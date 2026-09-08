@@ -9,10 +9,6 @@ import {
 import { migratePreparedProfile } from '../src/core/maintenance/profile-maintenance.js'
 import type { LocalArtifactManifest } from '../src/shared/contracts/build-info.js'
 import {
-  schemaMigrations,
-  type SchemaMigration
-} from '../src/core/persistence/sqlite/schema-migrations.js'
-import {
   createInstallJournal,
   readInstallJournal,
   writeInstallJournal,
@@ -47,10 +43,7 @@ import {
   validateCompletedInstallation,
   validateDeploymentCheckpoint
 } from './local-installation/deployment.js'
-import {
-  recoverActivationState,
-  recoverCampaignMigrationArtifacts
-} from './local-installation/recovery.js'
+import { adoptLegacyLocalMaintenance } from './local-installation/legacy-maintenance.js'
 import {
   isInstalledLocalAppRunning,
   withInstallationLock
@@ -111,6 +104,7 @@ function advanceLocalAppInstallationLocked(
     candidate.appBuildInputFingerprint ===
       manifest.receipt.build.appBuildInputFingerprint &&
     candidate.artifactSha256 === manifest.artifactSha256
+  if (journal) adoptLegacyLocalMaintenance(paths, journal)
   const coordinator = new MaintenanceCoordinator(
     paths.root,
     options.afterMaintenanceBoundaryForTest,
@@ -151,7 +145,7 @@ function advanceLocalAppInstallationLocked(
         journal.phase
       ))
   ) {
-    recoverInterruptedInstallation(paths, options.schemaMigrations, now)
+    recoverInterruptedInstallation(paths, now)
     journal = readInstallJournal(paths.journal)
   }
   if (matches(journal) && journal !== null)
@@ -307,7 +301,7 @@ function advanceLocalAppInstallationLocked(
     return installationResult(paths, manifest, activeJournal)
   } catch (error) {
     if (error instanceof LocalInstallCrashForTest) throw error
-    recoverInterruptedInstallation(paths, options.schemaMigrations, now)
+    recoverInterruptedInstallation(paths, now)
     if (error instanceof LocalInstallationError) throw error
     throw new LocalInstallationError(
       'atomic-replace-failed',
@@ -340,6 +334,15 @@ export function inspectLocalAppInstallation(
       validateDeploymentCheckpoint(paths, manifest, options, journal)
     if (target === 'activated') {
       if (journal.phase !== 'completed') return null
+      const maintenance = new MaintenanceCoordinator(paths.root).read()
+      if (
+        maintenance &&
+        (!['awaiting-start', 'committed'].includes(maintenance.phase) ||
+          maintenance.next.sha256 !== manifest.artifactSha256 ||
+          maintenance.next.deployment !==
+            manifest.receipt.build.workspaceFingerprint)
+      )
+        return null
       validateCompletedInstallation(paths, manifest, options.iconSourcePath)
     } else if (
       target === 'deployment-staged' &&
@@ -361,35 +364,21 @@ export function inspectLocalAppInstallation(
 
 function recoverInterruptedInstallation(
   paths: LocalInstallationPaths,
-  migrations: readonly SchemaMigration[] = schemaMigrations,
   now: () => Date = () => new Date()
 ): void {
   const journal = readInstallJournal(paths.journal)
+  if (journal) adoptLegacyLocalMaintenance(paths, journal)
   const coordinator = new MaintenanceCoordinator(paths.root)
-  if (coordinator.read()) {
-    coordinator.rollback()
-    if (journal)
-      writeInstallJournal(
-        paths.journal,
-        { ...journal, phase: 'rolled-back', migration: null, replacements: [] },
-        now
-      )
-    return
-  }
-
-  if (
-    journal === null ||
-    journal.phase === 'completed' ||
-    journal.phase === 'rolled-back'
-  )
-    return
-  recoverCampaignMigrationArtifacts(paths, journal, migrations)
-  let recovered = recoverActivationState(paths, journal)
-  if (journal.replacements.length === 0)
-    recovered = {
-      ...recovered,
-      campaignDataHash: campaignDataHash(paths),
-      migration: null
-    }
-  writeInstallJournal(paths.journal, recovered, now)
+  coordinator.rollback()
+  if (journal && !['completed', 'rolled-back'].includes(journal.phase))
+    writeInstallJournal(
+      paths.journal,
+      {
+        ...journal,
+        phase: 'rolled-back',
+        migration: null,
+        replacements: []
+      },
+      now
+    )
 }

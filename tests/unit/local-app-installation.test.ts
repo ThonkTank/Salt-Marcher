@@ -1,8 +1,17 @@
+import { randomUUID } from 'node:crypto'
+import { adoptLegacyLocalMaintenance } from '../../scripts/local-installation/legacy-maintenance.js'
+import {
+  readInstallJournal,
+  writeInstallJournal
+} from '../../scripts/local-install-journal.js'
+import { desktopIntegration } from '../../scripts/local-installation/deployment.js'
 import { MaintenanceCoordinator } from '../../src/shared/maintenance/coordinator.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { createHash } from 'node:crypto'
 import {
   existsSync,
+  cpSync,
+  symlinkSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -13,11 +22,12 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { basename, dirname, join, relative } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   advanceLocalAppInstallation,
+  inspectLocalAppInstallation,
   installLocalApp as activateLocalApp,
   LocalInstallCrashForTest,
   localInstallationPaths,
@@ -54,6 +64,33 @@ function installAndAccept(options: InstallLocalAppOptions) {
 }
 
 describe('local AppImage installation', () => {
+  it('does not reuse activation evidence contradicted by the common journal', () => {
+    const fixture = createFixture(build('a'))
+    const first = installAndAccept(fixture.options)
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    const coordinator = new MaintenanceCoordinator(first.paths.root)
+    const state = coordinator.read()!
+    writeFileSync(
+      coordinator.journalPath,
+      JSON.stringify({
+        ...state,
+        phase: 'rolled-back',
+        rollbackFrom: 'program-moving'
+      })
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+    writeFileSync(
+      coordinator.journalPath,
+      JSON.stringify({
+        ...state,
+        next: { ...state.next, sha256: 'f'.repeat(64) }
+      })
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+  })
+
   it('stores canonical profile data separately from the Local handoff proof', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
@@ -666,6 +703,222 @@ describe('local AppImage installation', () => {
     }
   )
 })
+
+describe('legacy Local maintenance admission', () => {
+  it.each([
+    'files-staged',
+    'old-0',
+    'old-1',
+    'old-2',
+    'new-0',
+    'new-1',
+    'new-2'
+  ])('recovers the old program, data and desktop after %s', (boundary) => {
+    const legacy = createLegacyInterruption(boundary)
+    adoptLegacyLocalMaintenance(legacy.paths, legacy.journal)
+    const coordinator = new MaintenanceCoordinator(legacy.paths.root)
+    expect(coordinator.read()?.phase).toBe('rollback-started')
+    expect(readFileSync(legacy.database)).not.toEqual(legacy.original)
+    coordinator.rollback()
+    coordinator.rollback()
+    expect(readFileSync(legacy.database)).toEqual(legacy.original)
+    expect(readFileSync(legacy.paths.appImage, 'utf8')).toBe('artifact-a')
+    expect(readFileSync(legacy.paths.desktopEntry, 'utf8')).toContain(
+      'a'.repeat(12)
+    )
+    expect(existsSync(legacy.journal.migration.rollback)).toBe(true)
+    expect(
+      existsSync(
+        join(legacy.paths.root, `failed-${legacy.journal.transactionId}`)
+      )
+    ).toBe(true)
+  })
+  it('resumes common rollback after interruption without reinterpreting the legacy journal', () => {
+    const legacy = createLegacyInterruption('new-2')
+    adoptLegacyLocalMaintenance(legacy.paths, legacy.journal)
+    expect(() =>
+      new MaintenanceCoordinator(legacy.paths.root, (boundary) => {
+        if (boundary === 'old-data-restored') throw new Error('power loss')
+      }).rollback()
+    ).toThrow('power loss')
+    adoptLegacyLocalMaintenance(legacy.paths, legacy.journal)
+    new MaintenanceCoordinator(legacy.paths.root).rollback()
+    expect(readFileSync(legacy.database)).toEqual(legacy.original)
+    expect(readFileSync(legacy.paths.appImage, 'utf8')).toBe('artifact-a')
+  })
+  it('continues the installer after adopting an interrupted legacy update', () => {
+    const legacy = createLegacyInterruption('old-2')
+    const completed = installAndAccept(legacy.fixture.options)
+    expect(readFileSync(completed.paths.appImage, 'utf8')).toBe('artifact-b')
+    const database = new Database(legacy.database, { readonly: true })
+    expect(database.prepare('SELECT content FROM valuable').pluck().get()).toBe(
+      'preserve me'
+    )
+    database.close()
+    expect(new MaintenanceCoordinator(legacy.paths.root).read()?.phase).toBe(
+      'committed'
+    )
+    expect(
+      existsSync(
+        join(
+          legacy.paths.root,
+          `legacy-local-source-${legacy.journal.transactionId}.json`
+        )
+      )
+    ).toBe(true)
+  })
+  it('does not guess the old program when its rollback pointer is gone', () => {
+    const legacy = createLegacyInterruption('new-2')
+    rmSync(legacy.journal.replacements[2]!.rollback!)
+    const before = readFileSync(legacy.database)
+    expect(() =>
+      adoptLegacyLocalMaintenance(legacy.paths, legacy.journal)
+    ).toThrow('Rückweg fehlt')
+    expect(readFileSync(legacy.database)).toEqual(before)
+    expect(new MaintenanceCoordinator(legacy.paths.root).read()).toBeNull()
+  })
+  it('uses the validated backup when the old installer already removed its data rollback', () => {
+    const legacy = createLegacyInterruption('files-staged')
+    rmSync(legacy.journal.migration.rollback, { recursive: true })
+    adoptLegacyLocalMaintenance(legacy.paths, legacy.journal)
+    new MaintenanceCoordinator(legacy.paths.root).rollback()
+    const database = new Database(legacy.database, { readonly: true })
+    expect(database.prepare('SELECT content FROM valuable').pluck().get()).toBe(
+      'preserve me'
+    )
+    database.close()
+    expect(existsSync(legacy.journal.backupPath!)).toBe(true)
+  })
+  it('does not replace later accepted work from a completed legacy transaction', () => {
+    const legacy = createLegacyInterruption('files-staged')
+    adoptLegacyLocalMaintenance(legacy.paths, {
+      ...legacy.journal,
+      phase: 'completed'
+    })
+    expect(new MaintenanceCoordinator(legacy.paths.root).read()).toBeNull()
+    expect(readFileSync(legacy.database)).not.toEqual(legacy.original)
+    expect(existsSync(legacy.journal.migration.rollback)).toBe(true)
+  })
+  it('rejects an escaped legacy path before changing current data', () => {
+    const legacy = createLegacyInterruption('files-staged')
+    const before = readFileSync(legacy.database)
+    expect(() =>
+      adoptLegacyLocalMaintenance(legacy.paths, {
+        ...legacy.journal,
+        migration: {
+          ...legacy.journal.migration,
+          rollback: join(legacy.paths.root, 'outside')
+        }
+      })
+    ).toThrow('Migrationspfade')
+    expect(readFileSync(legacy.database)).toEqual(before)
+    expect(new MaintenanceCoordinator(legacy.paths.root).read()).toBeNull()
+  })
+  it('fails closed when both retained data and the verified backup are missing', () => {
+    const legacy = createLegacyInterruption('files-staged')
+    const before = readFileSync(legacy.database)
+    rmSync(legacy.journal.migration.rollback, { recursive: true })
+    expect(() =>
+      adoptLegacyLocalMaintenance(legacy.paths, {
+        ...legacy.journal,
+        backupPath: null
+      })
+    ).toThrow('Sicherung')
+    expect(readFileSync(legacy.database)).toEqual(before)
+  })
+})
+
+/** Reenacts the old producer's rename-before-journal gaps with real Local fixtures. */
+function createLegacyInterruption(boundary: string) {
+  const fixture = createFixture(build('a'))
+  const first = installAndAccept(fixture.options)
+  const paths = first.paths
+  const database = createDatabase(paths.campaignData, schemaVersion)
+  const original = readFileSync(database)
+  fixture.useBuild(build('b'))
+  const staged = advanceLocalAppInstallation(
+    fixture.options,
+    'deployment-staged'
+  )
+  rmSync(new MaintenanceCoordinator(paths.root).journalPath)
+  const sourceJournal = readInstallJournal(paths.journal)!
+  const migration = {
+    staging: join(paths.profile, '.campaign-data.migration'),
+    rollback: join(paths.profile, '.campaign-data.rollback')
+  }
+  cpSync(paths.campaignData, migration.staging, { recursive: true })
+  const nextDatabase = new Database(
+    join(migration.staging, 'installation.sqlite')
+  )
+  nextDatabase
+    .prepare('UPDATE valuable SET content = ?')
+    .run('changed by legacy migration')
+  nextDatabase.close()
+  renameSync(paths.campaignData, migration.rollback)
+  renameSync(migration.staging, paths.campaignData)
+  const token = randomUUID()
+  const files = desktopIntegration(
+    paths,
+    join(staged.deploymentPath!, 'icon.png'),
+    build('b')
+  )
+  let journal = {
+    ...sourceJournal,
+    migration,
+    phase: 'files-staged' as const,
+    replacements: [
+      ...files.map((file) => {
+        const staged = join(
+          dirname(file.target),
+          `.${basename(file.target)}.install-${token}`
+        )
+        if (file.source) cpSync(file.source, staged)
+        else writeFileSync(staged, file.content!)
+        return {
+          target: file.target,
+          staged,
+          rollback: null as string | null,
+          state: 'staged' as const
+        }
+      }),
+      {
+        target: paths.current,
+        staged: join(paths.root, `.current.install-${token}`),
+        rollback: null as string | null,
+        state: 'staged' as const
+      }
+    ]
+  } satisfies import('../../scripts/local-install-journal.js').LocalInstallJournal
+  symlinkSync(
+    relative(paths.root, staged.deploymentPath!),
+    journal.replacements[2]!.staged
+  )
+  const persist = () =>
+    writeInstallJournal(paths.journal, journal, () => new Date())
+  persist()
+  if (boundary !== 'files-staged') {
+    for (let index = 0; index < journal.replacements.length; index++) {
+      const entry = journal.replacements[index]!
+      const rollback = join(
+        dirname(entry.target),
+        `.${basename(entry.target)}.rollback-${token}`
+      )
+      renameSync(entry.target, rollback)
+      if (boundary === `old-${index}`) break
+      entry.rollback = rollback
+      persist()
+    }
+    if (boundary.startsWith('new-'))
+      for (let index = 0; index < journal.replacements.length; index++) {
+        const entry = journal.replacements[index]!
+        renameSync(entry.staged, entry.target)
+        if (boundary === `new-${index}`) break
+        persist()
+      }
+  }
+  journal = readInstallJournal(paths.journal)! as typeof journal
+  return { paths, journal, database, original, fixture }
+}
 
 function createFixture(initialBuild: BuildInfo): {
   readonly xdg: string

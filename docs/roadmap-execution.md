@@ -393,3 +393,73 @@ Handoff, keine Live-Abnahme und keine Veröffentlichung erfolgt.
 
 Development-Smoke unter Xvfb ebenfalls bestanden: Core ready, regulärer Exit 0.
 Dieser Nachweis ist kein gepackter Local-Handoff.
+
+### Phase 2 — Legacy-Local-Übernahme, Plan vor Änderung
+
+Vorheriger Zielturn: Fortschritt; Commit 9a9e90710 enthält die geprüfte gemeinsame
+Local-Aktivierung. Aktuelle Arbeitskopie sauber. Verbleibender alter Recovery-Leser
+löscht Daten anhand Schema-Lesbarkeit und entscheidet Programmabschluss separat.
+
+Ersetzung: abgeschlossene Altvorgänge erhalten spätere Arbeit unverändert. Für
+unterbrochene Local-v2-Vorgänge Quellen und Pfade strikt prüfen; alte Programm-
+identität aus aktuellem oder gesichertem Zeiger lesen. Beim alten Rename-vor-Journal-
+Fenster die deterministische Rollbackdatei aus dem Stagingnamen berücksichtigen.
+Vorhandenen Datenrollback oder geprüfte Vorgangssicherung in einen kanonischen
+Rückweg kopieren, ohne die alten Belege zu entfernen. Desktop-Rückwege ebenfalls
+kopieren. Erst danach das gemeinsame Journal dauerhaft schreiben; sämtliche
+Live-Rücksetzung übernimmt MaintenanceCoordinator. Wiederholte Aufnahme muss
+kopierte Belege validieren statt überschreiben. Fehlende oder widersprüchliche
+Rückwege werden ohne Änderung der Live-Daten abgewiesen.
+
+Backupvalidierung in reine Sicherungsprüfung und Live-Checkpoint-Prüfung teilen,
+damit alte Sicherungen nach Datenpromotion prüfbar bleiben. Tests decken Daten-
+und Desktop-Renamefenster, entfernten direkten Datenrollback, erneute Unterbrechung
+nach Aufnahme, abgeschlossene spätere Arbeit und ungültige Pfade/fehlende Rückwege
+ab. Legacy-v1-Provenienz ohne erforderliche Identitätsnachweise bleibt explizit
+abgewiesen. Keine Unterstützung bislang unbekannter Altzustände behaupten.
+
+Legacy-Aufnahmeprüfung: 11 neue Tests bestanden (32 bestehende Installer-Fälle im
+gezielten Lauf übersprungen). Alte Rename-vor-Journal-Fenster, Sicherungsrückweg,
+abgeschlossene Arbeit und fehlerhafte Pfade sind damit direkt geprüft.
+Ergänzender Auditplan: terminale Altbelege ebenfalls vor späterem Überschreiben
+archivieren; Aufnahme mit unterbrochener gemeinsamer Rücksetzung sowie Fortsetzung
+über den öffentlichen Installer testen. Fehlenden alten Programmzeiger nach
+Promotion explizit abweisen, statt eine Version aus den Deployments zu erraten.
+
+Legacy-Runde: 125 Tests in vier Dateien bestanden, einschließlich aller bisherigen
+Installer-Fälle und der neuen Aufnahme-/Fortsetzungsfälle. TypeScript bestanden;
+ESLint meldet fünf überflüssige Non-null-Assertions in der Legacy-Testfixture.
+Diese entfernen. Nächster Auditpunkt: inspectLocalAppInstallation darf einen
+Aktivierungsbeleg nicht wiederverwenden, wenn das gemeinsame Journal bereits
+zurückgesetzt wurde oder eine andere Programmidentität nennt. Die Lesefunktion
+an diesen Zustand binden und mit manipuliertem Journal direkt prüfen.
+
+### Phase 2 — Legacy-Local-Zwischenaudit
+
+Implementierung gegen Rundenplan: alte Local-Recovery entfernt; v2-Altvorgänge werden
+unter bestehender Profilsperre aufgenommen. Originaljournal, alter Datenrollback,
+Sicherungen und Desktop-Rückwege bleiben erhalten. Kopierte Rückwege werden vor dem
+gemeinsamen Journal synchronisiert; nach dessen Existenz entscheidet ausschließlich
+MaintenanceCoordinator über Rücksetzung. Die vorherige Programmidentität wird aus
+dem belegten Zeiger gelesen, nicht aus der Reihenfolge vorhandener Deployments.
+Terminale Altvorgänge sichern ihren Beleg und behalten spätere Arbeit.
+
+Validierung: 125 Tests in Local-Installer, Koordinator, Local-Start und Release-
+Recovery bestanden. Zusätzlich direkter Test der widersprüchlichen Aktivierungs-
+belege bestanden; übrige 46 Fälle bei diesem gezielten Zusatzlauf übersprungen.
+91 Architekturtests, TypeScript und ESLint bestanden. Keine aktiven Referenzen
+auf recoverCampaignMigrationArtifacts, recoverActivationState oder
+campaignPersistenceIsReady verbleiben.
+
+Audit gegen kanonische Phase 2: Legacy-Local-Aufnahme und Wiederverwendungsbarriere
+sind implementiert und direkt geprüft. Abschluss weiterhin offen: der stabile
+Local-Startpunkt und sein Verhalten bei nicht ausführbarem Ziel müssen noch gegen
+die gemeinsame Recovery qualifiziert werden. Insbesondere darf ein alter Local-
+Build ohne Kenntnis des neuen Journals nicht mit unbestätigten neuen Daten als
+Fallback gestartet werden. Der externe Verifier schützt den Handoff-Start bereits;
+das ist kein Beleg für diesen Desktop-Startfall. Danach steht das vollständige
+Phase-2-Abschlussaudit einschließlich der Release-Legacy-Aufnahme an.
+
+Remote Check 34219709769 für vorherigen Commit 9a9e90710 zum Auditzeitpunkt noch
+in_progress: alle abgeschlossenen Prüfjobs erfolgreich; campaign-workspaces und
+hex-npc-restart laufen. Dies ist keine Remote-Abnahme der uncommitteten Legacy-Runde.

@@ -360,6 +360,9 @@ export class MaintenanceCoordinator {
     file: MaintenanceJournal['integration'][number]
   ): void {
     const stat = lstatSync(file.target, { throwIfNoEntry: false })
+    // Restoring an absent target never overwrites external content. Legacy
+    // installers could move the old target before publishing its replacement.
+    if (!stat) return
     const isNext =
       stat?.isFile() &&
       sha256(file.target) === file.sha256 &&

@@ -67,6 +67,14 @@ export function validateBackupCheckpoint(
       'data-corrupt',
       'Campaign data changed after the verified backup checkpoint'
     )
+  validateBackupContents(paths, journal)
+}
+
+/** Validates retained evidence independently from the now-promoted live profile. */
+export function validateBackupContents(
+  paths: LocalInstallationPaths,
+  journal: LocalInstallJournal
+): void {
   if (journal.backupPath === null) {
     if (journal.backupManifestSha256 !== null)
       throw new Error('Backup checkpoint has a hash without a backup')

@@ -34,14 +34,3 @@ export function readPersistencePreflight(
     throw error
   }
 }
-
-export function campaignPersistenceIsReady(
-  path: string,
-  migrations: readonly SchemaMigration[]
-): boolean {
-  try {
-    return preflightPersistence(path, migrations).kind === 'ready'
-  } catch {
-    return false
-  }
-}
