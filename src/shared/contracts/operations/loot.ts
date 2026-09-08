@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   acceptGeneratedTreasureInputSchema,
   characterLootInputSchema,
@@ -37,7 +38,7 @@ export const lootOperationDefinitions = utilityOperationFragment({
   ),
   'loot.groupRewardReceipt': read(
     'loot:group-reward-receipt',
-    commitGroupRewardInputSchema,
+    commitGroupRewardInputSchema.extend({ campaignId: z.uuid() }),
     commitGroupRewardResultSchema.nullable()
   ),
   'loot.commitGroupReward': write(

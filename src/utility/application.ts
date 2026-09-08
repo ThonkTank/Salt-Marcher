@@ -173,6 +173,7 @@ const play = new LivePlayService(activePersistence, biomeProjection, () => {
   }
 })
 const lootComposition = createLootComposition({
+  activeCampaignId: () => campaigns.activeCampaignId(),
   activeDatabase: activePersistence,
   rules: campaignRules,
   generation: sessionGenerationService,

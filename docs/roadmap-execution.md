@@ -2619,3 +2619,77 @@ Quittung braucht weiterhin einen verlässlichen, bedienbaren Abschluss; andere
 Unknown-Fälle (Generierung/Archivieren/Combat), Session Planner, übrige Schreib-
 und Kartenwege sowie Offline-/Update-UI bleiben zu bearbeiten. Phasen 5–7,
 kanonischer Handoff, Livetest und Veröffentlichung sind weiterhin erforderlich.
+
+### Phase 4 — Fehlende Gruppenquittung verbindlich auflösen: Umsetzungsplan
+
+Vorheriger Goal-Turn Fortschritt: 07f8cf6b3 sauber gepusht. Aktueller Worktree sauber.
+Die beiden Save-/Reward-Commit-Handler laufen synchron und atomar; Utility-Dispatch
+führt den Handler vor Promise-Auflösung aus. Der Supervisor startet nach Timeout
+keine Ersatz-Utility vor dem Exit der alten Generation. Ein erfolgreicher Read
+nach dem unbekannten Auftrag kann daher dessen Abwesenheit bestätigen. Die Reads
+müssen dazu serverseitig auf die ursprüngliche Kampagne beschränkt sein.
+
+Die beiden Receipt-IPC-Inputs um die explizite Kampagnen-ID ergänzen; Utility weist
+abweichende aktive Kampagnen vor dem Journalzugriff zurück. Renderer-Port bindet
+sie an die beim Öffnen geladene Kampagne und prüft auch die aktuelle Projektion.
+Nach erfolgreichem Receipt-Read (auch null) einen frischen kampagnengebundenen
+Snapshot lesen. Nur vorhandene Quittungen bestätigen Draft-Baselines. Bei null
+bleibt der lokale Entwurf erhalten, die Unknown-Sperre endet und eine Meldung nennt
+Speichern oder Verwerfen als nächste Aktion. Save/Discard der Wartung dürfen nach
+dieser bestätigten Abwesenheit fortfahren. Read-/Kampagnenfehler halten die Sperre.
+
+Prüfen: beide Receipt-Verträge, Ablehnung anderer Kampagnen vor Domain-Zugriff,
+bestätigt nicht gespeicherter normaler Save und Reward-Commit, keine Quittierung
+des lokalen Entwurfs, kein Schreibaufruf beim Read-Abgleich/Verwerfen, bewusstes
+erneutes Speichern, spätere persistierte Änderungen und fehlerhafter frischer Read.
+Supervisor-/Dispatcherregression, Typecheck, Lint, Build/Smoke, getrennte Audits.
+
+Korrekturrunde Testdaten: 60 Tests bestehen, zwei Testannahmen passen noch nicht.
+Der neue native Reward-Read muss einen schema-validen Auftrag mit mindestens einem
+Eintrag verwenden. Der bestehende UI-Test für gescheiterte Reads muss einen echten
+Read-Fehler liefern; null ist jetzt bewusst bestätigte Abwesenheit. Diese Fälle
+korrigieren, danach die unveränderte fachliche Erwartung erneut prüfen. ESLint
+besteht bereits; Typecheck läuft noch.
+
+Zusätzliche Beweisprüfung: 135 Regressionstests bestehen. Zwei neue Vertragstests
+bestehen ebenfalls; der ergänzte Timeout-/Receipt-Test hängt nach seinen fachlichen
+Assertions im Test-Cleanup, weil die Fake-Utility den Shutdown nicht beantwortet
+und Fake-Timer nicht weiterlaufen. Im Cleanup den Exit der neuen Fake-Generation
+explizit auslösen, damit der Test die tatsächliche Exit-Barriere isoliert prüft.
+
+UI-Teilaudit/Korrektur: Bei bestätigter Abwesenheit eines Reward-Commits wurde
+die Gruppenmeldung aktualisiert, die Beuteansicht zeigte jedoch noch den alten
+Unknown-Fehler. Auch dort den bestätigten Nicht-Speichern-Status samt nächster
+Aktion anzeigen und alte Issues ersetzen; keine Baseline oder Inhalte quittieren.
+Diese sichtbare Konsistenz im vorhandenen Abwesenheitstest mitprüfen.
+
+### Phase 4 — Fehlende Gruppenquittung: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Beide Receipt-IPC-Verträge verlangen eine UUID der
+ursprünglichen Kampagne; die Utility prüft diese vor dem Domain-Read. Renderer
+bindet beide Quittungsreads und den anschließenden Session-Read an die geladene
+Kampagne. Fehlende Quittung plus erfolgreicher frischer Read beendet Unknown,
+bestätigt jedoch keine Draft-Baseline. Der Entwurf bleibt bearbeitbar; Save oder
+Discard können bewusst fortfahren. Gruppen- und Beuteansicht zeigen konsistent,
+dass der Auftrag nicht gespeichert wurde. Readfehler halten Unknown unverändert.
+
+Die Abwesenheitsaussage gilt für diese beiden synchron atomaren Handler. Der
+zusätzliche Supervisor-Test hält einen nach Timeout getöteten Writer künstlich
+am Leben: kein Ersatzprozess nach 60 Sekunden, Receipt-Read abgewiesen, erst nach
+Exit/neuer ready-Generation erfolgreich. Nicht auf asynchrone Hintergrundjobs
+oder beliebige fehlende Journaleinträge verallgemeinert.
+
+Validierung: 135 Tests in 12 Dateien einschließlich Architektur, Runtime/Owner,
+Kampagnenbindung, nativer Save-/Reward-Quittungsreads und Supervisor bestanden.
+Anschließend 35 Vertrags-/Supervisor-Tests mit expliziter Exit-Barriere bestanden.
+Nach UI-Fehlertextkorrektur 16 Owner-/UI-Tests erneut bestanden. Vollständiger
+Typecheck und ESLint bestanden; geänderte UI-/Testdateien anschließend erneut
+lint-geprüft. Abschließendes Prettier, Build/Built-Smoke (ready/closed) und
+git diff --check bestanden. Logs: work/roadmap-phase4-absent-receipts-*.log.
+Kein Nutzerprofil verändert und kein kanonischer Handoff durchgeführt.
+
+Roadmapabgleich: Die bisher offene dauerhafte Abwesenheit von Quittungen ist für
+normale Gruppen-Saves und Reward-Commits bedienbar aufgelöst. Phase 4 bleibt offen:
+Generierung, Archivieren/Combat, Session Planner, übrige Writer-/Kartenwege und
+Offline-/Update-UI müssen noch vollständig qualifiziert werden. Phasen 5–7 und
+exakter CI-Handoff/Main-Abschluss bleiben erforderlich.

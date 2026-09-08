@@ -133,9 +133,14 @@ export function createGroupManagerCommands(
     }
     const reconcile = async () => {
       const receipt = await ports.scene.groupSaveReceipt(request)
-      if (!receipt) return null
       const fresh = await ports.session.read()
-      acknowledgeGroupSave(input, receipt)
+      if (receipt) acknowledgeGroupSave(input, receipt)
+      else
+        dispatch({
+          kind: 'group-message',
+          key,
+          message: message('group.saveNotApplied')
+        })
       dispatch({
         kind: 'sync-external',
         groups:

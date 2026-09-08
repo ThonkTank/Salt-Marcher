@@ -1,3 +1,4 @@
+import { createSessionHandlers } from '../../src/utility/composition/live-play.js'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -39,6 +40,27 @@ function harness() {
 }
 
 describe('scene group command receipts', () => {
+  it('rejects a receipt read for another campaign before consulting its database', () => {
+    const { store, play, input } = harness()
+    const handlers = createSessionHandlers(play, () => store.activeCampaignId())
+    expect(() =>
+      handlers['scene.groupSaveReceipt']({ ...input, campaignId: randomUUID() })
+    ).toThrow('stale')
+    expect(
+      handlers['scene.groupSaveReceipt']({
+        ...input,
+        campaignId: store.activeCampaignId()
+      })
+    ).toBeNull()
+    const result = play.saveSceneGroupCommand(input)
+    expect(
+      handlers['scene.groupSaveReceipt']({
+        ...input,
+        campaignId: store.activeCampaignId()
+      })
+    ).toEqual(result)
+  })
+
   it('creates once, replays the exact result, rejects changed requests, and reads after restart', () => {
     const { root, store, play, input, db } = harness()
     expect(play.sceneGroupSaveReceipt(input)).toBeNull()

@@ -132,9 +132,21 @@ export function createGroupManagerLootCommands(
     }
     const reconcile = async () => {
       const receipt = await ports.loot.groupRewardReceipt(request)
-      if (!receipt) return null
       const fresh = await ports.session.read()
-      acknowledge(receipt)
+      if (receipt) acknowledge(receipt)
+      else {
+        dispatch({
+          kind: 'group-message',
+          key,
+          message: message('group.saveNotApplied')
+        })
+        dispatch({
+          kind: 'loot-failed',
+          key,
+          error: message('group.saveNotApplied'),
+          issues: []
+        })
+      }
       dispatch({
         kind: 'sync-external',
         groups:

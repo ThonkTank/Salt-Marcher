@@ -104,6 +104,8 @@ export const sessionMessagesDe = {
   'group.generatedReplaced': 'zuletzt {count} erzeugt',
   'group.unavailable': 'nicht kampffähig',
   'group.levels': 'Stufen',
+  'group.saveNotApplied':
+    'Der Auftrag wurde nicht gespeichert. Dein Entwurf bleibt erhalten; du kannst ihn erneut speichern oder verwerfen.',
   'group.saveUnconfirmed': 'Der Speicherauftrag ist noch nicht bestätigt.',
   'group.checkSavedState': 'Speicherstand erneut prüfen',
   'group.receiptAbsent':

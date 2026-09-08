@@ -64,7 +64,11 @@ export function createSessionHandlers(
         input.expectedRevision
       ),
     'scene.saveGroup': (input) => play.saveSceneGroupCommand(input),
-    'scene.groupSaveReceipt': (input) => play.sceneGroupSaveReceipt(input),
+    'scene.groupSaveReceipt': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneGroupSaveReceipt(command)
+    },
     'scene.deleteGroup': (input) =>
       play.deleteSceneGroup(
         input.sceneId,

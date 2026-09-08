@@ -210,7 +210,6 @@ describe('group maintenance owner', () => {
     }
     const groupRewardReceipt = vi
       .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
-      .mockResolvedValueOnce(null)
       .mockRejectedValueOnce(new Error('read failed'))
       .mockResolvedValue(receipt)
     const fresh = snapshot()
@@ -244,7 +243,6 @@ describe('group maintenance owner', () => {
     const coordinator = new AsyncCommandCoordinator()
     await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow()
     expect(runtime.canReconcile()).toBe(true)
-    expect(await runtime.reconcileUnknown()).toBe(false)
     await expect(runtime.reconcileUnknown()).rejects.toThrow('read failed')
     await expect(runtime.reconcileUnknown()).rejects.toThrow(
       'snapshot unavailable'
@@ -258,7 +256,7 @@ describe('group maintenance owner', () => {
     )
     expect(runtime.snapshot().uncertain).toBe(false)
     expect(commitGroupReward).toHaveBeenCalledOnce()
-    expect(groupRewardReceipt).toHaveBeenCalledTimes(4)
+    expect(groupRewardReceipt).toHaveBeenCalledTimes(3)
     for (const [request] of groupRewardReceipt.mock.calls)
       expect(request).toBe(commitGroupReward.mock.calls[0]?.[0])
   })
@@ -282,7 +280,7 @@ describe('group maintenance owner', () => {
     const receipt = { treasure: null, groupResult: result }
     const groupRewardReceipt = vi
       .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
-      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('receipt unavailable'))
       .mockResolvedValue(receipt)
     const fresh = {
       ...initial,
@@ -519,21 +517,113 @@ describe('group maintenance owner', () => {
     expect(runtime.snapshot().snapshot).toBe(fresh)
   })
 
-  it('does not replay or discard an unknown write outcome', async () => {
+  it('keeps unknown state when receipt reads fail without replaying or discarding', async () => {
     const runtime = dirtyRuntime()
     const saveGroup = vi
       .fn<GroupManagerPorts['scene']['saveGroup']>()
       .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const base = mockPorts(saveGroup)
+    const ports = {
+      ...base,
+      scene: {
+        ...base.scene,
+        groupSaveReceipt: () => Promise.reject(new Error('receipt unavailable'))
+      }
+    }
     const coordinator = new AsyncCommandCoordinator()
-    await expect(
-      runtime.saveAll(mockPorts(saveGroup), coordinator, vi.fn())
-    ).rejects.toThrow()
-    await expect(
-      runtime.saveAll(mockPorts(saveGroup), coordinator, vi.fn())
-    ).rejects.toThrow('unbekannt')
-    await expect(runtime.discardAll(coordinator)).rejects.toThrow('unbekannt')
+    await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow()
+    await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow(
+      'receipt unavailable'
+    )
+    await expect(runtime.discardAll(coordinator)).rejects.toThrow(
+      'receipt unavailable'
+    )
     expect(saveGroup).toHaveBeenCalledOnce()
     expect(runtime.isDirty()).toBe(true)
+  })
+
+  it.each(['save', 'discard'] as const)(
+    'resolves an absent normal save and allows %s without acknowledging the draft',
+    async (next) => {
+      const runtime = dirtyRuntime()
+      const saveGroup = vi
+        .fn<GroupManagerPorts['scene']['saveGroup']>()
+        .mockRejectedValueOnce(new CapabilityError('outcome_unknown', false))
+        .mockImplementation(saveResult)
+      const base = mockPorts(saveGroup)
+      const read = vi
+        .fn<GroupManagerPorts['session']['read']>()
+        .mockRejectedValueOnce(new Error('snapshot unavailable'))
+        .mockResolvedValue(snapshot())
+      const ports = { ...base, session: { read } }
+      const coordinator = new AsyncCommandCoordinator()
+      await expect(
+        runtime.saveAll(ports, coordinator, vi.fn())
+      ).rejects.toThrow()
+      await expect(runtime.reconcileUnknown()).rejects.toThrow(
+        'snapshot unavailable'
+      )
+      expect(runtime.snapshot().uncertain).toBe(true)
+      expect(await runtime.reconcileUnknown()).toBe(true)
+      expect(runtime.snapshot().uncertain).toBe(false)
+      expect(runtime.isDirty()).toBe(true)
+      expect(runtime.snapshot().state.sessions['a']?.group.name).toBe(
+        'A edited'
+      )
+      expect(runtime.snapshot().state.sessions['a']?.sourceRevision).toBe(1)
+      expect(runtime.snapshot().state.sessions['a']?.group.message).toContain(
+        'nicht gespeichert'
+      )
+      expect(saveGroup).toHaveBeenCalledOnce()
+      if (next === 'save') {
+        expect(await runtime.saveAll(ports, coordinator, vi.fn())).toBe(true)
+        expect(saveGroup).toHaveBeenCalledTimes(3)
+      } else {
+        expect(await runtime.discardAll(coordinator)).toBe(true)
+        expect(saveGroup).toHaveBeenCalledOnce()
+      }
+    }
+  )
+
+  it('allows discarding an absent reward commit without writing or acknowledging generated loot', async () => {
+    const runtime = runtimeFor(snapshot())
+    runtime.dispatch({
+      kind: 'loot-generated',
+      key: 'a',
+      run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+      draft: { label: 'No loot', items: [], containers: [] },
+      seed: 1
+    })
+    const commitGroupReward = vi
+      .fn<GroupManagerPorts['loot']['commitGroupReward']>()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const groupRewardReceipt = vi
+      .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
+      .mockResolvedValue(null)
+    const saveGroup = vi.fn<GroupManagerPorts['scene']['saveGroup']>()
+    const ports = {
+      ...mockPorts(saveGroup),
+      loot: {
+        ...mockPorts(saveGroup).loot,
+        commitGroupReward,
+        groupRewardReceipt
+      },
+      session: { read: () => Promise.resolve(snapshot()) }
+    }
+    const coordinator = new AsyncCommandCoordinator()
+    await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow()
+    expect(await runtime.reconcileUnknown()).toBe(true)
+    expect(runtime.isDirty()).toBe(true)
+    expect(
+      runtime.snapshot().state.sessions['a']?.loot.committedSignature
+    ).toBeNull()
+    expect(runtime.snapshot().state.sessions['a']?.loot.error).toContain(
+      'nicht gespeichert'
+    )
+    await runtime.discardAll(coordinator)
+    expect(runtime.isDirty()).toBe(false)
+    expect(commitGroupReward).toHaveBeenCalledOnce()
+    expect(saveGroup).not.toHaveBeenCalled()
   })
 
   it('waits for a normal save started before maintenance without closing early or saving twice', async () => {

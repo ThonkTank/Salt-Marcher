@@ -1,3 +1,5 @@
+import { sceneOperationDefinitions } from '../../src/shared/contracts/operations/scene.js'
+import { lootOperationDefinitions } from '../../src/shared/contracts/operations/loot.js'
 import { describe, expect, it } from 'vitest'
 import {
   changeHpInputSchema,
@@ -27,6 +29,44 @@ import {
 import { activeCampaignSessionInputSchema } from '../../src/shared/contracts/operations/session.js'
 
 describe('live session capability contracts', () => {
+  it.each([
+    sceneOperationDefinitions['scene.groupSaveReceipt'],
+    lootOperationDefinitions['loot.groupRewardReceipt']
+  ])(
+    'requires the campaign identity on receipt channel $channel',
+    (definition) => {
+      const id = '00000000-0000-4000-8000-000000000001'
+      const normal = {
+        commandId: id,
+        sceneId: id,
+        groupId: id,
+        name: 'Group',
+        note: '',
+        disposition: 'hostile',
+        entries: [{ creatureId: id, quantity: 1, deadQuantity: 0 }]
+      }
+      const input =
+        definition === sceneOperationDefinitions['scene.groupSaveReceipt']
+          ? { ...normal, expectedRevision: 1, expectedGroupRevision: 1 }
+          : {
+              ...normal,
+              runId: id,
+              generatedTreasureId: null,
+              treasureDraft: null,
+              expectedSceneRevision: 1,
+              expectedGroupRevision: 1
+            }
+      expect(definition.mode).toBe('read')
+      expect(definition.input.safeParse(input).success).toBe(false)
+      expect(
+        definition.input.safeParse({ ...input, campaignId: 'invalid' }).success
+      ).toBe(false)
+      expect(
+        definition.input.safeParse({ ...input, campaignId: id }).success
+      ).toBe(true)
+    }
+  )
+
   it('requires an explicit Campaign identity for the active Session read', () => {
     expect(
       activeCampaignSessionInputSchema.safeParse({

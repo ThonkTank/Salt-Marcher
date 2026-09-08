@@ -1,3 +1,4 @@
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 import { lootOperationDefinitions } from '../../shared/contracts/operations/loot.js'
@@ -39,6 +40,7 @@ export type LootComposition = Readonly<{
 }>
 
 export function createLootComposition(dependencies: {
+  activeCampaignId(): string
   activeDatabase: SqliteDatabaseAccess
   rules: Readonly<{ read(): CampaignRules }>
   generation: GroupRewardGenerationPort
@@ -121,7 +123,11 @@ export function createLootComposition(dependencies: {
           'loot.read': (input) => loot.read(input.treasureId),
           'loot.catalog': (input) => catalog.search(input),
           'loot.generateForGroupDraft': (input) => rewards.generate(input),
-          'loot.groupRewardReceipt': (input) => commits.commandReceipt(input),
+          'loot.groupRewardReceipt': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return commits.commandReceipt(command)
+          },
           'loot.commitGroupReward': (input) =>
             publish(
               lootOperationDefinitions['loot.commitGroupReward'],

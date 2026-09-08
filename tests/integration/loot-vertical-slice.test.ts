@@ -1,3 +1,4 @@
+import { createLootComposition } from '../../src/utility/composition/loot.js'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -65,6 +66,53 @@ function campaign() {
 }
 
 describe('loot vertical slice', () => {
+  it('requires the original campaign for an authoritative absent reward receipt', () => {
+    const { campaigns, db } = campaign()
+    const unused = (): never => {
+      throw new Error('unexpected domain work')
+    }
+    const handlers = createLootComposition({
+      activeCampaignId: () => campaigns.activeCampaignId(),
+      activeDatabase: fixedSqliteDatabaseAccess(db),
+      rules: { read: unused },
+      generation: { generateGroupReward: unused },
+      loadCatalog: unused,
+      currentCatalogReference: unused,
+      groupCommands: { save: unused, result: unused }
+    }).createHandlers(unused)
+    const input = {
+      commandId: randomUUID(),
+      runId: randomUUID(),
+      generatedTreasureId: null,
+      treasureDraft: null,
+      sceneId: randomUUID(),
+      groupId: randomUUID(),
+      expectedSceneRevision: 1,
+      expectedGroupRevision: null,
+      name: 'Absent',
+      note: '',
+      disposition: 'hostile' as const,
+      entries: [{ creatureId: randomUUID(), quantity: 1, deadQuantity: 0 }]
+    }
+    expect(() =>
+      handlers['loot.groupRewardReceipt']({
+        ...input,
+        campaignId: randomUUID()
+      })
+    ).toThrow('stale')
+    db.pragma('query_only = ON')
+    try {
+      expect(
+        handlers['loot.groupRewardReceipt']({
+          ...input,
+          campaignId: campaigns.activeCampaignId()
+        })
+      ).toBeNull()
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+  })
+
   it('keeps the durable Loot receipt schema frozen with one versioned result envelope', () => {
     const { db } = campaign()
     expect(columns(db, 'loot_operation_receipt')).toEqual([

@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   liveSessionSnapshotSchema,
   sceneGroupCommandResultSchema
@@ -29,7 +30,7 @@ export const sceneOperationDefinitions = utilityOperationFragment({
   ),
   'scene.groupSaveReceipt': read(
     'scene:group-save-receipt',
-    saveSceneGroupInputSchema,
+    saveSceneGroupInputSchema.extend({ campaignId: z.uuid() }),
     sceneGroupCommandResultSchema.nullable()
   ),
   'scene.saveGroup': write(

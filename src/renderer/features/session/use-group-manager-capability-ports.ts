@@ -1,3 +1,5 @@
+import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
+import type { CommitGroupRewardInput } from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
@@ -17,16 +19,23 @@ import {
 export type GroupManagerPorts = Readonly<{
   runtime: Readonly<{ e2e: boolean }>
   creatures: CreatureCapabilityPort
-  scene: SessionCapabilities['scene']
+  scene: Omit<SessionCapabilities['scene'], 'groupSaveReceipt'> &
+    Readonly<{
+      groupSaveReceipt(
+        input: SaveSceneGroupInput
+      ): ReturnType<SaltMarcherApi['scene']['groupSaveReceipt']>
+    }>
   session: Readonly<{ read(): Promise<LiveSessionSnapshot> }>
   campaignRules: Pick<SaltMarcherApi['campaignRules'], 'read'>
   loot: Pick<
     SaltMarcherApi['loot'],
-    | 'catalog'
-    | 'generateForGroupDraft'
-    | 'commitGroupReward'
-    | 'groupRewardReceipt'
-  >
+    'catalog' | 'generateForGroupDraft' | 'commitGroupReward'
+  > &
+    Readonly<{
+      groupRewardReceipt(
+        input: CommitGroupRewardInput
+      ): ReturnType<SaltMarcherApi['loot']['groupRewardReceipt']>
+    }>
   biomes: Pick<SaltMarcherApi['biomes'], 'search'>
   combat: Pick<SaltMarcherApi['combat'], 'joinGroup'>
 }>
@@ -38,28 +47,42 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
   const projection = context.campaignWorkspace
   const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
   const campaignId = root.sessionCampaignId
-  return useMemo(
-    () => ({
+  return useMemo(() => {
+    const requireCampaign = () => {
+      const current = projection.snapshot()
+      if (
+        !campaignId ||
+        current.sessionCampaignId !== campaignId ||
+        current.campaigns.activeCampaignId !== campaignId
+      )
+        throw new CapabilityError('stale', false)
+      return campaignId
+    }
+    return {
       runtime: { e2e: api.runtime.e2e },
       creatures: createCreatureCapabilityPort(api.creatures),
-      scene: sessionCapabilities(api).scene,
+      scene: {
+        ...sessionCapabilities(api).scene,
+        groupSaveReceipt: async (input: SaveSceneGroupInput) =>
+          api.scene.groupSaveReceipt({
+            ...input,
+            campaignId: requireCampaign()
+          })
+      },
       session: {
-        read: () => {
-          const current = projection.snapshot()
-          if (
-            !campaignId ||
-            current.sessionCampaignId !== campaignId ||
-            current.campaigns.activeCampaignId !== campaignId
-          )
-            return Promise.reject(new CapabilityError('stale', false))
-          return api.session.read({ campaignId })
-        }
+        read: async () => api.session.read({ campaignId: requireCampaign() })
       },
       campaignRules: api.campaignRules,
-      loot: api.loot,
+      loot: {
+        ...api.loot,
+        groupRewardReceipt: async (input: CommitGroupRewardInput) =>
+          api.loot.groupRewardReceipt({
+            ...input,
+            campaignId: requireCampaign()
+          })
+      },
       biomes: api.biomes,
       combat: encounterCapabilities(api).combat
-    }),
-    [api, campaignId, projection]
-  )
+    }
+  }, [api, campaignId, projection])
 }
