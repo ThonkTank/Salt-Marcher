@@ -4324,3 +4324,93 @@ CampaignWorkspaceProjection-Quittungen und use-campaign-session-coordinator
 prüfen, insbesondere automatische Navigation/Unmount nach create/activate und
 Fehler beim nachfolgenden enterSession. Den Detailplan vor Sourceänderungen
 festhalten und vorhandene Lifecycle-Recovery wiederverwenden.
+
+### Phase 4 — Plan: Kampagnenbefehle bis zum vollständigen Sitzungsstart halten
+
+Vorheriger Zielturn war Fortschritt; 2632726aa ist sauber gepusht und Check
+34284009832 wartet. CampaignScreen besitzt lokale Popups ohne Maintenance-Owner.
+Vor deren Anschluss muss useCampaignSessionCoordinator seine Wahrheit klären:
+enterSession meldet bei fehlgeschlagenem Read bislang nur sessionRetry, kehrt aber
+normal zurück; run liefert deshalb true. Ein bestätigtes Create/Activate kann so
+als vollständig abgeschlossen gelten, obwohl der Sessionstand fehlt.
+
+Zuerst den Koordinator absichern: awaitbares Pending statt Boolean, ursprüngliche
+Zielkampagne des bestätigten Starts bis zum vollständigen Read behalten, Fehler
+als false zurückgeben, weitere Schreibbefehle bis Klärung sperren. Erfolgreicher
+Read verlangt ready, vorhandene Session und identische aktive/geladene Kampagne
+vor/nach dem Read. Retry sendet weder Create noch Activate erneut. Ein stabiler
+Maintenance-Owner am Workspace-Koordinator wartet Pending ab und klärt bestehende
+Quittungs-Reconciliation bzw. den Sessionread; Save/Discard führen hier dieselbe
+lesende Klärung aus. Während zentraler Wartung keine automatische Navigation in
+neu gemountete Editoren auslösen. Tests für Fehler/Stale/fehlende Session,
+Kampagnenwechsel, laufenden Read und Save/Discard sowie verlorene Quittung ergänzen.
+
+Danach CampaignScreen-Drafts anbinden: synchrone Eingaberefs und Original-Popup-Art,
+zentraler Save ausschließlich Create/Rename, Delete nur ausdrücklich bestätigt,
+Discard nach abgeschlossener Befehls-/Readklärung, globale Interaktionssperre.
+Veraltetes Rename darf nie zu Create werden. Koordinator- und Screenteil getrennt
+prüfen, aber erst zusammen als erledigte CampaignScreen-Lücke bewerten. Keine
+neue Backend-Migration oder alternative Quittungsimplementierung erforderlich.
+
+Koordinator-Detailprüfung: Auch nach Quittungs-Recovery muss enterSession an
+receipt.campaignId gebunden sein; bei Create an die bestätigte Ergebnis-Kampagne,
+bei Activate an die ursprüngliche ID. Eine inzwischen neuere Projektion darf
+nicht still zur Zielkampagne des alten Befehls werden. Pro zentraler Klärung
+höchstens einen erneuten Sessionread ausführen; wiederholte Fehler bleiben für
+den nächsten ausdrücklich ausgelösten Versuch offen. Öffentliche Schreibaktionen
+zusätzlich synchron gegen globale Wartung und ausstehende Reconciliation sperren.
+Der spätere Screen-Save benötigt dafür einen ausdrücklich internen Wartungsweg.
+
+Korrekturrunde Typprüfung: Lint und 27 Tests bestehen. Beim Ergänzen des
+Receipt-Typimports wurde dieser vor die vorhandene vite/client-Referenz gesetzt;
+damit wirkt die Triple-Slash-Referenz nicht mehr und der Test-Typecheck verliert
+SVG-URL-Deklarationen. Import hinter die Dateidirektiven verschieben, keine
+Projektkonfiguration ändern. Zusätzlich Create mit bestätigtem Ergebnis und
+fehlgeschlagenem Read prüfen; erneute Create-Aktion muss bis Read-Recovery gesperrt
+bleiben. Danach Typen und Koordinatortests wiederholen.
+
+### Phase 4 — Audit des gehaltenen Kampagnen-Sitzungsstarts
+
+Planabgleich Koordinatorteil: Pending ist awaitbar und umfasst den vollständigen
+Befehl plus Sessionread. Bestätigte Create-/Activate-Ziele bleiben bei fehlendem,
+veraltetem oder fehlgeschlagenem Read erhalten; run liefert false statt eines
+falschen Gesamterfolgs. Weitere Schreibbefehle sind bis zur Klärung gesperrt.
+Die Ziel-ID stammt aus dem bestätigten Create-Ergebnis, dem Activate-Auftrag oder
+der ursprünglichen Quittung. Eine inzwischen andere aktive Kampagne wird nicht
+als Ersatz geöffnet. Retry liest ausschließlich; kein erneutes Create/Activate.
+Der stabile Workspace-Maintenance-Owner wartet Pending und vorhandene
+Quittungs-Reconciliation ab und hält fehlgeschlagenen Sessionstart offen. Save
+und Discard klären diesen Teil beide lesend. Während zentraler Wartung erfolgt
+keine automatische Navigation in neu gemountete Workspace-Editoren. Öffentliche
+Schreibaktionen sind zusätzlich synchron bei Wartung gesperrt.
+
+Validierung: 106 Tests in neun Dateien bestanden (Architektur, Koordinator,
+Workspace-Projektion und bisherige CampaignScreen-Fälle). Neue Fälle prüfen
+Create-/Activate-Readfehler, Verhinderung doppelter Befehle, fehlende/abweichende
+Sessionstände, ursprüngliche Kampagne, laufenden Read, zentrale Save-/Discard-
+Klärung, gescheiterte Quittungs-Recovery und globale Schreibsperre. Vollständiger
+Typecheck, gezieltes Lint, Format und git diff --check bestehen nach Wiederherstellen
+der Test-Dateidirektive. Build, Smoke ready/closed und Bundle-Gate grün;
+1622594 reachable Bytes ohne Baseline-/Budgetänderung. Auf denselben Appbytes
+besteht campaignCreate-E2E mit echtem Anlegen und Wechseln. Summary
+.tmp/e2e-runs/functional-1788905575321-525268/summary.json. Build auf dirty
+2632726aa, appBuildInputFingerprint
+5b5465f0d61dcab8c63275c343be2936793f40effb32118961dfcc2b121824d6,
+BuiltAt 2026-09-08T22:12:47.389Z. Logs work/roadmap-phase4-campaign-entry-*.log.
+Keine offene Abweichung im Koordinatorteil des Plans.
+
+Separater Roadmapabgleich: CampaignScreen ist noch nicht vollständig angebunden.
+Die Namens-/Löschpopup-Entwürfe besitzen weiterhin keinen eigenen zentralen
+Save-/Discard-Owner. Ihr Anschluss muss nach einem fehlgeschlagenen Befehl
+zwischen bestätigtem Write, noch offener Recovery und bestätigter Nichtausführung
+unterscheiden. Boolean-Ergebnisse allein genügen dafür nicht: insbesondere darf
+ein inzwischen durch den Koordinator geklärtes Create nicht aus dem noch offenen
+Namenspopup erneut ausgeführt werden. Für den Screenteil einen an den ursprünglichen
+Versuch gebundenen Abschlussstatus/Handle vorsehen, vorhandene Projektionsquittungen
+weiterverwenden und den expliziten internen Wartungs-Save von öffentlichen Aktionen
+trennen. Anschließend Original-Popup-Art und synchronen Namen/Bestätigung halten,
+veraltetes Rename niemals zu Create umdeuten, unbestätigtes Delete zentral nur
+schließen, Eingaben sperren und Save/Discard/Cancel/Unknown/Readfehler gerendert
+prüfen. Vor Sourceänderungen den konkreten Schnittstellenplan protokollieren.
+Phase 4, Phasen 5–7, Exact-SHA-CI, Handoff/Main und öffentliche Abnahme bleiben offen.
+Keine Nutzerinstallation oder echten Kampagnendaten verändert.
