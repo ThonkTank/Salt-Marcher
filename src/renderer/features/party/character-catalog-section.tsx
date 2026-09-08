@@ -1,6 +1,17 @@
+import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
-import { lazy, Suspense, useMemo, useState, useContext } from 'react'
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useState,
+  useContext,
+  useRef,
+  useCallback
+} from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type {
   PartyCharacter,
@@ -36,14 +47,65 @@ export default function CharacterCatalogSection(props: {
   const party = useMemo(() => partyCapabilities(api).party, [api])
   const commands = useAsyncCommandCoordinator()
   const [query, setQuery] = useState('')
-  const [editing, setEditing] = useState<{
+  const [editing, setEditingState] = useState<{
     base: PartyCharacter | null
   } | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDeleteState] = useState<string | null>(null)
   const [ledger, setLedger] = useState<PartyCharacter | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const editingRef = useRef(editing)
+  const confirmRef = useRef<string | null>(null)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const unknown = useRef(false)
+  const [uncertain, setUncertain] = useState(false)
+  const submitRef = useRef<(() => Promise<boolean>) | null>(null)
+  const registerSave = useCallback((submit: () => Promise<boolean>) => {
+    submitRef.current = submit
+    return () => {
+      if (submitRef.current === submit) submitRef.current = null
+    }
+  }, [])
+  const setEditing = (value: typeof editing) => {
+    editingRef.current = value
+    setEditingState(value)
+  }
+  const setConfirmDelete = (value: string | null) => {
+    confirmRef.current = value
+    setConfirmDeleteState(value)
+  }
+  async function drain() {
+    await pending.current
+    if (unknown.current)
+      throw new Error(
+        'Der Ausgang der Charakterspeicherung ist unbekannt. Die Wartung kann noch nicht fortgesetzt werden.'
+      )
+  }
+  const blocked = useMaintenanceDraft({
+    label: 'Charakterkatalog',
+    isDirty: () =>
+      Boolean(
+        editingRef.current ||
+        confirmRef.current ||
+        pending.current ||
+        unknown.current
+      ),
+    save: async () => {
+      await drain()
+      if (editingRef.current && !(await submitRef.current?.())) return false
+      setConfirmDelete(null)
+      return !editingRef.current && !unknown.current
+    },
+    discard: async () => {
+      await drain()
+      setEditing(null)
+      setConfirmDelete(null)
+      setError(null)
+      return true
+    }
+  })
   const target = { scope: 'character-catalog', entityKey: props.campaignId }
-  const busy = commands.state(target).status === 'pending'
+  const commandBusy = commands.state(target).status === 'pending'
+  const busy = commandBusy || blocked || uncertain
   const members = props.snapshot.party.members
   const selected =
     members.find((member) => member.id === props.selectedId) ?? null
@@ -57,17 +119,34 @@ export default function CharacterCatalogSection(props: {
       scene.partyMemberIds.includes(member.id)
     )?.title ?? message('character.inactive')
   function select(id: string | null) {
-    if (busy) return
+    if (busy || maintenanceDraftCoordinator.isLocked() || pending.current)
+      return
     setEditing(null)
     setConfirmDelete(null)
     setError(null)
     props.select(id)
   }
-  async function mutate(
+  function mutate(
+    execute: () => Promise<PartySnapshot>,
+    accept: (result: PartySnapshot) => void,
+    maintenanceSave = false
+  ): Promise<boolean> {
+    if (
+      pending.current ||
+      unknown.current ||
+      (!maintenanceSave && maintenanceDraftCoordinator.isLocked())
+    )
+      return Promise.resolve(false)
+    const request = executeMutation(execute, accept).finally(() => {
+      pending.current = null
+    })
+    pending.current = request
+    return request
+  }
+  async function executeMutation(
     execute: () => Promise<PartySnapshot>,
     accept: (result: PartySnapshot) => void
-  ) {
-    if (commands.state(target).status === 'pending') return
+  ): Promise<boolean> {
     setError(null)
     const outcome = await commands.run({
       ...target,
@@ -79,29 +158,38 @@ export default function CharacterCatalogSection(props: {
             ? current
             : { ...current, party: result }
         )
-        void workspace.refreshActiveSession().then((outcome) => {
-          if (outcome.status === 'failure')
-            props.onError(capabilityErrorText(outcome.cause))
-        })
+        try {
+          const refresh = await workspace.refreshActiveSession()
+          if (refresh.status === 'failure')
+            props.onError(capabilityErrorText(refresh.cause))
+        } catch (cause) {
+          props.onError(capabilityErrorText(cause))
+        }
         return result
       },
       accept
     })
-    if (outcome.status === 'failure')
+    if (outcome.status === 'failure') {
+      if (capabilityErrorCode(outcome.cause) === 'outcome_unknown') {
+        unknown.current = true
+        setUncertain(true)
+      }
       setError(capabilityErrorText(outcome.cause))
+    }
+    return outcome.status === 'success'
   }
-  function save(draft: PartyCharacterDraft) {
-    if (!editing) return
-    const base = editing.base
+  function save(draft: PartyCharacterDraft): Promise<boolean> {
+    if (!editingRef.current) return Promise.resolve(false)
+    const base = editingRef.current.base
     const current = base && members.find((member) => member.id === base.id)
     if (
       base &&
       (!current || characterProfileKey(base) !== characterProfileKey(current))
     ) {
       setError(message('character.conflict'))
-      return
+      return Promise.resolve(false)
     }
-    void mutate(
+    return mutate(
       () =>
         base
           ? party.update(base.id, draft, props.snapshot.party.revision)
@@ -115,7 +203,8 @@ export default function CharacterCatalogSection(props: {
             )?.id ??
             null
         )
-      }
+      },
+      true
     )
   }
   return (
@@ -131,6 +220,12 @@ export default function CharacterCatalogSection(props: {
           <button
             disabled={busy}
             onClick={() => {
+              if (
+                maintenanceDraftCoordinator.isLocked() ||
+                pending.current ||
+                unknown.current
+              )
+                return
               select(null)
               setEditing({ base: null })
             }}
@@ -178,7 +273,8 @@ export default function CharacterCatalogSection(props: {
           <CharacterProfileForm
             key={editing.base?.id ?? 'new'}
             member={editing.base}
-            busy={busy}
+            busy={commandBusy || uncertain}
+            registerSave={registerSave}
             error={error}
             save={save}
             close={() => {
@@ -195,15 +291,42 @@ export default function CharacterCatalogSection(props: {
               </span>
             </header>
             <div className="character-actions">
-              <button onClick={() => setEditing({ base: selected })}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !pending.current &&
+                    !unknown.current
+                  )
+                    setEditing({ base: selected })
+                }}
+              >
                 {message('character.edit')}
               </button>
-              <button onClick={() => setLedger(selected)}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !pending.current &&
+                    !unknown.current
+                  )
+                    setLedger(selected)
+                }}
+              >
                 {message('character.loot')}
               </button>
               <button
                 disabled={busy}
-                onClick={() => setConfirmDelete(characterProfileKey(selected))}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !pending.current &&
+                    !unknown.current
+                  )
+                    setConfirmDelete(characterProfileKey(selected))
+                }}
               >
                 {message('character.delete')}
               </button>

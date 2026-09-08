@@ -1,4 +1,9 @@
 // @vitest-environment jsdom
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftResolution
+} from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { CampaignWorkspaceProjection } from '../../src/renderer/capabilities/campaign-workspace-projection.js'
 import CharacterCatalogSection from '../../src/renderer/features/party/character-catalog-section.js'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
@@ -6,6 +11,7 @@ import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.j
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import '@testing-library/jest-dom/vitest'
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -48,7 +54,10 @@ const member = partyCharacterSchema.parse({
   xpSinceShortRest: 0,
   xpSinceLongRest: 0
 })
+let maintenanceResolution: MaintenanceDraftResolution | undefined
 afterEach(() => {
+  maintenanceResolution?.release()
+  maintenanceResolution = undefined
   cleanup()
   vi.restoreAllMocks()
 })
@@ -286,5 +295,201 @@ describe('catalog draft concurrency', () => {
       typeof update === 'function' &&
         update(snapshot()).party.members.at(-1)?.name
     ).toBe('New')
+  })
+
+  function maintenanceFixture() {
+    const result = {
+      revision: 4,
+      members: [member, { ...member, id: 'new', name: 'New' }]
+    }
+    const create = vi.fn().mockResolvedValue(result)
+    const update = vi.fn().mockResolvedValue(result)
+    const remove = vi.fn().mockResolvedValue(result)
+    const onError = vi.fn()
+    const api = {
+      party: { create, update, delete: remove },
+      session: { onChanged: () => () => undefined }
+    } as unknown as SaltMarcherApi
+    render(
+      <CapabilityProvider api={api}>
+        <CharacterCatalogSection
+          campaignId="campaign"
+          snapshot={snapshot()}
+          selectedId={member.id}
+          select={vi.fn()}
+          onError={onError}
+        />
+      </CapabilityProvider>
+    )
+    return { create, update, remove, result, onError }
+  }
+  function beginMaintenance() {
+    act(() => {
+      maintenanceResolution = maintenanceDraftCoordinator.begin()
+    })
+  }
+  async function resolveMaintenance(choice: 'save' | 'discard') {
+    let result!: Awaited<ReturnType<MaintenanceDraftResolution['resolve']>>
+    await act(async () => {
+      result = await maintenanceResolution!.resolve(choice)
+    })
+    return result
+  }
+
+  it.each(['Neu', 'Bearbeiten'])(
+    'saves the %s form through central maintenance and blocks later input',
+    async (action) => {
+      const f = maintenanceFixture()
+      fireEvent.click(screen.getByText(action))
+      fireEvent.change(screen.getByLabelText('Charaktername'), {
+        target: { value: 'Saved name' }
+      })
+      beginMaintenance()
+      fireEvent.change(screen.getByLabelText('Charaktername'), {
+        target: { value: 'Forbidden' }
+      })
+      expect(await resolveMaintenance('save')).toEqual([])
+      const command = action === 'Neu' ? f.create : f.update
+      expect(command).toHaveBeenCalledOnce()
+      expect(command.mock.calls[0]?.[0]).toMatchObject({
+        character: { name: 'Saved name' },
+        expectedRevision: 3
+      })
+      expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+    }
+  )
+
+  it.each(['save', 'discard'] as const)(
+    'closes an unconfirmed character deletion during %s without deleting',
+    async (choice) => {
+      const f = maintenanceFixture()
+      fireEvent.click(screen.getByText('Löschen'))
+      expect(
+        screen.getByRole('group', { name: 'Löschen bestätigen' })
+      ).toBeVisible()
+      beginMaintenance()
+      expect(await resolveMaintenance(choice)).toEqual([])
+      expect(f.remove).not.toHaveBeenCalled()
+      expect(
+        screen.queryByRole('group', { name: 'Löschen bestätigen' })
+      ).not.toBeInTheDocument()
+      expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+    }
+  )
+
+  it('keeps validation errors and input until explicit discard', async () => {
+    const f = maintenanceFixture()
+    fireEvent.click(screen.getByText('Neu'))
+    beginMaintenance()
+    expect(await resolveMaintenance('save')).toMatchObject([
+      { label: 'Charakterkatalog' }
+    ])
+    expect(screen.getByLabelText('Charaktername')).toHaveValue('')
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(f.create).not.toHaveBeenCalled()
+    expect(await resolveMaintenance('discard')).toEqual([])
+    expect(screen.queryByLabelText('Charaktername')).not.toBeInTheDocument()
+  })
+
+  it('keeps failed input, allows discard and does not repeat a failed mutation while discarding', async () => {
+    const f = maintenanceFixture()
+    f.update.mockRejectedValue(new Error('not saved'))
+    fireEvent.click(screen.getByText('Bearbeiten'))
+    fireEvent.change(screen.getByLabelText('Charaktername'), {
+      target: { value: 'Draft' }
+    })
+    beginMaintenance()
+    expect(await resolveMaintenance('save')).toHaveLength(1)
+    expect(screen.getByLabelText('Charaktername')).toHaveValue('Draft')
+    expect(await resolveMaintenance('discard')).toEqual([])
+    expect(f.update).toHaveBeenCalledOnce()
+  })
+
+  it('does not replay or discard an unknown character mutation', async () => {
+    const f = maintenanceFixture()
+    f.create.mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    fireEvent.click(screen.getByText('Neu'))
+    fireEvent.change(screen.getByLabelText('Charaktername'), {
+      target: { value: 'Unknown' }
+    })
+    beginMaintenance()
+    expect(await resolveMaintenance('save')).toHaveLength(1)
+    expect(await resolveMaintenance('discard')).toHaveLength(1)
+    expect(await resolveMaintenance('save')).toHaveLength(1)
+    expect(f.create).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('Charaktername')).toHaveValue('Unknown')
+  })
+
+  it('keeps the form when maintenance is canceled', () => {
+    maintenanceFixture()
+    fireEvent.click(screen.getByText('Bearbeiten'))
+    fireEvent.change(screen.getByLabelText('Charaktername'), {
+      target: { value: 'Still here' }
+    })
+    beginMaintenance()
+    act(() => {
+      maintenanceResolution!.release()
+      maintenanceResolution = undefined
+    })
+    expect(screen.getByLabelText('Charaktername')).toHaveValue('Still here')
+    expect(screen.getByLabelText('Charaktername')).toBeEnabled()
+  })
+
+  it('waits for the existing write and its refresh before discarding without repeating the write', async () => {
+    const f = maintenanceFixture()
+    let finishWrite!: (value: typeof f.result) => void
+    let finishRead!: (
+      value: Awaited<
+        ReturnType<CampaignWorkspaceProjection['refreshActiveSession']>
+      >
+    ) => void
+    f.update.mockReturnValue(
+      new Promise((resolve) => {
+        finishWrite = resolve
+      })
+    )
+    const refresh = vi
+      .spyOn(CampaignWorkspaceProjection.prototype, 'refreshActiveSession')
+      .mockReturnValue(
+        new Promise((resolve) => {
+          finishRead = resolve
+        })
+      )
+    fireEvent.click(screen.getByText('Bearbeiten'))
+    fireEvent.click(screen.getByText('Speichern'))
+    beginMaintenance()
+    let result!: Promise<readonly unknown[]>
+    const settled = vi.fn()
+    act(() => {
+      result = maintenanceResolution!.resolve('discard')
+      void result.then(settled)
+    })
+    await act(async () => {
+      finishWrite(f.result)
+      await Promise.resolve()
+    })
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(settled).not.toHaveBeenCalled()
+    await act(async () => {
+      finishRead({ status: 'stale' })
+      await result
+    })
+    expect(await result).toEqual([])
+    expect(f.update).toHaveBeenCalledOnce()
+    expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  })
+
+  it('retains a confirmed write when only the following refresh fails', async () => {
+    const f = maintenanceFixture()
+    vi.spyOn(
+      CampaignWorkspaceProjection.prototype,
+      'refreshActiveSession'
+    ).mockRejectedValue(new Error('read failed'))
+    fireEvent.click(screen.getByText('Bearbeiten'))
+    beginMaintenance()
+    expect(await resolveMaintenance('save')).toEqual([])
+    expect(await resolveMaintenance('save')).toEqual([])
+    expect(f.update).toHaveBeenCalledOnce()
+    expect(f.onError).toHaveBeenCalledOnce()
   })
 })

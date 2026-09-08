@@ -1,5 +1,7 @@
 import { message } from '../../i18n/session-runtime.de.js'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import type {
   PartyCharacter,
   PartyCharacterDraft
@@ -14,34 +16,41 @@ export function CharacterProfileForm(props: {
   member: PartyCharacter | null
   busy: boolean
   error: string | null
-  save: (draft: PartyCharacterDraft) => void
+  save: (draft: PartyCharacterDraft) => Promise<boolean>
+  registerSave?: (save: () => Promise<boolean>) => () => void
   close: () => void
 }) {
   const [values, setValues] = useState(() => characterFormValues(props.member))
+  const valuesRef = useRef(values)
+  const blocked = useMaintenanceEditingBlocked()
   const [errors, setErrors] = useState<Record<string, string>>({})
+  async function submit(): Promise<boolean> {
+    if (props.busy) return false
+    const result = parseCharacterForm(valuesRef.current)
+    if (!result.success) {
+      setErrors(
+        Object.fromEntries(
+          result.error.issues.map((issue) => [
+            String(issue.path[0]),
+            issue.path[0] === 'name'
+              ? message('character.nameError')
+              : message('character.valueError')
+          ])
+        )
+      )
+      return false
+    }
+    setErrors({})
+    return props.save(result.data)
+  }
+  useLayoutEffect(() => props.registerSave?.(submit))
   return (
     <form
       className="character-profile-form"
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
-        if (props.busy) return
-        const result = parseCharacterForm(values)
-        if (!result.success) {
-          setErrors(
-            Object.fromEntries(
-              result.error.issues.map((issue) => [
-                String(issue.path[0]),
-                issue.path[0] === 'name'
-                  ? message('character.nameError')
-                  : message('character.valueError')
-              ])
-            )
-          )
-          return
-        }
-        setErrors({})
-        props.save(result.data)
+        if (!maintenanceDraftCoordinator.isLocked()) void submit()
       }}
     >
       {characterFields.map(({ key, label, numeric }) => (
@@ -60,12 +69,15 @@ export function CharacterProfileForm(props: {
             aria-describedby={
               errors[key] ? `character-error-${key}` : undefined
             }
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
+            disabled={props.busy || blocked}
+            onChange={(event) => {
+              if (props.busy || maintenanceDraftCoordinator.isLocked()) return
+              valuesRef.current = {
+                ...valuesRef.current,
                 [key]: event.target.value
-              }))
-            }
+              }
+              setValues(valuesRef.current)
+            }}
           />
           {errors[key] && (
             <small role="alert" id={`character-error-${key}`}>
@@ -80,10 +92,16 @@ export function CharacterProfileForm(props: {
         </p>
       )}
       <footer className="character-wide character-actions">
-        <button type="button" disabled={props.busy} onClick={props.close}>
+        <button
+          type="button"
+          disabled={props.busy || blocked}
+          onClick={() => {
+            if (!maintenanceDraftCoordinator.isLocked()) props.close()
+          }}
+        >
           {message('character.cancel')}
         </button>
-        <button type="submit" disabled={props.busy}>
+        <button type="submit" disabled={props.busy || blocked}>
           {message('character.save')}
         </button>
       </footer>

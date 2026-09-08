@@ -3146,3 +3146,67 @@ für die neue Desktop-Tabelle sowie vollständige Artefakt-/Releaseprüfungen
 bleiben ausdrücklich ausstehend. Phasen 5–7 sind offen. Der Vorgänger-Check
 34260605418 lief beim letzten Abruf ohne abgeschlossenen Fehler weiter; dies
 ist kein vollständiges CI-Grün. Kein kanonischer Handoff/Main-Push/Release.
+
+### Phase 4 — Plan: Charakterprofil und Katalogwartung
+
+Charakterkatalog e3b0cec15 ist sauber; Check 34261446658 ist noch pending.
+CharacterProfileForm besitzt lokale Eingaben, aber fire-and-forget Save.
+Der Katalog wartet die nachgelagerte Session-Aktualisierung bisher nicht ab.
+Ein gemeinsamer Katalog-Owner soll offene Formulare, Löschbestätigung und den
+vollständigen aktiven Mutationsvorgang erfassen. Das Formular registriert
+seine validierende Save-Funktion beim Katalog, ohne einen zweiten Owner mit
+eigenständiger Auflösungsreihenfolge einzuführen. Eingaben werden synchron
+gelesen; Speichern liefert erst nach bestätigtem Erfolg true.
+
+Katalogmutationen halten ein Promise über Write, Veröffentlichung, Refresh und
+Accept. Wartung wartet es vor Save/Discard ab. Unbekannte Write-Ausgänge werden
+festgehalten und verhindern blindes Wiederholen oder Verwerfen; deren konkrete
+Quittungs-Recovery bleibt ein ausdrücklich offenes Folgepaket. Bestätigte
+Writes dürfen bei anschließendem Refresh-Fehler nicht erneut ausgeführt werden.
+Verwerfen schließt nur ungespeicherte Formulare/unbestätigte Löschanfragen.
+Eingaben, Navigation und neue Mutationen werden während Wartung synchron
+gesperrt; generisches Speichern führt keine unbestätigte Löschung aus.
+
+Prüfen mit gerendertem Katalog und echter Wartungskoordination: Create/Update,
+Validierung, Erhalt bei Fehler, Save/Discard/Abbruch, laufender Write plus
+Refresh, keine zweite Mutation nach bestätigtem Write, Unknown-Sperre und
+sofortige Eingabesperre. Bestehende Charakter-/Desktop- und Architekturtests,
+Typecheck/Lint/Build/Smoke; danach getrennter Plan-/Roadmapabgleich.
+
+### Phase 4 — Charakterprofil: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Ein gemeinsamer Katalog-Owner erfasst offenes Formular,
+unbestätigte Löschanfrage und die vollständige Mutation. CharacterProfileForm
+registriert seine validierende Save-Funktion per Layout-Effekt beim Owner und
+liest Eingaben synchron; es gibt keinen zweiten Formular-Owner mit konkurrierender
+Auflösungsreihenfolge. Create/Update liefern bestätigten Erfolg zurück.
+Wartung wartet Write, Veröffentlichung, Refresh und Accept ab. Refresh-Fehler
+werden angezeigt, führen aber nicht zu einer erneuten bereits bestätigten
+Mutation. Ein Unknown-Ausgang wird synchron festgehalten und verhindert
+Wiederholung/Verwerfen.
+
+Die zentrale Klärung speichert gültige Formulare, erhält ungültige/fehlgeschlagene
+Eingaben und verwirft lokale Formulare erst nach Ende laufender Befehle.
+Unbestätigte Löschanfragen werden bei beiden Entscheidungen ohne Delete
+geschlossen. Wartungsabbruch bewahrt die Eingaben. Eingaben, Navigation und
+neue Mutationen beachten die unmittelbare Wartungssperre.
+
+Validierung: 124 Tests in 10 Dateien einschließlich gerendertem Charakterkatalog
+mit CapabilityProvider und realem Wartungskoordinator, Desktopprojektion,
+Wartungskoordination und Architektur bestanden. Neue Fälle prüfen Create/Update,
+sofortige Eingabesperre, Validierung, bekannten Fehler/Discard, Unknown ohne
+zweiten Write, Abbruch, offenen Write plus verzögerten Refresh, bestätigte
+Mutation trotz Refresh-Fehler sowie unbestätigte Löschung. Bestehende Konflikt-,
+Formular- und verspätete Veröffentlichungsfälle bestehen ebenfalls. Vollständiger
+Typecheck, gezielter ESLint, Prettier, Build/Built-Smoke (ready/closed), Bundle-Gate
+und diff --check bestanden. Logs: work/roadmap-phase4-character-*.log. Kein
+Nutzerprofil verändert; Schema 41/35 und Registry 14 unverändert.
+
+Roadmapabgleich: Die Formular-/Pending-Auflösung ist implementiert und lokal
+geprüft; keine vollständige Charakter-/Phase-4-Abnahme behauptet. Der konkrete
+Quittungsabgleich unklarer Charakterbefehle inklusive Kampagnenbindung bleibt
+offen, ebenso die persönlichen Beute-Schreibwege des Katalogs. Planner-Unknown-
+Recovery, Beute-Unterdialoge, Kampagnenoberfläche, übrige Gruppen-/Karten-/Writer-
+wege und Offline-/Updateabnahme sind weiterhin erforderlich. Phasen 5–7 bleiben
+offen. Vorgänger-Check 34261446658 war zuletzt aktiv ohne abgeschlossenen
+Fehler; kein vollständiges CI-Grün, kanonischer Handoff, Main-Push oder Release.
