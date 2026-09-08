@@ -2,8 +2,11 @@
 
 ## Boundary
 
-Release 0.2.0 establishes the persistent Electron real-use baseline. Installation
-schema 39 and Campaign schema 34 are versioned independently from the application.
+The planned first public Electron real-use release is 0.3.0. The existing
+0.2.0-named fixture is an internal baseline, not proof of a published Electron
+release. Installation schema 39 and Campaign schema 34 are versioned independently
+from the application. Release acceptance remains pending under the
+[maintenance roadmap](../architecture/release-maintenance-roadmap.md).
 Every later public release must retain a tested, complete forward migration path
 from every earlier public release. Packaged data is never implicitly reset.
 Development-only reset behavior remains confined to the isolated development-data root.
@@ -71,3 +74,38 @@ backs up current data. The renderer receives validated status and backup IDs onl
 
 - [Electron Target Architecture](../architecture/target-architecture.md)
 - [Campaign Registry Persistence Contract](../../campaign/contract/contract-campaign-registry-persistence.md)
+
+## Source compatibility for the planned public baseline
+
+Format compatibility and source consistency are separate admission checks. Both
+must pass before activation. Existing migration edges are retained; a path alone
+is not evidence of preserved user content. Installation 39 / Campaign 34 is the
+frozen internal baseline. Older role-version combinations need a complete path
+and representative semantic fixtures before being advertised as supported.
+Unknown old versions remain unqualified, not silently reset or deleted.
+
+Future Development, Local and Release profile folders must cooperate with the same
+canonical-path lock for direct import. Existing Local profiles use runtime.lock,
+but complete cross-channel/alias qualification remains open. Pre-baseline
+Development and legacy Electron folders have no established exclusive import
+contract. They require a complete, consistent, validated backup/export from a
+qualified producer; no historical producer version is currently qualified.
+The diagnostic JSON from scripts/export-development-data.ts explicitly declares
+supportedMigrationContract:false and is not such an export. Java import is excluded.
+
+Backups produced by the current profile transaction have inventory/hash validation;
+public acceptance additionally requires the complete-content and concurrency cases
+in the [acceptance matrix](../architecture/release-maintenance-acceptance-matrix.md).
+A newer schema or incomplete migration path must be rejected before replacement.
+Restoration preserves the current profile first and migrates only a working copy.
+No implicit database downgrade, profile reset or backup pruning is permitted.
+
+## Maintenance ownership transition
+
+The current implementation has separate Release data and activation journals plus
+Local installer recovery. This is an implementation gap, not the target contract.
+Phase 2 replaces their recovery authority with one installation maintenance journal
+and coordinator. Main/headless runtime owns locking, process lifecycle and executable
+activation; Utility owns snapshots, migrations and semantic readback. Aggregate
+owners retain SQL. Handoff receipts remain provenance evidence only. Existing
+journals must finish under validated legacy recovery before new maintenance starts.
