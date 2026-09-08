@@ -7,6 +7,7 @@ import {
   activeGroupSession,
   createGroupManagerState,
   groupManagerReducer,
+  groupManagerAnyDirty,
   type GroupManagerAction
 } from '../../src/renderer/features/session/group-manager-state.js'
 import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session-generation.js'
@@ -66,9 +67,81 @@ describe('group manager commands', () => {
       runId: 'run-a',
       signature: groupLootDraftSignature(draft)
     })
+    expect(input.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'group-saved',
+        key: 'group-a',
+        persisted: groupResult(2).scenePatch.upsertedGroups[0]
+      })
+    )
     expect(input.saved).toHaveBeenCalledWith(
       expect.objectContaining({ revision: 2 })
     )
+  })
+
+  it('acknowledges a newly committed group and loot before publication', async () => {
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    let state = createGroupManagerState({
+      activeKey: 'new',
+      initialGroup: null,
+      prospectiveGroupId: 'created-group',
+      locationId: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-generated',
+      key: 'new',
+      run: {
+        id: 'run-a',
+        treasures: [{ id: 'treasure-a' }]
+      } as GroupRewardGeneratedRun,
+      draft: { label: 'Beute', items: [], containers: [] },
+      seed: 1
+    })
+    const dispatch = (action: GroupManagerAction) => {
+      state = groupManagerReducer(state, action)
+    }
+    const result = groupResult(2)
+    const confirmed = {
+      ...result,
+      scenePatch: {
+        ...result.scenePatch,
+        upsertedGroups: [
+          { ...result.scenePatch.upsertedGroups[0]!, id: 'created-group' }
+        ]
+      }
+    }
+    const commitGroupReward = vi
+      .fn()
+      .mockResolvedValue({ treasure: null, groupResult: confirmed })
+    const saved = vi.fn(() => {
+      expect(state.activeKey).toBe('created-group')
+      expect(state.sessions['new']).toBeUndefined()
+      expect(state.sessions['created-group']?.sourceRevision).toBe(2)
+      expect(state.prospectiveGroupId).not.toBe('created-group')
+      expect(groupManagerAnyDirty(state)).toBe(false)
+    })
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          state,
+          session: activeGroupSession(state),
+          rewardGroupId: 'created-group',
+          dispatch,
+          saved,
+          ports: {
+            ...input.ports,
+            loot: { commitGroupReward }
+          } as unknown as GroupManagerPorts
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      expect(await controller.result.current.commitLoot()).not.toBeNull()
+    })
+    expect(saved).toHaveBeenCalledOnce()
+    expect(commitGroupReward).toHaveBeenCalledOnce()
   })
 
   it('counts loot commands for an inactive group but not catalog reads', async () => {
@@ -113,6 +186,9 @@ describe('group manager commands', () => {
       expect(await controller.result.current.save()).toBeNull()
     })
     expect(saved).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'group-saved' })
+    )
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'group-message', key: 'group-a' })
     )
@@ -180,6 +256,16 @@ describe('group manager commands', () => {
     expect(controller.result.current.pending).toBe(false)
     expect(controller.result.current.busy).toBe(false)
 
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'group-saved',
+        key: 'group-a',
+        persisted: groupResult(3).scenePatch.upsertedGroups[0]
+      })
+    )
+    expect(dispatch.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      saved.mock.invocationCallOrder[0]!
+    )
     expect(saved).toHaveBeenCalledOnce()
     expect(saved.mock.calls[0]?.[0]).toMatchObject({ revision: 3 })
     expect(dispatch).not.toHaveBeenCalledWith(
@@ -246,7 +332,19 @@ function groupResult(revision: number): SceneGroupCommandResult {
     scenePatch: {
       sceneId: 'scene-a',
       sceneRevision: revision,
-      upsertedGroups: [],
+      upsertedGroups: [
+        {
+          id: 'group-a',
+          revision,
+          name: '',
+          note: '',
+          disposition: 'hostile',
+          archived: false,
+          baseXp: 0,
+          position: 0,
+          entries: []
+        }
+      ],
       removedGroupIds: []
     }
   } as SceneGroupCommandResult

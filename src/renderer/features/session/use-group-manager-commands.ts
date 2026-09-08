@@ -10,6 +10,7 @@ import {
   applySceneGroupCommandResult
 } from './session-patches.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
+import { acknowledgeGroupSave } from './group-manager-save-result.js'
 import { useGroupManagerLootCommands } from './use-group-manager-loot-commands.js'
 
 const tuning: EncounterTuningOverride = {
@@ -128,6 +129,7 @@ export function useGroupManagerCommands(
       )
     )
     if (!outcome) return null
+    acknowledgeGroupSave(input, outcome)
     const next = applySceneGroupCommandResult(snapshot, outcome)
     saved(next)
     return next

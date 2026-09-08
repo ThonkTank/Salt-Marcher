@@ -28,6 +28,7 @@ import {
 } from '../creatures/creature-state.js'
 import {
   groupDraftReducer,
+  groupDraftSignature,
   groupDraftStateDirty,
   groupDraftStateFromGroup,
   type DraftCreatureFact,
@@ -94,6 +95,13 @@ export type GroupManagerAction =
     }
   | { kind: 'mutate-group'; mutation: GroupDraftMutation }
   | { kind: 'group-message'; key: string; message: string }
+  | {
+      kind: 'group-saved'
+      key: string
+      submittedSignature: string
+      persisted: SceneGroup
+      nextProspectiveGroupId: string
+    }
   | {
       kind: 'facts-result'
       key: string
@@ -249,6 +257,57 @@ export function groupManagerReducer(
             }
           : state.sessions,
       pendingIntent: null
+    }
+  }
+  if (action.kind === 'group-saved') {
+    const session = state.sessions[action.key]
+    if (!session) return state
+    if (
+      session.sourceRevision !== null &&
+      session.sourceRevision > action.persisted.revision
+    )
+      return state
+    const id = action.persisted.id
+    // Never replace another open draft while acknowledging a newly created group.
+    if (id !== action.key && state.sessions[id]) return state
+    const persisted = groupDraftStateFromGroup(action.persisted)
+    const unchanged =
+      groupDraftSignature(
+        session.group.name,
+        session.group.note,
+        session.group.disposition,
+        session.group.quantities,
+        session.group.deadQuantities
+      ) === action.submittedSignature
+    const sessions = { ...state.sessions }
+    delete sessions[action.key]
+    sessions[id] = {
+      ...session,
+      sourceRevision: action.persisted.revision,
+      externalConflict: false,
+      group: {
+        ...session.group,
+        ...(unchanged
+          ? {
+              name: persisted.name,
+              note: persisted.note,
+              disposition: persisted.disposition,
+              quantities: persisted.quantities,
+              deadQuantities: persisted.deadQuantities
+            }
+          : {}),
+        baseline: persisted.baseline,
+        message: ''
+      }
+    }
+    return {
+      ...state,
+      sessions,
+      activeKey: state.activeKey === action.key ? id : state.activeKey,
+      prospectiveGroupId:
+        state.prospectiveGroupId === id
+          ? action.nextProspectiveGroupId
+          : state.prospectiveGroupId
     }
   }
   if (action.kind === 'mutate-group')

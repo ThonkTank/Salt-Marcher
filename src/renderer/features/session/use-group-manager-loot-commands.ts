@@ -10,6 +10,7 @@ import {
 } from '../loot/group-loot-draft.js'
 import { generationSeed } from './generation-seed.js'
 import { applySceneGroupCommandResult } from './session-patches.js'
+import { acknowledgeGroupSave } from './group-manager-save-result.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
 
 export function useGroupManagerLootCommands(
@@ -121,9 +122,10 @@ export function useGroupManagerLootCommands(
         })
     })
     if (outcome.status === 'success') {
+      const savedKey = acknowledgeGroupSave(input, outcome.value.groupResult)
       dispatch({
         kind: 'loot-committed',
-        key,
+        key: savedKey,
         runId: run.id,
         signature: groupLootDraftSignature(history.draft)
       })

@@ -2270,3 +2270,63 @@ accept sowie die generateRoster→generateLoot-Kette sind noch als vollständige
 Controller-Operationen nachzuverfolgen. Unbekannte Beute-Commit-Ausgänge, sofortige
 Baseline-Updates bei Teilerfolgen und zurückgestellte Dialogschließung bleiben
 verbindlich. Kein kanonischer Handoff oder Release; technische Development-Probe.
+
+### Phase 4 — Gruppen-Savequittierung: Umsetzungsplan
+
+Vorheriger Turn ist Fortschritt (944fd055e), aktueller Worktree sauber. Für den
+geplanten Mehrfachsave fehlt weiterhin eine bestätigte Baseline pro Session:
+useGroupManagerCommands.save publiziert nur den Snapshot; der Reducer erfährt weder
+die persistierte Gruppen-ID bei Neuanlage noch deren Revision. Zuerst diese
+Quittierung im tatsächlichen Save- und Beute-Commit-Pfad ergänzen, unmittelbar vor
+Publication. Sie enthält den abgeschickten Gruppenentwurf und die bestätigte Gruppe.
+
+Bei unverändertem Entwurf die normalisierten persistierten Felder übernehmen; bei
+zwischenzeitlicher Bearbeitung nur Baseline/Quellrevision aktualisieren, lokale
+Änderungen erhalten. Neue Session von 'new' auf die zurückgelieferte Gruppen-ID
+umhängen, sodass Wiederholung keine zweite Neuanlage auslöst. Beute und die Undo-
+History bleiben erhalten; Beute-Commit quittiert zusätzlich den Gruppenstand.
+Nicht bestätigte oder fehlerhafte Ergebnisse dürfen keine Baseline zurücksetzen.
+Tests müssen reale Save-Rückgaben, Neuanlage, späteres Edit, inaktive Gruppen,
+Teilerfolg und Beuteerhalt beweisen. Anschließend Typecheck/Lint/Build/Smoke sowie
+getrennte Audits. Der vollständige Owner wird auf diese tatsächlich verdrahteten
+Quittierungen aufgesetzt; dieser Schritt allein schließt Phase 4 nicht ab.
+
+Gruppen-Savequittierung — Auditkorrektur vor Abschluss: Command- und Loot-Scope
+können getrennt laufen. Eine verspätete Bestätigung mit älterer Gruppenrevision
+darf deshalb auch im Reducer keine neuere Baseline/Quellrevision zurücksetzen.
+Diesen monotonen Revisionsvergleich ergänzen und direkt testen. Die spätere
+Owner-Integration muss zusätzlich den Gesamtsnapshot monoton fortschreiben und
+neue User-Aufträge sperren.
+
+Gruppen-Savequittierung — Validierungskorrektur: 40 Tests einschließlich Renderer-
+Architektur und vollständiger Typecheck bestanden. ESLint beanstandet zwei neue
+verschachtelte untypisierte Matcherwerte in erwarteten Action-Objekten. Die
+Assertions auf den bestätigten Gruppenwert umstellen, ohne die Prüfanforderung zu
+ändern; danach gezieltes Lint und betroffene Command-Tests wiederholen. App-Build
+bereits erfolgreich, noch ohne abschließenden Built-Smoke.
+
+### Phase 4 — Gruppen-Savequittierung: Teilaudit
+
+Planabgleich bestanden: Gemeinsames acknowledgeGroupSave ist im echten Save- und
+Beute-Commit-Pfad vor Publication verdrahtet. Quittiert werden zurückgelieferte
+Gruppen-ID, Revision und normalisierte Baseline. Unveränderte Felder werden auf den
+bestätigten normalisierten Stand gesetzt; spätere lokale Änderungen bleiben dirty.
+Neuanlagen werden umgehängt, alte 'new'-Session entfernt, eine verbrauchte prospektive
+Beute-Gruppen-ID ersetzt. Beute und History bleiben erhalten; Beutequittierung
+adressiert nach dem Umhängen die bestätigte ID. Ältere Gruppenrevisionen ersetzen
+keine neuere Baseline. Fehlgeschlagene Commands senden keine Savequittierung.
+
+40 Tests in drei Dateien einschließlich Renderer-Architektur bestanden. Nach reiner
+Matcher-Korrektur die sieben Command-Tests erneut bestanden. Vollständiger Typecheck,
+gezieltes ESLint, Build/Built-Smoke (ready/closed) und git diff --check bestanden.
+Nachweise unter work/roadmap-phase4-group-ack-*.log im übergeordneten Arbeitsverzeichnis.
+Technische Development-Probe; kein kanonischer Handoff.
+
+Roadmapabgleich: Phase 4 bleibt offen. Die für Teilsaves notwendige Quittierung ist
+nun implementiert und wird tatsächlich verwendet, aber der Gruppen-Owner muss noch
+alle Sessions sequenziell bearbeiten und den Gesamtsnapshot synchron aktualisieren.
+Die bisherige sofortige Schließung durch props.saved darf während Wartung erst nach
+allen Sessions erfolgen. Command-Drain inklusive außerhalb accept laufender
+Controllerketten, Reconciliation unbekannter Commit-Ausgänge und vollständige
+Eingabesperren sind weiterhin verpflichtend; keine Teilprüfung als vollständige
+Mehrgruppenabnahme gewertet. Phasen 5–7 sowie Handoff/Release bleiben ausstehend.
