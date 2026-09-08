@@ -3855,3 +3855,82 @@ die Desktop-Scope-Prüfung um Aufräumarbeiten erweitert; bei der ausstehenden
 Qualifikation der Desktop-Schreibwege auch die Trennung dieser Pflege vom
 lesenden Wartungsabgleich erneut prüfen. Phasen 5–7, Handoff/Main-Abschluss,
 Livetest und Veröffentlichung bleiben offen.
+
+### Phase 4 — Plan: Beuteverteilung zentral klären
+
+Vorheriger Zielturn war Fortschritt: Schatzeditor und Main-Konvergenz sind auf
+381e34f4c sauber committed/gepusht, dessen Check 34276677982 läuft. Phase 4
+bleibt offen. Für Verteilung existiert bereits eine atomare loot_operation_receipt
+mit vollständigem Fingerprint. Diese über einen strikt validierten lesenden Status
+mit Originalquittung, aktuellem Schatz und aktueller Partyrevision zugänglich machen.
+Verteilung/Status erhalten kampagnengebundene Capabilities und Originalports.
+Keine neue Quittungstabelle und keine neue Migration. Native Prüfung unter
+query_only, spätere Verteilung/Partyänderung, Fingerprint-/Zielkonflikt und
+Kampagnenwechsel vor Domainarbeit bzw. vor/während Transport.
+
+Danach hält der Dialog seine Anteile synchron, einschließlich unverändertem
+Ausgangsentwurf, Originalrevisionen und genau einem laufenden Originalcommand.
+Zentral Save/Discard wartet auf Write und asynchronen Parentabschluss; Unknown
+wird nur gelesen. Fehlende Quittung lässt den Entwurf erhalten; geänderte Schatz-
+oder Partyrevision verhindert erneute Buchung auf alter Grundlage. Unberührtes
+Öffnen erfordert keine Buchung. Neue Eingaben/Schließen sind während Klärung,
+Pending und Unknown gesperrt. Der Planner benennt den Kind-Owner auch vor dem
+Lazy-Mount und erhält interne, abgewartete Refresh-/Schließcallbacks.
+
+Gerenderte Tests müssen Mehrfachempfänger, ungültige Anteile, zentrale Klärung,
+Abbruch, Pending/Refreshfehler, Unknown/Readretry/Abwesenheit/Revisionskonflikt und
+Parentreihenfolge belegen. Danach Loot-/Planner-/Port-/Architekturprüfungen,
+Typecheck/Lint und Build/Smoke/Bundle plus echter Loot-Neustartablauf. Der erste
+Backend-/Portschritt allein schließt den Dialog nicht; beide Schritte bleiben
+Teil desselben Phase-4-Plans.
+
+Korrekturrunde UI-Audit: Die ersten 17 gerenderten UI-/Regressionsfälle bestehen.
+Beim noch ladenden Kinddialog benennt der Planner zwar die Abhängigkeit, zählt sie
+aber ohne eigenen Parentdraft nicht als offenen Änderungsstand. Die zentrale
+Ansicht kann dadurch zunächst nur eine Prüfung statt Save/Discard anbieten.
+Offene Kindabhängigkeiten deshalb in isDirty einbeziehen; Tests prüfen sauberen
+Parent vor Lazy-Mount und beide Kind-IDs sowie deren synchrone Anmeldung. Die
+Verteilungs-Testquittung außerdem als tatsächliche Teilverteilung modellieren.
+
+### Phase 4 — Beuteverteilung: Plan-/Roadmapaudit
+
+Planabgleich bestanden: Bestehende atomare Verteilungsquittungen sind über einen
+strikten, kampagnengebundenen Status lesbar. Originalfingerprint und Ziel-ID werden
+geprüft; Ergebnisquittung, aktueller Schatz und aktuelle Partyrevision bleiben
+getrennt. Verteilung ist ebenfalls kampagnengebunden, einschließlich Unknown nach
+Kampagnenwechsel während eines bestätigten Writes. Keine neue Tabelle/Migration.
+
+Der gerenderte Verteilungsdialog besitzt einen zentralen Owner und synchrone
+Anteile. Save/Discard warten auf denselben laufenden Write einschließlich
+asynchronem Parentabschluss. Unknown und fehlgeschlagener Refresh werden nur
+lesend abgeglichen; keine zweite Buchung bei bestätigter Quittung. Abwesenheit
+bewahrt Anteile, geänderte Schatz-/Partyrevision blockiert erneutes Buchen auf
+alter Grundlage. Ein unberührter Dialog schließt ohne Write. Klärung/Pending/
+Unknown sperren neue Eingaben, Splitaktionen und Schließen. Planner-Abhängigkeiten
+sind für beide Beutedialoge synchron bekannt, auch vor Lazy-Mount. Interne
+Abschlusscallbacks warten den frischen Plannerstand ab und erhalten lokale
+Parentänderungen. Ersetzte öffentliche Close-/Fire-and-forget-Refreshprops wurden
+aus dem Dialoghost entfernt.
+
+Validierung: 179 Tests in 17 Dateien bestanden. Native Tests prüfen query_only
+bei Abwesenheit und nach Buchung, späterem Edit, weiterer Verteilung und Party-
+änderung, unveränderte ursprüngliche Quittung sowie Fingerprint-/Zielkonflikte.
+Falsche Kampagne wird vor Domainarbeit abgewiesen; Ports sind vor/während
+Transport geprüft. Gerenderte Fälle prüfen zwei Empfänger, doppelte Empfänger,
+Überbelegung, Bruchteile, zentrale Klärung, Abbrechen, Pending bis Parentrefresh,
+Refreshfehler, mehrfachen Readretry, Abwesenheit und beide Revisionskonflikte.
+Parent-/Kindtests prüfen Reihenfolge, Kindfehler, Lazy-Mount und stabile synchrone
+IDs. Typecheck und gezieltes ESLint bestehen. Build, Smoke ready/closed und
+Bundle-Gate grün (1617724 reachable Bytes; keine Baseline-/Budgetänderung).
+Loot-E2E mit teilweiser Verteilung/Neustart/Provenienz und sessionGeneration-E2E
+mit dauerhaftem Plannerstand über Neustart bestehen auf denselben Buildbytes.
+Logs work/roadmap-phase4-distribution-*.log. Keine echte Nutzerinstallation oder
+Nutzerdaten verändert.
+
+Roadmapabgleich: Schatzeditor und Verteilungsdialog sind nun vollständig an die
+zentralen Wartungsschnittstellen und den abhängigen Planner angeschlossen. Phase 4
+bleibt offen: insbesondere Unknown-Recovery der Charakterprofil-Schreibbefehle,
+CampaignScreen, weitere Gruppen-/Kampf-/Karten-/Preset-/Desktop-Schreibwege und
+Update-/Offline-Abnahme. Die erwähnte Desktop-Scope-Pflege beim Read bleibt bei
+deren Qualifikation zu prüfen. Phasen 5–7, vollständige Exact-SHA-CI, kanonischer
+Handoff/Main-Abschluss und öffentliche Abnahme bleiben erforderlich.

@@ -1,4 +1,9 @@
 export const lootMessagesDe = {
+  'loot.distributionCheck': 'Gespeicherte Verteilung prüfen',
+  'loot.distributionConflict':
+    'Schatz oder Gruppe wurden inzwischen geändert. Bitte die Verteilung verwerfen und mit dem aktuellen Stand erneut öffnen.',
+  'loot.distributionNotSaved':
+    'Die Verteilung wurde nicht gespeichert. Du kannst die Anteile bestätigen oder verwerfen.',
   'loot.editorCheck': 'Gespeicherten Schatz prüfen',
   'loot.editorInvalid':
     'Bitte Bezeichnung, Gegenstände und Behälter prüfen oder den Entwurf verwerfen.',

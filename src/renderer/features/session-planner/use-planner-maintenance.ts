@@ -60,7 +60,8 @@ export function usePlannerMaintenance(options: {
       runtime.uncertain() ||
       coordinator.hasPending() ||
       Boolean(readUnresolved()) ||
-      Boolean(dialogs?.isOpen()),
+      Boolean(dialogs?.isOpen()) ||
+      Boolean(options.dependencies?.().length),
     save: async () => {
       const fresh = await settle('save')
       const current = read()

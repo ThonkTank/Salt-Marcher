@@ -170,6 +170,25 @@ describe('loot vertical slice', () => {
         command: { kind: 'create', input: editorInput }
       })
     ).toThrow('stale')
+    const distributionInput = {
+      campaignId: wrongCampaign,
+      commandId: randomUUID(),
+      treasureId: randomUUID(),
+      expectedTreasureRevision: 1,
+      expectedPartyRevision: 1,
+      items: [
+        {
+          itemId: randomUUID(),
+          shares: [{ characterId: members[0]!.id, quantity: 1 }]
+        }
+      ]
+    }
+    expect(() =>
+      handlers['loot.distributeForCampaign'](distributionInput)
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.distributionStatus'](distributionInput)
+    ).toThrow('stale')
     const generatedInput = {
       campaignId: randomUUID(),
       commandId: randomUUID(),
@@ -1053,6 +1072,13 @@ describe('loot vertical slice', () => {
         }
       ]
     }
+    db.pragma('query_only = ON')
+    expect(loot.distributionStatus(input)).toEqual({
+      receipt: null,
+      treasure,
+      partyRevision: party.read().revision
+    })
+    db.pragma('query_only = OFF')
     const result = loot.distribute(input)
     expect(result.treasure.items[0]?.allocatedQuantity).toBe(3)
     expect(result.createdEntries).toHaveLength(2)
@@ -1082,6 +1108,30 @@ describe('loot vertical slice', () => {
       }))
     })
     expect(changed.label).toBe('Nach dem Award umbenannt')
+    db.pragma('query_only = ON')
+    expect(loot.distributionStatus(input)).toEqual({
+      receipt: result,
+      treasure: changed,
+      partyRevision: party.read().revision
+    })
+    expectIdempotencyConflict(() =>
+      loot.distributionStatus({
+        ...input,
+        expectedPartyRevision: input.expectedPartyRevision + 1
+      })
+    )
+    expectIdempotencyConflict(() =>
+      loot.distributionStatus({
+        ...input,
+        items: [
+          {
+            ...input.items[0]!,
+            shares: [{ characterId: members[0]!.id, quantity: 2 }]
+          }
+        ]
+      })
+    )
+    db.pragma('query_only = OFF')
     expect(
       new LootService(campaigns.activeCampaignPersistence()).distribute(input)
     ).toEqual(result)
@@ -1100,6 +1150,35 @@ describe('loot vertical slice', () => {
     expect(
       new CharacterLootStore(db).ledger(members[0]!.id).entries
     ).toHaveLength(1)
+    const final = loot.distribute({
+      ...input,
+      commandId: randomUUID(),
+      expectedTreasureRevision: changed.revision,
+      items: [
+        {
+          itemId: changed.items[0]!.id,
+          shares: [{ characterId: members[1]!.id, quantity: 1 }]
+        }
+      ]
+    })
+    party.setMembership(members[1]!.id, false, party.read().revision)
+    const ledger = loot.ledger(members[1]!.id)
+    db.pragma('query_only = ON')
+    expect(
+      new LootService(campaigns.activeCampaignPersistence()).distributionStatus(
+        input
+      )
+    ).toEqual({
+      receipt: result,
+      treasure: final.treasure,
+      partyRevision: party.read().revision
+    })
+    expect(loot.ledger(members[1]!.id)).toEqual(ledger)
+    db.pragma('query_only = OFF')
+    db.prepare(
+      'UPDATE loot_operation_receipt SET target_id = ? WHERE command_id = ?'
+    ).run(randomUUID(), input.commandId)
+    expectIdempotencyConflict(() => loot.distributionStatus(input))
   })
 
   it('rolls back the whole distribution when a recipient is not active', () => {

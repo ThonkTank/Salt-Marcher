@@ -14,6 +14,42 @@ import type { SessionPlannerAuthority } from '../../src/renderer/features/sessio
 const sessionId = '01900000-0000-7000-8000-000000000001'
 
 describe('Session Planner command controllers', () => {
+  it('publishes both reward child dependencies synchronously and keeps their IDs stable', () => {
+    const fixture = authorityFixture(false)
+    const { result, unmount } = renderHook(() =>
+      useSessionRewardMaterialization({
+        coordinator: new AsyncCommandCoordinator(),
+        loot: {} as never,
+        planner: {} as never,
+        read: fixture.read,
+        applyWorkspace: vi.fn(),
+        saveDraft: () => Promise.resolve(fixture.workspace),
+        onError: vi.fn()
+      })
+    )
+    const treasureId = result.current.treasureMaintenanceId
+    const distributionId = result.current.distributionMaintenanceId
+    expect(treasureId).not.toBe(distributionId)
+    act(() => {
+      result.current.setTreasureEditor(null)
+      expect(result.current.dialogDependencies()).toEqual([treasureId])
+      result.current.setDistribution({ id: 'treasure' } as never)
+      expect(result.current.dialogDependencies()).toEqual([
+        treasureId,
+        distributionId
+      ])
+    })
+    act(() => {
+      result.current.setTreasureEditor(false)
+      expect(result.current.dialogDependencies()).toEqual([distributionId])
+      result.current.setDistribution(null)
+      expect(result.current.dialogDependencies()).toEqual([])
+    })
+    expect(result.current.distributionMaintenanceId).toBe(distributionId)
+    expect(result.current.treasureMaintenanceId).toBe(treasureId)
+    unmount()
+  })
+
   it('does not replace newer authored state with a delayed save result', async () => {
     const saved = deferred<SessionPlannerWorkspace>()
     const fixture = authorityFixture()

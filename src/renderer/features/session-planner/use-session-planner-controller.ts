@@ -70,12 +70,10 @@ export function useSessionPlannerController(
     saveDraft: sessions.saveDraft,
     settlePreparations: preparation.settleForMaintenance,
     dialogs: { isOpen: sessions.hasOpenDialog, settle: sessions.settleDialogs },
-    dependencies: rewards.treasureDependencies,
+    dependencies: rewards.dialogDependencies,
     readUnresolved: () => {
       if (preparation.hasActiveOperation())
         return 'Die Sitzungsvorbereitung ist noch offen. Bitte Wartung abbrechen und die Vorbereitung abschließen oder abbrechen.'
-      if (rewards.hasDistributionDialog())
-        return 'In der Sitzungsplanung ist noch ein Dialog offen. Bitte Wartung abbrechen und den Dialog zuerst abschließen oder schließen.'
       return null
     }
   })
@@ -110,6 +108,14 @@ export function useSessionPlannerController(
       if (workspace.read().dirty) workspace.mergeCatalog(fresh.sessions)
       else workspace.applyWorkspace(fresh)
       rewards.setTreasureEditor(false)
+    },
+    distributionMaintenanceId: rewards.distributionMaintenanceId,
+    closeDistribution: () => rewards.setDistribution(null),
+    completeDistribution: async () => {
+      const fresh = await planner.read()
+      if (workspace.read().dirty) workspace.mergeCatalog(fresh.sessions)
+      else workspace.applyWorkspace(fresh)
+      rewards.setDistribution(null)
     },
     distribution: rewards.distribution,
     preparationRunning: preparation.preparationRunning,

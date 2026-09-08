@@ -39,7 +39,15 @@ export type TreasureEditorPort = Pick<
     ): ReturnType<SaltMarcherApi['loot']['editorStatus']>
   }>
 
-export type RewardDistributionPort = Pick<SaltMarcherApi['loot'], 'distribute'>
+export type RewardDistributionPort = Pick<
+  SaltMarcherApi['loot'],
+  'distribute'
+> &
+  Readonly<{
+    distributionStatus(
+      input: Parameters<SaltMarcherApi['loot']['distribute']>[0]
+    ): ReturnType<SaltMarcherApi['loot']['distributionStatus']>
+  }>
 
 export function useLootScenePort(): LootScenePort {
   const loot = useCapabilityApi().loot
@@ -175,5 +183,43 @@ export function useTreasureEditorPort(): TreasureEditorPort {
 
 export function useRewardDistributionPort(): RewardDistributionPort {
   const loot = useCapabilityApi().loot
-  return useMemo(() => ({ distribute: loot.distribute }), [loot])
+  const context = useContext(CapabilityContext)
+  if (!context) throw new Error('Capability provider missing')
+  const projection = context.campaignWorkspace
+  const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
+  const campaignId = root.sessionCampaignId
+  return useMemo(() => {
+    const requireCampaign = () => {
+      const current = projection.snapshot()
+      if (
+        !campaignId ||
+        current.sessionCampaignId !== campaignId ||
+        current.campaigns.activeCampaignId !== campaignId
+      )
+        throw new CapabilityError('stale', false)
+      return campaignId
+    }
+    return {
+      distribute: async (input) => {
+        const result = await loot.distributeForCampaign({
+          ...input,
+          campaignId: requireCampaign()
+        })
+        try {
+          requireCampaign()
+        } catch {
+          throw new CapabilityError('outcome_unknown', true)
+        }
+        return result
+      },
+      distributionStatus: async (input) => {
+        const result = await loot.distributionStatus({
+          ...input,
+          campaignId: requireCampaign()
+        })
+        requireCampaign()
+        return result
+      }
+    } satisfies RewardDistributionPort
+  }, [loot, projection, campaignId])
 }

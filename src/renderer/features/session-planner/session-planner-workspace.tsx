@@ -114,6 +114,9 @@ export function SessionPlannerWorkspace(props: WorkspaceSurfaceProps) {
           name={controller.name}
           deleteConfirm={controller.deleteConfirm}
           treasureEditor={controller.treasureEditor}
+          distributionMaintenanceId={controller.distributionMaintenanceId}
+          closeDistribution={controller.closeDistribution}
+          completeDistribution={controller.completeDistribution}
           treasureMaintenanceId={controller.treasureMaintenanceId}
           closeTreasureEditor={controller.closeTreasureEditor}
           completeTreasureEditor={controller.completeTreasureEditor}
@@ -122,15 +125,10 @@ export function SessionPlannerWorkspace(props: WorkspaceSurfaceProps) {
           setNameDialog={controller.setNameDialog}
           setName={controller.setName}
           setDeleteConfirm={controller.setDeleteConfirm}
-          setTreasureEditor={controller.setTreasureEditor}
-          setDistribution={controller.setDistribution}
           cancelPreparation={controller.cancelPreparation}
           requestPreparation={controller.requestPreparation}
           submitName={controller.submitName}
           deleteSession={controller.deleteSession}
-          refreshWorkspace={() =>
-            void controller.planner.read().then(controller.applyWorkspace)
-          }
         />
       </section>
     </div>

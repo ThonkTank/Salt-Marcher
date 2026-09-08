@@ -191,6 +191,20 @@ export function createLootComposition(dependencies: {
               'accepted',
               () => loot.acceptGenerated(input)
             ),
+          'loot.distributionStatus': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.distributionStatus(input)
+          },
+          'loot.distributeForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.distributeForCampaign'],
+              'distributed',
+              () => loot.distribute(input)
+            )
+          },
           'loot.distribute': (input) =>
             publish(
               lootOperationDefinitions['loot.distribute'],

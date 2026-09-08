@@ -141,6 +141,10 @@ export class LootService {
     return this.commands.acceptGenerated(input)
   }
 
+  distributionStatus(input: CompleteLootDistributionInput) {
+    return this.distribution.status(input)
+  }
+
   distribute(input: CompleteLootDistributionInput): LootDistributionResult {
     return this.distribution.distribute(input)
   }

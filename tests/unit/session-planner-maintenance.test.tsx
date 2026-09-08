@@ -167,40 +167,47 @@ async function resolve(choice: 'save' | 'discard') {
 }
 
 describe('Session Planner maintenance owner', () => {
-  it('blocks a still-loading treasure child and settles it before saving the parent draft', async () => {
-    let open = true
-    let childDone = false
-    const hook = setup(undefined, undefined, {}, () =>
-      open ? ['loading-treasure'] : []
-    )
-    await load()
-    act(() =>
-      hook.result.current.mutate((draft) => ({
-        ...draft,
-        adventureDayFraction: '0.5'
-      }))
-    )
-    begin()
-    expect(await resolve('save')).toMatchObject([{ label: 'Sitzungsplanung' }])
-    expect(hook.save).not.toHaveBeenCalled()
-    const close = maintenanceDraftCoordinator.register('loading-treasure', {
-      label: 'Schatz',
-      isDirty: () => !childDone,
-      save: () => {
-        expect(hook.save).not.toHaveBeenCalled()
-        childDone = true
-        open = false
-        return Promise.resolve(true)
-      }
-    })
-    try {
-      expect(await resolve('save')).toEqual([])
-      expect(hook.save).toHaveBeenCalledOnce()
+  it.each(['treasure', 'distribution'])(
+    'blocks a still-loading %s child and settles it before saving the parent draft',
+    async (kind) => {
+      let open = true
+      let childDone = false
+      const hook = setup(undefined, undefined, {}, () =>
+        open ? [`loading-${kind}`] : []
+      )
+      await load()
       expect(hook.result.current.workspace.dirty).toBe(false)
-    } finally {
-      close()
+      expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
+      act(() =>
+        hook.result.current.mutate((draft) => ({
+          ...draft,
+          adventureDayFraction: '0.5'
+        }))
+      )
+      begin()
+      expect(await resolve('save')).toMatchObject([
+        { label: 'Sitzungsplanung' }
+      ])
+      expect(hook.save).not.toHaveBeenCalled()
+      const close = maintenanceDraftCoordinator.register(`loading-${kind}`, {
+        label: 'Schatz',
+        isDirty: () => !childDone,
+        save: () => {
+          expect(hook.save).not.toHaveBeenCalled()
+          childDone = true
+          open = false
+          return Promise.resolve(true)
+        }
+      })
+      try {
+        expect(await resolve('save')).toEqual([])
+        expect(hook.save).toHaveBeenCalledOnce()
+        expect(hook.result.current.workspace.dirty).toBe(false)
+      } finally {
+        close()
+      }
     }
-  })
+  )
   it.each(['save', 'create', 'open', 'switch', 'rename', 'delete'] as const)(
     'reconciles %s using the original command and latest workspace without replay',
     async (kind) => {

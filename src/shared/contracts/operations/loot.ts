@@ -102,6 +102,22 @@ export const lootOperationDefinitions = utilityOperationFragment({
     acceptGeneratedTreasureInputSchema,
     treasureSchema
   ),
+  'loot.distributionStatus': read(
+    'loot:distribution-status',
+    completeLootDistributionInputSchema.extend({ campaignId: z.uuid() }),
+    z
+      .object({
+        receipt: lootDistributionResultSchema.nullable(),
+        treasure: treasureSchema,
+        partyRevision: z.number().int().nonnegative()
+      })
+      .strict()
+  ),
+  'loot.distributeForCampaign': write(
+    'loot:distribute-for-campaign',
+    completeLootDistributionInputSchema.extend({ campaignId: z.uuid() }),
+    lootDistributionResultSchema
+  ),
   'loot.distribute': write(
     'loot:distribute',
     completeLootDistributionInputSchema,
