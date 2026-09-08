@@ -64,11 +64,45 @@ function setup(
   overrides: Partial<SessionPlannerPort> = {}
 ) {
   const coordinator = new AsyncCommandCoordinator()
-  const planner = {
+  const semanticPlanner = {
+    commandStatus: vi
+      .fn()
+      .mockRejectedValue(
+        new Error('Befehlsausgang unbekannt: Abgleich nicht erreichbar.')
+      ),
     read: () => Promise.resolve(initial),
     save,
     ...overrides
   } as unknown as SessionPlannerPort
+  const executeCommand = vi.fn<SessionPlannerPort['executeCommand']>(
+    async ({ command }) => {
+      switch (command.kind) {
+        case 'save':
+          return semanticPlanner.save(command.input)
+        case 'create':
+          return semanticPlanner.create(command.input.name)
+        case 'open':
+          return semanticPlanner.open(command.input.sessionId)
+        case 'switch':
+          return semanticPlanner.switch(
+            command.input.targetSessionId,
+            command.input.source
+          )
+        case 'rename':
+          return semanticPlanner.rename(
+            command.input.sessionId,
+            command.input.expectedRevision,
+            command.input.name
+          )
+        case 'delete':
+          return semanticPlanner.delete(
+            command.input.sessionId,
+            command.input.expectedRevision
+          )
+      }
+    }
+  )
+  const planner: SessionPlannerPort = { ...semanticPlanner, executeCommand }
   const onError = vi.fn()
   const hook = renderHook(() => {
     const runtime = usePlannerMaintenanceRuntime()
@@ -110,7 +144,7 @@ function setup(
       save: maintenance.command(sessions.saveDraft, null)
     }
   })
-  return { ...hook, save }
+  return { ...hook, save, planner }
 }
 async function load() {
   await act(async () => {
@@ -131,6 +165,160 @@ async function resolve(choice: 'save' | 'discard') {
 }
 
 describe('Session Planner maintenance owner', () => {
+  it.each(['save', 'create', 'open', 'switch', 'rename', 'delete'] as const)(
+    'reconciles %s using the original command and latest workspace without replay',
+    async (kind) => {
+      const fresh = {
+        ...initial,
+        session: { ...initial.session, revision: 9, name: 'Later work' }
+      }
+      const status = vi
+        .fn<SessionPlannerPort['commandStatus']>()
+        .mockRejectedValueOnce(new Error('read unavailable'))
+        .mockResolvedValue({ receipt: initial, workspace: fresh })
+      const hook = setup(undefined, undefined, { commandStatus: status })
+      await load()
+      vi.mocked(hook.planner.executeCommand).mockRejectedValueOnce(
+        new CapabilityError('outcome_unknown', true)
+      )
+      if (kind === 'save' || kind === 'switch')
+        act(() =>
+          hook.result.current.mutate((draft) => ({
+            ...draft,
+            adventureDayFraction: '0.5'
+          }))
+        )
+      if (kind === 'create' || kind === 'rename')
+        act(() => {
+          hook.result.current.sessions.setNameDialog(kind)
+          hook.result.current.sessions.setName('Requested name')
+        })
+      if (kind === 'delete')
+        act(() => hook.result.current.sessions.setDeleteConfirm(true))
+      await act(async () => {
+        await hook.result.current.runtime.run(async () => {
+          const sessions = hook.result.current.sessions
+          if (kind === 'save') await sessions.saveDraft()
+          else if (kind === 'create' || kind === 'rename')
+            await sessions.submitName()
+          else if (kind === 'delete') await sessions.deleteSession()
+          else await sessions.openSession('other-session')
+        })
+      })
+      expect(hook.result.current.maintenance.uncertain).toBe(true)
+      expect(hook.result.current.maintenance.canReconcile).toBe(true)
+      const original = vi.mocked(hook.planner.executeCommand).mock.calls[0]![0]
+      expect(original.command.kind).toBe(kind)
+      await act(async () => {
+        await hook.result.current.maintenance.retryUnknown()
+      })
+      expect(hook.result.current.maintenance.uncertain).toBe(true)
+      await act(async () => {
+        await hook.result.current.maintenance.retryUnknown()
+      })
+      expect(status.mock.calls).toEqual([[original], [original]])
+      expect(hook.planner.executeCommand).toHaveBeenCalledOnce()
+      expect(hook.result.current.maintenance.uncertain).toBe(false)
+      expect(hook.result.current.workspace.read().workspace).toEqual(fresh)
+      expect(hook.result.current.workspace.read().dirty).toBe(false)
+      expect(hook.result.current.sessions.nameDialog).toBeNull()
+      expect(hook.result.current.sessions.deleteConfirm).toBe(false)
+    }
+  )
+
+  it.each(['save', 'discard'] as const)(
+    'reconciles a confirmed save before central %s',
+    async (choice) => {
+      const fresh = { ...initial, session: { ...initial.session, revision: 5 } }
+      const status = vi
+        .fn<SessionPlannerPort['commandStatus']>()
+        .mockResolvedValue({ receipt: initial, workspace: fresh })
+      const hook = setup(undefined, undefined, { commandStatus: status })
+      await load()
+      act(() =>
+        hook.result.current.mutate((draft) => ({
+          ...draft,
+          adventureDayFraction: '0.5'
+        }))
+      )
+      vi.mocked(hook.planner.executeCommand).mockRejectedValueOnce(
+        new CapabilityError('outcome_unknown', true)
+      )
+      await act(async () => {
+        await hook.result.current.save()
+      })
+      begin()
+      expect(await resolve(choice)).toEqual([])
+      expect(hook.planner.executeCommand).toHaveBeenCalledOnce()
+      expect(hook.result.current.workspace.read().workspace).toEqual(fresh)
+    }
+  )
+
+  it('keeps an absent save dirty and only writes on the next explicit save', async () => {
+    const status = vi
+      .fn<SessionPlannerPort['commandStatus']>()
+      .mockResolvedValue({ receipt: null, workspace: initial })
+    const hook = setup(undefined, undefined, { commandStatus: status })
+    await load()
+    act(() =>
+      hook.result.current.mutate((draft) => ({
+        ...draft,
+        adventureDayFraction: '0.5'
+      }))
+    )
+    vi.mocked(hook.planner.executeCommand).mockRejectedValueOnce(
+      new CapabilityError('outcome_unknown', true)
+    )
+    await act(async () => {
+      await hook.result.current.save()
+    })
+    await act(async () => {
+      await hook.result.current.maintenance.retryUnknown()
+    })
+    expect(hook.planner.executeCommand).toHaveBeenCalledOnce()
+    expect(hook.result.current.workspace.read().dirty).toBe(true)
+    expect(hook.result.current.maintenance.uncertain).toBe(false)
+    begin()
+    expect(await resolve('save')).toEqual([])
+    expect(hook.planner.executeCommand).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves newer local edits while acknowledging the original saved command', async () => {
+    const fresh = { ...initial, session: { ...initial.session, revision: 4 } }
+    const status = vi
+      .fn<SessionPlannerPort['commandStatus']>()
+      .mockResolvedValue({ receipt: initial, workspace: fresh })
+    const hook = setup(undefined, undefined, { commandStatus: status })
+    await load()
+    act(() =>
+      hook.result.current.mutate((draft) => ({
+        ...draft,
+        adventureDayFraction: '0.5'
+      }))
+    )
+    vi.mocked(hook.planner.executeCommand).mockRejectedValueOnce(
+      new CapabilityError('outcome_unknown', true)
+    )
+    await act(async () => {
+      await hook.result.current.save()
+    })
+    // An external editor continuation can still have newer authored state.
+    act(() =>
+      hook.result.current.workspace.mutate((draft) => ({
+        ...draft,
+        adventureDayFraction: '0.75'
+      }))
+    )
+    await act(async () => {
+      await hook.result.current.maintenance.retryUnknown()
+    })
+    expect(
+      hook.result.current.workspace.read().draft?.adventureDayFraction
+    ).toBe('0.75')
+    expect(hook.result.current.workspace.read().dirty).toBe(true)
+    expect(hook.planner.executeCommand).toHaveBeenCalledOnce()
+  })
+
   it.each(['create', 'rename'] as const)(
     'saves the draft before %s and retains the final workspace',
     async (operation) => {

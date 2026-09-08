@@ -22,7 +22,7 @@ describe('Session Planner command controllers', () => {
     const { result } = renderHook(() =>
       useSessionPlannerSessionCommands({
         coordinator: new AsyncCommandCoordinator(),
-        planner: { save: () => saved.promise } as never,
+        planner: { executeCommand: () => saved.promise } as never,
         read: fixture.read,
         applyWorkspace,
         mergeCatalog,
@@ -50,7 +50,7 @@ describe('Session Planner command controllers', () => {
       useSessionPlannerSessionCommands({
         coordinator: new AsyncCommandCoordinator(),
         planner: {
-          save: () => Promise.reject(new Error('save failed'))
+          executeCommand: () => Promise.reject(new Error('save failed'))
         } as never,
         read: fixture.read,
         applyWorkspace: vi.fn(),

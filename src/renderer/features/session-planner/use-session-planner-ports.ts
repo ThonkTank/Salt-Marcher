@@ -2,12 +2,17 @@ import { useContext, useMemo, useSyncExternalStore } from 'react'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
-import type { SaveSessionPlanInput } from '../../../shared/contracts/session-planner.js'
+import type {
+  SessionPlannerCommand,
+  SaveSessionPlanInput
+} from '../../../shared/contracts/session-planner.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 type RawPlanner = SaltMarcherApi['sessionPlanner']
 export type SessionPlannerPort = Omit<
   RawPlanner,
+  | 'executeCommand'
+  | 'commandStatus'
   | 'create'
   | 'open'
   | 'switch'
@@ -17,6 +22,12 @@ export type SessionPlannerPort = Omit<
   | 'cancelPreparationForMaintenance'
 > &
   Readonly<{
+    executeCommand(
+      input: SessionPlannerCommand
+    ): ReturnType<RawPlanner['executeCommand']>
+    commandStatus(
+      input: SessionPlannerCommand
+    ): ReturnType<RawPlanner['commandStatus']>
     preparationMaintenanceStatus(
       operationIds: readonly string[]
     ): ReturnType<RawPlanner['preparationMaintenanceStatus']>
@@ -72,6 +83,26 @@ export function useSessionPlannerPorts(): Readonly<{
     return {
       planner: {
         ...api.sessionPlanner,
+        executeCommand: async (input: SessionPlannerCommand) => {
+          const result = await api.sessionPlanner.executeCommand({
+            ...input,
+            campaignId: requireCampaign()
+          })
+          try {
+            requireCampaign()
+          } catch {
+            throw new CapabilityError('outcome_unknown', true)
+          }
+          return result
+        },
+        commandStatus: async (input: SessionPlannerCommand) => {
+          const result = await api.sessionPlanner.commandStatus({
+            ...input,
+            campaignId: requireCampaign()
+          })
+          requireCampaign()
+          return result
+        },
         preparationMaintenanceStatus: async (
           operationIds: readonly string[]
         ) => {

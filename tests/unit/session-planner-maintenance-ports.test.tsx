@@ -9,6 +9,71 @@ import {
 import { useSessionPlannerPorts } from '../../src/renderer/features/session-planner/use-session-planner-ports.js'
 
 describe('Planner maintenance campaign binding', () => {
+  it.each(['before', 'during'] as const)(
+    'binds writes and recovery reads to the original campaign %s transport',
+    async (when) => {
+      const executeCommand = vi.fn().mockResolvedValue({})
+      const commandStatus = vi.fn().mockResolvedValue({ receipt: null })
+      let root = {
+        sessionCampaignId: 'original',
+        campaigns: { activeCampaignId: 'original' }
+      }
+      const context = {
+        api: {
+          sessionPlanner: { executeCommand, commandStatus },
+          encounterPlans: {},
+          loot: {}
+        },
+        campaignWorkspace: { snapshot: () => root, subscribe: () => () => {} }
+      } as unknown as CapabilityContextValue
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <CapabilityContext.Provider value={context}>
+          {children}
+        </CapabilityContext.Provider>
+      )
+      const hook = renderHook(() => useSessionPlannerPorts(), { wrapper })
+      const original = hook.result.current.planner
+      const input = {
+        commandId: 'command',
+        command: {
+          kind: 'create' as const,
+          input: { name: 'Original request' }
+        }
+      }
+      await original.executeCommand(input)
+      await original.commandStatus(input)
+      expect(executeCommand).toHaveBeenCalledWith({
+        ...input,
+        campaignId: 'original'
+      })
+      expect(commandStatus).toHaveBeenCalledWith({
+        ...input,
+        campaignId: 'original'
+      })
+      executeCommand.mockClear()
+      commandStatus.mockClear()
+      if (when === 'before') root = { ...root, sessionCampaignId: 'other' }
+      const write = original.executeCommand(input)
+      const read = original.commandStatus(input)
+      root = { ...root, sessionCampaignId: 'other' }
+      await expect(write).rejects.toMatchObject({
+        code: when === 'before' ? 'stale' : 'outcome_unknown'
+      })
+      await expect(read).rejects.toMatchObject({ code: 'stale' })
+      expect(executeCommand).toHaveBeenCalledTimes(when === 'before' ? 0 : 1)
+      expect(commandStatus).toHaveBeenCalledTimes(when === 'before' ? 0 : 1)
+      root = {
+        sessionCampaignId: 'original',
+        campaigns: { activeCampaignId: 'original' }
+      }
+      await original.commandStatus(input)
+      expect(commandStatus).toHaveBeenLastCalledWith({
+        ...input,
+        campaignId: 'original'
+      })
+    }
+  )
+
   it.each(['session', 'active', 'during-read'] as const)(
     'rejects %s campaign changes before status or cancellation',
     async (changed) => {

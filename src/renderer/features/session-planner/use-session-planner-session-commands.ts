@@ -1,5 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
-import type { SessionPlannerWorkspace } from '../../../shared/contracts/session-planner.js'
+import type {
+  SessionPlannerCommand,
+  SessionPlannerWorkspace
+} from '../../../shared/contracts/session-planner.js'
 import type {
   AsyncCommandCoordinator,
   AsyncCommandOutcome
@@ -15,7 +18,7 @@ type Dependencies = Readonly<{
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   mergeCatalog: (sessions: SessionPlannerWorkspace['sessions']) => void
   resetEncounterQuery: () => void
-  failed?: (cause: unknown) => void
+  failed?: (cause: unknown, reconcile?: () => Promise<boolean>) => void
   onError: (message: string) => void
 }>
 
@@ -63,9 +66,13 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
   const execute = useCallback(
     async (
       target: SessionPlannerAuthority,
-      transport: () => Promise<SessionPlannerWorkspace>,
+      command: SessionPlannerCommand['command'],
       accepted?: () => void
     ): Promise<SessionPlannerWorkspace | null> => {
+      const input: SessionPlannerCommand = {
+        commandId: crypto.randomUUID(),
+        command: structuredClone(command)
+      }
       let published = false
       const entityKey = target.workspace
         ? `session:${target.workspace.session.id}`
@@ -74,7 +81,7 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
         scope: 'planner.session-command',
         entityKey,
         mode: 'queue',
-        execute: transport,
+        execute: () => planner.executeCommand(input),
         accept: (next) => {
           if (sameAuthority(read(), target)) {
             applyWorkspace(next)
@@ -85,19 +92,35 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
           }
         }
       })
-      if (outcome.status === 'failure') failed?.(outcome.cause)
+      if (outcome.status === 'failure')
+        failed?.(outcome.cause, async () => {
+          const status = await planner.commandStatus(input)
+          if (status.receipt && sameAuthority(read(), target)) {
+            applyWorkspace(status.workspace)
+            accepted?.()
+          } else if (
+            !status.receipt &&
+            !read().dirty &&
+            sameAuthority(read(), target)
+          ) {
+            applyWorkspace(status.workspace)
+          } else {
+            mergeCatalog(status.workspace.sessions)
+          }
+          return true
+        })
       reportCommandFailure(outcome, onError)
       return outcome.status === 'success' && published ? outcome.value : null
     },
-    [applyWorkspace, coordinator, failed, mergeCatalog, onError, read]
+    [applyWorkspace, coordinator, failed, mergeCatalog, onError, planner, read]
   )
 
   const saveDraft =
     useCallback(async (): Promise<SessionPlannerWorkspace | null> => {
       const target = read()
       if (!target.draft) return target.workspace
-      return execute(target, () => planner.save(target.draft!))
-    }, [execute, planner, read])
+      return execute(target, { kind: 'save', input: target.draft })
+    }, [execute, read])
 
   const openSession = useCallback(
     async (sessionId: string): Promise<void> => {
@@ -105,15 +128,17 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
       if (!target.workspace || sessionId === target.workspace.session.id) return
       const opened = await execute(
         target,
-        () =>
-          target.dirty && target.draft
-            ? planner.switch(sessionId, target.draft)
-            : planner.open(sessionId),
+        target.dirty && target.draft
+          ? {
+              kind: 'switch',
+              input: { targetSessionId: sessionId, source: target.draft }
+            }
+          : { kind: 'open', input: { sessionId } },
         resetEncounterQuery
       )
       void opened
     },
-    [execute, planner, read, resetEncounterQuery]
+    [execute, read, resetEncounterQuery]
   )
 
   const submitName = useCallback(async (): Promise<void> => {
@@ -137,19 +162,21 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     if (!current) return
     await execute(
       target,
-      () =>
-        operation.kind === 'create'
-          ? planner.create(requestedName)
-          : planner.rename(
-              current.session.id,
-              current.session.revision,
-              requestedName
-            ),
+      operation.kind === 'create'
+        ? { kind: 'create', input: { name: requestedName } }
+        : {
+            kind: 'rename',
+            input: {
+              sessionId: current.session.id,
+              expectedRevision: current.session.revision,
+              name: requestedName
+            }
+          },
       () => {
         if (dialogs.current.name === operation) setNameDialog(null)
       }
     )
-  }, [execute, onError, planner, read, saveDraft, setNameDialog])
+  }, [execute, onError, read, saveDraft, setNameDialog])
 
   const deleteSession = useCallback(async (): Promise<void> => {
     const target = read()
@@ -157,10 +184,16 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     if (!current) return
     await execute(
       target,
-      () => planner.delete(current.session.id, current.session.revision),
+      {
+        kind: 'delete',
+        input: {
+          sessionId: current.session.id,
+          expectedRevision: current.session.revision
+        }
+      },
       () => setDeleteConfirm(false)
     )
-  }, [execute, planner, read, setDeleteConfirm])
+  }, [execute, read, setDeleteConfirm])
 
   const settleDialogs = async (
     choice: 'save' | 'discard'

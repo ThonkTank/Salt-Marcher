@@ -3509,3 +3509,68 @@ abwesende Quittung ohne Replay freigeben und Save/Discard sowie Namensdialoge
 korrekt abschließen. Die übrigen Phase-4-Schreibwege, Update-/Offline-Abnahme,
 Phasen 5–7 und kanonischer Handoff/Main-Abschluss bleiben verpflichtend.
 Keine echte Nutzerinstallation, Nutzerdaten oder öffentlichen Releases geändert.
+
+### Phase 4 — Plan: Plannerbefehle an lesende Recovery anbinden
+
+Ausgang af04f95a1 sauber, Check 34270091488 läuft. Der vorherige Zielturn war
+Fortschritt: atomare Quittungen und qualifizierte Migration sind gepusht.
+Jetzt create/open/switch/rename/save/delete im Sitzungscontroller auf den
+kampagnengebundenen Execute-Vertrag umstellen. Der Controller erstellt vor dem
+Transport einen unveränderlichen Befehlsumschlag und hält genau diesen zusammen
+mit dem ursprünglichen Port im Recoverycallback. Ein Kampagnenwechsel nach
+erfolgreichem Write-Transport bedeutet outcome_unknown, nicht sicher abgelehnt.
+
+Bei vorhandener Quittung nur den frischen Workspace übernehmen; ursprüngliche
+Dialogbestätigung nur bei unverändertem lokalem Bearbeitungskontext ausführen.
+Bei abwesender Quittung lokale Entwürfe erhalten, frischen Katalog nachführen
+und Unknown beenden. Neuere lokale Eingaben bleiben geschützt. Readfehler
+halten Unknown; Retry schreibt nie. Die vorhandene zentrale Wartung verwendet
+denselben Callback, wartet vollständige Aktionen ab und entscheidet anschließend
+über noch offene Entwürfe/Dialogs. Tests prüfen alle sechs Befehle, Originalinput,
+Readfehler/Retry, Abwesenheit, spätere Daten, neuere lokale Entwürfe, Dialogschluss,
+Save/Discard und Kampagnenwechsel vor/während Transport. Bestehende Planner-/
+Vorbereitungs-/Wartungstests plus Typecheck/Lint/Build/Smoke/Bundle prüfen.
+
+Korrekturrunde Planner-Testharness: 142 Tests bestanden. Ein alter Unknown-Test
+hat keinen Statusport und scheitert deshalb am Testdouble statt am beabsichtigten
+Readfehler. Einen explizit fehlgeschlagenen Statusread als Default ergänzen.
+Typecheck beanstandet außerdem die nachträgliche Zuweisung an den readonly-Port;
+das Testobjekt vollständig bei Erstellung zusammensetzen. Produktverhalten
+bleibt unverändert; die vollständige gezielte Suite erneut prüfen.
+
+### Phase 4 — Planner-UI-Recovery: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Alle sechs allgemeinen Plannerbefehle verwenden jetzt
+den kampagnengebundenen Quittungsvertrag. Der Controller kopiert den kompletten
+Befehl vor dem Transport und hält ihn im Callback zusammen mit dem ursprünglichen
+Port fest. Ein Wechsel nach erfolgreichem Write-Transport wird als unbekannter
+Ausgang behandelt; ein Wechsel vor Transport verhindert den Write. Statusreads
+prüfen die Kampagne vor und nach dem Lesen.
+
+Eine bestätigte Quittung führt zum aktuellen Workspace, nicht zur historischen
+Quittungskopie. Nur unveränderte lokale Autorität darf dadurch bestätigt und
+ihr Namens-/Löschdialog geschlossen werden. Neuere lokale Änderungen bleiben
+bestehen; nur der Katalog wird aktualisiert. Abwesende Quittungen beenden Unknown
+nach erfolgreichem Read, lassen lokale Entwürfe aber erhalten. Retry schreibt
+nie. Fehlgeschlagene Reads halten die Bearbeitung gesperrt. Die zentrale Wartung
+verwendet denselben Abgleich vor Save/Discard und wartet vollständige Aktionen ab.
+
+Validierung: 144 Tests in 12 Dateien bestanden, einschließlich aller sechs
+Befehle mit fehlender Antwort und fehlgeschlagenem erstem Read, Originalinput,
+frischem statt historischem Workspace, Dialogschluss, zentralem Save/Discard,
+expliziter Abwesenheit und erst danach bewusstem Save sowie neueren lokalen
+Entwürfen. Kampagnenbindung vor/während Write und Read sowie Rückkehr zum
+Originalport geprüft. Bestehende Vorbereitungs-/Wartungs-/Architekturtests und
+der sichtbare Recoverybutton bleiben grün. Typecheck, gezieltes ESLint, Build,
+Smoke ready/closed und Bundle-Gate bestanden. Renderer reachable 1647536 Bytes;
+keine neue Dependency und keine Baseline-/Budgetänderung. Der bestehende echte
+sessionGeneration-E2E besteht auf demselben Build einschließlich Wiederaufnahme
+der Plannerarbeit nach Electron-Neustart. Logs work/roadmap-phase4-planner-ui-*.
+
+Roadmapabgleich: Dieser Schritt vervollständigt die zentrale Klärung der
+allgemeinen Plannerbefehle. Er ersetzt nicht die noch offenen Beute-/Verteilungs-
+Unterdialoge und Belohnungsmaterialisierung des Planners. Charakterbefehle,
+weitere Gruppen-/Kampagnen-/Karten-/Desktop-Schreibwege, vollständige Update- und
+Offline-Abnahme sowie Phasen 5–7 bleiben offen. Remote-Check des neuen SHA,
+kanonischer Handoff und grüner Main-Abschluss bleiben notwendig. Keine echte
+Nutzerinstallation, Nutzerdaten oder öffentlichen Releases verändert.
