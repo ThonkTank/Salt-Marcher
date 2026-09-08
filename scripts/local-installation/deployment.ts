@@ -127,9 +127,8 @@ export function validateCompletedInstallation(
     throw new Error('Activated desktop entry differs from its build')
 }
 
-export function activationReplacements(
+export function desktopIntegration(
   paths: LocalInstallationPaths,
-  deployment: string,
   iconSourcePath: string,
   build: BuildInfo
 ): readonly InstallationReplacement[] {
@@ -143,10 +142,6 @@ export function activationReplacements(
       target: paths.desktopEntry,
       content: renderDesktopEntry(paths, build),
       mode: 0o644
-    },
-    {
-      target: paths.current,
-      symlinkTarget: relative(paths.root, deployment)
     }
   ]
 }

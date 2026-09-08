@@ -34,6 +34,30 @@ export const maintenanceJournalSchema = z
     rollbackFrom: forwardPhase.nullable(),
     hadData: z.boolean(),
     backup: storedName.nullable(),
+    integration: z
+      .array(
+        z
+          .object({
+            target: z.string().min(1),
+            sha256: z.string().regex(/^[a-f0-9]{64}$/),
+            mode: z.number().int().min(0).max(0o777),
+            previous: z.discriminatedUnion('kind', [
+              z.object({ kind: z.literal('missing') }).strict(),
+              z
+                .object({
+                  kind: z.literal('file'),
+                  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+                  mode: z.number().int().min(0).max(0o777)
+                })
+                .strict(),
+              z
+                .object({ kind: z.literal('link'), target: z.string().min(1) })
+                .strict()
+            ])
+          })
+          .strict()
+      )
+      .default([]),
     previous: maintenanceProgramSchema.nullable(),
     next: maintenanceProgramSchema
   })

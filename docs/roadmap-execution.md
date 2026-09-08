@@ -217,3 +217,179 @@ Zusätzliche Validierung Runde 2: pnpm test:smoke:built unter Xvfb erfolgreich,
 Core erreicht ready und beendet mit Code 0. Beleg im Aufgabenordner
 work/roadmap-phase2-release-smoke.log. Dieser Development-Smoke bestätigt den
 Buildstart, nicht die noch ausstehende AppImage-Update-Abnahme.
+
+### Phase 2 — Local-Anbindung, konkreter Rundenplan vor Änderungen
+
+Local-Handoff-Belege bleiben Nachweise für Artifact-/Backup-Identität, aber
+verlieren Daten-/Programm-Recovery-Autorität. Local verwendet die kanonische
+Profilsicherung und dieselbe Prüfung der Arbeitskopie. Das Local-Artefaktmanifest
+enthält keine Semver-Appversion; seine verfügbare Versionsidentität ist der
+Build-Commit, der ausdrücklich als Local-Commit angezeigt/gespeichert wird.
+
+Reihenfolge: kanonische Backup-Payload plus separater Handoff-Beleg;
+gemeinsame geprüfte Arbeitskopie; Aktivierung über MaintenanceCoordinator;
+Local-Startbarriere mit Token aus installiertem Verifier; Legacy-Local-Übernahme.
+Bestehende Backupformate bleiben lesbar. Tests müssen echte fachlich lesbare
+Profile verwenden, sobald fachlicher Readback Teil ihrer Abnahme ist; minimale
+SQLite-Dateien dürfen nicht als erfolgreiche App-Profile durchgehen.
+
+### Phase 2 — Korrekturrunde 3, Plan vor Änderung
+
+Local-Backup-Test: 42 Tests bestanden, WAL-Checkpoint-Wiederverwendung fehlgeschlagen.
+Der kanonische Manifestvergleich erfasst zusätzliche SQLite-Nebendateien, die das
+lesende Öffnen einer WAL-markierten Sicherung erzeugt. Statt Neben-/WAL-Daten pauschal
+vom Hashvergleich auszunehmen, fertige Online-Backup-Zieldateien im gemeinsamen
+Snapshotmodul auf journal_mode=DELETE abschließen. Nur die Sicherung wird geändert;
+Quelle bleibt bytegleich. Danach WAL-Wiederverwendung und Release-Profiltests prüfen.
+
+### Phase 2 — Korrekturrunde 4, Plan vor Änderung
+
+Beim Audit der Startadapter ist die Entscheidung über Token/Startprüfung noch
+zwischen Local und Release dupliziert. Zudem darf ein zwischen Startprüfung und
+Bestätigung fehlendes Journal nicht als erfolgreicher Abschluss gelten.
+Korrektur: gemeinsame recoverForStart/completeStart-Regel im Koordinator;
+Adapter liefern nur Laufzeitidentität und Token. Fehlendes Journal bei Abschluss
+wird abgewiesen. Aktuelle bereits bestätigte Daten werden weiterhin niemals
+zurückgesetzt. Gemeinsame und kanalbezogene Starttests ergänzen.
+
+### Phase 2 — Local-Datenmodule und Startbarriere, Zwischenstand
+
+Local backupCampaignData delegiert die Datenaufnahme jetzt an ProfileMaintenance
+über einen kleinen Node-Helfer des Entwickler-Installers. Kanonische Sicherung:
+UUID-Verzeichnis mit manifest.json und data/. Der zusätzliche backup-manifest.json
+bleibt ausschließlich ein Handoff-Nachweis außerhalb der gesicherten Nutzdaten.
+Legacy-Payload-Verzeichnisse werden anhand ihres bisherigen Layouts erkannt.
+Die kanonische Sicherung wird bei der Checkpoint-Prüfung ebenfalls validiert.
+
+Die Local-Arbeitskopie verwendet migratePreparedProfile einschließlich fachlichem
+Readback; die betroffenen Test-Installationsdaten enthalten jetzt echte Registry
+und Einstellungen plus eine Sentinel-Tabelle. Künstliche Versionsüberschreibungen
+bleiben ausdrücklich Fehlerfixtures, kein historischer Migrationsnachweis.
+
+Local-Start und installierter Verifier sind für Journal v2 angebunden: Token,
+Build-Commit und bei gepackter Laufzeit tatsächliche AppImage-Bytes müssen passen.
+Core-Verbindungen öffnen erst nach der gemeinsamen Startentscheidung. Local und
+Release benutzen recoverForStart/completeStart des Koordinators. Ein fehlendes
+Journal während der Bestätigung wird abgewiesen. Der Local-Neustart behält seinen
+expliziten Profilpfad bei.
+
+Validierung: 43 betroffene Backup-/Release-Tests nach WAL-Korrektur bestanden;
+zusätzlicher kanonischer Payload-Test bestanden. Nach fachlicher Local-Anbindung
+32 Installer-Tests bestanden. Gemeinsame Start-/Recovery-Gruppe: 65 Tests bestanden.
+Korrekturrunden 3 und 4 sind dadurch fachlich bestätigt; statische Prüfung folgt.
+
+Weiterhin offen und nächster kritischer Schritt: local-app-installation.ts muss
+Daten-/Programmaktivierung selbst über MaintenanceCoordinator ausführen; der
+bisherige Local-Producer und dessen aktive Recovery sind noch vorhanden. Die neue
+Startbarriere allein ist deshalb kein Beleg einer fertig umgestellten Local-
+Installation. Desktop-/Symbolintegration muss beim Rückwechsel ebenfalls auf das
+vorherige Deployment zeigen. Legacy-Local-Journale sind vor der neuen Veröffentlichung
+zu übernehmen. Phase 2 bleibt offen; keine neue Handoff-/Release-Abnahme behauptet.
+
+Statische Prüfung dieses Local-Zwischenstands: ESLint und beide TypeScript-Projekte
+bestanden. GitHub Check 34216053831 für den vorherigen gepushten Release-Zwischenstand
+33a6ca7c3ea63f8c0cd18ff0cf910ddd3fd85a71 ist vollständig erfolgreich; diese Remote-
+Evidenz gilt ausdrücklich nicht für die anschließenden uncommitteten Local-Änderungen.
+
+### Phase 2 — Local-Aktivierung: Integrationsdateien
+
+Entscheidung vor Umsetzung: Desktop-Datei und Symbol werden als kleine
+Integrationsdateien im selben Wartungsjournal geführt. Ihre alte und neue Fassung
+wird vor Veröffentlichung gesichert; Programmzeiger und Profildaten bleiben unter
+derselben Recovery-Entscheidung. Damit entfällt die aktive replaceAtomically-Saga,
+ohne die sichtbare Local-Buildkennung oder bestehende Desktop-Pfade zu ändern.
+Zielpfade werden auf applications/ und icons/ unter dem Installations-Datenverzeichnis
+begrenzt. Alte Integrationsdateien bleiben bis zur bestätigten Startprüfung erhalten.
+
+### Phase 2 — Korrekturrunde 5, Plan vor Änderung
+
+Die Typprüfung der Local-Aktivierung meldet einen ungenutzten renameSync-Import.
+Beim Integrationsaudit fehlen darüber hinaus der Nachweis unveränderter Desktop-
+Dateien vor Abschluss und die Abweisung fremder Änderungen beim Rücksetzen.
+Den Import entfernen, beim Rollback ausschließlich die erfasste alte oder eigene
+neue Fassung zulassen und vor Commit Hash und Modus der Integration prüfen.
+Gezielte Tests decken Unterbrechungen beider Integrationsdateien, wiederholten
+Rollback, fremde Änderungen sowie fehlgeschlagene Startbestätigung ab. Diese
+Prüfung ersetzt weder die Local-Adaptertests noch die spätere AppImage-Abnahme.
+
+Korrekturrunde 5: 53 Koordinator-Tests bestanden, darunter neun neue Fälle zur
+Desktop-Integration. Nächster Adapter-Schritt: bestehende Installer-Tests müssen
+abgeschlossene Startprüfung ausdrücklich modellieren, bevor sie spätere Nutzdaten
+schreiben. Absturztests werden auf die tatsächlich produzierten gemeinsamen
+Journalgrenzen umgestellt; erfolgreiche Kopien vergleichen Inhalte statt SQLite-
+Dateiheader. Bytegleicher Erhalt bei fehlgeschlagener Aktivierung bleibt Pflicht.
+
+Local-Adapterprüfung: 29/32 Tests bestanden. Drei Erwartungen stammen vom ersetzten
+Ablauf: Erstinstallation ohne vorbereitete Datenbank, bytegleiche SQLite-Header
+nach erfolgreicher Online-Kopie und Fehlerauslösung beim sechsten alten Rename.
+Korrekturplan: Erstinstallation auf initialisiertes leeres Schema prüfen, erfolgreiche
+Updates auf erhaltene Sentinel-/Notizinhalte prüfen und Rename-Fehler am konkreten
+Desktop-Ziel auslösen. Der fehlgeschlagene Updatefall behält die Bytegleichheits-
+prüfung des ursprünglichen Datenstands bei.
+
+### Phase 2 — Entfernung ersetzter Producer, Plan vor Änderung
+
+Referenzsuche ergibt keine Aufrufer mehr für replaceAtomically und
+migrateCampaignData. Beide alten Aktivierungsproducer werden entfernt. Die
+verbleibenden Legacy-Leser werden noch nicht als sicher abgenommen: deren
+Datenlöschung und unvollständige Übergangserkennung benötigen eine separate
+Übernahmeprüfung. Der Desktop-Adapter liefert künftig nur Integrationsdateien;
+der gemeinsame Koordinator besitzt allein den Programmzeiger.
+
+Korrektur der Erstinstallations-Testannahme: migratePreparedProfile akzeptiert einen
+leeren Profilordner; erst der echte Core-Start initialisiert die Datenbank. Der
+Installer-Test prüft deshalb den leeren vorbereiteten Ordner und die noch ausstehende
+Startprüfung, statt eine im Installer erzeugte Datenbank zu behaupten. Der zweite
+Lauf bestand ansonsten 31/32 Fälle, einschließlich bytegleichem Fehler-Rollback.
+
+### Phase 2 — Startfehler vor Electron, Plan vor Änderung
+
+Der installierte Verifier gibt das Wartungstoken bereits weiter, behandelt aber
+Fehler vor dem Start des Electron-Main-Prozesses noch ohne Recovery. Ein kleiner
+Local-Prozessadapter soll vor dem Start unter Profilsperre die Transaktion erfassen,
+die Sperre für den Appstart freigeben und nach Prozessende den dauerhaften Abschluss
+prüfen. Bei Fehler wird unter erneut erworbener Sperre nur dieselbe unbestätigte
+Transaktion zurückgesetzt. Bestätigte Arbeit oder eine andere Transaktion bleiben
+unangetastet. Tests: Startfehler, Exit ohne Bestätigung, erfolgreicher Abschluss,
+Fehler nach Abschluss und paralleler Besitzer der Profilsperre.
+
+Startfehler-Adapter: alle neun Local-Starttests bestanden, darunter fünf neue externe
+Verifier-Fälle. Release-Regression: 29 Tests in drei Integrationsdateien bestanden.
+Typprüfung bestanden. ESLint meldet einen untypisierten vi.fn-Testcallback; diesen
+auf die tatsächliche void-Launch-Signatur typisieren und Lint erneut prüfen.
+
+### Phase 2 — Local-Aktivierung, Zwischenaudit
+
+Implementiert: Local-Installer veröffentlicht Arbeitskopie, Programmzeiger, Desktop-
+Eintrag und Symbol über MaintenanceCoordinator. Der vorherige Datenstand bleibt
+bis zur bestätigten Startprüfung verfügbar. Local und Release teilen Startentscheidung
+und dauerhaften Abschluss. Der externe Local-Verifier fängt Fehler vor Electron ab
+und verlangt den nachgewiesenen Abschluss derselben Transaktion. Unbenutzte alte
+Aktivierungsproducer sind entfernt; Desktop-Adapter liefert keine eigene Zeiger-
+Aktivierung mehr.
+
+Automatisierte Evidenz: 89 Tests in Koordinator/Local-Installer/Local-Start bestanden;
+anschließend fünf zusätzliche Verifier-Fälle mit insgesamt neun Local-Starttests
+bestanden. 29 Release-Integrations- und 91 Architekturtests bestanden. TypeScript
+und ESLint bestanden nach Typisierung des Testcallbacks. Development-Build bestanden.
+Die zuerst angegebene Unit-Datei release-recovery.test.ts existiert nicht; die
+Release-Evidenz stammt ausdrücklich aus dem anschließend gelaufenen richtigen
+Pfad tests/integration/release-recovery.test.ts, zusammen mit den beiden anderen
+Release-Integrationsdateien.
+
+Audit gegen aktuellen Umsetzungsplan: gekoppelte Local-Aktivierung und Startbarriere
+belegt; Desktop-Unterbrechungen und unterbrochener Rollback geprüft. Quell-Bytegleichheit
+im fehlgeschlagenen Update bleibt geprüft. Keine Gleichsetzung des leeren Installer-
+Arbeitsordners mit einem tatsächlich startgeprüften App-Profil.
+
+Audit gegen kanonische Phase 2: noch nicht bestanden. Alte Local-Journale werden
+noch vom bisherigen Recovery-Leser bearbeitet; dessen Löschungen und Entscheidung
+allein nach Datenlesbarkeit/Zeiger sind nicht der verlangte gemeinsame Ablauf.
+Weiter offen: sichere Legacy-Übernahme mit Unterbrechungstests, vollständige Prüfung
+des stabilen Local-Starts bei nicht ausführbarem Ziel und Wiederverwendungsprüfung
+gegen den gemeinsamen Journalzustand. Der nächste Korrekturplan muss diese Lücken
+schließen. Phase 2 bleibt in Arbeit; Phasen 3–7 sind unverändert offen. Kein neuer
+Handoff, keine Live-Abnahme und keine Veröffentlichung erfolgt.
+
+Development-Smoke unter Xvfb ebenfalls bestanden: Core ready, regulärer Exit 0.
+Dieser Nachweis ist kein gepackter Local-Handoff.

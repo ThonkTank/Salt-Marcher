@@ -17,18 +17,11 @@ export function recoverRelease(): 'normal' | 'verify' | 'relaunch' {
   const root = releaseRoot()
   adoptLegacyReleaseMaintenance(root)
   const coordinator = new MaintenanceCoordinator(root)
-  const state = coordinator.read()
-  if (state && !['committed', 'rolled-back'].includes(state.phase)) {
-    if (
-      state.phase === 'awaiting-start' &&
-      process.argv.includes('--release-complete') &&
-      process.argv.at(-1) === state.id &&
-      matchesRuntime(state.next)
-    )
-      return 'verify'
-    coordinator.rollback()
-    if (state.previous) return 'relaunch'
-  }
+  const token = process.argv.includes('--release-complete')
+    ? process.argv.at(-1)
+    : undefined
+  const recovery = coordinator.recoverForStart(token, matchesRuntime)
+  if (recovery === 'verify' || recovery === 'relaunch') return recovery
   const current = currentProgram(root)
   return current && !matchesRuntime(current) ? 'relaunch' : 'normal'
 }
@@ -36,17 +29,10 @@ export function recoverRelease(): 'normal' | 'verify' | 'relaunch' {
 /** Caller awaited target core readiness and has not exposed user actions. */
 export function completeRelease(): void {
   const coordinator = new MaintenanceCoordinator(releaseRoot())
-  const state = coordinator.read()
-  if (!state || state.phase === 'committed') return
-  if (
-    !process.argv.includes('--release-complete') ||
-    process.argv.at(-1) !== state.id ||
-    !matchesRuntime(state.next)
-  )
-    throw new Error(
-      'Die Startprüfung gehört nicht zur vorgesehenen Programmversion.'
-    )
-  coordinator.commit(state.id)
+  const token = process.argv.includes('--release-complete')
+    ? process.argv.at(-1)
+    : undefined
+  coordinator.completeStart(token, matchesRuntime)
 }
 
 export function rollbackRelease(): void {

@@ -1,4 +1,12 @@
-import { mkdirSync, renameSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { basename, join } from 'node:path'
+import { MaintenanceCoordinator } from '../src/shared/maintenance/coordinator.js'
+import {
+  currentLocalProgram,
+  localProgram
+} from '../src/shared/maintenance/local-program.js'
+import { migratePreparedProfile } from '../src/core/maintenance/profile-maintenance.js'
 import type { LocalArtifactManifest } from '../src/shared/contracts/build-info.js'
 import {
   schemaMigrations,
@@ -27,15 +35,13 @@ import {
 } from './local-installation/contract.js'
 import {
   backupCampaignData,
+  backupPayload,
   campaignDataHash,
   validateBackupCheckpoint
 } from './local-installation/campaign-backup.js'
+import { readPersistencePreflight } from './local-installation/campaign-migration.js'
 import {
-  migrateCampaignData,
-  readPersistencePreflight
-} from './local-installation/campaign-migration.js'
-import {
-  activationReplacements,
+  desktopIntegration,
   deploymentManifestSha256,
   stageDeployment,
   validateCompletedInstallation,
@@ -43,8 +49,7 @@ import {
 } from './local-installation/deployment.js'
 import {
   recoverActivationState,
-  recoverCampaignMigrationArtifacts,
-  replaceAtomically
+  recoverCampaignMigrationArtifacts
 } from './local-installation/recovery.js'
 import {
   isInstalledLocalAppRunning,
@@ -106,6 +111,39 @@ function advanceLocalAppInstallationLocked(
     candidate.appBuildInputFingerprint ===
       manifest.receipt.build.appBuildInputFingerprint &&
     candidate.artifactSha256 === manifest.artifactSha256
+  const coordinator = new MaintenanceCoordinator(
+    paths.root,
+    options.afterMaintenanceBoundaryForTest,
+    options.renameForInstall
+  )
+  const pending = coordinator.read()
+  if (pending && !['committed', 'rolled-back'].includes(pending.phase)) {
+    if (
+      pending.phase === 'awaiting-start' &&
+      matches(journal) &&
+      journal &&
+      pending.next.sha256 === manifest.artifactSha256 &&
+      pending.next.deployment === manifest.receipt.build.workspaceFingerprint
+    ) {
+      journal = writeInstallJournal(
+        paths.journal,
+        {
+          ...journal,
+          phase: 'completed',
+          campaignDataHash: campaignDataHash(paths)
+        },
+        now
+      )
+    } else {
+      coordinator.rollback()
+      if (journal)
+        journal = writeInstallJournal(
+          paths.journal,
+          { ...journal, phase: 'rolled-back' },
+          now
+        )
+    }
+  }
   if (
     journal !== null &&
     (!matches(journal) ||
@@ -219,30 +257,52 @@ function advanceLocalAppInstallationLocked(
       return installationResult(paths, manifest, activeJournal)
 
     validateBackupCheckpoint(paths, activeJournal)
-    const preflight = readPersistencePreflight(paths, options.schemaMigrations)
-    if (preflight.kind === 'migration-required')
-      migrateCampaignData(
-        paths,
-        preflight,
-        options.schemaMigrations ?? schemaMigrations,
-        updateJournal
-      )
-
     const deployment = activeJournal.deploymentPath
     if (deployment === null)
       throw new Error('Installation journal has no staged deployment')
-    replaceAtomically(
-      activationReplacements(
+    const id = randomUUID()
+    const staging = join(paths.root, `staged-${id}`)
+    const source = activeJournal.backupPath
+      ? backupPayload(activeJournal.backupPath)
+      : paths.campaignData
+    if (existsSync(source))
+      cpSync(source, staging, {
+        recursive: true,
+        errorOnExist: true,
+        force: false,
+        filter: (path) =>
+          path !== join(activeJournal.backupPath ?? '', 'backup-manifest.json')
+      })
+    else mkdirSync(staging)
+    try {
+      migratePreparedProfile(staging, options.schemaMigrations)
+    } catch (cause) {
+      throw new LocalInstallationError(
+        'migration-failed',
+        'Prepared profile failed migration or domain validation; current data is unchanged',
+        { cause }
+      )
+    }
+    const previousProgram = currentLocalProgram(paths.root)
+    coordinator.begin({
+      id,
+      operation: previousProgram ? 'update' : 'install',
+      previous: previousProgram,
+      next: localProgram(paths.root, basename(deployment)),
+      backup: activeJournal.backupPath
+        ? basename(activeJournal.backupPath)
+        : null,
+      integration: desktopIntegration(
         paths,
-        deployment,
-        options.iconSourcePath,
+        join(deployment, 'icon.png'),
         manifest.receipt.build
-      ),
-      options.renameForInstall ?? renameSync,
-      updateJournal
-    )
-    mkdirSync(paths.profile, { recursive: true })
-    updateJournal({ phase: 'completed' })
+      )
+    })
+    coordinator.activate()
+    updateJournal({
+      phase: 'completed',
+      campaignDataHash: campaignDataHash(paths)
+    })
     validateCompletedInstallation(paths, manifest, options.iconSourcePath)
     return installationResult(paths, manifest, activeJournal)
   } catch (error) {
@@ -305,6 +365,18 @@ function recoverInterruptedInstallation(
   now: () => Date = () => new Date()
 ): void {
   const journal = readInstallJournal(paths.journal)
+  const coordinator = new MaintenanceCoordinator(paths.root)
+  if (coordinator.read()) {
+    coordinator.rollback()
+    if (journal)
+      writeInstallJournal(
+        paths.journal,
+        { ...journal, phase: 'rolled-back', migration: null, replacements: [] },
+        now
+      )
+    return
+  }
+
   if (
     journal === null ||
     journal.phase === 'completed' ||

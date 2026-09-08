@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readlinkSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync
@@ -177,3 +178,115 @@ describe.each(['local', 'release'] as const)(
     })
   }
 )
+
+function integratedFixture() {
+  const { root: sandbox, input } = fixture('local')
+  const root = join(sandbox, 'salt-marcher-local')
+  mkdirSync(root)
+  // Keep every integration path within this test's private data directory.
+  renameSync(join(sandbox, 'deployments'), join(root, 'deployments'))
+  renameSync(join(sandbox, 'profile'), join(root, 'profile'))
+  renameSync(join(sandbox, 'current'), join(root, 'current'))
+  renameSync(
+    join(sandbox, `staged-${input.id}`),
+    join(root, `staged-${input.id}`)
+  )
+  const desktop = join(sandbox, 'applications', 'salt.desktop')
+  const icon = join(sandbox, 'icons', 'salt.png')
+  mkdirSync(join(sandbox, 'applications'))
+  mkdirSync(join(sandbox, 'icons'))
+  writeFileSync(desktop, 'previous desktop')
+  return {
+    root,
+    desktop,
+    icon,
+    input: {
+      ...input,
+      integration: [
+        { target: desktop, content: 'next desktop', mode: 0o644 },
+        { target: icon, content: 'next icon', mode: 0o644 }
+      ]
+    }
+  }
+}
+
+describe('journaled desktop integration', () => {
+  it.each(['integration-0-applied', 'integration-1-applied', 'program-linked'])(
+    'restores the full pair after %s',
+    (boundary) => {
+      const { root, input, desktop, icon } = integratedFixture()
+      const transaction = new MaintenanceCoordinator(
+        root,
+        interruptAt(boundary)
+      )
+      transaction.begin(input)
+      expect(() => transaction.activate()).toThrow(Interrupted)
+      const recovery = new MaintenanceCoordinator(root)
+      recovery.rollback()
+      recovery.rollback()
+      expect(readFileSync(desktop, 'utf8')).toBe('previous desktop')
+      expect(existsSync(icon)).toBe(false)
+      expect(
+        readFileSync(join(root, 'profile', 'campaign-data', 'state'), 'utf8')
+      ).toBe('old campaign')
+      expect(readlinkSync(join(root, 'current'))).toBe(
+        join('deployments', 'previous')
+      )
+    }
+  )
+
+  it.each(['integration-0-restored', 'integration-1-restored'])(
+    'resumes interrupted recovery at %s',
+    (boundary) => {
+      const { root, input, desktop, icon } = integratedFixture()
+      const transaction = new MaintenanceCoordinator(root)
+      transaction.begin(input)
+      transaction.activate()
+      expect(() =>
+        new MaintenanceCoordinator(root, interruptAt(boundary)).rollback()
+      ).toThrow(Interrupted)
+      transaction.rollback()
+      expect(readFileSync(desktop, 'utf8')).toBe('previous desktop')
+      expect(existsSync(icon)).toBe(false)
+      expect(transaction.read()?.phase).toBe('rolled-back')
+    }
+  )
+
+  it.each(['desktop', 'icon'] as const)(
+    'preserves outside changes to %s during rollback',
+    (target) => {
+      const fixture = integratedFixture()
+      const transaction = new MaintenanceCoordinator(fixture.root)
+      transaction.begin(fixture.input)
+      transaction.activate()
+      writeFileSync(fixture[target], 'outside change')
+      expect(() => transaction.rollback()).toThrow('außerhalb der Wartung')
+      expect(readFileSync(fixture[target], 'utf8')).toBe('outside change')
+      expect(transaction.read()?.phase).toBe('rollback-program')
+    }
+  )
+
+  it('does not accept a start with changed desktop integration', () => {
+    const { root, input, desktop } = integratedFixture()
+    const transaction = new MaintenanceCoordinator(root)
+    transaction.begin(input)
+    transaction.activate()
+    writeFileSync(desktop, 'unexpected desktop')
+    expect(() => transaction.commit(input.id)).toThrow('Desktop-Integration')
+    expect(transaction.read()?.phase).toBe('awaiting-start')
+  })
+
+  it('retains later desktop and profile changes after acceptance', () => {
+    const { root, input, desktop } = integratedFixture()
+    const transaction = new MaintenanceCoordinator(root)
+    transaction.begin(input)
+    transaction.activate()
+    transaction.commit(input.id)
+    writeFileSync(desktop, 'later customization')
+    const data = join(root, 'profile', 'campaign-data', 'state')
+    writeFileSync(data, 'later play')
+    transaction.rollback()
+    expect(readFileSync(desktop, 'utf8')).toBe('later customization')
+    expect(readFileSync(data, 'utf8')).toBe('later play')
+  })
+})

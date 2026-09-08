@@ -1,25 +1,10 @@
-import {
-  chmodSync,
-  copyFileSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  renameSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync
-} from 'node:fs'
-import { basename, dirname, join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { existsSync, renameSync, rmSync } from 'node:fs'
 import type { SchemaMigration } from '../../src/core/persistence/sqlite/schema-migrations.js'
 import type {
   JournalReplacement,
   LocalInstallJournal
 } from '../local-install-journal.js'
-import type {
-  InstallationReplacement,
-  LocalInstallationPaths
-} from './contract.js'
+import type { LocalInstallationPaths } from './contract.js'
 import { campaignPersistenceIsReady } from './campaign-migration.js'
 import { currentSelectsDeployment } from './deployment.js'
 
@@ -70,98 +55,6 @@ export function recoverActivationState(
       journal.deploymentPath === null ? 'rolled-back' : 'deployment-staged',
     replacements: []
   }
-}
-
-export function replaceAtomically(
-  replacements: readonly InstallationReplacement[],
-  promote: (source: string, target: string) => void,
-  updateJournal: (
-    changes: Partial<
-      Omit<LocalInstallJournal, 'formatVersion' | 'transactionId'>
-    >
-  ) => void
-): void {
-  const token = randomUUID()
-  const staged = new Map<string, string>()
-  const rollback = new Map<string, string>()
-  const installed = new Set<string>()
-  try {
-    for (const replacement of replacements) {
-      mkdirSync(dirname(replacement.target), { recursive: true })
-      if (
-        existsSync(replacement.target) &&
-        !lstatSync(replacement.target).isFile() &&
-        !lstatSync(replacement.target).isSymbolicLink()
-      )
-        throw new Error(
-          `Installation target is not a file: ${replacement.target}`
-        )
-      const next = join(
-        dirname(replacement.target),
-        `.${basename(replacement.target)}.install-${token}`
-      )
-      if (replacement.symlinkTarget !== undefined)
-        symlinkSync(replacement.symlinkTarget, next)
-      else if (replacement.source !== undefined)
-        copyFileSync(replacement.source, next)
-      else writeFileSync(next, replacement.content ?? '', 'utf8')
-      if (replacement.symlinkTarget === undefined)
-        chmodSync(next, replacement.mode ?? 0o644)
-      staged.set(replacement.target, next)
-    }
-    let journalReplacements: JournalReplacement[] = replacements.map(
-      (replacement) => ({
-        target: replacement.target,
-        staged: staged.get(replacement.target)!,
-        rollback: null,
-        state: 'staged'
-      })
-    )
-    updateJournal({ phase: 'files-staged', replacements: journalReplacements })
-    for (const replacement of replacements) {
-      if (!existsSync(replacement.target)) continue
-      const previous = join(
-        dirname(replacement.target),
-        `.${basename(replacement.target)}.rollback-${token}`
-      )
-      promote(replacement.target, previous)
-      rollback.set(replacement.target, previous)
-      journalReplacements = journalReplacements.map((entry) =>
-        entry.target === replacement.target
-          ? { ...entry, rollback: previous, state: 'previous-moved' }
-          : entry
-      )
-      updateJournal({
-        phase: 'files-promoting',
-        replacements: journalReplacements
-      })
-    }
-    for (const replacement of replacements) {
-      promote(staged.get(replacement.target)!, replacement.target)
-      installed.add(replacement.target)
-      journalReplacements = journalReplacements.map((entry) =>
-        entry.target === replacement.target
-          ? { ...entry, state: 'promoted' }
-          : entry
-      )
-      updateJournal({
-        phase: 'files-promoting',
-        replacements: journalReplacements
-      })
-    }
-  } catch (error) {
-    for (const target of [...installed].reverse())
-      rmSync(target, { force: true })
-    for (const [target, previous] of [...rollback].reverse()) {
-      if (existsSync(target)) rmSync(target, { force: true })
-      if (existsSync(previous)) renameSync(previous, target)
-    }
-    updateJournal({ phase: 'deployment-staged', replacements: [] })
-    throw error
-  } finally {
-    for (const path of staged.values()) rmSync(path, { force: true })
-  }
-  for (const previous of rollback.values()) rmSync(previous, { force: true })
 }
 
 const installationPhases: readonly LocalInstallJournal['phase'][] = [

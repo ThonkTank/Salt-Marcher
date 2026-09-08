@@ -1,10 +1,15 @@
+import {
+  recoverLocalMaintenance,
+  completeLocalMaintenance,
+  rollbackLocalMaintenance
+} from '../local-profile/maintenance.js'
 import { relaunchRelease } from '../release/relaunch.js'
 import {
   configureReleaseQualification,
   qualifyRelease,
   releaseQualificationEnabled
 } from '../release/qualification.js'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { ReleaseController } from '../release/controller.js'
 import { releaseRoot } from '../release/paths.js'
 import {
@@ -60,11 +65,17 @@ export async function startApplication(): Promise<void> {
       'application'
     )
   try {
-    const recovery = release ? recoverRelease() : 'normal'
+    const installationRoot = dirname(app.getPath('userData'))
+    const local = buildInfo?.channel === 'local'
+    const recovery = release
+      ? recoverRelease()
+      : local
+        ? recoverLocalMaintenance(installationRoot, buildInfo.commit)
+        : 'normal'
     if (recovery === 'relaunch') {
       relaunchRelease(
-        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
-        []
+        join(installationRoot, 'current', 'SaltMarcher.AppImage'),
+        local ? [`--user-data-dir=${app.getPath('userData')}`] : []
       )
       app.quit()
       return
@@ -84,7 +95,7 @@ export async function startApplication(): Promise<void> {
 async function startApplicationWithProfileLock(
   buildInfo: ReturnType<typeof loadBuildInfo>,
   windowTitle: string,
-  verifyRelease = false
+  verifyMaintenance = false
 ): Promise<void> {
   if (buildInfo !== undefined)
     console.info(
@@ -147,17 +158,28 @@ async function startApplicationWithProfileLock(
     },
     () => supervisor.resumeAfterMaintenance()
   )
-  if (verifyRelease) {
+  if (verifyMaintenance) {
     try {
       await supervisor.waitUntilReady()
-      completeRelease()
+      if (buildInfo?.channel === 'local')
+        completeLocalMaintenance(
+          dirname(app.getPath('userData')),
+          buildInfo.commit
+        )
+      else completeRelease()
     } catch (error) {
       await supervisor.closeGracefully()
-      rollbackRelease()
-      relaunchRelease(
-        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
-        []
-      )
+      const installationRoot = dirname(app.getPath('userData'))
+      if (buildInfo?.channel === 'local')
+        rollbackLocalMaintenance(installationRoot)
+      else rollbackRelease()
+      if (existsSync(join(installationRoot, 'current')))
+        relaunchRelease(
+          join(installationRoot, 'current', 'SaltMarcher.AppImage'),
+          buildInfo?.channel === 'local'
+            ? [`--user-data-dir=${app.getPath('userData')}`]
+            : []
+        )
       app.quit()
       throw error
     }
@@ -166,7 +188,7 @@ async function startApplicationWithProfileLock(
   createMainWindow(windowTitle)
   if (releaseQualificationEnabled()) {
     await supervisor.waitUntilReady()
-    void qualifyRelease(releases, verifyRelease, async () => {
+    void qualifyRelease(releases, verifyMaintenance, async () => {
       await supervisor.requestOperation('campaign.create', {
         commandId: crypto.randomUUID(),
         expectedRegistryRevision: 0,

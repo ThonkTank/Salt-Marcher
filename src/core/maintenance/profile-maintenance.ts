@@ -18,10 +18,7 @@ import {
   syncPath,
   syncTree
 } from '../../shared/maintenance/files.js'
-import {
-  backupSummarySchema,
-  releaseVersionSchema
-} from '../../shared/contracts/release.js'
+import { backupSummarySchema } from '../../shared/contracts/release.js'
 import {
   migrateProfile,
   snapshotProfile,
@@ -33,7 +30,7 @@ const backupSchema = z
     formatVersion: z.literal(1),
     id: z.uuid(),
     createdAt: z.iso.datetime(),
-    version: releaseVersionSchema,
+    version: z.string().min(1),
     restorable: z.boolean().default(true),
     files: z.array(
       z
@@ -58,6 +55,14 @@ export class ProfileMaintenance {
   }
   async backup(preserveInvalid = false): Promise<string | null> {
     if (!existsSync(this.data)) return null
+    const required =
+      inventory(this.data).reduce((sum, file) => sum + file.bytes, 0) * 2 +
+      64 * 1024 * 1024
+    const available = statfsSync(this.root)
+    if (available.bavail * available.bsize < required)
+      throw new Error(
+        'Nicht genug freier Speicherplatz für eine vollständige Sicherung.'
+      )
     const id = randomUUID()
     const staged = join(this.root, 'backups', `.pending-${id}`)
     mkdirSync(staged)
@@ -163,13 +168,21 @@ export class ProfileMaintenance {
         })
       else await snapshotProfile(source, staged)
     } else mkdirSync(staged)
-    migrateProfile(staged)
-    readbackProfile(staged)
-    syncTree(staged)
+    migratePreparedProfile(staged)
     return { id, backup }
   }
   validate(): void {
     validateProfile(this.data, true)
     readbackProfile(this.data)
   }
+}
+
+/** Shared final preparation gate; aggregate owners retain migration SQL. */
+export function migratePreparedProfile(
+  staged: string,
+  migrations?: readonly import('../persistence/sqlite/schema-migrations.js').SchemaMigration[]
+): void {
+  migrateProfile(staged, migrations)
+  readbackProfile(staged)
+  syncTree(staged)
 }
