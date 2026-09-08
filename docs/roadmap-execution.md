@@ -3770,3 +3770,26 @@ Owner plus abhängigen Parentabschluss integrieren. Weitere Phase-4-Schreibwege 
 Update-/Offline-Abnahme sowie Phasen 5–7 bleiben offen. Lokaler Build und diese
 Prüfungen ersetzen weder vollständige Exact-SHA-CI noch Handoff, Main-Abschluss,
 Livetest oder Veröffentlichung.
+
+### Phase 4 — Korrekturplan: Main-Konvergenz nach Schatzeditor
+
+96bcf8b7f ist sauber auf Candidate gepusht; GitHub meldet Konflikte und hat dafür
+noch keine Check-Ausführung gestartet. origin/main ist inzwischen c084ff2f1 mit
+96a0992ee (regulärer Szenendesktop) und Titelzeilen-/Fokuskorrektur. Merge-Vorschau
+zeigt sechs Textkonflikte; keine Nutzerdaten wurden dabei geöffnet/verändert.
+
+Main vollständig übernehmen und eigene Wartungsgarantien erhalten: Installation
+42 mit neuer Main-Migration, Kampagne weiterhin 37 mit beiden Candidate-Quittungs-
+Ownern, Registry auf 17. Datenvertrag und aktuelle Fixture-Erwartungen gemeinsam
+aktualisieren; eingefrorene 0.2.0-Fixtures bleiben historisch unverändert. Im
+Charakterkatalog Main-Suche/Status mit synchronem Wartungscontroller kombinieren.
+Automatische Merges von Desktop-Persistenz, Session-Capabilities und Tests auf
+verlorene Guards prüfen. Bundle-Konflikt zunächst mit bisheriger Candidate-
+Baseline auflösen, dann reale kombinierte Buildgrößen prüfen; eine erforderliche
+Neubaseline nur mit konkreter Ursachen-/Chunkangabe erzeugen.
+
+Nach Merge Typecheck, Lint, Architektur, Unit-/Integrationstests und Version-Truth
+prüfen, dann Build/Smoke/Bundle und Desktop-/Loot-/Planner-/Kampagnen-E2E passend
+zum kombinierten Stand. Abweichungen vor Fixes gesondert protokollieren. Erst ein
+sauberer neuer Mergecommit wird gepusht und für genau dessen SHA CI überprüft.
+Die vorherigen 178 Tests und zwei E2Es belegen allein den Vor-Merge-Stand.
