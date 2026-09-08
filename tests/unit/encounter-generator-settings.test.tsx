@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -17,6 +18,12 @@ import {
   type GeneratorPresetEditorSnapshot
 } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftResolution
+} from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import { GeneratorPresetReconciliationPendingError } from '../../src/renderer/features/workspace/generator-preset-application.js'
+import type { CampaignRewardRulesPort } from '../../src/renderer/features/workspace/campaign-reward-rules-port.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 
 const campaignId = '00000000-0000-4000-8000-000000000010'
@@ -24,7 +31,17 @@ const customId = '00000000-0000-4000-8000-000000000020'
 const copiedId = '00000000-0000-4000-8000-000000000030'
 const now = '2026-08-08T12:00:00.000Z'
 
-afterEach(cleanup)
+let maintenance: MaintenanceDraftResolution | undefined
+function beginMaintenance() {
+  act(() => {
+    maintenance = maintenanceDraftCoordinator.begin()
+  })
+}
+afterEach(() => {
+  act(() => maintenance?.release())
+  maintenance = undefined
+  cleanup()
+})
 
 function presetHarness(): {
   application: GeneratorPresetApplicationPort
@@ -194,7 +211,7 @@ function presetHarness(): {
   return { application, snapshot: () => snapshot, createPreset, assignPreset }
 }
 
-function renderSettings() {
+function renderSettings(campaignRules?: CampaignRewardRulesPort) {
   const harness = presetHarness()
   const onClose = vi.fn()
   const onError = vi.fn()
@@ -202,6 +219,7 @@ function renderSettings() {
     <ModalLayerProvider>
       <EncounterGeneratorSettings
         application={harness.application}
+        {...(campaignRules ? { campaignRules } : {})}
         activeCampaignId={campaignId}
         partySize={5}
         onClose={onClose}
@@ -477,5 +495,194 @@ describe('encounter generator settings editor', () => {
 
     expect(screen.getByText('15 %')).toBeInTheDocument()
     expect(screen.getByText('20 %')).toBeInTheDocument()
+  })
+})
+
+describe('generator preset maintenance owner', () => {
+  it('waits for the actual reward-rule child before persisting the preset', async () => {
+    let finish!: () => void
+    const initial = {
+      revision: 0,
+      rewardXpBasis: 'base' as const,
+      updatedAt: now
+    }
+    const update = vi.fn<CampaignRewardRulesPort['update']>(
+      () =>
+        new Promise((resolve) => {
+          finish = () =>
+            resolve({ ...initial, revision: 1, rewardXpBasis: 'adjusted' })
+        })
+    )
+    const { container, createPreset } = renderSettings({
+      read: () => Promise.resolve(initial),
+      update,
+      commandReceipt: vi
+        .fn<CampaignRewardRulesPort['commandReceipt']>()
+        .mockResolvedValue(null)
+    })
+    const name = await screen.findByLabelText('Name')
+    fireEvent.change(name, { target: { value: 'Nach Belohnungsregel' } })
+    await waitFor(() =>
+      expect(
+        container.querySelector('.campaign-reward-rules-card')
+      ).not.toBeNull()
+    )
+    const card = container.querySelector<HTMLElement>(
+      '.campaign-reward-rules-card'
+    )!
+    const radios = within(card).getAllByRole('radio')
+    await waitFor(() => expect(radios[1]).toBeEnabled())
+    fireEvent.click(radios[1]!)
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    beginMaintenance()
+    await act(async () => {
+      const result = maintenance!.resolve('save')
+      await Promise.resolve()
+      expect(createPreset).not.toHaveBeenCalled()
+      finish()
+      expect(await result).toEqual([])
+    })
+    expect(createPreset).toHaveBeenCalledOnce()
+    expect(update).toHaveBeenCalledOnce()
+  })
+
+  it('saves the protected draft as a copy and blocks late changes without assigning it', async () => {
+    const { createPreset, assignPreset } = renderSettings()
+    const name = await screen.findByLabelText('Name')
+    fireEvent.change(name, { target: { value: 'Wartungskopie' } })
+    beginMaintenance()
+    expect(name).toBeDisabled()
+    fireEvent.change(name, { target: { value: 'Forbidden' } })
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toEqual([])
+    })
+    expect(createPreset).toHaveBeenCalledExactlyOnceWith(
+      'Wartungskopie',
+      expect.any(Object)
+    )
+    expect(assignPreset).not.toHaveBeenCalled()
+    expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  })
+  it('includes an uncommitted role combination through the owner save', async () => {
+    const { container, createPreset } = renderSettings()
+    await screen.findByLabelText('Name')
+    const combinations =
+      container.querySelector<HTMLElement>('.combination-rules')!
+    fireEvent.click(
+      within(combinations).getByRole('button', {
+        name: 'Kombination Minion entfernen'
+      })
+    )
+    fireEvent.click(
+      within(
+        combinations.querySelector<HTMLElement>('.combination-picker')!
+      ).getByRole('button', { name: 'Minion' })
+    )
+    beginMaintenance()
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toEqual([])
+    })
+    expect(
+      createPreset.mock.calls[0]![1].composition.roleCombinations
+    ).toContainEqual(['minion'])
+  })
+  it('does not overwrite a stale draft on maintenance retry', async () => {
+    const { application } = renderSettings()
+    fireEvent.change(await screen.findByLabelText('Preset'), {
+      target: { value: customId }
+    })
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Konflikt' }
+    })
+    vi.mocked(application.update).mockRejectedValueOnce(
+      new CapabilityError('stale', true)
+    )
+    beginMaintenance()
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toHaveLength(1)
+    })
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toHaveLength(1)
+    })
+    expect(application.update).toHaveBeenCalledOnce()
+  })
+  it('waits for a normal save instead of issuing another mutation', async () => {
+    const { application } = renderSettings()
+    const create = vi.mocked(application.create)
+    const implementation = create.getMockImplementation()!
+    let finish!: () => void
+    create.mockImplementationOnce(
+      (...args) =>
+        new Promise((resolve) => {
+          finish = () => {
+            void implementation(...args).then(resolve)
+          }
+        })
+    )
+    fireEvent.change(await screen.findByLabelText('Name'), {
+      target: { value: 'Pending' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Als Kopie speichern' }))
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    beginMaintenance()
+    await act(async () => {
+      const result = maintenance!.resolve('save')
+      finish()
+      expect(await result).toEqual([])
+    })
+    expect(create).toHaveBeenCalledOnce()
+  })
+  it('discards without saving or assigning', async () => {
+    const { createPreset, assignPreset, onClose } = renderSettings()
+    fireEvent.change(await screen.findByLabelText('Name'), {
+      target: { value: 'Discard' }
+    })
+    beginMaintenance()
+    await act(async () => {
+      expect(await maintenance!.resolve('discard')).toEqual([])
+    })
+    expect(createPreset).not.toHaveBeenCalled()
+    expect(assignPreset).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+  it('reconciles an unknown save without calling create again', async () => {
+    const { application, createPreset } = renderSettings()
+    const implementation = createPreset.getMockImplementation()!
+    const uncertain = vi.spyOn(application, 'reconciliationPending')
+    createPreset.mockImplementationOnce(() => {
+      uncertain.mockReturnValue(true)
+      return Promise.reject(
+        new GeneratorPresetReconciliationPendingError(copiedId)
+      )
+    })
+    vi.mocked(application.reconcile)
+      .mockRejectedValueOnce(new Error('receipt offline'))
+      .mockImplementationOnce(async () => {
+        const result = await implementation(
+          'Unklar',
+          structuredClone(defaultGeneratorConfig)
+        )
+        uncertain.mockReturnValue(false)
+        return result
+      })
+    fireEvent.change(await screen.findByLabelText('Name'), {
+      target: { value: 'Unklar' }
+    })
+    beginMaintenance()
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toHaveLength(1)
+    })
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toHaveLength(1)
+    })
+    act(() => maintenance!.release())
+    maintenance = undefined
+    expect(screen.getByLabelText('Name')).toBeDisabled()
+    beginMaintenance()
+    await act(async () => {
+      expect(await maintenance!.resolve('save')).toEqual([])
+    })
+    expect(createPreset).toHaveBeenCalledOnce()
+    expect(application.reconcile).toHaveBeenCalledTimes(2)
   })
 })

@@ -2022,3 +2022,96 @@ Roadmapabgleich: Phase4 in Arbeit. Weitere Draft-Owner (u.a. Session Planner,
 Gruppenverwaltung, Generator-Einstellungen), vollständige Karteninteraktionssperren,
 Offline-/Update-Gesamtabnahme und anschließende Phasen5–7 bleiben erforderlich.
 Die bereits geprüften Teilbäume ersetzen keine Freigabe der gesamten Phase.
+
+### Phase 4 — Generator-Inventar: automatische Belohnungsregel
+
+Vorheriger Zielturn: Fortschritt, Orts-Owner als d8b982b05 committed/gepusht. Worktree
+sauber. Drei bisherige Übergangs-Guards verbleiben: Generator-Einstellungen,
+Gruppenverwaltung und Session Planner. Generator-Inventar findet zusätzlich den
+separaten CampaignRewardRulesCard-Sofortsave, dessen Pending bisher unregistriert ist.
+Vor Generatorabschluss diesen tatsächlichen Schreibpfad integrieren: laufende Befehle
+abwarten, neue Eingaben direkt/sichtbar sperren, unklaren Command-Ausgang durch
+Receipt-Prüfung auflösen. Discard rollt einen bereits ausgelösten Sofortsave nicht
+zurück. Solange Receipt-Abgleich unklar ist, Wartung verhindern und eine erneute
+Prüfung anbieten. Fehler beim Receipt-/Stale-Read dürfen nicht als unhandled rejection
+entweichen. Tests prüfen Pending-Save/Discard, Sperre, Outcome-Unknown und Retry ohne
+zweites Update sowie vorhandene normale Belohnungsregel-Semantik.
+
+### Phase 4 — Generator-Preset: Teilplan
+
+15 Belohnungsregel-/Generatorregressionstests bestanden. Preset-Owner führt den
+bestehenden Reducer synchron, registriert Save/Discard und wartet sämtliche bereits
+laufenden Preset-Mutationen ab (auch Zuweisen/Löschen). Reconciliation bleibt beim
+Application-Port; unbekannte Ergebnisse werden nicht durch erneute Mutation ersetzt.
+Stale-Konflikte verhindern automatisches Überschreiben. Ausstehende Rollenkombination
+wird beim ausdrücklichen Save nach bestehenden Limits normalisiert übernommen.
+Alle Benutzeraktionen erhalten direkte Sperren; die Belohnungsregel wird als Kind-
+Abhängigkeit gehalten, bevor der gesamte Einstellungsdialog geschlossen werden darf.
+Tests müssen reale Preset-Saves, Kombination, Konflikt, Pending und Discard abdecken.
+
+### Phase 4 — Preset-Audit vor Owner-Tests
+
+Bestehende 15 Tests, Typecheck und gezieltes Lint bestanden. Audit: Kombinationen-
+Zwischenentwurf muss auch für normales Wechseln/Schließen als Dirty zählen, sonst
+würde er auf ein anderes Preset übertragen. Bei bestätigtem Verwerfen/Reset wird
+der Zwischenentwurf ausdrücklich geleert. Danach echte Ownerfälle ergänzen, darunter
+Save unter Sperre, geschütztes Preset ohne Zuweisung, Kombination, Konflikt,
+laufender Save und unklarer Ausgang mit Reconciliation ohne zweite Mutation.
+
+### Phase 4 — Generator-Unterbaum: Integrationsprüfung
+
+21 Tests bestanden (bestehende Generatorfälle plus sechs Preset-Owner- und sechs
+Belohnungsregel-Fälle). Zusätzlich denselben echten Einstellungsdialog mit beiden
+Ownern rendern: während eine Sofortregel noch schreibt, darf die Preset-Mutation
+nicht beginnen; nach deren Abschluss wird das Preset genau einmal gespeichert.
+Diese Prüfung belegt den tatsächlich weitergereichten Kind-ID-Vertrag.
+
+### Phase 4 — Generator-Testport: Korrekturrunde
+
+51 Tests in vier Dateien und gezieltes Lint bestanden. Typecheck findet den neuen
+Integrations-Testport: nacktes vi.fn() ohne Implementierung ist auch als Konstruktor
+typisiert und erfüllt commandReceipt nicht. Den Mock ausdrücklich mit dem vorhandenen
+CampaignRewardRulesPort-Vertrag typisieren und null als nicht benötigte Receipt
+liefern. Nach abgeschlossenem Build/Smoke Typprüfung erneut ausführen; Produktcode
+bleibt hierfür unverändert.
+
+### Phase 4 — Reconciliation nach Lesefehler: Korrekturplan
+
+Codeaudit: Nach einem generischen Fehler der Preset-Reconciliation kann der Reducer
+phase=error anzeigen, während der Application-Port den Command weiterhin als pending
+hält. Die sichtbare/direct Eingabesperre und Retry-Anzeige müssen daher zusätzlich
+den autoritativen reconciliationPending()-Zustand des Ports verwenden. Ein neuer
+Testversuch lässt den ersten Receipt-Abgleich scheitern und prüft gesperrte Eingaben,
+danach erfolgreichen Retry weiterhin ohne zweiten Create-Aufruf.
+
+### Phase 4 — Generator-Preset und Belohnungsregel: Teilaudit
+
+Planabgleich: Beide tatsächlichen Schreibpfade sind nun registrierte Owner. Die
+Belohnungsregel wartet Sofortsave ab und löst outcome_unknown ausschließlich mit
+seiner Command-ID auf; null/fehlgeschlagene Receipt blockiert weitere Wartung und
+neue Eingaben. Discard wartet diese bereits ausgelöste Mutation ebenfalls ab, ohne
+sie rückgängig zu machen. Preset-Owner nutzt synchronen Reducer/Pending-Pfad für
+Save, Zuweisen, Löschen und Reconciliation. Stale-Konflikte erlauben kein implizites
+Überschreiben. Pending-Rollenkombinationen werden normalisiert übernommen und bei
+bestätigtem Verwerfen/Reset geleert. Belohnungsregel-ID ist eine echte Abhängigkeit
+vor dem Schließen/Speichern des gesamten Presetdialogs.
+
+Tests: sechs Belohnungsregel-Fälle prüfen Sperre, Pending-Save/Discard, unknown mit
+gleicher Command-ID, Receipt-Ausfall/Retry und fehlgeschlagenen Stale-Read. Sieben
+Preset-Owner-Fälle prüfen Save unter Sperre, Systemkopie ohne Zuweisung, Kombination,
+Konflikt, normalen Pending-Save, Discard, Reconciliation ohne zweite Mutation sowie
+den echten Dialog mit gleichzeitig laufender Belohnungsregel. Der abschließende
+Reconciliation-Test enthält zusätzlich einen fehlgeschlagenen Receipt-Abgleich und
+belegt die fortbestehende Sperre auch nach Abbrechen der Wartung.
+
+Validierung: 51 Tests in vier Dateien bestanden; nach letzter Reconciliation-
+Korrektur die sieben betroffenen Owner-Tests erneut bestanden. Vollständiger
+Typecheck des abschließenden Stands, gezieltes Lint, erneuter Build/Built-Smoke und
+git diff --check bestanden. Smoke belegt ready/closed. Früherer Typfehler und seine
+Korrektur bleiben oben erhalten. Kein kanonischer Handoff/Release behauptet.
+
+Roadmapabgleich: Phase4 bleibt offen. Übergangs-Guards verbleiben bei Gruppenverwaltung
+und Session Planner. Zusätzlicher Gesamtaudit muss schreibende Wege ohne bisherigen
+Guard sowie Karteninteraktionen erfassen und das Warten bei weiteren Preset-Befehlen
+wie Zuweisen/Löschen prüfen. Offline-/Update-Gesamtabnahme und Phasen5–7 einschließlich
+aller Handoff-/Veröffentlichungsgates bleiben erforderlich.
