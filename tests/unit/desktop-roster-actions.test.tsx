@@ -30,6 +30,16 @@ vi.mock(
   '../../src/renderer/features/party/use-character-command-port.js',
   () => ({ useCharacterCommandPort: () => xpPort })
 )
+import type { ScenePartyCommandPort } from '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js'
+const scenePort = vi.hoisted(() => ({
+  execute: vi.fn<ScenePartyCommandPort['execute']>(),
+  status: vi.fn<ScenePartyCommandPort['status']>(),
+  refresh: vi.fn<ScenePartyCommandPort['refresh']>()
+}))
+vi.mock(
+  '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js',
+  () => ({ useScenePartyCommandPort: () => scenePort })
+)
 let resolution: MaintenanceDraftResolution | undefined
 afterEach(() => {
   resolution?.release()
@@ -59,7 +69,10 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
       scenes: [{ id: 'source', title: 'Hafen', partyMemberIds: [ids[0]] }]
     }
   } as unknown as LiveSessionSnapshot
-  const setRoster = vi.fn().mockResolvedValue(snapshot)
+  const setRoster = scenePort.execute
+    .mockReset()
+    .mockResolvedValue({ snapshot })
+  scenePort.refresh.mockReset().mockResolvedValue(snapshot)
   const api = {
     scene: { setRoster },
     session: {
@@ -99,11 +112,14 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
   fireEvent.click(screen.getByRole('checkbox'))
   fireEvent.click(screen.getByText('Übernehmen'))
   await waitFor(() => expect(setRoster).toHaveBeenCalledTimes(1))
-  expect(setRoster).toHaveBeenCalledWith({
-    sceneId: 'source',
-    memberIds: [ids[0], ids[1], ids[17]],
-    expectedRevision: 2,
-    expectedPartyRevision: 3
+  expect(setRoster.mock.lastCall?.[0].command).toEqual({
+    kind: 'set-roster',
+    input: {
+      sceneId: 'source',
+      memberIds: [ids[0], ids[1], ids[17]],
+      expectedRevision: 2,
+      expectedPartyRevision: 3
+    }
   })
 })
 
@@ -217,7 +233,7 @@ it('holds an unknown XP write and resolves the original command without replay',
 it('requires the same rest button twice and invalidates confirmation on selection and revision changes', async () => {
   const { DesktopRestAction } =
     await import('../../src/renderer/features/scene-desktop/desktop-rest-action.js')
-  const restSelected = vi.fn().mockResolvedValue({ revision: 4 })
+  const restSelected = scenePort.execute.mockReset()
   const api = {
     party: { restSelected },
     session: { onChanged: () => () => undefined }
@@ -239,6 +255,8 @@ it('requires the same rest button twice and invalidates confirmation on selectio
       scenes: [{ id: 'source', partyMemberIds: ['a', 'b'] }]
     }
   } as unknown as LiveSessionSnapshot
+  restSelected.mockResolvedValue({ snapshot })
+  scenePort.refresh.mockReset().mockResolvedValue(snapshot)
   function view(value: LiveSessionSnapshot) {
     return (
       <CapabilityProvider api={api}>
@@ -267,12 +285,144 @@ it('requires the same rest button twice and invalidates confirmation on selectio
   expect(restSelected).not.toHaveBeenCalled()
   fireEvent.click(screen.getByText('Kurze Rast bestätigen'))
   await waitFor(() =>
-    expect(restSelected).toHaveBeenCalledWith({
-      sceneId: 'source',
-      memberIds: ['a'],
-      type: 'short',
-      expectedRevision: 3,
-      expectedSceneRevision: 3
+    expect(restSelected.mock.lastCall?.[0].command).toEqual({
+      kind: 'rest-selected',
+      input: {
+        sceneId: 'source',
+        memberIds: ['a'],
+        type: 'short',
+        expectedRevision: 3,
+        expectedSceneRevision: 3
+      }
     })
   )
+})
+
+function sceneFixture() {
+  const snapshot = {
+    party: {
+      revision: 7,
+      members: [
+        { id: 'a', name: 'Edrik', active: true },
+        { id: 'b', name: 'Vivian', active: true }
+      ]
+    },
+    scene: {
+      revision: 4,
+      unassignedPartyMemberIds: [],
+      scenes: [{ id: 'source', title: 'Hafen', partyMemberIds: ['a', 'b'] }]
+    }
+  } as unknown as LiveSessionSnapshot
+  scenePort.execute.mockReset().mockResolvedValue({ snapshot })
+  scenePort.status
+    .mockReset()
+    .mockResolvedValue({ receipt: { snapshot }, snapshot })
+  scenePort.refresh.mockReset().mockResolvedValue(snapshot)
+  render(
+    <ModalLayerProvider>
+      <DesktopRosterActions
+        campaignId="campaign"
+        sceneId="source"
+        snapshot={snapshot}
+      />
+    </ModalLayerProvider>
+  )
+  return snapshot
+}
+it('retains roster selection through popup dismissal and central cancel, then saves under the editing lock', async () => {
+  sceneFixture()
+  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getAllByRole('checkbox')[1]!)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
+  fireEvent.click(screen.getByText('Besetzung'))
+  expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked()
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  expect(screen.getAllByRole('checkbox')[0]).toBeDisabled()
+  act(() => {
+    resolution!.release()
+    resolution = undefined
+  })
+  expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked()
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  await act(async () => {
+    expect(await resolution!.resolve('save')).toEqual([])
+  })
+  expect(scenePort.execute.mock.lastCall?.[0].command).toEqual({
+    kind: 'set-roster',
+    input: {
+      sceneId: 'source',
+      memberIds: ['a'],
+      expectedRevision: 4,
+      expectedPartyRevision: 7
+    }
+  })
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+})
+it('blocks unconfirmed rest during central save and discards without executing it', async () => {
+  sceneFixture()
+  fireEvent.click(screen.getByText('Rasten'))
+  fireEvent.click(screen.getByText('Kurze Rast'))
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  await act(async () => {
+    const failures = await resolution!.resolve('save')
+    expect(failures).toHaveLength(1)
+    expect(failures[0]?.label).toBe('Rast: Hafen')
+    expect(failures[0]?.message).toContain('bestätige')
+  })
+  expect(scenePort.execute).not.toHaveBeenCalled()
+  expect(screen.getAllByRole('checkbox')[0]).toBeDisabled()
+  await act(async () => {
+    expect(await resolution!.resolve('discard')).toEqual([])
+  })
+  expect(scenePort.execute).not.toHaveBeenCalled()
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+})
+it.each(['save', 'discard'] as const)(
+  'settles an unknown confirmed rest before central %s without replay',
+  async (choice) => {
+    sceneFixture()
+    scenePort.execute.mockRejectedValueOnce(new Error('lost'))
+    fireEvent.click(screen.getByText('Rasten'))
+    fireEvent.click(screen.getByText('Lange Rast'))
+    fireEvent.click(screen.getByText('Lange Rast bestätigen'))
+    await screen.findByText('Speicherstatus erneut prüfen')
+    const original = scenePort.execute.mock.calls[0]![0]
+    act(() => {
+      resolution = maintenanceDraftCoordinator.begin()
+    })
+    await act(async () => {
+      expect(await resolution!.resolve(choice)).toEqual([])
+    })
+    expect(scenePort.status).toHaveBeenCalledWith(original)
+    expect(scenePort.execute).toHaveBeenCalledOnce()
+    expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  }
+)
+it('recovers a confirmed new-scene move after refresh failure without creating a second scene', async () => {
+  sceneFixture()
+  scenePort.refresh.mockRejectedValueOnce(new Error('refresh lost'))
+  fireEvent.click(screen.getByText('Verschieben'))
+  fireEvent.click(screen.getByText('Alle auswählen'))
+  fireEvent.change(screen.getByLabelText('Szenenname'), {
+    target: { value: 'Vorhut' }
+  })
+  fireEvent.click(screen.getByText('Übernehmen'))
+  await screen.findByText('Speicherstatus erneut prüfen')
+  expect(screen.getByLabelText('Szenenname')).toBeDisabled()
+  fireEvent.click(screen.getByText('Speicherstatus erneut prüfen'))
+  await waitFor(() =>
+    expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  )
+  expect(scenePort.execute).toHaveBeenCalledOnce()
+  expect(scenePort.execute.mock.lastCall?.[0].command).toMatchObject({
+    kind: 'move-roster',
+    input: { target: { kind: 'new', title: 'Vorhut' } }
+  })
 })

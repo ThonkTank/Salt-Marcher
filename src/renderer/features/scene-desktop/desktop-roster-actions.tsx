@@ -1,13 +1,14 @@
 import { DesktopRestAction } from './desktop-rest-action.js'
-import { useContext, useState } from 'react'
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import { CapabilityContext } from '../../capabilities/capability-context.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { characterShortId } from '../party/character-profile.js'
+
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { ScenePartyCommandController } from './scene-party-command-controller.js'
+import { useScenePartyCommandPort } from './use-scene-party-command-port.js'
 
 type Draft = {
   kind: 'roster' | 'move'
@@ -24,19 +25,51 @@ export function DesktopRosterActions(props: {
   sceneId: string
   snapshot: LiveSessionSnapshot
 }) {
-  const api = useCapabilityApi()
-  const workspace = useContext(CapabilityContext)!.campaignWorkspace
-  const commands = useAsyncCommandCoordinator()
-  const [draft, setDraft] = useState<Draft | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const port = useScenePartyCommandPort(props.campaignId)
+  const [controller] = useState(() => new ScenePartyCommandController(port))
+  const command = useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot
+  )
+  const [draft, renderDraft] = useState<Draft | null>(null)
+  const draftRef = useRef<Draft | null>(null)
+  const [visiblePopup, setVisiblePopup] = useState(false)
   const source = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.sceneId
   )!
-  const target = {
-    scope: 'desktop-roster',
-    entityKey: `${props.campaignId}:${props.sceneId}`
+  function editDraft(value: Draft) {
+    if (!publicBlocked()) setDraft(value)
   }
-  const busy = commands.state(target).status === 'pending'
+  function setDraft(value: Draft | null) {
+    draftRef.current = value
+    renderDraft(value)
+  }
+  useLayoutEffect(() => {
+    controller.attach(() => {
+      setDraft(null)
+      setVisiblePopup(false)
+    })
+  })
+  useLayoutEffect(() => controller.detach, [controller])
+  const blocked = useMaintenanceDraft({
+    label: `Besetzung: ${source.title}`,
+    isDirty: () => controller.unresolved() || draftRef.current !== null,
+    save: async () => {
+      if (!(await controller.settle())) return false
+      return !draftRef.current || apply(true)
+    },
+    discard: async () => {
+      if (!(await controller.settle()) || !controller.reset()) return false
+      setDraft(null)
+      setVisiblePopup(false)
+      return true
+    }
+  })
+  const busy = blocked || command.busy || command.uncertain || command.conflict
+  const publicBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() ||
+    controller.unresolved() ||
+    controller.snapshot().conflict
   const available = props.snapshot.party.members.filter(
     (member) =>
       source.partyMemberIds.includes(member.id) ||
@@ -50,7 +83,12 @@ export function DesktopRosterActions(props: {
       .includes(draft?.query.trim().toLocaleLowerCase('de-DE') ?? '')
   )
   function open(kind: Draft['kind'], anchor: HTMLElement) {
-    setError(null)
+    if (maintenanceDraftCoordinator.isLocked() || command.busy) return
+    if (draftRef.current) {
+      setDraft({ ...draftRef.current, anchor })
+      setVisiblePopup(true)
+      return
+    }
     setDraft({
       kind,
       anchor,
@@ -63,77 +101,89 @@ export function DesktopRosterActions(props: {
       revision: props.snapshot.scene.revision,
       partyRevision: props.snapshot.party.revision
     })
+    setVisiblePopup(true)
   }
-  async function apply() {
-    if (!draft || commands.state(target).status === 'pending') return
-    setError(null)
+  async function apply(maintenance = false): Promise<boolean> {
+    const original = draftRef.current
+    if (!original) return true
+    if (
+      (!maintenance && publicBlocked()) ||
+      controller.unresolved() ||
+      controller.snapshot().conflict
+    )
+      return false
+    if (
+      original.kind === 'move' &&
+      (!original.selected.length ||
+        (!original.target && !original.title.trim()))
+    )
+      return false
     const input = {
-      sceneId: source.id,
-      memberIds: draft.selected,
-      expectedRevision: draft.revision,
-      expectedPartyRevision: draft.partyRevision
+      sceneId: props.sceneId,
+      memberIds: original.selected,
+      expectedRevision: original.revision,
+      expectedPartyRevision: original.partyRevision
     }
-    const outcome = await commands.run({
-      ...target,
-      mode: 'latest-only',
-      execute: async () => {
-        const result =
-          draft.kind === 'roster'
-            ? await api.scene.setRoster(input)
-            : await api.scene.moveRoster({
+    return controller.execute({
+      commandId: crypto.randomUUID(),
+      command:
+        original.kind === 'roster'
+          ? { kind: 'set-roster', input }
+          : {
+              kind: 'move-roster',
+              input: {
                 ...input,
-                target: draft.target
-                  ? { kind: 'existing', sceneId: draft.target }
-                  : { kind: 'new', title: draft.title }
-              })
-        workspace.publishSession(props.campaignId, (current) =>
-          result.party.revision < current.party.revision
-            ? current
-            : { ...current, party: result.party }
-        )
-        const refresh = await workspace.refreshActiveSession()
-        return { result, refresh }
-      },
-      accept: ({ refresh }) => {
-        if (refresh.status === 'failure')
-          setError(capabilityErrorText(refresh.cause))
-        else setDraft((current) => (current === draft ? null : current))
-      }
+                target: original.target
+                  ? { kind: 'existing', sceneId: original.target }
+                  : { kind: 'new', title: original.title }
+              }
+            }
     })
-    if (outcome.status === 'failure')
-      setError(capabilityErrorText(outcome.cause))
   }
   return (
     <div className="desktop-roster-actions">
-      <button onClick={(event) => open('roster', event.currentTarget)}>
+      <button
+        disabled={blocked || command.busy}
+        onClick={(event) => open('roster', event.currentTarget)}
+      >
         {message('roster.manage')}
       </button>
       <button
-        disabled={!source.partyMemberIds.length}
+        disabled={
+          blocked || command.busy || (!draft && !source.partyMemberIds.length)
+        }
         onClick={(event) => open('move', event.currentTarget)}
       >
         {message('roster.move')}
       </button>
       <DesktopRestAction {...props} />
       <AnchoredPopup
-        open={!!draft}
+        open={visiblePopup && !!draft}
         anchor={draft?.anchor ?? null}
-        onDismiss={() => setDraft(null)}
+        onDismiss={() => {
+          if (
+            !maintenanceDraftCoordinator.isLocked() &&
+            !controller.unresolved()
+          )
+            setVisiblePopup(false)
+        }}
         className="desktop-roster-popup"
       >
         {draft && (
           <>
             <input
+              disabled={busy}
               aria-label={message('roster.search')}
               placeholder={message('roster.search')}
               value={draft.query}
               onChange={(event) =>
-                setDraft({ ...draft, query: event.target.value })
+                editDraft({ ...draft, query: event.target.value })
               }
             />
             <button
+              disabled={busy}
               onClick={() =>
-                setDraft({
+                editDraft({
                   ...draft,
                   selected:
                     draft.kind === 'roster'
@@ -148,10 +198,11 @@ export function DesktopRosterActions(props: {
               {visible.map((member) => (
                 <label key={member.id}>
                   <input
+                    disabled={busy}
                     type="checkbox"
                     checked={draft.selected.includes(member.id)}
                     onChange={(event) =>
-                      setDraft({
+                      editDraft({
                         ...draft,
                         selected: event.target.checked
                           ? [...draft.selected, member.id]
@@ -180,10 +231,11 @@ export function DesktopRosterActions(props: {
             {draft.kind === 'move' && (
               <>
                 <select
+                  disabled={busy}
                   aria-label={message('roster.destination')}
                   value={draft.target}
                   onChange={(event) =>
-                    setDraft({ ...draft, target: event.target.value })
+                    editDraft({ ...draft, target: event.target.value })
                   }
                 >
                   {props.snapshot.scene.scenes
@@ -197,17 +249,29 @@ export function DesktopRosterActions(props: {
                 </select>
                 {!draft.target && (
                   <input
+                    disabled={busy}
                     aria-label={message('roster.sceneName')}
                     placeholder={message('roster.sceneName')}
                     value={draft.title}
                     onChange={(event) =>
-                      setDraft({ ...draft, title: event.target.value })
+                      editDraft({ ...draft, title: event.target.value })
                     }
                   />
                 )}
               </>
             )}
-            {error && <p role="alert">{error}</p>}
+            {command.error && <p role="alert">{command.error}</p>}
+            {command.uncertain && (
+              <button
+                disabled={blocked || command.busy}
+                onClick={() => {
+                  if (!maintenanceDraftCoordinator.isLocked())
+                    void controller.settle()
+                }}
+              >
+                {message('character.checkSavedState')}
+              </button>
+            )}
             <footer>
               <button
                 disabled={

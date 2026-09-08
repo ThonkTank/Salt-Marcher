@@ -1,4 +1,8 @@
 export const workspaceMessagesDe = {
+  'rest.confirmBeforeSave':
+    'Bitte bestätige die gewünschte Rast zuerst im Rastfenster oder verwirf die Auswahl.',
+  'sceneParty.commandConflict':
+    'Szene oder Gruppe wurden inzwischen geändert. Bitte den Entwurf verwerfen und neu öffnen.',
   'rest.action': 'Rasten',
   'rest.short': 'Kurze Rast',
   'rest.long': 'Lange Rast',

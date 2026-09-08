@@ -4949,3 +4949,85 @@ Current-Format-App-Abnahme belegt Schema-/Bestandsregression, keine fertige
 Wartungsintegration dieser beiden Oberflächen. Phasen 5–7 bleiben unverändert offen.
 Kein Local-Handoff, keine Main-Promotion, kein öffentlicher Release in dieser Runde.
 Candidate-Remoteprüfung für diesen neuen Stand ist nach Commit/Push noch abzuwarten.
+
+Phase 4 – Renderer-Teilplan für Scene-Party-Befehle:
+Voriger Turn war Fortschritt (Backend 8cf10f495, qualifiziert und gepusht).
+DesktopRosterActions und DesktopRestAction werden auf den ScenePartyCommand-Port
+mit ursprünglicher Campaign-ID umgestellt. Ein eigener Controller hält den
+Originalbefehl bei unbekanntem Ergebnis auch nach Unmount; Status liest nur,
+frischt den vollständigen Sessionzustand auf und unterscheidet bestätigte von
+fehlenden Quittungen. Fehlende Quittungen prüfen sowohl Party- als auch
+Scene-Revision, bevor ausdrücklich erneut gespeichert werden darf.
+
+Besetzungs-/Verschiebeentwürfe behalten Auswahl, Ziel und Titel bei Popup-Dismiss;
+ein anderer Modus darf einen offenen Entwurf nicht ersetzen. Zentrales Save
+klärt zuerst die ursprüngliche Quittung, Discard klärt ebenfalls und verwirft
+anschließend nur den ungespeicherten Entwurf. Wartung sperrt alle Eingaben.
+Rasten behalten ihre zweistufige bewusste Bestätigung: zentrale Speicherung darf
+keine bloß vorbereitete Rast ausführen. Bereits bestätigte, nachweislich nicht
+angekommene Rast darf bei explizitem Save mit neuer ID erneut gesendet werden.
+
+Abnahme: Controllerfehler nach Write/Refresh, reine Statusklärung, spätere
+Änderungen, konfliktbehafteter Fehlbeleg, Unmount und gesperrte Konkurrenz;
+Komponententests für Save/Discard/Cancel, Dismiss, zweite Rastbestätigung und
+Eingabesperren. Bestehende Desktop-E2E ergänzen die echte UI-Abnahme. Danach
+getrennte Audits gegen diesen Plan und Phase 4; keine Phase-5-Abnahme vorziehen.
+
+Implementierungsprüfung vor Tests: Die mechanische JSX-Anpassung hat doppelte
+disabled-Attribute erzeugt; außerdem liegen Rasttexte in workspace-messages.de.ts.
+Korrekturplan: Duplikate entfernen, neuen Bestätigungstext beim vorhandenen
+Nachrichtenowner ergänzen und Eingabehandler zusätzlich synchron gegen die
+Wartungssperre schützen. Danach Typecheck und Verhaltensabnahme ausführen.
+
+UI-Teilprüfung: 30 Controller-/Port-/Komponentenfälle bestehen. Die Erstprüfung
+meldete genau die bereits korrigierten JSX-Duplikate und den damals noch fehlenden
+Rasttext; erneuter vollständiger Typecheck folgt jetzt. Auditkorrektur vor Abschluss:
+der neue Scene-Controller darf keinen ausschließlich auf Charaktere bezogenen
+Konflikttext anzeigen. Eigenen Text für geänderte Szene oder Gruppe ergänzen;
+keine Änderung am bestehenden Charaktercontroller. Erfolgreich bestätigte Rasten
+schließen das erledigte Popup; den bestehenden E2E-Schritt auf diesen sichtbaren
+Abschluss abstimmen, ohne die zweite Bestätigung zu entfernen.
+
+Renderer-Zwischenabnahme: 30 gezielte Fälle in drei Dateien bestehen (42189,
+exit 0): alle drei Befehlsvarianten, beide Revisionskonflikte, verlorene Antwort,
+fehlgeschlagener Refresh, lesende Recovery, ursprüngliche Campaign-ID, detached
+Save/Discard, Popup-Dismiss, zentrale Klärung unter Eingabesperre sowie keine
+unbestätigte Rast. Vollständiger Typecheck und Lint bestehen (87400, exit 0).
+Build, Smoke und Bundlebudget bestehen; unveränderte Grenze, Renderer 1635446
+Bytes. E2E-Gesamthandle 72604 läuft noch und darf nicht als abgeschlossen gelten.
+Backend-Candidate 8cf10f495 hat CI 34292249972 in Arbeit; Vorgänger 4c95c1604
+ist nun vollständig grün (34290901390).
+
+Zusätzlicher Roadmap-Befund: SceneDesktop keyt DesktopRosterActions auf focused.id;
+die Originalszene bleibt innerhalb einer gemounteten Ownerinstanz stabil. Der
+Szenenselektor ruft aber weiterhin actions.focusScene direkt auf. Ein weiterer
+Schritt muss diesen Wechsel durch die vorhandene Entwurfsklärung führen, bevor
+ungesendete Entwürfe beim Szenenwechsel sicher erhalten/aufgelöst sind. Dies bleibt
+explizit offen; die aktuelle Teilabnahme schließt Phase 4 nicht.
+
+Renderer-App-Abnahme abgeschlossen: Handle 72604 endet mit exit 0; Build,
+Smoke, Bundlebudget und alle sieben sceneDesktop-Szenarien bestehen. Summary:
+.tmp/e2e-runs/functional-1788911674558-556222/summary.json. Der echte Desktoppfad
+führt Besetzungsbatches, Aufteilen/Zusammenführen, XP und bestätigte Rasten über
+die neue Bridge aus; die vorhandenen Reise-/Karten-/Fensterregressionen bestehen.
+
+Plan-Audit: Besetzung/Verschieben bewahrt einen Entwurf beim Popup-Dismiss und
+wechselt bei erneuter Öffnung nicht unbemerkt die Absicht. Der Port bindet den
+Originalauftrag an seine Kampagne; Controller und detached Wartungsregistrierung
+bewahren unklare Ergebnisse. Status fragt nur das Original ab und veröffentlicht
+über vollständigen Refresh den heutigen Sessionzustand; keine alte Quittung wird
+als heutiger Zustand eingesetzt. Beide Revisionsstände begrenzen eine ausdrücklich
+autorisierte erneute Speicherung bei fehlender Quittung. Save/Discard klären
+zuerst unbekannte Ergebnisse. Zentrales Save verlangt bei unbestätigter Rast die
+Bestätigung im Rastfenster; es wählt oder bestätigt keine Rast selbst. Alle
+Eingaben sind während Klärung und ungewissem Ausgang gesperrt. Controller-/Port-
+und Komponententests liefern die Fehlerpfadbelege, Desktop-E2E den realen Normalpfad.
+
+Roadmap-Audit: Dieser Besetzungs-/Rast-Schritt ist implementiert und lokal
+qualifiziert. Die vollständige Phase 4 bleibt offen (direkter Szenenwechsel,
+weitere Writer und vollständige Update-/Offline-Abnahme). Die Oberfläche behält
+auch vorbereitete Popup-Entwürfe bis zur bewussten Klärung; spätere Daten werden
+beim Verwerfen einer bestätigten Originalaktion nicht zurückgerollt. Kein Handoff,
+keine Main-Promotion und keine öffentliche Veröffentlichung. Nach abschließendem
+Formatcheck diesen geprüften Stand als Candidate committen/pushen und dessen
+vollständige Remote-Prüfung abwarten.
