@@ -118,6 +118,7 @@ describe('generator preset integration', () => {
     await (await dialog.$('button[aria-label="Schließen"]')).click()
 
     await client.refresh()
+    await resumeCampaignFromScreen(client)
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({ timeout: 15_000 })
