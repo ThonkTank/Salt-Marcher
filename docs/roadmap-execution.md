@@ -4255,3 +4255,72 @@ Schreibwege und die vollständige Update-/Offline-Abnahme. Die bekannte schreibe
 Desktop-Scope-Pflege in Readpfaden bleibt zu qualifizieren. Phasen 5–7 sowie
 Exact-SHA-CI, kanonischer Handoff und Main-Abschluss bleiben erforderlich. Keine
 Nutzerinstallation oder echten Kampagnendaten verändert.
+
+### Phase 4 — Plan: Desktop-Recovery ohne schreibende Reads
+
+Vorheriger Zielturn war Fortschritt: 05bbb492e ist sauber gepusht, Check
+34283346372 läuft. Bestätigter offener Befund: SceneDesktopService.validateScope
+führt bei read und save cleanupCampaigns und retainScenes aus. Dadurch kann eine
+Statusabfrage Layoutdaten löschen. visitCampaignDatabase öffnet inaktive
+Kampagnen außerdem schreibfähig und setzt journal_mode=WAL.
+
+Validierung von Scope und Lesen von Layouts von der Bereinigung trennen. Reads
+prüfen Existenz und lesen ausschließlich. Bestehende Bereinigung bleibt beim
+expliziten permanenten Kampagnenlöschen und beim erfolgreichen Desktop-Save.
+Save umschließt Layoutspeicherung und Bereinigung in einer Installationstransaktion,
+damit ein stale/fehlgeschlagener Save keine unabhängigen Layouts löscht. Ungültige
+Scopes werden vor Schreibarbeit abgewiesen.
+
+CampaignStore erhält für den vorhandenen Visitor einen expliziten Lesezugriff:
+inaktive Datenbanken readonly/fileMustExist öffnen, ohne journal_mode zu setzen;
+aktive Verbindung weiter verwenden. SceneDesktop-Scopeprüfung nutzt diesen
+Lesezugriff. Native Tests erzwingen query_only auf Installation/aktiver Kampagne,
+prüfen fehlende/verwaiste/trashed Scopes unverändert, fehlgeschlagenen Save ohne
+Cleanup, erfolgreiche Cleanup und inaktive Kampagnen mit unverändertem
+DELETE-Journalmodus. SQL bleibt in SceneDesktopStore/SceneStore und Persistenz-
+owner. Keine Schemaänderung. Danach passende Integrations-, Typ-/Lint-/Architektur-
+prüfungen sowie Build/Smoke und Desktop-E2E; Phase 4 bleibt darüber hinaus offen.
+
+### Phase 4 — Audit: schreibfreie Desktop-Statusabfrage
+
+Planabgleich: SceneDesktopService.read validiert ausschließlich Registry-/Scene-
+Existenz und liest den gespeicherten Layoutstand. Ungültige, verwaiste und trashed
+Scopes werden ohne Bereinigung abgewiesen. Die Scopeprüfung inaktiver Kampagnen
+öffnet diese readonly/fileMustExist und verändert nicht den Journalmodus. Aktive
+Verbindungen bleiben unter dem bestehenden Owner; der konkrete Lesepfad ist mit
+query_only geprüft. Erfolgreicher Desktop-Save und anschließende Bereinigung
+liegen in einer gemeinsamen Installationstransaktion. Stale oder ein Fehler
+während Cleanup rollen die gesamte Änderung zurück. Permanente Kampagnenlöschung
+behält ihre explizite Cleanup-Anbindung. Keine Schema-/Capabilityänderung.
+
+Nachweise: 88 Architektur-/Persistenzfälle sowie 31 zusätzliche Campaign-Import-
+und Desktop-Projection-/Maintenancefälle bestanden. Native Assertions prüfen
+query_only auf Installation und aktiver Kampagne, unveränderte verwaiste Layouts
+bei Read/ungültigem Scope/stalem Save, Rollback nach injiziertem Cleanup-Abbruch,
+readonly inaktive Verbindung ohne Änderung von journal_mode=DELETE, Trash/Restore
+und explizites permanentes Cleanup. Vollständiger Typecheck, gezieltes ESLint,
+Format und git diff --check bestehen. Build, Smoke ready/closed und Bundle-Gate
+grün; unverändert 1621722 reachable Bytes, keine Budget-/Baselineänderung.
+Build auf dirty 05bbb492e, appBuildInputFingerprint
+d5d745dcb4e06f0ce748bb9cb6d31bde371c88763fb487ee52ff41003ae62491,
+BuiltAt 2026-09-08T22:01:37.399Z. Alle sieben sceneDesktop-E2E bestehen auf diesen
+Bytes; Summary .tmp/e2e-runs/functional-1788904905195-521685/summary.json.
+Logs work/roadmap-phase4-desktop-readonly-*.log. Keine offene Abweichung im Teilplan.
+
+Separater Roadmapabgleich: Der bekannte schreibende Desktop-Read ist behoben und
+qualifiziert. Phase 4 bleibt wegen CampaignScreen, übrigen Gruppen-/Kampf-/Karten-/
+Preset-/Desktop-Schreibwegen, noch nie gesendeten Entwürfen beim Fensterschließen
+und durchgängiger Update-/Offline-Abnahme offen. Phasen 5–7, Exact-SHA-CI,
+kanonischer Handoff und Main-Abschluss bleiben erforderlich. Keine echte
+Nutzerinstallation/Nutzerdaten geändert.
+
+Nächster konkreter Kandidat ist CampaignScreen: offene Popups besitzen bislang
+keinen Maintenance-Owner. run/reconcile verwenden nur ein Boolean-Pending, das
+nicht awaitbar ist; New/Rename-Eingaben und unbestätigte Delete-Dialoge müssen
+zentral geklärt werden. Der submit-Code entscheidet nach aktuell gefundenem
+editing-Objekt statt nach ursprünglicher Popup-Art: verschwindet die umbenannte
+Kampagne, darf das nicht in create umfallen. Vor Umsetzung die bestehenden
+CampaignWorkspaceProjection-Quittungen und use-campaign-session-coordinator
+prüfen, insbesondere automatische Navigation/Unmount nach create/activate und
+Fehler beim nachfolgenden enterSession. Den Detailplan vor Sourceänderungen
+festhalten und vorhandene Lifecycle-Recovery wiederverwenden.
