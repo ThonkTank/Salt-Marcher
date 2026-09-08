@@ -2427,3 +2427,43 @@ Oberflächenabnahme; Session Planner verbleibt beim Übergangs-Guard. Der überg
 Writer-/Karten-/Offline-/Updateaudit sowie Phasen 5–7 und sämtliche kanonischen
 Handoff-/Releasegates bleiben erforderlich. Keine vollständige Gruppen- oder
 Phase-4-Abnahme aus den erfolgreichen Teilfällen abgeleitet.
+
+### Phase 4 — Gruppenbeute-Receipt: Umsetzungsplan
+
+Vorheriger Turn Fortschritt (ae8ef0e4b); Worktree sauber. Das vorhandene
+LootOperationJournal speichert commit_group_reward mit Command-ID, Fingerprint,
+Zielgruppe und validiertem Ergebnis. Eine read-only Operation
+loot.groupRewardReceipt erhält den exakt ursprünglichen Auftrag und liefert nur
+dessen passende Quittierung oder null. Abweichende Inhalte bei gleicher ID werden
+als Idempotenzkonflikt zurückgewiesen. Utility liest beim vorhandenen Handler aus
+seinem Journal; keine Migration und keine zweite Persistenzimplementierung.
+
+Commit und Receipt-Lesen teilen dieselbe Zuordnung/Validierung. Integrationstest
+prüft vor Commit/bei Rollback null, nach Commit dasselbe Ergebnis, unveränderte
+Tabellenstände/Revisionen und SQLite query_only sowie Konflikt bei geändertem
+Auftrag. Bridge/Registry/Typecheck prüfen die veröffentlichte read-Capability.
+Diese Capability ist Voraussetzung für den folgenden Renderer-Abgleich; sie allein
+hebt die aktuelle Unknown-Sperre noch nicht auf und schließt Phase 4 nicht ab.
+
+### Phase 4 — Gruppenbeute-Receipt: Teilaudit
+
+Planabgleich bestanden: Die neue read-only Capability loot.groupRewardReceipt ist
+Zod-validiert und nur für das Hauptfenster (gm) verfügbar. Utility liest beim
+bestehenden GroupRewardCommitHandler; dessen Commit und Receipt-Lesen verwenden
+dieselbe Journalzuordnung mit Fingerprint/Zielgruppe/Schema. Ein fehlender oder
+zurückgerollter Commit liefert null, eine bestätigte Übernahme ihr gespeichertes
+Ergebnis. Abweichender Auftrag bei gleicher ID wird zurückgewiesen. Der echte
+SQLite-Integrationstest liest unter query_only und belegt unveränderte Gruppen-,
+Beute- und Receipt-Anzahlen sowie Projektionsrevision. Keine Migration/neue SQL-
+Implementierung. 36 Integrations-/Registry-/Capabilitytests, vollständiger Typecheck,
+gezieltes Lint, Build/Built-Smoke (ready/closed) und git diff --check bestanden.
+Logs work/roadmap-phase4-group-receipt-*.log. Technische Development-Probe.
+
+Roadmapabgleich: Phase 4 bleibt offen. Der Renderer muss den unveränderten Auftrag
+samt Command-ID halten, diesen Leseweg bedienbar wiederholen und die Unknown-Sperre
+erst nach bestätigtem Abgleich aufheben. Die Quittierung beweist einen historischen
+Commit, nicht den heutigen Gesamtsnapshot; späteren Stand vor Freigabe frisch lesen
+bzw. monoton berücksichtigen. Scene.saveGroup benötigt noch einen entsprechenden
+verlässlichen Abgleich für Neuanlagen. Unbekannte Ausgänge bleiben bis zur folgenden
+Integration gesperrt. Weitere Gruppen-Pending-Fälle, Session Planner, Gesamtaudit
+sowie Phasen 5–7 und Handoff/Release sind weiterhin ausstehend.

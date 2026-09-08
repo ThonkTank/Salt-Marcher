@@ -121,6 +121,7 @@ export function createLootComposition(dependencies: {
           'loot.read': (input) => loot.read(input.treasureId),
           'loot.catalog': (input) => catalog.search(input),
           'loot.generateForGroupDraft': (input) => rewards.generate(input),
+          'loot.groupRewardReceipt': (input) => commits.commandReceipt(input),
           'loot.commitGroupReward': (input) =>
             publish(
               lootOperationDefinitions['loot.commitGroupReward'],

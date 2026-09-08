@@ -35,6 +35,11 @@ export const lootOperationDefinitions = utilityOperationFragment({
     generateGroupDraftLootInputSchema,
     generateGroupDraftLootResultSchema
   ),
+  'loot.groupRewardReceipt': read(
+    'loot:group-reward-receipt',
+    commitGroupRewardInputSchema,
+    commitGroupRewardResultSchema.nullable()
+  ),
   'loot.commitGroupReward': write(
     'loot:commit-group-reward',
     commitGroupRewardInputSchema,

@@ -649,7 +649,33 @@ describe('loot vertical slice', () => {
     expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
     expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
 
+    expect(commit.commandReceipt(input)).toBeNull()
     const result = commit.commit(input)
+    const countsAfterCommit = {
+      groups: scenes.groups(sceneId).length,
+      treasures: tableCount(db, 'loot_treasure'),
+      receipts: tableCount(db, 'loot_operation_receipt'),
+      revision: new LootProjectionStore(db).revision()
+    }
+    db.pragma('query_only = ON')
+    try {
+      expect(commit.commandReceipt(input)).toEqual(result)
+      expect(
+        commit.commandReceipt({ ...input, commandId: randomUUID() })
+      ).toBeNull()
+      expectCapabilityCode(
+        () => commit.commandReceipt({ ...input, name: 'Changed request' }),
+        'idempotency_conflict'
+      )
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+    expect({
+      groups: scenes.groups(sceneId).length,
+      treasures: tableCount(db, 'loot_treasure'),
+      receipts: tableCount(db, 'loot_operation_receipt'),
+      revision: new LootProjectionStore(db).revision()
+    }).toEqual(countsAfterCommit)
     if (!result.treasure) throw new Error('Expected committed treasure')
     expect(result.groupResult.scenePatch.sceneRevision).toBe(
       expectedSceneRevision + 1
