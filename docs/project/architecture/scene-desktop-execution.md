@@ -1074,3 +1074,149 @@ stub with Promise.resolve, rerun lint on the exact changed test and its seven
 cases, and push a new candidate SHA. The application implementation is unchanged;
 the failed SHA is not eligible for handoff or promotion. The new SHA must still
 pass the complete remote set and canonical handoff.
+
+### Phase 4 — Candidate correction 7
+
+Corrected candidate `67655becd8267e13d308ed1ca58a8e0a7fdf20b8`, Check
+34250219664, passed portable/static/app, native platforms, packaged harness and
+most completed visual suites. The campaign visual suite fails before any image
+comparison: its walking scenario opens Catalog after previously selecting Places,
+then assumes Catalog always resets to Monsters. The approved phase plan explicitly
+retains catalog navigation. Update that scenario to select Monsters explicitly
+before searching; preserve all assertions and golden images. Run the campaign
+combat scenario locally, then push a new exact candidate. Failure-artifact upload
+also received an intermediary 403, but the completed job log identifies the
+selector assumption without ambiguity. No production or golden changes planned.
+
+### Phase 4 — Acceptance timing correction 8
+
+The explicit Monsters selection reaches the next acceptance gate. Axe reported
+mixed light foreground/dark background on a transparent filter-reset button.
+Source inspection shows that button already uses the theme-aware text token;
+Theme updates the root data-theme attribute in a React effect, while the shared
+accessibility helper starts Axe immediately after dispatching the toggle. Correct
+the helper to wait for the requested root theme before scanning and to wait for
+the original theme when restoring. Re-run campaign combat before considering any
+CSS change. No contrast threshold, assertion or golden image is relaxed.
+
+### Phase 4 — Layout/contrast correction 9
+
+Waiting for the theme alone did not resolve the filter-reset contrast failure;
+retain the stronger timing guarantee but reject that as the root-cause diagnosis.
+Add computed-color/token/ancestor diagnostics to accessibility failures to identify
+the actual cascade before editing colors. The completed hex/NPC CI shard also
+found a real 5.6px horizontal overflow at 720px: the sixth Catalog section prevents
+the header from shrinking. Allow section buttons to wrap, then rerun the NPC
+small-viewport scenario and campaign combat. Preserve all accessibility and
+geometry assertions and all golden images.
+
+### Phase 4 — Contrast correction 10
+
+Computed diagnostics confirm an actual stale foreground: the reset button is
+rgb(74,53,32) while its own --text-2 token is already the correct dark #d6c49c;
+all ancestors and root are dark. Add an explicit dark-theme selector for the
+shared reset control so a theme change resolves its foreground under that
+selector. Keep semantic tokens and existing contrast thresholds. Remove the
+temporary control-specific diagnostics; retain the helper's theme-settlement
+checks. Rebuild and rerun campaign combat/NPC acceptance.
+
+### Phase 4 — Resize acceptance correction 11
+
+The NPC screenshot after resizing back to 1280×800 shows the correct contained
+layout. The resize helper captures content bounds once, immediately when outer
+bounds match, then compares the renderer against that frozen value even while
+Electron content bounds can still settle. Read current Electron content bounds
+on every renderer-acknowledgement poll, still requiring the requested outer size
+and exact renderer/owned-layout agreement. This strengthens the actual agreement
+check without changing viewport limits. Re-run both cases on the completed build;
+no result from a run overlapping a rebuild counts as final acceptance.
+
+### Phase 4 — Contrast investigation 12
+
+The explicit selector also fails to change the measured button foreground. Do not
+claim that correction as effective. Inspect the exact matching live stylesheet
+rules and computed style before another production edit; keep the acceptance
+threshold unchanged. The resize correction is being validated independently in
+the same run. Temporary diagnostics are removed once the cause is isolated.
+
+### Phase 4 — Contrast correction 13
+
+Live matching rules confirm the built stylesheet and explicit dark selector are
+loaded, with no overriding color declaration, but the button's var(--text-2)
+foreground remains the old light value despite the token resolving dark. Its
+parent's computed foreground updates correctly. Make the transparent reset action
+inherit that surrounding foreground, remove the ineffective redundant dark rule,
+and validate both themes. No palette constants or contrast exceptions are added.
+
+### Phase 4 — Test-host rendering correction 14
+
+The live native geometry is already 1280×800, but renderer reads stay 720×540
+through every poll; the eventual screenshot is 1280×800. Tests are running on the
+host's existing :0/Wayland desktop (no Xvfb executable), unlike CI's isolated Xvfb.
+Together with the correctly loaded CSS rules and stale resolved foreground this
+points to deferred background rendering, not palette or layout constants. In the
+E2E helper only, disable background throttling on the test process windows and
+await a renderer frame before accessibility measurements; also do this before
+native resize. Remove ineffective production reset-color edits and temporary
+cascade/geometry diagnostics. Retain root-theme and live-bounds agreement checks.
+Run the original unchanged contrast/geometry assertions before accepting this
+host-level correction. Production window/background policy remains untouched.
+
+### Phase 4 — Isolated display correction 15
+
+The local host is Fedora KDE/Wayland using existing DISPLAY=:0 and has no Xvfb.
+Even the test-only unthrottled-frame experiment times out waiting for frames.
+Stop this failed local experiment and withdraw the speculative helper changes
+(corrections 8, 11, 12 diagnostics and 14); restore the original helper and retain
+all original assertions. Download/extract Fedora's Xvfb package into /tmp only,
+without installing or changing the host, and rerun on an isolated display matching
+CI. Production reset-color experiments are already removed. Only the confirmed
+catalog wrapping fix and explicit Monsters test navigation remain as functional
+corrections. No overlapping-run or host-background result is final acceptance.
+
+### Phase 4 — Corrective acceptance and re-audit
+
+The isolated Xvfb run passes both unchanged scenarios: campaignCombat 1m28.2s,
+npcCatalog 1m17.4s, including both themes, 720px containment, expansion and restart.
+Summary: `.tmp/e2e-runs/functional-1788886339413-335804/summary.json`.
+This validates the host-background diagnosis. All experimental color, animation,
+resize and diagnostic helper edits were withdrawn. The only lasting corrections
+since candidate 67655becd are catalog-section wrapping and explicit Monsters
+navigation in the walking scenario. No golden or accessibility oracle changed.
+
+Re-audit against the phase plan: catalog navigation retention and compact viewport
+support now coexist with the prior NPC/group/combat workflows. Re-audit against
+original phase 4: all bullets still hold; no change to XP/rest semantics or phase
+5/6 scope. The final sceneDesktop suite is being repeated on the same isolated
+screen before the next candidate push. Future local visual/E2E validation uses
+that isolated display rather than the host's active Wayland desktop.
+
+The isolated final desktop run passes all five cases in 1m51.1s:
+`.tmp/e2e-runs/functional-1788886546941-337141/summary.json`.
+
+### Phase 4 — Final scope audit correction 16
+
+The final lifecycle audit finds a missing distinction: canceling a library view
+must suppress late navigation, but must not suppress publication of an already
+committed Party result. Move campaign-scoped aggregate publication/refresh into
+the mutation execution's confirmed-result continuation, independent of the
+view's guarded accept callback. Keep selection/editor state changes guarded by
+the coordinator. Strengthen the late-completion unit case to require shared
+publication and prohibit late navigation; rerun focused tests, lint/typecheck,
+build and the scene suite before candidate delivery. No mutation replay added.
+
+### Phase 4 — Final corrective validation and audits
+
+Correction 16 passes all seven focused cases, including publication after view
+closure with no late navigation; changed-file lint and both typecheck projects
+pass. The completed build passes all five sceneDesktop cases in 1m50.3s on the
+isolated screen: `.tmp/e2e-runs/functional-1788886867170-341307/summary.json`.
+The earlier isolated campaignCombat/NPC acceptance validates the unchanged shared
+UI corrections. Final bundle measurement remains below all reviewed budgets.
+
+Phase-plan re-audit: confirmed mutations update campaign state independently of
+view lifetime, while draft/selection callbacks remain scoped. Catalog rows,
+nullable CRUD, loot, scene-only comparisons and retained navigation meet the plan.
+Original-roadmap re-audit: phase 4 is implemented without XP/rest semantics changes
+or premature legacy removal. All discovered discrepancies are resolved; exact
+candidate checks, canonical handoff and green-main promotion remain outstanding.

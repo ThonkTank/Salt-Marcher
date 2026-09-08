@@ -637,6 +637,11 @@ export async function runCampaignCombatScenario(): Promise<void> {
   ).toBeElementsArrayOfSize(2)
 
   await (await client.$('button[aria-label="Katalog"]')).click()
+  await (
+    await client.$('.catalog-section-selector')
+  )
+    .$('button=Monster')
+    .click()
   const monsterSearch = await client.$('input[aria-label="Monster suchen"]')
   await monsterSearch.setValue('wolf')
   const wolf = await client.$('button=Wolf')

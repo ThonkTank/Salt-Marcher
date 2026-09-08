@@ -72,19 +72,20 @@ export default function CharacterCatalogSection(props: {
     const outcome = await commands.run({
       ...target,
       mode: 'latest-only',
-      execute,
-      accept: (result) => {
+      execute: async () => {
+        const result = await execute()
         workspace.publishSession(props.campaignId, (current) =>
           result.revision < current.party.revision
             ? current
             : { ...current, party: result }
         )
-        accept(result)
         void workspace.refreshActiveSession().then((outcome) => {
           if (outcome.status === 'failure')
             props.onError(capabilityErrorText(outcome.cause))
         })
-      }
+        return result
+      },
+      accept
     })
     if (outcome.status === 'failure')
       setError(capabilityErrorText(outcome.cause))

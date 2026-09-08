@@ -48,7 +48,10 @@ const member = partyCharacterSchema.parse({
   xpSinceShortRest: 0,
   xpSinceLongRest: 0
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 describe('character library and scene facts', () => {
   it('accepts name-only profiles, clears nullable facts and deduplicates languages in authored order', () => {
     const values = characterFormValues(null)
@@ -233,6 +236,10 @@ describe('catalog draft concurrency', () => {
     }
   })
   it('prevents duplicate saves and ignores late navigation after unmount', async () => {
+    const publish = vi.spyOn(
+      CampaignWorkspaceProjection.prototype,
+      'publishSession'
+    )
     let resolve!: (value: unknown) => void
     const create = vi.fn(
       () =>
@@ -265,9 +272,19 @@ describe('catalog draft concurrency', () => {
     fireEvent.click(screen.getByText('Speichern'))
     expect(create).toHaveBeenCalledTimes(1)
     view.unmount()
-    resolve({ members: [member, { ...member, id: 'new', name: 'New' }] })
+    resolve({
+      ...snapshot().party,
+      revision: 4,
+      members: [member, { ...member, id: 'new', name: 'New' }]
+    })
     await Promise.resolve()
     await Promise.resolve()
     expect(select).not.toHaveBeenCalled()
+    expect(publish).toHaveBeenCalledWith('campaign', expect.any(Function))
+    const update = publish.mock.calls[0]![1]
+    expect(
+      typeof update === 'function' &&
+        update(snapshot()).party.members.at(-1)?.name
+    ).toBe('New')
   })
 })
