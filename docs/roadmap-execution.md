@@ -2218,3 +2218,55 @@ abbrechbarer IPC-Auftrag weiterlaufen kann; Owner-Drain darf deshalb nicht allei
 auf aktuelle busy-/pending-Anzeigen vertrauen. Diese verbleibenden Anforderungen
 werden im folgenden Gruppen-Owner-Schritt umgesetzt und geprüft. Kein Abschluss
 von Phase 4, Handoff, Main-Promotion oder Release behauptet.
+
+### Phase 4 — Tatsächliches Command-Ende: Umsetzungsplan
+
+Vorheriger Zielturn: Fortschritt, 4c3fe837d sauber committed/gepusht. Worktree erneut
+sauber geprüft. Gruppenbefehle verwenden latest-only; Abort und sichtbarer Slotstatus
+beweisen kein Transportende. Den bestehenden AsyncCommandCoordinator um unabhängig
+vom sichtbaren Ergebnis verfolgte laufende Aufträge und whenIdle erweitern. Erfasst
+werden sofort gestartete und wartende Queue-Aufträge einschließlich accept-Phase,
+auch nach cancelAll oder Verdrängung. Optionale Scope-Auswahl trennt Gruppenmutation
+von Katalogabfragen. whenIdle prüft erneut nach jedem Durchlauf und erfasst während
+des Wartens hinzugekommene Aufträge. Es blockiert selbst keine neuen Aufträge; die
+Eingabesperre und anschließende Ergebnisprüfung bleiben Owner-Verantwortung.
+
+Den Gruppen-Übergangs-Guard außerdem um tatsächlich laufende Command-/Loot-Scopes
+ergänzen, damit ein bislang sauberer Editor mit laufender Generierung/Mutation
+Wartung nicht passieren lässt. Die Anzeige busy berücksichtigt diese Aufträge über
+alle Gruppen, nicht allein die aktive Session. Tests für verdrängten nicht abbrechbaren
+Auftrag, cancelAll, wartende Queue, asynchrones accept, Scope-Isolation und Nachläufer.
+Typecheck, gezieltes Lint und Build/Smoke; getrennte Plan-/Roadmapaudits. Vollständige
+Gruppen-Save/Discard-Integration folgt weiterhin, mit Verarbeitung in accept bzw.
+zusätzlicher Nachverfolgung vollständiger Controller-Promises; whenIdle allein
+quittiert ausdrücklich keine Callbacks außerhalb des Coordinators.
+
+Command-Ende — Korrekturrunde: 29 gezielte Tests bestanden. ESLint beanstandet zwei
+neue Testcallbacks mit async ohne await. Durch Promise.resolve ersetzen; keine
+Änderung der getesteten Reihenfolge. Wegen gemeinsamer Coordinator-Nutzung zusätzlich
+bestehende Keyed-Owner-, Hex-, Planner-, Reise- und Session-Controller-Tests prüfen,
+um neue Benachrichtigungen und Promise-Reihenfolge über den Gruppenfall hinaus
+abzusichern.
+
+### Phase 4 — Tatsächliches Command-Ende: Teilaudit
+
+Planabgleich bestanden: AsyncCommandCoordinator verfolgt jeden gestarteten und
+wartenden Auftrag unabhängig von sichtbaren Slots bis einschließlich accept-Ende.
+hasPending und whenIdle erfassen auch superseded/cancelAll-Fälle und beim Warten
+hinzugekommene Aufträge; Scope-Auswahl lässt reine Katalogabfragen getrennt. Der
+Gruppen-View-Guard berücksichtigt offene Command-/Loot-Aufträge; busy bleibt auch
+nach Erfolg eines neueren Saves true, solange ein älterer Auftrag noch läuft.
+Inaktive Gruppen werden dabei erfasst. 78 Tests in 15 Dateien bestanden, einschließlich
+bestehender Keyed-Owner-, Hex-, NPC-, Planner-, Reise- und Session-Verwendung.
+Vollständiger Typecheck, korrigiertes gezieltes Lint, Build/Built-Smoke (ready/closed)
+und git diff --check bestanden. Logs unter work/roadmap-phase4-group-drain-*.
+
+Roadmapabgleich: Phase 4 bleibt offen. Der Gruppen-Guard verweigert jetzt auch bei
+noch sauberem Draft mit laufendem Auftrag die Wartungsfreigabe. Ein vollständiger
+Owner muss als Nächstes selbst awaiten, anschließend bestätigte Ergebnisse abgleichen
+und sämtliche Sessions speichern/verwerfen. whenIdle ist Infrastruktur, kein
+Speicherbeleg und keine Sperre für neue Eingaben. Callbacks nach run außerhalb von
+accept sowie die generateRoster→generateLoot-Kette sind noch als vollständige
+Controller-Operationen nachzuverfolgen. Unbekannte Beute-Commit-Ausgänge, sofortige
+Baseline-Updates bei Teilerfolgen und zurückgestellte Dialogschließung bleiben
+verbindlich. Kein kanonischer Handoff oder Release; technische Development-Probe.

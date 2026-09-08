@@ -34,6 +34,7 @@ export function useGroupManagerCommands(
   archive: () => Promise<void>
   joinCombat: () => Promise<void>
   busy: boolean
+  pending: boolean
 }> {
   const {
     canGenerate,
@@ -210,8 +211,11 @@ export function useGroupManagerCommands(
     save,
     archive,
     joinCombat,
-    busy:
-      commands.state({ scope: 'group-manager.command' }).status === 'pending'
+    busy: commands.hasPending(['group-manager.command', 'group-manager.loot']),
+    pending: commands.hasPending([
+      'group-manager.command',
+      'group-manager.loot'
+    ])
   }
 }
 

@@ -96,6 +96,7 @@ export function projectGroupManagerView(input: {
       loot?.phase === 'committing',
     dirty: session ? groupDraftSessionDirty(session) : false,
     anyDirty: groupManagerAnyDirty(state),
+    pending: commands.pending,
     anyLootDirty: groupManagerAnyLootDirty(state),
     currentLootDirty,
     effectiveCatalogMode: (state.catalogMode === 'loot' && loot?.run

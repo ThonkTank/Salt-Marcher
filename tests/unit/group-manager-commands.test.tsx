@@ -71,6 +71,36 @@ describe('group manager commands', () => {
     )
   })
 
+  it('counts loot commands for an inactive group but not catalog reads', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const catalogGate = deferred<void>()
+    const lootGate = deferred<void>()
+    const catalog = coordinator.run({
+      scope: 'group-manager.loot-catalog',
+      mode: 'latest-only',
+      execute: () => catalogGate.promise
+    })
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    const controller = renderHook(() =>
+      useGroupManagerCommands(input, coordinator)
+    )
+    expect(controller.result.current.pending).toBe(false)
+    const loot = coordinator.run({
+      scope: 'group-manager.loot',
+      entityKey: 'inactive-group',
+      mode: 'latest-only',
+      execute: () => lootGate.promise
+    })
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(true)
+    lootGate.resolve()
+    await loot
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(false)
+    catalogGate.resolve()
+    await catalog
+  })
+
   it('does not acknowledge a currently failed save', async () => {
     const saveGroup = vi.fn().mockRejectedValue(new Error('write failed'))
     const saved = vi.fn()
@@ -141,8 +171,14 @@ describe('group manager commands', () => {
       newer.resolve(groupResult(3))
       expect(await second).toMatchObject({ revision: 3 })
     })
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(true)
+    expect(controller.result.current.busy).toBe(true)
     older.reject(new Error('obsolete failure'))
     expect(await first).toBeNull()
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(false)
+    expect(controller.result.current.busy).toBe(false)
 
     expect(saved).toHaveBeenCalledOnce()
     expect(saved.mock.calls[0]?.[0]).toMatchObject({ revision: 3 })
