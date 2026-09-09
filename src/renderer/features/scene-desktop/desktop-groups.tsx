@@ -8,6 +8,7 @@ import type {
   SessionWorkspaceViewModel
 } from '../session/session-workspace-model.js'
 export function DesktopGroups(props: {
+  disabled?: boolean
   campaignId: string
   model: SessionWorkspaceViewModel
   actions: SessionWorkspaceActions
@@ -43,7 +44,9 @@ export function DesktopGroups(props: {
           groupId: group.id
         }
         const enabled =
-          !group.archived && group.entries.some((e) => e.aliveQuantity > 0)
+          !props.disabled &&
+          !group.archived &&
+          group.entries.some((e) => e.aliveQuantity > 0)
         return (
           <div key={group.id} className="desktop-draggable-group">
             <button

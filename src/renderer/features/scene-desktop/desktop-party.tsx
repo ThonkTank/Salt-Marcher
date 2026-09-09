@@ -1,9 +1,11 @@
+import { desktopXpDraftId } from './desktop-xp-draft-id.js'
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
+import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { message } from '../../i18n/session-runtime.de.js'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { PartyQuickField } from '../../../shared/contracts/party-quick-fields.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import { useInstallationSettingsProjection } from '../../shell/use-installation-settings-projection.js'
@@ -22,7 +24,7 @@ export function DesktopParty(props: {
   toggle: (id: string) => void
 }) {
   const api = useCapabilityApi()
-  const workspace = useContext(CapabilityContext)!.campaignWorkspace
+  const maintenanceBlocked = useMaintenanceEditingBlocked()
   const commands = useAsyncCommandCoordinator()
   const { snapshot: settings, projection } =
     useInstallationSettingsProjection(true)
@@ -31,9 +33,6 @@ export function DesktopParty(props: {
     'passivePerception'
   ]
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-  const [move, setMove] = useState<{ anchor: HTMLElement; id: string } | null>(
-    null
-  )
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const scene = props.snapshot.scene.scenes.find((s) => s.id === props.sceneId)!
@@ -41,6 +40,7 @@ export function DesktopParty(props: {
     (m) => m.active && scene.partyMemberIds.includes(m.id)
   )
   async function saveFields(next: PartyQuickField[]) {
+    if (maintenanceBlocked) return
     setBusy(true)
     setError(null)
     const outcome = await commands.run({
@@ -61,36 +61,6 @@ export function DesktopParty(props: {
     }
     setBusy(false)
   }
-  async function moveTo(sceneId: string) {
-    if (!move || busy) return
-    setBusy(true)
-    setError(null)
-    const outcome = await commands.run({
-      scope: 'desktop-roster',
-      entityKey: `${props.campaignId}:${props.sceneId}`,
-      mode: 'latest-only',
-      execute: async () => {
-        await api.scene.moveRoster({
-          sceneId: props.sceneId,
-          memberIds: [move.id],
-          expectedRevision: props.snapshot.scene.revision,
-          expectedPartyRevision: props.snapshot.party.revision,
-          target: { kind: 'existing', sceneId }
-        })
-        return workspace.refreshActiveSession()
-      },
-      accept: (result) => {
-        if (result.status === 'failure')
-          setError(capabilityErrorText(result.cause))
-        else setMove(null)
-      }
-    })
-    if (outcome.status === 'failure') {
-      setError(capabilityErrorText(outcome.cause))
-      await workspace.refreshActiveSession()
-    }
-    setBusy(false)
-  }
   return (
     <div
       role="group"
@@ -99,7 +69,7 @@ export function DesktopParty(props: {
     >
       <div className="desktop-party-tools">
         <button
-          disabled={!settings.value}
+          disabled={!settings.value || maintenanceBlocked}
           onClick={(e) => {
             setError(null)
             setAnchor(e.currentTarget)
@@ -130,16 +100,15 @@ export function DesktopParty(props: {
                     )
                   ).map((value, i) => <span key={i}>{value}</span>)}
               </div>
-              <button
-                disabled={busy || props.snapshot.scene.scenes.length < 2}
-                aria-label={`${member.name} verschieben`}
-                onClick={(e) => {
-                  setError(null)
-                  setMove({ anchor: e.currentTarget, id: member.id })
-                }}
-              >
-                {message('partyWindow.move')}
-              </button>
+              <DesktopRosterActions
+                campaignId={props.campaignId}
+                sceneId={props.sceneId}
+                snapshot={props.snapshot}
+                characterDraftIds={[
+                  desktopXpDraftId(props.campaignId, props.sceneId, member.id)
+                ]}
+                singleCharacter={{ id: member.id, name: member.name }}
+              />
             </div>
             <div
               id={`party-${member.id}`}
@@ -185,7 +154,7 @@ export function DesktopParty(props: {
               <label key={field}>
                 <input
                   type="checkbox"
-                  disabled={busy}
+                  disabled={busy || maintenanceBlocked}
                   checked={fields.includes(field)}
                   onChange={(e) =>
                     void saveFields(
@@ -200,26 +169,6 @@ export function DesktopParty(props: {
             ))}
           </fieldset>
         ))}
-        {error && <p role="alert">{error}</p>}
-      </AnchoredPopup>
-      <AnchoredPopup
-        open={!!move}
-        anchor={move?.anchor ?? null}
-        onDismiss={() => setMove(null)}
-        className="desktop-party-popup"
-      >
-        <h3>{message('partyWindow.target')}</h3>
-        {props.snapshot.scene.scenes
-          .filter((s) => s.id !== props.sceneId)
-          .map((s) => (
-            <button
-              key={s.id}
-              disabled={busy}
-              onClick={() => void moveTo(s.id)}
-            >
-              {s.title}
-            </button>
-          ))}
         {error && <p role="alert">{error}</p>}
       </AnchoredPopup>
     </div>

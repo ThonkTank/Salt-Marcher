@@ -1,3 +1,4 @@
+import * as partyPort from '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js'
 // @vitest-environment jsdom
 import { useState } from 'react'
 import {
@@ -74,7 +75,13 @@ it('keeps all details available while changing only collapsed quick fields, and 
   const moveRoster = vi
     .fn()
     .mockRejectedValueOnce(new Error('Speicherfehler'))
-    .mockResolvedValue(snapshot)
+    .mockResolvedValue({ snapshot })
+  vi.spyOn(partyPort, 'useScenePartyCommandPort').mockReturnValue({
+    current: () => snapshot,
+    refresh: () => Promise.resolve(snapshot),
+    execute: moveRoster,
+    status: () => Promise.resolve({ receipt: null, snapshot })
+  })
   const api = {
     settings: {
       read: vi.fn().mockImplementation(() => Promise.resolve(settings)),
@@ -138,13 +145,25 @@ it('keeps all details available while changing only collapsed quick fields, and 
   fireEvent.click(screen.getByRole('button', { name: 'Wald' }))
   await screen.findByRole('alert')
   expect(screen.getByText('Verschieben nach')).toBeInTheDocument()
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Speicherstatus erneut prüfen' })
+  )
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Wald' })).not.toBeDisabled()
+  )
   fireEvent.click(screen.getByRole('button', { name: 'Wald' }))
   await waitFor(() => expect(screen.queryByText('Verschieben nach')).toBeNull())
   expect(moveRoster).toHaveBeenLastCalledWith({
-    sceneId: 'source',
-    memberIds: ['mira'],
-    expectedRevision: 4,
-    expectedPartyRevision: 3,
-    target: { kind: 'existing', sceneId: 'target' }
+    commandId: expect.any(String),
+    command: {
+      kind: 'move-roster',
+      input: {
+        sceneId: 'source',
+        memberIds: ['mira'],
+        expectedRevision: 4,
+        expectedPartyRevision: 3,
+        target: { kind: 'existing', sceneId: 'target' }
+      }
+    }
   })
 })

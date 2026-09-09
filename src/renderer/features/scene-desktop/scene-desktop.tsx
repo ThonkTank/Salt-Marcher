@@ -62,9 +62,15 @@ export function SceneDesktop(
       text: message('desktop.resolveBeforeSceneChange')
     }
   )
+  const combatCommands = useCombatCommands(
+    props.campaignId,
+    focused.id,
+    props.onError
+  )
   const { drag, setDrag, dropGroup, scopeKey } = useDesktopGroupDrop(
     props,
-    projection
+    projection,
+    combatCommands
   )
   const [expanded, setExpanded] = useState<Record<string, string[]>>({})
 
@@ -114,11 +120,7 @@ export function SceneDesktop(
       window.removeEventListener('resize', measure)
     }
   }, [])
-  const combatCommands = useCombatCommands(
-    props.campaignId,
-    focused.id,
-    props.onError
-  )
+
   const windows = snapshot.state?.windows ?? []
   const visible = windows.filter((window) => !window.minimized)
   const raised = visible.at(-1)?.id
@@ -404,6 +406,7 @@ export function SceneDesktop(
                 />
               ) : (
                 <DesktopGroups
+                  disabled={editingBlocked || combatCommands.busy || sceneBusy}
                   campaignId={props.campaignId}
                   model={model}
                   actions={actions}

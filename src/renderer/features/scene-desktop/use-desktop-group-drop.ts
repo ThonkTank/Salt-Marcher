@@ -1,33 +1,31 @@
-import { useContext, useRef, useState } from 'react'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { CapabilityContext } from '../../capabilities/capability-context.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
+import { useState } from 'react'
 import type { WorkspaceSurfaceProps } from '../workspace/workspace-surface-props.js'
 import type { DesktopProjection } from './desktop-projection.js'
+import type { useCombatCommands } from '../encounter/use-combat-commands.js'
 import { droppableGroup, type GroupDrag } from './desktop-group-drop.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 export function useDesktopGroupDrop(
   props: WorkspaceSurfaceProps,
-  projection: DesktopProjection
+  projection: DesktopProjection,
+  commands: ReturnType<typeof useCombatCommands>
 ) {
-  const focused = props.snapshot.scene.scenes.find(
-    (s) => s.id === props.snapshot.scene.focusedSceneId
-  )!
-  const api = useCapabilityApi()
-  const workspace = useContext(CapabilityContext)!.campaignWorkspace
-  const commands = useAsyncCommandCoordinator()
   const [drag, setDrag] = useState<GroupDrag | null>(null)
-  const joining = useRef(false)
-  const scopeKey = `${props.campaignId}:${focused.id}`
+  const scopeKey = `${props.campaignId}:${props.snapshot.scene.focusedSceneId}`
   const [dragScope, setDragScope] = useState(scopeKey)
   if (dragScope !== scopeKey) {
     setDragScope(scopeKey)
     setDrag(null)
   }
-  async function dropGroup(payload: unknown) {
+  function dropGroup(payload: unknown) {
     const group = droppableGroup(payload, props.campaignId, props.snapshot)
     setDrag(null)
-    if (!group || joining.current) return
+    if (
+      !group ||
+      commands.blocked() ||
+      maintenanceDraftCoordinator.isLocked() ||
+      projection.snapshot().error
+    )
+      return
     if (!props.snapshot.combat) {
       const selected = projection.snapshot().state?.combatSelection ?? []
       if (!selected.includes(group.id))
@@ -35,34 +33,26 @@ export function useDesktopGroupDrop(
           type: 'combat-selection',
           value: [...selected, group.id]
         })
-      return
+    } else {
+      commands.request((current) => {
+        const currentGroup = droppableGroup(payload, props.campaignId, current)
+        if (
+          !currentGroup ||
+          !current.combat ||
+          current.combat.selectedGroupIds.includes(currentGroup.id)
+        )
+          return null
+        return {
+          kind: 'joinGroup',
+          input: {
+            sceneId: current.scene.focusedSceneId,
+            groupId: currentGroup.id,
+            expectedGroupRevision: currentGroup.revision,
+            expectedCombatRevision: current.combat.revision
+          }
+        }
+      })
     }
-    if (props.snapshot.combat.selectedGroupIds.includes(group.id)) return
-    joining.current = true
-    const outcome = await commands.run({
-      scope: 'desktop-group-drop',
-      entityKey: `${props.campaignId}:${focused.id}`,
-      mode: 'queue',
-      execute: async () => {
-        await api.combat.joinGroup({
-          sceneId: focused.id,
-          groupId: group.id,
-          expectedGroupRevision: group.revision,
-          expectedCombatRevision: props.snapshot.combat!.revision
-        })
-        return workspace.refreshActiveSession()
-      },
-      accept: (result) => {
-        if (result.status === 'failure')
-          props.onError(capabilityErrorText(result.cause))
-      }
-    })
-    if (outcome.status === 'failure') {
-      props.onError(capabilityErrorText(outcome.cause))
-      await workspace.refreshActiveSession()
-    }
-    joining.current = false
   }
-
   return { drag, setDrag, dropGroup, scopeKey }
 }
