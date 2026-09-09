@@ -30,11 +30,17 @@ import {
 } from './qualification/historical-ui-driver.js'
 import {
   stageDeployment,
+  deploymentProgram,
   setCurrent,
   currentProgram
 } from '../src/main/release/deployment.js'
 import { maintenanceJournalSchema } from '../src/shared/contracts/maintenance.js'
 import { MaintenanceCoordinator } from '../src/shared/maintenance/coordinator.js'
+import { readAppImageLauncher } from '../src/shared/maintenance/appimage-launcher.js'
+import {
+  installMaintenanceLauncher,
+  validateMaintenanceLauncher
+} from '../src/shared/maintenance/launcher.js'
 import {
   releaseManifestSchema,
   releaseRepository
@@ -47,6 +53,7 @@ const { values } = parseArgs({
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
+    'installed-launcher': { type: 'boolean', default: false },
     'maintenance-crash': { type: 'boolean', default: false },
     'activation-crash': { type: 'string' },
     'recovery-crash': { type: 'string' },
@@ -59,6 +66,8 @@ if (values['recovery-crash'] && !values['activation-crash'])
   throw new Error(
     'Recovery interruption requires a preceding activation interruption'
   )
+if (values['installed-launcher'] && values['recovery-crash'])
+  throw new Error('The Main crash observer cannot interrupt the standalone launcher')
 const baselineDirectory = resolve(z.string().parse(values.baseline))
 const targetDirectory = resolve(z.string().parse(values.target))
 const home = resolve(z.string().parse(values.home))
@@ -98,7 +107,15 @@ const originalDeployment = stageDeployment(
   baseline.executable,
   manifest(baseline)
 )
-setCurrent(root, originalDeployment)
+if (!values['installed-launcher']) setCurrent(root, originalDeployment)
+if (values['installed-launcher']) {
+  installMaintenanceLauncher(
+    root,
+    { path: baseline.executable, sha256: baseline.receipt.artifact.sha256 },
+    readAppImageLauncher(baseline.executable, baseline.receipt.artifact.sha256)
+  )
+  validateMaintenanceLauncher(root)
+}
 const requests: string[] = []
 let transportMode: 'healthy' | 'offline' | 'corrupt' | 'truncated' = values[
   'transport-failures'
@@ -177,7 +194,7 @@ let maintenanceCrash: unknown = null
 let activationCrash: unknown = null
 let commitCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
-function spawnApplication(): void {
+function spawnApplication(installationId?: string): void {
   const temporary = join(home, `ui-launch-${exits.length}`)
   mkdirSync(temporary)
   const log = openSync(join(home, `ui-launch-${exits.length}.log`), 'wx')
@@ -190,9 +207,10 @@ function spawnApplication(): void {
     SALT_MARCHER_HISTORICAL_UI_FEED: `http://127.0.0.1:${address && typeof address !== 'string' ? address.port : 0}`
   }
   delete env['ELECTRON_RUN_AS_NODE']
+  if (values['installed-launcher']) validateMaintenanceLauncher(root)
   const child = spawn(
-    join(root, 'current/SaltMarcher.AppImage'),
-    ['--no-sandbox'],
+    join(root, values['installed-launcher'] && !installationId ? 'start' : 'current/SaltMarcher.AppImage'),
+    ['--no-sandbox', ...(installationId ? ['--release-complete', installationId] : [])],
     { env, stdio: ['ignore', log, log] }
   )
   if (child.pid) trackIsolatedProcess(home, child.pid)
@@ -211,6 +229,31 @@ async function launch(): Promise<HistoricalUiDriver> {
   return HistoricalUiDriver.connect(home)
 }
 try {
+  if (values['installed-launcher']) {
+    const id = randomUUID()
+    cpSync(join(root, 'profile'), join(root, `staged-${id}`), { recursive: true })
+    const coordinator = new MaintenanceCoordinator(root)
+    coordinator.begin({
+      id,
+      operation: 'install',
+      journalVersion: 3,
+      backup: null,
+      previous: null,
+      next: deploymentProgram(root, originalDeployment)
+    })
+    coordinator.activate()
+    spawnApplication(id)
+    ui = await HistoricalUiDriver.connect(home)
+    await waitFor(
+      () => coordinator.read(),
+      (state) => state?.id === id && state.phase === 'committed',
+      'baseline installation accepted by its actual runtime'
+    )
+    await ui.closeApplication(home)
+    ui.disconnect()
+    ui = undefined
+  }
+  const initialJournal = new MaintenanceCoordinator(root).read()
   if (values['transport-failures']) {
     for (const mode of ['offline', 'corrupt', 'truncated'] as const) {
       transportMode = mode
@@ -230,7 +273,7 @@ try {
       }
       assert(!(await ui.text()).includes('Installieren und neu starten'))
       assert.equal(currentProgram(root)?.deployment, originalDeployment)
-      assert.equal(new MaintenanceCoordinator(root).read(), null)
+      assert.deepEqual(new MaintenanceCoordinator(root).read(), initialJournal)
       assert(!existsSync(join(root, 'cache', target.receipt.artifact.name)))
       assert(
         !existsSync(
@@ -297,7 +340,7 @@ try {
       'Wartung wurde unterbrochen. Der bisherige Datenstand bleibt erhalten.'
     )
     assert.equal(currentProgram(root)?.deployment, originalDeployment)
-    assert.equal(new MaintenanceCoordinator(root).read(), null)
+    assert.deepEqual(new MaintenanceCoordinator(root).read(), initialJournal)
     rmSync(arm)
     await ui.closeApplication(home)
     ui.disconnect()
@@ -838,6 +881,7 @@ try {
     )
   readHistoricalArtifact(baselineDirectory)
   readHistoricalArtifact(targetDirectory)
+  if (values['installed-launcher']) validateMaintenanceLauncher(root)
   writeFileSync(
     join(home, 'ui-update-evidence.json'),
     JSON.stringify(
@@ -845,6 +889,7 @@ try {
         formatVersion: 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
+        startPath: values['installed-launcher'] ? 'installed-launcher' : 'appimage',
         baseline: baseline.receipt,
         target: target.receipt,
         requests,

@@ -23,6 +23,16 @@ export type HistoricalSource = z.infer<typeof historicalSourceSchema>
 /** Original source identities, not published releases or qualified artifacts. */
 export const historicalReleaseSources: readonly HistoricalSource[] = [
   {
+    id: 'starter-baseline',
+    commit: 'b64a408a58d33d7806d5e9e8736a3314246667ad',
+    schemaVersions: { installation: 42, campaign: 41 }
+  },
+  {
+    id: 'starter-target',
+    commit: '5c852f3b717c90e73ca9cbec8c49ae18444e7aad',
+    schemaVersions: { installation: 42, campaign: 42 }
+  },
+  {
     id: 'extraction-baseline',
     commit: 'ab32d4947ea8409bda679d60d3befe9103c176c0',
     schemaVersions: { installation: 42, campaign: 41 }

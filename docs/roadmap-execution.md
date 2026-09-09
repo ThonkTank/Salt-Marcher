@@ -9091,3 +9091,65 @@ Plan-Audit Annahmegrenze bestanden. Roadmap-Audit Phase5 bleibt offen für
 Starter-/Local-Integration und übrige Daten-/Umgebungsfehlermatrix. Remote Check
 34350796115 für35a486c41 ist vollständig grün; daraus folgt keine Freigabe des
 geänderten aktuellen Candidate-Stands. Keine Host-GUI, kein Main-/Nutzerhandoff.
+
+### Phase 5 – Update und Recovery über den installierten Startpunkt
+
+Voriger Turn Fortschritt: dauerhafte Annahme plus Erhalt späterer Arbeit mit
+AppImages grün,5c852f3b7 gepusht. Arbeitsbaum sauber, keine laufende Test-VM.
+Plan: --installed-launcher im UI-Qualifier ergänzt echten Installationsstartpunkt
+über installMaintenanceLauncher mit aus unverändertem Baseline-AppImage gelesenem
+Originalhelfer. Alle expliziten Appstarts laufen dann über root/start; Herkunft
+vor jedem Start sowie nach Abschluss prüfen und Startweg im Bericht festhalten.
+Pilot: Aktivierung old-data-moved abbrechen (Profil fehlt zeitweise), anschließend
+Recovery über den installierten Starter, vollständiger alter Datenvergleich und
+normaler UI-Update-/Weiterarbeiten-/Restorefall. Keine Test-Recoveryfunktion.
+Historischer Main-Beobachter kann nicht im eigenständigen Originalhelfer pausieren;
+--recovery-crash zusammen mit diesem Startweg deshalb ausdrücklich ablehnen, nicht
+stillschweigend einen ungeprüften zweiten Abbruch behaupten. Beobachtung dieses
+Helfers bleibt separat offen. Vorhandene0.0.154/0.0.155 unverändert verwenden.
+Lint/Typprüfung und anschließend isolierter Gastlauf; keine Quelländerung während
+Build/Test, keine Host-GUI oder echten Nutzerprofile.
+
+49300 terminalExit0: erster Driverstand Lint/Typen grün. Statischer Integrations-
+Audit vor Gaststart findet fehlenden initialen Wartungsbeleg der bisher direkt
+gestarteten Fixture. Korrekturplan: Baseline als echte Installations-Transaktion
+aktivieren und ausschließlich diesen ersten Start mit --release-complete direkt
+anstoßen. Erst die App bestätigt ihre Daten; danach alle Starts über root/start.
+Fehlerfälle müssen den bestätigten initialen Beleg unverändert lassen statt null
+zu erwarten. Kein künstlicher committed-Beleg, kein Test-Koordinator-commit.
+
+18414 terminalExit0: korrigierter Driver Lint/Typen grün. Weitere statische
+Prüfung vor Gaststart: installLauncher wird bei jedem Update aufgerufen. Die
+alten ab32/f633-Testartefakte würden daher die dort noch alte Shellimplementierung
+installieren. Neue explizite Vergleichsquellen sind erforderlich: Baseline ab32
+mit ausschließlich aktuellem src/shared/maintenance/launcher.ts (Schemas und SQL
+unverändert42/41), Ziel aktueller geprüfter Quellstand5c852f3b7 (42/42). Baseline
+separat committen und veröffentlichen, beide immutable IDs im Quellenkatalog
+registrieren. Neue Testversionen0.0.156/0.0.157; bestehende Assets unverändert.
+Dies ist ein dokumentierter Vergleichsstand, kein nachträgliches Verändern alter
+Releasebytes oder eine künstliche Migration. Erst danach Starter-Pilot ausführen.
+
+73409 terminalExit0: neue Testartefakte0.0.156/157 gebaut.63927 terminalExit0:
+Gast-TestExit0 nach121.5s, aber serieller Export enthält eine abgebrochene Base64-
+Zeile während Shutdown-Ausgaben (14 statt76 Zeichen), gzip deshalb ungültig.
+Kein vollständiger Berichtvergleich behauptet. Korrekturplan nur Gast-Export:
+ui-update-evidence.json gezielt exportieren, Ausgabe flushen und zehn Sekunden
+vor Shutdown zum Austragen des Konsolenpuffers lassen. Dasselbe unveränderte
+Payload erneut in frischem Gast und Testhome ausführen; kein Quell-/Artefaktwechsel.
+
+62948 terminalExit0, installed-update-run-2 TestExit0 und vollständiger Export
+mit gültigem gzip. BerichtSHA 3fdc016f5f2082eac8daa849b8e45e84576f1e5aa29400c6c88af419e2634fc0
+Baseline0.0.156 SHA8b6776d37bb8efa5a56bb625cb8e43249847253291517f51ebaba5d43cfd4286
+(177048277 Bytes), Ziel0.0.157
+SHA9b23022f613491ad3b55be0eac2fd8088549d7b56a261e2ec14d9698d30effd8
+(177048160 Bytes). Initialer Abschluss durch Baseline-Runtime; danach Starts über
+den installierten, hashgeprüften Shellstarter. Abbruch old-data-moved, Recovery
+rolled-back mit altem Programm; vollständiger alter Profilvergleich bestanden.
+Anschließend UI-Update, Schemawechsel, Weiterarbeiten und Restore grün:
+after/restored/unchanged==seeded; continued==protectedRead. Keine Test-Recovery
+und kein künstlicher commit. Neuer Quellenkatalog referenziert Baselineb64a408a5
+und Ziel5c852f3b7 mit unveränderten echten Schemaständen42/41→42/42.
+
+Plan-Audit Starter-Pilot bestanden. Roadmap-Audit: weitere Startergrenzen, Abbruch
+im eigenständigen Helfer, Local-Adapter und übrige Fehlermatrix bleiben offen.
+Phase5 nicht abgeschlossen; keine Freigabe/Handoff/Veröffentlichung.
