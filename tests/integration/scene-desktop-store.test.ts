@@ -26,7 +26,16 @@ describe('installation-owned scene desktops', () => {
     const db = new Database(':memory:')
     try {
       initializeSceneDesktopSchema(db)
-      const old = { windows: initialDesktopState().windows, schemaVersion: 1 }
+      const old = {
+        windows: [
+          {
+            ...initialDesktopState().windows[0],
+            id: 'overview',
+            kind: 'overview'
+          }
+        ],
+        schemaVersion: 1
+      }
       db.prepare('INSERT INTO scene_desktop VALUES (?, ?, ?, ?)').run(
         scope.campaignId,
         scope.sceneId,

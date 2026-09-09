@@ -143,9 +143,10 @@ describe('scene desktop projection', () => {
       )
     const source = desktopProjection(api, scope)
     await source.load()
-    source.dispatch({ type: 'minimize', id: 'overview' })
-    source.dispatch({ type: 'open-overview' })
-    source.dispatch({ type: 'close', id: 'overview' })
+    source.dispatch({ type: 'minimize', id: 'party' })
+    source.dispatch({ type: 'open-party' })
+    source.dispatch({ type: 'close', id: 'party' })
+    source.dispatch({ type: 'close', id: 'groups' })
     const targetScope = {
       ...scope,
       sceneId: '00000000-0000-4000-8000-000000000003'
@@ -179,7 +180,7 @@ describe('scene desktop projection', () => {
     api.read.mockRejectedValueOnce(new Error('unavailable'))
     const model = new DesktopProjection(api, scope)
     await model.load()
-    model.dispatch({ type: 'open-overview' })
+    model.dispatch({ type: 'open-party' })
     expect(model.snapshot().state).toBeNull()
     expect(api.save).not.toHaveBeenCalled()
     api.read.mockResolvedValue(stored(3, empty))
@@ -194,8 +195,13 @@ describe('scene desktop projection', () => {
     const model = new DesktopProjection(api, scope)
     await model.load()
     api.save.mockRejectedValue(new Error('lost response'))
-    api.read.mockResolvedValue(stored(1, empty))
-    model.dispatch({ type: 'close', id: 'overview' })
+    api.read.mockResolvedValue(
+      stored(1, {
+        ...initialDesktopState(),
+        windows: initialDesktopState().windows.filter((w) => w.kind !== 'party')
+      })
+    )
+    model.dispatch({ type: 'close', id: 'party' })
     await vi.waitFor(() => expect(model.snapshot().saving).toBe(false))
     expect(model.snapshot().error).toBeNull()
     expect(api.save).toHaveBeenCalledTimes(1)
@@ -207,9 +213,9 @@ describe('scene desktop projection', () => {
     await model.load()
     api.save.mockRejectedValue(new Error('stale'))
     api.read.mockResolvedValue(stored(5, initialDesktopState()))
-    model.dispatch({ type: 'close', id: 'overview' })
+    model.dispatch({ type: 'close', id: 'party' })
     await vi.waitFor(() => expect(model.snapshot().error).not.toBeNull())
-    model.dispatch({ type: 'open-overview' })
+    model.dispatch({ type: 'open-party' })
     expect(api.save).toHaveBeenCalledTimes(1)
     model.reload()
     await vi.waitFor(() => expect(model.snapshot().loading).toBe(false))

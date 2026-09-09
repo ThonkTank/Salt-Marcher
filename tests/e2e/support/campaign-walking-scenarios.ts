@@ -64,9 +64,9 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (await client.$('h1=Session · test')).waitForExist({ timeout: 10_000 })
   await expect(await client.$('.error-message')).not.toBeExisting()
   await expect(await client.$('.scene-desktop')).toBeExisting()
-  await expect(client.$('[data-window-id="overview"]')).toBeExisting()
+  await expect(client.$('[data-window-id="groups"]')).toBeExisting()
   await expect(
-    client.$('[data-window-id="overview"] [aria-label="Gruppen"]')
+    client.$('[data-window-id="groups"] [aria-label="Gruppen"]')
   ).toBeExisting()
   await openSceneWindow(client, 'combat')
   await expect(client.$('[data-window-id="combat"]')).toBeExisting()
@@ -211,7 +211,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await expectAccessibleInBothThemes(client)
   await openSceneWindow(client, 'map')
   await expect(await client.$('strong=Keine Hex-Karte')).toBeExisting()
-  const overview = await openSceneWindow(client, 'overview')
+  const overview = await openSceneWindow(client, 'groups')
   await overview
     .$('button[aria-label="Fenster mit Pfeiltasten verschieben"]')
     .click()
@@ -631,10 +631,10 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await expectAccessibleInBothThemes(client)
 
   await (await client.$('button[aria-label="Session"]')).click()
-  const groupsHeading = await client.$('[data-window-id="overview"]')
+  const groupsHeading = await client.$('[data-window-id="groups"]')
   await expect(await groupsHeading.$('button=Neue Gruppe')).not.toBeExisting()
   await (
-    await openSceneWindow(client, 'overview')
+    await openSceneWindow(client, 'groups')
   )
     .$('button[aria-label="Gruppen bearbeiten"]')
     .click()
@@ -783,7 +783,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
     expect.stringContaining('Prone')
   )
   await (await reader.$('.reference-document')).waitForDisplayed()
-  await openSceneWindow(client, 'overview')
+  await openSceneWindow(client, 'groups')
   await (await groupNote.$('button=Stunned')).click()
   await expect(reader).toHaveAttribute(
     'aria-label',
@@ -820,7 +820,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await reader.waitForExist({ reverse: true, timeout: 5_000 })
 
   await (
-    await openSceneWindow(client, 'overview')
+    await openSceneWindow(client, 'groups')
   )
     .$('button[aria-label="Gruppen bearbeiten"]')
     .click()

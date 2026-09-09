@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DesktopWindow } from '../../src/renderer/features/scene-desktop/desktop-window.js'
-import { initialOverviewWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
+import { initialPartyWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
 
 const size = { width: 900, height: 600 }
 afterEach(cleanup)
@@ -11,7 +11,7 @@ function fixture() {
   const preview = vi.fn()
   const view = render(
     <DesktopWindow
-      window={initialOverviewWindow}
+      window={initialPartyWindow}
       size={size}
       others={[]}
       raised
@@ -62,8 +62,8 @@ describe('desktop window interaction', () => {
     )
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'bounds',
-      id: 'overview',
-      bounds: { ...initialOverviewWindow.bounds, x: 30 }
+      id: 'party',
+      bounds: { ...initialPartyWindow.bounds, x: 30 }
     })
     fireEvent.keyDown(
       view.getByRole('button', { name: 'Fenstergröße mit Pfeiltasten ändern' }),
@@ -71,24 +71,24 @@ describe('desktop window interaction', () => {
     )
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'bounds',
-      id: 'overview',
-      bounds: { ...initialOverviewWindow.bounds, height: 440 }
+      id: 'party',
+      bounds: { ...initialPartyWindow.bounds, height: 440 }
     })
     fireEvent.click(view.getByText('Linke Hälfte'))
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'snap',
-      id: 'overview',
+      id: 'party',
       side: 'left'
     })
     fireEvent.click(view.getByRole('button', { name: 'Minimieren' }))
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'minimize',
-      id: 'overview'
+      id: 'party'
     })
     fireEvent.click(view.getByRole('button', { name: 'Fenster schließen' }))
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'close',
-      id: 'overview'
+      id: 'party'
     })
   })
 
@@ -103,8 +103,8 @@ describe('desktop window interaction', () => {
     pointer(view.header, 'pointerup', 160, 140)
     expect(view.dispatch).toHaveBeenCalledExactlyOnceWith({
       type: 'bounds',
-      id: 'overview',
-      bounds: { ...initialOverviewWindow.bounds, x: 80, y: 60 }
+      id: 'party',
+      bounds: { ...initialPartyWindow.bounds, x: 80, y: 60 }
     })
   })
 

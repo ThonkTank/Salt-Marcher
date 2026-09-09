@@ -9,18 +9,26 @@ import type {
 
 import { referenceTargetKey } from '../../../shared/reference/reference-target-key.js'
 
-export const initialOverviewWindow: SceneDesktopWindow = {
-  id: 'overview',
-  kind: 'overview',
+export const initialPartyWindow = {
+  id: 'party',
+  kind: 'party',
   bounds: { x: 20, y: 20, width: 380, height: 420 },
   minimized: false,
   maximized: false,
   snap: null
-}
+} satisfies SceneDesktopWindow
 export function initialDesktopState(): SceneDesktopState {
   return {
-    schemaVersion: 4,
-    windows: [initialOverviewWindow],
+    schemaVersion: 5,
+    windows: [
+      initialPartyWindow,
+      {
+        ...initialPartyWindow,
+        id: 'groups',
+        kind: 'groups',
+        bounds: { x: 60, y: 60, width: 380, height: 420 }
+      }
+    ],
     mapView: { mapId: null, selected: null, cameras: [] },
     combatSelection: []
   }
@@ -28,7 +36,8 @@ export function initialDesktopState(): SceneDesktopState {
 export type DesktopAction =
   | Readonly<{ type: 'open-characters' }>
   | Readonly<{ type: 'character-comparison'; value: CharacterComparison }>
-  | Readonly<{ type: 'open-overview' }>
+  | Readonly<{ type: 'open-party' }>
+  | Readonly<{ type: 'open-groups' }>
   | Readonly<{ type: 'open-search' }>
   | Readonly<{ type: 'open-map' }>
   | Readonly<{ type: 'open-combat' }>
@@ -78,7 +87,7 @@ export function reduceDesktop(
     if (state.windows.some((window) => window.id === 'characters'))
       return reduceDesktop(state, { type: 'raise', id: 'characters' })
     return appendWindow(state, {
-      ...initialOverviewWindow,
+      ...initialPartyWindow,
       id: 'characters',
       kind: 'characters',
       comparison: { language: '', passive: 'passivePerception', minimum: null },
@@ -111,23 +120,34 @@ export function reduceDesktop(
     if (state.windows.some((window) => window.id === kind))
       return reduceDesktop(state, { type: 'raise', id: kind })
     return appendWindow(state, {
-      ...initialOverviewWindow,
+      ...initialPartyWindow,
       id: kind,
       kind,
       ...(kind === 'map' ? { controlsOpen: false } : {}),
       bounds: { x: 80, y: 40, width: kind === 'map' ? 720 : 600, height: 560 }
     } as SceneDesktopWindow)
   }
-  if (action.type === 'open-overview' || action.type === 'open-search') {
-    const id = action.type === 'open-overview' ? 'overview' : 'search'
+  if (
+    action.type === 'open-party' ||
+    action.type === 'open-groups' ||
+    action.type === 'open-search'
+  ) {
+    const id =
+      action.type === 'open-party'
+        ? 'party'
+        : action.type === 'open-groups'
+          ? 'groups'
+          : 'search'
     if (state.windows.some((window) => window.id === id))
       return reduceDesktop(state, { type: 'raise', id })
     return appendWindow(
       state,
-      id === 'overview'
-        ? initialOverviewWindow
+      id !== 'search'
+        ? id === 'party'
+          ? initialPartyWindow
+          : { ...initialPartyWindow, id: 'groups', kind: 'groups' }
         : {
-            ...initialOverviewWindow,
+            ...initialPartyWindow,
             id,
             kind: 'search',
             query: '',
@@ -147,7 +167,7 @@ export function reduceDesktop(
       return existing
         ? reduceDesktop(state, { type: 'raise', id: existing.id })
         : appendWindow(state, {
-            ...initialOverviewWindow,
+            ...initialPartyWindow,
             id: action.separateId,
             kind: 'reference',
             entry: action.entry,
@@ -173,7 +193,7 @@ export function reduceDesktop(
       )
     }
     return appendWindow(state, {
-      ...initialOverviewWindow,
+      ...initialPartyWindow,
       id: 'reader',
       kind: 'reader',
       entries: [action.entry],
@@ -298,7 +318,7 @@ function appendWindow(
   window: SceneDesktopWindow
 ): SceneDesktopState {
   // Do not evict an existing document to make room for another one.
-  return state.windows.length >= 32
+  return state.windows.length >= 33
     ? state
     : { ...state, windows: [...state.windows, window] }
 }

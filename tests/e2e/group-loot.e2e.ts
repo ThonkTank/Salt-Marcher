@@ -22,7 +22,7 @@ describe('Group Loot editor', () => {
     ).waitForExist({ timeout: 15_000 })
     await (
       await client.$(
-        '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+        '[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]'
       )
     ).click()
     const dialog = await client.$(

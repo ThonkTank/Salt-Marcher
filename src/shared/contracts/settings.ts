@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { partyQuickFieldSchema } from './party-quick-fields.js'
 import { sessionLayoutPreferenceSchema } from './session-layout.js'
 
 /** Historical envelope codec, used only when migrating pre-desktop settings. */
@@ -18,7 +19,12 @@ export const legacyPersistedInstallationPreferencesSchema = z
 
 export const installationPreferencesSchema = z
   .object({
-    theme: z.enum(['light', 'dark'])
+    theme: z.enum(['light', 'dark']),
+    partyQuickFields: z
+      .array(partyQuickFieldSchema)
+      .max(10)
+      .refine((fields) => new Set(fields).size === fields.length)
+      .default(['armorClass', 'passivePerception'])
   })
   .strict()
 
@@ -38,8 +44,13 @@ export const installationSettingsSchema = z
   .strict()
   .readonly()
 
-export const installationPreferencesPatchSchema =
-  installationPreferencesSchema.partial()
+export const installationPreferencesPatchSchema = installationPreferencesSchema
+  .partial()
+  .extend({
+    partyQuickFields: installationPreferencesSchema.shape.partyQuickFields
+      .removeDefault()
+      .optional()
+  })
 
 export const updateInstallationSettingsInputSchema = z
   .object({
@@ -54,7 +65,7 @@ export const defaultInstallationPreferences: InstallationPreferences =
   })
 
 export function persistedInstallationPreferences(
-  preferences: InstallationPreferences
+  preferences: z.input<typeof installationPreferencesSchema>
 ): PersistedInstallationPreferences {
   return persistedInstallationPreferencesSchema.parse({
     schemaVersion: 2,

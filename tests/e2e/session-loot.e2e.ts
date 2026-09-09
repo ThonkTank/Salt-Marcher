@@ -142,7 +142,7 @@ describe('Loot distribution and ledger', () => {
     await client
       .$('[data-window-id="loot"] button[aria-label="Fenster schließen"]')
       .click()
-    await openSceneWindow(client, 'overview')
+    await openSceneWindow(client, 'groups')
     const character = await client
       .$('.desktop-register')
       .$(`li*=${prepared.characterName}`)

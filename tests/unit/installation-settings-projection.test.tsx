@@ -150,7 +150,10 @@ function settings(
   return Object.freeze({
     revision,
     preferences: Object.freeze({
-      theme
+      theme,
+      partyQuickFields: ['armorClass', 'passivePerception'] as (
+        'armorClass' | 'passivePerception'
+      )[]
     })
   })
 }

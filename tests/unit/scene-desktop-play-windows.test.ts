@@ -23,7 +23,8 @@ describe('scene play window presentation', () => {
     })
     state = reduceDesktop(state, { type: 'combat-selection', value: [mapId] })
     state = reduceDesktop(state, { type: 'close', id: 'map' })
-    state = reduceDesktop(state, { type: 'close', id: 'overview' })
+    state = reduceDesktop(state, { type: 'close', id: 'party' })
+    state = reduceDesktop(state, { type: 'close', id: 'groups' })
     const restored = readStoredDesktopState(JSON.parse(JSON.stringify(state)))
     expect(restored.windows).toEqual([])
     expect(restored.mapView).toEqual(state.mapView)
@@ -38,7 +39,16 @@ describe('scene play window presentation', () => {
     })
     const restored = readStoredDesktopState({
       schemaVersion: 2,
-      windows: previous.windows
+      windows: [
+        ...[
+          {
+            ...initialDesktopState().windows[0],
+            id: 'overview',
+            kind: 'overview'
+          }
+        ],
+        ...previous.windows.filter((w) => w.kind === 'search')
+      ]
     })
     expect(restored).toEqual(previous)
     expect(() =>

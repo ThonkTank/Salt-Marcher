@@ -175,7 +175,10 @@ function settings(
   return Object.freeze({
     revision: 0,
     preferences: Object.freeze({
-      theme
+      theme,
+      partyQuickFields: ['armorClass', 'passivePerception'] as (
+        'armorClass' | 'passivePerception'
+      )[]
     })
   }) satisfies InstallationSettings
 }

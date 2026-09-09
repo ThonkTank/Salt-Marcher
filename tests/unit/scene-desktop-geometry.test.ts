@@ -7,7 +7,7 @@ import {
 } from '../../src/renderer/features/scene-desktop/desktop-geometry.js'
 import {
   initialDesktopState,
-  initialOverviewWindow,
+  initialPartyWindow,
   reduceDesktop
 } from '../../src/renderer/features/scene-desktop/desktop-state.js'
 import { saveSceneDesktopInputSchema } from '../../src/shared/contracts/scene-desktop.js'
@@ -17,7 +17,7 @@ const size = { width: 1200, height: 700 }
 describe('scene desktop geometry and state', () => {
   it('keeps preferred geometry when the viewport shrinks and restores it when room returns', () => {
     const window = {
-      ...initialOverviewWindow,
+      ...initialPartyWindow,
       bounds: { x: 600, y: 200, width: 500, height: 400 }
     }
     expect(desktopWindowBounds(window, { width: 300, height: 250 })).toEqual({
@@ -39,16 +39,16 @@ describe('scene desktop geometry and state', () => {
     const start = initialDesktopState()
     const snapped = reduceDesktop(start, {
       type: 'snap',
-      id: 'overview',
+      id: 'party',
       side: 'right'
     })
-    const max = reduceDesktop(snapped, { type: 'maximize', id: 'overview' })
+    const max = reduceDesktop(snapped, { type: 'maximize', id: 'party' })
     expect(desktopWindowBounds(max.windows[0]!, size)).toEqual({
       x: 0,
       y: 0,
       ...size
     })
-    const restored = reduceDesktop(max, { type: 'maximize', id: 'overview' })
+    const restored = reduceDesktop(max, { type: 'maximize', id: 'party' })
     expect(desktopWindowBounds(restored.windows[0]!, size)).toEqual({
       x: 600,
       y: 0,
@@ -56,23 +56,24 @@ describe('scene desktop geometry and state', () => {
       height: 700
     })
     expect(
-      reduceDesktop(restored, { type: 'snap', id: 'overview', side: null })
+      reduceDesktop(restored, { type: 'snap', id: 'party', side: null })
     ).toEqual(start)
   })
 
   it('keeps minimized state, reopens a singleton, and leaves a closed desktop empty', () => {
     const minimized = reduceDesktop(initialDesktopState(), {
       type: 'minimize',
-      id: 'overview'
+      id: 'party'
     })
     expect(minimized.windows[0]?.minimized).toBe(true)
-    const reopened = reduceDesktop(minimized, { type: 'open-overview' })
-    expect(reopened).toEqual(initialDesktopState())
-    const closed = reduceDesktop(reopened, { type: 'close', id: 'overview' })
-    expect(closed.windows).toHaveLength(0)
-    expect(reduceDesktop(closed, { type: 'raise', id: 'overview' })).toBe(
-      closed
+    const reopened = reduceDesktop(minimized, { type: 'open-party' })
+    expect(reopened.windows.at(-1)).toEqual(initialDesktopState().windows[0])
+    const closed = reduceDesktop(
+      reduceDesktop(reopened, { type: 'close', id: 'party' }),
+      { type: 'close', id: 'groups' }
     )
+    expect(closed.windows).toHaveLength(0)
+    expect(reduceDesktop(closed, { type: 'raise', id: 'party' })).toBe(closed)
   })
 
   it('snaps near viewport and neighboring edges while keeping windows reachable', () => {
@@ -107,8 +108,8 @@ describe('scene desktop geometry and state', () => {
           ...input.state,
           windows: [
             {
-              ...initialOverviewWindow,
-              bounds: { ...initialOverviewWindow.bounds, x: -1 }
+              ...initialPartyWindow,
+              bounds: { ...initialPartyWindow.bounds, x: -1 }
             }
           ]
         }
@@ -119,7 +120,7 @@ describe('scene desktop geometry and state', () => {
         ...input,
         state: {
           ...input.state,
-          windows: [initialOverviewWindow, initialOverviewWindow]
+          windows: [initialPartyWindow, initialPartyWindow]
         }
       }).success
     ).toBe(false)

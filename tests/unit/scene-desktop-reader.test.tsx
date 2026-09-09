@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DesktopReader } from '../../src/renderer/features/scene-desktop/desktop-references.js'
 import { ReferenceProvider } from '../../src/renderer/features/reference/reference-provider.js'
 import { useReferenceContext } from '../../src/renderer/features/reference/reference-context.js'
-import { initialOverviewWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
+import { initialPartyWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type {
   ReferenceDocument,
@@ -32,7 +32,7 @@ const entries = [
   { target: second, title: 'Two', scrollTop: 91 }
 ]
 const reader = (index: number): SceneDesktopWindow => ({
-  ...initialOverviewWindow,
+  ...initialPartyWindow,
   kind: 'reader',
   id: 'reader',
   entries,

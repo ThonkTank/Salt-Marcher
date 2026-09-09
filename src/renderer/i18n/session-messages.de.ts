@@ -1,4 +1,20 @@
 export const sessionMessagesDe = {
+  'partyWindow.title': 'Party',
+  'partyWindow.quick': 'Schnellwerte',
+  'partyWindow.move': 'Verschieben …',
+  'partyWindow.empty': 'Keine Charaktere in dieser Szene.',
+  'partyWindow.collapsed': 'Eingeklappt anzeigen',
+  'partyWindow.done': 'Fertig',
+  'partyWindow.target': 'Verschieben nach',
+  'groupWindow.manage': 'Gruppen managen',
+  'groupWindow.edit': 'Gruppen bearbeiten',
+  'groupWindow.title': 'Gruppen',
+  'groupWindow.selected': 'Im Kampf',
+  'groupWindow.hp': 'HP',
+  'groupWindow.dropTarget': 'Kampf: Gruppe hier ablegen',
+  'groupWindow.dragStatus':
+    'Gruppe aufgenommen. Im Kampf-Fenster ablegen; Escape bricht ab.',
+
   'hex.loading': 'Karte wird geladen …',
   'reference.loading': 'Referenz wird geladen …',
   'reference.contextCreature': '{context} › Kreatur',

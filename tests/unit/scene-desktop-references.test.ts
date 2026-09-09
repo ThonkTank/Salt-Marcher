@@ -112,7 +112,7 @@ describe('desktop reference state', () => {
       entry: item,
       separateId: '00000000-0000-4000-8000-000000000009'
     })
-    expect(state.windows).toHaveLength(2)
+    expect(state.windows).toHaveLength(3)
     expect(state.windows.at(-1)).toMatchObject({
       id,
       minimized: false,
@@ -126,7 +126,13 @@ describe('desktop reference state', () => {
     })
     expect(
       readStoredDesktopState({
-        windows: initialDesktopState().windows,
+        windows: [
+          {
+            ...initialDesktopState().windows[0],
+            id: 'overview',
+            kind: 'overview'
+          }
+        ],
         schemaVersion: 1
       })
     ).toEqual(initialDesktopState())

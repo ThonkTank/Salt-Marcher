@@ -99,3 +99,35 @@ copy.
 - [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md)
 - [Scene Domain](../domain/domain-scene.md)
 - [Scene Persistence Contract](../contract/contract-scene-persistence.md)
+
+## Party and Groups desktop windows
+
+The scene desktop replaces Overview with independent Party and Groups singleton
+windows using the existing move, resize, snap, minimize, and restore controls.
+Location editing and scene time remain available in the desktop toolbar.
+
+Party lists only active PCs assigned to the focused scene. Each PC expands
+independently to Character, Combat, Passive, and Languages sections, in that
+order. D&D terms are English; movement uses the stored feet value. Passive
+scores use Per., Ins., and Inv. Class and level form one value; species and
+player names have no redundant labels. User-entered text is never translated.
+Unknown numeric values show an em dash, not zero.
+
+The Quick Values popup selects which fields also appear beside the collapsed
+character name. Its categorized checkboxes do not hide expanded details.
+AC and Per. are the defaults. Installation preferences preserve this selection
+across scenes and restarts. The row move popup targets another existing scene
+through the atomic roster-move command and retains errors without closing.
+
+Groups retain editing, archives, references and loot. Their independent drag
+grip places a group into the Combat window without moving either desktop window.
+Before initiative, a drop adds to the scene's persisted combat selection only.
+During initiative/combat it joins through the existing reinforcement command.
+Repeated drops never duplicate membership. Foreign-scope, archived, wholly dead,
+and result-phase drops are invalid. Keyboard pickup, target focus, Enter/Space
+to drop, and Escape cancellation support the same operation.
+
+Desktop document version 5 migrates each legacy overview to Party plus an offset
+Groups window; preserves other windows, selection and minimized state; and leaves
+intentionally closed desktops closed. Window capacity allows the extra migrated
+window. No campaign or combat state is copied into desktop presentation data.

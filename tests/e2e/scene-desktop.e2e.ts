@@ -1,5 +1,6 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import { openSceneWindow } from './support/scene-desktop-navigation.js'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import {
   expectAccessibleInBothThemes,
@@ -8,8 +9,55 @@ import {
 } from './support/e2e-assertions.js'
 
 describe('per-scene desktop', () => {
+  it('shows party details and accepts a group drop without preparing initiative', async () => {
+    const client = browser as unknown as WdioBrowser
+    await resumeCampaignFromScreen(client)
+    const party = await openSceneWindow(client, 'party')
+    await party.$('.desktop-party-toggle').click()
+    await expect(party.$('.desktop-party-details')).toHaveText(
+      expect.stringContaining('Charakter')
+    )
+    await party.$('button=Schnellwerte').click()
+    await expect(client.$('.desktop-party-popup')).toBeDisplayed()
+    await client.$('.desktop-party-popup').$('button=Fertig').click()
+    const combat = await openSceneWindow(client, 'combat')
+    const groups = await openSceneWindow(client, 'groups')
+    await groups.$('.desktop-group-grip').click()
+    await client.keys('Enter')
+    await expect(combat.$('.desktop-drop-ready')).toBeExisting()
+    await client.execute(() =>
+      document.querySelector<HTMLElement>('.desktop-combat')!.focus()
+    )
+    await client.keys('Enter')
+    await waitSaved(client)
+    await expect(
+      combat.$('.encounter-group-choice input:checked')
+    ).toBeExisting()
+    await expect(combat.$('.combat-setup')).toBeExisting()
+    await combat.$('.encounter-group-choice input:checked').click()
+    await openSceneWindow(client, 'groups')
+    await groups.$('summary').click()
+    await groups.$('button=Linke Hälfte').click()
+    await openSceneWindow(client, 'combat')
+    await combat.$('summary').click()
+    await combat.$('button=Rechte Hälfte').click()
+    await groups
+      .$('.desktop-group-grip')
+      .dragAndDrop(combat.$('.desktop-combat'), { duration: 500 })
+    await expect(
+      combat.$('.encounter-group-choice input:checked')
+    ).toBeExisting()
+    await combat.$('.encounter-group-choice input:checked').click()
+    await combat.$('button[aria-label="Fenster schließen"]').click()
+    await openSceneWindow(client, 'party')
+    await expectAccessibleInBothThemes(client)
+    await client.saveScreenshot('/tmp/saltmarcher-party-groups.png')
+    await waitSaved(client)
+  })
+
   it('preserves separate arrangements and intentional closure through navigation and process restart', async () => {
     const client = browser as unknown as WdioBrowser
+    await client.reloadSession()
     await resumeCampaignFromScreen(client)
     await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
     await expect(client.$('.desktop-preview-setting')).not.toBeExisting()
@@ -22,7 +70,10 @@ describe('per-scene desktop', () => {
       return Math.abs(desktop.width - work.width) < 2
     })
     expect(spansWorkspace).toBe(true)
-    expect(await client.$('.desktop-register').getText()).toContain('Edrik')
+    await client
+      .$('[data-window-id="groups"] button[aria-label="Fenster schließen"]')
+      .click()
+    expect(await client.$('.desktop-party').getText()).toContain('Edrik')
     const identities = await client
       .$$('select[aria-label="Szene"] option')
       .map((option) => option.getAttribute('value'))
@@ -57,6 +108,9 @@ describe('per-scene desktop', () => {
     )
     await waitSaved(client)
     await client.$('.desktop-window').waitForDisplayed({ timeout: 10_000 })
+    await client
+      .$('[data-window-id="groups"] button[aria-label="Fenster schließen"]')
+      .click()
     await client.$('button[aria-label="Fenster schließen"]').click()
     await waitSaved(client)
     await expect(client.$('.desktop-window')).not.toBeExisting()
@@ -91,7 +145,7 @@ describe('per-scene desktop', () => {
     await waitSaved(client)
     await waitSaved(client)
     await expect(client.$('.desktop-window')).not.toBeExisting()
-    await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+    await client.$('.desktop-toolbar').$('button=Gruppen').click()
     await client.$('.desktop-window').waitForDisplayed({ timeout: 10_000 })
     await setWindowToMinimumResponsiveSize(client)
     console.info(
@@ -155,7 +209,7 @@ describe('per-scene desktop', () => {
     await reader.$('button[aria-label="Wiederherstellen"]').click()
     await reader.$('button=Separat öffnen').click()
     const separateSelector =
-      '.desktop-window:not([data-window-id="reader"]):not([data-window-id="search"]):not([data-window-id="overview"])'
+      '.desktop-window:not([data-window-id="reader"]):not([data-window-id="search"]):not([data-window-id="groups"]):not([data-window-id="party"])'
     await client.$(separateSelector).waitForDisplayed()
     await client.$(separateSelector).$('summary').click()
     await client.$(separateSelector).$('button=Linke Hälfte').click()

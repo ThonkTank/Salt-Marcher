@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DesktopOverview } from '../../src/renderer/features/scene-desktop/desktop-overview.js'
+import { DesktopSceneFacts } from '../../src/renderer/features/scene-desktop/desktop-overview.js'
 import type {
   SessionWorkspaceActions,
   SessionWorkspaceViewModel
@@ -10,7 +10,6 @@ import type {
 afterEach(cleanup)
 describe('regular scene overview', () => {
   it('keeps location editing local and opens character management through quickinfos', () => {
-    const openCharacters = vi.fn()
     const setSceneLocation = vi.fn()
     const model = {
       focused: {
@@ -31,13 +30,7 @@ describe('regular scene overview', () => {
       setSceneLocation,
       manageGroups: vi.fn()
     } as unknown as SessionWorkspaceActions
-    render(
-      <DesktopOverview
-        model={model}
-        actions={actions}
-        openCharacters={openCharacters}
-      />
-    )
+    render(<DesktopSceneFacts model={model} actions={actions} />)
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Kein Ort' }))
     fireEvent.change(screen.getByRole('combobox'), {
@@ -45,7 +38,5 @@ describe('regular scene overview', () => {
     })
     expect(setSceneLocation).toHaveBeenCalledWith('harbour')
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Charaktere öffnen' }))
-    expect(openCharacters).toHaveBeenCalledOnce()
   })
 })

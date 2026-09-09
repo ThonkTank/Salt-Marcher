@@ -2,6 +2,10 @@ import { useCombatCommands } from '../encounter/use-combat-commands.js'
 import { desktopXpDraftId } from './desktop-xp-draft-id.js'
 import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { useDesktopGroupDrop } from './use-desktop-group-drop.js'
+import { DesktopParty } from './desktop-party.js'
+import { DesktopGroups } from './desktop-groups.js'
+import { droppableGroup, groupDragMime } from './desktop-group-drop.js'
 import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
@@ -12,7 +16,7 @@ import {
   SessionEncounterPanel
 } from '../encounter/encounter-panels.js'
 import type { SessionTravelSlots } from '../session/session-travel-slots.js'
-import { DesktopOverview } from './desktop-overview.js'
+import { DesktopSceneFacts } from './desktop-overview.js'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { WorkspaceSurfaceProps } from '../workspace/workspace-surface-props.js'
 import { message } from '../../i18n/session-runtime.de.js'
@@ -58,6 +62,12 @@ export function SceneDesktop(
       text: message('desktop.resolveBeforeSceneChange')
     }
   )
+  const { drag, setDrag, dropGroup, scopeKey } = useDesktopGroupDrop(
+    props,
+    projection
+  )
+  const [expanded, setExpanded] = useState<Record<string, string[]>>({})
+
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
   const requestedFocus = useRef<{ sceneId: string; windowId: string } | null>(
@@ -144,12 +154,12 @@ export function SceneDesktop(
           onClick={() => {
             requestedFocus.current = {
               sceneId: focused.id,
-              windowId: 'overview'
+              windowId: 'party'
             }
-            projection.dispatch({ type: 'open-overview' })
+            projection.dispatch({ type: 'open-party' })
           }}
         >
-          {message('desktop.overview')}
+          {message('partyWindow.title')}
         </button>
         <button
           disabled={!snapshot.state || !!snapshot.error}
@@ -160,20 +170,27 @@ export function SceneDesktop(
         >
           {message('desktop.search')}
         </button>
-        {(['characters', 'map', 'combat', 'loot'] as const).map((kind) => (
-          <button
-            key={kind}
-            disabled={!snapshot.state || !!snapshot.error}
-            onClick={() => {
-              requestedFocus.current = { sceneId: focused.id, windowId: kind }
-              projection.dispatch({ type: `open-${kind}` })
-            }}
-          >
-            {kind === 'characters'
-              ? message('character.characters')
-              : message(`desktop.${kind}`)}
-          </button>
-        ))}
+        {(['groups', 'characters', 'map', 'combat', 'loot'] as const).map(
+          (kind) => (
+            <button
+              key={kind}
+              disabled={!snapshot.state || !!snapshot.error}
+              onClick={() => {
+                requestedFocus.current = { sceneId: focused.id, windowId: kind }
+                projection.dispatch({ type: `open-${kind}` })
+              }}
+            >
+              {kind === 'characters'
+                ? message('character.characters')
+                : message(`desktop.${kind}`)}
+            </button>
+          )
+        )}
+        <DesktopSceneFacts
+          model={model}
+          actions={actions}
+          busy={sceneBusy || editingBlocked}
+        />
         <small role="status">
           {snapshot.loading
             ? message('desktop.loading')
@@ -190,7 +207,18 @@ export function SceneDesktop(
           </button>
         </div>
       )}
-      <div ref={stage} className="desktop-stage">
+      {drag && (
+        <span role="status" className="desktop-drag-status">
+          {message('groupWindow.dragStatus')}
+        </span>
+      )}
+      <div
+        ref={stage}
+        className="desktop-stage"
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setDrag(null)
+        }}
+      >
         {[...visible]
           .sort((a, b) => a.id.localeCompare(b.id))
           .map((window) => (
@@ -295,7 +323,35 @@ export function SceneDesktop(
                   </div>
                 </div>
               ) : window.kind === 'combat' ? (
-                <div className="desktop-combat">
+                <div
+                  className={`desktop-combat${drag && droppableGroup(drag, props.campaignId, props.snapshot) ? ' desktop-drop-ready' : ''}`}
+                  tabIndex={0}
+                  aria-label={message('groupWindow.dropTarget')}
+                  onDragOver={(event) => {
+                    if (
+                      drag &&
+                      droppableGroup(drag, props.campaignId, props.snapshot)
+                    ) {
+                      event.preventDefault()
+                      event.dataTransfer.dropEffect = 'copy'
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const value = event.dataTransfer.getData(groupDragMime)
+                    try {
+                      void dropGroup(JSON.parse(value))
+                    } catch {
+                      setDrag(null)
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (drag && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault()
+                      void dropGroup(drag)
+                    }
+                  }}
+                >
                   <EncounterCrumbs
                     commands={combatCommands}
                     snapshot={props.snapshot}
@@ -327,14 +383,36 @@ export function SceneDesktop(
                 </div>
               ) : window.kind === 'loot' ? (
                 <SessionLootPanel model={model.groups} actions={actions} />
+              ) : window.kind === 'party' ? (
+                <DesktopParty
+                  key={focused.id}
+                  campaignId={props.campaignId}
+                  sceneId={focused.id}
+                  snapshot={props.snapshot}
+                  expanded={expanded[scopeKey] ?? []}
+                  toggle={(id) =>
+                    setExpanded((current) => {
+                      const ids = current[scopeKey] ?? []
+                      return {
+                        ...current,
+                        [scopeKey]: ids.includes(id)
+                          ? ids.filter((value) => value !== id)
+                          : [...ids, id]
+                      }
+                    })
+                  }
+                />
               ) : (
-                <DesktopOverview
-                  busy={sceneBusy || editingBlocked}
+                <DesktopGroups
+                  campaignId={props.campaignId}
                   model={model}
                   actions={actions}
-                  openCharacters={() =>
-                    projection.dispatch({ type: 'open-characters' })
+                  selection={
+                    props.snapshot.combat?.selectedGroupIds ??
+                    snapshot.state!.combatSelection
                   }
+                  start={setDrag}
+                  cancel={() => setDrag(null)}
                 />
               )}
             </DesktopWindow>

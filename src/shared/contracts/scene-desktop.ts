@@ -136,7 +136,7 @@ export const characterComparisonSchema = z
   .strict()
   .readonly()
 
-export const sceneDesktopWindowSchema = z.union([
+const version4WindowSchema = z.union([
   version3WindowSchema,
   z
     .object({
@@ -149,13 +149,33 @@ export const sceneDesktopWindowSchema = z.union([
     .readonly()
 ])
 
+export const sceneDesktopWindowSchema = z.union([
+  version4WindowSchema.refine((window) => window.kind !== 'overview'),
+  z
+    .object({
+      ...windowShape,
+      id: z.literal('party'),
+      kind: z.literal('party')
+    })
+    .strict()
+    .readonly(),
+  z
+    .object({
+      ...windowShape,
+      id: z.literal('groups'),
+      kind: z.literal('groups')
+    })
+    .strict()
+    .readonly()
+])
+
 // Array order is the back-to-front order. Empty is a deliberately closed desktop.
 export const sceneDesktopStateSchema = z
   .object({
-    schemaVersion: z.literal(4),
+    schemaVersion: z.literal(5),
     mapView: desktopMapViewSchema,
     combatSelection: z.array(z.uuid()).max(1000).readonly(),
-    windows: z.array(sceneDesktopWindowSchema).max(32).readonly()
+    windows: z.array(sceneDesktopWindowSchema).max(33).readonly()
   })
   .strict()
   .superRefine((state, context) => {
@@ -181,6 +201,14 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
       legacyDesktopStateSchema,
       z
         .object({
+          schemaVersion: z.literal(4),
+          windows: z.array(version4WindowSchema).max(32),
+          mapView: desktopMapViewSchema,
+          combatSelection: z.array(z.uuid()).max(1000)
+        })
+        .strict(),
+      z
+        .object({
           schemaVersion: z.literal(3),
           windows: z.array(version3WindowSchema).max(32),
           mapView: desktopMapViewSchema,
@@ -199,7 +227,26 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
     old.success
       ? {
           ...old.data,
-          schemaVersion: 4,
+          schemaVersion: 5,
+          windows: old.data.windows.flatMap((window) =>
+            window.kind === 'overview'
+              ? [
+                  { ...window, id: 'party', kind: 'party' },
+                  {
+                    ...window,
+                    id: 'groups',
+                    kind: 'groups',
+                    maximized: false,
+                    snap: null,
+                    bounds: {
+                      ...window.bounds,
+                      x: Math.min(100000, window.bounds.x + 40),
+                      y: Math.min(100000, window.bounds.y + 40)
+                    }
+                  }
+                ]
+              : [window]
+          ),
           mapView:
             'mapView' in old.data
               ? old.data.mapView

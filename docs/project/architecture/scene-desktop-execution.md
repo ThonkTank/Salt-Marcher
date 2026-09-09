@@ -1956,3 +1956,17 @@ This documentation-only closure records the already delivered application SHA
 without changing any app-build input. It follows the repository's `pnpm check`
 and clean candidate/remote qualification/promotion process. Its own qualification
 is separate from, and cannot substitute for, the completed application handoff above.
+
+## Follow-up: Party and Groups windows
+
+Implementation on `codex/scene-party-groups` replaces the overview singleton with
+Party and Groups. Desktop document V5 upgrades V1–V4 documents without losing
+other windows or combat selection. Party quick fields are validated installation
+preferences (default AC/Per.); expanded details retain all agreed fields. Scene
+facts move to the desktop toolbar. Group drag/drop reuses combat selection and
+`combat.joinGroup`; party moves reuse `scene.moveRoster`.
+
+Validation includes legacy migrations, singleton lifecycle, independent expanded
+rows, quick-field settings, feet and English rules terminology, invalid drops,
+inline move failures, and desktop E2E keyboard drop before initiative. Delivery
+is pending candidate CI, exact-SHA canonical handoff, and main promotion.

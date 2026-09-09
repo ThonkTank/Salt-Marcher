@@ -1,30 +1,22 @@
 import { useState } from 'react'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
-import { CompactRegister } from '../shared/compact-register.js'
-import { SessionGroupCard } from '../session/session-group-card.js'
 import type {
   SessionWorkspaceActions,
   SessionWorkspaceViewModel
 } from '../session/session-workspace-model.js'
 import '../session/session-groups-panel.css'
 
-export function DesktopOverview({
+export function DesktopSceneFacts({
   model,
   actions,
-  openCharacters,
   busy = false
 }: {
   model: SessionWorkspaceViewModel
   actions: SessionWorkspaceActions
-  openCharacters: () => void
   busy?: boolean
 }) {
   const [editingLocation, setEditingLocation] = useState(false)
   const focused = model.focused
-  const members = model.snapshot.party.members.filter((member) =>
-    focused.partyMemberIds.includes(member.id)
-  )
-  const groups = [...model.groups.activeRows, ...model.groups.archivedRows]
   return (
     <>
       <div className="desktop-scene-facts">
@@ -78,63 +70,6 @@ export function DesktopOverview({
           })}
         </span>
       </div>
-      <div className="desktop-section-heading">
-        <h3>{message('desktop.characters')}</h3>
-        <button
-          aria-label={message('desktop.openCharacters')}
-          onClick={openCharacters}
-        >
-          {message('ui.bearbeiten')}
-        </button>
-      </div>
-      <ul className="desktop-register">
-        {members.map((member) => (
-          <li key={member.id}>
-            <span>
-              {member.name}
-              <small>
-                {' '}
-                · {member.playerName ?? '—'} · {message('ui.lv')}{' '}
-                {member.level ?? '—'}
-              </small>
-            </span>
-            <button onClick={() => actions.openLedger(member)}>
-              {message('desktop.loot')}
-            </button>
-          </li>
-        ))}
-      </ul>
-      {!members.length && (
-        <p className="desktop-empty">{message('desktop.noCharacters')}</p>
-      )}
-      <div className="desktop-section-heading">
-        <h3>{message('desktop.groups')}</h3>
-        <button
-          aria-label={message('desktop.editGroups')}
-          onClick={actions.manageGroups}
-        >
-          {message('ui.bearbeiten')}
-        </button>
-      </div>
-      <CompactRegister
-        className="group-register"
-        label={message('desktop.groups')}
-        columns={(
-          [
-            'ui.status',
-            'ui.gruppe',
-            'ui.zahl',
-            'ui.xp.2',
-            'ui.aktionen'
-          ] as const
-        ).map((key) => message(key))}
-      >
-        {groups.map((row) =>
-          row.kind === 'active-group' || row.kind === 'archived-group' ? (
-            <SessionGroupCard key={row.key} row={row} actions={actions} />
-          ) : null
-        )}
-      </CompactRegister>
     </>
   )
 }

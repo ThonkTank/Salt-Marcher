@@ -1,4 +1,4 @@
-import { DesktopOverview } from '../../src/renderer/features/scene-desktop/desktop-overview.js'
+import { DesktopGroups } from '../../src/renderer/features/scene-desktop/desktop-groups.js'
 // @vitest-environment jsdom
 
 import {
@@ -112,7 +112,7 @@ describe('Loot UI', () => {
     expect(screen.getByText(/Ortsperle/)).toBeTruthy()
   })
 
-  it('routes an individual character ledger request from the compact party chip', () => {
+  it('keeps character ledger actions out of the groups window', () => {
     const focused = {
       id: sceneId,
       title: 'Testszene',
@@ -145,8 +145,8 @@ describe('Loot UI', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Beute' }))
-    expect(openLedger).toHaveBeenCalledWith(snapshot.party.members[0])
+    expect(screen.queryByRole('button', { name: 'Beute' })).toBeNull()
+    expect(openLedger).not.toHaveBeenCalled()
   })
 
   it('traps initial focus and Escape discards a local distribution draft', async () => {
@@ -284,7 +284,7 @@ function GroupsPanelHarness(props: {
   } satisfies SessionGroupsViewModel
   return (
     <>
-      <DesktopOverview
+      <DesktopGroups
         model={{
           snapshot: props.snapshot,
           focused: props.focused,
@@ -302,7 +302,10 @@ function GroupsPanelHarness(props: {
           dialog: { kind: 'none' }
         }}
         actions={actions}
-        openCharacters={vi.fn()}
+        campaignId={sceneId}
+        selection={[]}
+        start={vi.fn()}
+        cancel={vi.fn()}
       />
       <SessionLootPanel model={model} actions={actions} />
     </>

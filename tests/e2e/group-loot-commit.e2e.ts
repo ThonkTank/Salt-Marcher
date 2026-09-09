@@ -27,7 +27,7 @@ describe('Group Loot atomic commit', () => {
       client,
       async () =>
         await client.$(
-          '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+          '[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]'
         )
     )
     const dialogSelector = 'section[aria-labelledby="group-builder-title"]'
