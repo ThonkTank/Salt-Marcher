@@ -8014,3 +8014,391 @@ Report SHA256 492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90;
 Qualifier SHA256 10e38f3419dc9fce017a1362a7559cf85600ceddce1c3e6413b9c65ce359ab8e;
 UI-Driver SHA256 68ddbdd52b958ba8ed76a1438b26d0280e19f8aeb2146b4d636ef7a0e433134e.
 Update c27228c5-edd6-46f0-806c-b9d2fd962836. Lint6458 Exit0.
+
+### Phase 5 – Echte Transportfehler vor erfolgreichem UI-Update
+
+Voriger Turn Fortschritt: kompletter UI-Update-/Restore-Nachweis, Stand567cb13c
+gepusht, aktuelle CI34333006569 pending bestätigt. Checkout sauber.
+
+Plan: optionalen --transport-failures-Modus in bestehenden UI-Qualifier integrieren.
+Erster Feedversuch liefert HTTP503; UI muss verständlich fehlschlagen und normales
+Beenden/erneutes Öffnen und vollständigen eigenen Baseline-Readback erlauben.
+Danach unverändertes Manifest, aber einmal gleich große AppImage-Bytes mit einem
+gekippten Byte und einmal abgeschnittene Bytes ausliefern. Nach jedem Fehler:
+Fehlermeldung sichtbar, kein Installationsbutton, keine aktive oder partielle
+Cachedatei, keine Wartungstransaktion, vorheriges Deployment unverändert;
+App schließen, vollständiger Baseline-Readback muss Quelle entsprechen.
+Anschließend dasselbe echte Artefakt korrekt herunterladen und den gesamten
+bereits qualifizierten UI-Update-/Weiterarbeits-/Restoreweg durchlaufen. Keine
+Änderung der gespeicherten Artefaktbytes. Neue Arbeitskopie und eigener Nachweis.
+Dieser Modus ersetzt nicht WAL-, Kapazitäts- oder Prozessabbruchprüfungen.
+
+Transportfehlermatrix53227 Exit0. HTTP503, gleich große korrumpierte Datei und
+abgeschnittener Download wurden im echten Baseline-AppImage sichtbar abgewiesen.
+Nach jedem Fehler eigener vollständiger Baseline-Readback gleich Quellprofil,
+keine Cache-/Partialdatei, kein Wartungsjournal und unverändertes Deployment.
+Danach kompletter UI-Update-/Weiterarbeits-/Restoreweg bestanden. Nachweis:
+work/historical-ui-transport-failures-v1/ui-update-evidence.json,
+SHA256 dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a.
+Update7393cffb-2541-4140-9025-4eaa0e1d3d0c, Restore210ae205-5b9e-4082-aefd-ac00e869d5c7.
+Typprüfung45177 und Lint27286 Exit0. Plan-Audit Transportfälle bestanden.
+
+Roadmap-Audit weiter offen für restliche Phase5 sowie Phasen6–7. Abnahmematrix
+jetzt mit diesen Nachweisen aktualisieren, damit alte Bestandsaufnahme nicht
+mehr die neuen Artefaktläufe als fehlend bezeichnet. Fehlende Abbruch-/Kapazitäts-
+Nachweise weiterhin explizit lassen. Unshare-Usernamespace-Probe funktioniert;
+ein isoliertes begrenztes Dateisystem ist als nächste Kapazitätsprüfung möglich,
+aber noch nicht aufgebaut oder als ENOSPC-Nachweis gewertet.
+
+### Phase 5 – Harter Abbruch nach bestätigter Nutzung
+
+Plan: separaten --accepted-crash-Fall zum selben realen UI-Qualifier hinzufügen.
+Nach erfolgreichem Update und eigenständig verifiziertem späterem XP-Stand die
+Ziel-App normal öffnen, Bereitschaft über sichtbare Einstellungen prüfen, dann
+nur Prozesse mit dem einmaligen Test-XDG-Root per SIGKILL beenden. Exit-Signal des
+vom Driver gestarteten Prozesses explizit belegen; normale Starts weiter Exit0
+verlangen. Anschließend normalen Zielstart einschließlich Recovery ausführen,
+schließen und vollständigen eigenen Ziel-Readback mit späterem Stand vergleichen.
+Journal muss committed bleiben; kein Rücksprung auf Vor-Update-Daten. Danach
+wie bisher explizite Wiederherstellung und Sicherung späterer Arbeit prüfen.
+Dieser Fall qualifiziert ausschließlich Absturz nach Freigabe, nicht Abbrüche
+innerhalb der Migration oder der noch nicht bestätigten Aktivierung.
+
+88583 terminal Exit1. Korrektur zur vorherigen Zwischeninterpretation: nicht der
+Einstellungsklick scheiterte, sondern der anschließende Browser.close-Aufruf
+beendete nach dem Neustart nicht alle Appprozesse. Die Zeile395 und terminale
+Fehlermeldung belegen das; Einstellungen und Zielversion waren vorher geprüft.
+Der abschließende Cleanup beendete die Testprozesse, kein Datenverlustnachweis.
+
+Fixplan für den Driver: den tatsächlich verbundenen Renderer-Target explizit
+über Target.closeTarget schließen, damit das Electron-Fenster den normalen
+window-all-closed/quit-barrier-Pfad durchläuft. Target-ID aus derselben überprüften
+DevTools-Page übernehmen, Erfolg oder Socketende prüfen und weiterhin alle
+Prozessenden abwarten. Keine Lockerung des Exit-/Datenvergleichs und kein
+SIGTERM als erfolgreicher regulärer Beenden-Ersatz. Danach vollständigen
+accepted-crash-Fall auf frischer Arbeitskopie wiederholen.
+
+Parallel zur laufenden unveränderten AppImage-Prüfung eine isolierte Kapazitäts-
+Umgebung geprüft: eigener User-/Mount-Namespace mit 1MiB tmpfs, Schreiben von2MiB
+liefert echtes ENOSPC(errno28), Mount und temporärer Ordner danach entfernt.
+Keine Füllung des Host-Dateisystems. work/roadmap-phase5-capacity-probe.log, Exit0.
+Dies qualifiziert die spätere Fehlerumgebung, noch keinen App-Backup-/Updatefall.
+
+48961 ebenfalls terminal Exit1 am normalen Beenden nach dem akzeptierten Absturz.
+Target.closeTarget beseitigt den Fehler nicht. Kein weiterer Wiederholungslauf
+mit bloß verändertem Timeout. Nächster Diagnoseschritt: im isolierten fehlgeschlagenen
+Profil einen Start mit Main-Inspector beobachten, Fensterbestand und Quit-Lifecycle
+vor/nach demselben Close-Aufruf read-only erfassen. Anschließend ausschließlich
+diese Diagnoseprozesse beenden. Erst anhand dieses Befunds weitere Korrektur planen.
+
+Main-Inspector-Diagnosen im isolierten fehlgeschlagenen Profil:
+71642 Exit1 (nach Close war Main-Kontext bereits nicht mehr auswertbar),
+27575 Exit0 als Diagnose mit explizitem Cleanup, nicht regulärer Shutdown-Abnahme.
+Beide zeigen einen sichtbaren BrowserWindow und registrierte Quit-Barriere;
+Target.closeTarget meldet success. Core-Logs zeigen danach shutdown/exited0/closed.
+Mit offenen Einstellungen ebenfalls Main-Kontext beendet. Wegen anschließendem
+Inspector-Cleanup per SIGTERM zählen diese Proben nicht als bestandener normaler
+Beenden-Test. Keine Ursache durch bloße Timeoutverlängerung als behoben behauptet.
+
+Der Fehler ist bislang an die vollständige Kill-/Neustartsequenz gebunden.
+Nächster konkreter Schritt: genau diese Sequenz mit beobachtenden Main-Eventtraces
+(browser-window-created/close/closed, window-all-closed, before-quit) und gebundener
+CDP-Target-ID diagnostizieren; Inspector vor dem Schließen trennen, damit er
+Shutdown nicht selbst zurückhält. Danach begründete Korrektur und unveränderten
+regulären Abnahmefall erneut ausführen. Aktuell keine lokale Prüfung aktiv;
+Transporterweiterung und Matrix aktualisiert, accepted-crash bleibt unbestanden.
+
+### Phase 5 – Prozessidentität statt unzuverlässiger Environment-Erkennung
+
+Nach Unterbrechung revalidiert: Handle48742 fehlt, Log terminal Exit1, PID815440
+existiert nicht mehr. Voriger Turn lieferte entscheidende neue Evidenz: Trace
+schloss nach dem vermeintlichen SIGKILL noch Fenster aus ui-launch-2, während
+ui-launch-3 erst startete. /proc/815440/environ enthielt trotz laufendem Main keine
+XDG-/TMPDIR-Einträge; stat und cmdline belegten denselben lebenden Testprozess.
+Damit war die Environment-only-Prozessliste kein zulässiger Todesnachweis.
+
+Fixplan vor Änderungen: gestartete AppImage-Prozesse mit PID plus Kernel-Startzeit
+verfolgen, bekannte Nachfahren aufnehmen und Identitäten über Scans erhalten,
+auch wenn Environment-Einträge verschwinden. Den durch beide Profilleases
+verifizierten Main-PID zusätzlich aufnehmen, damit Relaunch/Orphans erfasst sind.
+Zombies gelten als beendet, wiederverwendete PID nicht als alter Prozess.
+Unitfälle mit kontrolliertem proc-Baum für leeres Environment, Nachfahren,
+PID-Wiederverwendung und Zombies. Danach echter accepted-crash-UI-Lauf ohne
+Inspector wiederholen; keine Lockerung von Shutdown- oder Inhaltsassertions.
+
+### Phase 5 – Desktop-Ausfall: Diagnose und Schutz vor weiteren GUI-Läufen
+
+2026-09-09: Voriger Turn ist Fortschritt durch neue Ursachen-Evidenz, keine
+bestandene Artefaktabnahme. Vorheriger Boot endet um11:37:47, aktueller Boot
+nach Neustart. Um11:20:42 und11:31:40 melden isolierte Test-Mains
+inotify_init/EMFILE. Um11:34:37 scheitert dbus-broker-launch beim
+Konfigurationsreload in dirwatch_new mit „Too many open files“; unmittelbar
+folgen D-Bus-Abbruch und Fatal-Abstürze von ChatGPT und SaltMarcher Local sowie
+WirePlumber-Segfault. Keine gespeicherte OOM-/GPU-Hang-Evidenz. Verursachender
+Ressourcenverbraucher nach Neustart nicht beweisbar; Testprozess-Leaks sind ein
+plausibler Beitrag. Warnungen hätten weitere Starts stoppen müssen.
+
+Keine GUI-/AppImage-Tests bis Absicherung. Aktuelle Prozessprüfung zeigt keine
+übrig gebliebenen Salt-Marcher-/Xvfb-/Qualifier-/Vitest-Prozesse. Der vor der
+Untersuchung gestartete Tracker-Unitlauf ist laut Log terminal:4Tests bestanden,
+208ms,11:45:05. Das ist kein Nachweis vollständiger Prozessbereinigung im E2E.
+
+Korrekturplan vor Änderungen:
+1. Historischen UI-Qualifier vor dem ersten Seed/Prozessstart sperren, wenn
+   tatsächliche cgroup-v2-Grenzen für Speicher und Prozesszahl fehlen oder der
+   Desktop-D-Bus verwendet wird. Kein Umgebungsflag als alleiniger Nachweis.
+2. Eigenen begrenzten Service und privaten D-Bus als Startweg ergänzen; gesamter
+   Test einschließlich Relaunch und Xvfb gehört zur Gruppe. Gruppencleanup statt
+   alleiniger PID-/Environment-Heuristik, kein Zugriff auf Desktop-D-Bus.
+3. Gemeinsame inotify-Ressourcen zusätzlich berücksichtigen: cgroup-Speicher-
+   und Prozesslimits begrenzen dieses benutzerweite Limit nicht zuverlässig.
+   Vor erneuter GUI-Abnahme separate Benutzer-/VM-Isolation oder eine nachweisbar
+   wirksame Grenze und Überwachung samt Abbruch vor Ressourcenerschöpfung nötig.
+4. Erst kleine Nicht-GUI-Proben, dann Fehler-/Cleanup-Prüfung. Keine Wiederholung
+   der vollständigen AppImage-Sequenz allein aufgrund bestandener Unitprüfungen.
+Plan-/Roadmap-Audit: Phase5 weiterhin offen; bisherige Inhaltsvergleiche bleiben
+Evidenz ihres Inhaltsumfangs, env-only-Prozessende ist kein vollständiger
+Cleanup-Nachweis. Keine Public-Release-/Handofffreigabe aus diesen Läufen.
+
+Erster Schutzschritt implementiert: historical-test-isolation.ts liest die
+wirkliche cgroup-v2-Zuordnung sowie memory.max/pids.max. Historischer UI-Qualifier
+prüft dies vor Seed/erstem AppImage. Verlangt eigene benannte Service-cgroup,
+maximal8GiB/256Tasks und privaten tmp-D-Bus statt Desktopbus. Unitprüfung für
+Isolation und Prozessidentität:15Tests/2Dateien bestanden (26350, Exit0).
+Read-only-Probe der tatsächlichen Desktopumgebung wird wie beabsichtigt
+abgewiesen; kein AppImage gestartet. git diff --check bestanden.
+
+Plan-Audit: Schritt1 erfüllt als Startsperre, Schritte2–4 offen. Diese Sperre
+allein ist KEIN vollständiger Sicherheitsnachweis: private-Bus-Adresse ist
+noch kein Nachweis vollständiger Sessionisolation, und benutzerweite inotify-
+Erschöpfung bleibt ungelöst. Daher weiterhin keine GUI-Läufe. Roadmap-Audit:
+Phase5 unverändert offen; keine neue Migrations-/Recovery-Abnahme behauptet.
+
+### Phase 5 – Eigener Kernel für GUI-Qualifikation
+
+Voriger Turn: Fortschritt (Startsperre +15 bestandene Tests), nicht vollständige
+Isolation. Iststand: /dev/kvm verfügbar, Podman installiert, QEMU nicht installiert.
+Korrekturplan: QEMU-Werkzeuge in einem begrenzten lokalen Container bereitstellen;
+keine Änderung an Desktopdiensten oder systemweiten inotify-Limits. Gast mit
+festem RAM/vCPU-Budget, eigenem Kernel, eigenem D-Bus und virtueller Grafik ohne
+Host-GPU-Passthrough. Nur explizite Testdateien übertragen. Zunächst Boot und
+Ressourcengrenzen ohne AppImage verifizieren. Erst danach kontrollierten Startweg
+mit Kernelidentität und kompletter Prozessgruppenbereinigung anbinden. QEMU-
+Systememulation/KVM-Aufruf anhand offizieller Invocation-Dokumentation geprüft:
+https://www.qemu.org/docs/master/system/invocation.html .
+
+Werkzeugbereitstellung abgeschlossen: erster Build wegen nicht unterstütztem
+--pids-limit abgewiesen, zweiter wegen relativem cwd abgewiesen; anschließend
+absoluter Kontext im begrenzten systemd-Service erfolgreich, Exit0,422.1MiB Peak.
+Podman-Image3d6445cd07b63f6032fff7c4505e1f72ede65ac90aecce1044ebb792ee66bc08.
+Ubuntu noble amd64 SHA256 mit Hersteller-SHA256SUMS über HTTPS verglichen:
+d0fe84bb5f80853425fa6be28e2c106f30104c3cfe8611933f2e65c9b63f0e30.
+Original unverändert als qcow2-Backing, neue12GiB-sparse-Overlay-Probe.
+
+Bootprobe12992 startet ausschließlich QEMU, keine SaltMarcher-App. Tatsächliche
+cgroup-Dateien im laufenden Container: memory.max2147483648,pids.max128,
+cpu.max200000/100000. /dev/dri und Desktopbus fehlen. Gast mit1024MiB,2vCPUs,
+KVM, serieller Ausgabe, ohne Netzkarte; eigener Kernel6.8.0-138-generic bereits
+im Bootlog. Container bei erster Stichprobe425.8MB/14Tasks. Harddeadline180s
+plus10s Kill-Nachlauf, automatisches Entfernen des Containers. Hostboot-ID
+ea2527db-9f4d-4588-b388-51f759fea11c. Vollständiger Boot-/Shutdownnachweis noch
+ausstehend; derzeit wartet Gast auf Netzwerk-online-Timeout. Keine GUI-Freigabe.
+
+Bootprobe12992 terminal Exit0: cloud-init-Probe bei129s vollständig, reguläres
+Powerdown bei161.33s vor180s-Deadline. Gastboot-ID
+8c4189f5-bf92-4f2c-9e69-a4f198333272 unterscheidet sich vom Host; MemTotal984196kB,
+eigenes inotify-Instanzlimit128. Container nach Abschluss entfernt. Das erwartete
+network-online-Timeout bei netzlosem Gast verzögerte den Boot, verhinderte aber
+Probe und Shutdown nicht. Log: work/qualification-vm/probe.log.
+
+Plan-Audit: Werkzeugbereitstellung, begrenzter eigener Kernel und regulärer
+Shutdown nachgewiesen. Noch offen: wiederverwendbarer Gast-Startweg, Übergabe
+unveränderlicher AppImages/Quellen, Startguard-Bindung an geprüften Gast und
+Fehlercleanup. Roadmap-Audit: keine neue AppImage-Abnahme; Phase5 bleibt offen.
+
+### Phase 5 – VM-Startvertrag und garantierter Abbruch
+
+Voriger Turn Fortschritt: Boot und Shutdown im eigenen Kernel nachgewiesen.
+Nächster Fixplan: wiederverwendbarer begrenzter Podman/QEMU-Startweg mit frischem
+Overlay, read-only Gastbasis/Seed, exklusiver Host-Laufsperre und harter Deadline.
+Nur eigene Container-ID beim Cleanup verwenden; keine breite Prozesssuche.
+Hostboot-ID als QEMU-fw_cfg in den Gast übertragen. UI-Guard verlangt diesen
+Kernelvertrag zusätzlich zu Gast-cgroup/private-D-Bus und lehnt denselben Boot
+ab. Kleine Abbruchprobe mit bestehendem netzlosem Seed vor AppTests, Unitfälle
+für fehlende/gleiche Boot-ID. Noch kein GUI-Start in diesem Korrekturschritt.
+
+Implementiert: scripts/qualification/run-historical-vm.sh mit exklusivem flock,
+frischem24GiB-sparse-Overlay, read-only Basis/Seed, einmal aufgelöster Toolimage-ID,
+Hostboot-ID per fw_cfg, Gast4GiB/2vCPU, Host-cgroup7GiB/128Tasks/2CPU ohne Swap,
+keinem Netz/Grafik-Passthrough, Deadline und UUID-spezifischem Cleanup. Isolations-
+Guard verlangt verschiedene UUID-Bootkennungen aus Kernel/QEMU-Dateien.
+
+Validierung:24185 terminal Exit0,17Unitfälle/2Dateien, Shellsyntax und diff-check
+bestanden. Reale Abbruchprobe27796 terminal Exit124 wie erwartet; serielles Log
+belegt SIGTERM von timeout nach10s. exit-code-Datei124; podman ps -a zeigt keinen
+zugehörigen Container mehr. Keine SaltMarcher-App ausgeführt. Testdaten unter
+work/qualification-vm/abort-probe-1, originale Basis bleibt read-only.
+
+Plan-Audit: Startweg und Deadline-Cleanup implementiert/geprüft. Signalunterbrechung
+des äußeren Runners und Konkurrenzstart noch gesondert zu prüfen; QEMU-fw_cfg-
+Lesbarkeit im fertig gebooteten Gast noch nicht praktisch bestätigt. Gastpakete,
+Übertragung der unveränderlichen Qualifikationseingaben und Ergebnisexport fehlen.
+Roadmap-Audit: Phase5 weiterhin offen; kein Ersatz echter Update-/Recoverytests
+oder Handoff durch Infrastrukturproben.
+
+Signal-/Konkurrenzprobe50683 abgeschlossen: zweiter Start korrekt Exit2 ohne
+Ausgabeordner. SIGTERM nur an Starter führt jedoch nach10s noch nicht zum Ende;
+Container existiert weiter. Diagnosecleanup entfernt ausschließlich Testcontainer.
+Fixplan vor Änderung: Podman-Aufrufe als eigene Hintergrundkinder starten und
+mit Bash wait warten (unterbrechbar durch Trap); auch Vorbereitung eindeutig
+benennen. EXIT-Cleanup zeichnet Exitstatus auf, entfernt eigenen aktiven Container
+und wartet Clientende. SIGTERM muss143 melden und Container zeitnah entfernen.
+
+Korrigierter Signal-/Konkurrenzlauf terminal Exit0: SIGTERM nur an Bash-Starter
+endet143, exit-code-Datei143, Container nach0.18s entfernt. Zweiter Start erneut
+Exit2 und kein Ausgabeordner. Shellsyntax bestanden. Logs unter
+work/qualification-vm/signal-probe-2*. Fehler im Vordergrund-Warten behoben.
+
+Noch offene Startgrenze: Signal exakt während Containererzeugung vor dessen
+Sichtbarkeit kann Cleanup-Prüfung überholen; vor GUI-Läufen gesondert absichern.
+Als nächstes Gast-bootstrap mit begrenztem ausgehendem Netzwerk nur für Pakete,
+privatem D-Bus und Xvfb vorbereiten, dann wieder offline qualifizieren. Keine
+Desktopprofile oder Host-GPU durchreichen. Gast muss QEMU-fw_cfg lesen können;
+Testeingaben samt SHA256 werden nur explizit als read-only Datenträger übertragen.
+
+### Phase 5 – Startgrenze schließen, Gast vorbereiten
+
+Voriger Turn Fortschritt durch korrigierten und geprüften Signalpfad. Fixplan:
+Container zunächst nur erzeugen (noch kein Gastprozess), danach vorhandene ID
+asynchron starten. Trap während synchronem create wird erst nach dessen Ende
+abgearbeitet, kann dann den erzeugten Container entfernen; start kann gelöschten
+Container nicht neu erzeugen. Gleicher Ablauf für Overlay-Vorbereitung. Danach
+kontrollierte Probe für Signal während verzögertem create plus reale Signalprobe.
+Gastbootstrap erhält ausdrücklich optionales ausgehendes NAT-Netz; Standard der
+Qualifikation bleibt ohne Netzwerk. Keine Portweiterleitung oder Hostfreigabe.
+
+69758 Exit0: verzögertes create mit echtem Podman, SIGTERM an Starter bevor
+create zurückkehrt:143, kein Gastoverlay gestartet, Preparecontainer entfernt.
+Bootstrap60276 Exit0 ist nur QEMU-Shutdown, KEIN Bootstrap-Pass: Pakete installiert,
+aber qemu_fw_cfg-Modul fehlt im minimalen Cloudkernel. Erfolgmarker fehlt. Fix:
+passendes linux-modules-extra-Paket im Gast installieren und Kernelvertrag erneut
+prüfen. Gebündelter Qualifier benötigt __filename/__dirname für enthaltenes
+TypeScript; erster Bundle-Start scheitert vor Guard. Bundlebanner ergänzen, dann
+Host-Abweisung explizit prüfen. Keine AppImage-Ausführung bisher.
+
+Payload1 vorbereitet: gebündelter Qualifier mit CJS-Pfadbanner startet auf Host
+bis zum Guard und scheitert dort an fehlender QEMU-fw_cfg-Datei (keine App).
+Baselinehash639b0d4d797261f2fbc6ff3e27786d2f0562ea1598b577113c763582d876c5f9,
+Targethash3e143eee43b745eb61f425c6e623d7ee3726bb14f91171c71eb4094bb556724c
+nach Kopie erneut geprüft, unveränderte Original-AppImages/Receipts; Node22-Tarball
+und Bundle ergänzen6dateiiges SHA256-Inventar. Manifest benennt ausdrücklich
+uncommittete Qualifieränderungen, kein falscher exact-commit-Buildnachweis.
+work/qualification-vm/payload-1. Gastbootstrap48433 aktuell laufend mit tatsächlichem
+Container086ce3e4-5b23-4d0b-a09c-77cfd6f96e3a; Quelle ist weiterhin frisches Overlay,
+keine Benutzerkampagnen. diff-check bestanden. Phase5 weiterhin offen.
+
+Bootstrap48433 terminal Exit0 mit explizitem QUALIFICATION_BOOTSTRAP_COMPLETE:
+Host-IDea2527db-9f4d-4588-b388-51f759fea11c via fw_cfg lesbar, Gast-ID
+56410099-75f5-4c5a-82f3-bff1fa6cc513, systemd-detect-virt=kvm. Vollständiger
+Shutdown, Container entfernt. linux-modules-extra behebt fehlendes qemu_fw_cfg.
+Plan-Audit: Startgrenze/create, Gastpakete, Kernelkennung und Eingabekopie geprüft.
+Für Offline-Qualifikation wird Gastoverlay als unabhängige qcow2-Basis exportiert
+(22729), damit keine Host-Backingpfade im späteren Gaststart erforderlich sind.
+Noch keine UI-Abnahme; Ergebnisexport und Ausführung des vollständigen
+accepted-crash-Update-/Restorefalls bleiben als nächster Schritt offen.
+
+### Phase 5 – Vollständiger UI-Fall im Offline-Gast
+
+Voriger Turn Fortschritt: Bootstrap, separate Kennungen und Payloadhashes belegt;
+Export22729 terminal Exit0. Plan: read-only Seed-ISO mit Payload/SHA256-Inventar,
+Gast kopiert und prüft alle Eingaben, führt als ubuntu in begrenztem systemd-Service
+mit privatem D-Bus/Xvfb den unveränderten accepted-crash-Fall aus. Gastservice
+liefert expliziten Exitcode; Bericht/Diagnoselogs werden seriell exportiert.
+QEMU-Exit0 allein gilt weiterhin nicht als Testpass. Keine Quellenänderungen
+während dieses AppImage-Laufs. Keine Desktopdaten oder Hostnetzfreigaben.
+
+UI-Gastlauf19278 terminal QEMU Exit0, aber Testservice Exit1: Timeout „target
+restart commits update“. Gastservice Peak2.3GiB, vollständig beendet/exportiert;
+kein laufender Container. Evidenz unter work/qualification-vm/ui-run-1/evidence.
+Journal5f58e3bd-77dd-4ae0-abfe-61532e3c982e: rolled-back aus prepared, Backup
+e681ece5-641b-4a29-b5cc-7aa8df431a3c vorhanden, frühere Programmreferenz0.0.146.
+Damit kein bestandener Update-/accepted-crash-Nachweis. Zielvorbereitung scheitert
+vor Aktivierung. Controller verwirft Wartungschild-stdio und meldet bei Exitfehler
+nur generische Ursache. Ubuntu-Sandboxunterschied ist eine Hypothese, kein Befund.
+
+Nächster Diagnoseplan: Ziel-AppImage im selben isolierten Gast mit ungültigem
+Wartungstoken und eigenem leeren Diagnoseprofil starten, stderr/Exit aufzeichnen;
+keine vorhandenen Profile verwenden. Außerdem Test-Timeout um UI-Fehlertext und
+terminalen Rollbackzustand ergänzen, damit keine120s trotz abgeschlossenem
+Fehlerversuch verstreichen. Erst nach Ursachenbeleg Produkt-/Harnesskorrektur;
+keine Deaktivierung von Host-Schutzmaßnahmen und kein stilles Lockern der Abnahme.
+
+Diagnose32204 terminal Exit0 (Gast), Wartungsprozess Exit1 erwartungsgemäß:
+liest maintenance-request.json im leeren Diagnoseprofil und meldet ENOENT.
+Kein grundsätzlicher Electron-/Sandbox-Startfehler belegt; Hypothese nicht als
+Ursache verwenden. Nächste geplante Diagnosekorrektur: UI-Wartekriterium erkennt
+rolled-back als terminal und berichtet Journal-ID plus lesbaren UI-Fehlertext.
+Danach frische VM mit identischen AppImage-Bytes; nur gebündelter Test geändert.
+
+63333 terminal TestExit1 nach22.6s statt120s: UI nennt „Der Starthelfer konnte
+nicht aus dem Ziel-AppImage gelesen werden.“ Diagnose60521 terminal GastExit0,
+separater Node-Leseaufruf Exit9: salt-marcher: bad option: --no-sandbox.
+Originales AppRun geprüft: unshare -Ur true scheitert → NO_SANDBOX=(--no-sandbox),
+unabhängig von ELECTRON_RUN_AS_NODE. Damit konkrete Plattformursache belegt,
+kein Migrationsfehler. Fedora-Erfolg deckte diese AppRun-Verzweigung nicht ab.
+
+Produkt-Fixplan: Hashprüfung beibehalten, Wartungsresource per AppImage-Runtime
+--appimage-extract in exklusivem temporären Ordner lesen, APPIMAGE_EXTRACT_AND_RUN
+und ELECTRON_RUN_AS_NODE entfernen; AppRun nicht ausführen. Extrahierte reguläre
+Datei innerhalb temporären Roots, Größenlimit, erneuter Artefakthash und Cleanup
+bei jedem Ergebnis. Unitfälle für Fehlpfad/Symlink/Größe/Extraktionsfehler/Hashwechsel
+und echte Extraktion im Gast. Danach neue unveränderliche Vergleichsartefakte mit
+Fix; bestehende historische Bytes niemals nachträglich ändern.
+
+Direkte Runtime-Extraktion78062 terminal GastExit0 UND DiagnoseExit0: unverändertes
+Ziel-AppImage extrahiert resources/maintenance/start.cjs als reguläre Datei mit
+169006Bytes. Kein AppRun-/Node-Modus, keine Sandbox-Flagänderung. Damit alternativer
+Leseweg auf derselben problematischen Gastplattform praktisch belegt. Produktfix
+und dessen Regressionstests noch ausstehend; Phase5 bleibt offen.
+
+Produkt-Leseweg auf direkte Runtime-Extraktion umgestellt, reguläre Pfadkomponenten,
+Dateigröße, Vor-/Nachhash und finally-Cleanup geprüft. Unit40372 Exit0:31Tests
+inklusive14Extraktionsfälle. Typecheck40654 Exit2: expliziter ProcessEnv-Typ und
+Indexsignaturzugriff fehlen, außerdem älterer DBUS-Zugriff im Isolationsguard.
+Fixrunde: diese3Typfehler korrigieren, typecheck/lint wiederholen; danach dieselbe
+Produktfunktion im isolierten Gast gegen unveränderte Targetbytes prüfen.
+
+Typecheck61766 vollständig bestanden; anschließender ESLint meldet7unsichere
+Zugriffe ausschließlich auf untypisierte Mock-Aufrufe im neuen Unitfile. Fixplan:
+Mock-Signatur konkret typisieren, Umgebungsvariablen per Index lesen; Lint und
+31gezielte Tests erneut prüfen. Produkt-Reader-Probe ist als separate Payload
+gebündelt, noch nicht ausgeführt.
+
+Fixvalidierung: Typecheck vollständig bestanden; gezieltes ESLint ohne Befund
+(leere Logdatei);35117 Exit0 mit31Tests. Produkt-Reader-Gastprobe44159 terminal
+GastExit0 UND ServiceExit0: readAppImageLauncher + readAppImageProfileProtocol
+gegen unverändertes0.0.147. Helper169006Bytes, SHA256
+b0c175f9c4e9c8244e800373ca678f488c8721e1009fe4a9b71eada4f34d77ce stimmt mit
+unabhängig vorhandenem Originalresource überein. Profilvertrag format1,
+canonical-profile-v1/complete-profile/outside-profile. Kein AppRun-Nodeaufruf.
+git diff --check bestanden. Plan-Audit des Lesewegfixes: implementiert und gezielt
+geprüft; kein vollständiger Paketupdate-Pass behauptet.
+
+Nächster Schritt: unveränderliche Quellen für neue Artefakte herstellen. Sowohl
+Ausgangs-App (Schema42/41) als auch Ziel-App (42/42) brauchen den Lesewegfix,
+weil die alte Ausgangs-App sonst weiterhin vor Zielaktivierung scheitert.
+Historische Artefakte/Quellen nicht nachträglich verändern: eigener deklarierter
+Backport-Commit für Ausgangsstand, eigener Zielcommit, neue Testversionen/Hashes.
+Danach kompletter accepted-crash-Update-/Restorefall im Gast. Phase5, exakter
+Candidate-CI/Handoff/Main-Abschluss und Phasen6–7 bleiben offen.
+
+### Phase 5 – Unveränderliche Quellen für Plattformkorrektur
+
+Voriger Turn Fortschritt: Produktfix,31Unitfälle, Typecheck/Lint und echter Reader-
+Gastpass. Nun aktueller Candidate einschließlich Isolation/Testdiagnose committen;
+separaten Ausgangsbranch vonbd8b33c mit ausschließlich demselben Resource-Reader-
+Fix und zugehörigen Regressionstests erzeugen. Schemata müssen42/41 bzw42/42
+bleiben. Beide SHA in historische Quellliste aufnehmen und zwei neue deklarierte
+Testversionen0.0.148/0.0.149 bauen, ohne bisherige Artefakte zu überschreiben.
+Bauten begrenzen; keine AppImageausführung auf Desktop. Vollständiges Candidate-
+Check/Handoff/Main erst nach Phase5-Abnahme, keine Freigabe durch bloßen Build.

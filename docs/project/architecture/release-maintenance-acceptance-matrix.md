@@ -8,20 +8,20 @@ Status below is evidence classification, not a declaration of passing execution.
 | ID  | Required behavior                             | Existing evidence / gap                                                                                  | Owning phase and required proof                                                                     |
 | --- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | M01 | Preserve baseline 39/34                       | release-baseline.test.ts; fixture already at current schema                                              | 1/5: run baseline, extend exact settings/content assertions                                         |
-| M02 | Real forward migration and skipped version    | loot-schema-31-migration.test.ts covers a domain transition; synthetic AppImages share schemas           | 5: immutable historical schema artifacts A→B→C and A→C; compare semantic state                      |
+| M02 | Real forward migration and skipped version    | Original-source AppImages passed A→B→C, A→C, 34→41 campaign migrations and schema-30 generated loot→42; UI pair 42/41→42/42 passed. Immutable sources and hashes recorded in roadmap-execution.md | 5: immutable historical schema artifacts A→B→C and A→C; compare semantic state                      |
 | M03 | No downgrade/missing path/reset               | persistence-preflight.ts rejects incompatible inputs                                                     | 2/5: source byte comparison for missing edge/newer schema/corruption                                |
 | M04 | One Local/Release transaction                 | Shared coordinator owns both adapters; Phase-2 completion suite passed | 2: both adapters run identical fault table and use one authoritative journal                        |
 | M05 | Durable intent and recovery at every boundary | Shared forward/recovery boundary tests passed; real Local starter fault probe passed                                                 | 2/5: kill before/after intent, moves, startup/commit and recovery itself; restart repeatedly        |
 | M06 | Never rollback accepted later work            | Commit/write/crash tests and damaged-accepted-AppImage probe preserve later work                                                 | 2/5: commit, edit, crash, restart; exact later-state comparison                                     |
 | M07 | Safe source import across channels/aliases    | Canonical shared leases; real second processes through aliases blocked during asynchronous export (source-profile-access.test.ts); direct controller import preserves source bytes | 3: parallel Development/Local/Release processes; canonical aliases; source hashes unchanged         |
-| M08 | Full profile preservation                     | complete-profile-maintenance.test.ts compares settings, inactive/trash parties and live combat; advances combat after update; preserves later work in pre-restore backup | 3/5: exact preferences, inactive/trash campaigns, user files, own content and resumable live state  |
+| M08 | Full profile preservation                     | Full original-runtime readbacks compare settings, active/inactive/trash campaigns, own files, world, paused journey and ongoing combat; real UI update preserves these and persists subsequent manual XP | 3/5: exact preferences, inactive/trash campaigns, user files, own content and resumable live state  |
 | M09 | Consistent legacy export only                 | Qualified packaged protocol plus terminal journal/program/starter verification; unknown producers rejected; verified legacy backup import retained | 3: qualify producer+format or reject; no unsupported direct-folder fallback                         |
-| M10 | Restore plus prior backup                     | Complete-profile/controller tests preserve current work and restore prior semantic state; newer-format backup rejected by release-maintenance.test.ts | 3/5: compare both retained current state and migrated restored state; reject newer backup           |
+| M10 | Restore plus prior backup                     | Real UI restore forward-migrates the pre-update profile; an independent target-AppImage readback proves the prior backup retains the complete later state. Newer-format rejection still needs final artifact-matrix audit | 3/5: compare both retained current state and migrated restored state; reject newer backup           |
 | M11 | Recovery without campaign DB                  | qualify-profile-recovery.ts passes real Release AppImage UI clicks after corrupt-data startup, pre-backup, relaunch and committed restore; artifact 87952bee17d0… | 3/4: launch with damaged profile, enumerate backups, restore through UI                             |
-| M12 | Reuse installed executable for restore        | Controller restore reuses the same deployment; identity/count assertions passed                                                                   | 2: unchanged executable deployment count and identity after restore                                 |
+| M12 | Reuse installed executable for restore        | Real UI restore kept the same target deployment and AppImage hash (0.0.147); complete restored and protected-later profiles compared independently | 2: unchanged executable deployment count and identity after restore                                 |
 | M13 | Resolve all drafts                            | Shared save/discard/cancel owners, partial-failure tests and ten SceneDesktop E2E cases including scene location/focus; Hex plan/receipt backend, productive command owner and persistent route drafts verified; save without travel start, central save/discard/cancel, renderer restart and closed-window travel pass; eleven Electron cases and unchanged travel visuals pass; pre-action transitions now resolve other editors and re-read command bases; partial-save and delayed/unmounted preparation tests pass; registered owners and their tests are inventoried in release-editor-inventory.md; repeated read supersession reproduces the stale error path and has a failing-before/passing-after regression; full candidate CI remains pending                                                                     | 4: multi-editor save/discard/cancel, partial save failure, edit barrier                             |
-| M14 | Explicit download/install; offline usable     | Separate check/download/install UI tests and offline recovery passed; complete multi-artifact feed path remains Phase 5                                                                         | 4/5: UI and feed demonstrate no automatic download/install or shutdown install                      |
-| M15 | Verify origin/manifest/arch/size/hash         | release-contract.test.ts, release-transport.test.ts                                                      | 5: damaged/truncated/wrong-origin payload never executed; progress/errors actionable                |
+| M14 | Explicit download/install; offline usable     | Actual UI pair 0.0.146→0.0.147 passed separate check/download/install/restart/continue/restore. HTTP503 leaves the old app/profile usable. Startup/check never download; download never activates | 4/5: UI and feed demonstrate no automatic download/install or shutdown install                      |
+| M15 | Verify origin/manifest/arch/size/hash         | Actual UI rejected same-size corrupted and truncated downloads, removed partial/cache files, and preserved program/data; retry with original bytes passed full update/restore. Wrong-origin/manifest/arch artifact cases remain to qualify | 5: damaged/truncated/wrong-origin payload never executed; progress/errors actionable                |
 | M16 | WAL, disk/access failure, concurrent start    | partial snapshot and profile-lock tests                                                                  | 2/3/5: real WAL and fault injection before backup and during stage/activation                       |
 | M17 | Empty, existing, damaged initial profile      | installed-profile-readbacks.test.ts and maintenance tests                                                | 5: separate packaged cases, no artificial campaign to pass empty verification                       |
 | M18 | Test immutable inputs                         | existing exact-SHA Handoff                                                                               | 6: immutable checkout; preflight tools/auth/display/disk/version before expensive run               |
@@ -45,7 +45,8 @@ standalone artifacts; record exact commits and hashes. If historical packaging
 needs a harness, record that harness separately and retain each stand's original
 schema/migration semantics. No invented production migration merely to pass a test.
 Choose three actual schema stands for skipped-release qualification. Exact artifact
-commits are an open Phase 5 deliverable, not existing evidence.
+commits and successful historical runs are recorded in the Phase 5 execution log;
+the remaining fault matrix is still open.
 
 ## Original owner to target owner (Phase-1 inventory)
 
@@ -66,7 +67,9 @@ assertions have been audited for the associated requirement.
 Selected historical sources (Phase 1 audit): A=52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0
 (37/34), B=6e84a12c1c83cd6437680ae70529cdc9723c353b (38/34),
 C=c583e05506e10d8446a4e210fa0603e3be53d63a (39/34). Their schema metadata and
-production migration edges were inspected; packaged execution remains unqualified.
+production migration edges and packaged execution were qualified in Phase 5;
+see the subsequent execution-log entries for exact artifact hashes and semantic
+comparisons, including continued work between B and C.
 
 
 ## Phase 2 evidence update
@@ -94,3 +97,19 @@ completion run. The exact Local artifact probe did not exercise that Release-onl
 branch. Canonical CI artifact handoff, main promotion, live acceptance and publication
 remain separate, outstanding gates. See `../../roadmap-execution.md` for corrective
 rounds and scope of each result.
+
+## Phase 5 UI and transport evidence (2026-09-09)
+
+The actual original Main source `bd8b33c4f5b6e5f064deb64278d9097f739cac6d`
+(installation42/campaign41) and repaired source
+`6d7889ca451762259bc4f472851c893bce57e1e0` (42/42) are packaged as distinct
+0.0.146 and 0.0.147 AppImages. The external, explicitly enabled harness redirects
+only test transport; UI inputs call the original production capability bridge.
+
+`qualify-historical-ui-update.ts --transport-failures` passed HTTP503, same-size
+corruption and truncation followed by check/download/install/restart, manual XP
+editing, restore and independent readback of the backup protecting later work.
+Report SHA256: `dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a`.
+Exact retained report location and run command are in `../../roadmap-execution.md`.
+This is synthetic-data automated qualification, not user-data live acceptance,
+a public release, or a completed Phase 5 interruption/capacity matrix.

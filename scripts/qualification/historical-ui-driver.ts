@@ -1,5 +1,7 @@
+import { HistoricalProcessTracker } from './historical-process-tracker.js'
+import { assertProfileAccessOwner } from '../../src/main/local-profile/profile-access.js'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { z } from 'zod'
@@ -19,20 +21,33 @@ export async function waitFor<T>(
   throw new Error(`Timed out: ${label}`)
 }
 
+const trackers = new Map<string, HistoricalProcessTracker>()
+function processTracker(home: string): HistoricalProcessTracker {
+  let tracker = trackers.get(home)
+  if (!tracker) {
+    tracker = new HistoricalProcessTracker()
+    trackers.set(home, tracker)
+  }
+  return tracker
+}
+export function trackIsolatedProcess(home: string, pid: number): void {
+  processTracker(home).track(pid)
+}
 export function isolatedProcesses(home: string): number[] {
-  return readdirSync('/proc')
-    .filter((name) => /^\d+$/.test(name))
-    .flatMap((name) => {
-      try {
-        return readFileSync(`/proc/${name}/environ`, 'utf8')
-          .split('\0')
-          .includes(`XDG_DATA_HOME=${home}`)
-          ? [Number(name)]
-          : []
-      } catch {
-        return []
-      }
-    })
+  const root = join(home, 'salt-marcher')
+  const lock = join(root, 'runtime.lock')
+  if (existsSync(lock)) {
+    try {
+      const { pid } = z
+        .object({ pid: z.number().int().positive() })
+        .parse(JSON.parse(readFileSync(lock, 'utf8')))
+      assertProfileAccessOwner(join(root, 'profile'), pid, root)
+      processTracker(home).track(pid)
+    } catch {
+      // Stale or transitioning leases cannot confer ownership; retain known identities.
+    }
+  }
+  return processTracker(home).scan(home)
 }
 
 export class HistoricalUiDriver {
@@ -45,7 +60,10 @@ export class HistoricalUiDriver {
       timer: ReturnType<typeof setTimeout>
     }
   >()
-  private constructor(private socket: WebSocket) {
+  private constructor(
+    private socket: WebSocket,
+    private targetId: string
+  ) {
     socket.addEventListener('message', (event) => {
       const packet = z
         .object({
@@ -108,7 +126,10 @@ export class HistoricalUiDriver {
     )
     assert(url)
     const socket = new WebSocket(url)
-    const driver = new HistoricalUiDriver(socket)
+    const driver = new HistoricalUiDriver(
+      socket,
+      z.string().min(1).parse(new URL(url).pathname.split('/').at(-1))
+    )
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
         socket.close()
@@ -246,7 +267,9 @@ export class HistoricalUiDriver {
   }
   async closeApplication(home: string): Promise<void> {
     try {
-      await this.command('Browser.close')
+      z.object({ success: z.literal(true) }).parse(
+        await this.command('Target.closeTarget', { targetId: this.targetId })
+      )
     } catch (error) {
       if (!(error instanceof Error) || error.message !== 'CDP closed')
         throw error

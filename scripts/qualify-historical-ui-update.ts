@@ -1,3 +1,6 @@
+import { Transform } from 'node:stream'
+import { assertHistoricalTestIsolation } from './qualification/historical-test-isolation.js'
+import { existsSync } from 'node:fs'
 import { readVerifiedBackup } from '../src/core/maintenance/verified-backup.js'
 import { cpSync } from 'node:fs'
 import assert from 'node:assert/strict'
@@ -20,6 +23,7 @@ import {
 } from './qualification/historical-artifact-runner.js'
 import {
   HistoricalUiDriver,
+  trackIsolatedProcess,
   isolatedProcesses,
   waitFor
 } from './qualification/historical-ui-driver.js'
@@ -34,8 +38,12 @@ import {
   releaseRepository
 } from '../src/shared/contracts/release.js'
 
+assertHistoricalTestIsolation()
+
 const { values } = parseArgs({
   options: {
+    'transport-failures': { type: 'boolean', default: false },
+    'accepted-crash': { type: 'boolean', default: false },
     baseline: { type: 'string' },
     target: { type: 'string' },
     home: { type: 'string' }
@@ -82,8 +90,19 @@ const originalDeployment = stageDeployment(
 )
 setCurrent(root, originalDeployment)
 const requests: string[] = []
+let transportMode: 'healthy' | 'offline' | 'corrupt' | 'truncated' = values[
+  'transport-failures'
+]
+  ? 'offline'
+  : 'healthy'
+const transportFailures: Array<{ mode: string; readback: unknown }> = []
 const server = createServer((request, response) => {
   requests.push(request.url ?? '')
+  if (transportMode === 'offline') {
+    response.statusCode = 503
+    response.end('temporarily unavailable')
+    return
+  }
   if (request.url === `/repos/${releaseRepository}/releases/latest`) {
     response.setHeader('Content-Type', 'application/json')
     response.end(
@@ -108,9 +127,30 @@ const server = createServer((request, response) => {
   else if (
     request.url ===
     `/${releaseRepository}/releases/download/v${target.receipt.version}/${target.receipt.artifact.name}`
-  )
-    createReadStream(target.executable).pipe(response)
-  else {
+  ) {
+    if (transportMode === 'truncated')
+      createReadStream(target.executable, {
+        start: 0,
+        end: target.receipt.artifact.bytes - 2
+      }).pipe(response)
+    else if (transportMode === 'corrupt') {
+      let first = true
+      createReadStream(target.executable)
+        .pipe(
+          new Transform({
+            transform(chunk: Buffer, _encoding, callback) {
+              const bytes = Buffer.from(chunk)
+              if (first) {
+                bytes[0] = bytes[0]! ^ 1
+                first = false
+              }
+              callback(null, bytes)
+            }
+          })
+        )
+        .pipe(response)
+    } else createReadStream(target.executable).pipe(response)
+  } else {
     response.statusCode = 404
     response.end()
   }
@@ -119,7 +159,11 @@ await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
 const address = server.address()
 assert(address && typeof address !== 'string')
 let ui: HistoricalUiDriver | undefined
-const exits: Array<Promise<number | null>> = []
+const exits: Array<
+  Promise<{ pid: number; code: number | null; signal: NodeJS.Signals | null }>
+> = []
+const expectedKills = new Set<number>()
+let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
 async function launch(): Promise<HistoricalUiDriver> {
   const temporary = join(home, `ui-launch-${exits.length}`)
   mkdirSync(temporary)
@@ -138,27 +182,77 @@ async function launch(): Promise<HistoricalUiDriver> {
     ['--no-sandbox'],
     { env, stdio: ['ignore', log, log] }
   )
+  if (child.pid) trackIsolatedProcess(home, child.pid)
   closeSync(log)
   exits.push(
     new Promise((resolve, reject) => {
       child.once('error', reject)
-      child.once('exit', resolve)
+      child.once('exit', (code, signal) =>
+        resolve({ pid: child.pid!, code, signal })
+      )
     })
   )
   return HistoricalUiDriver.connect(home)
 }
 try {
+  if (values['transport-failures']) {
+    for (const mode of ['offline', 'corrupt', 'truncated'] as const) {
+      transportMode = mode
+      ui = await launch()
+      await ui.click('Einstellungen', 'body', true)
+      await ui.click('Jetzt prüfen')
+      if (mode === 'offline')
+        await ui.expectText(
+          'Updates konnten nicht geprüft werden. Bitte später erneut versuchen.'
+        )
+      else {
+        await ui.expectText(`Version ${target.receipt.version}`)
+        await ui.click('Herunterladen')
+        await ui.expectText(
+          'Die heruntergeladene Datei ist unvollständig oder beschädigt.'
+        )
+      }
+      assert(!(await ui.text()).includes('Installieren und neu starten'))
+      assert.equal(currentProgram(root)?.deployment, originalDeployment)
+      assert.equal(new MaintenanceCoordinator(root).read(), null)
+      assert(!existsSync(join(root, 'cache', target.receipt.artifact.name)))
+      assert(
+        !existsSync(
+          join(root, 'cache', `${target.receipt.artifact.name}.partial`)
+        )
+      )
+      await ui.closeApplication(home)
+      ui = undefined
+      const readback = await runHistoricalArtifact(
+        baselineDirectory,
+        home,
+        'read'
+      )
+      assert(readback.result.response.ok)
+      assert.deepEqual(
+        readback.result.response.result,
+        seeded.result.response.result
+      )
+      transportFailures.push({ mode, readback })
+    }
+    transportMode = 'healthy'
+  }
+  const healthyRequestStart = requests.length
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
   await ui.expectText(`Installierte Version: ${baseline.receipt.version}`)
   assert(
-    !requests.some((path) => path.endsWith('.AppImage')),
+    !requests
+      .slice(healthyRequestStart)
+      .some((path) => path.endsWith('.AppImage')),
     'Startup must not download'
   )
   await ui.click('Jetzt prüfen')
   await ui.expectText(`Version ${target.receipt.version}`)
   assert(
-    !requests.some((path) => path.endsWith('.AppImage')),
+    !requests
+      .slice(healthyRequestStart)
+      .some((path) => path.endsWith('.AppImage')),
     'Checking must not download'
   )
   await ui.click('Herunterladen')
@@ -173,10 +267,12 @@ try {
   await ui.click('Bestätigen', '[role="alertdialog"]')
   const updated = await waitFor(
     () => new MaintenanceCoordinator(root).read(),
-    (state) => state?.phase === 'committed',
+    (state) => state?.phase === 'committed' || state?.phase === 'rolled-back',
     'target restart commits update'
   )
   assert(updated)
+  if (updated.phase === 'rolled-back')
+    throw new Error(`Update ${updated.id} rolled back: ${await ui.text()}`)
   assert.equal(updated.next.version, target.receipt.version)
   ui.disconnect()
   ui = await HistoricalUiDriver.connect(home)
@@ -277,6 +373,42 @@ try {
     character.xp += 25
   }
   assert.deepEqual(continued.result.response.result, expected)
+  if (values['accepted-crash']) {
+    ui = await launch()
+    await ui.click('Einstellungen', 'body', true)
+    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    assert.equal(new MaintenanceCoordinator(root).read()?.phase, 'committed')
+    const killedPids = isolatedProcesses(home)
+    assert(killedPids.length > 0)
+    for (const pid of killedPids) {
+      expectedKills.add(pid)
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+      }
+    }
+    await waitFor(
+      () => isolatedProcesses(home),
+      (pids) => pids.length === 0,
+      'hard-killed application exited'
+    )
+    ui.disconnect()
+    ui = await launch()
+    await ui.click('Einstellungen', 'body', true)
+    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    assert.equal(new MaintenanceCoordinator(root).read()?.id, updated.id)
+    assert.equal(new MaintenanceCoordinator(root).read()?.phase, 'committed')
+    await ui.closeApplication(home)
+    ui = undefined
+    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      continued.result.response.result
+    )
+    acceptedCrash = { killedPids, readback }
+  }
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
   await ui.click('Wiederherstellen')
@@ -342,7 +474,20 @@ try {
     unchanged.result.response.result,
     seeded.result.response.result
   )
-  assert((await Promise.all(exits)).every((code) => code === 0))
+  const processExits = await Promise.all(exits)
+  assert(
+    processExits.every(
+      (exit) =>
+        exit.code === 0 ||
+        (expectedKills.has(exit.pid) && exit.signal === 'SIGKILL')
+    )
+  )
+  if (values['accepted-crash'])
+    assert(
+      processExits.some(
+        (exit) => expectedKills.has(exit.pid) && exit.signal === 'SIGKILL'
+      )
+    )
   readHistoricalArtifact(baselineDirectory)
   readHistoricalArtifact(targetDirectory)
   writeFileSync(
@@ -355,6 +500,9 @@ try {
         baseline: baseline.receipt,
         target: target.receipt,
         requests,
+        transportFailures,
+        acceptedCrash,
+        processExits,
         transaction: updated,
         seeded,
         after,
