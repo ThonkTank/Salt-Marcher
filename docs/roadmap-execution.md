@@ -6874,3 +6874,863 @@ nur dieses Log; alle 352 übernommenen Änderungsdateien behalten ansonsten den
 bereits vollständig geprüften Stand. Repositoryformat (92716) und diff --check
 bestanden. Der neue Commit benötigt unabhängig davon eigene CI- und Handoff-
 Belege. Der vorherige Kandidatenbranch bleibt auf c5a9c78aa erhalten.
+
+### Phase 4 – Abschluss mit eigenem linearen Kandidaten und grünem Main
+
+Die anschließenden Warteturns haben jeweils den laufenden CI-Job 34318597826
+autoritativ abgefragt. Der vollständige Lauf für
+bd8b33c4f5b6e5f064deb64278d9097f739cac6d ist success, einschließlich des
+Exact-SHA-Aggregats. Neuer Reviewstand: PR 671. Die unabhängige
+delivery:verify-candidate-Prüfung 42309 besteht mit sauberem Arbeitsbaum,
+aktuellem Main als Vorfahr und sämtlichen erforderlichen Jobs.
+
+handoff:app 40821 endet mit Exit 0. Belegstate
+cd434d39-0a3b-401d-970e-80202bde9a8d, Versuch
+3f705929-d743-491e-9eb9-91067f716494. CI-Artefakt und installiertes AppImage
+haben denselben SHA-256
+59c509f13517430c5e15d95aed0c306e6c295be3f2bcc2a485957e9eff53d0c4.
+Vorherige Local-Daten wurden in 0d9906ff-e39b-4063-b421-d0bde1da9cce gesichert.
+Die installierte Laufzeit besteht zwei Quickchecks und vier fachliche Readbacks.
+
+delivery:promote 69490 übernimmt exakt bd8b33c4f nach Main (Exit 0), ohne
+Neubau oder Änderung des Kandidaten. delivery:verify-post-promotion 92905
+mit explizitem GITHUB_SHA besteht. Main-Check 34320025838 ist vollständig
+success. Seine Attestation bestätigt die vorherige vollständige Kandidaten-
+abnahme; die dort übersprungenen Kandidatenjobs sind keine erneut ausgeführten
+Tests. Kandidaten- und Main-SHA stimmen überein.
+
+Plan-Audit bestanden: gemeinsame Editorregistrierungen und konkrete Save-/
+Discard-Funktionen sind im release-editor-inventory.md den produktiven Besitzern
+und Tests zugeordnet. Die bisherigen Fixrunden belegen ursprüngliche Befehls-
+identität, Auflösung unklarer Ergebnisse, abhängige Editoren, erhaltene
+Teilerfolge und Eingabesperren. Der gemeinsame Dialog benennt die offenen
+Bereiche. Keine offenen Diskrepanzen aus den Phase-4-Fixplänen; die gesamte
+Implementierung besteht die eigenen Remote- und Handoff-Gates.
+
+Roadmap-Audit Phase 4 bestanden: mehrere offene Editoren, Speichern mit Fehler,
+Teilerfolg, Verwerfen, Abbrechen und neu hinzukommende Änderungen besitzen
+ausgeführte UI-/Koordinatortests. release-update-ui prüft explizit getrennte
+Aktionen, Weiterarbeit beim Download, kein Installieren beim Schließen,
+Offlinefehler und erneute Nutzeraktion. Die tatsächlichen Electronfälle prüfen
+unter anderem Reise-/Szenenübergänge und den benannten Routenentwurf.
+
+Phase 4 ist damit implementiert, automatisiert geprüft, lokal übergeben und
+auf grünem Main abgeschlossen. Dies ist keine vollständige historische
+AppImage-Qualifikation, keine öffentliche Liveabnahme und keine Veröffentlichung.
+Phasen 5–7 bleiben offen. Der nächste Schritt ist der konkrete Phase-5-Plan
+gegen die aktuelle Implementierung und die unveränderte kanonische Roadmap:
+echte historische Schemaartefakte, semantischer Profilvergleich, tatsächliche
+UI-Aktionen und Prozess-/Dateisystemfehler einschließlich Recovery und Restore.
+
+### Phase 5 – Verbindlicher Implementierungs- und Abnahmeplan
+
+Ausgangslage erneut geprüft: Phase 4 ist auf bd8b33c4f ausgeliefert; aktueller
+Branch candidate/release-artifact-qualification trägt zunächst nur den obigen
+Abschlusslog. Kanonisch bleiben release-maintenance-roadmap.md und die ursprüngliche
+Abnahmematrix. Die Quellenrecherche ist Vorbereitung, kein Artefaktnachweis.
+
+Ziel dieser Phase: ein ausführbarer Abnahmeauftrag identifiziert echte historische
+AppImages und den aktuellen Zielstand. Die Tests vergleichen vollständige Profile
+und fortsetzbare Fachzustände über Update, Fehler-Recovery und Wiederherstellung.
+Der gemeinsame produktive Wartungsablauf bleibt verantwortlich; Testcode darf
+keine eigene erfolgreiche Aktivierung oder eine erfundene Migration vortäuschen.
+
+Arbeitspakete in Reihenfolge:
+
+1. Historische Quellen unveränderlich festhalten und maschinell prüfen:
+   A=52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0 (37/34),
+   B=6e84a12c1c83cd6437680ae70529cdc9723c353b (38/34),
+   C=c583e05506e10d8446a4e210fa0603e3be53d63a (39/34).
+   Zusätzlich Loot30=b4927dbc0979906f71b2ee4e106ec22668245dd7 (30/30)
+   und Loot31=a3c506b50cac3ff3c6a52bb5285f9c96d5e0b0b8 (31/31).
+   Der aktuelle Zielcommit wird bei seinem Build ausdrücklich fixiert (derzeit
+   42/41); keine implizite Auswahl von latest oder einem Java-Release-Tag.
+2. In isolierten Quellbäumen originale Main-/Utility-/Schemaartefakte bauen.
+   Für fehlende historische Wartungs-/Prüfeinstiege einen getrennt ausgewiesenen
+   Harness verwenden, mit eigener Quellidentität und Hash. Die ursprünglichen
+   Schemaowner und Migrationsdateien bleiben unverändert. Provenienz umfasst
+   Originalcommit, Quellbaum, Harness, Werkzeuge und tatsächliche AppImage-Bytes.
+   Historischer Start, Seed, Migration und Readback müssen im jeweils benannten
+   Artefakt laufen; der aktuelle Arbeitscheckout darf Daten nicht vorher öffnen.
+3. Separate reichhaltige Fixture samt semantischem Erwartungszustand ergänzen:
+   Installationseinstellungen, aktive/inaktive/Trash-Kampagnen, eigene Dateien
+   einschließlich leerer Verzeichnisse, Weltinhalte, Gruppe, Loot/Belegidentität
+   und fortsetzbarer Kampf-/Reisezustand. Originalfixture release-0.2.0 unverändert
+   erhalten. Fachliche Werte/Identitäten vergleichen; zulässige neue Schema-
+   Metadaten getrennt bewerten. Leere, bestehende und beschädigte Profile sind
+   eigene Fälle. Nach Migration eine weitere echte Fachaktion ausführen.
+4. Kontrollierten Loopbackfeed und tatsächliche Rendererbedienung integrieren:
+   prüfen, herunterladen, bestätigen, installieren, Neustart, weiterarbeiten,
+   Sicherung auswählen und wiederherstellen. Die vorhandene Controller-Direkt-
+   prüfung bleibt Transportnachweis. Kein Download/Install ohne jeweilige Aktion;
+   Downloadabschluss und Profilsperren/Prozessende zuverlässig abwarten.
+5. Übergangsmatrix ausführen: A→B→C, A→C, historischer Stand→aktuelles Ziel,
+   zwei echte unterschiedlich versionierte Zielartefakte ohne Schemaänderung,
+   und vollständiger Loot30→Loot31-Profilübergang. Jeder Nachweis benennt die
+   tatsächlich ausgeführten Bytes und die erreichten Installation-/Kampagnenschemas.
+6. Fehlerfälle mit denselben Artefakten ergänzen: tatsächlicher Prozessabbruch
+   innerhalb einer produktiven Migration und an allen Aktivierungs-/Recovery-
+   Grenzen; WAL, Platzmangel, Zugriffsfehler, Parallelstart, beschädigte Downloads,
+   fehlende Migration und neueres Datenformat. Vor Freigabe konsistentes altes
+   oder neues Paar beweisen. Nach Freigabe spätere Änderungen erhalten und
+   automatischen Rollback ausschließen. Restore erstellt vorher eine vollständige
+   Sicherung des aktuellen Stands; diese muss spätere Arbeit wiederherstellen können.
+7. Maschinenlesbare Abnahmebelege und Grenzen dokumentieren, relevante statische,
+   native und echte Artefakt-/UI-Prüfungen ausführen, anschließend getrennte Audits
+   gegen diesen Plan und Phase 5 der Roadmap. Kandidaten-/Handoff-/Main-Gates wie
+   bisher einhalten. Erst danach Phase 6 beginnen.
+
+Betroffene Komponenten: neue Quellen-/Artefaktverträge und Runner unter
+scripts/qualification, historische Harness-Einstiege, semantische Fixtures und
+Tests; vorhandener Release-Qualification-/Feed-/Remote-Debugging-Adapter;
+erforderliche eng begrenzte Testports an produktiven Utility-/Wartungsgrenzen.
+Main behält Netzwerk und Prozesssteuerung, Utility die Datenarbeit, SQL bleibt
+bei Original- beziehungsweise Zielaggregaten. Fehlerports nur im ausdrücklich
+isolierten Testmodus, keine frei aktivierbare Störung normaler Profile.
+
+Erster konkreter Abschnitt vor Implementierung: Quellenkatalog und Inspektor
+erstellen. Vollständige Commit-IDs verlangen, Git-Bäume und Originaldateien lesen,
+Installation/Kampagne aus dem tatsächlichen TypeScript-Schemaowner bestimmen,
+erwartete Versionen abgleichen und Quelldigests ausgeben. Unbekannte Ownerform,
+fehlender Commit und abweichende Schemazuordnung müssen scheitern. Zielgerichtete
+Tests dieser Ablehnungen sowie echte Inspektion aller fünf historischen Quellen;
+kein AppImage-Erfolg aus diesen Metadaten ableiten. Danach erst den Buildadapter
+gegen die bestätigten Originalquellen konkretisieren und implementieren.
+
+Abschlussgrenze: Jeder geforderte Fall besitzt einen bestandenen Nachweis im
+passenden Umfang. Ein Vertrag, grüner Unit-Test, erfolgreicher Neubau oder Start
+allein schließt Phase 5 nicht. Releasepipeline/geschützte Freigabe und Risiko-CI
+bleiben Phase 6; vorhandene Nutzerdatenkopie, dokumentierter Livetest und die
+öffentliche Veröffentlichung unveränderter Bytes bleiben Phase 7.
+
+### Phase 5 – Quelleninspektor: erster geprüfter Abschnitt
+
+Implementiert: scripts/qualification/historical-release-sources.ts benennt die
+fünf Originalcommits und erwarteten Schemapaare. Der Inspektor verlangt volle
+Commit-IDs, liest Dateien mit git show aus diesem Commit und ermittelt die
+Schemawerte über den TypeScript-AST ohne Ausführung alten Anwendungscodes.
+Ausgabe enthält Quellbaum, Paket-/Paketmanagerversion und SHA-256 von Schemaowner,
+package.json und Lockfile, ausdrücklich als source-inspection-only gekennzeichnet.
+scripts/inspect-release-history.ts inspiziert alle fünf Originalstände.
+
+Validierung: 52822, elf Tests bestanden. Die Git-basierte Regression verändert
+nach dem Commit den Arbeitsbaum und belegt trotzdem die ursprünglichen
+Schemawerte; falsche Erwartungen und fehlende Commits werden abgelehnt. Weitere
+Fälle prüfen ungepinnte Referenzen, irreführende Kommentare, nichtliterale Werte,
+doppelte Deklarationen/Felder und unbekannte Ownerformen. Typprüfung 49645 und
+betroffenes ESLint/Format 75238 bestanden. Tatsächliche Quelleninspektion 30560
+bestanden: A 37/34, B 38/34, C 39/34, Loot30 30/30, Loot31 31/31. Bericht unter
+work/roadmap-phase5-historical-sources.json außerhalb des Repositorys.
+
+Abschnittsaudit gegen Plan bestanden: die gewählten Quellen sind nun anhand
+der Originaldateien maschinell prüfbar und bleiben unabhängig vom Arbeitsbaum.
+Roadmap-Audit: dies qualifiziert ausschließlich die Quellidentität. Noch keine
+historischen AppImages gebaut, keine reale Migration/UI- oder Fehlerabnahme
+dieser Phase bestanden. Nächster Abschnitt: Buildadapter mit unveränderten
+historischen Schemaownern und ausdrücklich separatem Harness konkretisieren.
+
+### Phase 5 – Historischer Buildadapter: konkreter nächster Abschnitt
+
+Quellenprüfung: A besitzt originale Release-Build-/Packaging-Skripte und dieselben
+grundlegenden Electron-/SQLite-Versionen, aber keinen Release-Updater. Der Build
+kann deshalb aus einem separaten detached Worktree mit eigenem node_modules
+erfolgen. Historische Runtime- und Migrationsdateien werden nicht bearbeitet.
+
+Implementierungsplan: Originalstand prüfen, frischen detached Worktree anlegen,
+Lockfile-Installation und originales build:release ausführen. Danach ausschließlich
+unter out/qualification einen separat gebündelten Test-Main und Test-Utility
+ergänzen. Packaging wählt den Test-Main als expliziten Wrapper: normale Starts
+delegieren an den originalen Main; nur der isolierte historische Testmodus startet
+die Test-Utility. Ein Alias bindet den originalen Schemaowner aus dem historischen
+Worktree ein. Native Module bleiben original paketiert. Testversionen sind explizite
+CLI-Eingaben und keine veröffentlichten Releases. Vor/nach dem Build unveränderten
+getrackten Quellbaum nachweisen; vorhandene Ausgabeordner nicht überschreiben.
+
+Erster Runtimeauftrag liefert ausschließlich Identität: tatsächliche Schemas,
+native SQLite-Funktion, Electron-/Node-Version. Ausgabe und Prüfumgebung liegen
+unter einem eigens gewählten isolierten XDG-Ort. Kein Öffnen vorhandener Profile.
+Ein Herkunftsbeleg bindet Originalquellen, separate Harness-Quelldigests,
+Buildwerkzeuge, eingepackte Harness-Dateien und AppImage-Hash zusammen. Dieser
+Abschnitt behauptet noch keine historische Updatebedienung oder Migration.
+Validierung: statische Prüfungen, tatsächlich A bauen und den eingebauten
+Utility-Einstieg aus exakt diesem AppImage starten. Bei Fehlern gezielte
+Fixrunden; erst danach Seed/Migrate/Readback und die übrigen Stände erweitern.
+
+Erste statische Prüfung des Buildadapters: Typprüfung 51299 bestanden; ESLint
+45070 beanstandet eine unvalidierte version-Eigenschaft aus JSON.parse bei der
+Vite-Werkzeugidentität. Korrekturplan: Paketmetadaten mit Zod validieren statt
+eines nachgeschalteten Typecasts; betroffenes ESLint erneut ausführen, dann
+erst den tatsächlichen historischen Build starten.
+
+Korrigiertes ESLint 1647 bestanden. Historischer Build A (89305) vollständig
+Exit 0: eigener detached Worktree, originales Lockfile installiert und originaler
+Release-Build durchgeführt; zwei separate Harness-Bundles ergänzt und AppImage
+gebaut. Der getrackte Originalbaum ist vor/nach dem Build unverändert. Artefakt
+SaltMarcher-0.0.137-x64.AppImage, 176562741 Bytes, SHA-256
+0ff4bc0bbb21b59e2fe2b7c55b8e39f6cb06066a8c90891a09442325b20c5bc6.
+Herkunftsbeleg liegt neben den Bytes unter work/historical-artifacts/a.
+
+Der erste Startaufruf erreichte das AppImage wegen fehlendem xvfb-run im PATH
+nicht (Exit 127). Mit dem vorhandenen Testwerkzeugpfad startet dieselbe Datei,
+ohne Neubau: 85992 Exit 0. Tatsächlicher Utility-Readback meldet Testversion
+0.0.137, Installation 37/Kampagne 34, SQLite 3.53.4, Node 24.18.0 und Electron
+43.2.0. Unabhängiger Vergleich bestätigt Dateigröße/Hash und Übereinstimmung
+von Laufzeitschema und ursprünglichem Quellenbeleg. Keine vorhandenen Profile
+geöffnet; Testmodus nutzte einen separaten XDG-Ort.
+
+Abschnittsaudit: Build- und Utility-Identitätsweg bestehen für A. Das ist ein
+echtes historisches AppImage mit unveränderten Originalschemas und bezeichnetem
+Harness. Normale UI-Delegation, weitere Quellen, Seed/Migration/Readback,
+Fehlerfälle und vollständige Updatebedienung sind noch unqualifiziert. Phase 5
+bleibt offen; kein historischer Migrations- oder Veröffentlichungserfolg behauptet.
+
+### Phase 5 – Historische Profilbefehle und erste semantische Fixture
+
+Plan vor Erweiterung: Test-Main erhält explizite seed/read/advance-Aufträge
+mit eindeutiger Request-ID. Er hält die vorhandene gemeinsame kanonische
+Profilsperre bis zum Ende seiner Utility. Profile liegen am Release-Profilort
+innerhalb des isolierten XDG-Verzeichnisses; Ergebnisse außerhalb des Profils,
+unveränderlich pro Request. IPC-Anfragen/-Antworten werden validiert. Keine
+Änderung normaler Anwendungsaktionen oder historischer SQL-Dateien.
+
+Utility bindet CampaignStore und PartyStore ausschließlich aus dem gewählten
+Originalbaum ein. Vor read/advance muss dessen ursprünglicher Persistence-
+Preflight alle Daten als ready bestätigen; kein Lesen mit versehentlicher
+Vorwärtsmigration. Seed verweigert bereits vorhandene Daten, erzeugt aktive,
+inaktive und Trash-Kampagne, abweichende Einstellungen, eigene Binär-/Textdateien
+und ein leeres Verzeichnis sowie benannte Charaktere mit XP/Sprachen/Werten.
+Read liefert konkrete Werte aus allen drei Kampagnen und eigene Dateiinhalte;
+advance verändert XP über den ursprünglichen PartyStore und belegt weitere
+Facharbeit. Diese Fixture ist zunächst ausdrücklich partiell; Weltinhalte,
+Kampf-/Reisezustand und Loot31-Fakten bleiben im Phase-5-Plan verpflichtend.
+
+Weil die gemeinsame Sperre zusätzliche aktuelle Harness-Abhängigkeiten einbindet,
+erfasst der Builder nun auch die tatsächlich gebündelten Quelldateien samt Hash,
+getrennt vom unveränderten Originalbaum. Nach statischer Prüfung neues A-Artefakt
+in neuem Ausgabeordner bauen; altes Identitätsartefakt erhalten. Seed/read/advance
+aus denselben Bytes prüfen und Schema/semantische Werte vergleichen. Ein
+Migrationsbefehl wird erst im nächsten Abschnitt über Original-Preflight und
+Original-Migrationsregistry auf einer Arbeitskopie ergänzt; kein In-place-Test
+als Nachweis journalgestützter Aktivierung ausgeben.
+
+Profilbefehle implementiert: validierte Request-/Response-Verträge und eindeutige
+Ergebnisdateien, gemeinsame Main-Profilsperre bis zum Utility-Ende, ursprüngliche
+CampaignStore-/PartyStore-/Preflight-Bindungen. read/advance verlangen ready vor
+Öffnen; seed verweigert jedes vorhandene Profil. Der Builder erfasst nun alle
+tatsächlich gebündelten Harness-Abhängigkeiten mit Dateidigests und prüft ihre
+Unverändertheit. Originaldateien bleiben separat durch Commit/Tree gebunden.
+
+Typprüfung 51960 und ESLint 67436 bestanden. Build A mit erweitertem Harness
+32275 Exit 0, neues eigenes Ausgabeverzeichnis a-profile-v1. AppImage-SHA-256
+9e05893db392a1c13dc60080ee8fc28683713a04d4eb1aa52f5a9ea8f4c955a6.
+Der vorherige reine Identitätsbuild bleibt erhalten. Tatsächliche AppImage-
+Abnahme 12556 Exit 0: seed, read, advance, read, abgelehnter seed und read.
+Jeder Aufruf prüfte Prozessende, Paketversion, Request-ID und Erfolg/Fehler.
+Initiales und erneut gelesenes Profil stimmen vollständig überein. Drei
+Kampagnen, eine davon im Trash, dunkles Theme, Charaktersprachen und leeres
+eigenes Verzeichnis explizit geprüft. Weiterarbeit erhöht nur die aktive
+Charakter-XP um 25; die anderen Kampagnen bleiben gleich. Nach verweigertem
+Neuanlegen bleibt der gesamte spätere Readback identisch.
+
+Unabhängige abschließende SQLite-Prüfung: genau vier Datenbanken, Installation
+37 und alle drei Kampagnen 34, jeweils integrity_check=ok und keine verletzten
+Fremdschlüssel. Ergebnisse unter work/roadmap-phase5-profile-a-evidence.json;
+pro Request unveränderte Berichte unter dem isolierten historischen Testprofil.
+
+Abschnittsaudit bestanden für die ausdrücklich partielle Fixture. Dies belegt
+Erzeugung, Persistenz und eine spätere Fachänderung in Originalruntime A. Keine
+historische Migration oder gekoppelte Aktivierung ausgeführt; Welt-/Kampf-/
+Reise-/Loot-Fakten und die vollständige Fehler-/UI-Matrix bleiben ausstehend.
+Nächster Abschnitt: wiederverwendbaren Artefaktrunner und Originalmigrations-
+auftrag auf Arbeitskopien ergänzen, dann A→B und A→C tatsächlich vergleichen.
+
+### Phase 5 – Runner und Originalmigrationen auf Arbeitskopien
+
+Konkreter Plan: ein wiederverwendbarer Runner validiert den historischen
+Artefaktbeleg und Dateinamen, prüft Größe/Hash vor Ausführung, bindet jeden
+AppImage-Aufruf an Request-ID/Operation/Version und wartet auf dessen tatsächliches
+Prozessende. Ergebnis und Laufzeitbeleg bleiben pro Aufruf erhalten. Eine
+Testdeadline beendet ausschließlich die eigens gestartete Prozessgruppe;
+Beobachtungszeitlimits lösen keinen neuen Lauf aus. Byteidentität nach dem Lauf
+erneut prüfen. Strukturierte fachliche Fehler sind von Prozess-/Protokollfehlern
+zu unterscheiden.
+
+Getrennte Arbeitskopie: nur in neuem Ziel-XDG-Ort anlegen, ursprüngliches
+Testprofil mit gemeinsamer Sperre halten und vollständigen Dateibaum einschließlich
+WAL/SHM/leerem Verzeichnis kopieren. Vorher/nachher Inventar der unveränderten
+Quelle vergleichen; Arbeitskopie außerhalb des Profils ausdrücklich markieren.
+Dies ist Fixturetransport unter exklusiver Sperre, kein Ersatz für den produktiven
+Online-Backup-/Updateablauf und kein Beleg seiner Aktivierung.
+
+Test-Utility erhält migrate nur für diese markierte Arbeitskopie. Vorab den
+vollständigen Original-Preflight ausführen; sämtliche ermittelten Datenbanken mit
+dem unveränderten applySchemaMigrations der Zielquelle aktualisieren, WAL
+abschließen und Integrität/Fremdschlüssel prüfen. Danach ready und fachlichen
+Readback durch dieselbe Zielruntime verlangen. Bericht enthält tatsächliche
+Migrations-IDs und vorherige/erreichte Versionen, getrennt von fachlichen Werten.
+
+Nach statischer Prüfung B mit Originalschema 38/34 bauen, A-Profil auf Arbeitskopie
+mit B migrieren und gegen A-Readback vergleichen; ursprüngliches A-Profil bleibt
+unverändert. Danach C für A→C und B→C einschließlich späterer Arbeit verwenden.
+Unveränderte Quellbäume, separate Harnessbelege, Datenpaaraktivierung und echte
+Update-UI bleiben strikt getrennte Nachweise im vollständigen Phase-5-Plan.
+
+Erste Runnerprüfung: 17 Quellen-/Artefaktfälle (39011) und Typprüfung 18441
+bestanden. ESLint 27520 fordert für den unbekannten kill-Fehler einen Error als
+Promise-Rejection. Fixplan: diesen Fehler mit Ursache in einen Error einbetten,
+ohne Timeout-/Prozessbeendigung zu ändern, und betroffenes ESLint wiederholen.
+
+Korrektur-ESLint 13336 bestanden. B-Build 68822 Exit 0 mit Originalcommit
+6e84a12c1c83cd6437680ae70529cdc9723c353b und Testversion 0.0.138;
+AppImage-SHA-256 f679ff8e6fa291487b70ce3c6c32185230555c720f4cb0b6117734509f6f482a.
+Der neue wiederverwendbare qualify-historical-migration.ts orchestriert Quelle,
+markierte Arbeitskopie, Ablehnung des unmigrierten Stands, Migration, Wiederlesen,
+Weiterarbeit und Kontrolle der Quelle. CLI-ESLint 8611 und Typprüfung 18589 bestanden.
+
+Tatsächlicher A→B-Lauf 91477 Exit 0, Nachweis
+work/historical-a-to-b-v1/historical-migration-evidence.json. A-Bytes
+9e05893db392a1c13dc60080ee8fc28683713a04d4eb1aa52f5a9ea8f4c955a6
+gegen die oben benannten B-Bytes. Die Originalmigration
+installation-37-to-38-campaign-registry-revision wurde tatsächlich ausgeführt;
+Installation ist danach 38, alle drei Kampagnen bleiben 34. Vor Migration
+verweigert B den Readback. Danach stimmen sämtliche bisher erfassten
+Profilwerte mit A überein; B kann XP weiter erhöhen und denselben späteren
+Stand nach Neustart lesen. Der abschließende A-Readback bleibt identisch.
+
+Abschnittsaudit: echte Originalmigration und eigene Zielruntime mit partieller
+Fixture belegt. Kein Beleg für Updatefeed, Programmaktivierung oder vollständigen
+Spielzustand. Nächster Lauf: C-Bytes bauen und A→C sowie B→C ausführen, damit
+das Überspringen und die mehrstufige Kette dieselben Originalmigrationen prüfen.
+
+C-Build 64706 Exit 0: Originalcommit
+c583e05506e10d8446a4e210fa0603e3be53d63a, Testversion 0.0.139, AppImage-SHA-256
+bcfadf0f953588db692c4766ea7a5a7c463e8a44a8d26e5eaedd24e2c61deecf.
+A→C 44982 besteht (Exit 0): echte Installation 37→38→39 über
+campaign-registry-revision und campaign-command-receipts, Kampagnen 34 bleiben
+34. Sämtliche partiell erfassten Inhalte werden vor/nach Migration und nach
+weiterer XP-Arbeit geprüft. Quelle unverändert. Nachweis
+work/historical-a-to-c-v1/historical-migration-evidence.json.
+
+B→C 46953 besteht (Exit 0) aus dem bereits unter B fortgeführten A-Profil:
+Installation 38→39 durch installation-38-to-39-campaign-command-receipts.
+Die nach A→B geleistete Arbeit bleibt erhalten, C ermöglicht weitere Arbeit,
+und der unveränderte B-Quellstand bleibt lesbar. Nachweis
+work/historical-b-to-c-v1/historical-migration-evidence.json. Dieselben C-Bytes
+wurden für beide Pfade verwendet; keine Neubauten zwischen diesen Abnahmen.
+
+Plan-Audit dieses Abschnitts bestanden: A→B→C und A→C laufen mit tatsächlichen
+Original-Schemawechseln in echten AppImages, nicht nur umbenannten aktuellen
+Bundles. Der Runner bindet Ergebnisse an Dateihashes, Request-IDs und Prozessende.
+Roadmap-Audit bleibt unvollständig: partielle Fixture, keine gekoppelte
+Programmaktivierung, kein UI-Updateweg, keine volle Fehler-/Restorematrix.
+Noch erforderlich: reichhaltiger Fachzustand, aktuelles Ziel 42/41, gleicher-
+Schema-Fall, Loot30→31, echte Unterbrechungen/WAL/Platz/Zugriff/Parallelstart,
+fehlende/neue Formate, Restore und spätere Arbeit. Phase 5 bleibt offen.
+
+### Phase 5 – Fortsetzbarer Kampf und eigene Orte
+
+Plan vor Fixture-Erweiterung: den tatsächlich vorhandenen Originalablauf aus
+live-play.test.ts verwenden: Charakter der Szene zuweisen, benannte feindliche
+Wolfsgruppe mit Notiz speichern, Kampf vorbereiten, Initiative bestätigen,
+poisoned auf einer Gegnerkarte setzen und einen Zug fortschalten. Pro Kampagne
+einen eigenen Ort mit Tags, Vorlesetext und Spielleitungsnotiz anlegen. Original-
+LivePlayService, DatabaseAccess und WorldLocationStore über explizite historische
+Aliase einbinden; keine direkte Fixture-SQL-Abkürzung.
+
+Readback erweitert sich um vollständigen LiveSessionSnapshot und Ortsbestand
+aller Kampagnen einschließlich Trash. Die Weiterarbeit im aktiven Bestand erhöht
+weiterhin XP und schaltet zusätzlich einen tatsächlich laufenden Kampfzug fort.
+Abnahme prüft vor Migration vorhandene Gruppen, Zustände und Initiative, danach
+vollständige Gleichheit sowie fortgesetzten und erneut geladenen Kampfzustand.
+Der generische Runner darf eine leere/unvorbereitete Kampfsnapshot nicht als
+Fortsetzbarkeit werten.
+
+Neue Fixturekennung und neue Artefakt-/Profilverzeichnisse verwenden; bisherige
+partielle Belege bleiben unverändert. Zuerst Typen/Lint, dann A und C mit demselben
+erweiterten Harness bauen und den überspringenden Originalmigrationspfad erneut
+prüfen. B und die vollständige Matrix folgen für die finale Fixture. Reise,
+Loot-Migration, NSC/Fraktionen und die übrigen Abnahmeanforderungen bleiben offen.
+
+Erweiterung implementiert und statisch geprüft: Typprüfung 66482 und ESLint
+27711 bestanden. combat-profile.ts nutzt ausschließlich die Originalservices;
+zusätzlich zu poisoned werden zwei Trefferpunkte Schaden gespeichert. Der
+Runner verlangt vorbereiteten Kampf, vergifteten verletzten Gegner, eigenen
+Ort und nach Weiterarbeit höhere Kampfrevision sowie andere aktive Karte/Runde.
+Die dünne CLI run-historical-artifact.ts macht einzelne Harness-Aufträge ohne
+temporäres Eval-Skript ausführbar.
+
+Buildsequenz 93418 vollständig Exit 0. A-combat-v2 hat SHA-256
+4c1c3196e42c6792df4d8d3e351693065f35c3cef37ca72aec90bebc44e5576f;
+C-combat-v2 hat SHA-256
+583b43ce40be8aa015ad805c41abfcd2e288f383a9f59042009bb17f54015e0f.
+Seed aus tatsächlichem A-AppImage 46367 Exit 0. A→C 5641 Exit 0, Beleg
+work/historical-a-to-c-combat-v2/historical-migration-evidence.json. Originale
+Installation 37→38→39, alle Kampagnen 34. Vollständige erfasste Sessions/Orte,
+Charaktere, Kampagnen und eigene Inhalte stimmen nach Migration überein. Der
+aktive Kampf wird unter C fortgesetzt; erneutes Lesen bestätigt den späteren
+Zustand. A bleibt unverändert. Alle drei Kampagnen, einschließlich Trash, tragen
+einen echten laufenden Kampf statt einer leeren Fachprojektion.
+
+Abschnittsaudit bestanden: fortsetzbarer Kampf und eigene Orte sind im
+überspringenden historischen Artefaktpfad belegt. Die Fixture bleibt ohne
+Reisefortschritt, NSC-/Fraktionsbestand und Loot-Migrationsfakten unvollständig;
+die volle Matrix ist mit der finalen Fixture erneut auszuführen. Aktueller
+Zielstand 42/41, gekoppelte Aktivierung, UI, Fehlerfälle und Restore bleiben
+weiterhin verpflichtend. Phase 5 bleibt offen.
+
+### Phase 5 – Verknüpfte Weltinhalte und pausierter Reisefortschritt
+
+Plan vor Erweiterung: Original-EncounterTableStore und WorldFactionStore erzeugen
+eine eigene Begegnungstabelle und Fraktion; WorldLocationStore verknüpft sie mit
+dem eigenen Ort. Original-WorldNpcApplicationService legt einen benannten NSC
+mit Fraktions- und Ortsbezug sowie eigenen Textfeldern an. Readback prüft die
+vollen jeweiligen Bestände und ausdrücklich die erhaltenen Verknüpfungen.
+
+Original-HexMapStore erzeugt eine kleine begehbare Karte mit fünf Hexfeldern und
+Ortsplatzierung. Der Charakter wird der Standardszene zugewiesen; originaler
+HexTravelService startet die Route, erreicht mit kontrollierter Uhr einen
+Wegpunkt und pausiert. Danach beginnt der bereits qualifizierte Kampf auf dieser
+Szene. Beide Zustände bleiben gespeichert; es läuft keine Hintergrunduhr im
+Harness. Readback ergänzt Karte/Chunks und vollständigen Reise-Snapshot.
+Weiterarbeit setzt die pausierte Reise über den Originalservice fort, erreicht
+einen weiteren Wegpunkt und pausiert erneut. Position, Spielzeit, Wegindex und
+unveränderte Route werden explizit geprüft, zusätzlich zum Kampfzug/XP-Nachweis.
+
+Fixturekennung v3 und neue Artefakt-/Profilverzeichnisse verwenden. Keine neuen
+produktiven SQL-Abkürzungen. Statische Prüfungen, dann A/C neu bauen und den
+überspringenden Migrationslauf mit vollständigem Vergleich wiederholen. Diese
+Erweiterung betrifft den Schema-34-Kohortenbestand; Loot30/31 benötigt weiter
+seine auf die damals verfügbaren Besitzer abgestimmte fachliche Fixture.
+
+V3-Erweiterung implementiert: world-profile.ts verwendet Originalbesitzer für
+Tabelle, Fraktion, verknüpften Ort und NSC; travel-profile.ts erzeugt Karte und
+pausierte Reise über Originalservices mit kontrollierter Uhr. Profil-Readback
+enthält vollständige Welt-, Karten-/Chunk- und Reiseprojektionen. Weiterarbeit
+setzt Kampf und Reise fort. Der Qualifier verlangt die Referenzbeziehungen,
+einen zusätzlichen Wegpunkt, unveränderte Route und 3600 zusätzliche Spielsekunden.
+
+Statische Validierung: erste Typprüfung 78270 Exit 0; ESLint 75020 Exit 0;
+abschließende Typprüfung einschließlich erweitertem Qualifier 32110 Exit 0.
+Planabgleich: Implementierung des V3-Abschnitts vorhanden, tatsächliche A/C-
+Artefaktprüfung noch ausstehend. Roadmapabgleich: Phase 5 bleibt unvollständig;
+diese statischen Prüfungen belegen weder historische Laufzeitkompatibilität noch
+Updateaktivierung. Nächster Schritt: neue A/C-world-travel-v3-AppImages bauen,
+Seed und überspringenden Migrationspfad ausführen, Abweichungen vor Korrektur
+protokollieren. Frühere Artefakte und deren Nachweise bleiben erhalten.
+
+V3-Artefaktprüfung abgeschlossen: A-Build 98646, A-Seed 66285, C-Build 16955
+und A→C-Qualifikation 63053 jeweils Exit 0. A-SHA256
+45883945c2dd3cc5e267d893fecaaf98b55085d48793d05019ad9f2bb7fccf44,
+C-SHA256 ec801da1a7d75adbbbd6fb9554a51a05814b2f5cfa01e2f20877986a2a254cdf.
+Beleg: work/historical-a-to-c-world-travel-v3/historical-migration-evidence.json.
+Alle drei Kampagnen (aktiv/inaktiv/Trash) enthalten verknüpfte Weltinhalte,
+laufenden Kampf und pausierte Reise bei Wegindex 1. Originale Installation
+37→38→39 ausgeführt, Kampagnen bleiben bei 34. Vollständige erfasste Projektionen
+nach Migration identisch, anschließend XP/Kampfzug/Reise fortgesetzt und erneut
+identisch geladen. Aktive Reise erreicht Index 2 mit 3600 zusätzlichen
+Spielsekunden; das Quellprofil bleibt im vollständigen Readback unverändert.
+
+Plan-Audit des V3-Abschnitts: bestanden einschließlich tatsächlicher historischer
+Laufzeiten, Referenzerhalt und fortsetzbarer Reise. Roadmap-Audit: Teilnachweis;
+Loot-Migration, vollständige finale Matrix, aktueller Zielstand 42/41,
+Produktionsaktivierung mit UI/Feed, Fehlermatrix und Restore bleiben offen.
+Phase 5 wird nicht geschlossen. Keine laufenden Builds/Tests nach diesem Lauf.
+
+### Phase 5 – Übergang zum aktuellen Originalstand 42/41
+
+Voriger Goal-Turn: Fortschritt durch V3-Implementierung und bestandenen echten
+A→C-Migrationsnachweis. Aktueller Checkout bestätigt den unveränderten grünen
+App-Commit bd8b33c4f5b6e5f064deb64278d9097f739cac6d mit Installation 42 /
+Kampagne 41. Keine laufenden Builds oder Tests festgestellt.
+
+Plan: Diesen vollständigen Commit als expliziten Vergleichsstand current in den
+Quellkatalog aufnehmen. Ein neues Test-AppImage 0.0.142 mit den unveränderten
+Originalquellen und demselben V3-Harness bauen. A→current auf neuer Profilkopie
+prüfen; dabei müssen erstmals auch die Kampagnenschemata 34→41 migrieren.
+Vollständiger Projektionsvergleich bleibt zunächst streng. Falls neue fachliche
+Felder einen begründeten Vergleichsvertrag benötigen, zuerst konkrete Differenz
+und Migrationsverantwortung untersuchen und einen Korrekturplan protokollieren;
+keine pauschale Entfernung unbekannter Felder oder Abschwächung der Assertions.
+Eigene Dateien, Referenzen, Kampf und Reise müssen erhalten und fortsetzbar sein.
+
+Current-Build 85775 Exit 0. A→current 31672 endet erwartungsgemäß am strengen
+Vergleich mit Exit 1, nachdem Originalmigrationen und Fachreadback erfolgreich
+waren. Konkrete Differenzen: neue burden-Projektion (shortTrusted/longTrusted
+false, dailyBudget 1200) an beiden Party-Lesestellen; lastOpenedAt null für alle
+Registry-Einträge; Settingsrevision +1 und entfallenes altes Standardlayout.
+
+Korrekturplan vor Änderung: Eigenständigen erwarteten Migrationszustand aus der
+Quellprojektion bilden, eng begrenzt auf den nachgewiesenen Übergang 34→41 /
+37–39→42. Nur die ausdrücklich erwarteten neuen Felder hinzufügen. Die damalige
+Fixture besitzt ausschließlich das alte Standardlayout; dessen Ablösung ist in
+scene-desktop-roadmap.md Phase 6 vorgesehen und Installation 41→42 umgesetzt.
+Nur exakt dieses Standardlayout darf dieser Vergleich entfernen, kundenspezifische
+Layoutwerte müssen den Test abbrechen und gesondert geprüft werden. Theme bleibt
+unverändert, Revision erhöht sich genau einmal. Alle übrigen Felder bleiben im
+vollständigen Gleichheitsvergleich; keine generische Normalisierung. Unitfälle
+prüfen Erwartungen, Quellunverändertheit und Ablehnung fremder Layoutwerte.
+Danach denselben unveränderten AppImage-Bytesatz auf frischer Arbeitskopie prüfen.
+
+Erwartungsvertrag implementiert in historical-profile-expectations.ts; dieser
+transformiert ausschließlich den bekannten Standardlayout-/Stufe-3-Kohortenfall.
+14 Unitfälle (inklusive bestehender Quellinspektion) in 37573 bestanden; ESLint
+und Typprüfung 31073 Exit 0. AppImage current unverändert mit SHA256
+4a4d93dd7c591911042adbb31e66f801e0e7e84316900a13af1b8d7b8d1c2bdb.
+
+Erneuter Lauf 57483 auf neuer Kopie endet Exit 1 erst bei advance: Migration
+37→42 / 34→41 und vollständiger erwarteter Profilvergleich sowie erneutes Lesen
+bestehen. Advance meldet scene_activity_conflict. Original-HexTravelStore.resume
+verhindert bei laufendem Kampf eine Reise; V3 hatte nach XP/Kampfzug die Reise
+auf derselben Szene fortgesetzt. Das war historisch zulässig, ist im aktuellen
+Fachmodell ausdrücklich verhindert. Kein Produktfehler aus dieser Beobachtung
+abgeleitet. Die fehlgeschlagene Kopie enthält bereits XP/Kampfzug-Änderungen und
+wird nicht als Ausgangsbestand wiederverwendet. Quellen und Artefakte unverändert.
+
+Korrekturplan vor nächster Harness-Änderung: Weiterarbeit in zwei explizite
+Aufträge aufteilen. Zuerst XP und Kampfzug, dann vollständiger read/persistierter
+Vergleich inklusive weiterhin unveränderter pausierter Reise. Anschließend über
+originales endCombat den Kampf beenden, Reise fortsetzen und erneut pausieren;
+separater Vergleich von Route, Position, Wegindex, Zeit, eigenen Weltinhalten und
+unberührten Kampagnen. Auch diesen Endzustand in neuem Utility-Prozess lesen.
+Der Nachweis des fortgesetzten Kampfs bleibt als Zwischenbeleg erhalten; kein
+Entfernen seiner Assertions zugunsten der Reise. Aufträge versioniert im Harness
+abbilden und neue Artefaktverzeichnisse verwenden; ältere V3-Bytes erhalten.
+Danach A→current mit vollständigen Nachweisen wiederholen und die übrige Matrix
+mit konsistentem Harness nachziehen.
+
+Plan-Audit aktueller Abschnitt: Originalmigration bis 42/41 und erwartete
+Fachreadbacks belegt, Fortsetzung wegen unpassender Testreihenfolge offen.
+Roadmap-Audit: Phase 5 bleibt offen, insbesondere echte Produktionsaktivierung,
+UI-Feed-Ablauf, Fehler-/Recoverymatrix und vollständige Restore-Abnahme. Kein
+Build-/Testprozess mehr aktiv am Ende dieses Abschnitts.
+
+Präzisierung vor Umsetzung: endCombat öffnet die Ergebnisphase. Der zweite
+Auftrag ruft danach completeCombat auf (keine besiegten Gegner, keine zusätzliche
+XP-Vergabe) und erst dann resume/tick/pause. Finale Kampfsnapshot muss null sein;
+der unveränderte gespeicherte Zwischenstand beweist zuvor den fortgesetzten Kampf.
+Neue Auftragsnamen advance-combat und finish-combat-and-travel vermeiden eine
+stille Umdeutung des bereits belegten V3-Auftrags advance.
+
+Korrektur implementiert: explizite Aufträge advance-combat und
+finish-combat-and-travel, vollständiger gespeicherter Kampf-Zwischenstand,
+anschließender Abschluss und gespeicherte Reise. Typprüfung 12809 und ESLint
+8736 Exit 0. Current-V4-Build 53764 Exit 0; SHA256
+18633206ffea1f4b3c24a91cfbdd7721cefd65a9396c3b55ace53408216534d9.
+A→current 27673 vollständig Exit 0, Beleg
+work/historical-a-to-current-sequential-v4/historical-migration-evidence.json.
+Originalinstallation 37→42 und alle drei Kampagnen 34→41; beide Fortsetzungs-
+Zwischenstände erneut geladen. Quelle unverändert. Plan-Audit Korrektur bestanden;
+Roadmap-Audit weiterhin Teilnachweis ohne gekoppelte Updateaktivierung.
+
+Nächster geplanter Matrixfall: aktuelles Original-AppImage erzeugt ein frisches
+V3-Fachprofil. Zweites AppImage desselben expliziten Originalcommits mit anderer
+Testversion 0.0.143 qualifiziert den Übergang ohne Schemaänderung. Neue Verzeichnisse,
+keine Wiederverwendung fehlgeschlagener Kopien. Vergleich darf keine Migration
+melden und keinen erwarteten Datenformatumbau anwenden; Fortsetzung von Kampf
+und Reise bleibt identisch verpflichtend. Dieser Fall bleibt als Daten-/Artefakt-
+prüfung vom noch offenen UI-Transport-/Aktivierungsnachweis getrennt.
+
+Ohne-Schemawechsel-Fall abgeschlossen: Current-Seed 22036 Exit 0, unabhängig
+gebautes zweites AppImage 36712 Exit 0, SHA256
+066d6a6eee0ed94614cc563348eda653d7b694f16b755ac5d0e29507ce01306e.
+Version 0.0.142→0.0.143, beide Originalcommit bd8b33c4f5b6e5f064deb64278d9097f739cac6d.
+Qualifikation 94768 Exit 0, Beleg
+work/historical-current-to-next-sequential-v4/historical-migration-evidence.json.
+Alle vier Datenbanken bleiben auf 42/41; keine Migration wird ausgeführt.
+Vollständiger Profilvergleich, fortgesetzter Kampf, Abschluss, fortgesetzte Reise,
+erneutes Laden beider Zwischenstände und unveränderte Quelle bestätigt.
+
+Abschließende statische Prüfung 37302 Exit 0. ESLint leer/erfolgreich und alle
+20 Unitfälle in 89649 bestanden. Keine Builds/Tests mehr aktiv.
+Plan-Audit dieses Abschnitts: sequenzielle Fortsetzung und echter Artefaktfall
+ohne Schemaänderung bestanden. Roadmap-Audit: A/B/C mit finalem Harness,
+Loot30→31, Fehler-/Abbruchmatrix, Produktionsaktivierung über kontrollierten Feed
+und UI sowie Restore bleiben offen. Kein vollständiger Updateweg behauptet;
+alle aktuellen Nachweise verwenden isolierte markierte Arbeitskopien und den
+expliziten historischen Utility-Harness. Phase 5 bleibt offen.
+
+### Phase 5 – Vollständiger Zwischenversionspfad mit späterer Arbeit
+
+Voriger Goal-Turn ist Fortschritt: sequenzielle Fortsetzung und schemafreier
+Artefaktvergleich bestanden. Aktuelle Dateien und Prozesszustand bestätigt.
+Plan vor Erweiterung: Qualifier erhält optional continuation-home. Nach dem
+vollständig erneut gelesenen Kampf-/XP-Zwischenstand wird das vollständige Profil
+unter bestehender exklusiver Kopiersperre in ein neues Verzeichnis kopiert und
+vom B-AppImage dort erneut gelesen. Der Vergleich muss exakt dem B-Zwischenstand
+entsprechen; dieser Beleg wird in den A→B-Nachweis aufgenommen. A→B schließt danach
+seinen Reise-/Abschlusstest weiterhin ab. B→C verwendet die erhaltene Kopie mit
+bereits erhöhten XP, fortgesetztem Kampf und eigener later-work.txt. So bleiben
+beide Abnahmeläufe vollständig, während der zweite echte spätere Arbeit übernimmt.
+
+B und C mit dem aktuellen sequenziellen Harness in neuen Verzeichnissen bauen.
+A→B, B→C und A→C ausführen. Keine Änderungen an historischen Appquellen oder SQL;
+keine Behauptung von Produktionsbackup/Updateaktivierung für die Harness-Kopie.
+
+B-Build 78847, C-Build 74530, A→B 66769 und B→C 17705 Exit 0.
+Parallel A→C 67046 Exit 1: Antwortdatei beweist Migration erfolgreich, jedoch
+stimmt Prozessabschluss nicht mit Erfolg überein; Runner verweigert korrekt den
+Erfolgsnachweis. Log enthält „Failed to clean up cache directory“, gemeinsame
+/tmp/appimage_extracted_d27f3a09da4c14919c9cd728a3dcfbc0 sowie Inotify-Limitmeldungen.
+Beide Prozesse verwendeten dasselbe C-AppImage mit standardmäßig gemeinsamem
+Extraktionsverzeichnis. Kein erneuter Start wegen Beobachtungstimeout: beide
+Prozesshandles sind terminal bestätigt.
+
+Korrekturplan: pro Harness-Auftrag eigenes TMPDIR innerhalb des isolierten
+Reportverzeichnisses mit restriktivem Modus bereitstellen. Damit konkurrieren
+Extraktion und Aufräumen desselben AppImages nicht um einen gemeinsamen Pfad.
+Fehlerdiagnose bei widersprüchlichem Abschluss um tatsächlichen/erwarteten Exitcode
+und Request-ID ergänzen, ohne die Erfolgsbedingung abzuschwächen. A→C anschließend
+auf neuer Kopie wiederholen; parallele Identitätsaufrufe desselben Artefakts mit
+isolierten Profilen prüfen zusätzlich die Extraktionsisolation. Inotify-Limits
+werden nicht global verändert. Historische AppImage-Bytes bleiben unverändert.
+
+Extraktionskorrektur geprüft: ESLint und sechs Runner-Unitfälle 8916 bestanden;
+A→C 13023 Exit 0 auf neuer Kopie. Zwei parallele C-Identitätsaufrufe 35170/85433
+beide Exit 0, während A→C lief. Kein gemeinsamer TMPDIR mehr. Abschließende
+Typprüfung 30263 Exit 0, git diff --check bestanden.
+
+A/B/C-Artefakte dieses Nachweises: A 45883945c2dd3cc5e267d893fecaaf98b55085d48793d05019ad9f2bb7fccf44;
+B b37be6fec9668cca8d6a3545a6c213d531e8455c459c24fa59cdc4b03ba6dd55;
+C bc5911f9789a61aa2706c3f1e197f65cf70b6818038c1e8c3d0ebfcd7e65d52e.
+A ist die unveränderte V3-Quellfixture; B/C besitzen die expliziten sequenziellen
+V4-Aufträge. Readback-Inhalt bleibt kompatibel. Kein identischer Harness-Build
+aller drei behauptet; deren individuelle Herkunft steht in jedem Manifest.
+
+Kettenbindung zusätzlich vollständig verglichen und in
+work/historical-a-b-c-chain-v4.json festgehalten: B-continuation entspricht exakt
+dem erneut gelesenen B-Zwischenstand sowie der B→C-Quelle; Artefakthash identisch.
+Unter B gespeicherte 1000 XP und later-work.txt werden übernommen. Beide
+Einzelnachweise sind mit SHA256 gebunden. A→C-Nachweis:
+work/historical-a-to-c-sequential-v4-isolated/historical-migration-evidence.json.
+
+Plan-Audit: A→B→C mit unter B entstandener Arbeit sowie direkter Sprung A→C und
+Fortsetzung/Neuladen in allen Zielständen bestanden. Roadmap-Audit weiterhin
+Teilnachweise: Loot30→31, echte Migrations-/Aktivierungsabbrüche, Fehlerfälle,
+Produktions-UI-Feed-Aktivierung und Restore fehlen. Keine parallele echte
+Profilnutzung aus separaten TMPDIR-Identitätsaufrufen abgeleitet. Phase 5 offen;
+alle gestarteten Prozesse dieses Abschnitts terminal beendet.
+
+### Phase 5 – Original-Loot-Kohorte 30→31
+
+Voriger Turn Fortschritt durch Kettennachweise und korrigierte Extraktionsisolation.
+Originalquellen 30/31 untersucht: LootService erzeugt manuelle Schätze und
+Verteilungen; Schema 31 ersetzt kopierte Itemfakten durch kanonische Referenzen.
+Der existierende Integrationstest verwendet reduzierte Tabellen und ersetzt den
+verpflichtenden Original-AppImage-Nachweis nicht. Schema 30 besitzt noch keine
+NSC-Services der V3-Fixture; CampaignStore bietet visitCampaignDatabases, aber
+noch nicht visitCampaignDatabase. Keine spätere API wird in alte Quellen kopiert.
+
+Plan: Generischen Migrationslauf in ein gemeinsames Harness-Modul extrahieren,
+mit Fachreadback als Callback. Builder bindet Worker-Profil über explizite
+Fixtureauswahl aus dem gepinnten Quellkatalog (30/31→Loot, sonst Welt/Spielstand).
+Eigenes Loot-Profil zunächst mit original erzeugtem manuellem Schatz, teilweiser
+Verteilung und Ledger aufbauen; eigene IDs außerhalb der Datenbank als
+Fixturemanifest speichern. Originalschema unverändert. Danach Generatorbestand,
+Verteilung/Korrektur und archivierte Receipts ergänzen; manuelle Teilfixture ist
+kein Abschluss des Loot-Nachweises. Strenger Readback mit expliziten erwarteten
+Referenzänderungen; keine generische Entfernung neuer Felder. Ziel 31 liest und
+bearbeitet migrierte Daten über seine eigenen Originalservices.
+
+Statische Prüfung 88723/6718 fehlgeschlagen: die heutige CampaignStore-Typreferenz
+enthält die in beiden Originalständen tatsächlich vorhandene Methode
+activeCampaignDatabase nicht mehr. Korrekturplan: eigener enger Legacy-Store-Port
+für die Loot-Kohorte mit den verwendeten, an Originalquellen nachgewiesenen
+Methoden. Keine Ergänzung der entfernten API in produktivem aktuellem Store;
+kein any-Cast. Builder bindet den Port weiterhin auf dieselbe Originaldatei.
+
+Loot-Kohortenport korrigiert, Typprüfung/ESLint 63815 bestanden. Original-Loot30-
+AppImage-Build 87638 und Seed 46653 Exit 0; Original-Loot31-Build 76437 Exit 0.
+Qualify-historical-loot.ts vergleicht ausschließlich die ausdrücklich ausgewiesene
+manuelle Teilfixture: kopierte Itemfakten werden in erwartete Legacy-Definitionen
+überführt, IDs/Referenzen/Werte/Verteilungen und übriger Profilinhalt vollständig
+verglichen. Zielservice teilt anschließend eine zweite Handkarte zu. Beide
+Ledger-Einträge und Schatz müssen dieselbe erwartete Definition auflösen.
+
+Qualifikation 55876 Exit 0; Beleg
+work/historical-loot30-to31-manual-v1/historical-loot-evidence.json.
+Installation und Kampagne original 30→31; Handkartenwert 250 cp und Gesamtmenge 3
+bleiben erhalten. Zuteilung nach Migration von 1 auf 2 erweitert, erneut geladen;
+Quellprofil unverändert. Qualifier-ESLint 69648 und abschließende Typprüfung 84787
+Exit 0. git diff --check bestanden. Alle Prozesse terminal.
+
+Plan-Audit manueller Teil: echte Erzeugung, Migration, Readback und weitere
+Verteilung nachgewiesen. Roadmap-Audit: Loot-Kohorte bleibt unvollständig bis
+Generatorbestand, relevante Korrekturen/Status und archivierte Receipts belegt
+sind. Dafür ist Originaltest loot-vertical-slice.test.ts ab Zeile 1144 der nächste
+konkrete Pfad: SessionGenerationService mit BundledEncounterCatalogProvider,
+sha256EncounterEntropy, OriginaldefaultGeneratorConfig und seed 1000 erzeugt
+und speichert einen echten Run; LootService.acceptGenerated übernimmt ihn.
+Keine generierten Fakten als neue Fixture-SQL-Zeilen nachbilden. Die ausgelagerte
+Migrationsimplementierung wird vor finaler Matrix auch für Welt/Spielstand erneut
+im neu gebauten Harness ausgeführt; frühere Artefaktbelege bleiben unverändert.
+Phase 5 und alle nachfolgenden Phasen bleiben offen.
+
+### Phase 5 – Original erzeugte Beute und unveränderlicher Generatorlauf
+
+Voriger Turn Fortschritt: manuelle Loot-Migration mit tatsächlichen 30/31-
+AppImages bestanden. Aktuelle Dateien/Prozesse geprüft; keine laufenden Tests.
+Plan vor Erweiterung: Original-SessionGenerationService erzeugt mit mitgeliefertem
+Katalog catalog-2026-07-16, Original-Entropy, Original-Defaultpreset und Seed 1000
+einen gespeicherten Run. Original-LootService.acceptGenerated übernimmt einen
+nichtleeren Schatz. Eine Position wird dem Fixturecharakter zugeteilt. Run-/
+Schatz-/Positions-IDs werden im Fixturemanifest gebunden. Readback enthält den
+vollständigen Originalrun, übernommenen Schatz und gemeinsamen Charakterledger.
+
+Die Originalressourcen werden innerhalb des AppImages über process.resourcesPath
+angesprochen; kein Zugriff auf einen Entwicklerkatalog. Versionierte V2-Fixture
+und neue Artefakte statt Überschreiben der manuellen V1-Belege. Ziel 31 liest den
+migrierten Run durch seinen Original-GeneratedRunStore. Vergleiche prüfen
+kanonische Referenzidentität zwischen Run, übernommenem Schatz und Ledger sowie
+alle übrigen Run- und Profilfakten. Die Umwandlung der Auditprojektion wird gegen
+die konkreten Originalmigrationen geprüft. Korrektur-/Archivbelege bleiben noch
+verpflichtend; generierte Teilfixture allein schließt Loot nicht ab.
+
+Typprüfung 19016 findet einen Einfügefehler: generated wurde zusätzlich im
+manuellen Verteilungsauftrag vor seiner Deklaration eingesetzt. Korrekturplan:
+diesen unzulässigen Zusatz nur dort entfernen; Manifestbindung nach dem
+Generatoraufruf bleibt erhalten. ESLint 73410 ohne Befund. Danach Typen erneut.
+
+Generated-V2: Loot30-Build 63459, Seed 42024, Loot31-Build 11762 Exit 0. Original-
+Generator erzeugt zwei Schätze und nach Übernahme zwei Ledger-Einträge insgesamt.
+Migrationsprobe 48350 Exit 1 beim Fachreadback: rewardEngineVersion reward-v1
+wird vom Original-31-Vertrag (literal reward-v2) abgelehnt. SQLite-Migration allein
+ist somit kein Fachlesbarkeitsnachweis. Auch der heutige Persistenzvertrag erlaubt
+nur reward-v2/v3; Herkunft darf nicht auf eine neuere Engine umetikettiert werden.
+
+Korrekturplan für Produktfehler: vollständige, vom Original-30-AppImage erzeugte
+Kampagnen-DB komprimiert als synthetische Regressionfixture einfrieren, mit
+Quellcommit/Artefakthash/DB-Hash und Originalrun-Readback. Auf frischer DB-Kopie
+heutige Originalmigrationskette ausführen; GeneratedRunStore muss reward-v1 und
+unveränderte Run-ID, Fingerprint, Erzeugungszeit, Katalog und Begegnungen lesen.
+Zunächst roten Test ausführen. Persistierten Versionsvertrag dann um die konkret
+bekannte reward-v1 ergänzen; neue Erzeugung bleibt auf reward-v3 beschränkt und
+unbekannte Versionen bleiben ungültig. Weitergehende Differenzen separat erfassen.
+Historisches 31-Artefakt bleibt unverändert als reproduzierbarer Fehlerbeleg.
+Dieser Befund macht für die Abnahme einen korrigierten aktuellen Zielcommit nötig;
+kein Patch in die als Original deklarierten 30/31-Quellen.
+
+Regression 73829 ist erwartungsgemäß rot: heutiger GeneratedRunStore lehnt den
+Original-run nach vollständiger heutiger Schema-Migration allein wegen reward-v1
+ab. Keine native ABI-/Testumgebungsstörung. Jetzt die geplante enge Erweiterung
+des persistierten Versionsvertrags ausführen und denselben Test wiederholen.
+
+Produktkorrektur implementiert: persistierter rewardEngineVersionSchema akzeptiert
+jetzt reward-v1/v2/v3. Erzeugungsverträge bleiben literal reward-v3; unbekannte
+Versionen werden abgewiesen. Regression mit eingefrorener Originaldatenbank sowie
+bestehender GeneratedRunStore-Suite: 16105 Exit 0, fünf Tests bestanden. Der Test
+prüft ausdrücklich, dass reward-v1 unverändert in SQLite bleibt und nicht als
+aktuell generierter Run akzeptiert wird. ESLint und abschließende Typprüfung
+95559 Exit 0; git diff --check bestanden.
+
+Neue synthetische Fixture tests/fixtures/historical-loot30: vollständige DB
+komprimiert (28 KiB), Originalrun (12 KiB), Provenienz und Nutzungshinweis.
+Original-AppImage-SHA256
+2e0c1d71e1336dce02e89f424cf191c68bd116b47d17175eee2e2d5ba7297dfc;
+unveränderte DB-SHA256
+d22c3fbf49a9f05b371a89038c1e9c507a9ee3a8405b5a344203edd05f1b32da.
+Readback-Provenienz im Fixturemanifest. Kein Nutzerprofil verwendet.
+
+Plan-Audit: Generatorfixture erzeugt; realer Kompatibilitätsfehler reproduziert,
+heutiger Persistenzvertrag korrigiert und native Regression bestanden. Vollständiger
+kanonischer Referenzvergleich des generierten Bestands, Ledger-Korrekturen und
+Receiptarchiv fehlen noch. Original-31-AppImage bleibt erwartbar inkompatibel;
+sein gescheiterter Readback ist kein qualifizierter Releasevergleich. Der korrigierte
+aktuelle Stand muss auf einem unveränderlichen Candidate-Commit neu gebaut und
+mit diesem Original-30-Profil tatsächlich qualifiziert werden. Eine Relabelung
+oder Änderung historischer Originalquellen ist ausgeschlossen.
+Roadmap-Audit: Phase 5 weiterhin offen; Produktkorrektur noch nicht kanonisch
+übergeben. Keine laufenden Tests/Builds am Ende dieses Abschnitts.
+
+### Phase 5 – Vollständige Loot-Referenzen und archivierte Befehlsbelege
+
+Voriger Turn Fortschritt: echter reward-v1-Readbackfehler behoben und Regression
+mit Originaldatenbank bestanden. Plan: Originalprofil-Readback ergänzend zum
+bereits eingefrorenen Run unverändert/hashgebunden ablegen; DB und Run unverändert
+lassen. Test vergleicht sämtliche generierten Itemdefinitionen und -positionen,
+übrige Generatorlaufdaten sowie übernommenen Schatz und Ledger gegen ausdrücklich
+abgeleitete Referenzumwandlung. Alle historischen Receipts vor der Migration
+vollständig lesen, anschließend das Archiv byte-/feldgleich vergleichen. Danach
+über CharacterLootStore einen empfangenen Eintrag als verkauft korrigieren und
+Original/Korrekturverkettung, Gegenstandsreferenz, Werte und erneutes Lesen prüfen.
+Der Archivevergleich wird nach Weiterarbeit erneut verlangt. Kein Nachbau alter
+Tabellen und keine Umbenennung der Generatorherkunft. Dies ist eine native
+fachliche Regression; das noch ausstehende neue AppImage ersetzt sie nicht.
+
+Vollvergleich 84449 scheitert gezielt am übernommenen Schatz: historisches
+provenance.catalogEntry wird in der aktuellen Projektion bei generated-Referenz
+null. Ownerbefund LootStore.project Zeilen 320ff: Katalogreferenzen werden nur
+für direkte catalog-Referenzen projiziert; generierte Definitionen tragen die
+ursprüngliche Katalog-ID in components.baseItemId. Bereits verglichener vollständiger
+Run/Definitionen ist identisch. Korrekturplan Vergleich: originale catalogEntry-ID
+und Art ausdrücklich gegen die zugehörige Definition prüfen, dann genau dieses
+redundante Projektionsfeld auf null erwarten. sourceLineId bleibt erhalten. Keine
+pauschale Entfernung der Provenienz und keine unbelegte Annahme von Datenerhalt.
+
+Vergleichskorrektur 32613 findet einen Adapterfehler: Zod-Projektion der alten
+Provenienz enthielt noch nicht catalogEntry und entfernte dieses vor der Prüfung.
+Korrekturplan: das vorhandene nullable Katalogfeld ausdrücklich in diesen engen
+Quellvertrag aufnehmen; Referenzvergleich unverändert beibehalten und wiederholen.
+
+67717 entdeckt einen weiteren Einfügefehler: die nur für Schatzpositionen gedachte
+Provenienztransformation wurde auch in den Ledger-Mapper eingesetzt. Korrekturplan:
+ausschließlich diesen Ledger-Zusatz entfernen; Ledgerprovenienz bleibt vollständig
+unverändert. Die Schatztransformation und ihr Katalog-ID-Nachweis bleiben bestehen.
+
+56018 besteht den vollständigen nativen Vergleich samt Korrektur und Archiv.
+Typprüfung 55984 beanstandet die nicht ausdrücklich typisierte characterId im
+Ledger-Erwartungswert. Korrekturplan: vorhandene characterId und revision im
+Quell-Ledgervertrag explizit validieren statt dynamischen Feldzugriff zu casten.
+Zusätzlich den korrigierten Stand nach Schließen/Neuöffnen der SQLite-Verbindung
+lesen, damit die Prüfung über einen neuen Store hinaus persistente Daten abdeckt.
+
+Vollständiger nativer Nachweis abgeschlossen: 72418 Exit 0, sechs Tests über
+Historical-Generated-Loot-, Loot31-Migrations- und GeneratedRunStore-Suites.
+Erwartungsvertrag historical-loot-expectations.ts vergleicht alle Run-Felder,
+sechs generierte Positionen/Definitionen, manuelle und übernommene Schätze sowie
+zwei Ledger-Einträge. Katalogherkunft ist in der Definition ausdrücklich gebunden.
+Alle vier alten Loot-Receipts stimmen nach Migration und nach Weiterarbeit exakt
+mit dem Archiv überein. Verkaufskorrektur erhält Originaleintrag und verknüpften
+Korrektureintrag; nach Schließen und neuer SQLite-Verbindung unverändert lesbar.
+Originalgeneratorlauf bleibt auch nach Korrektur vollständig unverändert.
+ESLint und Typprüfung 8530 Exit 0; git diff --check bestanden.
+
+Plan-Audit dieses nativen Abschnitts bestanden. Originalprofil-Readback ergänzt
+und via profileSha256 gebunden; zuvor eingefrorene DB/Runbytes unverändert.
+Roadmap-Audit: Abnahme im korrigierten aktuellen AppImage weiterhin offen. Der
+Legacy-Loot-Harness verwendet activeCampaignDatabase und Funktionszugriff, die
+heutige CampaignStore-/LootService-Schnittstelle nicht mehr anbietet. Vor dem
+neuen Artefaktnachweis einen ausdrücklichen Harness-Adapter über den in allen
+betroffenen Versionen vorhandenen visitCampaignDatabases-Owner-Scope vorsehen;
+aktuelle Services benötigen SqliteDatabaseAccess.use. Originalquellen unverändert
+lassen. Neuer aktueller Quellcommit muss die reward-v1-Korrektur enthalten und
+unveränderlich gebaut werden. Diese Adapter-/Artefaktarbeit ist noch nicht getan.
+Phase 5 offen, keine laufenden Prozesse.
+
+### Phase 5 – Aktueller Loot-Artefaktadapter
+
+Voriger Turn Fortschritt durch vollständigen nativen Referenz-/Archiv-/Korrektur-
+Nachweis. Checkout und Prozesszustand erneut bestätigt. Plan: Loot-Harness führt
+alle Datenbankarbeiten innerhalb visitCampaignDatabases aus und wählt darin nur
+die aktive Fixturekampagne. Kein Database-Handle verlässt den Callback. Ein
+expliziter Testzugriff unterstützt sowohl den historischen Funktionsaufruf als
+auch das heutige SqliteDatabaseAccess.use; beide sind auf den geöffneten Owner-
+Scope begrenzt. Builder erhält validierte optionale --fixture-Auswahl, damit ein
+aktueller unveränderlicher Quellcommit mit dem Loot-Readback gebaut werden kann.
+Ausgewählte Fixture wird im Artefaktmanifest dokumentiert. Eine aktuelle Loot-
+Neuerzeugung mit alten Itemeingaben wird nicht behauptet; Seed bleibt für Schema30.
+Gezielte Tests prüfen aktive Auswahl, Fehler ohne aktive Kampagne sowie Ablauf und
+Scope des Adapters. Danach Typen/Lint und kanonischen Candidate-Zwischenstand für
+das neue Originalquellen-Artefakt vorbereiten; Phase 5 dabei nicht schließen.
+
+Adapter implementiert und geprüft: Owner-Callback statt herausgereichtem aktivem
+DB-Handle; kompatibler Callable/use-Testzugriff; explizite validierte Builder-
+Fixtureauswahl im Manifest; Legacy-Seed verlangt Schema30. Typprüfung 29100,
+Adapter-/Originaldatenbanktests 93295, breites ESLint/Typprüfung 98649 und gezielter
+Checkpoint-Testlauf 63004 Exit 0. Keine laufenden Prozesse.
+
+Plan-Audit Adapter: implementiert und lokal geprüft. Roadmap-Audit: aktueller
+Artefaktlauf und gesamte restliche Phase 5 weiter offen. Jetzt den bestehenden
+Phase-5-Zwischenstand einschließlich reward-v1-Produktkorrektur auf dem vorhandenen
+Candidate-Branch festhalten und dort prüfen lassen. Dieser Commit ist ein
+unveränderlicher Ausgangspunkt für weitere Qualifikation, kein Phasenabschluss
+und keine Freigabe auf Main. Keine Veränderung realer Installationen vorgesehen.

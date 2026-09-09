@@ -1,0 +1,372 @@
+{
+  "runKind": "session",
+  "id": "01a08535-62d2-7000-a3ca-a74b42634681",
+  "originFingerprint": "09481fd2a77a02533dbc4e8004c686dad534ce184e3b834997a7ef76d26f2c66",
+  "generatedAt": "2026-08-09T10:00:00.000Z",
+  "engineVersion": "encounter-v5",
+  "rewardEngineVersion": "reward-v1",
+  "catalogVersion": "catalog-2026-07-16",
+  "catalogContentHash": "c67ec3eb357ff74af27e00c2be8654d0baed40fab288b03239dd0948c132afca",
+  "generatorPreset": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "revision": 0,
+    "configHash": "31700d18df7c3a0ae73a8223c3d0762ad282dd260e4939c740c617104eea4d13"
+  },
+  "input": {
+    "party": [
+      {
+        "level": 3,
+        "count": 2
+      }
+    ],
+    "adventureDayFraction": "0.6",
+    "encounterCount": 2,
+    "seed": 1000
+  },
+  "session": {
+    "partyCount": 2,
+    "dayXpBudget": 2400,
+    "sessionXpTarget": 1440,
+    "averageLevel": 2,
+    "encounterCount": 2,
+    "goldBudgetCp": 22560,
+    "normalTreasureCount": 1,
+    "overstockTreasureCount": 1,
+    "magicTargets": {
+      "Common": 0,
+      "Uncommon": 0,
+      "Rare": 0,
+      "Very Rare": 0,
+      "Legendary": 0
+    }
+  },
+  "rewardBasis": null,
+  "encounters": [
+    {
+      "encounterNumber": 1,
+      "targetXp": 348,
+      "adjustedXp": 340,
+      "xpDelta": -8,
+      "difficulty": "EASY",
+      "patternId": "preset:standard-minion",
+      "blocks": [
+        {
+          "role": "Standard",
+          "challengeRating": "1/2",
+          "challengeRatingCode": 0,
+          "quantity": 1,
+          "statblockSlots": 1,
+          "unitXp": 100
+        },
+        {
+          "role": "Minion",
+          "challengeRating": "0",
+          "challengeRatingCode": -3,
+          "quantity": 7,
+          "statblockSlots": 1,
+          "unitXp": 10
+        }
+      ],
+      "monsterCount": 8,
+      "statblockCount": 2,
+      "effectiveMonsterCount": 3.2135943621178655,
+      "xpMultiplier": 2,
+      "bossinessRank": 2,
+      "constraintDiagnostics": []
+    },
+    {
+      "encounterNumber": 2,
+      "targetXp": 1092,
+      "adjustedXp": 1100,
+      "xpDelta": 8,
+      "difficulty": "DEADLY",
+      "patternId": "preset:boss-support",
+      "blocks": [
+        {
+          "role": "Boss",
+          "challengeRating": "2",
+          "challengeRatingCode": 2,
+          "quantity": 1,
+          "statblockSlots": 1,
+          "unitXp": 450
+        },
+        {
+          "role": "Support",
+          "challengeRating": "1/4",
+          "challengeRatingCode": -1,
+          "quantity": 2,
+          "statblockSlots": 1,
+          "unitXp": 50
+        }
+      ],
+      "monsterCount": 3,
+      "statblockCount": 2,
+      "effectiveMonsterCount": 1.6666666666666665,
+      "xpMultiplier": 2,
+      "bossinessRank": 1,
+      "constraintDiagnostics": []
+    }
+  ],
+  "treasures": [
+    {
+      "id": "treasure:1",
+      "stockClass": "normal",
+      "rewardChannel": "encounter",
+      "anchorEncounterNumber": 2,
+      "themeId": "theme:travel",
+      "theme": "Travel",
+      "targetValueCp": "22560",
+      "actualValueCp": 22560,
+      "items": [
+        {
+          "id": "treasure:1:item:1",
+          "treasureId": "treasure:1",
+          "catalogItemId": "item:object:ladder-10-foot",
+          "role": "flavor",
+          "name": "Ladder (10 foot)",
+          "modifier": null,
+          "quantity": 50,
+          "unitValueCp": 10,
+          "totalValueCp": 500,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:1:0:container",
+          "capacity": 400,
+          "position": 0
+        },
+        {
+          "id": "treasure:1:item:2",
+          "treasureId": "treasure:1",
+          "catalogItemId": "item:livestock:plainscow",
+          "role": "useful",
+          "name": "Plainscow",
+          "modifier": null,
+          "quantity": 1,
+          "unitValueCp": 20000,
+          "totalValueCp": 20000,
+          "stackable": false,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:1:1:container",
+          "capacity": 9999,
+          "position": 1
+        },
+        {
+          "id": "treasure:1:item:3",
+          "treasureId": "treasure:1",
+          "catalogItemId": null,
+          "role": "compact_value",
+          "name": "copper_pieces",
+          "modifier": null,
+          "quantity": 2060,
+          "unitValueCp": 1,
+          "totalValueCp": 2060,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:1:0:container",
+          "capacity": 41.2,
+          "position": 2
+        }
+      ],
+      "containers": [
+        {
+          "id": "treasure:1:0:container",
+          "catalogContainerId": "container:cart",
+          "name": "Cart",
+          "capacity": 1000,
+          "position": 0
+        },
+        {
+          "id": "treasure:1:1:container",
+          "catalogContainerId": "container:pile",
+          "name": "50\u00d7 Pile",
+          "capacity": 10000,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "id": "treasure:2",
+      "stockClass": "overstock",
+      "rewardChannel": "environment",
+      "anchorEncounterNumber": null,
+      "themeId": "theme:arcana",
+      "theme": "Arcana",
+      "targetValueCp": "4512",
+      "actualValueCp": 4512,
+      "items": [
+        {
+          "id": "treasure:2:item:1",
+          "treasureId": "treasure:2",
+          "catalogItemId": "item:material:turquoise",
+          "role": "compact_value",
+          "name": "Turquoise",
+          "modifier": null,
+          "quantity": 2,
+          "unitValueCp": 1000,
+          "totalValueCp": 2000,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:2:0:container",
+          "capacity": 0.5,
+          "position": 0
+        },
+        {
+          "id": "treasure:2:item:2",
+          "treasureId": "treasure:2",
+          "catalogItemId": "item:material:block-of-incense",
+          "role": "flavor",
+          "name": "Block of Incense",
+          "modifier": null,
+          "quantity": 50,
+          "unitValueCp": 50,
+          "totalValueCp": 2500,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:2:0:container",
+          "capacity": 12.5,
+          "position": 1
+        },
+        {
+          "id": "treasure:2:item:3",
+          "treasureId": "treasure:2",
+          "catalogItemId": null,
+          "role": "compact_value",
+          "name": "copper_pieces",
+          "modifier": null,
+          "quantity": 12,
+          "unitValueCp": 1,
+          "totalValueCp": 12,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "curseEffect": null,
+          "containerId": "treasure:2:0:container",
+          "capacity": 0.24,
+          "position": 2
+        }
+      ],
+      "containers": [
+        {
+          "id": "treasure:2:0:container",
+          "catalogContainerId": "container:chest",
+          "name": "Chest",
+          "capacity": 100,
+          "position": 0
+        }
+      ]
+    }
+  ],
+  "rewardSummary": {
+    "normalValueCp": 22560,
+    "overstockValueCp": 4512,
+    "magicCount": 0
+  },
+  "warnings": [],
+  "audits": [
+    {
+      "code": "encounter_target_sum",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "actual": 1440,
+        "expected": 1440
+      }
+    },
+    {
+      "code": "candidate_coverage",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "encounterCount": 2,
+        "zeroCandidateCount": 0
+      }
+    },
+    {
+      "code": "encounter_selector_fit",
+      "passed": true,
+      "hard": false,
+      "parameters": {
+        "encounterCount": 2,
+        "fitCount": 2
+      }
+    },
+    {
+      "code": "deterministic_seed_path",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "algorithm": "sha256_named_streams"
+      }
+    },
+    {
+      "code": "treasure_count",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "actual": 2,
+        "expected": 2
+      }
+    },
+    {
+      "code": "unique_encounter_anchors",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "anchorCount": 1,
+        "uniqueAnchorCount": 1
+      }
+    },
+    {
+      "code": "treasure_assignment_complete",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "emptyTreasureCount": 0,
+        "treasureCount": 2
+      }
+    },
+    {
+      "code": "normal_loot_budget_tolerance",
+      "passed": true,
+      "hard": false,
+      "parameters": {
+        "actualCp": 22560,
+        "targetCp": 22560,
+        "tolerancePercent": 15
+      }
+    },
+    {
+      "code": "magic_item_count",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "actual": 0,
+        "expected": 0
+      }
+    },
+    {
+      "code": "packing_validity",
+      "passed": true,
+      "hard": true,
+      "parameters": {
+        "invalidAssignmentCount": 0
+      }
+    }
+  ]
+}
