@@ -439,6 +439,9 @@ describe('per-scene desktop', () => {
       '[role="alertdialog"][aria-label="Reiseaktion bestätigen"]'
     )
     await routeConfirmation.waitForDisplayed()
+    await expect(
+      routeConfirmation.$('ul[aria-label="Offene Änderungen"]')
+    ).toHaveText(expect.stringContaining('Routenentwurf'))
     await routeConfirmation.$('button=Speichern und fortfahren').click()
     await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
       expect.stringContaining('Reise läuft.')

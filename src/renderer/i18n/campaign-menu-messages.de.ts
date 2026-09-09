@@ -1,4 +1,5 @@
 export const campaignMenuMessagesDe = {
+  'draft.areas': 'Offene Änderungen',
   'draft.retry':
     'Erneut versuchen oder abbrechen, um die betroffenen Änderungen zu bearbeiten.',
   'draft.save': 'Speichern und fortfahren',

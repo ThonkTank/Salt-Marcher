@@ -43,41 +43,42 @@ export function useDraftTransition(
       }
     }
   }, [identity])
-  const request = useCallback((run: () => void) => {
-    if (
-      !mounted.current ||
-      pending.current ||
-      maintenanceDraftCoordinator.isLocked()
-    )
-      return
-    if (!maintenanceDraftCoordinator.hasDirty()) {
-      run()
-      return
-    }
-    const held: Transition = {
-      run,
-      cancelled: false,
-      resolving: false,
-      resolution: null
-    }
-    pending.current = held
-    void (async () => {
-      await maintenanceDraftCoordinator.settleBackgroundWrites()
-      if (held.cancelled || pending.current !== held || !mounted.current) return
-      if (maintenanceDraftCoordinator.isLocked()) {
-        pending.current = null
+  const request = useCallback(
+    <Result,>(run: () => Result): Result | undefined => {
+      if (
+        !mounted.current ||
+        pending.current ||
+        maintenanceDraftCoordinator.isLocked()
+      )
         return
+      if (!maintenanceDraftCoordinator.hasDirty()) return run()
+      const held: Transition = {
+        run,
+        cancelled: false,
+        resolving: false,
+        resolution: null
       }
-      if (!maintenanceDraftCoordinator.hasDirty()) {
-        pending.current = null
-        held.run()
-        return
-      }
-      held.resolution = maintenanceDraftCoordinator.begin()
-      setErrors([])
-      setOpen(true)
-    })()
-  }, [])
+      pending.current = held
+      void (async () => {
+        await maintenanceDraftCoordinator.settleBackgroundWrites()
+        if (held.cancelled || pending.current !== held || !mounted.current)
+          return
+        if (maintenanceDraftCoordinator.isLocked()) {
+          pending.current = null
+          return
+        }
+        if (!maintenanceDraftCoordinator.hasDirty()) {
+          pending.current = null
+          held.run()
+          return
+        }
+        held.resolution = maintenanceDraftCoordinator.begin()
+        setErrors([])
+        setOpen(true)
+      })()
+    },
+    []
+  )
   const cancel = () => {
     const held = pending.current
     if (!held || held.resolving) return
@@ -126,6 +127,7 @@ export function useDraftTransition(
         title={description?.title ?? message('draft.transitionTitle')}
         text={description?.text ?? message('draft.transitionText')}
         errors={errors}
+        draftLabels={maintenanceDraftCoordinator.dirtyLabels()}
         busy={busy}
         needsDrafts
         cancel={cancel}

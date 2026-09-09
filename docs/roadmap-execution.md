@@ -6745,3 +6745,59 @@ Phase 4 bleibt bis zur abschließenden Kandidatenabnahme offen. Phasen 5–7,
 Handoff, Main-Gates und veröffentlichte unveränderte Artefakte bleiben Pflicht.
 Nächster Schritt: geprüften Stand sauber committen und auf den bestehenden
 Kandidatenbranch pushen, ausschließlich dessen neuen exakten SHA prüfen.
+
+### Phase 4 – Sichtbare betroffene Bereiche vor der Entscheidung
+
+Vorheriger Turn: Fortschritt durch d8998d9e8, sauber gepusht. CI 34314803230
+ist bei erneuter Abfrage aktiv; noch keine Fehler, vollständige Abnahme offen.
+Abschlussaudit gegen den detaillierten Zielzustand findet eine weitere Lücke:
+„Der Wartungsdialog zeigt die betroffenen Bereiche“ ist vor der Entscheidung
+nicht erfüllt. DraftResolutionDialog zeigt Namen bislang nur bei Speicherfehlern.
+
+Fixplan vor Änderungen: vorhandene dirtyLabels des gemeinsamen Koordinators an
+beiden Dialogaufrufern (ReleaseSettings und useDraftTransition) als Pflichtprop
+übergeben; im Dialog eine lesbare Liste offener Bereiche anzeigen. Bei Teilerfolg
+zeigt die nächste Darstellung nur weiterhin offene Bereiche. Keine Registrierung,
+Save-/Discard-Logik oder Wartungsfreigabe ändern. Bei fehlenden Entwürfen keine
+leere Liste. Prüfungen an der echten gemeinsamen Transition vor Save, nach
+Teilerfolg und am bestätigungspflichtigen Installationsdialog mit offenem Editor;
+anschließend Typen/Lint und betroffene Electronabnahme.
+
+CI 34314803230 meldet einen Fehler in Portable: 1526 von 1527 Unit-Fällen
+bestanden; renderer-async-boundary erkennt in use-travel-command-transition.ts:60
+einen veränderlichen Promise.resolve-Platzhalter als parallele Warteschlange.
+Der Code hängt keine Aufträge an, benötigt den Platzhalter aber zur synchronen
+Rückgabe des aus requestTransition gestarteten Promises. Der Architekturtest
+und seine Regeln bleiben unverändert.
+
+Fixplan: useDraftTransition.request gibt generisch das Ergebnis zurück, wenn die
+Aktion sofort ausgeführt wird; bei Dialog/ausstehender Klärung bleibt die Rückgabe
+undefined. Der Reiseübergang reicht dieses Ergebnis direkt zurück und entfernt
+den veränderlichen Promise-Platzhalter. Seine bestehenden asynchronen Besitzer
+bleiben unverändert; keine Queue und keine neue Schreibwiederholung. Bestehende
+Dialog-/Reise-Asyncfälle prüfen weiterhin den sofort abwartbaren Befehlsweg und
+die spätere Ausführung nach Bestätigung. Zusätzlich genau den fehlgeschlagenen
+Architekturtest ausführen. Änderungen erst nach terminalem Electronlauf 53360.
+
+Validierung: Bereichsübersicht 55821, 27 Tests bestanden. Der erste gebaute Stand
+besteht zehn SceneDesktop-Fälle inklusive sichtbarem Routenentwurf vor Bestätigung
+(53360). Nach Entfernung des Promise-Platzhalters: 40921, 47 Fälle in fünf Dateien
+bestanden, ausdrücklich einschließlich unverändertem renderer-async-boundary.
+82084: Typecheck und betroffenes ESLint bestanden. 69329: Build, Smoke,
+unverändertes Bundlebudget (+3837 Bytes gegenüber Baseline) und die zehn
+SceneDesktop-Fälle erneut vollständig bestanden. Keine aktive lokale Prüfung.
+
+Plan-Audit: beide Dialogaufrufer liefern die vor der Entscheidung offenen
+Bereiche. Die gemeinsame Liste verschwindet für bereits erfolgreich gespeicherte
+Bereiche; Tests decken Teilerfolg und unveränderte Installationsbestätigung ab.
+Der bisherige Rückgabe-Platzhalter entfällt; unmittelbare Aktionen bleiben
+abwartbar, Entscheidungen im offenen Dialog weiterhin verzögert. Keine neue
+Warteschlange, kein geänderter Architekturfilter, keine Schreibwiederholung.
+
+Roadmap-Audit: die benannten Bereiche des detaillierten Zielzustands sind nun
+auch vor einem Fehler sichtbar. Phase 4 bleibt bis zur vollständigen Remote-
+Abnahme offen. Der vorherige Kandidat d8998d9e8 hatte einen einzelnen Fehler im
+portablen Async-Architekturtest; der genaue Test besteht jetzt lokal. Noch
+laufende Remotejobs des alten SHA werden nicht als Prüfung dieses Diffs gewertet.
+Nächster Schritt: diesen geprüften Fix committen/pushen und seine eigenen Gates
+verfolgen. Keine Mainpromotion, kein Handoff und keine öffentliche Freigabe.

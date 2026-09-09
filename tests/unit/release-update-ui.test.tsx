@@ -199,3 +199,29 @@ it('shows a failed download without offering installation and retries only on re
   expect(mocks.download).toHaveBeenCalledTimes(2)
   expect(mocks.install).not.toHaveBeenCalled()
 })
+
+it('names open editor areas before confirming an installation', async () => {
+  mocks.status.mockResolvedValue(downloaded)
+  const save = vi.fn().mockResolvedValue(false)
+  const unregister = maintenanceDraftCoordinator.register('route-editor', {
+    label: 'Routenentwurf',
+    isDirty: () => true,
+    save
+  })
+  try {
+    await view()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Installieren und neu starten' })
+    )
+    await screen.findByRole('alertdialog')
+    expect(
+      screen.getByRole('list', { name: 'Offene Änderungen' })
+    ).toHaveTextContent('Routenentwurf')
+    expect(save).not.toHaveBeenCalled()
+    expect(mocks.install).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }))
+    expect(maintenanceDraftCoordinator.isLocked()).toBe(false)
+  } finally {
+    unregister()
+  }
+})

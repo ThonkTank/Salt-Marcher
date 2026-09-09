@@ -12,7 +12,7 @@ import type { TravelRouteDraft } from './use-travel-route-draft.js'
 import type { useTravelQueries } from './use-travel-queries.js'
 
 export function useTravelCommandTransition<P, S, M, E>(options: {
-  requestTransition: (run: () => void) => void
+  requestTransition: (run: () => Promise<void>) => Promise<void> | undefined
   prepareCommand: ReturnType<
     typeof useTravelQueries<P, S, M, E>
   >['prepareCommand']
@@ -57,68 +57,65 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
       if (!target) return Promise.resolve()
       const original = structuredClone(command)
       const needsResolution = maintenanceDraftCoordinator.hasDirty()
-      let execution = Promise.resolve()
-      requestTransition(() => {
-        if (blocked() || !isCurrent(target)) return
-        if (!needsResolution) {
-          execution = execute(original, clearDraft)
-          return
-        }
-        execution = (async () => {
-          const held = maintenanceDraftCoordinator.begin()
-          let next: TravelProviderCommand<P> | null = null
-          try {
-            if ((await held.resolve('check')).length)
-              throw new CapabilityError('stale', false)
-            const route = routeDraft?.snapshot()
-            const preparation = await prepareCommand({
-              command: original,
-              ...(route
-                ? {
-                    route: {
-                      plan: structuredClone(route.plan),
-                      savedRevision: route.savedRevision
+      return (
+        requestTransition(() => {
+          if (blocked() || !isCurrent(target)) return Promise.resolve()
+          if (!needsResolution) return execute(original, clearDraft)
+          return (async () => {
+            const held = maintenanceDraftCoordinator.begin()
+            let next: TravelProviderCommand<P> | null = null
+            try {
+              if ((await held.resolve('check')).length)
+                throw new CapabilityError('stale', false)
+              const route = routeDraft?.snapshot()
+              const preparation = await prepareCommand({
+                command: original,
+                ...(route
+                  ? {
+                      route: {
+                        plan: structuredClone(route.plan),
+                        savedRevision: route.savedRevision
+                      }
                     }
-                  }
-                : {}),
-              ...(multiplierDirection === undefined
-                ? {}
-                : { multiplierDirection })
-            })
-            if (preparation.status === 'failure') throw preparation.cause
-            if (preparation.status !== 'success' || !isCurrent(target)) return
-            const prepared = preparation.value
-            const view = read()
-            if (
-              (original.kind === 'start' || original.kind === 'position') &&
-              view.mapId !== original.mapId
-            )
-              return
-            const freshTarget = capture()
-            if (
-              !freshTarget ||
-              !acceptContext({
-                target: freshTarget,
-                result: prepared.result,
-                descriptor: prepared.descriptor,
-                mapId: view.mapId,
-                map: view.map,
-                describe: port.describe
+                  : {}),
+                ...(multiplierDirection === undefined
+                  ? {}
+                  : { multiplierDirection })
               })
-            )
-              throw new CapabilityError('stale', false)
-            next = prepared.command
-          } catch (cause) {
-            const text = capabilityErrorText(cause)
-            if (failed(target, 'scope', 'command', text)) onError(text)
-          } finally {
-            held.release()
-          }
-          if (next && isCurrent(target) && !blocked())
-            await execute(next, clearDraft)
-        })()
-      })
-      return execution
+              if (preparation.status === 'failure') throw preparation.cause
+              if (preparation.status !== 'success' || !isCurrent(target)) return
+              const prepared = preparation.value
+              const view = read()
+              if (
+                (original.kind === 'start' || original.kind === 'position') &&
+                view.mapId !== original.mapId
+              )
+                return
+              const freshTarget = capture()
+              if (
+                !freshTarget ||
+                !acceptContext({
+                  target: freshTarget,
+                  result: prepared.result,
+                  descriptor: prepared.descriptor,
+                  mapId: view.mapId,
+                  map: view.map,
+                  describe: port.describe
+                })
+              )
+                throw new CapabilityError('stale', false)
+              next = prepared.command
+            } catch (cause) {
+              const text = capabilityErrorText(cause)
+              if (failed(target, 'scope', 'command', text)) onError(text)
+            } finally {
+              held.release()
+            }
+            if (next && isCurrent(target) && !blocked())
+              await execute(next, clearDraft)
+          })()
+        }) ?? Promise.resolve()
+      )
     },
     [
       acceptContext,

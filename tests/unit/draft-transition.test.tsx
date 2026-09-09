@@ -138,8 +138,20 @@ it('keeps successful partial saves and retries only the failed area', async () =
   const save = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true)
   render(<Harness save={save} />)
   await openTransition()
+  expect(
+    screen.getByRole('list', { name: 'Offene Änderungen' })
+  ).toHaveTextContent('NSC')
+  expect(
+    screen.getByRole('list', { name: 'Offene Änderungen' })
+  ).toHaveTextContent('Charaktername')
   fireEvent.click(screen.getByText('Speichern und fortfahren'))
   await screen.findByText(/Charaktername: Speichern wurde nicht bestätigt/)
+  expect(
+    screen.getByRole('list', { name: 'Offene Änderungen' })
+  ).not.toHaveTextContent('NSC')
+  expect(
+    screen.getByRole('list', { name: 'Offene Änderungen' })
+  ).toHaveTextContent('Charaktername')
   expect(screen.getByLabelText('Charaktername')).toHaveValue('Arlik Entwurf')
   fireEvent.click(screen.getByText('Speichern und fortfahren'))
   await screen.findByText('Sitzung geöffnet')

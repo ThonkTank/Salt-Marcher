@@ -398,6 +398,7 @@ export function ReleaseSettings({
           title="Neustart bestätigen"
           text={confirmation.text}
           errors={draftErrors}
+          draftLabels={maintenanceDraftCoordinator.dirtyLabels()}
           needsDrafts={needsDrafts}
           busy={busy}
           cancel={cancelMaintenance}

@@ -6,6 +6,7 @@ export function DraftResolutionDialog(props: {
   title: string
   text: string
   errors: readonly { id: string; text: string }[]
+  draftLabels: readonly string[]
   needsDrafts: boolean
   busy: boolean
   cancel: () => void
@@ -20,6 +21,13 @@ export function DraftResolutionDialog(props: {
       busy={props.busy}
     >
       <p>{props.text}</p>
+      {props.draftLabels.length > 0 && (
+        <ul aria-label={message('draft.areas')}>
+          {props.draftLabels.map((label, index) => (
+            <li key={index}>{label}</li>
+          ))}
+        </ul>
+      )}
       {props.errors.length > 0 && (
         <div role="alert">
           {props.errors.map((failure) => (
