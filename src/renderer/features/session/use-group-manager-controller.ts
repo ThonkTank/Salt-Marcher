@@ -1,3 +1,5 @@
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { useGroupLifecycleOwner } from './use-group-lifecycle.js'
 import { useCallback, useEffect } from 'react'
 import { message } from '../../i18n/session-runtime.de.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
@@ -53,6 +55,24 @@ export function useGroupManagerController(
       },
       props.snapshot
     )
+  const lifecycle = useGroupLifecycleOwner(
+    ports.lifecycle,
+    props.onError,
+    (current) => {
+      runtime.acceptSnapshot(current)
+      runtime.dispatch({
+        kind: 'sync-external',
+        groups:
+          current.scene.scenes.find((scene) => scene.id === initialFocused.id)
+            ?.groups ?? []
+      })
+      if (!maintenanceDraftCoordinator.isLocked()) props.saved(current)
+    }
+  )
+  const archiveTransition = useDraftTransition(initialFocused.id, {
+    title: message('group.archiveTitle'),
+    text: message('group.resolveBeforeArchive')
+  })
   const dispatch = runtime.dispatch
   const focused = snapshot.scene.scenes.find(
     (scene) => scene.id === snapshot.scene.focusedSceneId
@@ -61,17 +81,19 @@ export function useGroupManagerController(
   const editingBlocked = () =>
     maintenanceDraftCoordinator.isLocked() ||
     runtime.snapshot().pending ||
-    runtime.snapshot().uncertain
+    runtime.snapshot().uncertain ||
+    lifecycle.blocked()
   const userDispatch = useCallback(
     (action: GroupManagerAction) => {
       if (
         !maintenanceDraftCoordinator.isLocked() &&
         !runtime.snapshot().pending &&
-        !runtime.snapshot().uncertain
+        !runtime.snapshot().uncertain &&
+        !lifecycle.blocked()
       )
         runtime.dispatch(action)
     },
-    [runtime]
+    [runtime, lifecycle]
   )
   const publish = (next: LiveSessionSnapshot) => {
     runtime.acceptSnapshot(next)
@@ -80,16 +102,17 @@ export function useGroupManagerController(
   }
   const maintenanceBlocked = useMaintenanceDraft({
     label: 'Gruppenverwaltung',
+    dependsOn: [lifecycle.ownerId],
     isDirty: runtime.isDirty,
     save: async () => {
       if (!(await runtime.saveAll(ports, coordinator, props.lootChanged)))
         return false
-      props.saved(runtime.snapshot().snapshot)
+      if (!archiveTransition.dialog) props.saved(runtime.snapshot().snapshot)
       return true
     },
     discard: async () => {
       await runtime.discardAll(coordinator)
-      props.saved(runtime.snapshot().snapshot)
+      if (!archiveTransition.dialog) props.saved(runtime.snapshot().snapshot)
       return true
     }
   })
@@ -152,7 +175,12 @@ export function useGroupManagerController(
   const commands = {
     ...rawCommands,
     pending,
-    busy: pending || uncertain || maintenanceBlocked || rawCommands.busy,
+    busy:
+      pending ||
+      uncertain ||
+      maintenanceBlocked ||
+      rawCommands.busy ||
+      lifecycle.busy,
     save: () =>
       editingBlocked() ? Promise.resolve(null) : runtime.run(rawCommands.save),
     commitLoot: () =>
@@ -167,8 +195,32 @@ export function useGroupManagerController(
       editingBlocked()
         ? Promise.resolve(false)
         : runtime.run(() => rawCommands.generateLoot(...args)),
-    archive: () =>
-      editingBlocked() ? Promise.resolve() : runtime.run(rawCommands.archive),
+    archive: (): Promise<void> => {
+      if (editingBlocked() || !selectedPersistedGroup) return Promise.resolve()
+      const sceneId = focused.id
+      const groupId = selectedPersistedGroup.id
+      archiveTransition.request(() => {
+        if (lifecycle.blocked()) return
+        const current = runtime
+          .snapshot()
+          .snapshot.scene.scenes.find((scene) => scene.id === sceneId)
+          ?.groups.find((group) => group.id === groupId)
+        if (!current) {
+          props.onError(message('group.lifecycleConflict'))
+          return
+        }
+        lifecycle.execute({
+          kind: 'archive',
+          input: {
+            sceneId,
+            groupId,
+            archived: true,
+            expectedGroupRevision: current.revision
+          }
+        })
+      })
+      return Promise.resolve()
+    },
     joinCombat: () =>
       editingBlocked() ? Promise.resolve() : runtime.run(rawCommands.joinCombat)
   }
@@ -193,6 +245,7 @@ export function useGroupManagerController(
 
   return {
     ...projectGroupManagerView({
+      archive: commands.archive,
       snapshot,
       reinforcementMode: props.reinforcementMode,
       state,
@@ -210,7 +263,9 @@ export function useGroupManagerController(
       queries,
       interactions
     }),
-    maintenanceBlocked: maintenanceBlocked || uncertain,
+    lifecycleNotice: lifecycle.notice,
+    archiveDialog: archiveTransition.dialog,
+    maintenanceBlocked: maintenanceBlocked || uncertain || lifecycle.busy,
     uncertain,
     canReconcile: runtime.canReconcile(),
     retryUnknown: async () => {

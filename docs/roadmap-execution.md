@@ -5443,3 +5443,84 @@ Renderergraph 1642947 Bytes bei unveränderten Grenzen. Plan-Audit dieses
 Session-Teilplans bestanden; Roadmap-Audit weiterhin Phase 4 in Arbeit, 5–7 offen.
 Den qualifizierten Zwischenstand auf Candidate committen/pushen; der nächste
 Teilplan ist die Gruppenmanager-Archivierung inklusive offener Entwürfe.
+
+Phase 4 – Teilplan Gruppenmanager-Archivierung (nach Candidate 7aa201635):
+Den vorhandenen Lifecycle-Hook in einen wiederverwendbaren Owner mit explizitem
+Port zerlegen; Sessionadapter bleibt erhalten. Der Gruppenmanager erhält denselben
+originalkampagnengebundenen Port, Statushinweise und eine Wartungsabhängigkeit
+vor seinem Draft-Owner. Bestätigte Ergebnisse übernehmen den frisch gelesenen
+Snapshot. Den alten direkten Archive-Write aus den Gruppenmanagercommands entfernen.
+
+Archivieren muss zuerst den zentralen Speichern-/Verwerfen-/Abbrechen-Dialog
+verwenden. Nach Auflösung anhand der ursprünglich gewählten Szene/Gruppe den
+aktuellen bestätigten Stand aus dem Runtime lesen, dann den Auftrag erzeugen.
+Wartungs-Save/Discard dürfen die Gruppenverwaltung nicht vor dem ausstehenden
+Übergang schließen; der normale bestätigte Archivierungserfolg darf schließen.
+Andere Entwürfe während ausstehender Archivierung sperren, Originalauftrag auch
+nach Unmount behalten. Originalszene/-gruppe fehlen: verständlich abbrechen.
+
+Abnahme: bestehende Gruppenmanager-Wartungsfälle, Archive mit sauberen/geänderten
+Entwürfen (Save/Discard/Cancel), fehlgeschlagener Save verhindert Archive, verlorene
+Antwort/Statusfehler halten Wartung, erfolgreiche Originalquittung ohne Replay,
+frischer Snapshot statt alter Quittung. Echte Electron-Archivierung im vorhandenen
+Desktop-Lifecyclefall ergänzen, um den kompletten sichtbaren Gruppenweg zu prüfen.
+Type/Lint/Format/Architektur sowie Build/Smoke/Bundle prüfen. Phase 4 insgesamt
+bleibt bis zur restlichen Writer-Inventur offen; Remote-Gates vor Handoff bestehen.
+
+Gruppenmanager-Korrekturplan: Der erste Hooklauf findet zwei Regressionen bei
+bereits vollständig aufgelöster allgemeiner Wartung: deren bestätigter Snapshot
+wurde nicht mehr publiziert. Das Zurückhalten von props.saved nur auf einen
+tatsächlich offenen Archivierungsübergang beschränken. Allgemeine Wartung behält
+ihr geprüftes Publikationsverhalten; während Archivierungsauflösung bleibt der
+Editor bis zum nachfolgenden Originalauftrag montiert. Danach gezielte Fälle für
+Save/Discard/Cancel, Speicherfehler und verlorene Archive-Antwort ergänzen.
+
+Fixture-Korrektur: Neue Archivierungs-Dialogtests haben den echten ModalDialog
+ohne ModalLayerProvider gerendert; dadurch fehlen Dialoge und nachfolgende
+Auflösungen sind nicht aussagekräftig. Den Produktions-Modalprovider im neuen
+Fixture einsetzen, dann erneut getrennt die Archivefälle prüfen. Eine gescheiterte
+Lifecycleabhängigkeit kann mehrere betroffene Bereiche melden; Abnahme verlangt
+sichtbares Scheitern und gehaltenen Auftrag, keine künstlich feste Fehleranzahl.
+
+22 Gruppenmanagerfälle bestehen einschließlich der sechs neuen Archivefälle.
+Nachweis der Call-Site-Inventur: setGroupArchived/deleteGroup in den internen
+SessionCapabilities haben keine Renderercaller mehr. Diese zwei unbenutzten
+Wrapper entfernen; die öffentlichen Bridgeoperationen bleiben für Kompatibilität
+unverändert. Den bestehenden Desktop-Lifecyclefall jetzt auf echte UI-Archivierung
+umstellen: erste Archivierung mit geänderter Disposition und zentralem Save,
+zweite Archivierung ohne Entwurf; Wiederherstellen und bestätigtes Löschen bleiben.
+
+118 gezielte/Architekturtests bestehen. Typecheck stoppt vor Build wegen eines
+falsch aufgebauten neuen Archive-Testbelegs: scenePatch besitzt keine globale
+revision. Das Fixture auf den tatsächlichen SceneGroupCommandResult-Vertrag
+korrigieren und einen lokal nicht-null typisierten Beleg erzeugen, bevor er im
+Statusfixture gespeichert wird. Produktionscode und Assertions bleiben unverändert.
+
+Gruppenmanager-Archivierung qualifiziert: 118 gezielte und Architekturfälle
+bestehen; nach Korrektur des rein typisierten Testbelegs erneut alle 22
+Gruppenmanagerfälle grün. Lauf 39624 endet exit 0: Typecheck, vollständiges
+Lint/Format, Build, Smoke, Bundlebudget und acht Electron-Desktopfälle bestehen.
+Renderergraph 1643683 Bytes, Grenzen unverändert. E2E-Summary:
+.tmp/e2e-runs/functional-1788916514269-588411/summary.json.
+Der echte UI-Weg speichert die geänderte Disposition vor Archivierung, stellt
+wieder her, archiviert unverändert erneut, bricht Löschen ab, bestätigt es und
+prüft Abwesenheit nach einem echten Prozessneustart.
+
+Plan-Audit: bestanden für diesen Teilplan. Session und Gruppenmanager verwenden
+denselben Lifecycle-Owner/Port. Der alte direkte Renderer-Archivierungsaufruf und
+seine unbenutzten internen Wrapper sind entfernt; öffentliche Altoperationen
+bleiben kompatibel. Save/Discard/Cancel vor Archivierung sind geprüft; Savefehler
+lösen keinen Archiveauftrag aus. Wartungsauflösung hält den Archivierungsdialog
+montiert, danach wird die ursprünglich gewählte Gruppe mit bestätigter Revision
+archiviert. Statusfehler und Unmount behalten den Originalauftrag; erfolgreiche
+Quittung beendet ihn ohne Replay. Wartungskontext verhindert neue Edits.
+
+Roadmap-Audit: weiterhin Phase 4 in Arbeit. Nächste konkrete Lücke ist
+use-group-manager-commands.ts joinCombat -> combat.joinGroup ohne Originalbeleg.
+Auch die weiteren Combat-Operationen besitzen im operations/combat.ts-Vertrag
+noch keine Execute-/Statusquittungen. Diese zusammenhängende Schnittstelle vor
+weiterer Einzelumstellung inventarisieren und gemeinsam planen. Phasen 5–7,
+kanonischer Handoff, Main-Gates und öffentlicher Release bleiben offen.
+Candidate 7aa201635 / CI 34297853752 wurde zuletzt live in_progress ohne
+fehlgeschlagene Jobs gelesen. Diese Runde als neuen Candidate sichern; kein
+Handoff oder Main-Push vor vollständigen Gates des neuen exakten SHAs.

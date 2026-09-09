@@ -1,3 +1,7 @@
+import {
+  useGroupLifecyclePort,
+  type GroupLifecyclePort
+} from './use-group-lifecycle-port.js'
 import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
 import type { CommitGroupRewardInput } from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
@@ -17,6 +21,7 @@ import {
 } from './session-capabilities.js'
 
 export type GroupManagerPorts = Readonly<{
+  lifecycle: GroupLifecyclePort
   runtime: Readonly<{ e2e: boolean }>
   creatures: CreatureCapabilityPort
   scene: Omit<SessionCapabilities['scene'], 'groupSaveReceipt'> &
@@ -47,6 +52,7 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
   const projection = context.campaignWorkspace
   const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
   const campaignId = root.sessionCampaignId
+  const lifecycle = useGroupLifecyclePort(campaignId ?? '')
   return useMemo(() => {
     const requireCampaign = () => {
       const current = projection.snapshot()
@@ -59,6 +65,7 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
       return campaignId
     }
     return {
+      lifecycle,
       runtime: { e2e: api.runtime.e2e },
       creatures: createCreatureCapabilityPort(api.creatures),
       scene: {
@@ -84,5 +91,5 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
       biomes: api.biomes,
       combat: encounterCapabilities(api).combat
     }
-  }, [api, campaignId, projection])
+  }, [api, campaignId, projection, lifecycle])
 }

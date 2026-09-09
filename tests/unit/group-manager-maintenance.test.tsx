@@ -6,7 +6,8 @@ import {
   renderHook,
   render,
   screen,
-  fireEvent
+  fireEvent,
+  waitFor
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -17,6 +18,8 @@ import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session
 import type { SceneGroup } from '../../src/shared/contracts/scene.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-coordinator.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import { applySceneGroupCommandResult } from '../../src/renderer/features/session/session-patches.js'
 import { GroupManagerDraftRuntime } from '../../src/renderer/features/session/group-manager-draft-runtime.js'
 import { createGroupManagerState } from '../../src/renderer/features/session/group-manager-state.js'
 import { groupDraftStateFromGroup } from '../../src/renderer/features/session/group-draft.js'
@@ -763,6 +766,182 @@ describe('group maintenance owner', () => {
   })
 })
 
+describe('group archive lifecycle', () => {
+  it.each(['save', 'discard', 'cancel'] as const)(
+    'resolves changed drafts with %s before archiving',
+    async (choice) => {
+      const f = archiveFixture()
+      act(() => f.controller().setName('Edited before archive'))
+      act(() => f.controller().archive())
+      await screen.findByRole('alertdialog', { name: 'Gruppe archivieren' })
+      expect(f.execute).not.toHaveBeenCalled()
+      expect(f.props.saved).not.toHaveBeenCalled()
+      fireEvent.click(
+        screen.getByText(
+          choice === 'save'
+            ? 'Speichern und fortfahren'
+            : choice === 'discard'
+              ? 'Verwerfen und fortfahren'
+              : 'Abbrechen'
+        )
+      )
+      if (choice === 'cancel') {
+        await waitFor(() =>
+          expect(screen.queryByRole('alertdialog')).toBeNull()
+        )
+        expect(f.controller().group.name).toBe('Edited before archive')
+        expect(f.execute).not.toHaveBeenCalled()
+        return
+      }
+      await waitFor(() => expect(f.props.saved).toHaveBeenCalledOnce())
+      expect(f.saveGroup).toHaveBeenCalledTimes(choice === 'save' ? 1 : 0)
+      expect(f.execute).toHaveBeenCalledOnce()
+      expect(f.execute.mock.calls[0]?.[0].command).toEqual({
+        kind: 'archive',
+        input: {
+          sceneId: 'scene',
+          groupId: 'a',
+          archived: true,
+          expectedGroupRevision: choice === 'save' ? 2 : 1
+        }
+      })
+      expect(f.current().scene.scenes[0]!.groups[0]!.name).toBe(
+        choice === 'save' ? 'Edited before archive' : 'A'
+      )
+      expect(f.current().scene.scenes[0]!.groups[0]!.archived).toBe(true)
+    }
+  )
+  it('keeps the archive unsubmitted when saving the draft fails', async () => {
+    const f = archiveFixture()
+    f.saveGroup.mockRejectedValue(new Error('save failed'))
+    act(() => f.controller().setName('Keep me'))
+    act(() => f.controller().archive())
+    fireEvent.click(await screen.findByText('Speichern und fortfahren'))
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'Gruppenverwaltung'
+      )
+    )
+    expect(f.execute).not.toHaveBeenCalled()
+    expect(f.props.saved).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText('Abbrechen'))
+    expect(f.controller().group.name).toBe('Keep me')
+  })
+  it.each([false, true])(
+    'holds a lost archive reply through status failure (detached=%s)',
+    async (detached) => {
+      const f = archiveFixture()
+      const write = f.execute.getMockImplementation()!
+      f.execute.mockImplementation(async (input) => {
+        await write(input)
+        throw new Error('lost reply')
+      })
+      f.status.mockRejectedValueOnce(new Error('status unavailable'))
+      act(() => f.controller().archive())
+      await screen.findByText('Speicherstatus erneut prüfen')
+      act(() => f.controller().setName('Blocked edit'))
+      expect(f.controller().group.name).toBe('A')
+      if (detached) f.view.unmount()
+      act(() => {
+        resolution = maintenanceDraftCoordinator.begin()
+      })
+      await act(async () => {
+        expect((await resolution!.resolve('discard')).length).toBeGreaterThan(0)
+      })
+      expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
+      await act(async () => {
+        expect(await resolution!.resolve('discard')).toEqual([])
+      })
+      expect(f.status).toHaveBeenLastCalledWith(f.execute.mock.calls[0]![0])
+      expect(f.execute).toHaveBeenCalledOnce()
+      expect(f.props.saved).not.toHaveBeenCalled()
+      expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+      expect(f.current().scene.scenes[0]!.groups[0]!.archived).toBe(true)
+    }
+  )
+})
+
+function archiveFixture() {
+  let current = snapshot()
+  let receipt: SceneGroupCommandResult | null = null
+  const saveGroup = vi
+    .fn<GroupManagerPorts['scene']['saveGroup']>()
+    .mockImplementation(async (...args) => {
+      const result = await saveResult(...args)
+      current = applySceneGroupCommandResult(current, result)
+      return result
+    })
+  const execute = vi
+    .fn<GroupManagerPorts['lifecycle']['execute']>()
+    .mockImplementation((input) => {
+      const original = current.scene.scenes[0]!.groups[0]!
+      const result: SceneGroupCommandResult = {
+        combat: null,
+        scenePatch: {
+          sceneId: 'scene',
+          sceneRevision: current.scene.revision + 1,
+          upsertedGroups: [
+            {
+              ...original,
+              archived: true,
+              revision: input.command.input.expectedGroupRevision + 1
+            }
+          ],
+          removedGroupIds: []
+        }
+      }
+      receipt = result
+      current = applySceneGroupCommandResult(current, result)
+      return Promise.resolve(result)
+    })
+  const status = vi
+    .fn<GroupManagerPorts['lifecycle']['status']>()
+    .mockImplementation(() => Promise.resolve({ receipt, snapshot: current }))
+  const ports = {
+    ...mockPorts(saveGroup),
+    lifecycle: {
+      execute,
+      status,
+      current: () => current,
+      refresh: () => Promise.resolve(current)
+    }
+  }
+  const props = {
+    snapshot: current,
+    group: current.scene.scenes[0]!.groups[0]!,
+    close: vi.fn(),
+    saved: vi.fn(),
+    lootChanged: vi.fn(),
+    inspect: vi.fn(),
+    onError: vi.fn(),
+    reinforcementMode: false
+  }
+  let controller!: ReturnType<typeof useGroupManagerController>
+  function View() {
+    controller = useGroupManagerController(props, ports)
+    return (
+      <>
+        {controller.archiveDialog}
+        {controller.lifecycleNotice}
+      </>
+    )
+  }
+  const view = render(
+    <ModalLayerProvider>
+      <View />
+    </ModalLayerProvider>
+  )
+  return {
+    view,
+    controller: () => controller,
+    props,
+    saveGroup,
+    execute,
+    status,
+    current: () => current
+  }
+}
+
 function group(id: string, name: string, revision = 1): SceneGroup {
   return {
     id,
@@ -848,6 +1027,12 @@ function mockPorts(
   saveGroup: GroupManagerPorts['scene']['saveGroup']
 ): GroupManagerPorts {
   return {
+    lifecycle: {
+      execute: vi.fn(),
+      status: vi.fn(),
+      refresh: vi.fn(),
+      current: vi.fn()
+    },
     runtime: { e2e: true },
     scene: { saveGroup, groupSaveReceipt: () => Promise.resolve(null) },
     loot: {},

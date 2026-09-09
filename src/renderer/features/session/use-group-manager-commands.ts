@@ -36,7 +36,6 @@ export function createGroupManagerCommands(
   ) => Promise<boolean>
   commitLoot: ReturnType<typeof useGroupManagerLootCommands>['commitLoot']
   save: () => Promise<LiveSessionSnapshot | null>
-  archive: () => Promise<void>
   joinCombat: () => Promise<void>
   busy: boolean
   pending: boolean
@@ -172,20 +171,6 @@ export function createGroupManagerCommands(
     return next
   }
 
-  async function archive(): Promise<void> {
-    const key = state.activeKey
-    if (!key || key === newGroupDraftKey || !selectedPersistedGroup) return
-    const outcome = await runCommand(key, () =>
-      ports.scene.setGroupArchived(
-        focused.id,
-        key,
-        true,
-        selectedPersistedGroup.revision
-      )
-    )
-    if (outcome) saved(applySceneGroupCommandResult(snapshot, outcome))
-  }
-
   async function joinCombat(): Promise<void> {
     const key = state.activeKey
     const combat = snapshot.combat
@@ -254,7 +239,6 @@ export function createGroupManagerCommands(
     generateLoot: lootCommands.generateLoot,
     commitLoot: lootCommands.commitLoot,
     save,
-    archive,
     joinCombat,
     busy: commands.hasPending(['group-manager.command', 'group-manager.loot']),
     pending: commands.hasPending([

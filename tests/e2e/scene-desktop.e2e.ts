@@ -757,12 +757,6 @@ describe('per-scene desktop', () => {
       const group = current.scene.scenes
         .find((scene) => scene.id === sceneId)!
         .groups.find((group) => group.name === 'Lifecycle E2E')!
-      await api.scene.setGroupArchived({
-        sceneId,
-        groupId: group.id,
-        archived: true,
-        expectedGroupRevision: group.revision
-      })
       return { campaignId, sceneId, groupId: group.id }
     })
     const openGroup = async () => {
@@ -783,6 +777,38 @@ describe('per-scene desktop', () => {
             .groups.find((group) => group.id === input.groupId) ?? null
         )
       }, target)
+    const archiveGroup = async (edit: boolean) => {
+      await client.refresh()
+      await resumeCampaignFromScreen(client)
+      await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client
+        .$(
+          '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+        )
+        .click()
+      const manager = client.$('section[aria-labelledby="group-builder-title"]')
+      await manager.waitForDisplayed({ timeout: 10_000 })
+      await manager
+        .$('select[aria-label="Gruppe auswählen"]')
+        .selectByVisibleText('Lifecycle E2E')
+      if (edit)
+        await manager
+          .$('.group-manager-disposition')
+          .selectByAttribute('value', 'allied')
+      await manager.$('button=Archivieren').click()
+      if (edit) {
+        const confirmation = client.$(
+          '[role="alertdialog"][aria-label="Gruppe archivieren"]'
+        )
+        await confirmation.waitForDisplayed()
+        await confirmation.$('button=Speichern und fortfahren').click()
+      }
+      await manager.waitForExist({ reverse: true, timeout: 10_000 })
+      expect((await readGroup())?.archived).toBe(true)
+      expect((await readGroup())?.disposition).toBe('allied')
+    }
+    await archiveGroup(true)
     await openGroup()
     await client
       .$('[data-window-id="overview"]')
@@ -790,19 +816,7 @@ describe('per-scene desktop', () => {
       .click()
     await client.waitUntil(async () => (await readGroup())?.archived === false)
     expect((await readGroup())?.note).toBe('Preserve through restore')
-    await client.execute(async (input) => {
-      const api = window.saltMarcher
-      const snapshot = await api.session.read({ campaignId: input.campaignId })
-      const group = snapshot.scene.scenes
-        .find((scene) => scene.id === input.sceneId)!
-        .groups.find((group) => group.id === input.groupId)!
-      await api.scene.setGroupArchived({
-        sceneId: input.sceneId,
-        groupId: input.groupId,
-        archived: true,
-        expectedGroupRevision: group.revision
-      })
-    }, target)
+    await archiveGroup(false)
     await openGroup()
     await client.$('[data-window-id="overview"]').$('button=Löschen').click()
     await client.$('.group-delete-confirm').$('button=Abbrechen').click()

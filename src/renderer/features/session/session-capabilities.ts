@@ -44,23 +44,6 @@ export function sessionCapabilities(api: SaltMarcherApi) {
           expectedRevision,
           expectedGroupRevision
         }),
-      deleteGroup: (
-        sceneId: string,
-        groupId: string,
-        expectedGroupRevision: number
-      ) => api.scene.deleteGroup({ sceneId, groupId, expectedGroupRevision }),
-      setGroupArchived: (
-        sceneId: string,
-        groupId: string,
-        archived: boolean,
-        expectedGroupRevision: number
-      ) =>
-        api.scene.setGroupArchived({
-          sceneId,
-          groupId,
-          archived,
-          expectedGroupRevision
-        }),
       evaluateGroupDraft: (
         sceneId: string,
         entries: readonly SceneGroupDraftEntry[],

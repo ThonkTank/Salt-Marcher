@@ -101,6 +101,7 @@ export function GroupManagerView(props: {
         }
         tools={
           <>
+            {controller.lifecycleNotice}
             {controller.uncertain && (
               <div role="status">
                 {uiMessage('group.saveUnconfirmed')}
@@ -191,6 +192,7 @@ export function GroupManagerView(props: {
           />
         }
       />
+      {controller.archiveDialog}
       {state.pendingIntent && (
         <DiscardChangesDialog
           message={
