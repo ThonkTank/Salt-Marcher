@@ -7918,3 +7918,99 @@ Lintwiederholung 4824 Exit 0, anschließender gezielter UI-Feed-Unitlauf Exit 0.
 Plan-Audit des Transportadapters bestanden; echter UI-Lauf weiterhin offen.
 Harnessstand einschließlich gepinnter Reparaturquelle jetzt als Folgecommit
 auf Candidate sichern. Keine Änderung an den bereits qualifizierten Artefakten.
+
+Beide UI-Testartefakte gebaut: 59573 und 23101 jeweils Exit 0. Danach neuen
+DOM-/CDP-Driver und ersten ausführbaren Abschnitt des UI-Qualifiers ergänzt:
+Originalprofil erzeugen, Arbeitskopie, prüfen/download/install durch reale
+Mauseingaben, Zielneustart und vollständiger Readback im Ziel-AppImage. Explizite
+Negativassertions verhindern, dass automatische Downloads oder Aktivierung beim
+Download als Erfolg gelten. Der Nachweis kennzeichnet fehlende Weiterarbeit und
+Restore ausdrücklich; diese folgen im selben Phase-5-Ablauf nach erfolgreicher
+Prüfung dieses Abschnitts. Controller werden nicht direkt aufgerufen.
+
+Typprüfung 34912 Exit 2: TypeScript inferiert das zusammengesetzte env-Objekt zu
+eng für das Entfernen von ELECTRON_RUN_AS_NODE. Korrekturplan: expliziten
+NodeJS.ProcessEnv-Vertrag am Prozess-Environment verwenden; Verhalten unverändert.
+
+UI-Erstabschnitt 97097 Exit 0: realer Ablauf check/download/install/restart mit
+0.0.146→0.0.147 und Kampagnenschema41→42, danach kompletter Ziel-Readback gleich
+Original sowie unveränderte Quelle. Nachweis work/historical-ui-update-v5/
+ui-update-evidence.json; Transaktion e8c71d7f-2c23-41fa-bd43-3cff11ece5ba committed.
+Typprüfung 44703 und Lint 96528 jeweils Exit 0. Kein Restore-Nachweis bisher.
+
+Fortsetzungsplan: Zielversion erneut normal öffnen, Charakterfenster und XP-Popup
+über echte Eingaben bedienen, Mara 1 um 25 XP erhöhen, schließen und im separaten
+Zielprozess persistierte Änderung prüfen. Erwartungsvertrag erlaubt ausschließlich
+Partyrevision +1 und XP/Rastzähler +25 in aktiver Kampagne und deren Sessionprojektion.
+Danach UI-Wiederherstellung der einzigen Vor-Update-Sicherung bestätigen. Neuer
+Restorejournal muss eigene Sicherung der späteren Arbeit referenzieren; diese auf
+separater vollständiger Profilkopie durch Ziel-AppImage lesen und mit späterem
+Stand vollständig vergleichen. Wiederhergestelltes Profil muss Original entsprechen,
+Zielprogramm bleibt unverändert, neue Vorwärtsmigration erfolgt bei Restore.
+
+Lauf 4525 noch aktiv. Read-only DOM-Inspektion des tatsächlich gestarteten Fensters
+zeigt die Kampagnenauswahl mit genau einem Fortsetzen-Button; der Driver wartet
+bereits auf die erst danach sichtbare Charaktertoolbar. Konkreter Fixplan nach
+terminalem Lauf: Fortsetzen als echte UI-Aktion vor dem Charakterfenster ergänzen.
+Das ist fehlende Testnavigation, kein Nachweis eines Produktfehlers. Quellen
+während des laufenden AppImage-Tests nicht ändern.
+
+CI-Job102401426977 meldet drei veraltete Erwartungen: current-format-manifest
+verlangt Kampagnenschema41, Golden-Master-Preflight Registry21/Schema41. Plan nach
+Laufende: ausschließlich aktuelle Manifestzielversion und aktuelle Endstand-
+erwartungen auf42/22 aktualisieren; originale Golden-Masterbytes unverändert.
+Das Manifest ist ausdrücklich eine vorläufige Current-Format-Referenz und keine
+historische Releasefixture oder abgeschlossene RP-Abnahme. Gezielte Unitfälle
+und vollständige CI müssen den aktualisierten Stand erneut prüfen.
+
+4525 terminal Exit 1 mit genau dem erwarteten Navigations-Timeout; eigene
+Appprozesse beendet. Fortsetzen ergänzt. Quellprüfung zeigt zusätzlich:
+CampaignRegistryRepository.setActive aktualisiert last_opened_at und die Registry-
+revision. Der historische Readback enthält keine Registryrevision, aber explizite
+Zeitstempel. Erwartungsvertrag für diese echte Benutzeraktion deshalb erweitern:
+ausschließlich aktiven lastOpenedAt auf den beobachteten, innerhalb des Eingabe-
+intervalls liegenden ISO-Zeitpunkt setzen; alle übrigen Registryfelder unverändert.
+Keine pauschale Normalisierung von Zeitstempeln oder unbekannten Feldern.
+
+Wiederholung 41529 Exit 1: echte UI-XP-Eingabe erfolgreich, 1000 XP nach Neustart
+persistiert. Vollvergleich meldet ausschließlich unveränderte Rastzähler statt
+der angenommenen +25. Quellprüfung von applyXpAdjustment erforderlich, bevor der
+Erwartungsvertrag angepasst wird; keine Änderung an Produktsemantik anhand des
+Testergebnisses. Restore wurde wegen des strikten Vergleichs noch nicht gestartet.
+
+Quell-/Anforderungsabgleich: applyXpAdjustment erhält shortXp/longXp bewusst;
+party-burden.test.ts prüft unveränderte Zähler für alle manuellen XP-Modi, und
+requirements-party-dropdown.md verweist auf korrigierte manuelle XP-Semantik.
+Die +25-Annahme des neuen Qualifiers war falsch. Fixplan: XP +25 und Revision +1
+weiter verlangen, Rastzähler exakt unverändert vergleichen. Keine Produktänderung.
+
+### Phase 5 – Erster vollständiger UI-Update-/Restore-Nachweis
+
+Lauf 24891 Exit 0, evidence work/historical-ui-update-restore-v7/
+ui-update-evidence.json. Reale UI-Eingaben: prüfen, herunterladen, bestätigen,
+Installation und Zielneustart; erneut öffnen, Kampagne fortsetzen, Mara 1 +25 XP
+speichern; erneut öffnen, ganze Vor-Update-Sicherung wiederherstellen und Ziel-
+neustart. Unabhängige eigene AppImage-Prozesse lesen vollständigen Ausgangs-,
+Update-, Weiterarbeits-, Restore- und Sicherungsstand. Die Quelle bleibt unverändert.
+Rastzähler bleiben entsprechend aktueller manueller XP-Semantik unverändert.
+
+Vor-Update-AppImage SHA256
+639b0d4d797261f2fbc6ff3e27786d2f0562ea1598b577113c763582d876c5f9,
+Ziel-AppImage SHA256
+3e143eee43b745eb61f425c6e623d7ee3726bb14f91171c71eb4094bb556724c.
+Restore773dca7c-f985-4c49-b8b2-395163389f28 committed, zusätzliche Sicherung
+16791f9b-6ba1-47ca-a5e8-98cbd8785648 enthält vollständig die spätere Arbeit.
+Zielprogramm bleibt beim Restore identisch, Originalschema41 wird vorwärtsmigriert.
+
+Plan-Audit dieses UI-Ablaufs bestanden. Roadmap-Audit Phase5 bleibt offen:
+Prozessabbrüche in Migration/allen Aktivierungs-/Recoverygrenzen, volle Platte,
+Zugriffsfehler, WAL/Parallelstart/beschädigter Download und fehlende/neue Formate
+müssen noch in der abschließenden echten Artefaktmatrix belegt werden. Dieser
+Erfolg ersetzt weder diese Matrix noch Main-Handoff oder manuellen Livetest.
+18 CI-Regressionsunitfälle11952 bestanden; Golden-Masterbytes unverändert.
+
+Nachweisbindung des erfolgreichen Laufs:
+Report SHA256 492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90;
+Qualifier SHA256 10e38f3419dc9fce017a1362a7559cf85600ceddce1c3e6413b9c65ce359ab8e;
+UI-Driver SHA256 68ddbdd52b958ba8ed76a1438b26d0280e19f8aeb2146b4d636ef7a0e433134e.
+Update c27228c5-edd6-46f0-806c-b9d2fd962836. Lint6458 Exit0.
