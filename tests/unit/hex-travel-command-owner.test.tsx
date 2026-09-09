@@ -52,7 +52,7 @@ function fixture() {
   const completed = vi.fn()
   let owner!: ReturnType<typeof useHexTravelCommandOwner>
   function View() {
-    owner = useHexTravelCommandOwner(port, completed)
+    owner = useHexTravelCommandOwner(port, completed, 'scene')
     return (
       <>
         <button

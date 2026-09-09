@@ -1,3 +1,10 @@
+import {
+  useTravelRouteDraft,
+  type TravelRouteDraft
+} from './use-travel-route-draft.js'
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
+import type { ReactNode } from 'react'
 import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { useCallback, useMemo } from 'react'
@@ -12,6 +19,9 @@ import { useTravelRemoteReconciliation } from './use-travel-remote-reconciliatio
 
 export type TravelController<P, S, M, E> = Readonly<{
   busy: boolean
+  routeDirty: boolean
+  saveRoute: () => Promise<void>
+  notice?: ReactNode
   state: TravelControllerState<P, S, M, E>
   selectMap: (mapId: string) => Promise<void>
   selectPosition: (position: P) => void
@@ -36,15 +46,18 @@ export function useTravelController<P, S, M, E>(options: {
   onError: (message: string) => void
   active: boolean
   commandBusy?: boolean
+  routeDraft?: TravelRouteDraft<P>
   commandsBlocked?: () => boolean
   presentation?: { mapId: string | null; selected: P | null }
 }): TravelController<P, S, M, E> {
-  const { commandsBlocked } = options
+  const { commandsBlocked, routeDraft, onError } = options
   const maintenance = useMaintenanceEditingBlocked()
   const blocked = useCallback(
     () =>
-      maintenanceDraftCoordinator.isLocked() || commandsBlocked?.() === true,
-    [commandsBlocked]
+      maintenanceDraftCoordinator.isLocked() ||
+      routeDraft?.snapshot().busy === true ||
+      commandsBlocked?.() === true,
+    [commandsBlocked, routeDraft]
   )
   const coordinator = useAsyncCommandCoordinator()
   const projection = useTravelViewProjection<P, S, M, E>({
@@ -52,7 +65,10 @@ export function useTravelController<P, S, M, E>(options: {
     setSnapshot: options.setSnapshot,
     ...(options.presentation ? { presentation: options.presentation } : {})
   })
+  const draftState = useTravelRouteDraft(routeDraft, options.port, projection)
   const sceneId = options.snapshot.scene.focusedSceneId
+  const transition = useDraftTransition(sceneId)
+  const requestTransition = transition.request
   const scope = useMemo<TravelScope | null>(
     () =>
       options.port
@@ -75,6 +91,7 @@ export function useTravelController<P, S, M, E>(options: {
   const selectMap = queries.selectMap
   const commands = useTravelCommands({
     blocked,
+    routeDraft,
     port: options.port,
     scope,
     projection,
@@ -104,20 +121,45 @@ export function useTravelController<P, S, M, E>(options: {
         projection.local({ type: 'selected', position }, 'intent')
         return
       }
-      if (current.mode === 'plan')
+      if (current.mode === 'plan') {
+        if (
+          routeDraft &&
+          (!current.mapId ||
+            !routeDraft.edit({
+              mapId: current.mapId,
+              waypoints: [...current.waypoints, position],
+              multiplier: current.multiplier
+            }))
+        )
+          return
         projection.local({ type: 'waypoint-added', position }, 'route')
-      else if (current.mode === 'position') void positionParty(position)
+      } else if (current.mode === 'position') void positionParty(position)
       else projection.local({ type: 'selected', position }, 'intent')
     },
-    [blocked, options.port, positionParty, projection]
+    [blocked, options.port, positionParty, projection, routeDraft]
   )
 
   return useMemo(
     () => ({
-      busy: maintenance || options.commandBusy === true,
+      busy: maintenance || draftState.busy || options.commandBusy === true,
+      routeDirty: draftState.dirty,
+      notice: transition.dialog,
+      saveRoute: async () => {
+        if (blocked() || !routeDraft) return
+        try {
+          await routeDraft.save()
+        } catch (cause) {
+          onError(capabilityErrorText(cause))
+        }
+      },
       state: projection.state,
       selectMap: async (mapId: string) => {
-        if (!blocked()) await selectMap(mapId)
+        if (blocked()) return
+        if (routeDraft?.isDirty() && projection.read().mapId !== mapId)
+          requestTransition(() => {
+            if (!blocked()) void selectMap(mapId)
+          })
+        else await selectMap(mapId)
       },
       selectPosition: (position: P) =>
         !blocked() &&
@@ -142,7 +184,8 @@ export function useTravelController<P, S, M, E>(options: {
           'route'
         ),
       clearRoute: () => {
-        if (!blocked()) projection.local({ type: 'route-cleared' }, 'route')
+        if (blocked() || (routeDraft && !routeDraft.edit(null))) return
+        projection.local({ type: 'route-cleared' }, 'route')
       },
       readViewport: queries.readViewport,
       previewToken: (position: P | null) =>
@@ -156,6 +199,12 @@ export function useTravelController<P, S, M, E>(options: {
     }),
     [
       activatePosition,
+      routeDraft,
+      draftState.busy,
+      draftState.dirty,
+      transition.dialog,
+      requestTransition,
+      onError,
       blocked,
       maintenance,
       options.commandBusy,

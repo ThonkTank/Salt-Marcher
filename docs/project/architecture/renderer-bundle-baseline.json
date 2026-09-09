@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-09",
-  "reason": "Account for qualified combat command recovery and central initiative, HP and resolution drafts.",
-  "dependencyRationale": "No added dependency or lockfile change. Reuse the existing maintenance coordinator, capability bridge and draft dialog; preserve absolute budgets and the 16 KiB growth threshold.",
-  "chunkRationale": "Combat controller, original-campaign port and shared draft owners belong to the workspace used by the scene desktop and group manager. Growth also includes the previously qualified roster and group lifecycle integration since the prior baseline; no runtime schema library is imported into the renderer.",
+  "reason": "Account for journaled travel commands and persistent route drafts with central save/discard recovery.",
+  "dependencyRationale": "No added dependency or lockfile change. Reuse React, the existing command owner and maintenance dialog. Absolute budgets and the 16 KiB growth threshold are unchanged.",
+  "chunkRationale": "Route drafts and command recovery remain in the lazy SceneDesktop graph. Reachable growth is 17768 bytes since the combat baseline, including 5467 bytes since the qualified travel projection commit. Common workspace growth is 732 bytes; the shell is unchanged. No runtime schema library was added to the renderer.",
   "graphs": {
     "shell": 420905,
-    "workspace": 526243,
+    "workspace": 526975,
     "session": 1348,
     "catalog": 186677,
     "hex": 175900,
     "reference": 37404,
     "pixi": 409405,
-    "reachable": 1651242
+    "reachable": 1669010
   }
 }

@@ -6387,3 +6387,160 @@ Auftragsklärung und eindeutigem Umgang mit unbekanntem Speicherergebnis. Danach
 zentrale Übergänge, welche nach Verwerfen keine alten Startdaten und nach einem
 Save keinen umgedeuteten Pause/Resume-Intent verwenden. Main-/Handoff-/öffentliche
 Releasegates weiterhin ausstehend; lokalen Qualifikationsbuild nicht installieren.
+
+### Phase 4 – Persistierbarer Routeneditor
+
+Fortschrittsklassifikation: vorheriger Turn ist Fortschritt (b6b4418de, neue
+Routenprojektion und Regressionen). Worktree sauber, Candidate bestätigt.
+Check b6b4418de/34309077288 läuft; Vorgängercheck terminal cancelled nach Push.
+
+Plan vor Implementierung: Ein HexRoutePlanDraft hält je Originalport den lokalen
+Plan, die geladene Planbasis und einen ggf. angeforderten Save. Er verwendet den
+bereits produktiven HexTravelCommandController für save-plan, Statusklärung und
+explizite Wiederholung. Dessen zuletzt bestätigter Auftrag samt aktuellem Readback
+bleibt lesbar, damit der Editor auch nach verlorener Antwort oder abgehängter View
+einen erfüllten Save erkennt. Keine zweite Write-/Recoveryimplementierung.
+
+Save klärt zuerst gehaltene Aufträge, liest den Originalcontext frisch, prüft die
+Planbasis und schreibt ausschließlich save-plan mit aktueller Szenenrevision.
+Neue lokale Eingaben und normale Reiseaktionen sind währenddessen gesperrt.
+Ein neuerer fremder Plan wird bei schmutzigem Entwurf nicht überschrieben.
+Discard klärt offene Writes und übernimmt den aktuellen gespeicherten Plan;
+später gespeicherte Arbeit wird niemals auf die alte Basis zurückgesetzt.
+Detached dirty drafts bleiben zentral auflösbar. Der Hook registriert den Editor
+mit Abhängigkeit vom bestehenden Befehlsowner und hält beide außerhalb der
+Kartenfenster. Der generische Reisecontroller bekommt dessen schmale Schnittstelle;
+Wegpunkte aus einem gespeicherten Plan werden auf der zugehörigen Karte geladen,
+Planmoduswechsel/Start dürfen den Editor nicht implizit löschen. Explizites Clear
+ist ein löschbarer Entwurf (tombstone erst nach Save).
+
+Validierung: Save ohne Reisestart, Clear/Discard, Mehrfachsave, neuere Basis,
+verlorene Antwort mit und ohne Receipt, spätere Arbeit, Wechsel der Originalszene,
+Readbackfehler und detached Klärung; zentrale Save/Discard- und Eingabesperrentests.
+Danach tatsächliche Integration und Reise-UI prüfen. Vor endgültigem Phase-4-
+Abschluss bleiben zentrale Voraktionsdialoge und Mehrfacheditor-Electronabnahme
+verbindlich; dieser Plan ersetzt sie nicht. Kein Schemawechsel vorgesehen.
+
+Reviewpräzisierung vor Tests: Completion kann den Editor synchron quittieren,
+bevor dessen await zurückkehrt; Save muss auch diesen bereits sauberen Zustand
+als Erfolg anerkennen. Außerdem müssen absichtlich abgehängte Entwürfe bei einer
+späteren zentralen Saveentscheidung speicherbar bleiben. Dafür erhält der bestehende
+Commandcontroller einen eng auf save-plan typisierten Einstieg; normale execute-
+Aufträge bleiben für detached Views gesperrt. Beide Fälle werden konkret getestet.
+
+49370: bestehende Controller-/Reiseoberflächentests bestehen; zwei Testprobleme:
+Der neue Modelltest benötigt wegen des realen Renderer-Message-Runtimes jsdom.
+Außerdem meldet der bislang saubere Routenowner einen zweiten Abhängigkeitsfehler,
+wenn ausschließlich ein Reiseauftrag unklar ist. Fixplan: Abhängigkeit vom
+Befehlsowner nur für tatsächlich offene Routenentwürfe deklarieren; bei Dirty/
+Pending/Save bleibt sie verpflichtend. Bisheriger Typcheck (3381) bestanden.
+
+50799: alle zehn neuen Modellfälle, sechs Ownerfälle und der neue echte Console-
+Save-/Reloadfall bestanden. Zwei zentrale Dialogfälle scheitern am fehlenden
+ModalLayerProvider des bisherigen (dialoglosen) Consoleharness. Fixplan: denselben
+Modal-Provider wie die App verwenden und den Completioncallback des Harness auf
+context.session projizieren; keine Mockdialoge. Danach alle gezielten Fälle und
+statische Prüfungen erneut ausführen.
+
+75160 stoppte im Typecheck: der geplante Harness-Callbackersatz traf die inzwischen
+von Prettier einzeilig formatierte Stelle nicht. Fix: genau diesen Aufruf auf
+current.context.session umstellen; Lint und erweiterte Tests waren noch nicht
+gestartet.
+
+76699: beide Typechecks bestanden; Lint verlangt gebundene Callbacktypen für
+subscribe/snapshot, einen vollständigen Hook-Dependencybezug sowie await im
+Dialog-Testcallback. Fixplan: Schnittstelle mit readonly Funktionsproperties,
+onError lokal destrukturieren, React-Test-Microtasks ausdrücklich abwarten.
+Fachliche Präzisierung: gespeicherte Wegpunkte erscheinen nur im Planmodus,
+damit nach abgeschlossener Reise kein alter Plan als aktive Reiseroute erscheint.
+Der Plan bleibt trotzdem gespeichert/dirty und beim erneuten Planen verfügbar.
+Der reale Reise-Electronfall ergänzt Save ohne Start, Renderer-Neustart und
+Weiterreise aus dem gespeicherten Plan. Die neue sichtbare Saveaktion erfordert
+später gezielte, visuell geprüfte Aktualisierung der drei Reise-Goldens.
+
+81001: Typprüfung/Lint bestanden, 148/150 Tests bestanden. Beide Dialogfälle
+scheitern jetzt an der korrekten aria-hidden-Abschirmung des Hintergrunds durch
+den echten ModalLayer: die Hintergrund-Saveaktion wird mit getByRole nicht mehr
+gefunden. Fixplan: den Button vor Öffnen des Dialogs erfassen und an dieser
+Referenz seine disabled-Sperre prüfen; Modal-Abschirmung unverändert lassen.
+
+1588: alle sieben Consolefälle bestanden, danach Build und Smoke bestanden.
+Bundleprüfung verlangt eine begründete Baselineprüfung: reachable jetzt 1669010
+Bytes, +17768 gegenüber 1651242. Gegenüber dem qualifizierten b6b4418de sind es
+5467 Bytes; der Rest sind bereits qualifizierte Scene-/Reiseowner seit der letzten
+Combat-Baseline. Keine neue Bibliothek, keine Lockfileänderung, nur bestehende
+React-/Wartungs-/Capabilitybausteine; Route- und Befehlsowner bleiben beim lazy
+SceneDesktop. Workspacegraph wächst insgesamt um 732 Bytes, Shell unverändert.
+Fixplan: vorhandenen Mess-/Baselinehelper mit diesem Dependency-/Chunkgrund
+verwenden. Absolute Limits und 16-KiB-Prüfschwelle unverändert. Anschließend
+Budget erneut prüfen und denselben bereits gebauten Stand in Electron abnehmen.
+Candidate b6b4418de/34309077288 jetzt terminal success; gilt nicht für aktuelle
+uncommittete Editoränderungen.
+
+24822: Budget bestanden; Electronlauf terminal product-assertion nach erfolgreich
+geprüftem Plan-Save, Renderer-Neustart und erster Start/Pause/Resume/Stop-Sequenz.
+Der zweite Reiseabschnitt erwartet nach einem Klick 5x, weil er früher das Tempo
+2x der letzten Reise als neue Planbasis verwendete. Der wieder geladene gespeicherte
+Plan hat korrekt weiterhin 1x; tatsächliches Ergebnis nach Klick ist 2x. Fixplan:
+vor zweiter Reise den erhaltenen Plan und sein 1x-Tempo ausdrücklich prüfen,
+keinen zusätzlichen Wegpunkt in den bereits geladenen Plan einfügen, dann 2/5/10x
+explizit wählen und den geänderten Plan speichern. Aufnahmen zeigen erreichbare
+Aktionen ohne Überdeckung. Keine Runtimekorrektur für diese fachlich überholte
+Testerwartung; denselben Build weiterverwenden.
+
+32224: gezieltes Update aller drei Reisegoldens erfolgreich (identischer Build),
+alle drei Bilder visuell geprüft: lesbare Aktionen, keine Überdeckung, nach
+Reiseende keine aktive Planlinie. SceneDesktop danach terminal failure: erster
+Fehler ist der nun korrekt erscheinende Save/Discard/Cancel-Dialog beim Schließen
+des Fensters mit noch ungespeichertem Plan. Drei Folgefälle laufen in denselben
+offenen Dialog; keine zweite Ursache belegt. Fixplan: dieser konkrete Reise-
+Fensterfall wählt Speichern und fortfahren, wartet auf tatsächliche Schließung
+und prüft den gespeicherten Plan über die Capability. Danach die bestehende
+Weiterreise-/Pause-/Prozessneustartabnahme beibehalten. Keine Dialogumgehung und
+kein pauschaler automatisch bestätigender Testhook. Anschließend gesamte gekoppelte
+SceneDesktop-Suite und Visualvergleich der gezielt aktualisierten Bilder.
+
+Abnahme Routenentwurf: 64962 exit 0, vollständiger funktionaler Reisefall inklusive
+Save ohne Reisestart, Renderer-Neustart, geladener Route und erneutem Plan-Save
+bestanden; Summary functional-1788927563531-647448. 24338 exit 0: alle zehn
+SceneDesktopfälle bestanden (functional-1788928007938-650024), darunter zentrale
+Plan-Saveentscheidung beim Schließen des Fensters, Weiterreise bei geschlossenem
+Fenster und pausierte Reise nach Prozessneustart. Anschließender Visualvergleich
+aller drei gezielt erneuerten Reisebilder bestanden (visual-1788928170690-651827).
+Danach beide Typechecks und vollständiges Format bestanden. Gezieltes Lint der
+Runtime-/Unitänderungen und der beiden abschließend angepassten Electrondateien
+bestanden. 150 gezielte Architektur-/Controller-/Owner-/UI-Fälle abgedeckt:
+81001 hatte 148 erfolgreiche Fälle; die zwei korrigierten Dialogfälle wurden mit
+allen sieben Consolefällen in 1588 erfolgreich wiederholt. Seitdem keine Runtime-
+oder Unitänderung. Build/Smoke und nach begründetem Messupdate Bundle bestanden.
+Keine laufenden lokalen Prüfprozesse; keine Schema-/Frozen-Fixtureänderung.
+
+Plan-Audit Routeneditor: tatsächliche produktive Integration im Originalcampaign-
+Owner; eigenständiger Plan mit Basisrevision statt flüchtiger, beim Start gelöschter
+Wegpunkte. save-plan verwendet denselben gehaltenen Commandcontroller, inklusive
+lesbarer Bestätigung für synchrone Quittierung und spätere Recovery. Detached
+Entwürfe bleiben explizit speicher-/verwerfbar; normale detached execute-Aktionen
+bleiben gesperrt. Save klärt Writes und prüft frischen Originalcontext plus
+unveränderte Planbasis. Discard lädt den aktuellen gespeicherten Stand, statt alte
+Daten zurückzuschreiben. Neuere Änderungen nach einem zunächst unbekannten Save
+bleiben erhalten. UI und Handler sperren neue lokale Eingaben während Save und
+zentraler Klärung. Die Abhängigkeit vom Commandowner gilt bei offenen Entwürfen,
+verursacht aber keinen zusätzlichen Fehler für einen sauberen Routeneditor.
+Planen zeigt den auf dieser Karte gespeicherten Entwurf; außerhalb des Planmodus
+wird er nicht als aktive/abgeschlossene Reiselinie ausgegeben. Kartenwechsel bei
+offenem Entwurf geht bereits über die zentrale Klärung. Savebutton und zentraler
+Save/Discard/Cancel-Dialog, Clear-Tombstone, Restart und Fensterclosure sind geprüft.
+
+Roadmap-Audit: dieser persistierbare Routenabschnitt ist implementiert und lokal
+automatisiert geprüft, Phase 4 bleibt offen. Noch erforderlich sind zentrale
+Voraktionsübergänge für Start/Position/Pause/Resume/Abort und passende Tempoaktionen,
+mit Klärung anderer Editoren und frischen Revisionen: nach Discard keine alte
+Start-Closure benutzen, nach anderen Saves ein beabsichtigtes Pause nicht in
+Resume umdeuten. Danach gemeinsame Routen-/Mehrfacheditorabnahme mit Teilerfolg,
+Fehler und finalem Owner-Inventaraudit (inklusive verbliebener Übergangsguards).
+Ein Tempo ohne Wegpunkt ist weiterhin eine temporäre Eingabe für den nächsten
+Plan; erst eine tatsächliche Route enthält einen speicherbaren Multiplikator.
+Phasen 5–7 vollständig offen. Kein Handoff, keine Mainpromotion und kein öffentlicher
+Release durch diese lokalen Builds. Als nächstes den geprüften Kandidaten committen/
+pushen und seine eigenen Remote-Gates verfolgen; b6b4418de bleibt nur Nachweis
+seines vorigen Stands.

@@ -82,7 +82,11 @@ export function useSessionTravelIntegration(options: {
     },
     [setSnapshot]
   )
-  const commands = useHexTravelCommandOwner(original, recovered)
+  const commands = useHexTravelCommandOwner(
+    original,
+    recovered,
+    snapshot.scene.focusedSceneId
+  )
   const port = loaded?.owner === commands.executor ? loaded.port : null
   useLayoutEffect(() => {
     portRef.current = port
@@ -110,6 +114,7 @@ export function useSessionTravelIntegration(options: {
   const controller = useTravelController({
     port,
     commandBusy: commands.busy,
+    routeDraft: commands.routeDraft,
     commandsBlocked: commands.blocked,
     snapshot,
     setSnapshot,
@@ -163,7 +168,12 @@ export function useSessionTravelIntegration(options: {
 
   return useMemo(
     () => ({
-      notice: commands.notice,
+      notice: (
+        <>
+          {commands.notice}
+          {controller.notice}
+        </>
+      ),
       renderMap: (
         presentation?: Parameters<SessionTravelSlots['renderMap']>[0]
       ) => (

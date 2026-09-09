@@ -16,6 +16,11 @@ type Snapshot = Readonly<{
   conflict: boolean
   error: string | null
 }>
+export type HexTravelCommandConfirmation = Readonly<{
+  input: HexTravelCommand
+  receipt: HexTravelCommandReceipt
+  current: HexTravelCommandState
+}>
 type Completion = (
   receipt: HexTravelCommandReceipt,
   current: HexTravelCommandState
@@ -35,6 +40,7 @@ export class HexTravelCommandController {
   private attempt: HexTravelCommand | null = null
   private unsaved: HexTravelCommand | null = null
   private completion: Completion | null = null
+  private confirmation: HexTravelCommandConfirmation | null = null
   private attached = true
   private unregister: (() => void) | null = null
   private readonly ownerId = `hex-travel-command-${crypto.randomUUID()}`
@@ -47,6 +53,7 @@ export class HexTravelCommandController {
     private readonly maintenance: MaintenanceDraftCoordinator = maintenanceDraftCoordinator
   ) {}
 
+  confirmed = (): HexTravelCommandConfirmation | null => this.confirmation
   snapshot = (): Snapshot => this.state
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
@@ -111,6 +118,8 @@ export class HexTravelCommandController {
     receipt: HexTravelCommandReceipt,
     current: HexTravelCommandState
   ): boolean {
+    if (this.attempt)
+      this.confirmation = { input: this.attempt, receipt, current }
     this.completion?.(receipt, current)
     this.attempt = null
     this.unsaved = null
@@ -121,6 +130,16 @@ export class HexTravelCommandController {
     if (this.held() || this.state.conflict || !this.attached)
       return Promise.resolve(false)
     return this.start(input)
+  }
+  /** Only the retained route editor may save a plan after its view has detached. */
+  savePlan = (
+    input: Extract<HexTravelCommand['command'], { kind: 'save-plan' }>['input']
+  ): Promise<boolean> => {
+    if (this.held() || this.state.conflict) return Promise.resolve(false)
+    return this.start({
+      commandId: crypto.randomUUID(),
+      command: { kind: 'save-plan', input }
+    })
   }
   private start(input: HexTravelCommand): Promise<boolean> {
     const original = structuredClone(input)

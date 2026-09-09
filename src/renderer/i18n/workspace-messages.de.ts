@@ -1,4 +1,8 @@
 export const workspaceMessagesDe = {
+  'travel.routeDraft': 'Routenentwurf',
+  'travel.saveRoute': 'Route speichern',
+  'travel.planConflict':
+    'Die gespeicherte Route wurde inzwischen geändert. Verwirf den Entwurf, um den aktuellen Stand zu laden.',
   'travel.commands': 'Reiseaktionen',
   'travel.commandConflict':
     'Die Reise oder Szene wurde inzwischen geändert. Bitte den alten Auftrag verwerfen und neu prüfen.',

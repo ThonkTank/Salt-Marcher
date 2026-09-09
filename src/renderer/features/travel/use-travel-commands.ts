@@ -1,3 +1,4 @@
+import type { TravelRouteDraft } from './use-travel-route-draft.js'
 import { useCallback, useEffect, useRef } from 'react'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { sameTravelScope, type TravelScope } from './travel-controller.js'
@@ -12,12 +13,13 @@ const multipliers = [1, 2, 5, 10] as const
 /** Publishes command results; the provider owns durable execution and recovery. */
 export function useTravelCommands<P, S, M, E>(options: {
   blocked: () => boolean
+  routeDraft: TravelRouteDraft<P> | undefined
   port: TravelProviderPort<P, S, M, E> | null
   scope: TravelScope | null
   projection: TravelViewProjection<P, S, M, E>
   onError: (message: string) => void
 }) {
-  const { blocked, onError, port, projection, scope } = options
+  const { blocked, onError, port, projection, scope, routeDraft } = options
   const onErrorRef = useRef(onError)
   useEffect(() => {
     onErrorRef.current = onError
@@ -178,6 +180,17 @@ export function useTravelCommands<P, S, M, E>(options: {
       const index = multipliers.indexOf(current.multiplier)
       const multiplier = multipliers[index + direction]
       if (multiplier === undefined) return
+      if (routeDraft && current.mode === 'plan') {
+        const plan = routeDraft.snapshot().plan
+        if (
+          plan &&
+          plan.mapId === current.mapId &&
+          !routeDraft.edit({ ...plan, multiplier })
+        )
+          return
+        publishLocalMultiplier(local, multiplier)
+        return
+      }
       if (!port || !current.providerState) {
         publishLocalMultiplier(local, multiplier)
         return
@@ -199,7 +212,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         false
       )
     },
-    [applyCommand, blocked, local, port, read, sceneRevision]
+    [applyCommand, blocked, local, port, read, sceneRevision, routeDraft]
   )
 
   return { positionParty, start, pauseOrResume, abort, stepMultiplier }

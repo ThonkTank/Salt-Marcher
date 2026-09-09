@@ -116,6 +116,14 @@ export function TravelScenario(props: {
 
         <div className="travel-route-actions">
           <button
+            disabled={props.controller.busy || !props.controller.routeDirty}
+            onClick={() => {
+              void props.controller.saveRoute()
+            }}
+          >
+            {message('travel.saveRoute')}
+          </button>
+          <button
             className="primary-action"
             aria-pressed={state.mode === 'plan'}
             disabled={props.controller.busy || !state.map}

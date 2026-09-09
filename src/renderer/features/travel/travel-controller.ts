@@ -59,6 +59,11 @@ export type TravelControllerEvent<P, S, M, E> =
   | Readonly<{ type: 'mode'; mode: TravelMode }>
   | Readonly<{ type: 'waypoint-added'; position: P }>
   | Readonly<{ type: 'route-cleared' }>
+  | Readonly<{
+      type: 'route-loaded'
+      waypoints: readonly P[]
+      multiplier: TravelMultiplier
+    }>
   | Readonly<{ type: 'evaluated'; evaluation: E }>
   | Readonly<{ type: 'token-preview'; position: P | null }>
   | Readonly<{ type: 'local-multiplier'; multiplier: TravelMultiplier }>
@@ -177,7 +182,6 @@ export function travelControllerReducer<P, S, M, E>(
       return {
         ...state,
         mode: event.mode,
-        waypoints: event.mode === 'plan' ? [] : state.waypoints,
         evaluation: event.mode === 'plan' ? null : state.evaluation,
         tokenPreview: event.mode === 'position' ? state.tokenPreview : null
       }
@@ -186,6 +190,13 @@ export function travelControllerReducer<P, S, M, E>(
         ...state,
         selected: event.position,
         waypoints: [...state.waypoints, event.position],
+        evaluation: null
+      }
+    case 'route-loaded':
+      return {
+        ...state,
+        waypoints: event.waypoints,
+        multiplier: event.multiplier,
         evaluation: null
       }
     case 'route-cleared':

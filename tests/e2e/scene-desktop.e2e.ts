@@ -448,6 +448,27 @@ describe('per-scene desktop', () => {
       .$('[data-window-id="map"]')
       .$('button[aria-label="Fenster schließen"]')
       .click()
+    const routeConfirmation = client.$(
+      '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
+    )
+    await routeConfirmation.waitForDisplayed()
+    await routeConfirmation.$('button=Speichern und fortfahren').click()
+    await client
+      .$('[data-window-id="map"]')
+      .waitForExist({ reverse: true, timeout: 5_000 })
+    const savedRoute = await client.execute(async () => {
+      const campaignId = (await window.saltMarcher.campaigns.list())
+        .activeCampaignId!
+      const session = await window.saltMarcher.session.read({ campaignId })
+      return (
+        await window.saltMarcher.hexTravel.readState({
+          campaignId,
+          sceneId: session.scene.focusedSceneId
+        })
+      ).routePlan
+    })
+    expect(savedRoute.plan?.waypoints).toHaveLength(1)
+    expect(savedRoute.revision).toBeGreaterThan(0)
     await client.pause(1200)
     await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
     await client.$('[data-window-id="map"]').$('button=Reiseplanung').click()

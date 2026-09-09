@@ -1,8 +1,16 @@
 import type { HexTravelContextResult } from '../../src/shared/contracts/live-session.js'
-import type { HexTravelCommand } from '../../src/shared/contracts/hex-travel-command.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import { useHexTravelCommandOwner } from '../../src/renderer/features/hex/use-hex-travel-command-owner.js'
+import { maintenanceDraftCoordinator as maintenance } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import type {
+  HexRoutePlanSnapshot,
+  HexTravelCommandState,
+  HexTravelCommand
+} from '../../src/shared/contracts/hex-travel-command.js'
 // @vitest-environment jsdom
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -10,6 +18,7 @@ import {
   waitFor
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useDraftTransition } from '../../src/renderer/shell/use-draft-transition.js'
 import { useEffect, useMemo, type ReactNode } from 'react'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { HexMapCanvasProps } from '../../src/renderer/features/hex/hex-map-canvas-pixi.js'
@@ -91,6 +100,18 @@ function travel(overrides: Partial<HexTravelSnapshot> = {}): HexTravelSnapshot {
 }
 
 function fixture(initialTravel: HexTravelSnapshot = travel()) {
+  let routePlan: HexRoutePlanSnapshot = { sceneId, revision: 0, plan: null }
+  const receipts = new Map<string, HexTravelCommandState>()
+  const writePlan = vi.fn<
+    (
+      input: Extract<
+        HexTravelCommand['command'],
+        { kind: 'save-plan' }
+      >['input']
+    ) => void
+  >((input) => {
+    routePlan = { sceneId, revision: routePlan.revision + 1, plan: input.plan }
+  })
   let sessionChanged: ((notice: SessionChangeNotice) => void) | null = null
   const ready = initialTravel
   const travelling = travel({
@@ -241,19 +262,29 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
       read: readTravel,
       readState: async () => ({
         context: await readTravel(),
-        routePlan: { sceneId, revision: 0, plan: null }
+        routePlan
       }),
-      executeCommand: async ({ command }: HexTravelCommand) => {
-        if (command.kind === 'save-plan') throw new Error('Not a plan fixture')
+      executeCommand: async ({ commandId, command }: HexTravelCommand) => {
+        if (command.kind === 'save-plan') {
+          writePlan(command.input)
+          const state = { context: await readTravel(), routePlan }
+          receipts.set(commandId, state)
+          return state
+        }
         const context =
           command.kind === 'set-multiplier'
             ? await commands.setMultiplier(command.input)
             : await commands[command.kind](command.input)
-        return {
-          context,
-          routePlan: { sceneId, revision: 0, plan: null }
-        }
+        readTravel.mockResolvedValue(context)
+        const state = { context, routePlan }
+        receipts.set(commandId, state)
+        return state
       },
+      commandStatus: async ({ commandId }: HexTravelCommand) => ({
+        context: await readTravel(),
+        routePlan,
+        receipt: receipts.get(commandId) ?? null
+      }),
       ...commands
     },
     session: {
@@ -272,6 +303,8 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
   } as unknown as SaltMarcherApi
   return {
     api,
+    writePlan,
+    savedPlan: () => routePlan,
     commands,
     readTravel,
     emitSessionChange: () =>
@@ -286,7 +319,9 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
 
 function Providers(props: { api: SaltMarcherApi; children: ReactNode }) {
   return (
-    <CapabilityProvider api={props.api}>{props.children}</CapabilityProvider>
+    <CapabilityProvider api={props.api}>
+      <ModalLayerProvider>{props.children}</ModalLayerProvider>
+    </CapabilityProvider>
   )
 }
 
@@ -294,16 +329,41 @@ function TravelSurfaces(props: {
   api: SaltMarcherApi
   openMap: () => void
   mapActive: boolean
+  persistent?: boolean
+  onLeave?: () => void
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
 }) {
+  const original = useMemo(
+    () => ({
+      current: () => session,
+      execute: (input: HexTravelCommand) =>
+        props.api.hexTravel.executeCommand({ ...input, campaignId }),
+      status: (input: HexTravelCommand) =>
+        props.api.hexTravel.commandStatus({ ...input, campaignId }),
+      refresh: () => props.api.hexTravel.readState({ campaignId, sceneId })
+    }),
+    [props.api]
+  )
+  const owner = useHexTravelCommandOwner(
+    original,
+    (current) => props.setSnapshot(current.context.session),
+    sceneId
+  )
+  const transition = useDraftTransition('travel-test')
   const port = useMemo(
     () =>
-      createHexTravelProviderPort(props.api, {
-        execute: (input) =>
-          props.api.hexTravel.executeCommand({ ...input, campaignId }),
-        refresh: () => props.api.hexTravel.readState({ campaignId, sceneId })
-      }),
-    [props.api]
+      createHexTravelProviderPort(
+        props.api,
+        props.persistent
+          ? owner.executor
+          : {
+              execute: (input) =>
+                props.api.hexTravel.executeCommand({ ...input, campaignId }),
+              refresh: () =>
+                props.api.hexTravel.readState({ campaignId, sceneId })
+            }
+      ),
+    [props.api, props.persistent, owner.executor]
   )
   useEffect(() => () => port.dispose(), [port])
   const controller = useTravelController({
@@ -311,10 +371,23 @@ function TravelSurfaces(props: {
     snapshot: session,
     setSnapshot: props.setSnapshot,
     onError: vi.fn(),
-    active: true
+    active: true,
+    ...(props.persistent
+      ? {
+          routeDraft: owner.routeDraft,
+          commandBusy: owner.busy,
+          commandsBlocked: owner.blocked
+        }
+      : {})
   })
   return (
     <>
+      {owner.notice}
+      {controller.notice}
+      {transition.dialog}
+      <button onClick={() => transition.request(() => props.onLeave?.())}>
+        Bereich wechseln
+      </button>
       <SessionHexMap controller={controller} />
       <TravelScenario
         controller={controller}
@@ -325,9 +398,110 @@ function TravelSurfaces(props: {
   )
 }
 
-afterEach(cleanup)
+afterEach(async () => {
+  cleanup()
+  const resolution = maintenance.begin()
+  try {
+    expect(await resolution.resolve('discard')).toEqual([])
+  } finally {
+    resolution.release()
+  }
+})
 
 describe('Session travel console', () => {
+  it('saves and reloads a route without starting a journey', async () => {
+    const f = fixture()
+    const element = (
+      <Providers api={f.api}>
+        <TravelSurfaces
+          api={f.api}
+          setSnapshot={vi.fn()}
+          openMap={vi.fn()}
+          mapActive
+          persistent
+        />
+      </Providers>
+    )
+    const view = render(element)
+    await screen.findByLabelText('Hex-Karte')
+    fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Schneller' }))
+    const save = screen.getByRole('button', { name: 'Route speichern' })
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+    await waitFor(() => expect(save).toBeDisabled())
+    expect(f.writePlan).toHaveBeenCalledOnce()
+    expect(f.savedPlan().plan).toEqual({
+      mapId,
+      waypoints: [{ q: 1, r: 0 }],
+      multiplier: 2
+    })
+    expect(f.commands.start).not.toHaveBeenCalled()
+    expect(maintenance.hasDirty()).toBe(false)
+    view.unmount()
+    render(element)
+    await screen.findByLabelText('Hex-Karte')
+    fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('Sichtbare Route')).toHaveTextContent(
+        '"q":1'
+      )
+    )
+    expect(screen.getByText('2×')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Route speichern' })
+    ).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Route speichern' }))
+    await waitFor(() =>
+      expect(f.savedPlan()).toMatchObject({ revision: 2, plan: null })
+    )
+    expect(f.commands.start).not.toHaveBeenCalled()
+  })
+
+  it.each(['Speichern und fortfahren', 'Verwerfen und fortfahren'])(
+    'resolves a route through the central %s dialog after cancellation',
+    async (choice) => {
+      const f = fixture()
+      const leave = vi.fn()
+      render(
+        <Providers api={f.api}>
+          <TravelSurfaces
+            api={f.api}
+            setSnapshot={vi.fn()}
+            openMap={vi.fn()}
+            onLeave={leave}
+            mapActive
+            persistent
+          />
+        </Providers>
+      )
+      await screen.findByLabelText('Hex-Karte')
+      fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+      const saveRoute = screen.getByRole('button', { name: 'Route speichern' })
+      fireEvent.click(screen.getByRole('button', { name: 'Bereich wechseln' }))
+      await screen.findByRole('alertdialog')
+      expect(saveRoute).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }))
+      expect(leave).not.toHaveBeenCalled()
+      expect(maintenance.hasDirty()).toBe(true)
+      fireEvent.click(screen.getByRole('button', { name: 'Bereich wechseln' }))
+      await screen.findByRole('alertdialog')
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: choice }))
+        await Promise.resolve()
+      })
+      await waitFor(() => expect(leave).toHaveBeenCalledOnce())
+      expect(f.writePlan).toHaveBeenCalledTimes(
+        choice.startsWith('Speichern') ? 1 : 0
+      )
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(maintenance.hasDirty()).toBe(false)
+    }
+  )
+
   it('hides a completed route while retaining its final position and status', async () => {
     const completed = travel({
       revision: 2,
