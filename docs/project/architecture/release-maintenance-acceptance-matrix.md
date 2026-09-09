@@ -156,3 +156,15 @@ screenshot and journal; no version or content assertion was relaxed. A separate
 synthetic slow-extractor regression proves SIGTERM during extraction exits 143
 and removes the owned child and temporary directory. It does not prove SIGKILL
 inside a real migration. Candidate CI and immutable packaging remain required.
+
+## Real coordinator process termination (2026-09-09)
+
+`tests/unit/maintenance-process-interruption.test.ts` adds 35 Linux cases for
+journal formats 2 and 3. Each targeted boundary writes an acknowledgement and
+terminates the child with SIGKILL; the parent verifies that exact signal.
+Recovery executes twice in newly started processes. Assertions compare complete
+file trees including empty directories, selected program links, preserved failed
+profiles, and post-commit writes. Format 3 includes the durable rollback-history
+boundary. These are real OS process deaths, but use inert program bytes and
+synthetic file profiles: packaged Local/Release adapters, SQLite migration,
+physical power loss and real AppImage interruption still require their own proof.

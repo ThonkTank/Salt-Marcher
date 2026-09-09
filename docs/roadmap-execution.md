@@ -8663,3 +8663,41 @@ salt-marcher-launcher-final-check; Log work/roadmap-phase5-launcher-current-chec
 Vorheriger versehentlicher pnpm11-Aufruf brach vor Dependencies-Purge ab; korrekt
 wiederholt über explizites Node22/corepack/pnpm10, kein Install-/Purge-Override.
 Änderungsstand wird als Candidate gesichert; kein Main-/Handoffabschluss daraus.
+
+### Phase 5 – Echte Prozessabbrüche des gemeinsamen Koordinators
+
+Voriger Turn Fortschritt: finaler Launcher-Gastnachweis, Candidate ad01235d3
+gepusht; CI34345111460 aktuell in_progress. Arbeitsbaum zu Rundenbeginn sauber.
+Roadmap-Refresh: Phase5 fordert Abbrüche innerhalb Migration sowie an Aktivierungs-
+und Recoverygrenzen. Bisherige Coordinatorfälle werfen Exceptions im selben
+Prozess. Konkreter Plan: ergänzende Linux-Subprozesssuite für Journal2/3, SIGKILL
+an vorhandenen dauerhaften Vorwärts-/Rollbackgrenzen, Recovery in separaten neuen
+Prozessen zweimal. Prüfen vollständigen Dateibaum/Leerordner, Programmverweis,
+erhaltenen fehlgeschlagenen Datenbaum und spätere Arbeit nach committed. Kind
+bestätigt erreichten Prüfschritt auf stdout, beendet sich selbst mit SIGKILL;
+Parent verlangt genau dieses Signal, kein bloßer Fehlerexit. Timeout und nur
+eigene temporäre Profile. Keine Electron-/AppImage-Ausführung auf Host.
+
+Dies ist ein ergänzender realer Prozessgrenzennachweis des gemeinsamen Moduls,
+kein Nachweis der Local-/Release-Adapter, realer SQLite-Migration, Stromverlust
+oder unveränderter Release-Artefakte. Anschließend Artefakt-Faultfälle anbinden;
+Phase5 aus dieser Suite allein keinesfalls schließen.
+
+54672 terminal:35 echte SIGKILL-Fälle bestanden, ESLint verlangt validierte
+statt any-typisierte JSON-Eingabe im Kind. Korrektur: vorhandenen Journalvertrag
+auf die Begin-Felder projizieren und Fixture-JSON damit parsen; kein neuer
+paralleler Vertrag. Gezielte Suite plus Lint/Typprüfung erneut ausführen.
+
+56485 terminalExit1: Zod lehnt pick() auf dem refinierenden Journalvertrag ab;
+kein SIGKILL-Fall erreicht. Korrekturplan: Fixture serialisiert vollständigen
+prepared-Journalwert, Kind validiert den unveränderten ganzen Vertrag und übergibt
+ihn an begin. Journal-Prüfungen bleiben wirksam; keine Typassertion/any-Umgehung.
+
+88678 terminalExit0:35 SIGKILL-Fälle, ESLint und vollständige Typprüfung bestanden;
+Log work/roadmap-phase5-process-interruption-check3.log. Kein Host-Electronlauf.
+Plan-Audit: zusätzliche Prozesssuite erfüllt ihren begrenzten Prüfauftrag;
+Roadmap-Audit: reale AppImage-/SQLite-Migrationsabbrüche und Adapterabdeckung fehlen
+weiterhin. pnpm check bleibt Abschlussgate, dessen GUI-Anteile nach Desktopvorfall
+nur in isolierter VM laufen dürfen; die fokussierte Suite ersetzt es nicht.
+Nächster Schritt: tatsächliche Zielruntime-/Migrations-Faultpunkte im
+Qualifikationsartefakt anbinden, originalen Profilreadback vor/nach Crash prüfen.
