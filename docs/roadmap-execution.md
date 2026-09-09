@@ -8982,3 +8982,83 @@ journal:rollback-started, journal:rollback-preserving, journal:rollback-restorin
 old-data-restored, journal:rollback-program, program-linked, journal:rolled-back.
 So wird auch Rückkehr vom bereits ausgewählten Zielprogramm geprüft. Historien-
 beobachtung erfordert separat ergänzte Testartefakte, keine Produktionsänderung.
+
+### Phase 5 – Weitere Recoverygrenzen nach Programmwechsel
+
+Voriger Turn Fortschritt:acht Vorwärtsgrenzen und Recovery-Pilot grün,
+Candidate35a486c41 gesichert. Plan:unveränderte0.0.152/0.0.153 und
+Payload-recovery-crash-1 für sieben weitere Recoverypunkte verwenden.
+Erster SIGKILL jeweils program-linked, zweiter an journal:rollback-started,
+journal:rollback-preserving, journal:rollback-restoring, old-data-restored,
+journal:rollback-program, program-linked, journal:rolled-back. Pro Fall frisches
+Profil; beide Profilbäume und kompletter Retry-/Restoreablauf müssen bestehen.
+Sequenzieller Gastlauf, Stop bei erstem Fehler, Gast-/Hostdeadline1200s.
+Keine Codeänderung während Lauf; Historiengrenze/Commit/Local/Starter bleiben offen.
+
+### Phase 5 – Unterbrechung des Nachweisexports und Historiengrenze
+
+Voriger Turn Fortschritt: Host-Absturzprotokolle erneut gelesen und den eigenen
+laufenden VM-Container auf Nutzerwunsch gestoppt; keine weiteren Host-Appstarts.
+Aktueller Zustand: kein laufender Qualifikationscontainer. Der erhaltene serielle
+Lauf recovery-remaining-run-1 meldet sieben erfolgreiche Fälle und TestExit0,
+aber QUALIFICATION_EXPORT_END fehlt. Daher kein vollständiger unabhängiger
+Berichtvergleich und keine abgeschlossene Abnahme dieser sieben Fälle. Die
+Overlaydatei bleibt für spätere ausschließlich lesende Berichtgewinnung erhalten.
+
+Korrekturrundenplan: ausschließlich historischen Test-Beobachter um dauerhaft
+veröffentlichtes maintenance-history/<Transaktion>-rolled-back.json erweitern.
+Das vorhandene Original-rename und Original-fsync müssen zuerst erfolgreich
+sein; nur das Historienverzeichnis dieser Installation und die konkrete laufende
+Transaktion dürfen den Punkt rollback-history-written auslösen. Danach gezielte
+Lint-/Typprüfung und vorhandene echte Koordinator-Unterbrechungstests in begrenzter
+Host-Servicegruppe ohne Electron. Gepackter Nachweis erfordert anschließend neue,
+versionierte Testartefakte und einen isolierten Gastlauf; er ist durch diese
+Quelländerung nicht erbracht. Phase 5 und die Gesamtroadmap bleiben offen.
+
+Korrektur nach tatsächlicher Exportauswertung: Der gzip-Stream ist unvollständig,
+aber alle sieben vollständigen ui-update-evidence.json-Dateien liegen vor dem
+Abbruch. Sie wurden einzeln ohne Teil-JSON-Akzeptanz gelesen und separat abgelegt
+unter recovery-remaining-run-1/partial-export-validated. Beide Artefakthashes
+stimmen mit 0.0.152/0.0.153 überein; je zwei erwartete SIGKILL und vier Exit0.
+Alle vollständigen Profilvergleiche bestanden: readback und failedReadback sowie
+after/restored/unchanged entsprechen seeded; continued entspricht protectedRead.
+Beide Unterbrechungen gehören jeweils derselben Journal-ID, Recovery rolled-back.
+Der komplette Logexport bleibt unvollständig, die sieben Ergebnisberichte sind
+unabhängig geprüft. Ihre SHA-256:
+- journal:rollback-preserving d3d71c1e825ed994897d0883fec39dc9e19da418cab237141c81d5330a16eb3d
+- journal:rollback-program 127bd129103d4d11719da75550c51ff98cc81e7c1e80de86926ef8c9f8633ce3
+- journal:rollback-restoring 3453efa27ffee5c05068b90ddaca9aeaf9e03aff4892c396e66263140e3b986a
+- journal:rollback-started 7256c3648a9f33f8a2b735167aa6d61fe84c67473fe3296e380936ada388b7e6
+- journal:rolled-back 1f0d29ce7b291848ae2f204af91cae523413b68eb70801d6c8d90772744a6e79
+- old-data-restored bd5d384a9285d1dc707f8bf6c7ca5228850758ac5773332f89b65a08019db3ae
+- program-linked a61ec12d5a9c65cacff1a29833f1bda374d110239d41091000c98ef645834951
+
+86263 terminal laut Serviceprotokoll: Lint, beide Typprüfungen und 35 vorhandene
+Koordinator-Prozessabbruchtests grün; Spitzen-RAM 1.5 GiB, kein Swap, kein Electron.
+Plan-Audit: Beobachter ergänzt und lokal geprüft. Roadmap-Audit: gepackte
+Historiengrenze weiterhin offen; keine Phasenfreigabe.
+
+Nächster konkreter Plan: neue Testartefakte 0.0.154/0.0.155 aus unveränderten
+extraction-baseline/extraction-target mit ergänztem historischem Bootstrap bauen.
+Danach isolierter vollständiger UI-Fall: activation program-linked, recovery
+rollback-history-written, beide Profilbäume und Retry/Weiterarbeiten/Restore prüfen.
+Keine parallelen Quelländerungen während Build/Test. Keine öffentlichen Assets,
+kein Main-Handoff und keine echten Nutzerprofile werden hierbei verändert.
+
+70210 terminalExit0: beide neuen historischen Test-AppImages gebaut.
+0.0.154 SHA25be40406418275d60b31cdbcd5c4980aec3888916466385edbe69a966003169
+(177048228 Bytes), 0.0.155
+SHAb89464df053290c8b6469dbe8a98cea3ba87021889213435db1ad24129c2cb3b
+(177048138 Bytes). Beide Herkunftsbelege enthalten den Hash des erweiterten
+Testbeobachters; Originalquellen ab32/f633 und Schemas42/41→42/42 unverändert.
+58415 terminalExit0; history-crash-run-1 TestExit0, vollständiger Export gelesen.
+BerichtSHA af1f82c11ba405e5a248507e35a05db2daf695e43865c3a2a42b05afc5a1b926
+Initialer Abbruch program-linked, zweiter rollback-history-written im Zustand
+rollback-program derselben Transaktion. Zwei erwartete SIGKILL und vier Exit0.
+Unabhängiger Vergleich beider vollständiger Profilbäume, Retry, gespeicherter
+Weiterarbeit, Restore, vorgeschalteter Sicherung und unveränderter Quelle grün.
+
+Plan-Audit Historiengrenze bestanden einschließlich echtem AppImage-Ablauf.
+Roadmap-Audit: Phase5 bleibt offen (u.a. gepackte Commit-/Starter-/Local-Fälle,
+Platz-/Zugriffs-/WAL-/Import- und weitere Fehlermatrix); Phasen6/7 unverändert offen.
+Keine Host-GUI gestartet, keine Nutzerdaten verändert, kein Release veröffentlicht.

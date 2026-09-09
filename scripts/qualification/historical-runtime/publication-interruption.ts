@@ -45,10 +45,26 @@ if (
       original.rename(source, target)
       if (
         typeof source !== 'string' ||
-        typeof target !== 'string' ||
-        dirname(target) !== root
+        typeof target !== 'string'
       )
         return
+      const history = join(root, 'maintenance-history')
+      if (dirname(target) === history) {
+        const journal = maintenanceJournalSchema.parse(
+          JSON.parse(
+            fs.readFileSync(join(root, 'maintenance-journal.json'), 'utf8')
+          )
+        )
+        if (
+          journal.formatVersion === 3 &&
+          journal.phase === 'rollback-program' &&
+          target === join(history, `${journal.id}-rolled-back.json`)
+        ) {
+          pending = { directory: history, point: 'rollback-history-written' }
+        }
+        return
+      }
+      if (dirname(target) !== root) return
       let point: string | null = null
       if (target === join(root, 'maintenance-journal.json')) {
         const journal = maintenanceJournalSchema.parse(
