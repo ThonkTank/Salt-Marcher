@@ -1,3 +1,4 @@
+import { useCombatCommandOwner } from '../encounter/use-combat-commands.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { useGroupLifecycleOwner } from './use-group-lifecycle.js'
 import { useCallback, useEffect } from 'react'
@@ -55,6 +56,15 @@ export function useGroupManagerController(
       },
       props.snapshot
     )
+  const combatCommands = useCombatCommandOwner(
+    ports.combatCommands,
+    initialFocused.id,
+    props.onError,
+    (current) => {
+      runtime.acceptSnapshot(current)
+      if (!maintenanceDraftCoordinator.isLocked()) props.saved(current)
+    }
+  )
   const lifecycle = useGroupLifecycleOwner(
     ports.lifecycle,
     props.onError,
@@ -82,18 +92,20 @@ export function useGroupManagerController(
     maintenanceDraftCoordinator.isLocked() ||
     runtime.snapshot().pending ||
     runtime.snapshot().uncertain ||
-    lifecycle.blocked()
+    lifecycle.blocked() ||
+    combatCommands.blocked()
   const userDispatch = useCallback(
     (action: GroupManagerAction) => {
       if (
         !maintenanceDraftCoordinator.isLocked() &&
         !runtime.snapshot().pending &&
         !runtime.snapshot().uncertain &&
-        !lifecycle.blocked()
+        !lifecycle.blocked() &&
+        !combatCommands.blocked()
       )
         runtime.dispatch(action)
     },
-    [runtime, lifecycle]
+    [runtime, lifecycle, combatCommands]
   )
   const publish = (next: LiveSessionSnapshot) => {
     runtime.acceptSnapshot(next)
@@ -102,17 +114,19 @@ export function useGroupManagerController(
   }
   const maintenanceBlocked = useMaintenanceDraft({
     label: 'Gruppenverwaltung',
-    dependsOn: [lifecycle.ownerId],
+    dependsOn: [lifecycle.ownerId, combatCommands.ownerId],
     isDirty: runtime.isDirty,
     save: async () => {
       if (!(await runtime.saveAll(ports, coordinator, props.lootChanged)))
         return false
-      if (!archiveTransition.dialog) props.saved(runtime.snapshot().snapshot)
+      if (!archiveTransition.dialog && !combatCommands.dialog)
+        props.saved(runtime.snapshot().snapshot)
       return true
     },
     discard: async () => {
       await runtime.discardAll(coordinator)
-      if (!archiveTransition.dialog) props.saved(runtime.snapshot().snapshot)
+      if (!archiveTransition.dialog && !combatCommands.dialog)
+        props.saved(runtime.snapshot().snapshot)
       return true
     }
   })
@@ -180,7 +194,8 @@ export function useGroupManagerController(
       uncertain ||
       maintenanceBlocked ||
       rawCommands.busy ||
-      lifecycle.busy,
+      lifecycle.busy ||
+      combatCommands.busy,
     save: () =>
       editingBlocked() ? Promise.resolve(null) : runtime.run(rawCommands.save),
     commitLoot: () =>
@@ -221,8 +236,27 @@ export function useGroupManagerController(
       })
       return Promise.resolve()
     },
-    joinCombat: () =>
-      editingBlocked() ? Promise.resolve() : runtime.run(rawCommands.joinCombat)
+    joinCombat: (): Promise<void> => {
+      if (editingBlocked() || !selectedPersistedGroup) return Promise.resolve()
+      const groupId = selectedPersistedGroup.id
+      combatCommands.request((current) => {
+        const group = current.scene.scenes
+          .find((scene) => scene.id === initialFocused.id)
+          ?.groups.find((group) => group.id === groupId)
+        if (!group || !current.combat)
+          throw new Error(message('combat.commandConflict'))
+        return {
+          kind: 'joinGroup',
+          input: {
+            sceneId: initialFocused.id,
+            groupId,
+            expectedGroupRevision: group.revision,
+            expectedCombatRevision: current.combat.revision
+          }
+        }
+      })
+      return Promise.resolve()
+    }
   }
   const interactions = createGroupManagerInteractions({
     state,
@@ -246,6 +280,7 @@ export function useGroupManagerController(
   return {
     ...projectGroupManagerView({
       archive: commands.archive,
+      joinCombat: commands.joinCombat,
       snapshot,
       reinforcementMode: props.reinforcementMode,
       state,
@@ -263,9 +298,12 @@ export function useGroupManagerController(
       queries,
       interactions
     }),
+    combatNotice: combatCommands.notice,
+    combatDialog: combatCommands.dialog,
     lifecycleNotice: lifecycle.notice,
     archiveDialog: archiveTransition.dialog,
-    maintenanceBlocked: maintenanceBlocked || uncertain || lifecycle.busy,
+    maintenanceBlocked:
+      maintenanceBlocked || uncertain || lifecycle.busy || combatCommands.busy,
     uncertain,
     canReconcile: runtime.canReconcile(),
     retryUnknown: async () => {

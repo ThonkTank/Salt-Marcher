@@ -32,6 +32,7 @@ export function createGroupManagerInteractions(input: {
   entries: ReturnType<typeof groupDraftEntries>
   commands: ReturnType<typeof useGroupManagerCommands> & {
     archive(): Promise<void>
+    joinCombat(): Promise<void>
   }
   ports: GroupManagerPorts
   dispatch: Dispatch<GroupManagerAction>

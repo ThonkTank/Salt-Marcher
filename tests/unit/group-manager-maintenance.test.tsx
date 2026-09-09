@@ -11,6 +11,7 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
+  CombatCommandResult,
   LiveSessionSnapshot,
   SceneGroupCommandResult
 } from '../../src/shared/contracts/live-session.js'
@@ -861,13 +862,23 @@ describe('group archive lifecycle', () => {
   )
 })
 
-function archiveFixture() {
+function archiveFixture(joinCombat = false) {
   let current = snapshot()
+  if (joinCombat)
+    current = {
+      ...current,
+      combat: {
+        revision: 7,
+        phase: 'combat',
+        selectedGroupIds: ['b'],
+        cards: []
+      } as unknown as NonNullable<LiveSessionSnapshot['combat']>
+    }
   let receipt: SceneGroupCommandResult | null = null
   const saveGroup = vi
     .fn<GroupManagerPorts['scene']['saveGroup']>()
     .mockImplementation(async (...args) => {
-      const result = await saveResult(...args)
+      const result = { ...(await saveResult(...args)), combat: current.combat }
       current = applySceneGroupCommandResult(current, result)
       return result
     })
@@ -897,8 +908,36 @@ function archiveFixture() {
   const status = vi
     .fn<GroupManagerPorts['lifecycle']['status']>()
     .mockImplementation(() => Promise.resolve({ receipt, snapshot: current }))
+  const executeCombat = vi
+    .fn<GroupManagerPorts['combatCommands']['execute']>()
+    .mockImplementation((input) => {
+      if (input.command.kind !== 'joinGroup')
+        throw new Error('unexpected command')
+      current = {
+        ...current,
+        combat: {
+          ...current.combat!,
+          revision: current.combat!.revision + 1,
+          selectedGroupIds: [
+            ...current.combat!.selectedGroupIds,
+            input.command.input.groupId
+          ]
+        }
+      }
+      return Promise.resolve({
+        combat: current.combat,
+        scenePatch: null,
+        party: null
+      } satisfies CombatCommandResult)
+    })
   const ports = {
     ...mockPorts(saveGroup),
+    combatCommands: {
+      execute: executeCombat,
+      status: vi.fn<GroupManagerPorts['combatCommands']['status']>(),
+      current: () => current,
+      refresh: () => Promise.resolve(current)
+    },
     lifecycle: {
       execute,
       status,
@@ -921,6 +960,8 @@ function archiveFixture() {
     controller = useGroupManagerController(props, ports)
     return (
       <>
+        {controller.combatDialog}
+        {controller.combatNotice}
         {controller.archiveDialog}
         {controller.lifecycleNotice}
       </>
@@ -938,6 +979,7 @@ function archiveFixture() {
     saveGroup,
     execute,
     status,
+    executeCombat,
     current: () => current
   }
 }
@@ -1033,6 +1075,12 @@ function mockPorts(
       refresh: vi.fn(),
       current: vi.fn()
     },
+    combatCommands: {
+      execute: vi.fn(),
+      status: vi.fn(),
+      current: vi.fn(),
+      refresh: vi.fn()
+    },
     runtime: { e2e: true },
     scene: { saveGroup, groupSaveReceipt: () => Promise.resolve(null) },
     loot: {},
@@ -1047,3 +1095,46 @@ function deferred<Value>() {
   })
   return { promise, resolve }
 }
+
+it.each(['save', 'discard', 'cancel'] as const)(
+  'resolves the group draft with %s before joining combat',
+  async (choice) => {
+    const f = archiveFixture(true)
+    act(() => f.controller().setName('Reinforcement edited'))
+    act(() => f.controller().joinCombat())
+    await screen.findByRole('alertdialog', { name: 'Kampfaktion fortsetzen' })
+    expect(f.executeCombat).not.toHaveBeenCalled()
+    fireEvent.click(
+      screen.getByText(
+        choice === 'save'
+          ? 'Speichern und fortfahren'
+          : choice === 'discard'
+            ? 'Verwerfen und fortfahren'
+            : 'Abbrechen'
+      )
+    )
+    if (choice === 'cancel') {
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+      expect(f.executeCombat).not.toHaveBeenCalled()
+      expect(f.saveGroup).not.toHaveBeenCalled()
+      expect(f.controller().group.name).toBe('Reinforcement edited')
+      return
+    }
+    await waitFor(() => expect(f.props.saved).toHaveBeenCalledOnce())
+    expect(f.saveGroup).toHaveBeenCalledTimes(choice === 'save' ? 1 : 0)
+    expect(f.executeCombat).toHaveBeenCalledOnce()
+    expect(f.executeCombat.mock.calls[0]![0].command).toEqual({
+      kind: 'joinGroup',
+      input: {
+        sceneId: 'scene',
+        groupId: 'a',
+        expectedCombatRevision: 7,
+        expectedGroupRevision: choice === 'save' ? 2 : 1
+      }
+    })
+    expect(f.current().combat!.selectedGroupIds).toEqual(['b', 'a'])
+    expect(f.current().scene.scenes[0]!.groups[0]!.name).toBe(
+      choice === 'save' ? 'Reinforcement edited' : 'A'
+    )
+  }
+)

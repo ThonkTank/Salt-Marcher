@@ -1,3 +1,4 @@
+import type { CombatCommands } from '../../src/renderer/features/encounter/use-combat-commands.js'
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest'
@@ -90,6 +91,18 @@ describe('encounter scenario panel', () => {
       <CapabilityProvider api={api}>
         <ModalLayerProvider>
           <SessionEncounterPanel
+            commands={
+              {
+                ownerId: 'combat-view',
+                busy: false,
+                blocked: () => false,
+                current: combatSnapshot,
+                perform: vi.fn(),
+                request: vi.fn(),
+                notice: null,
+                dialog: null
+              } satisfies CombatCommands
+            }
             snapshot={combatSnapshot()}
             loot={{
               revision: 0,

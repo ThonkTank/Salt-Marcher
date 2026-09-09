@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-08",
-  "reason": "Account for verified workspace draft transitions and durable desktop XP maintenance.",
-  "dependencyRationale": "No new dependency or lockfile change. Reuse the existing character command controller and shared draft dialog; preserve all absolute budgets and the 16 KiB growth threshold.",
-  "chunkRationale": "Reachable renderer is 1630221 bytes, 1620 bytes above the prior qualified route build. The older retained growth baseline also included 15108 bytes of previously qualified campaign and route maintenance. Desktop XP now retains original attempts and window transitions reuse the existing shell resolver.",
+  "recordedAt": "2026-09-09",
+  "reason": "Account for qualified combat command recovery and central initiative, HP and resolution drafts.",
+  "dependencyRationale": "No added dependency or lockfile change. Reuse the existing maintenance coordinator, capability bridge and draft dialog; preserve absolute budgets and the 16 KiB growth threshold.",
+  "chunkRationale": "Combat controller, original-campaign port and shared draft owners belong to the workspace used by the scene desktop and group manager. Growth also includes the previously qualified roster and group lifecycle integration since the prior baseline; no runtime schema library is imported into the renderer.",
   "graphs": {
     "shell": 420905,
-    "workspace": 524603,
+    "workspace": 526243,
     "session": 1348,
     "catalog": 186677,
     "hex": 175900,
     "reference": 37404,
     "pixi": 409405,
-    "reachable": 1630221
+    "reachable": 1651242
   }
 }

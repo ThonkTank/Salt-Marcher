@@ -1,4 +1,8 @@
 import {
+  useCombatCommandPort,
+  type CombatCommandPort
+} from '../encounter/use-combat-command-port.js'
+import {
   useGroupLifecyclePort,
   type GroupLifecyclePort
 } from './use-group-lifecycle-port.js'
@@ -14,7 +18,6 @@ import {
   createCreatureCapabilityPort,
   type CreatureCapabilityPort
 } from '../creatures/creatures-capabilities.js'
-import { encounterCapabilities } from '../encounter/encounter-capabilities.js'
 import {
   sessionCapabilities,
   type SessionCapabilities
@@ -42,7 +45,7 @@ export type GroupManagerPorts = Readonly<{
       ): ReturnType<SaltMarcherApi['loot']['groupRewardReceipt']>
     }>
   biomes: Pick<SaltMarcherApi['biomes'], 'search'>
-  combat: Pick<SaltMarcherApi['combat'], 'joinGroup'>
+  combatCommands: CombatCommandPort
 }>
 
 export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
@@ -53,6 +56,7 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
   const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
   const campaignId = root.sessionCampaignId
   const lifecycle = useGroupLifecyclePort(campaignId ?? '')
+  const combatCommands = useCombatCommandPort(campaignId ?? '')
   return useMemo(() => {
     const requireCampaign = () => {
       const current = projection.snapshot()
@@ -89,7 +93,7 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
           })
       },
       biomes: api.biomes,
-      combat: encounterCapabilities(api).combat
+      combatCommands
     }
-  }, [api, campaignId, projection, lifecycle])
+  }, [api, campaignId, projection, lifecycle, combatCommands])
 }

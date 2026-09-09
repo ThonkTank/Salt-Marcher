@@ -1,3 +1,4 @@
+import { useCombatCommands } from '../encounter/use-combat-commands.js'
 import { desktopXpDraftId } from './desktop-xp-draft-id.js'
 import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
@@ -96,6 +97,11 @@ export function SceneDesktop(
       window.removeEventListener('resize', measure)
     }
   }, [])
+  const combatCommands = useCombatCommands(
+    props.campaignId,
+    focused.id,
+    props.onError
+  )
   const windows = snapshot.state?.windows ?? []
   const visible = windows.filter((window) => !window.minimized)
   const raised = visible.at(-1)?.id
@@ -284,12 +290,14 @@ export function SceneDesktop(
               ) : window.kind === 'combat' ? (
                 <div className="desktop-combat">
                   <EncounterCrumbs
+                    commands={combatCommands}
                     snapshot={props.snapshot}
                     loot={model.loot}
                     setSnapshot={props.setSnapshot}
                     onError={props.onError}
                   />
                   <SessionEncounterPanel
+                    commands={combatCommands}
                     snapshot={props.snapshot}
                     loot={model.loot}
                     setSnapshot={props.setSnapshot}
@@ -354,6 +362,8 @@ export function SceneDesktop(
         )}
       </nav>
       {lifecycleNotice}
+      {combatCommands.notice}
+      {combatCommands.dialog}
       {transition.dialog}
       {sceneTransition.dialog}
       <SessionDialogHost

@@ -6,10 +6,7 @@ import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { generationSeed } from './generation-seed.js'
 import { groupDraftEntries, newGroupDraftKey } from './group-draft.js'
-import {
-  applyCombatCommandResult,
-  applySceneGroupCommandResult
-} from './session-patches.js'
+import { applySceneGroupCommandResult } from './session-patches.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
 import { acknowledgeGroupSave } from './group-manager-save-result.js'
 import {
@@ -36,7 +33,6 @@ export function createGroupManagerCommands(
   ) => Promise<boolean>
   commitLoot: ReturnType<typeof useGroupManagerLootCommands>['commitLoot']
   save: () => Promise<LiveSessionSnapshot | null>
-  joinCombat: () => Promise<void>
   busy: boolean
   pending: boolean
 }> {
@@ -171,22 +167,6 @@ export function createGroupManagerCommands(
     return next
   }
 
-  async function joinCombat(): Promise<void> {
-    const key = state.activeKey
-    const combat = snapshot.combat
-    if (!key || key === newGroupDraftKey || !selectedPersistedGroup || !combat)
-      return
-    const outcome = await runCommand(key, () =>
-      ports.combat.joinGroup({
-        sceneId: focused.id,
-        groupId: key,
-        expectedGroupRevision: selectedPersistedGroup.revision,
-        expectedCombatRevision: combat.revision
-      })
-    )
-    if (outcome) saved(applyCombatCommandResult(snapshot, outcome))
-  }
-
   async function runCommand<Value>(
     key: string,
     execute: () => Promise<Value>,
@@ -239,7 +219,6 @@ export function createGroupManagerCommands(
     generateLoot: lootCommands.generateLoot,
     commitLoot: lootCommands.commitLoot,
     save,
-    joinCombat,
     busy: commands.hasPending(['group-manager.command', 'group-manager.loot']),
     pending: commands.hasPending([
       'group-manager.command',

@@ -822,6 +822,37 @@ export class LivePlayService {
         )
       case 'rollInitiative':
         return this.rollInitiative(command.input.expectedRevision)
+      case 'saveInitiative':
+        return this.mutateCombat(command.input.expectedRevision, (combat) =>
+          combat.saveInitiative(command.input.values)
+        )
+      case 'finishResolution': {
+        let awardedParty: CombatCommandResult['party'] = null
+        let combat = this.readSession().combat
+        if (!combat) throw new CapabilityError('not_found', false)
+        if (combat.revision !== command.input.expectedRevision)
+          throw new CapabilityError('stale', false)
+        if (!combat.resolution?.xpAwarded) {
+          combat = this.updateResolution(
+            command.input.expectedRevision,
+            command.input.selectedEnemyIds,
+            command.input.mode,
+            command.input.xpFraction
+          ).combat
+          if (!combat?.resolution)
+            throw new CapabilityError('validation_failed', false)
+          if (combat.resolution.perPlayerXp > 0) {
+            const awarded = this.awardXp(
+              combat.revision,
+              command.input.expectedCampaignRulesRevision
+            )
+            combat = awarded.combat
+            awardedParty = awarded.party
+          }
+        }
+        if (!combat) throw new CapabilityError('not_found', false)
+        return { ...this.completeCombat(combat.revision), party: awardedParty }
+      }
       case 'confirmInitiative':
         return this.confirmInitiative(
           command.input.expectedRevision,

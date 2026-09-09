@@ -208,7 +208,7 @@ describe('atomic Party character commands and read-only recovery', () => {
       expect(h.play.readSession()).toEqual(before)
       h.db.exec('DROP TRIGGER fail_migration')
       applySchemaMigrations(h.db, { path: h.root, role: 'campaign' })
-      expect(h.db.pragma('user_version', { simple: true })).toBe(39)
+      expect(h.db.pragma('user_version', { simple: true })).toBe(40)
       expect(
         h.db
           .prepare('SELECT COUNT(*) FROM party_character_command_receipt')

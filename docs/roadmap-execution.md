@@ -5609,3 +5609,211 @@ auf den gemeinsamen Auftrag umstellen und ihre offenen Änderungen bei Wartung
 auflösen. Phasen 5–7, kanonischer Handoff, Main-Gates und Veröffentlichung bleiben
 offen. f1b56946b CI 34298646929 zuletzt in_progress; neue Runde als Candidate
 sichern und dessen exakte Remote-Gates vor Handoff erfüllen.
+
+Phase 4 – Combat-Renderer-Integrationsplan, erster notwendiger Vertragsschritt:
+Voriger Turn war Fortschritt (3f17660e5); Arbeitsbaum aktuell sauber. Die konkrete
+UI-Inventur findet neben direkten Writes drei bislang flüchtige Eingaben:
+Initiativewerte, HP-Betrag ohne gewählte Schaden/Heilung-Absicht und Ergebniswerte.
+Zusätzlich ist „Abschließen“ bislang eine Folge aus Ergebnis speichern, XP vergeben
+und Combat löschen; ein Fehler zwischen den Schritten lässt einen Teilabschluss.
+
+Vor dem UI-Cutover zwei auf denselben Journalvertrag aufbauende Operationen
+bereitstellen: saveInitiative speichert Werte in der Initiativephase, ohne Combat
+zu starten; finishResolution speichert die gewählte Abrechnung, vergibt nötige XP
+und beendet Combat atomar mit einem einzigen Beleg. Bereits vergebene XP dürfen
+bei Wiederaufnahme nicht nochmals vergeben werden. Kein neues Schema nötig:
+Tabelle und Resultatvertrag bleiben Version 1 bei Campaign 40/Registry 20.
+
+Danach einen originalkampagnengebundenen Combat-Port und Controller mit derselben
+Auftragsaufbewahrung wie Gruppenaktionen ergänzen. Read-only-Klärung muss Original-
+beleg und aktuellen Stand unterscheiden, bei fehlendem Beleg Fokus/Combat-/Gruppen-
+revision prüfen und bekannte Abwesenheit bis zu Save/Discard halten. Callback für
+zugehörige Draftbestätigung darf auch bei zentraler Recovery laufen, nie nach
+Unmount in eine andere Ansicht schreiben. Tests decken diese Grenzen ab.
+
+Der folgende UI-Teil verwendet einen gemeinsamen Owner für Crumbs/EncounterPanel,
+separate gespeicherte Initiative-/Ergebnisentwürfe und einen HP-Betragsentwurf,
+der ohne explizite Schaden/Heilung-Wahl kein Spielkommando erfindet. Phasenwechsel
+und Gruppenbeitritt klären Entwürfe zentral. Gruppenbeitritt bekommt denselben
+Combatvertrag und verliert seinen direkten Write. Erst vollständige UI-/E2E-
+Nachweise können diesen Integrationsplan schließen; Grundlagentests allein nicht.
+
+Fortsetzung – Combat-Integrationsreview: Der vorherige Installationsturn hat
+keinen Roadmap-Code verändert. Arbeitsbaum und kanonische Roadmap erneut gelesen;
+keine laufenden Native-/Build-/E2E-Prozesse vorhanden. Ein konkreter Befund:
+finishResolution vergibt XP atomar, verliert aber beim abschließenden clear das
+Party-Ergebnis des Awards. Korrekturplan: dieses ursprüngliche Party-Ergebnis im
+Gesamtbeleg erhalten. Native Tests ergänzen für reines Initiative-Speichern sowie
+Abschluss mit neuer und bereits erfolgter XP-Vergabe. Diese Tests müssen positive
+XP, unveränderte Initiativephase und ausbleibende Doppelvergabe direkt prüfen.
+Die übrige UI-/Electron-Abnahme bleibt davon unabhängig offen.
+
+24 native Combat-Belegfälle bestehen (9146 exit 0). CI 34299443859 ist dagegen
+terminal fehlgeschlagen: fünf ältere Migrationsfälle in vier Dateien erwarten
+nach vollständigem Vorwärtslauf noch Campaign 39 statt 40. Korrekturplan: nur
+jeweilige Endversionsassertionen auf 40 anheben; historische Ausgangsstände,
+Fehlerinjektionen und unveränderliche 0.2.0-Fixtures bleiben bestehen. Zusätzlich
+den neuen XP-Test von bloßer Snapshot-Ungleichheit auf den tatsächlichen positiven
+XP-Zuwachs des zugewiesenen Mitglieds verschärfen. Danach alle betroffenen nativen
+Dateien und Typecheck ausführen.
+
+60 native Fälle in fünf Dateien bestanden (73581 exit 0), einschließlich der
+fünf CI-Regressionen und des positiven XP-Nachweises. UI-Abnahmeplan ergänzen:
+im echten SceneDesktop Initiative ändern, Start zunächst abbrechen und danach
+mit zentralem Speichern fortsetzen; den gespeicherten Wert im Kampf anzeigen.
+HP-Betrag ändern, Schließen abbrechen und anschließend verwerfen; dabei darf kein
+HP-Kommando entstehen. Anschließend expliziten Schaden auslösen und die Änderung
+sichtbar prüfen. Bestehende Karten-/Fenster-/Neustartabnahme danach weiterführen.
+
+Statische Prüfung: Typecheck bestanden, Lint stoppt an vier Meldungen desselben
+Ref-Reads im Renderpfad von useCombatDraft. Fixplan: sichtbaren Draft mit React-
+State führen, die synchrone Ref nur für Event-/Wartungsaktionen behalten.
+Build bestanden. Bundleprüfung scheitert an der kumulierten Wachstumsschwelle:
+1651178 erreichbare Bytes, +7495 gegenüber 3f17660e5. Keine neue Abhängigkeit;
+Controller, Port und Draftintegration liegen im gemeinsamen Workspacegraph.
+Nach finaler Korrektur den vorgesehenen Baseline-Helper mit expliziter Begründung
+verwenden, harte Größenbudgets unverändert lassen.
+
+Electron 62245 terminal exit 1: neue Initiative-/HP-Dialogschritte erreichen ihre
+Assertions; später tritt beim Minimieren/Wiederöffnen eine stale-Fehlermeldung auf,
+die Folgeaktionen verdeckt. Suite insgesamt nicht bestanden. Screenshot und
+Log unter functional-1788918833977-596961 aufbewahrt. Nächste Untersuchung:
+Desktop-Projektions-/Layoutrevision nach Combat-Refresh; den Fehler nicht durch
+Wegklicken oder Entfernen der nachfolgenden Abnahme verdecken.
+
+Ref-Korrektur geprüft: 29 Combat-Owner-/Port-/Drafttests in drei Dateien bestehen;
+gezieltes ESLint für useCombatDraft bestanden (81812 exit 0). Der alte Build ist
+nach dieser Sourceänderung ausdrücklich kein aktueller Abnahmenachweis.
+
+Plan-Audit dieser Korrekturrunde: XP-Gesamtbeleg vollständig, positiver Award und
+keine Doppelvergabe sowie reines Initiative-Speichern nativ nachgewiesen. Die fünf
+remote gefundenen Endversionsassertionen sind lokal qualifiziert. Ref-Renderfehler
+behoben und gezielt geprüft. Electron-Gesamtabnahme weiterhin fehlgeschlagen;
+kein Handoff/Commit/Promotion in dieser Runde.
+
+Roadmap-Audit: Phase 4 bleibt offen. Vorliegender Electronlauf erreicht die neuen
+Dialogassertionen, scheitert danach bei Zeile 370 am überlagernden Workspace-stale-
+Fehler. DesktopProjection würde eigene desktop-error anzeigen; Screenshot zeigt
+feature.operation, daher Ursache in den Domain-/Workspaceaktionen lokalisieren,
+nicht vorschnell Layoutrevision ändern. Danach Gruppenbeitritt-UI und Ergebnis-
+abschluss vollständig qualifizieren, finale statische Prüfungen/Build/Bundle mit
+begründetem Vergleichsstand und Electron wiederholen. Phasen 5–7 und sämtliche
+Auslieferungsgates bleiben erhalten und offen.
+
+Fortsetzung: vorheriger Turn war Fortschritt (Korrekturen und neue Abnahmebefunde).
+Arbeitsbaum bestätigt. Diagnoseplan für den Electronfehler: die bestehende Abnahme
+um assertionsfreie Zeitdiagnose nicht erweitern, sondern an den fachlichen
+Übergängen ausdrücklich das Fehlen eines Workspacefehlers prüfen. So meldet die
+Suite den ersten fehlerhaften Schritt statt erst die verdeckte Folgeschaltfläche.
+Bei reproduzierbarem Befund die ursprüngliche fehlschlagende Capability ermitteln;
+keine CAS-Prüfung abschwächen. Danach dieselbe Suite vollständig wiederholen.
+
+Diagnose 42852 terminal exit 1: erster Workspacefehler liegt bereits nach HP-
+Bearbeitung vor (Zeile 349), nicht beim Layoutwechsel. Codebefund: das Encounter-
+Panel betreibt useEncounterEvaluation auch während aktivem Combat; jede neu
+gefilterte Selection triggert die CAS-basierte Auswahlprüfung erneut. Während
+ein Combatkommando die Szene verändert, kann diese obsolete Auswahlprüfung mit
+der vorherigen Revision laufen und stale global melden. Korrekturplan: Evaluation
+nur ohne aktiven Combat und ohne offenen Combatauftrag zulassen; beim Deaktivieren
+laufende Antworten logisch entwerten. Unit-Abnahme muss fehlende unnötige Reads
+und Ignorieren einer verspäteten Fehlerantwort sowie Reaktivierung belegen.
+Danach Electron mit unveränderten vollständigen Abnahmeschritten erneut ausführen.
+
+34848 exit 0: alle acht SceneDesktop-Electronfälle bestehen mit den vollständigen
+Initiative-/HP-, Fenster-, Reise- und Neustartassertionen. Summary:
+.tmp/e2e-runs/functional-1788919400141-602211/summary.json. 50307 exit 0 bestätigt
+gezieltes Lint plus Typecheck der Korrektur. Plan-Audit: obsolete Auswahlbewertung
+ist während Combat/Auftrag deaktiviert; verspätete Antworten sind entwertet.
+Roadmap-Audit: dieser Fehler behoben, Phase 4 insgesamt noch offen.
+
+Nächster UI-Nachweis: Gruppenbeitritt mit offenem Gruppenentwurf für Save/Discard/
+Cancel durch den echten GroupManagerController führen. Save muss erst den neuen
+Gruppenstand bestätigen, dann mit dessen frischer Revision genau einmal joinGroup
+aufrufen; Cancel schreibt nichts; Discard verwendet den ursprünglichen Stand.
+Bestehende Archivtests dabei beibehalten.
+
+Gruppenbeitritt-UI: 86478 exit 0, 25 GroupManager-Fälle bestanden. Die drei neuen
+Fälle belegen Save/Discard/Cancel, genau einen joinGroup-Auftrag, unveränderte
+Originalszene und Combatrevision sowie nach Save die neue Gruppenrevision 2.
+Archivabnahme bleibt mit denselben Tests erhalten. Gezieltes ESLint ist grün;
+Typecheck 39904 läuft noch und muss terminal geprüft werden.
+
+34567 exit 0: Baseline mit vorgesehenem Helper und expliziter Dependency-/Chunk-
+Begründung aktualisiert, Bundleprüfung und Built-Smoke bestanden. Erreichbarer
+Renderer 1651242 Bytes; feste Budgets und 16-KiB-Schwelle unverändert. Veränderung
+seit vorherigem Baseline-Dokument 21021 Bytes umfasst auch zuvor qualifizierte
+Roster-/Gruppenowner. Kein neuer Laufzeitimport von Schema-/Node-/SQL-Bibliotheken.
+
+Plan-Audit: Versionskonflikt ursächlich durch obsolete Auswahlabfrage behoben,
+Unit-Reproduktion und vollständige Electron-Suite bestanden. Gruppenbeitritt mit
+zentraler Entwurfsauflösung ist jetzt ebenfalls im echten Controller belegt.
+Roadmap-Audit: Phase 4 bleibt offen, insbesondere vollständiger Ergebnisabschluss
+über die UI und abschließende Prüfung der gesamten Combatintegration. Noch keine
+Candidate-Sicherung dieser Integration, kein exakter grüner CI-/Handoff-/Main-
+Nachweis. Phasen 5–7 bleiben ungekürzt offen.
+
+39904 abschließend exit 0: auch Typecheck für die Gruppenbeitritt-Abnahme bestanden.
+
+Fortsetzung – vorheriger Turn war Fortschritt, Arbeitsbaum erneut bestätigt.
+Plan für den noch fehlenden vollständigen UI-Ergebnisabschluss: am Ende der
+bestehenden Electron-Suite einen isolierten Testkampf mit zugewiesenem Charakter
+und Wolfgruppe im Wegwerfprofil vorbereiten. Kampfstart, Auflösung, manuelle
+Gegnerwahl und Abschluss über sichtbare Bedienelemente durchführen. Abbrechen
+muss Entwurf und ursprüngliche Party-XP erhalten; Speichern muss den Ergebnis-
+entwurf persistieren und den atomaren Abschluss auslösen. Party-XP vor/nach dem
+Vorgang anhand des angezeigten Awards vergleichen, Combat muss verschwinden und
+nach Prozessneustart weiterhin beendet sein, ohne weitere XP-Vergabe. Keine
+Änderung an echten Nutzerprofilen, historischen Fixtures oder Abnahmegrenzen.
+
+Portable-Gesamtprüfung 16168 exit 0: Format/Lint/Typecheck, Architektur-, Unit- und
+Integrationstests sowie Referenz-/Version-/Renderartefaktprüfungen bestanden.
+53147 dagegen exit 1: acht bestehende Electronfälle grün, neuer Abschlussfall
+scheitert innerhalb des Test-Setups bei execute/sync; WebDriver serialisiert die
+Fehlerantwort nicht sinnvoll. Fixplan: Setupfehler zusammen mit der aktiven
+Setupstufe als einfache Textdaten zurückgeben und außerhalb der Browserfunktion
+explizit fehlschlagen. Keine Wiederholung unbekannt abgeschlossener Setupwrites
+innerhalb derselben Funktion. Anschließend tatsächliche Ursache korrigieren.
+
+23701 exit 1: Diagnose benennt prepareCombat -> validation_failed. Vorherige
+Rosterabnahme weist Reservecharaktere ohne Level zu; evaluateSceneGroupDraft
+verlangt ausdrücklich vollständige Level aller zugewiesenen Mitglieder. Fixplan:
+der isolierte Abschlussfall wählt einen vorhandenen Charakter mit Level und setzt
+seine Testbesetzung explizit per setRoster. Produktive Startvalidierung bleibt
+unverändert. Zusätzlich Diagnosefeld failureText statt error verwenden: WebDriver
+interpretiert ein Top-Level-error-Feld als Transportfehler und wiederholt dadurch
+die Browserfunktion. Ein normaler Datenwert verhindert solche Setupwiederholungen.
+
+58314 exit 1: Setup meldet jetzt korrekt als normale Textdaten setRoster ->
+validation_failed, ohne WebDriver-Wiederholung. Codeprüfung zeigt die zweite
+Fixturebedingung: setRoster darf aktive Mitglieder einer anderen Szene nicht
+stillschweigend übernehmen. Korrektur: den gewählten vollständigen Charakter mit
+der vorhandenen expliziten assignPartyMember-Operation in die Testszene verschieben,
+frischen Stand lesen und erst dann den isolierten Roster setzen. Diese fachliche
+Grenze bleibt unverändert; der Abschlussfall bekommt einen gültigen Ausgangszustand.
+
+41193 exit 0: alle neun SceneDesktop-Electronfälle bestanden. Neuer Abschlussfall
+belegt Abbrechen mit unveränderten Party-XP und erhaltenem manuellen Entwurf,
+Speichern/Abschluss mit genau dem angezeigten positiven Award, unveränderte XP
+nicht zugewiesener Mitglieder, Combat=null sowie dieselbe Party nach Prozess-
+neustart. Summary .tmp/e2e-runs/functional-1788920531872-614481/summary.json.
+
+Plan-Audit der Combat-Renderer-Integration: 19 journalisierte Befehlsvarianten,
+Originalkampagnen-Port, gehaltene unbekannte Aufträge, zentrale Initiative-/HP-/
+Ergebnisentwürfe und Gruppenbeitritt integriert. Native Beleg-/Rollback-/Replay-
+Nachweise, UI-Owner/Port/Controller-Prüfungen, positive Abschluss-XP, neun echte
+Electronfälle, vollständige portable Prüfung mit 1869 Tests, Build/Smoke/Bundle
+bestehen. Nach letzter ausschließlich testseitiger Setupkorrektur läuft nochmals
+Typecheck 77587; erst terminaler Erfolg erlaubt Candidate-Sicherung.
+
+Roadmap-Audit: Combat-Teilplan erfüllt, Phase 4 insgesamt offen. Erneute Inventur:
+useMaintenanceDraftGuard hat keine aktiven Aufrufer mehr. Direkte Szenenortänderung
+in useSessionSceneController/useSessionMutationController und Reiseentwürfe in
+travel-view-projection/use-travel-commands besitzen noch keinen vollständigen
+Wartungsauftrag; dieser verbleibende Umfang darf nicht als erledigt gelten.
+Als nächste Teilpläne die tatsächlichen Save-/Discard-Semantiken und laufenden
+Aufträge dieser Bereiche bestimmen und absichern. Phasen 5–7, exakte Remote-Gates,
+kanonischer Handoff, Main-Promotion und öffentliche Freigabe bleiben offen.
+
+77587 exit 0: abschließender Typecheck bestanden. Combat-Integration als geprüften
+Candidate-Zwischenstand sichern und pushen; unveränderte vollständige Remote-
+Check-Gates gelten weiterhin vor jeglichem Handoff oder Main-Promotion.

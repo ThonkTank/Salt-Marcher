@@ -9,6 +9,13 @@ export const workspaceMessagesDe = {
   'desktop.confirmRosterChange': 'Besetzung ändern',
   'desktop.resolveBeforeRosterChange':
     'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
+  'combat.commandConflict':
+    'Der Kampf wurde inzwischen geändert. Bitte den offenen Auftrag verwerfen und den aktuellen Stand prüfen.',
+  'combat.resolveTitle': 'Kampfaktion fortsetzen',
+  'combat.resolveText':
+    'Vor dieser Kampfaktion die offenen Änderungen speichern oder verwerfen.',
+  'combat.hpChooseAction':
+    'Bitte für den eingegebenen HP-Betrag zuerst Schaden oder Heilung wählen, oder den Betrag verwerfen.',
   'group.archiveTitle': 'Gruppe archivieren',
   'group.resolveBeforeArchive':
     'Vor dem Archivieren die offenen Änderungen speichern oder verwerfen.',

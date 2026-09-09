@@ -52,7 +52,11 @@ function request(
   const groups = initial.scene.scenes[0]!.groups
   if (kind !== 'prepare') {
     h.play.prepareCombat(sceneId, initial.scene.revision, [groups[0]!.id])
-    if (kind !== 'rollInitiative' && kind !== 'confirmInitiative') {
+    if (
+      kind !== 'rollInitiative' &&
+      kind !== 'confirmInitiative' &&
+      kind !== 'saveInitiative'
+    ) {
       const combat = h.play.readSession().combat!
       h.play.confirmInitiative(
         combat.revision,
@@ -73,7 +77,11 @@ function request(
         false
       )
     }
-    if (['updateResolution', 'awardXp', 'complete'].includes(kind))
+    if (
+      ['updateResolution', 'awardXp', 'complete', 'finishResolution'].includes(
+        kind
+      )
+    )
       h.play.endCombat(h.play.readSession().combat!.revision)
   }
   if (kind === 'awardXp') {
@@ -96,6 +104,28 @@ function request(
     CombatCommand['command']['kind'],
     CombatCommand['command']
   > = {
+    saveInitiative: {
+      kind: 'saveInitiative',
+      input: {
+        ...revision,
+        values:
+          combat?.initiativeRows.map((row) => ({
+            id: row.id,
+            initiative: 18
+          })) ?? []
+      }
+    },
+    finishResolution: {
+      kind: 'finishResolution',
+      input: {
+        ...revision,
+        selectedEnemyIds:
+          combat?.resolution?.enemies.map((enemy) => enemy.id) ?? [],
+        mode: 'manual',
+        xpFraction: 1,
+        expectedCampaignRulesRevision: readCampaignRules(h.db).revision
+      }
+    },
     prepare: {
       kind: 'prepare',
       input: {
@@ -298,3 +328,69 @@ it('rolls back an interrupted 39-to-40 migration and retries without changing li
     rmSync(h.root, { recursive: true, force: true })
   }
 })
+
+it('saves initiative values without starting combat', () => {
+  const h = fixture()
+  try {
+    const input = request(h, 'saveInitiative')
+    const before = h.play.readSession().combat!
+    const result = h.play.executeCombatCommand(input)
+    expect(result.combat?.phase).toBe('initiative')
+    expect(result.combat?.cards).toEqual(before.cards)
+    expect(result.combat?.initiativeRows.map((row) => row.initiative)).toEqual(
+      before.initiativeRows.map(() => 18)
+    )
+    expect(h.play.readSession().combat).toEqual(result.combat)
+  } finally {
+    h.campaigns.close()
+    rmSync(h.root, { recursive: true, force: true })
+  }
+})
+
+it.each([false, true])(
+  'finishes resolution with a complete receipt and no duplicate XP (already awarded: %s)',
+  (alreadyAwarded) => {
+    const h = fixture()
+    try {
+      const input = request(h, 'finishResolution')
+      if (input.command.kind !== 'finishResolution') throw new Error('fixture')
+      const before = h.play.readParty()
+      if (alreadyAwarded) {
+        const values = input.command.input
+        h.play.updateResolution(
+          values.expectedRevision,
+          values.selectedEnemyIds,
+          values.mode,
+          values.xpFraction
+        )
+        h.play.awardXp(
+          h.play.readSession().combat!.revision,
+          values.expectedCampaignRulesRevision
+        )
+        input.command.input.expectedRevision =
+          h.play.readSession().combat!.revision
+      }
+      const beforeFinish = h.play.readParty()
+      const result = h.play.executeCombatCommand(input)
+      const after = h.play.readParty()
+      expect(result.combat).toBeNull()
+      expect(h.play.readSession().combat).toBeNull()
+      expect(
+        after.members.find((member) => member.id === h.member.id)!.xp
+      ).toBeGreaterThan(
+        before.members.find((member) => member.id === h.member.id)!.xp
+      )
+      if (alreadyAwarded) {
+        expect(after).toEqual(beforeFinish)
+        expect(result.party).toBeNull()
+      } else {
+        expect(result.party).toEqual(after)
+      }
+      expect(h.play.executeCombatCommand(input)).toEqual(result)
+      expect(h.play.readParty()).toEqual(after)
+    } finally {
+      h.campaigns.close()
+      rmSync(h.root, { recursive: true, force: true })
+    }
+  }
+)

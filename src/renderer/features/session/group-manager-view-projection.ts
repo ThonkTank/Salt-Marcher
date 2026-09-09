@@ -30,6 +30,7 @@ import type { useGroupManagerQueries } from './use-group-manager-queries.js'
 
 export function projectGroupManagerView(input: {
   archive(): Promise<void>
+  joinCombat(): Promise<void>
   snapshot: LiveSessionSnapshot
   reinforcementMode: boolean
   state: GroupManagerState
@@ -201,7 +202,7 @@ export function projectGroupManagerView(input: {
     close: () => interactions.requestIntent({ kind: 'close' }),
     save: () => interactions.requestIntent({ kind: 'save' }),
     archive: () => void input.archive(),
-    joinCombat: () => interactions.requestIntent({ kind: 'join-combat' }),
+    joinCombat: () => void input.joinCombat(),
     cancelPendingIntent: () =>
       dispatch({ kind: 'pending-intent', pending: null }),
     confirmPendingIntent: () => {

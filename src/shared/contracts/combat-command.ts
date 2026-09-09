@@ -37,6 +37,20 @@ export const combatCommandSchema = z
         .strict(),
       z
         .object({
+          kind: z.literal('saveInitiative'),
+          input: confirmInitiativeInputSchema
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('finishResolution'),
+          input: updateResolutionInputSchema.extend({
+            expectedCampaignRulesRevision: z.number().int().nonnegative()
+          })
+        })
+        .strict(),
+      z
+        .object({
           kind: z.literal('confirmInitiative'),
           input: confirmInitiativeInputSchema
         })
