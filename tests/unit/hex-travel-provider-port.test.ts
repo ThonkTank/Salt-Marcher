@@ -1,3 +1,4 @@
+import type { HexTravelCommandState } from '../../src/shared/contracts/hex-travel-command.js'
 import { describe, expect, it, vi } from 'vitest'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import type { HexCapabilities } from '../../src/renderer/features/hex/hex-capabilities.js'
@@ -6,7 +7,7 @@ import { createHexTravelProviderPort } from '../../src/renderer/features/hex/hex
 const sceneId = '01900000-0000-7000-8000-000000000080'
 const mapId = '01900000-0000-7000-8000-000000000081'
 const session = { scene: { focusedSceneId: sceneId } } as LiveSessionSnapshot
-const travel = {
+const travel: HexTravelCommandState['context']['travel'] = {
   revision: 4,
   sceneId,
   status: 'ready',
@@ -27,7 +28,7 @@ const travel = {
   assumedSpeedMemberNames: [],
   multiplier: 1,
   hintCode: 'ready'
-} as const
+}
 
 function fixture() {
   const result = { travel, session }
@@ -89,7 +90,7 @@ function fixture() {
     },
     hexTravel
   } as unknown as HexCapabilities
-  const state = {
+  const state: HexTravelCommandState = {
     context: result,
     routePlan: { sceneId, revision: 0, plan: null }
   }
@@ -97,7 +98,7 @@ function fixture() {
     execute: vi.fn().mockResolvedValue(state),
     refresh: vi.fn().mockResolvedValue(state)
   }
-  return { capabilities, hexTravel, sessionRead, executor }
+  return { capabilities, hexTravel, sessionRead, executor, state }
 }
 
 describe('Hex travel provider port', () => {
@@ -112,6 +113,59 @@ describe('Hex travel provider port', () => {
       map: { id: mapId }
     })
     expect(test.sessionRead).not.toHaveBeenCalled()
+    port.dispose()
+  })
+
+  it('carries the saved plan through reads, descriptions and command replies', async () => {
+    const test = fixture()
+    const plan = {
+      sceneId,
+      revision: 7,
+      plan: { mapId, waypoints: [{ q: 2, r: -1 }], multiplier: 5 as const }
+    }
+    test.executor.refresh.mockResolvedValue({ ...test.state, routePlan: plan })
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
+    const loaded = await port.read({ sceneId })
+    expect(loaded.providerState.routePlan).toEqual(plan)
+    expect(port.describe(loaded.providerState).routePlan).toEqual(plan)
+    const cleared = { sceneId, revision: 8, plan: null }
+    test.executor.execute.mockResolvedValue({
+      ...test.state,
+      routePlan: cleared
+    })
+    const applied = await port.execute({
+      kind: 'pause',
+      sceneId,
+      expectedRevision: 4,
+      expectedSceneRevision: 3
+    })
+    expect(applied.providerState.routePlan).toEqual(cleared)
+    expect(port.describe(applied.providerState).routePlan).toEqual(cleared)
+    expect(test.executor.refresh).toHaveBeenCalledOnce()
+    expect(test.hexTravel.read).not.toHaveBeenCalled()
+    port.dispose()
+  })
+
+  it('rejects a foreign plan in both read and command state', async () => {
+    const test = fixture()
+    const foreign = {
+      ...test.state,
+      routePlan: { sceneId: 'another-scene', revision: 2, plan: null }
+    }
+    test.executor.refresh.mockResolvedValue(foreign)
+    test.executor.execute.mockResolvedValue(foreign)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
+    await expect(port.read({ sceneId })).rejects.toMatchObject({
+      code: 'stale'
+    })
+    await expect(
+      port.execute({
+        kind: 'pause',
+        sceneId,
+        expectedRevision: 4,
+        expectedSceneRevision: 3
+      })
+    ).rejects.toMatchObject({ code: 'stale' })
     port.dispose()
   })
 

@@ -3,8 +3,20 @@ import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session
 export type TravelMultiplier = 1 | 2 | 5 | 10
 export type TravelMode = 'inspect' | 'position' | 'plan'
 
+/** Saved planning is versioned independently of the journey and scene clock. */
+export type TravelRoutePlanSnapshot<P> = Readonly<{
+  sceneId: string
+  revision: number
+  plan: Readonly<{
+    mapId: string
+    waypoints: readonly P[]
+    multiplier: TravelMultiplier
+  }> | null
+}>
+
 export type TravelProviderDescriptor<P> = Readonly<{
   revision: number
+  routePlan: TravelRoutePlanSnapshot<P>
   status: string
   mapOptions: readonly Readonly<{ id: string; label: string }>[]
   currentMapId: string | null

@@ -6305,3 +6305,85 @@ ist davon nicht abgedeckt; neuen SHA sauber committen/pushen und dessen eigene
 Remote-Gates abwarten. Kein Handoff/Main-/Releaseabschluss durch diesen lokalen
 Qualifikationsbuild. Worktree vor diesem Abschnitt war sauber, Änderungen gehören
 vollständig zum dokumentierten Cutover.
+
+### Phase 4 – Routenprojektion und unabhängige Planrevision
+
+Fortsetzung: vorheriger Installationsturn hat den vorhandenen Skill gegen dessen
+Repository verifiziert, aber die Roadmap nicht verändert (für das Implementierungsziel
+kein Fortschritt). Aktuell sauberer Candidate 6d5ab734d, remote identisch; dessen
+Check 34308324446 ist nach Abfrage in_progress. Kein lokaler Testprozess läuft.
+
+Teilplan vor Änderungen: Das bestehende atomare readState-Ergebnis vollständig
+bis zum Travel-Descriptor führen. Ein providerneutraler, verpflichtender
+Routenplan-Snapshot enthält Szene, eigene Revision und nullable Plan mit Karte,
+Wegpunkten und Multiplikator. Hex reicht ihn sowohl bei Reads als auch nach
+Befehlen unverändert weiter; kein zweiter Planread und kein Ersatz durch einen
+leeren Plan. Die Projektion vergleicht Planrevision unabhängig von Reise-/
+Szenenrevision: kein Rückschritt, auch nicht bei einer neuen Szene-Revision mit
+zurückgesetzter Reiserevision. Bei gleichen Reise-/Szenenständen gilt eine höhere
+Planrevision als neuer Zustand. Fremde Plan-Szenen werden abgewiesen.
+
+Prüfung: konkrete Porttests für gespeicherten Plan, tombstone und falsche Szene;
+Controllerregressionen für Planfortschritt nach lokaler Auswahl, veraltete Pläne,
+Positionsreset und spätes Wiederauftauchen gelöschter Pläne. Bestehende Reise-,
+Owner-, Architekturtests, Typen, Lint, Format, Build/Smoke/Bundle. Dieser Abschnitt
+ist die notwendige Datenbasis des Routeneditors, kein abgeschlossener Editor:
+Dirty-/Save-/Discard-Owner, Wiederaufnahme im Planmodus und zentrale Übergänge
+folgen mit eigenem konkretem Plan. Kein neuer Savepfad ohne dessen Recoveryowner.
+
+Erste Validierung: 32896 beendet; 20/20 gezielte Port-/Controllerfälle bestanden.
+Typecheck meldet eine bisher untypisierte Portfixture: deren `as const` erzeugt
+readonly path, während der atomare IPC-Vertrag ein deserialisiertes Array enthält.
+Fixplan vor Korrektur: Fixture direkt als context.travel-Vertrag deklarieren,
+keinen Cast des Ergebnisses und keine Lockerung des produktiven Vertrags.
+
+40494: beide Typechecks bestanden, Lint stoppt an einem leeren async-Testcallback
+zum Abschließen der React-Microtasks. Fixplan: dessen Promise ausdrücklich
+zurückgeben; kein eslint-disable. Erweiterte Tests/Build wurden durch && noch
+nicht gestartet, alte Logausgaben sind keine neue Abnahme.
+
+76436 exit 0: gezieltes Lint und 130 Tests/13 Dateien inklusive Architektur,
+Travelcontroller, Provider, Owner und Reiseoberfläche bestanden. Build, Smoke und
+Bundle bestanden; Renderergraph 1663543 Bytes, unveränderte Baseline/Limits.
+16793 exit 0: echter Reise-Electronfall bestanden (Planen/Positionieren/Start/
+Pause/Fortsetzen/Stopp), Summary functional-1788926032774-642329; vollständiges
+Format danach bestanden. Keine Runtimeänderungen seit diesem Build.
+
+Zusätzlicher CI-Fixplan: Job 102329557164 des Vorgänger-SHA 6d5ab734d ist terminal
+failure; Gesamtcheck 34308324446 hatte bei Abfrage noch laufende andere Jobs.
+Log belegt 1482 erfolgreiche Unitfälle und genau einen veralteten FR0-Baselinefall:
+frontend-robustness-baseline fordert use-travel-commands weiterhin als FIFO-
+Referenz. Diese Erwartung widerspricht dem protokollierten Befehls-Cutover.
+Travel aus dieser FIFO-Liste in eine ausdrücklich geprüfte journalisierte
+Referenz überführen: Controllerkonstruktion, Owneranmeldung, Statusabfrage und
+Erhalt abgehängter Aufträge müssen bestehen. Andere FIFO-Referenzen unverändert.
+Architektur-/Boundarytests und gezielte Recoverytests bleiben bestehen. Nach
+Korrektur Baseline/Boundary/Recovery gezielt prüfen; keine neue Runtime und somit
+kein Wiederholen desselben Electron-Builds nötig.
+
+97508 exit 0: Lint des CI-Fixes und 38 Baseline-/Boundary-/Travel-Recoveryfälle
+bestanden. Bestehender negativer Queue-Test und produktive Journalreferenz jetzt
+konsistent; kein CI-Gate abgeschaltet. git diff --check bestanden.
+
+Plan-Audit Routenprojektion: verpflichtender providerneutraler Snapshot sowie
+Hex-State enthalten die vollständige gespeicherte Route, einschließlich einer
+leeren Route mit fortgeschrittener Tombstone-Revision. Reads und Writeantworten
+geben dasselbe atomare Ergebnis weiter; keine zweite Planabfrage. Fremde Szene
+wird abgewiesen. Reise-, Plan- und Szenenrevision werden mit ihren unterschiedlichen
+Fortschrittsregeln berücksichtigt; Tests belegen Plan-only-Fortschritt nach lokaler
+Kartenwahl, Rückschrittsverbot bei Reise-/Szenenfortschritt, Positionsreset bei
+gleichem Planstand und Schutz vor spätem Wiederauftauchen eines gelöschten Plans.
+130 erweiterte Tests, Typecheck/Lint, Build/Smoke/Bundle und echter Reise-Electron-
+Ablauf bestanden. Nach GUI-Prüfung ausschließlich Baseline-Test und Protokoll
+geändert; dessen 38 gezielte Tests/Lint ebenfalls bestanden.
+
+Roadmap-Audit: Datenbasis für den Routeneditor vollständig durchgereicht, dessen
+Bedienabnahme weiterhin offen. Kein automatisches Laden in lokale Wegpunkte,
+keine Dirty-/Save-/Discard-Anmeldung oder Plan-Save während der Wartung in diesem
+Abschnitt behauptet. Phase 4 bleibt in Arbeit; Phasen 5–7 unverändert offen.
+Nächster Implementierungsschritt bleibt der tatsächliche persistierbare Routen-
+Editor mit Basisrevision, Originalkampagne/-szene, gezieltem Plan-Save, vorgeschalteter
+Auftragsklärung und eindeutigem Umgang mit unbekanntem Speicherergebnis. Danach
+zentrale Übergänge, welche nach Verwerfen keine alten Startdaten und nach einem
+Save keinen umgedeuteten Pause/Resume-Intent verwenden. Main-/Handoff-/öffentliche
+Releasegates weiterhin ausstehend; lokalen Qualifikationsbuild nicht installieren.

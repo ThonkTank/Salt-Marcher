@@ -1,4 +1,5 @@
 import type {
+  HexRoutePlanSnapshot,
   HexTravelCommand,
   HexTravelCommandState
 } from '../../../shared/contracts/hex-travel-command.js'
@@ -25,6 +26,7 @@ export type HexTravelProviderState = Readonly<{
   catalog: HexMapCatalogSnapshot
   biomes: HexBiomeCatalog
   travel: HexTravelSnapshot
+  routePlan: HexRoutePlanSnapshot
 }>
 
 export type HexTravelMapProjection = HexMapView &
@@ -103,7 +105,10 @@ export function createHexTravelProviderPort(
       maps.readBiomeCatalog(),
       commands.refresh()
     ])
-    if (context.context.travel.sceneId !== input.sceneId)
+    if (
+      context.context.travel.sceneId !== input.sceneId ||
+      context.routePlan.sceneId !== input.sceneId
+    )
       throw new CapabilityError('stale', false)
     catalog = nextCatalog
     biomes = nextBiomes
@@ -111,7 +116,8 @@ export function createHexTravelProviderPort(
       providerState: {
         catalog: nextCatalog,
         biomes: nextBiomes,
-        travel: context.context.travel
+        travel: context.context.travel,
+        routePlan: context.routePlan
       },
       session: context.context.session
     }
@@ -213,10 +219,16 @@ export function createHexTravelProviderPort(
         })()
       }
       const context = await commands.execute(input)
+      if (
+        context.context.travel.sceneId !== command.sceneId ||
+        context.routePlan.sceneId !== command.sceneId
+      )
+        throw new CapabilityError('stale', false)
       return {
         providerState: {
           ...supporting,
-          travel: context.context.travel
+          travel: context.context.travel,
+          routePlan: context.routePlan
         },
         session: context.context.session
       }
@@ -224,6 +236,7 @@ export function createHexTravelProviderPort(
     describe(state) {
       return {
         revision: state.travel.revision,
+        routePlan: state.routePlan,
         status: state.travel.status,
         mapOptions: state.catalog.maps.map((map) => ({
           id: map.id,

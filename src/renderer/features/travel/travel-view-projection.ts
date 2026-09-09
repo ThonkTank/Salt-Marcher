@@ -318,19 +318,27 @@ function remoteVersionIsOlder<P, S>(
   currentProviderSceneRevision: number | null,
   requireNewer = false
 ): boolean {
-  if (current === null) return false
+  const nextDescriptor = describe(next)
   if (nextSession.scene.focusedSceneId !== currentSession.scene.focusedSceneId)
     return true
+  if (nextDescriptor.routePlan.sceneId !== nextSession.scene.focusedSceneId)
+    return true
   if (nextSession.scene.revision < currentSession.scene.revision) return true
+  if (current === null) return false
+  const currentDescriptor = describe(current)
+  // A position reset may reset the journey revision, but never the saved plan.
+  if (nextDescriptor.routePlan.revision < currentDescriptor.routePlan.revision)
+    return true
   const publishedSceneRevision =
     currentProviderSceneRevision ?? currentSession.scene.revision
   if (nextSession.scene.revision !== publishedSceneRevision)
     return nextSession.scene.revision < publishedSceneRevision
-  const currentRevision = describe(current).revision
-  const nextRevision = describe(next).revision
-  return requireNewer
-    ? nextRevision <= currentRevision
-    : nextRevision < currentRevision
+  if (nextDescriptor.revision < currentDescriptor.revision) return true
+  return (
+    requireNewer &&
+    nextDescriptor.revision === currentDescriptor.revision &&
+    nextDescriptor.routePlan.revision === currentDescriptor.routePlan.revision
+  )
 }
 
 function publishSessionIfCurrent(

@@ -82,10 +82,28 @@ describe('FR0 frontend robustness baseline', () => {
     }
   })
 
+  it('records Travel as a journaled owner with retained status recovery', () => {
+    const owner = readTypeScriptModule(
+      'src/renderer/features/hex/use-hex-travel-command-owner.tsx'
+    )
+    const controller = readTypeScriptModule(
+      'src/renderer/features/hex/hex-travel-command-controller.ts'
+    )
+    const commands = readTypeScriptModule(
+      'src/renderer/features/travel/use-travel-commands.ts'
+    )
+    expect(owner.constructions).toContain('HexTravelCommandController')
+    expect(owner.calls).toContain('useMaintenanceDraft')
+    expect(controller.calls).toContain('this.port.status')
+    expect(controller.calls).toContain('this.retainDetachedAttempt')
+    expect(controller.calls).toContain('this.maintenance.register')
+    expect(commands.stringLiterals).not.toContain('queue')
+    expect(commands.calls).toContain('port.execute')
+  })
+
   it('records the existing positive FIFO reference owners', () => {
     const references = [
       'src/renderer/features/hex/hex-command-outcome.ts',
-      'src/renderer/features/travel/use-travel-commands.ts',
       'src/renderer/features/session-planner/use-session-planner-session-commands.ts',
       'src/renderer/shell/use-installation-preferences.ts'
     ]

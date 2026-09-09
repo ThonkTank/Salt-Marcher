@@ -8,12 +8,14 @@ import type { TravelController } from '../../src/renderer/features/travel/use-tr
 import { useTravelController } from '../../src/renderer/features/travel/use-travel-controller.js'
 import type {
   TravelProviderPort,
-  TravelProviderReadResult
+  TravelProviderReadResult,
+  TravelRoutePlanSnapshot
 } from '../../src/renderer/features/travel/travel-provider-port.js'
 
 type Position = Readonly<{ id: string }>
 type ProviderState = Readonly<{
   revision: number
+  routePlan: TravelRoutePlanSnapshot<Position>
   status: string
   currentMapId: string | null
   mapIds: readonly string[]
@@ -230,6 +232,107 @@ describe('Travel async controller boundaries', () => {
     await expectState('provider:0 map:map-a marker:fresh')
   })
 
+  it('accepts plan-only progress after a newer local map selection', async () => {
+    const pending = deferred<ReadResult>()
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(plannedResult(1))
+    fixture.read.mockImplementationOnce(() => pending.promise)
+    render(fixture.harness())
+    await expectState('provider:1 map:map-a')
+    act(() => fixture.invalidate({ kind: 'context', sceneId: 'scene-a' }))
+    await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(2))
+    await act(async () => fixture.controller().selectMap('map-c'))
+    await act(async () => {
+      pending.resolve(plannedResult(2))
+      await pending.promise
+    })
+    expect(fixture.controller().state.mapId).toBe('map-c')
+    expect(fixture.controller().state.providerState?.routePlan.revision).toBe(2)
+    expect(fixture.execute).not.toHaveBeenCalled()
+  })
+
+  it.each(['same-scene', 'position-reset'] as const)(
+    'rejects an older plan even with %s travel progress',
+    async (kind) => {
+      const fixture = createFixture()
+      fixture.read.mockResolvedValueOnce(plannedResult(3))
+      const obsolete = plannedResult(2)
+      fixture.read.mockResolvedValueOnce({
+        ...obsolete,
+        providerState: {
+          ...obsolete.providerState,
+          revision: kind === 'position-reset' ? 0 : 2
+        },
+        session: snapshot('scene-a', kind === 'position-reset' ? 2 : 1)
+      })
+      render(fixture.harness())
+      await expectState('provider:1 map:map-a')
+      act(() => fixture.invalidate({ kind: 'context', sceneId: 'scene-a' }))
+      await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(2))
+      await act(() => Promise.resolve())
+      expect(fixture.controller().state.providerState?.routePlan.revision).toBe(
+        3
+      )
+      expect(fixture.controller().state.providerState?.revision).toBe(1)
+    }
+  )
+
+  it('does not resurrect a cleared plan from a late command response', async () => {
+    const pending = deferred<ReadResult>()
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(plannedResult(2))
+    const cleared = plannedResult(3)
+    fixture.read.mockResolvedValueOnce({
+      ...cleared,
+      providerState: {
+        ...cleared.providerState,
+        routePlan: {
+          sceneId: 'scene-a',
+          revision: 3,
+          plan: null
+        }
+      }
+    })
+    fixture.execute.mockImplementationOnce(() => pending.promise)
+    render(fixture.harness())
+    await expectState('provider:1 map:map-a')
+    act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    await waitFor(() => expect(fixture.execute).toHaveBeenCalledOnce())
+    act(() => fixture.invalidate({ kind: 'context', sceneId: 'scene-a' }))
+    await waitFor(() =>
+      expect(fixture.controller().state.providerState?.routePlan.revision).toBe(
+        3
+      )
+    )
+    await act(async () => {
+      pending.resolve(plannedResult(2))
+      await pending.promise
+    })
+    expect(fixture.controller().state.providerState?.routePlan).toEqual({
+      sceneId: 'scene-a',
+      revision: 3,
+      plan: null
+    })
+  })
+
+  it('accepts a journey reset while retaining the saved plan revision', async () => {
+    const fixture = createFixture()
+    const initial = plannedResult(3)
+    fixture.read.mockResolvedValueOnce(initial)
+    fixture.execute.mockResolvedValue({
+      ...initial,
+      providerState: { ...initial.providerState, revision: 0 },
+      session: snapshot('scene-a', 2)
+    })
+    render(fixture.harness())
+    await expectState('provider:1 map:map-a')
+    act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    await expectState('provider:0 map:map-a')
+    expect(fixture.controller().state.providerState?.routePlan).toEqual(
+      initial.providerState.routePlan
+    )
+  })
+
   it('terminates pending work on unmount without publishing late results', async () => {
     const pending = deferred<ReadResult>()
     const fixture = createFixture()
@@ -278,6 +381,7 @@ function createFixture() {
     execute,
     describe: (state) => ({
       revision: state.revision,
+      routePlan: state.routePlan,
       status: state.status,
       mapOptions: state.mapIds.map((id) => ({ id, label: id })),
       currentMapId: state.currentMapId,
@@ -340,6 +444,7 @@ function result(
   return {
     providerState: {
       revision,
+      routePlan: { sceneId, revision: 0, plan: null },
       status: 'ready',
       currentMapId,
       mapIds: ['map-a', 'map-b', 'map-c'],
@@ -379,4 +484,23 @@ function travelResult(
 ): ReadResult {
   const value = result(sceneId, revision, 'map-a')
   return { ...value, providerState: { ...value.providerState, status } }
+}
+
+function plannedResult(revision: number): ReadResult {
+  const value = result('scene-a', 1, 'map-a')
+  return {
+    ...value,
+    providerState: {
+      ...value.providerState,
+      routePlan: {
+        sceneId: 'scene-a',
+        revision,
+        plan: {
+          mapId: 'map-b',
+          waypoints: [{ id: `stop-${revision}` }],
+          multiplier: 2
+        }
+      }
+    }
+  }
 }
