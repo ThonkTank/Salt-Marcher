@@ -6,6 +6,7 @@ import type { TravelProviderPort } from './travel-provider-port.js'
 export interface TravelRouteDraft<P> {
   readonly snapshot: () => Readonly<{
     plan: TravelRoutePlanSnapshot<P>['plan']
+    savedRevision: number | null
     dirty: boolean
     busy: boolean
     error: string | null
@@ -16,7 +17,13 @@ export interface TravelRouteDraft<P> {
   isDirty(): boolean
   save(): Promise<boolean>
 }
-const empty = { plan: null, dirty: false, busy: false, error: null } as const
+const empty = {
+  plan: null,
+  savedRevision: null,
+  dirty: false,
+  busy: false,
+  error: null
+} as const
 const readEmpty = () => empty
 const subscribeEmpty = () => () => undefined
 

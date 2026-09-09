@@ -435,6 +435,11 @@ describe('per-scene desktop', () => {
     await client
       .$('[data-window-id="map"] button[aria-label="Reise starten"]')
       .click()
+    const routeConfirmation = client.$(
+      '[role="alertdialog"][aria-label="Reiseaktion bestätigen"]'
+    )
+    await routeConfirmation.waitForDisplayed()
+    await routeConfirmation.$('button=Speichern und fortfahren').click()
     await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
       expect.stringContaining('Reise läuft.')
     )
@@ -448,11 +453,6 @@ describe('per-scene desktop', () => {
       .$('[data-window-id="map"]')
       .$('button[aria-label="Fenster schließen"]')
       .click()
-    const routeConfirmation = client.$(
-      '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
-    )
-    await routeConfirmation.waitForDisplayed()
-    await routeConfirmation.$('button=Speichern und fortfahren').click()
     await client
       .$('[data-window-id="map"]')
       .waitForExist({ reverse: true, timeout: 5_000 })
@@ -725,9 +725,14 @@ describe('per-scene desktop', () => {
       await confirmation().waitForDisplayed()
       await confirmation().$(`button=${choice}`).click()
       await confirmation().waitForExist({ reverse: true })
-      await expect(
-        client.$('select[aria-label="Szene"] option:checked')
-      ).toHaveText('Vorhut')
+      const targetOption = client
+        .$('select[aria-label="Szene"]')
+        .$('option=Vorhut')
+      await expect(targetOption).toBeSelected()
+      await expect(client.$('.scene-desktop')).toHaveAttribute(
+        'data-scene-id',
+        (await targetOption.getAttribute('value'))!
+      )
       await selectScene(client, 'Wald')
       await info().$('button=Besetzung').click()
       await popup()
@@ -1038,6 +1043,7 @@ describe('per-scene desktop', () => {
           .activeCampaignId!
         return window.saltMarcher.session.read({ campaignId })
       })
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     const before = await read()
     const sceneId = before.scene.focusedSceneId
     const original = before.scene.scenes.find(
@@ -1069,6 +1075,7 @@ describe('per-scene desktop', () => {
       cancelled.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
     ).toBe(original)
     expect(cancelled.party).toEqual(before.party)
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     await chooseLocation()
     await confirmation().waitForDisplayed()
     await confirmation().$('button=Verwerfen und fortfahren').click()

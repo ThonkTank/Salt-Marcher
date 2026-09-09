@@ -19,6 +19,9 @@ export const workspaceMessagesDe = {
   'desktop.confirmRosterChange': 'Besetzung ändern',
   'desktop.resolveBeforeRosterChange':
     'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
+  'travel.resolveTitle': 'Reiseaktion bestätigen',
+  'travel.resolveText':
+    'Es gibt offene Änderungen. Bitte vor der Reiseaktion speichern oder verwerfen.',
   'scene.resolveTitle': 'Szene ändern',
   'scene.resolveText':
     'Vor dieser Szenenänderung die offenen Änderungen speichern oder verwerfen.',

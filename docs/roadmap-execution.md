@@ -6544,3 +6544,204 @@ Phasen 5–7 vollständig offen. Kein Handoff, keine Mainpromotion und kein öff
 Release durch diese lokalen Builds. Als nächstes den geprüften Kandidaten committen/
 pushen und seine eigenen Remote-Gates verfolgen; b6b4418de bleibt nur Nachweis
 seines vorigen Stands.
+
+### Phase 4 – Editorauflösung vor Reiseaktionen
+
+Vorheriger Turn: Fortschritt durch 1d55407b0 (produktiver persistierbarer
+Routeneditor und elf Electronfälle). Worktree sauber. Check 34311390117 läuft,
+bei Abfrage kein fehlgeschlagener Job; kein lokaler Prüfprozess aktiv.
+
+Plan vor Änderungen: Start, Position, Pause, Resume, Abort und persistierte
+Tempoänderungen gehen vor Ausführung durch den vorhandenen useDraftTransition.
+Die Aktion wird beim Nutzerklick festgelegt. Bei offenen Editoren folgen Save/
+Discard/Cancel und danach unter einer kurz gehaltenen zentralen Eingabesperre
+ein frischer Originalcontext und fachliche Vorbereitung. Kein zusätzlicher
+Writeowner und keine FIFO-/automatische Stale-Wiederholung. Ohne offene Editoren
+bleibt der bereits qualifizierte unmittelbare Befehlsweg bestehen.
+
+Nach einer Klärung: Start liest den aufgelösten Routenentwurf samt Basisrevision,
+prüft ihn gegen den aktuellen gespeicherten Plan und bewertet die Route erneut.
+Ein leerer verworfener Plan startet nichts; ein Plan auf einer anderen Karte
+wird nicht still gestartet. Pause bleibt Pause (bereits pausiert => kein Write),
+Resume bleibt Resume, Abort bleibt Abort. Relative Tempoänderungen beziehen sich
+auf den frischen Zustand; ein einmal übermittelter Auftrag bleibt danach unverändert
+bei seinem vorhandenen Recoveryowner. Position prüft die gewünschte Karte/Position
+frisch. Szene/Provider dürfen während der Klärung nicht wechseln. Der frische
+Context wird auch bei einer inzwischen unnötigen Aktion veröffentlicht.
+
+Die Wartungssperre bleibt während vorbereitender Reads/Evaluation bestehen und
+wird unmittelbar vor Übergabe an den normalen gesperrten Writeowner freigegeben.
+Unbekannte Writes bleiben bei diesem Owner. Noch offene oder fehlgeschlagene
+Editoren verhindern die Aktion, bereits erfolgreiche Saves bleiben erhalten.
+Der Transitionhook stellt seinen bereits bestehenden Pendingzustand als stabilen
+Leser bereit, damit auch die kurze Background-Write-Klärung weitere Reiseeingaben
+abweist, bevor der Dialog seine globale Sperre hält.
+
+Prüfung: konkrete vorbereitete Befehle nach Save/Discard, frische Scene-/Travel-
+Revisionen, kein Pause->Resume, leeres/verändertes/fremdes Routenresultat, relative
+Temposchritte, Scopewechsel und gesperrte Eingaben während verzögerter Vorbereitung.
+Tatsächliche Oberfläche mit mehreren Editorbesitzern, Teilerfolg und Savefehler,
+Abbrechen/Verwerfen und anschließender Reiseaktion. Passende Electronfälle und
+unveränderte Bildreferenzen prüfen; Phase 4 erst nach abschließendem Ownerinventar
+und vollständiger gemeinsamer Abnahme schließen. Phasen 5–7 bleiben unverändert.
+
+Erste Validierung: 40317 Typecheck bestanden; 49236 alle 47 gezielten Vorbereitungs-,
+bestehenden Async-, Routen- und Consolefälle bestanden. Review-Fixplan vor Erweiterung:
+Vorbereitungsreads müssen denselben vorhandenen Query-Abbruch beim Unmount/Scope-
+Wechsel verwenden. useTravelQueries bekommt eine reine latest-only Vorbereitung;
+Writes bleiben ausschließlich nach deren erfolgreicher Rückkehr beim Commandowner.
+Zusätzlich deaktiviert die bestehende Remote-Reconciliation beim Cleanup ihre
+Viewprojektion, damit auch vor Beginn eines Reads bereits abgehängte Captures
+keine Veröffentlichungs-/Schreibautorität behalten. Kein zweiter Requestzähler.
+Ein verspätet eintreffender Read nach Unmount wird ausdrücklich getestet.
+
+Fortsetzung: Der letzte Installationsturn bestätigte die unveränderten aktuellen
+Skill-Dateien; für die Roadmap entstand dadurch kein Implementierungsfortschritt.
+Worktree und SHA 1d55407b0 erneut geprüft. Die 53 lokalen gezielten Fälle sind
+bestanden. Remote-Check 34311390117 ist inzwischen fehlgeschlagen: SceneDesktop
+erwartete nach Editorauflösung Vorhut, las Wald; im Fehlerbild ist Vorhut bereits
+sichtbar. Ein späterer Standortfall zeigt einen Workspace-Stalehinweis. Ursache
+noch nicht belegt; keine Testabschächung oder pauschale Wiederholung als Heilung.
+Prüfplan: den bereits geplanten Reise-Startdialog im Electronfall bestätigen
+(dadurch beim späteren Fensterschließen kein verbleibender Routendraft), aktuelle
+Typ-/Architekturprüfung und Build, dann SceneDesktop mit diesem Stand ausführen.
+Die beiden CI-Symptome anhand dieser Ergebnisse und betroffener Owner untersuchen.
+
+Validierung: Typecheck 68077, Lint 99919, Build 91578 und Bundlebudget bestanden
+(+3393 Bytes erreichbar, unveränderte Grenzen). Architektur und gemeinsame
+Dialog-/Szenenowner: 123 Tests in elf Dateien bestanden (65428).
+Electron 15446 beendet mit sechs bestandenen/vier fehlgeschlagenen Fällen.
+Primärfehler: Test erwartete Fensterschließdialog; tatsächlich öffnet sich der
+generische Arbeitsbereichwechsel-Dialog vor Reisebeginn. Drei Folgefälle scheitern
+am verbliebenen Modal. Standortfall bestanden, dessen CI-Ursache bleibt offen.
+Fixplan vor Änderungen: den Reiseübergang passend als Reiseaktion mit offenen
+Änderungen beschriften und im Electronfall genau diesen Dialog bestätigen.
+Zusätzlich CI-Szenenauswahltest korrigieren: expect-webdriverio 5.7.0 toHaveText
+behält das einmal gefundene Element; executeCommand fragt den Selektor nicht neu
+ab. option:checked wird so nach Auswahlwechsel weiterhin als alte Wald-Option
+gelesen. Stattdessen Vorhut-Option über ihren stabilen Wert auf ausgewählt prüfen
+und dieselbe Szenen-ID am Desktop nachweisen. Kein längeres Timeout, kein Write-
+Retry, keine Unterdrückung des getrennten Workspacefehlers. Danach die gesamte
+betroffene Electron-Suite erneut mit frisch gebautem Runtime-Stand prüfen.
+
+Abnahme des korrigierten lokalen Stands: Build 40684, Typecheck 46697 und
+gezieltes ESLint 49796 bestanden. SceneDesktop 4360: alle zehn Fälle bestanden,
+einschließlich Reise-Startdialog, geschlossenem Reisefenster, Roster-Save/Discard
+vor Szenenwechsel und XP-Discard vor Standortwechsel. Nachweis:
+`.tmp/e2e-runs/functional-1788930183829-658332/summary.json`.
+30748 vollständig beendet, Exit 0: Smoke, unverändertes Bundlebudget, eigener
+Reisefunktionstest (ein Fall) und Reise-Bildprüfung gegen unveränderte Goldens.
+Funktion: `.tmp/e2e-runs/functional-1788930369308-660688/summary.json`;
+Visual: `.tmp/e2e-runs/visual-1788930458482-661130/summary.json`.
+Insgesamt elf unterschiedliche Electron-Funktionsfälle, zusätzlich Bildprüfung.
+Kein lokaler Prüfprozess mehr aktiv. Alle Builds sind ausdrücklich dirty Development
+und kein Nachweis eines Kandidaten-Handoffs oder Release-Artefakts.
+
+Plan-Audit: Reise-Voraktionsübergänge sind implementiert und gezielt abgenommen.
+Die bereits bestandenen 53 Unit-/UI-Fälle decken frische Befehlsrevisionen,
+Erhalt der Pause-Absicht, leeren verworfenen Plan, Teilerfolg und fehlgeschlagenen
+Routen-Save sowie Unmount während gesperrter Vorbereitung ab. 123 zusätzliche
+Architektur-/gemeinsame Dialog-/Szenenfälle bestehen. Der konkrete Electronweg
+bestätigt nun den Routen-Save vor dem Start; der bestehende Reise- und Bildweg
+bleibt grün. Der CI-Szenenauswahlfehler ist durch Matcher-Code und Screenshot
+erklärt und korrigiert. Der getrennte Stalehinweis aus CI 34311390117 ist lokal
+nicht reproduziert und ausdrücklich noch nicht als behoben nachgewiesen.
+
+Roadmap-Audit: Phase 4 bleibt offen. Erforderlich bleiben Ursachenklärung oder
+stärkerer Regressionstest für den CI-Stalehinweis, finales Editor-/Ownerinventar
+und gemeinsame vollständige Abnahme. `useMaintenanceDraftGuard` ist nur noch
+definiert; keine Aufrufer in src/tests gefunden. Vor Entfernung einen eigenen
+engen Korrekturplan festhalten. Dann sauberer Kandidat und dessen eigene
+Remote-Gates; derzeit kein neuer Commit, Push, Handoff oder Mainpromotion.
+Phasen 5–7 und die unveränderte öffentliche Artefaktabnahme bleiben vollständig
+Teil des Ziels.
+
+### Phase 4 – Abschließendes Editorinventar und CI-Fehlergrenze
+
+Vorheriger Turn: Fortschritt durch konkrete Reiseübergänge, korrigierten
+Szenen-Auswahltest und elf erfolgreiche Electronfälle samt Bildvergleich.
+Aktueller Worktree entspricht diesem protokollierten uncommitteten Stand.
+Plan vor Änderungen: den ausschließlich noch definierten Übergangs-Guard
+useMaintenanceDraftGuard entfernen, einschließlich seines allein benötigten
+useEffect-Imports. Die tatsächliche gemeinsame Owner-Schnittstelle bleibt
+erhalten; fehlende Laufzeitfunktionen werden weiterhin sicher abgewiesen.
+Keine fachliche Save-/Discard-Implementierung wird durch einen bloßen Guard
+ersetzt. Aufruferprüfung in src/tests/scripts ist negativ.
+Zusätzlich den CI-Standortfall zeitlich eingrenzen: fehlerfreien Workspace direkt
+nach dem erneuten Start und nach Abbrechen prüfen, bevor der Standort-Discard
+überhaupt ausgelöst wird. Damit lässt ein erneuter CI-Ausfall erkennen, ob der
+Fehler vom Start, vom Abbrechen oder von der bestätigten Aktion stammt. Keine
+Fehlermeldung schließen, kein Timeout erhöhen, kein Write wiederholen.
+Validierung: gemeinsame Dialog-/Koordinatortests und Architektur, Typprüfung;
+der stärkere Electronfall bleibt Teil der nächsten vollständigen Suite.
+
+139 Architektur-/Übergangs-/Reisefälle bestanden (97181). Die gemeinsame
+Editorabnahme umfasst 296 bestandene Fälle in 26 Dateien (3632), darunter
+Katalog, Weltplanung, Gruppen, Kampf, XP/Rast/Besetzung, Beute, Sitzungsplanung,
+Kampagnen und Updates. Typprüfung 10825 bestanden. Der Formatter verlangte nur
+das Zusammenziehen des Imports nach Guardentfernung; korrigiert. Volles Lint und
+Repositoryformat 60225 bestanden. Registrierungsinventar samt Testzuordnung:
+`docs/project/architecture/release-editor-inventory.md`.
+
+Neue konkrete Evidenz für den CI-Stalehinweis: isolierte Reproduktion unter
+`../../work/reproduce-session-read-supersession.ts` mit der echten
+CampaignWorkspaceProjection. Drei überlappende reine Sitzungsabfragen: die erste
+wird durch die zweite überholt, hängt sich per ensure an diese, dann überholt
+eine dritte die zweite. Beim Abschluss der zweiten liefert die erste `stale`,
+während die dritte noch läuft; anschließend liefern zweite/dritte `ready`.
+useHexTravelCommandPort übersetzt dieses Schedulingresultat in CapabilityError
+stale und damit unter Umständen in den Workspacehinweis. Der historische
+CI-Stack ist damit nicht rekonstruiert, der gleiche Fehlerpfad ist jedoch
+reproduzierbar. Keine Quelländerung während der laufenden Electronabnahme.
+
+Fokussierter Fixplan: settleRead in der CampaignWorkspaceProjection folgt den
+bereits vorhandenen aktuellen Reads auch nach wiederholtem Superseding. Bei
+abgebrochenem Owner sofort beenden; echte Lesefehler unverändert zurückgeben.
+Bei verworfener älterer Revision den vorhandenen aktuellen Cache verwenden.
+Keine erneute Schreibausführung, kein neuer Requestowner und keine pauschale
+Stale-Unterdrückung. Regression mit drei kontrollierten Abfragen; zusätzlich
+Abbruch und tatsächlicher Fehler der letzten Abfrage, damit Warten nicht zur
+Endlosschleife oder Fehlerverdeckung wird. Vor Implementierung scheiternden Test
+belegen, danach relevante Projektions-/Port-/Architekturtests und Typprüfung,
+anschließend erneut gebaute Electronabnahme.
+
+Regression 51462 belegt: zwei neue Fälle scheitern (Erfolg/echter Fehler),
+15 bestehen. Erste Korrektur 90527 bleibt rot: AsyncCommandCoordinator markiert
+auch ein durch Superseding abgebrochenes Signal als reason=aborted. Diese
+allgemeine bestehende Semantik wird hier nicht geändert. Präzisierter Fixplan:
+settleRead als private Methode des Workspaceowners führen und dessen tatsächlichen
+Disposedzustand als Abbruchgrenze verwenden. Dadurch folgen alle vier bestehenden
+Read-Aufrufer gültigen Ersetzungen; der abgebaute Owner beendet das Warten.
+Der neue Test verwendet außerdem den vorhandenen Fehlercode internal.
+
+Korrigierte Leseabstimmung: 11010, alle 50 Projektions-/Originalporttests
+bestanden. Die mehrfach überholte Abfrage liefert jetzt das aktuelle Ergebnis
+beziehungsweise den tatsächlichen Lesefehler; Dispose endet ohne Wiederholung.
+29263: neuer Build, Smoke, Bundlebudget und beide Electron-Suites vollständig
+bestanden (zehn SceneDesktop- und ein Reisefall). Die drei neuen Fehlergrenzen
+im Standortfall bleiben sauber. Das Budget wächst gegenüber der unveränderten
+Baseline um 3632 Bytes. Typprüfung 28134 fand nur einen fehlenden generischen
+API-Typ beim neuen vi.fn-Katalogmock; nach terminaler Electronabnahme wird dieser
+Mock typisiert und die Typprüfung samt relevantem ESLint/Test erneut ausgeführt.
+
+Abschließende lokale Prüfung: 27074 Exit 0 (Typprüfung, betroffenes ESLint und
+alle 17 Workspace-Projektionsfälle), 47740 volles Repositoryformat bestanden.
+E2E-Nachweis des aktuellen Runtime-Stands:
+`.tmp/e2e-runs/functional-1788931159301-666594/summary.json` (elf Fälle).
+
+Plan-Audit: Guard entfernt, alle gefundenen produktiven Registrierungen mit
+Save-/Discard und Testzuordnung inventarisiert, 296 gemeinsame Editorfälle
+bestanden. Standort-E2E prüft zusätzlich vor Aktion und nach Abbrechen auf
+Workspacefehler. Wiederholtes Superseding ist als konkreter Fehlerpfad mit
+rotem Ausgangstest und grüner Korrektur belegt; echter Lesefehler und Ownerabbau
+sind separat enthalten. Keine Schreibwiederholung oder Fehlerunterdrückung.
+
+Roadmap-Audit: dieser Phase-4-Abschnitt ist implementiert und lokal automatisiert
+geprüft. Vollständige Remote-Abnahme des neuen Kandidaten steht aus. Die alte
+CI-Fehleraufnahme enthält keinen Aufrufstack; deshalb wird nicht behauptet,
+dass der historische Ablauf zweifelsfrei rekonstruiert wurde. Der reproduzierte
+passende Fehlerpfad ist behoben und die strengere betroffene Suite besteht.
+Phase 4 bleibt bis zur abschließenden Kandidatenabnahme offen. Phasen 5–7,
+Handoff, Main-Gates und veröffentlichte unveränderte Artefakte bleiben Pflicht.
+Nächster Schritt: geprüften Stand sauber committen und auf den bestehenden
+Kandidatenbranch pushen, ausschließlich dessen neuen exakten SHA prüfen.

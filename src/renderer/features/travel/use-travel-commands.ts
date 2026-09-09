@@ -1,3 +1,5 @@
+import type { useTravelQueries } from './use-travel-queries.js'
+import { useTravelCommandTransition } from './use-travel-command-transition.js'
 import type { TravelRouteDraft } from './use-travel-route-draft.js'
 import { useCallback, useEffect, useRef } from 'react'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -13,13 +15,26 @@ const multipliers = [1, 2, 5, 10] as const
 /** Publishes command results; the provider owns durable execution and recovery. */
 export function useTravelCommands<P, S, M, E>(options: {
   blocked: () => boolean
+  requestTransition: (run: () => void) => void
+  prepareCommand: ReturnType<
+    typeof useTravelQueries<P, S, M, E>
+  >['prepareCommand']
   routeDraft: TravelRouteDraft<P> | undefined
   port: TravelProviderPort<P, S, M, E> | null
   scope: TravelScope | null
   projection: TravelViewProjection<P, S, M, E>
   onError: (message: string) => void
 }) {
-  const { blocked, onError, port, projection, scope, routeDraft } = options
+  const {
+    blocked,
+    onError,
+    port,
+    projection,
+    scope,
+    routeDraft,
+    requestTransition,
+    prepareCommand
+  } = options
   const onErrorRef = useRef(onError)
   useEffect(() => {
     onErrorRef.current = onError
@@ -80,6 +95,18 @@ export function useTravelCommands<P, S, M, E>(options: {
     ]
   )
 
+  const requestCommand = useTravelCommandTransition({
+    requestTransition,
+    prepareCommand,
+    blocked,
+    port,
+    scope,
+    projection,
+    routeDraft,
+    execute: applyCommand,
+    onError
+  })
+
   const positionParty = useCallback(
     async (position: P): Promise<void> => {
       if (blocked()) return
@@ -96,7 +123,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         local({ type: 'token-preview', position: null }, 'transient')
         return
       }
-      await applyCommand(
+      await requestCommand(
         {
           kind: 'position',
           sceneId: current.scope!.sceneId,
@@ -107,7 +134,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         true
       )
     },
-    [applyCommand, blocked, local, port, read, sceneRevision]
+    [requestCommand, blocked, local, port, read, sceneRevision]
   )
 
   const start = useCallback(async (): Promise<void> => {
@@ -121,7 +148,7 @@ export function useTravelCommands<P, S, M, E>(options: {
       !port.canStart(current.evaluation)
     )
       return
-    await applyCommand(
+    await requestCommand(
       {
         kind: 'start',
         sceneId: current.scope!.sceneId,
@@ -133,7 +160,7 @@ export function useTravelCommands<P, S, M, E>(options: {
       },
       true
     )
-  }, [applyCommand, port, read, sceneRevision])
+  }, [requestCommand, port, read, sceneRevision])
 
   const pauseOrResume = useCallback(async (): Promise<void> => {
     const current = read()
@@ -146,7 +173,7 @@ export function useTravelCommands<P, S, M, E>(options: {
           ? 'resume'
           : null
     if (!kind) return
-    await applyCommand(
+    await requestCommand(
       {
         kind,
         sceneId: current.scope!.sceneId,
@@ -155,14 +182,14 @@ export function useTravelCommands<P, S, M, E>(options: {
       },
       false
     )
-  }, [applyCommand, port, read, sceneRevision])
+  }, [requestCommand, port, read, sceneRevision])
 
   const abort = useCallback(async (): Promise<void> => {
     const current = read()
     if (current.lifecycle !== 'ready' || !port || !current.providerState) return
     const descriptor = port.describe(current.providerState)
     if (!['travelling', 'paused', 'blocked'].includes(descriptor.status)) return
-    await applyCommand(
+    await requestCommand(
       {
         kind: 'abort',
         sceneId: current.scope!.sceneId,
@@ -171,7 +198,7 @@ export function useTravelCommands<P, S, M, E>(options: {
       },
       false
     )
-  }, [applyCommand, port, read, sceneRevision])
+  }, [requestCommand, port, read, sceneRevision])
 
   const stepMultiplier = useCallback(
     async (direction: -1 | 1): Promise<void> => {
@@ -201,7 +228,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         return
       }
       if (current.lifecycle !== 'ready') return
-      await applyCommand(
+      await requestCommand(
         {
           kind: 'set-multiplier',
           sceneId: current.scope!.sceneId,
@@ -209,10 +236,11 @@ export function useTravelCommands<P, S, M, E>(options: {
           expectedRevision: descriptor.revision,
           expectedSceneRevision: sceneRevision()
         },
-        false
+        false,
+        direction
       )
     },
-    [applyCommand, blocked, local, port, read, sceneRevision, routeDraft]
+    [requestCommand, blocked, local, port, read, sceneRevision, routeDraft]
   )
 
   return { positionParty, start, pauseOrResume, abort, stepMultiplier }

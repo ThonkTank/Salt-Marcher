@@ -22,6 +22,7 @@ type SaveHexRoutePlanInput = Extract<
 >['input']
 type Snapshot = Readonly<{
   plan: Plan
+  savedRevision: number | null
   dirty: boolean
   busy: boolean
   error: string | null
@@ -31,6 +32,7 @@ type Snapshot = Readonly<{
 export class HexRoutePlanDraft {
   private state: Snapshot = {
     plan: null,
+    savedRevision: null,
     dirty: false,
     busy: false,
     error: null
@@ -88,7 +90,12 @@ export class HexRoutePlanDraft {
       throw new CapabilityError('stale', false)
     this.basis = structuredClone(snapshot)
     this.requested = null
-    this.publish({ plan: this.basis.plan, dirty: false, error: null })
+    this.publish({
+      plan: this.basis.plan,
+      savedRevision: this.basis.revision,
+      dirty: false,
+      error: null
+    })
   }
   private acknowledge(): boolean {
     const confirmed = this.commands.confirmed()

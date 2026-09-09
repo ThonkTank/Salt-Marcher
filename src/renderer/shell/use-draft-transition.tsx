@@ -117,8 +117,10 @@ export function useDraftTransition(
       else setBusy(false)
     }
   }
+  const isPending = useCallback(() => pending.current !== null, [])
   return {
     request,
+    isPending,
     dialog: open ? (
       <DraftResolutionDialog
         title={description?.title ?? message('draft.transitionTitle')}

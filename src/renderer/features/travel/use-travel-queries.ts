@@ -1,3 +1,5 @@
+import { prepareTravelCommand } from './prepare-travel-command.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { useCallback, useEffect, useRef } from 'react'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -226,7 +228,34 @@ export function useTravelQueries<P, S, M, E>(options: {
     state.waypoints
   ])
 
-  return { refreshContext, refreshMap, selectMap, readViewport }
+  const prepareCommand = useCallback(
+    (
+      input: Omit<
+        Parameters<typeof prepareTravelCommand<P, S, M, E>>[0],
+        'port'
+      >
+    ) =>
+      coordinator.run({
+        scope: 'travel.command-preparation',
+        entityKey: scope ? travelEntityKey(scope) : null,
+        mode: 'latest-only',
+        execute: async ({ signal }) => {
+          if (
+            !port ||
+            !scope ||
+            read().lifecycle === 'inactive' ||
+            !sameTravelScope(read().scope, scope)
+          )
+            throw new CapabilityError('stale', false)
+          signal.throwIfAborted()
+          const prepared = await prepareTravelCommand({ ...input, port })
+          signal.throwIfAborted()
+          return prepared
+        }
+      }),
+    [coordinator, port, read, scope]
+  )
+  return { refreshContext, refreshMap, selectMap, readViewport, prepareCommand }
 }
 
 export function travelEntityKey(scope: TravelScope): string {

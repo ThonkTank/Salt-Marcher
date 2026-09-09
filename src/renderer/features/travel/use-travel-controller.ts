@@ -1,3 +1,4 @@
+import { message } from '../../i18n/session-runtime.de.js'
 import {
   useTravelRouteDraft,
   type TravelRouteDraft
@@ -51,13 +52,21 @@ export function useTravelController<P, S, M, E>(options: {
   presentation?: { mapId: string | null; selected: P | null }
 }): TravelController<P, S, M, E> {
   const { commandsBlocked, routeDraft, onError } = options
+  const sceneId = options.snapshot.scene.focusedSceneId
+  const transition = useDraftTransition(sceneId, {
+    title: message('travel.resolveTitle'),
+    text: message('travel.resolveText')
+  })
+  const requestTransition = transition.request
+  const transitionPending = transition.isPending
   const maintenance = useMaintenanceEditingBlocked()
   const blocked = useCallback(
     () =>
       maintenanceDraftCoordinator.isLocked() ||
+      transitionPending() ||
       routeDraft?.snapshot().busy === true ||
       commandsBlocked?.() === true,
-    [commandsBlocked, routeDraft]
+    [commandsBlocked, routeDraft, transitionPending]
   )
   const coordinator = useAsyncCommandCoordinator()
   const projection = useTravelViewProjection<P, S, M, E>({
@@ -66,9 +75,6 @@ export function useTravelController<P, S, M, E>(options: {
     ...(options.presentation ? { presentation: options.presentation } : {})
   })
   const draftState = useTravelRouteDraft(routeDraft, options.port, projection)
-  const sceneId = options.snapshot.scene.focusedSceneId
-  const transition = useDraftTransition(sceneId)
-  const requestTransition = transition.request
   const scope = useMemo<TravelScope | null>(
     () =>
       options.port
@@ -91,6 +97,8 @@ export function useTravelController<P, S, M, E>(options: {
   const selectMap = queries.selectMap
   const commands = useTravelCommands({
     blocked,
+    prepareCommand: queries.prepareCommand,
+    requestTransition,
     routeDraft,
     port: options.port,
     scope,

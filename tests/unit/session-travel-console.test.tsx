@@ -409,6 +409,191 @@ afterEach(async () => {
 })
 
 describe('Session travel console', () => {
+  it.each(['Speichern und fortfahren', 'Verwerfen und fortfahren'])(
+    'resolves the route before Start using %s without captured discarded waypoints',
+    async (choice) => {
+      const f = fixture()
+      showPersistent(f)
+      await planRoute()
+      fireEvent.click(screen.getByRole('button', { name: 'Reise starten' }))
+      await screen.findByRole('alertdialog')
+      expect(f.commands.start).not.toHaveBeenCalled()
+      await confirmDrafts(choice)
+      await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+      if (choice.startsWith('Speichern')) {
+        await waitFor(() => expect(f.commands.start).toHaveBeenCalledOnce())
+        expect(f.commands.start.mock.calls[0]![0]).toMatchObject({
+          waypoints: [{ q: 1, r: 0 }],
+          expectedRevision: 0,
+          expectedSceneRevision: 4
+        })
+        expect(f.writePlan).toHaveBeenCalledOnce()
+      } else {
+        expect(f.commands.start).not.toHaveBeenCalled()
+        expect(f.writePlan).not.toHaveBeenCalled()
+        expect(
+          screen.getByRole('button', { name: 'Reise starten' })
+        ).toBeDisabled()
+      }
+    }
+  )
+
+  it('keeps Pause as a no-op after another editor has already paused the journey', async () => {
+    const f = fixture(travel({ status: 'travelling', revision: 3 }))
+    showPersistent(f)
+    await screen.findByRole('button', { name: 'Pause' })
+    let dirty = true
+    const savedSession = {
+      ...session,
+      scene: { ...session.scene, revision: 8 }
+    }
+    const save = vi.fn(() => {
+      dirty = false
+      f.readTravel.mockResolvedValue({
+        travel: travel({ status: 'paused', revision: 6 }),
+        session: savedSession
+      })
+      return Promise.resolve(true)
+    })
+    const unregister = maintenance.register('other-editor', {
+      label: 'EP-Entwurf',
+      isDirty: () => dirty,
+      save
+    })
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+      await confirmDrafts('Speichern und fortfahren')
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Fortsetzen' })).toBeEnabled()
+      )
+      expect(save).toHaveBeenCalledOnce()
+      expect(f.commands.pause).not.toHaveBeenCalled()
+      expect(f.commands.resume).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
+  })
+
+  it('keeps another successful save when route save fails and does not Start after discard', async () => {
+    const f = fixture()
+    let dirty = true
+    let savedValue = 0
+    const save = vi.fn(() => {
+      dirty = false
+      savedValue = 12
+      return Promise.resolve(true)
+    })
+    const unregister = maintenance.register('first-editor', {
+      label: 'EP-Entwurf',
+      isDirty: () => dirty,
+      save
+    })
+    try {
+      showPersistent(f)
+      await planRoute()
+      f.writePlan.mockImplementationOnce(() => {
+        throw new Error('route storage unavailable')
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Reise starten' }))
+      await confirmDrafts('Speichern und fortfahren')
+      await waitFor(() =>
+        expect(screen.getByRole('alertdialog')).toHaveTextContent(
+          'Routenentwurf'
+        )
+      )
+      expect(savedValue).toBe(12)
+      expect(dirty).toBe(false)
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(maintenance.isLocked()).toBe(true)
+      await confirmDrafts('Verwerfen und fortfahren')
+      await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+      expect(savedValue).toBe(12)
+      expect(save).toHaveBeenCalledOnce()
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(f.writePlan).toHaveBeenCalledOnce()
+    } finally {
+      unregister()
+    }
+  })
+
+  it.each([false, true])(
+    'blocks input during fresh preparation and abandons an unmounted view (%s)',
+    async (unmount) => {
+      const f = fixture(travel({ status: 'travelling', revision: 3 }))
+      const view = showPersistent(f)
+      await screen.findByRole('button', { name: 'Pause' })
+      const freshSession = {
+        ...session,
+        scene: { ...session.scene, revision: 8 }
+      }
+      const fresh = {
+        context: {
+          travel: travel({ status: 'travelling', revision: 6 }),
+          session: freshSession
+        },
+        routePlan: f.savedPlan()
+      }
+      f.commands.pause.mockResolvedValue({
+        travel: travel({ status: 'paused', revision: 7 }),
+        session: freshSession
+      })
+      let finish!: (value: HexTravelCommandState) => void
+      const pending = new Promise<HexTravelCommandState>((resolve) => {
+        finish = resolve
+      })
+      let dirty = true
+      const prepareRead = vi.fn(() => pending)
+      const unregister = maintenance.register('delayed-editor', {
+        label: 'EP-Entwurf',
+        isDirty: () => dirty,
+        save: () => {
+          dirty = false
+          vi.spyOn(f.api.hexTravel, 'readState').mockImplementationOnce(
+            prepareRead
+          )
+          return Promise.resolve(true)
+        }
+      })
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+        await confirmDrafts('Speichern und fortfahren')
+        await waitFor(() => expect(prepareRead).toHaveBeenCalledOnce())
+        expect(maintenance.isLocked()).toBe(true)
+        const faster = screen.getByRole('button', { name: 'Schneller' })
+        expect(faster).toBeDisabled()
+        fireEvent.click(faster)
+        fireEvent.click(screen.getByRole('button', { name: 'Token ziehen' }))
+        expect(f.commands.setMultiplier).not.toHaveBeenCalled()
+        expect(f.commands.position).not.toHaveBeenCalled()
+        if (unmount) view.unmount()
+        await act(async () => {
+          finish(fresh)
+          await pending
+        })
+        await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+        if (unmount) expect(f.commands.pause).not.toHaveBeenCalled()
+        else {
+          await waitFor(() =>
+            expect(f.commands.pause).toHaveBeenCalledExactlyOnceWith({
+              sceneId,
+              expectedRevision: 6,
+              expectedSceneRevision: 8
+            })
+          )
+          expect(
+            await screen.findByRole('button', { name: 'Fortsetzen' })
+          ).toBeEnabled()
+        }
+      } finally {
+        await act(async () => {
+          finish(fresh)
+          await pending
+        })
+        unregister()
+      }
+    }
+  )
+
   it('saves and reloads a route without starting a journey', async () => {
     const f = fixture()
     const element = (
@@ -646,3 +831,32 @@ describe('Session travel console', () => {
     ).toBeDisabled()
   })
 })
+
+function showPersistent(f: ReturnType<typeof fixture>) {
+  return render(
+    <Providers api={f.api}>
+      <TravelSurfaces
+        api={f.api}
+        setSnapshot={vi.fn()}
+        openMap={vi.fn()}
+        mapActive
+        persistent
+      />
+    </Providers>
+  )
+}
+async function planRoute() {
+  await screen.findByLabelText('Hex-Karte')
+  fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Reise starten' })).toBeEnabled()
+  )
+}
+async function confirmDrafts(choice: string) {
+  await screen.findByRole('alertdialog')
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: choice }))
+    await Promise.resolve()
+  })
+}
