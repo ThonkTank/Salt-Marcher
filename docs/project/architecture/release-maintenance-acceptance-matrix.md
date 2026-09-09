@@ -209,3 +209,22 @@ Target SHA256:
 4741a6029e7608c3f68bdda3f43b27b8711539fbde03a2875272e57b7a428597.
 This proves the coupled Release preparation-failure path, not all activation/
 recovery boundaries, the Local adapter, or public-release artifact acceptance.
+
+## Release activation interrupted after durable publication (2026-09-09)
+
+Test AppImages 0.0.152 (42/41) → 0.0.153 (42/42) pass three actual activation
+crashes in KVM. A test-only Main observer pauses after the original directory
+fsync; the qualifier SIGKILLs the identified application processes. The next
+actual AppImage startup performs recovery, with no test-driven rollback call.
+
+| Durable boundary | Journal at interruption | Full UI report SHA256 |
+|---|---|---|
+| New profile moved into place | data-moving | 1259525343ddb697e8f885e96e3b06a23991e74dbe3e15a6adad912481470530 |
+| Data activation complete | data-ready | 89437437405fcecb5df0fb57a04edc1b271d0305f260281016e056b847866f9c |
+| Program symlink switched | program-moving | 6465be10afafef9a162d9229386d1e69c6a6765438a358e4aad818e44af87a45 |
+
+Each case verifies the recovered old program/profile, a complete old-runtime
+readback, then successful UI update/restart/continue/restore with preserved later
+work. Previous rollback journals and backups remain; retry completion is matched
+to a new transaction ID. Other activation boundaries, interrupted recovery,
+stable shell admission and the Local adapter still require separate coverage.

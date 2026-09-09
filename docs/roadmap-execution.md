@@ -8842,3 +8842,83 @@ Kompatibilitätsfälle und abschließende unveränderte Artefakt-/CI-Gates bleib
 work/roadmap-phase5-update-crash-final2.log. Präzisierung des vorigen Eintrags:
 „original-DLL“ war Schreibfehler; geprüft wurde originales DDL. Candidate-CI
 34346407184 weiterhin in_progress; kein Green/Main-Abschluss behauptet.
+
+### Phase 5 – Aktivierungsabbruch nach dauerhaftem Datenwechsel
+
+Voriger Turn Fortschritt:gekoppelter Utility-Vorbereitungsabbruch/Retry/Restore
+mit Originalwartung grün. Zu Beginn sauberer Candidate f6406409f, CI34347682840
+in_progress. Plan vor Änderungen: historischer Main-Bootstrap lädt einen
+Testbeobachter für originale fs.renameSync/openSync/fsyncSync/closeSync-Aufrufe.
+Er ruft alle Originalfunktionen unverändert auf und pausiert erst nach erfolgreichem
+fsync des Elternverzeichnisses einer erkannten Journal-/Profil-/Programmänderung.
+Keine SQL-Änderung, keine neuen Schalter in normalen Releasebuilds. Expliziter
+Arm-Auftrag mit ID/Punkt; Barriere enthält originalen Journalzustand und Main-PID.
+
+Erster konkreter Fall: new-data-moved, Journal data-moving. UI führt echtes Update
+bis zum Haltepunkt aus; Parent beendet die zugeordneten Appprozesse mit SIGKILL,
+wartet auf deren Ende und startet den tatsächlichen aktuellen AppImage-Startpfad.
+Die App muss vor Datenöffnung zurücksetzen, alte Version sichtbar bereitstellen,
+Profil vollständig mit alter Runtime lesbar erhalten. Kein Test-Coordinator darf
+Rollback ausführen. Danach vollständiger erneuter UI-Update-/Restorefall, ohne
+Journal/Backup zu löschen. Vorheriges rolled-back-Journal als erwarteten
+Ausgangszustand berücksichtigen statt fälschlich Null zu verlangen.
+
+Anschließend dieselbe Beobachtung auf übrige Aktivierungs-/Recoverygrenzen
+anwenden; erster Fall schließt deren gesamte Matrix nicht ab. Der stabile
+Shellstarter und Local-Adapter benötigen weiterhin eigene End-to-End-Nachweise.
+
+53056 terminalExit0:Lint und vollständige Typprüfung.18168 terminalExit0:beide
+Test-AppImages aus unveränderten historischen Sourcecheckouts gebaut;
+0.0.152(42/41)177048458Bytes SHA285562ac0e40f24a0cb734439e6f24311f070ece24b0e33655d0389cba825157,
+0.0.153(42/42)177048079Bytes SHAc149e927db222c4863469ec78dcc1e36142e1bc274343ae7b4e845218889c8f3.
+Payload-publication-crash-1 enthält hashgebundenen uncommittierten Qualifier;
+91841 Gastlauf gestartet. Ereignisbeobachtung erfolgt nach originalem
+Verzeichnis-fsync, nicht durch Exception statt Dateiumbenennung. Lauf noch keine
+bestandene Abnahme; keine Host-Electron-Ausführung.
+
+91841 terminal GastExit0/TestExit1 nach48.6s. Tatsächlicher Datenwechselabbruch
+new-data-moved/data-moving wurde erreicht, alter Datenstand von App-Recovery
+wiederhergestellt, activation-crash-evidence.json mit vollständigem Readback
+liegt vor. Anschließender Retry wurde im Qualifier sofort fälschlich als Fehler
+gemeldet: waitFor akzeptiert noch das rolled-back-Journal des vorherigen Versuchs.
+Keine Produktkorrektur daraus ableiten; bisheriger Test erwartete leeres Journal.
+
+Fixplan: Abschlusswarteschleife darf nur eine Transaktions-ID ungleich dem
+startingJournal akzeptieren. Phase committed/rolled-back bleibt verpflichtend;
+neuer tatsächlicher Rollback bleibt Fehler. Originalartefakte wiederverwenden,
+vollständigen Gastfall erneut durchführen. Alten Beleg weder löschen noch resetten.
+
+47481 terminal: publication-crash-run-2 TestExit0 nach87.8s. BerichtSHA
+1259525343ddb697e8f885e96e3b06a23991e74dbe3e15a6adad912481470530.
+Barriere new-data-moved, Journal data-moving; ursprünglicher AppImage-PID970
+nachgewiesen SIGKILL. Tatsächlicher nächster Appstart setzt rolled-back; vier
+weitere gestartete UI-Prozesse Exit0. Unabhängiger Exportvergleich:
+activationCrash.readback==seeded; after==restored==unchanged==seeded;
+continued==protectedRead.43671 Lint/Typprüfung terminalExit0.
+
+Plan-Audit erster Aktivierungsfall bestanden; Roadmap-Audit gesamte Matrix offen.
+Nächste unveränderte Fälle: journal:data-ready und program-linked, jeweils frisches
+Profil und kompletter Recovery-/Retry-/Restorefall. Gleiche AppImage-/Qualifier-
+Bytes, nur explizit gewählter Barrierenname und getrennte Testhome-Verzeichnisse.
+Beide nacheinander in derselben begrenzten VM; Fehler eines Falls stoppt die Folge.
+
+86952 terminal: publication-pair-run-1 GastExit0/TestExit0 nach162.2s. Beide
+nacheinander ausgeführten Fälle vollständig bestanden, identische Artefaktbytes:
+- journal:data-ready / Journal data-ready:ReportSHA
+89437437405fcecb5df0fb57a04edc1b271d0305f260281016e056b847866f9c.
+- program-linked / Journal program-moving:ReportSHA
+6465be10afafef9a162d9229386d1e69c6a6765438a358e4aad818e44af87a45.
+Beide Exporte unabhängig gelesen:App-Recovery rolled-back,
+activationCrash.readback==seeded; after==restored==unchanged==seeded;
+continued==protectedRead. Der program-linked-Fall startet tatsächlich das nun
+verknüpfte Ziel-AppImage; dieses stellt vor Datennutzung das alte Paar wieder her.
+
+Plan-Audit drei konkrete Aktivierungsgrenzen bestanden. Roadmap-Audit weiterhin
+offen:prepared/data-moving/old-data-moved/program-moving/awaiting-start,
+Unterbrechung der Recovery selbst, stabiler Starter/Local-Adapter und weitere
+Fehlermatrix. Keine Phase5-/Public-Release-Freigabe aus den drei Fällen.
+
+CI34347682840 für unveränderten Candidate f6406409f ist jetzt terminal success.
+Dieser Nachweis deckt den vorigen Utility-Abbruchstand ab, nicht die noch
+uncommittierte neue Aktivierungsbeobachtung. Letztere wird separat gesichert und
+benötigt ihren eigenen vollständigen Check; kein Main-/Handoffabschluss daraus.

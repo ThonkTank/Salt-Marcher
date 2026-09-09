@@ -33,6 +33,7 @@ import {
   setCurrent,
   currentProgram
 } from '../src/main/release/deployment.js'
+import { maintenanceJournalSchema } from '../src/shared/contracts/maintenance.js'
 import { MaintenanceCoordinator } from '../src/shared/maintenance/coordinator.js'
 import {
   releaseManifestSchema,
@@ -46,6 +47,7 @@ const { values } = parseArgs({
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'maintenance-crash': { type: 'boolean', default: false },
+    'activation-crash': { type: 'string' },
     baseline: { type: 'string' },
     target: { type: 'string' },
     home: { type: 'string' }
@@ -166,6 +168,7 @@ const exits: Array<
 > = []
 const expectedKills = new Set<number>()
 let maintenanceCrash: unknown = null
+let activationCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
 async function launch(): Promise<HistoricalUiDriver> {
   const temporary = join(home, `ui-launch-${exits.length}`)
@@ -344,6 +347,86 @@ try {
       JSON.stringify(maintenanceCrash, null, 2),
       { flag: 'wx' }
     )
+  if (values['activation-crash']) {
+    const id = randomUUID()
+    const arm = join(root, 'qualification-publication-crash.json')
+    const barrier = join(root, 'qualification-publication-boundary.json')
+    writeFileSync(
+      arm,
+      JSON.stringify({ id, point: values['activation-crash'] }),
+      { flag: 'wx' }
+    )
+    ui = await launch()
+    await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    await ui.click('Einstellungen', 'body', true)
+    await ui.click('Jetzt prüfen')
+    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.click('Herunterladen')
+    await ui.expectText('Installieren und neu starten')
+    await ui.click('Installieren und neu starten')
+    await ui.click('Bestätigen', '[role="alertdialog"]')
+    const boundary = await waitFor(
+      () =>
+        existsSync(barrier)
+          ? z
+              .object({
+                id: z.literal(id),
+                point: z.literal(values['activation-crash']!),
+                pid: z.number().int().positive(),
+                journal: maintenanceJournalSchema
+              })
+              .strict()
+              .parse(JSON.parse(readFileSync(barrier, 'utf8')))
+          : null,
+      (value) => value !== null,
+      'durable activation boundary'
+    )
+    assert(boundary)
+    const killedPids = isolatedProcesses(home)
+    assert(killedPids.includes(boundary.pid))
+    for (const pid of killedPids) {
+      expectedKills.add(pid)
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+      }
+    }
+    await waitFor(
+      () => isolatedProcesses(home),
+      (pids) => pids.length === 0,
+      'activation crash processes exit'
+    )
+    ui.disconnect()
+    rmSync(arm)
+    ui = await launch()
+    await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    await ui.click('Einstellungen', 'body', true)
+    await ui.expectText(`Installierte Version: ${baseline.receipt.version}`)
+    const recovered = new MaintenanceCoordinator(root).read()
+    assert.equal(recovered?.phase, 'rolled-back')
+    assert.equal(currentProgram(root)?.deployment, originalDeployment)
+    await ui.closeApplication(home)
+    ui.disconnect()
+    ui = undefined
+    const readback = await runHistoricalArtifact(
+      baselineDirectory,
+      home,
+      'read'
+    )
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      seeded.result.response.result
+    )
+    activationCrash = { boundary, killedPids, recovered, readback }
+    writeFileSync(
+      join(home, 'activation-crash-evidence.json'),
+      JSON.stringify(activationCrash, null, 2),
+      { flag: 'wx' }
+    )
+  }
+  const startingJournal = new MaintenanceCoordinator(root).read()
   const healthyRequestStart = requests.length
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
@@ -369,12 +452,14 @@ try {
     originalDeployment,
     'Download must not activate'
   )
-  assert.equal(new MaintenanceCoordinator(root).read(), null)
+  assert.deepEqual(new MaintenanceCoordinator(root).read(), startingJournal)
   await ui.click('Installieren und neu starten')
   await ui.click('Bestätigen', '[role="alertdialog"]')
   const updated = await waitFor(
     () => new MaintenanceCoordinator(root).read(),
-    (state) => state?.phase === 'committed' || state?.phase === 'rolled-back',
+    (state) =>
+      state?.id !== startingJournal?.id &&
+      (state?.phase === 'committed' || state?.phase === 'rolled-back'),
     'target restart commits update'
   )
   assert(updated)
@@ -626,6 +711,7 @@ try {
         transportFailures,
         acceptedCrash,
         maintenanceCrash,
+        activationCrash,
         processExits,
         transaction: updated,
         seeded,

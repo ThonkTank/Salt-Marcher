@@ -1,3 +1,4 @@
+import './publication-interruption.js'
 import { historicalUiFeed, historicalUiFetch } from './ui-feed.js'
 import { app, utilityProcess } from 'electron'
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
