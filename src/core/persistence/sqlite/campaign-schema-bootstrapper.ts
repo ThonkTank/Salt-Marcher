@@ -1,3 +1,5 @@
+import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
+import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
 import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
@@ -87,6 +89,13 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
       'world-factions'
     ]),
     registration('hex', initializeHexSchema, ['world-locations']),
+    registration('hex-route-plans', initializeHexRoutePlanSchema, [
+      'scene',
+      'hex'
+    ]),
+    registration('hex-travel-receipts', initializeHexTravelCommandJournal, [
+      'hex'
+    ]),
     registration(
       'world-location-save-journal',
       initializeWorldLocationSaveJournalSchema,

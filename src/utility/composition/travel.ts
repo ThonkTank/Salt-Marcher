@@ -1,3 +1,5 @@
+import type { HexTravelCommandService } from '../../core/hex/hex-travel-command-service.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { hexTravelOperationDefinitions } from '../../shared/contracts/operations/hex-travel.js'
 import {
   defineOperationHandlers,
@@ -9,6 +11,8 @@ import type { HexTravelService } from '../../core/hex/hex-travel.js'
 
 export function createTravelHandlers(dependencies: {
   travel: HexTravelService
+  commands: HexTravelCommandService
+  activeCampaignId: () => string
   play: LivePlayService
   publishChange: (
     snapshot: ReturnType<HexTravelService['read']>,
@@ -16,6 +20,10 @@ export function createTravelHandlers(dependencies: {
   ) => void
 }): OperationHandlers<typeof hexTravelOperationDefinitions> {
   const { travel, play } = dependencies
+  const requireCampaign = (campaignId: string) => {
+    if (campaignId !== dependencies.activeCampaignId())
+      throw new CapabilityError('stale', false)
+  }
   const context = (snapshot: ReturnType<HexTravelService['read']>) => ({
     travel: snapshot,
     session: play.readSession()
@@ -33,6 +41,24 @@ export function createTravelHandlers(dependencies: {
     'travel_handlers',
     hexTravelOperationDefinitions,
     {
+      'hexTravel.executeCommand': ({ campaignId, ...input }) => {
+        requireCampaign(campaignId)
+        const receipt = dependencies.commands.execute(input)
+        // Replay returns the original receipt, but invalidations describe current data.
+        dependencies.publishChange(
+          travel.read(input.command.input.sceneId),
+          'travel-command'
+        )
+        return receipt
+      },
+      'hexTravel.commandStatus': ({ campaignId, ...input }) => {
+        requireCampaign(campaignId)
+        return dependencies.commands.status(input)
+      },
+      'hexTravel.readPlan': ({ campaignId, sceneId }) => {
+        requireCampaign(campaignId)
+        return dependencies.commands.readPlan(sceneId)
+      },
       'hexTravel.read': (input) => context(travel.read(input.sceneId)),
       'hexTravel.evaluate': (input) => travel.evaluate(input),
       'hexTravel.position': (input) =>

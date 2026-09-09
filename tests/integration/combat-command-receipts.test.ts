@@ -318,7 +318,7 @@ it('rolls back an interrupted 39-to-40 migration and retries without changing li
     expect(h.play.readSession()).toEqual(before)
     h.db.exec('DROP TRIGGER fail_migration')
     applySchemaMigrations(h.db, { role: 'campaign', path: h.root })
-    expect(h.db.pragma('user_version', { simple: true })).toBe(40)
+    expect(h.db.pragma('user_version', { simple: true })).toBe(41)
     expect(h.play.readSession()).toEqual(before)
     expect(
       h.db.prepare('SELECT COUNT(*) AS count FROM combat_command_receipt').get()

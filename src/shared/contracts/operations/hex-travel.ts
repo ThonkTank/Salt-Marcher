@@ -1,3 +1,9 @@
+import {
+  campaignHexTravelCommandSchema,
+  hexTravelCommandReceiptSchema,
+  hexTravelCommandStatusSchema,
+  hexRoutePlanSnapshotSchema
+} from '../hex-travel-command.js'
 import { z } from 'zod'
 import {
   evaluateHexRouteInputSchema,
@@ -13,6 +19,21 @@ import { read, utilityOperationFragment, write } from './registry.js'
 const sceneId = z.object({ sceneId: z.uuid() }).strict()
 
 export const hexTravelOperationDefinitions = utilityOperationFragment({
+  'hexTravel.executeCommand': write(
+    'hex-travel:execute-command',
+    campaignHexTravelCommandSchema,
+    hexTravelCommandReceiptSchema
+  ),
+  'hexTravel.commandStatus': read(
+    'hex-travel:command-status',
+    campaignHexTravelCommandSchema,
+    hexTravelCommandStatusSchema
+  ),
+  'hexTravel.readPlan': read(
+    'hex-travel:read-plan',
+    sceneId.extend({ campaignId: z.uuid() }),
+    hexRoutePlanSnapshotSchema
+  ),
   'hexTravel.read': read(
     'hex-travel:read',
     sceneId,

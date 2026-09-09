@@ -163,7 +163,7 @@ describe('Session Planner vertical slice', () => {
     expect(h.planner.read()).toEqual(before)
     db.exec('DROP TRIGGER fail_migration')
     applySchemaMigrations(db, { path: h.root, role: 'campaign' })
-    expect(db.pragma('user_version', { simple: true })).toBe(40)
+    expect(db.pragma('user_version', { simple: true })).toBe(41)
     expect(tableCount(db, 'session_planner_command_receipt')).toBe(0)
     expect(h.planner.read()).toEqual(before)
   })

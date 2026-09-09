@@ -1,3 +1,5 @@
+import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
+import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
 import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
@@ -305,6 +307,25 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('campaign-39-to-40-combat-receipts', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-40-to-41-hex-route-plans-and-receipts',
+      role: 'campaign',
+      fromVersion: 40,
+      toVersion: 41,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeHexRoutePlanSchema(database)
+        initializeHexTravelCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-40-to-41-hex-route-plans-and-receipts',
+            new Date().toISOString()
+          )
       }
     }
   ])

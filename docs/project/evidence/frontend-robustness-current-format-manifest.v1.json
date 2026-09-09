@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 40,
+    "campaignDatabaseSchemaVersion": 41,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -143,6 +143,14 @@
       "oraclePlan": "Compare ledger revisions, entries, balances, and source identities."
     },
     {
+      "registration": "hex-travel-receipts",
+      "authority": "campaign.hex-travel-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Hex-owned table through CampaignSchemaBootstrapper; current-format materializers use legacy travel operations.",
+      "oraclePlan": "Root readback requires zero rows across campaign switching and restart. Populated plan and receipt recovery is qualified separately in hex-travel-command-receipts.test.ts."
+    },
+    {
       "registration": "party-character-receipts",
       "authority": "campaign.party-character-command-receipts",
       "stateClass": "reconciliation",
@@ -165,6 +173,14 @@
       "disposition": "switch-oracle",
       "fixturePlan": "Persist a non-empty Combat phase for the focused standard Scene through LivePlayService.",
       "oraclePlan": "Compare the focused Combat memento through A/B/A and restart."
+    },
+    {
+      "registration": "hex-route-plans",
+      "authority": "campaign.hex-route-plans",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Hex-owned table through CampaignSchemaBootstrapper; current-format materializers use legacy travel operations.",
+      "oraclePlan": "Root readback requires zero rows across campaign switching and restart. Populated plan and receipt recovery is qualified separately in hex-travel-command-receipts.test.ts."
     },
     {
       "registration": "scene-group-receipts",
@@ -204,7 +220,7 @@
       "stateClass": "durable-truth",
       "disposition": "initialize-only",
       "fixturePlan": "Set SQLite user_version only through the schema bootstrap owner.",
-      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 39."
+      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly the current project schema (41)."
     }
   ],
   "installationDependencies": [

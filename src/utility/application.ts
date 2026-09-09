@@ -1,3 +1,4 @@
+import { HexTravelCommandService } from '../core/hex/hex-travel-command-service.js'
 import type Database from 'better-sqlite3'
 import {
   coreReadySchema,
@@ -428,6 +429,8 @@ const hexHandlers = createHexHandlers({
   publishChange: publishHexChange
 })
 const travelHandlers = createTravelHandlers({
+  commands: new HexTravelCommandService(activePersistence, hexTravel, play),
+  activeCampaignId: () => campaigns.activeCampaignId(),
   travel: hexTravel,
   play,
   publishChange: publishSessionChange

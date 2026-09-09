@@ -5906,3 +5906,177 @@ von Reise starten trennen und aktive Aufträge vor Wartung klären, ohne durch
 5ff524103/CI 34303180324 zuletzt in_progress, keine fehlgeschlagenen Jobs gesehen;
 kein Handoff oder Main-Abschluss behauptet. Diesen qualifizierten Zwischenstand
 als neuen Candidate sichern; vollständige exakte Remote-Gates bleiben verbindlich.
+
+### Phase 4 – Reiseplanung und laufende Reiseaufträge, Teilplan (2026-09-09)
+
+Wiederaufnahme: vorheriger Installationsturn verifizierte nur den bereits aktuellen
+Roadmap-Skill; kein Fortschritt an der App. Worktree zu Beginn sauber auf 978860ec7.
+Die kanonische Roadmap und AGENTS wurden erneut gelesen. Phase 4 bleibt offen.
+
+Befund: useTravelViewProjection hält Wegpunkte und lokalen Multiplikator nur im
+Renderer. HexTravelStore.start persistiert eine aktive Reise und verändert bereits
+Partyposition/Szenenort; diese Operation ist deshalb kein Speichern eines Entwurfs.
+useTravelCommands verwendet eine abbrechbare FIFO-Projektion ohne gehaltenen
+Wartungsowner. Im Produkt existiert nur createHexTravelProviderPort; 'dungeon' ist
+bislang eine Erweiterungsoption des generischen Ports, kein zweiter produktiver
+Provider. Keine neuen Dungeonfunktionen aus dieser Typoption ableiten.
+
+Ziel: eigenständig speicherbare Route pro Originalkampagne/Szene, getrennt von der
+aktiven Reise; bestätigte Reiseaktionen mit dauerhaftem Originalbeleg. Zentrale
+Klärung erhält Entwürfe bei Abbruch/Fehler und wartet auf laufende Aufträge. Ein
+Speichern darf weder Reisezeit starten noch Position oder Party verändern.
+
+Umsetzungsfolge:
+1. Strikte gemeinsame Hex-Reiseverträge: versionierbarer Routenstand mit eigener
+   CAS-Revision, explizites Speichern/Löschen des Plans, bestehende sechs Reise-
+   aktionen, UUID-Auftragsidentität und Originalkampagne. Status trennt originalen
+   Beleg von frischer Reise-/Routenprojektion. Vertragstests prüfen insbesondere
+   die Trennung von Planrevision, Reiserevision und Szenenrevision sowie Grenzen.
+2. SQL beim Hex-Aggregat: additive Migration für Plan und unveränderliche Belege;
+   atomare Aktion samt Beleg, Replay vor CAS, Status ausschließlich lesend.
+   Utility prüft Originalkampagne, neue Aktionen Originalszene. Bestehende APIs
+   bleiben kompatibel. Native Tests: Rollback, Replay, spätere Änderungen,
+   Neustart, Quellen-/Versionsschutz. Frozen-0.2-Fixtures bleiben unverändert.
+3. Originalgebundener Rendererport und gehaltener Befehlsowner; unklarer Ausgang
+   wird über Belege geklärt, nicht blind erneut geschrieben. Planowner registriert
+   Save/Discard/Cancel und sperrt lokale Änderungen während zentraler Klärung.
+   Laden stellt gespeicherte Wegpunkte wieder her, Start bleibt eigene Aktion.
+4. UI-/Electron-Abnahme: Route speichern ohne Reisebeginn, Wiederladen, Verwerfen,
+   Abbrechen, mehrere Editoren, fehlgeschlagenes Speichern, laufender/verlorener
+   Auftrag und spätere Arbeit. Danach vollständiges Phase-4-Inventar und getrennte
+   Plan-/Roadmap-Audits, bevor Phase 4 geschlossen werden darf.
+
+Erster überprüfbarer Abschnitt ist der gemeinsame Vertrag. Er aktiviert noch
+keinen neuen Datenweg; Backend und UI sind danach weiterhin explizit offen.
+
+Vertragsprüfung: zwölf Fälle bestanden. Gezieltes Lint fand eine ungenutzte
+Destrukturierungsvariable im Negativtest; Typecheck wurde durch && noch nicht
+begonnen. Korrekturplan: den absichtlich falschen CAS-Payload explizit konstruieren,
+anschließend Vertragstests, Lint und Typecheck erneut prüfen.
+
+Vertragsabschnitt – Prüfergebnis: Lauf 82509 exit 0: gezieltes ESLint, zwölf
+Hex-Reisevertragstests und beide Typecheck-Projekte bestanden. Prettier --check
+für beide neuen Dateien und git diff --check bestanden ebenfalls. Kein nativer
+Test, Build oder Electronlauf ist für diesen Abschnitt gestartet worden.
+
+Plan-Audit Vertragsabschnitt: Plan und aktive Reise haben getrennte Payloads und
+Revisionen; Löschen ist explizit plan:null. Alle sechs bisherigen Reiseaktionen
+behalten ihre Eingaben. Der neue Kampagnenumschlag verlangt eine UUID; Beleg und
+Status enthalten getrennte Original-/Frischprojektionen. Grenzen für Wegpunkte,
+Multiplikator und Koordinaten sind durch wiederverwendete Hex-Verträge und
+Negativtests belegt. Kein Dateipfad-/SQL-Zugriff für den Renderer hinzugefügt.
+
+Roadmap-Audit: dies ist ausschließlich die geprüfte Schnittstellenbasis des oben
+aufgezeichneten Teilplans. Persistenz, Migration, Utility-Capabilities, gehaltene
+Rendererowner sowie deren native und UI-/Electronabnahme fehlen weiterhin. Kein
+behaupteter Schutz offener Reiserouten und kein Phase-4-Abschluss. Nächster Schritt
+ist Abschnitt 2: Hex-eigene Plan-/Belegtabellen und atomarer Executor. Bestehende
+Datenstände Installation 42/Kampagne 40/Registry 20 wurden noch nicht verändert.
+Änderungen dieses Abschnitts liegen uncommitted im Candidate-Worktree; kein
+Handoff/Main-Push/Release. Exakter Vorgänger-SHA 978860ec7 in CI 34304409104 beim
+aktuellen Abruf weiterhin in_progress (conclusion leer); nicht als grün gewertet.
+
+### Phase 4 – Hex-Persistenz und atomare Reisebefehle, Ausführung (2026-09-09)
+
+Voriger Zielturn: Fortschritt durch geprüfte Vertragsbasis. Worktree stimmt mit
+protokolliertem Stand überein. Konkretisierung vor Backendänderung: neuer Hex-
+RoutePlanStore besitzt Planrevision und JSON; Löschen erhält einen Tombstone mit
+weiterlaufender Revision. HexTravelCommandJournal besitzt unveränderliche Belege.
+HexTravelCommandService verbindet vorhandenen HexTravelService, LivePlayService
+und CampaignUnitOfWork auf derselben aktiven Kampagnenverbindung. Kein Import des
+LivePlayService in hex-travel.ts (bestehende Gegenrichtung bleibt zyklusfrei).
+Plan-Save prüft Szenen-CAS und vorhandene Karte/Wegpunkte, setzt aber weder Reise,
+Spielzeit noch Partyposition. Die Route bleibt auch nach explizitem Start als
+Plan erhalten; Start und Plan-Löschen sind getrennte Benutzerabsichten.
+Migration 40→41 plus Registry 21 und Bootstrap verwenden dieselben Hex-eigenen
+Initializer. Status/Planlesen sind kampagnengebunden, neue Writes fokusgebunden.
+Native Qualifikation muss alle sieben Varianten, atomaren Rollback, Replay nach
+späteren Änderungen und Neustart, read-only Status, falsche Kampagne/Fokus und
+40→41-Migration abdecken. Keine Behauptung einer fertigen Rendereranbindung.
+
+Backendprüfung: 20 native Reise-/Belegfälle bestanden (47366); Typecheck 46333
+bestand. Vollständiger Fast-Lauf 52264 beendete Format/Lint/Type erfolgreich,
+scheiterte dann mit zwei Architekturabweichungen (85/87 bestanden): neue Hex-
+DDL referenziert direkt die Scene-Tabelle; der Renderer-Architekturprüfer verlangt
+noch den im Vorgänger entfernten use-session-mutation-controller.
+
+Korrekturplan vor Änderungen:
+- Hex-Plan-DDL folgt vorhandenen Hex-Verantwortungsgrenzen mit eigener scene_id;
+  Szenengültigkeit wird ausschließlich über SceneStore geprüft. Kein fremdes
+  Scene-SQL und keine Ausnahme im Ownership-Test. Es gibt aktuell keinen produktiven
+  Szenenlöschpfad; keine automatische Scene-Cascade als implementiert ausgeben.
+- Architekturprüfer auf tatsächlichen use-scene-commands-Owner mit erforderlicher
+  Maintenance-/Transition-/Originalport-Anbindung umstellen; Negativprobe für eine
+  entfernte Maintenance-Anmeldung ergänzen. Nicht nur den alten Gateeintrag löschen.
+- Reviewfund unabhängig von Testfehlern: position löscht hex_journey und setzt die
+  sichtbare Reiserevision zurück. Start im neuen Belegvertrag verlangt deshalb
+  zusätzlich expectedSceneRevision und prüft diese vor Wirkung. Legacy-Start-API
+  bleibt unverändert; neuer nativer Fall belegt Ablehnung nach Neupositionierung
+  trotz identischer Reiserevision. Vertrags-/Backendtests und statische Gates neu.
+
+Korrekturrunde 16567: 54 Vertrags-/Native-/Architekturfälle bestanden. Erneuter
+Fast-Lauf 10602 bestand vollständiges Format/Lint, Typecheck meldete danach einen
+Testtypfehler: Zugriff auf expectedRevision über eine noch ungeschnittene
+Befehlsunion. Fixplan: die vor Neupositionierung erfasste Reiserevision separat
+halten und sowohl im Startauftrag als auch in der Assertion verwenden. Kein Cast
+und keine abgeschwächte Assertion. Danach gezieltes Lint/Format, beide Typechecks,
+volle portable Tests und übrige Fast-Gates; Build/Smoke/Bundle erst danach.
+
+Lauf 97078: beide Typechecks und alle 87 Architekturtests bestanden; portable Unit-
+Suite 1436/1439 bestanden. Drei Fehler betreffen veraltete Current-Format-Metadaten
+und erwartete Versionspfade (noch Kampagne 40). Integration/Build wurden dadurch
+noch nicht ausgeführt. Fixplan: ausschließlich das aktuelle Qualifikationsmanifest
+auf 41 aktualisieren und neue Bootstrap-Owner in tatsächlicher Reihenfolge
+aufnehmen. Root-Kohorte bekommt überprüfte initialize-only-Abdeckung der beiden
+anfangs leeren Hex-Tabellen mit echten Row-Count-Assertions; keine Behauptung
+gefüllter Reisebelege in diesem Fixture. Die separaten Reiseintegrationstests
+belegen deren gefüllte Zustände. Versionspfad-Test auf echte 40→41-Kante ergänzen;
+Frozen-0.2-Dateien unverändert. Danach Current-Format-/Versions-Unitfälle und volle
+Integration sowie die übrigen Fast-/App-Gates ausführen. Die 1436 bestandenen
+unveränderten Unitfälle müssen dafür nicht pauschal erneut laufen.
+
+Backendabschluss – Nachweise: 14600 exit 0, neun gezielte Versions-/Manifest-/
+Rootqualifikationsfälle bestanden. 60379 exit 0: gezieltes Lint der Korrekturen,
+beide Typechecks, alle 387 Integrationstests, Referenz-/Generierungskatalog,
+Version-Truth, Render-Artefaktprüfung und check:portable:app (Build, Smoke, Bundle)
+bestanden. Renderergraph weiterhin 1656365 Bytes, keine Baseline-/Limitänderung.
+Vollständiges Format/Lint bestanden zuvor in 10602; danach nur dokumentierte
+Testtyp-/Versions- und Qualifikationskorrekturen, jeweils gezielt geprüft/formatiert.
+87 Architekturtests bestanden im finalen Portablerun; dessen 1436 erfolgreichen
+Unitfälle plus gezielt korrigierte drei Fälle ergeben vollständige Unit-Abdeckung
+für diesen Abschnitt, ohne einen einzelnen erfolgreichen Full-Fast-Lauf zu behaupten.
+Keine laufenden lokalen Test-/Buildprozesse. Frozen tests/fixtures/release-0.2.0
+besitzen keinen Diff. Schema jetzt Installation 42/Kampagne 41/Registry 21.
+
+Plan-Audit Backendabschnitt: sieben explizite Befehlsvarianten besitzen atomare,
+fingerabdruckgebundene unveränderliche Belege. Replay prüft den vorhandenen Beleg
+vor aktueller Fokus-/CAS-Prüfung; Status ist nachgewiesen query_only-kompatibel.
+Native Tests erzwingen Belegfehler nach Wirkung und vergleichen das vollständige
+vorherige Reise-/Session-/Planzustandspaar, anschließend Originalergebnis nach
+späterer XP-/Fokusänderung und Datenbankneustart. Neue Aktionen auf fremdem Fokus
+und falscher Kampagne werden verworfen. Plan-Save verändert ausschließlich Plan;
+Clear erhält Revisionstombstone. Zusätzlicher Szenen-CAS verhindert Start nach
+Neupositionierung trotz zurückgesetzter Reiserevision. Migration 40→41 bleibt
+bei Fehler einschließlich DDL atomar und bewahrt eine laufende Reise sowie Session.
+Initializer liegen beim Hex-Aggregat und werden von Migration und Bootstrap
+verwendet. Utility-Capabilities sind über Zod/GM-Rolle registriert; Legacy-APIs
+bleiben unverändert. Alter Renderer-Architekturverweis durch tatsächliche
+Maintenance-/Transition-/Originalport-Verpflichtung mit Negativprobe ersetzt.
+
+Roadmap-Audit: Vertrags-/Backendabschnitte 1–2 des Reise-Teilplans erfüllt.
+Abschnitte 3–4 (Originalport, gehaltener Rendererowner, persistierte Planprojektion,
+zentrale Save/Discard/Cancel-Anbindung, UI-/Electronabnahme) sind ausdrücklich
+noch offen. Bestehendes Travel-UI nutzt weiterhin die Legacy-APIs; daher keine
+Behauptung, Reiseentwürfe seien bereits in der ausgelieferten Oberfläche sicher.
+Phase 4 bleibt offen, ebenso Phasen 5–7. Nächste Arbeit: useSessionTravelIntegration
+mit Originalkampagnenbindung ergänzen und den generischen Travel-Port um Plan-/
+Belegoperationen erweitern; gehaltene Originalantworten dürfen bei Scopewechsel
+nicht vom bisherigen FIFO-Abbruch verworfen werden. Vor UI-Änderungen konkreten
+Teilplan mit Lifecycle-/Draft-Abnahmekriterien fortschreiben.
+
+Voriger Candidate 978860ec7 hat im abgeschlossenen Portable-Job 102317982553 den
+nun behobenen missing_owner_source-Fehler; andere aufgelistete Native-/Linuxjobs
+grün, Aggregat zuletzt noch in_progress. Nicht handoff-fähig behauptet. Diesen
+geprüften Backendzwischenstand jetzt committen/pushen; exakte Remote-Gates sowie
+Handoff/Main-Promotion bleiben ausstehend. Lokaler Dirty-Build war ausschließlich
+Qualifikation und ist kein Übergabe-/Releaseartefakt.

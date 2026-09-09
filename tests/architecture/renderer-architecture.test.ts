@@ -18,6 +18,21 @@ architectureGate(
   () => {
     const sources = sourceMap('src/renderer')
     expect(rendererControllerBoundaryViolations(sources)).toEqual([])
+    const sceneOwner = 'src/renderer/features/session/use-scene-commands.tsx'
+    expect(
+      rendererControllerBoundaryViolations({
+        ...sources,
+        [sceneOwner]: sources[sceneOwner]!.replace(
+          'useMaintenanceDraft(',
+          'missingMaintenance('
+        )
+      })
+    ).toContainEqual(
+      expect.objectContaining({
+        path: sceneOwner,
+        code: 'missing_required_call'
+      })
+    )
     const mutations = [
       {
         path: 'src/renderer/features/session/use-group-manager-controller.ts',
