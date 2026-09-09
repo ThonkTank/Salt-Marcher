@@ -238,7 +238,7 @@ it('migrates 38 to 39 atomically without changing the campaign contents', () => 
     expect(h.play.readSession()).toEqual(before)
     h.db.exec('DROP TRIGGER fail_migration')
     applySchemaMigrations(h.db, { role: 'campaign', path: h.root })
-    expect(h.db.pragma('user_version', { simple: true })).toBe(41)
+    expect(h.db.pragma('user_version', { simple: true })).toBe(42)
     expect(h.play.readSession()).toEqual(before)
     expect(
       h.db

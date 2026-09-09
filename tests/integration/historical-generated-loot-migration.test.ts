@@ -1,3 +1,10 @@
+import {
+  initializeLootOperationJournalSchema,
+  LootOperationJournal
+} from '../../src/core/loot/loot-operation-journal.js'
+import { LootService } from '../../src/core/application/loot-service.js'
+import { PartyStore } from '../../src/core/party/party-store.js'
+import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
 import { expectedHistoricalGeneratedLoot } from '../../scripts/qualification/historical-loot-expectations.js'
 import { TreasureStore } from '../../src/core/loot/loot-store.js'
 import { CharacterLootStore } from '../../src/core/loot/character-loot-store.js'
@@ -131,6 +138,42 @@ it('hydrates the actual reward-v1 run after migrating its original schema-30 dat
         )
         .all()
     ).toEqual(receipts)
+    const treasure = new TreasureStore(db).read(expected.treasure.id)!
+    const command = {
+      commandId: randomUUID(),
+      treasureId: treasure.id,
+      expectedTreasureRevision: treasure.revision,
+      expectedPartyRevision: new PartyStore(db).read().revision,
+      items: [
+        {
+          itemId: treasure.items[0]!.id,
+          shares: [{ characterId, quantity: 1 }]
+        }
+      ]
+    }
+    const distributed = new LootService(
+      fixedSqliteDatabaseAccess(db)
+    ).distribute(command)
+    const afterDistribution = new CharacterLootStore(db).ledger(characterId)
+    expect(afterDistribution.entries).toHaveLength(corrected.entries.length + 1)
+    expect(
+      new LootService(fixedSqliteDatabaseAccess(db)).distribute(command)
+    ).toEqual(distributed)
+    db.close()
+    db = new Database(path, { fileMustExist: true })
+    expect(
+      new LootService(fixedSqliteDatabaseAccess(db)).distribute(command)
+    ).toEqual(distributed)
+    expect(new CharacterLootStore(db).ledger(characterId)).toEqual(
+      afterDistribution
+    )
+    expect(
+      db
+        .prepare(
+          'SELECT * FROM loot_operation_receipt_v30_archive ORDER BY command_id'
+        )
+        .all()
+    ).toEqual(receipts)
     expect(sessionGeneratedRunSchema.safeParse(run).success).toBe(false)
     expect(
       persistedSessionGeneratedRunSchema.safeParse({
@@ -149,5 +192,39 @@ it('hydrates the actual reward-v1 run after migrating its original schema-30 dat
   } finally {
     db.close()
     rmSync(root, { recursive: true, force: true })
+  }
+})
+
+it('preserves existing schema-41 command receipts when applying the repair', () => {
+  const db = new Database(':memory:')
+  try {
+    initializeLootOperationJournalSchema(db)
+    db.pragma('user_version = 41')
+    const journal = new LootOperationJournal(db)
+    const command = {
+      commandId: randomUUID(),
+      operationType: 'distribute' as const,
+      requestFingerprint: 'existing-request',
+      targetId: randomUUID(),
+      schema: z.object({ revision: z.number() }),
+      result: { revision: 7 }
+    }
+    journal.record(command)
+    const before = db.prepare('SELECT * FROM loot_operation_receipt').all()
+    applySchemaMigrations(db, { path: ':memory:', role: 'campaign' })
+    expect(db.pragma('user_version', { simple: true })).toBe(42)
+    expect(db.prepare('SELECT * FROM loot_operation_receipt').all()).toEqual(
+      before
+    )
+    expect(journal.read(command)).toEqual({
+      targetId: command.targetId,
+      result: command.result
+    })
+    applySchemaMigrations(db, { path: ':memory:', role: 'campaign' })
+    expect(db.prepare('SELECT * FROM loot_operation_receipt').all()).toEqual(
+      before
+    )
+  } finally {
+    db.close()
   }
 })

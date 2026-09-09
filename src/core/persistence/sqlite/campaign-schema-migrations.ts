@@ -1,3 +1,4 @@
+import { initializeLootOperationJournalSchema } from '../../loot/loot-operation-journal.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
@@ -324,6 +325,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-40-to-41-hex-route-plans-and-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-41-to-42-active-loot-receipts',
+      role: 'campaign',
+      fromVersion: 41,
+      toVersion: 42,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeLootOperationJournalSchema(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-41-to-42-active-loot-receipts',
             new Date().toISOString()
           )
       }

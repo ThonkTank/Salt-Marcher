@@ -7774,3 +7774,76 @@ nativen Erwartungsvertrag plus explizite Installation-/Partyformat-Ergänzungen
 verwenden. Erst danach diesen Bereich schließen. Jetzt gezielte Formatterausnahme
 und gepinnte corrected-Quellidentität als Folgecommit pushen; neue CI muss den
 neuen SHA prüfen. Keine Main-Promotion/Handoff in diesem Abschnitt.
+
+### Phase 5 – Vollständiger generierter Loot-Artefaktvergleich bis 42/41
+
+Voriger Turn Fortschritt: Adapter, immutable Candidate/Draft-PR und erfolgreicher
+korrigierter AppImage-Readback. Check 34329574327 für 462c7a45 ist weiterhin pending
+bestätigt, nicht beendet. Aktueller Checkout sauber. Plan: neuer Qualifier nutzt
+das bestehende vollständige Loot-Erwartungsmodell und ergänzt exakt die anhand
+Originalmigrationen geprüften Profiländerungen 30→42/41: fünf Stufe-3-Mitglieder
+mit untrusted Burden/1200, Registryrevision 0 und lastOpenedAt null, Settingsrevision
++2 (altes Sessionlayout und spätere Desktopumstellung), Theme erhalten. Nur das
+bekannte Standardlayout zulassen. Alle übrigen Profilfelder vollständig vergleichen.
+
+Danach Originalzielservice teilt eine weitere manuelle Karte zu. Vergleich erlaubt
+nur deklarierte Schatz-/Ledgerrevision, Zuteilungsmenge/-wert, Änderungszeit und
+einen neuen Ledger-Eintrag; Generatorlauf, eigener Inhalt und vorhandene Einträge
+bleiben exakt gleich. Anschließend eigener neuer Prozess für Readback; Quelle
+ebenfalls erneut unverändert lesen. Aktuelle Artefaktbytes wiederverwenden, neue
+Arbeitskopie. Unitfälle schützen die enge Profilumwandlung vor stiller Normalisierung.
+
+### Phase 5 – Korrekturrunde: aktive Loot-Befehlsbelege nach Migration
+
+Erneut geprüft: der vollständige AppImage-Lauf in
+work/roadmap-phase5-generated-loot-full-artifact.log scheitert beim Weiterarbeiten
+mit `no such table: loot_operation_receipt`. Die Migration 30→31 archiviert die
+alten Belege; bereits auf 41 migrierte Profile können ohne aktive Belegtabelle
+vorliegen. Der bisherige native Korrekturtest umging den Befehlsservice und war
+für diese Fortsetzbarkeit zu schwach. Kein vollständiger Phasennachweis.
+
+Korrekturplan vor Produktänderungen: Regression mit der unveränderten originalen
+Schema-30-Fixture über LootService.distribute einschließlich Wiederholung und
+Neustart ergänzen. Fehlverhalten zuerst reproduzieren. Die kanonische Tabellen-
+initialisierung zum LootOperationJournal verschieben und sowohl für frische DBs
+als auch in einer neuen Vorwärtsmigration 41→42 verwenden. Historische Migration
+30→31 nicht umschreiben. Bestehende aktive und archivierte Belege erhalten;
+Registryversion von 21 auf 22 erhöhen. Neu benötigte Erwartungen gezielt anpassen,
+gepinnte historische Quellidentitäten unverändert lassen. Native Migrationstests,
+Versionstruth und Typprüfung durchführen; danach neues unveränderliches Ziel-
+artefakt für den vollständigen Lauf vorbereiten. Produktionsaktivierung, gesamte
+Fehlermatrix und restliche Phasen bleiben weiterhin offen.
+
+Check 34329574327 aktuell noch in_progress; Portable fehlgeschlagen, beide
+plattformnativen Jobs und verpackter Harness erfolgreich. Fehlerursache vor
+nächstem Candidate-Push ermitteln; kein Handoff aus unvollständigem Check.
+
+Regressionsbefund: RED-Lauf 99940 Exit 1 reproduziert exakt die fehlende aktive
+Tabelle im echten DistributeLootCommandHandler. Nach neuer 41→42-Migration besteht
+51822 Exit 0 einschließlich Befehlswiederholung und Neustart. Erweiterter Lauf
+16487: 23 Tests bestanden, zwei alte Erwartungen in combined-schema-35-migration
+verlangen weiterhin 41 statt aktuellem 42; Versionstruth und Typecheck bestanden.
+Korrekturplan: ausschließlich Assertions auf den aktuellen Endstand in den sieben
+betroffenen Migrationstests aktualisieren; historische Eingangsstände und gepinnte
+Artefakte unverändert lassen. Neuer Loot-Qualifier muss Ziel 42/42 verlangen.
+
+Erweiterte Prüfung 33681 Exit 0: 101 Tests in elf Dateien bestanden. Neue
+Vorwärtsmigration erhält bestehende aktive Belege und alle vier historischen
+Archivbelege; Verteilen ist nach Neustart idempotent. Lint und Formatprüfung
+78273 Exit 0; git diff --check sauber. Plan-Audit dieser Reparatur lokal erfüllt,
+Roadmap-Audit weiterhin offen bis neues tatsächliches Zielartefakt qualifiziert ist.
+
+Portable-Joblog 102394928389 jetzt direkt abgerufen: zwei Fehler in
+version-truth.test.ts, da die reward-v1-Erweiterung noch nicht im erwarteten
+Lesbarkeitsvertrag und Dokument abgebildet war. Dokument bereits im aktuellen
+Versionsabgleich korrigiert. Fixplan: erwartete explizite Liste um reward-v1
+ergänzen; Unknown-Version-Ablehnung und aktuelle Generatorversion unverändert
+prüfen. Gezielt Versionstruth-/historische Unitfälle erneut ausführen.
+
+Versionstruth-Unitlauf 33211 fand zusätzlich die explizite alte Kampagnenpfad-
+erwartung 41. Im Rahmen des aufgezeichneten Endstand-Abgleichs auf 42 samt
+vollständigem Pfad korrigiert. Wiederholung 22765 Exit 0: fünf Unitfälle bestanden.
+Keine lokale Prüfung läuft mehr. Nächster Schritt: aktuellen Reparaturstand
+als Candidate-Commit sichern, vollständigen Check auslösen und ihn als neuen
+unveränderlichen 42/42-Zielstand für die AppImage-Qualifikation verwenden.
+Historische Artefakte bleiben unverändert. Main und reale Installation unberührt.
