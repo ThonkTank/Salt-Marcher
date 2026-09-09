@@ -1975,7 +1975,7 @@ contracts retain their existing boundary validation. Renderer growth remains
 within the unchanged bundle baseline allowance.
 
 Integration with the current maintenance owners also exposed stale journey
-revisions after reopening a travelling map. Explicit journey controls now use
+revisions after reopening a travelling map. Explicit journey controls and token positioning now use
 the existing read-only preparation step before the existing command owner;
 unknown outcomes still resolve through receipts without automatic write retries.
 The desktop acceptance covers both themes at 240 × 160 minimum window size.

@@ -139,6 +139,9 @@ describe('Travel async controller boundaries', () => {
     fixture.read.mockResolvedValueOnce(
       result('scene-a', 0, 'map-a', 'initial', 1)
     )
+    fixture.read.mockResolvedValueOnce(
+      result('scene-a', 0, 'map-a', 'initial', 1)
+    )
     fixture.read.mockImplementationOnce(() => remote.promise)
     fixture.execute.mockImplementationOnce(() => command.promise)
     render(fixture.harness())
@@ -147,7 +150,7 @@ describe('Travel async controller boundaries', () => {
     act(() => fixture.controller().dropToken({ id: 'position-1' }))
     await waitFor(() => expect(fixture.execute).toHaveBeenCalledTimes(1))
     act(() => fixture.invalidate({ kind: 'context', sceneId: 'scene-a' }))
-    await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(3))
     command.resolve(result('scene-a', 0, 'map-a', 'local-command', 2))
     await expectState('marker:local-command')
 
@@ -208,6 +211,28 @@ describe('Travel async controller boundaries', () => {
     expect(fixture.controller().state.mode).toBe('inspect')
   })
 
+  it('refreshes a position intent before submitting its scene revision', async () => {
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(result('scene-a', 0, 'map-a', 'old', 1))
+    fixture.read.mockResolvedValueOnce(
+      result('scene-a', 0, 'map-a', 'fresh', 2)
+    )
+    fixture.execute.mockResolvedValue(
+      result('scene-a', 0, 'map-a', 'positioned', 3)
+    )
+    render(fixture.harness())
+    await expectState('marker:old')
+    act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    await expectState('marker:positioned')
+    expect(fixture.execute).toHaveBeenCalledExactlyOnceWith({
+      kind: 'position',
+      sceneId: 'scene-a',
+      mapId: 'map-a',
+      position: { id: 'position-1' },
+      expectedSceneRevision: 2
+    })
+  })
+
   it('accepts a newer scene after position resets its journey revision', async () => {
     const fixture = createFixture()
     fixture.read.mockResolvedValue(result('scene-a', 5, 'map-a', 'old', 5))
@@ -228,6 +253,7 @@ describe('Travel async controller boundaries', () => {
     const view = render(fixture.harness(snapshot('scene-a', 5)))
     await expectState('provider:5')
     act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    await waitFor(() => expect(fixture.execute).toHaveBeenCalledOnce())
     view.rerender(fixture.harness(snapshot('scene-a', 6)))
     await act(async () => {
       pending.resolve(result('scene-a', 0, 'map-a', 'fresh', 6))
@@ -285,6 +311,7 @@ describe('Travel async controller boundaries', () => {
     const pending = deferred<ReadResult>()
     const fixture = createFixture()
     fixture.read.mockResolvedValueOnce(plannedResult(2))
+    fixture.read.mockResolvedValueOnce(plannedResult(2))
     const cleared = plannedResult(3)
     fixture.read.mockResolvedValueOnce({
       ...cleared,
@@ -322,7 +349,7 @@ describe('Travel async controller boundaries', () => {
   it('accepts a journey reset while retaining the saved plan revision', async () => {
     const fixture = createFixture()
     const initial = plannedResult(3)
-    fixture.read.mockResolvedValueOnce(initial)
+    fixture.read.mockResolvedValue(initial)
     fixture.execute.mockResolvedValue({
       ...initial,
       providerState: { ...initial.providerState, revision: 0 },

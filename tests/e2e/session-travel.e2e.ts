@@ -165,6 +165,7 @@ describe('Session map and travel console', () => {
         'Hex q=1, r=0',
       { timeout: 5_000, timeoutMsg: 'Direct token drag did not persist.' }
     )
+    await client.$('button=Route planen').waitForEnabled()
     await dragToken(1, 0)
     await client.waitUntil(
       async () =>

@@ -60,12 +60,9 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
       return (
         requestTransition(() => {
           if (blocked() || !isCurrent(target)) return Promise.resolve()
-          // A running journey can advance while its window is closed. Re-read
-          // its revision before sending an explicit control intent.
-          if (
-            !needsResolution &&
-            (original.kind === 'start' || original.kind === 'position')
-          )
+          // Journey and position controls use a fresh revision, including after
+          // an earlier command publishes before the workspace refresh settles.
+          if (!needsResolution && original.kind === 'start')
             return execute(original, clearDraft)
           return (async () => {
             const held = maintenanceDraftCoordinator.begin()
@@ -92,10 +89,7 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
               if (preparation.status !== 'success' || !isCurrent(target)) return
               const prepared = preparation.value
               const view = read()
-              if (
-                (original.kind === 'start' || original.kind === 'position') &&
-                view.mapId !== original.mapId
-              )
+              if (original.kind === 'start' && view.mapId !== original.mapId)
                 return
               const freshTarget = capture()
               if (
