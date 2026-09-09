@@ -7847,3 +7847,74 @@ Keine lokale Prüfung läuft mehr. Nächster Schritt: aktuellen Reparaturstand
 als Candidate-Commit sichern, vollständigen Check auslösen und ihn als neuen
 unveränderlichen 42/42-Zielstand für die AppImage-Qualifikation verwenden.
 Historische Artefakte bleiben unverändert. Main und reale Installation unberührt.
+
+### Phase 5 – Unveränderliches Reparaturartefakt 42/42
+
+Voriger Turn war Fortschritt: neue Vorwärtsmigration samt 106 gezielten Tests.
+Vollständiger Formatcheck 7934 Exit 0. Reparatur jetzt als
+6d7889ca451762259bc4f472851c893bce57e1e0 auf dem Candidate gepusht (17125 Exit 0),
+Checkout danach sauber; vollständige CI noch nicht als bestanden behauptet.
+
+Plan: neuen Quellkatalogeintrag repaired mit genau diesem SHA und 42/42 ergänzen.
+Als Loot-Testartefakt 0.0.145 in neuem Verzeichnis repaired-loot-v4 bauen. Originale
+source30-Bytes wiederverwenden; vollständigen Qualifier auf neuer Arbeitskopie
+laufen lassen. Erfolg verlangt vollständigen Profilvergleich, zusätzliche
+Verteilung, separaten Prozessneustart und unveränderte Quelle. Erst dieser Lauf
+kann den vormals fehlgeschlagenen AppImage-Fall schließen; Produktionstransport,
+Aktivierung und Restore bleiben gesonderte Anforderungen der Phase 5.
+
+Reparaturartefakt gebaut: 87568 Exit 0. Vollständiger ursprünglicher Loot-Fall
+56947 Exit 0, Nachweis
+work/historical-loot30-to-repaired-v4-full/generated-loot-migration-evidence.json.
+Originalprofil 30→42/42 vollständig verglichen, weiter verteilt, neuer Prozess
+liest dieselben Daten, Originalquelle erneut unverändert. Der konkrete Fehler
+mit fehlender aktiver Belegtabelle ist damit auch im tatsächlichen AppImage behoben.
+Plan-Audit Reparaturartefakt bestanden; Roadmap-Audit Phase 5 weiter unvollständig.
+
+### Phase 5 – Vorbereitung des tatsächlichen UI-Updatewegs
+
+Quellinspektion: historischer Stand c583e055 besitzt noch keine Releaseoberfläche;
+er eignet sich nicht für einen behaupteten UI-Updatetest. Der vorhandene
+qualify-release-update.ts ruft Controller direkt auf und prüft nur Namen/Text.
+Nächster UI-Vergleich verwendet den tatsächlichen Main-Stand bd8b33c (42/41)
+gegen reparierten Stand 6d7889ca (42/42), plus historisch qualifizierte Daten.
+
+Plan vor Änderungen: im externen historischen Test-Harness einen ausdrücklich
+aktivierten UI-Modus ergänzen, der vor Start der unveränderten Originalapp nur
+GitHub-Requests auf einen Loopback-Testfeed umleitet und einen dynamischen
+Debuggingport für echte Eingabeereignisse öffnet. Normale Starts bleiben ohne
+Testmodus unverändert. Absolute isolierte XDG-Pfade, Loopback-URL und expliziter
+Opt-in sind zwingend; vorhandener Headless-Qualifikationsmodus bleibt getrennt.
+Kein direkter Aufruf von Update-/Restore-Controllern aus dem UI-Driver.
+
+Darauf aufbauend zwei neue unveränderliche Testartefakte erstellen, vollständige
+Originaldaten seed/read über die zugehörigen Utility-Harnesses, reale Fenster-
+Aktionen check/download/install/restart/continue/restore; jeden Prozess bis zum
+Ende verfolgen, Artefakt- und Feedhashes im Nachweis binden. Historische Ketten,
+Faultmatrix und veröffentlichte Bytes bleiben eigene Anforderungen. Dieser Plan
+ist Vorbereitung; UI-Nachweis ist noch nicht implementiert oder bestanden.
+
+UI-Transportadapter implementiert. 99061 Exit 0: 21 Unitfälle (Konfiguration,
+Routing und unveränderliche Quellidentitäten) und vollständige Typprüfung bestehen.
+Der Adapter wird ausschließlich bei explizitem HISTORICAL_UI-Opt-in aktiv; ein
+parallel aktivierter bisheriger Headless-Updater wird abgewiesen. Er übergibt
+Originalrequests außerhalb GitHub unverändert und bewahrt Signal/Header bei
+umgeleiteten Requests. Noch kein gestarteter UI-Updatefall und kein UI-Erfolg.
+
+Nächste konkrete Artefakte für den UI-Fall: current-ui-world-v5 Version 0.0.146
+(Original bd8b33c, 42/41) und repaired-ui-world-v5 Version 0.0.147 (Original
+6d7889ca, 42/42), beide mit demselben externen World-/UI-Harness. Der bestehende
+Livetestbestand mit Reise/Kampf/eigenen Dateien ist Ausgangspunkt des geplanten
+Profilvergleichs. Lint 99020 Exit 0. Vor den neuen Builds zunächst diesen
+Harnessstand sichern; kein Abschluss der Phase und keine Main-Promotion.
+
+Korrektur der unmittelbar vorherigen Lint-Aussage: 99020 beendete die Shell mit
+Exit 0 wegen nachfolgender Dokumentationsbefehle; die Lintdatei enthält tatsächlich
+einen no-base-to-string-Fehler im neuen Test. Kein Lint-Pass. Fixplan: das erwartete
+URL-Objekt direkt vergleichen statt einen Request/URL/String-Unionwert implizit
+zu stringifizieren. Lint anschließend als alleinigen Abschlussbefehl prüfen.
+
+Lintwiederholung 4824 Exit 0, anschließender gezielter UI-Feed-Unitlauf Exit 0.
+Plan-Audit des Transportadapters bestanden; echter UI-Lauf weiterhin offen.
+Harnessstand einschließlich gepinnter Reparaturquelle jetzt als Folgecommit
+auf Candidate sichern. Keine Änderung an den bereits qualifizierten Artefakten.

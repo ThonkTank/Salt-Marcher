@@ -1,3 +1,4 @@
+import { historicalUiFeed, historicalUiFetch } from './ui-feed.js'
 import { app, utilityProcess } from 'electron'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
@@ -15,6 +16,11 @@ const identityOnly = process.argv.includes(
   '--historical-qualification-identity'
 )
 if (operationIndex === -1 && !identityOnly) {
+  const feed = historicalUiFeed(process.env)
+  if (feed) {
+    globalThis.fetch = historicalUiFetch(feed, globalThis.fetch)
+    app.commandLine.appendSwitch('remote-debugging-port', '0')
+  }
   void import(pathToFileURL(join(__dirname, '../main/index.js')).href)
 } else {
   const root = process.env['XDG_DATA_HOME']
