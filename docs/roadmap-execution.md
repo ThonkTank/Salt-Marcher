@@ -5208,3 +5208,67 @@ Formatkorrektur 35497 endet mit exit 0. Abschließend bestehen 55 gezielte Fäll
 (53 plus zwei neue synchrone Portidentitätsfälle), Typecheck, vollständiges Lint
 mit ergänzendem Lint der korrigierten Typdateien, Format, Build/Smoke/Budget und
 sieben Desktop-E2E-Szenarien. Candidate jetzt committen und pushen.
+
+Phase 4 – Teilplan Updatebedienung und Offlinebetrieb:
+Voriger Turn war Fortschritt (773d47fc5). Read-only-Inventar bestätigt weitere
+aktive Scene-Writes ohne vollständige Wartungsintegration; diese bleiben offen.
+Jetzt den ausdrücklich geforderten Update-UI-Pfad qualifizieren: Prüfung,
+Download und bestätigte Installation müssen getrennt bleiben. ReleaseSettings
+verwendet derzeit busy auch für die Modal-Schließsperre und hält damit während
+eines Downloads die normale Arbeit hinter dem Einstellungsdialog fest.
+
+Änderung: Während Netzwerkprüfung/Download darf die Einstellung geschlossen und
+später wieder geöffnet werden; nur tatsächliche Wartung/Entwurfsklärung sperrt
+das Schließen. Aktionsbuttons berücksichtigen sowohl lokale laufende Aufträge
+als auch eingehende checking/downloading-Statusereignisse. Main behält Netzwerk-
+und Downloadzustand; kein automatischer Installationsaufruf beim Schließen.
+
+Abnahme: verfügbare Version und Release Notes, manuelle Prüfung ohne Download,
+Downloadfortschritt und Weiterarbeit nach Schließen, Wiederöffnung mit geladenem
+Update, keine Installation bis separater Bestätigung, Offline-/Downloadfehler
+mit erneut möglicher Aktion sowie Statusereignisse ohne lokale Buttonaktion.
+Bestehende Wiederherstellungs-/Mehr-Editor-Tests unverändert weiterführen.
+
+Testkorrektur nach erstem Lauf: 16 Fälle bestehen, ein neuer Test findet den
+Einstellungsknopf nicht, weil der vorhandene Updatehinweis seinen zugänglichen
+Namen erweitert. Den tatsächlichen Namen mit /Einstellungen/ auswählen, ohne
+die Produktausgabe zu ändern. Zusätzlich den vom Main zurückgegebenen Download-
+Fehlerstatus und die ausdrückliche Wiederholung des Downloads prüfen.
+
+Update-UI-Zwischenabnahme: 45 Fälle in release-update-ui, profile-recovery-ui,
+draft-transition und maintenance-draft-coordinator bestehen. Netzwerkphasen
+checking/downloading deaktivieren konkurrierende Aktionen auch bei Statusereignissen
+ohne eigenen Buttonauftrag. Schließen und Escape bleiben möglich; das Schließen
+ruft install nicht auf. Der kontrollierte Download läuft bis zur Auflösung seines
+Promises weiter; Wiederöffnung zeigt die separate Installationsaktion. Offline-
+Prüfung lässt onReady(true) und die Wartungssperre unverändert frei; Wiederholung
+erfolgt nur nach Klick. Ein zurückgegebener Downloadfehler bietet keine Installation.
+
+Build, Smoke und Bundlebudget bestehen (88152, exit 0), Renderer 1637720 Bytes.
+Die UI-Tests verwenden einen kontrollierten Capability-Port; sie beweisen keine
+vollständige AppImage-Transport-/Migration-Abnahme. Diese bleibt ausdrücklich
+Phase 5 mit echten Artefakten und unterschiedlichen Schemas vorbehalten.
+
+Finale Testkorrektur: Typecheck besteht, vollständiges Lint meldet ausschließlich
+einen async-act-Callback ohne await in release-update-ui.test.tsx. Den Download-
+Abschluss im Test ausdrücklich um einen Microtask abwarten, anschließend diesen
+Test und sein Lint/Format erneut prüfen. Produktstand bleibt seit Build unverändert.
+
+Plan-Audit: Updateprüfung, Download und Installation bleiben getrennte Aktionen.
+Die UI startet keine Installation beim Beenden des Einstellungsdialogs. Lokale
+Aufträge und Main-Statusereignisse sperren konkurrierende Wartungs-/Netzwerkaktionen;
+Netzwerkphasen halten die normale Arbeit nicht mehr hinter dem Einstellungsdialog
+fest. Nur Bestätigung/Wartung sperrt dessen Schließen. Vorhandene Save-/Discard-
+und datenbankunabhängige Wiederherstellungsfälle bestehen weiterhin.
+
+Roadmap-Audit: Der konkrete Update-UI-/Offline-Komponentenpfad ist lokal geprüft.
+Automatische tägliche Prüfung und vollständiger Transport/Neustart mit echten
+Artefakten wurden hier nicht neu abgenommen. Phase 4 bleibt wegen weiterer aktiver
+Scene-/Gruppen-/Karten-Writes in Arbeit; Phasen 5–7 bleiben offen. Diese Runde
+enthält keinen Handoff, keine Main-Promotion und keinen öffentlichen Release.
+
+Abschluss der lokalen Runde: 83755 endet mit exit 0 (korrigiertes Test-Lint,
+sechs Update-UI-Fälle und Format). Alle übrigen Lintpartitionen bestanden zuvor;
+45 relevante Fälle, Typecheck, vollständiges Format und Build/Smoke/Budget sind
+nachgewiesen. git diff --check besteht. Candidate committen/pushen; dessen
+Remoteprüfung und spätere kanonische Übergabe bleiben eigenständige Gates.

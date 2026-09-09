@@ -53,7 +53,14 @@ export function ReleaseSettings({
     text: string
     run: () => Promise<ReleaseStatus>
   }) {
-    if (resolution.current) return
+    if (
+      resolution.current ||
+      busy ||
+      status?.phase === 'checking' ||
+      status?.phase === 'downloading' ||
+      status?.phase === 'maintenance'
+    )
+      return
     resolution.current = maintenanceDraftCoordinator.begin()
     setNeedsDrafts(hasMaintenanceDrafts())
     setDraftErrors([])
@@ -170,7 +177,14 @@ export function ReleaseSettings({
   }, [api, open])
   if (!status?.enabled) return null
   async function run(action: () => Promise<ReleaseStatus>) {
-    if (resolution.current) return
+    if (
+      resolution.current ||
+      busy ||
+      status?.phase === 'checking' ||
+      status?.phase === 'downloading' ||
+      status?.phase === 'maintenance'
+    )
+      return
     setBusy(true)
     setError('')
     try {
@@ -184,6 +198,12 @@ export function ReleaseSettings({
     }
   }
   const maintenance = status.phase === 'maintenance'
+  const actionBusy =
+    busy ||
+    maintenance ||
+    status.phase === 'checking' ||
+    status.phase === 'downloading'
+  const closeBlocked = maintenance || confirmation !== null
   return (
     <>
       <ProfileRecoveryNotice
@@ -201,13 +221,13 @@ export function ReleaseSettings({
           className="release-settings"
           ariaLabel="Einstellungen: Updates und Sicherungen"
           onClose={() => setOpen(false)}
-          busy={busy || maintenance}
+          busy={closeBlocked}
         >
           <h2>Updates</h2>
           <p>Installierte Version: {status.currentVersion}</p>
           {!status.installed && (
             <button
-              disabled={busy}
+              disabled={actionBusy}
               onClick={() =>
                 requestMaintenance({
                   text: 'SaltMarcher auf diesem Rechner installieren und neu starten?',
@@ -219,7 +239,7 @@ export function ReleaseSettings({
             </button>
           )}
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() => void run(() => api.updates.check())}
           >
             Jetzt prüfen
@@ -229,7 +249,7 @@ export function ReleaseSettings({
               <h3>Version {status.availableVersion}</h3>
               <p className="release-notes">{status.notes}</p>
               <button
-                disabled={busy || maintenance}
+                disabled={actionBusy}
                 onClick={() => void run(() => api.updates.download())}
               >
                 Herunterladen
@@ -245,7 +265,7 @@ export function ReleaseSettings({
           )}
           {status.phase === 'downloaded' && (
             <button
-              disabled={busy}
+              disabled={actionBusy}
               onClick={() =>
                 requestMaintenance({
                   text: 'Speichere offene Änderungen vor dem Neustart. Jetzt sichern, installieren und neu starten?',
@@ -259,7 +279,7 @@ export function ReleaseSettings({
           <p role="status">{status.message}</p>
           {error && <p role="alert">{error}</p>}
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() =>
               requestMaintenance({
                 text: 'Ein vollständiges Profil auswählen? Der aktuelle Stand wird vor der Übernahme gesichert.',
@@ -279,7 +299,7 @@ export function ReleaseSettings({
             .map((profile) => (
               <button
                 key={`direct-${profile.id}`}
-                disabled={busy || maintenance}
+                disabled={actionBusy}
                 onClick={() =>
                   requestMaintenance({
                     text: `Das vollständige Profil von ${profile.label} auswählen? Der aktuelle Stand wird vorher gesichert.`,
@@ -298,7 +318,7 @@ export function ReleaseSettings({
           {profiles.map((profile) => (
             <button
               key={profile.id}
-              disabled={busy || maintenance}
+              disabled={actionBusy}
               onClick={() =>
                 requestMaintenance({
                   text: 'Eine geprüfte Sicherung dieses Profils auswählen und übernehmen? Der aktuelle Stand wird vorher gesichert.',
@@ -314,7 +334,7 @@ export function ReleaseSettings({
             </button>
           ))}
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() =>
               requestMaintenance({
                 text: 'Mit einem leeren Profil neu anfangen? Das bisherige Profil wird vorher vollständig gesichert.',
@@ -340,7 +360,7 @@ export function ReleaseSettings({
                   ? 'Vollständiges Profil'
                   : 'Ältere Kampagnendatensicherung'}{' '}
                 <button
-                  disabled={busy || maintenance || !backup.valid}
+                  disabled={actionBusy || !backup.valid}
                   onClick={() =>
                     requestMaintenance({
                       text:
@@ -358,7 +378,7 @@ export function ReleaseSettings({
             ))}
           </ul>
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() =>
               requestMaintenance({
                 text: 'Eine geprüfte SaltMarcher-Sicherung übernehmen? Der aktuelle Stand wird vorher gesichert; die Quelle bleibt erhalten.',
@@ -368,7 +388,7 @@ export function ReleaseSettings({
           >
             Sicherungsordner auswählen
           </button>
-          <button disabled={busy || maintenance} onClick={() => setOpen(false)}>
+          <button disabled={closeBlocked} onClick={() => setOpen(false)}>
             Schließen
           </button>
         </ModalDialog>
