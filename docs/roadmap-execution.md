@@ -5031,3 +5031,106 @@ beim Verwerfen einer bestätigten Originalaktion nicht zurückgerollt. Kein Hand
 keine Main-Promotion und keine öffentliche Veröffentlichung. Nach abschließendem
 Formatcheck diesen geprüften Stand als Candidate committen/pushen und dessen
 vollständige Remote-Prüfung abwarten.
+
+Phase 4 – Teilplan Szenenwechsel: Voriger Turn war Fortschritt, Candidate
+458c2c6ff enthält die geprüfte Besetzungs-/Rastintegration. Der Desktop-Selektor
+wird über einen eigenen useDraftTransition-Aufruf mit passendem Szenentext
+geführt. Das Ziel wird synchron aus dem Ereignis übernommen; dieselbe Szene
+ist keine Aktion. Die vorhandene Controllerfunktion verwendet beim tatsächlichen
+Write den dann aktuellen Snapshot, damit ein vorangegangenes Save keine veraltete
+Scene-Revision in den Fokusauftrag trägt. Während globaler Klärung ist der
+Selektor gesperrt; Abbrechen hält die Originalszene und ihren gemounteten Owner.
+Keine Änderung am Fokus-SQL oder den eigenen Wartungsmodulen.
+
+Abnahme: bestehende Transition- und Desktop-Owner-Tests plus echter E2E-Fall
+mit Besetzungsentwurf, Szenenwechsel, Abbrechen, anschließend Save und später
+Discard; ursprüngliche/gespeicherte Auswahl nach Rückkehr vergleichen. Vollständige
+Typ-/Lint-/Buildprüfung und vorhandene Desktop-E2E bleiben Pflicht. Dies schließt
+nur den Desktop-Selektor, nicht automatisch alle übrigen Scene-/Map-Writes.
+
+Testreview vor App-Abnahme: Der neu geschriebene E2E-Selektor muss den realen
+Alertdialog über seine zugängliche Bezeichnung „Szene wechseln“ finden. Außerdem
+muss der Test nach der Klärung den tatsächlich abgeschlossenen Fokuswechsel
+abwarten, bevor er zurückwechselt. Beides jetzt korrigieren; ein geschlossenes
+Dialogelement allein belegt noch keinen abgeschlossenen asynchronen Fokusauftrag.
+
+Korrekturrunde nach E2E 54868 (exit 1): Der neue Test klickte die erste Checkbox
+im vollständigen Katalog, obwohl diese bereits unbesetzt sein konnte; seine
+Annahme „danach abgewählt“ war falsch. Explizit Reserve 4 über den vorhandenen
+Suchfilter auswählen und auch nach dem Wechsel dieselbe Figur vergleichen.
+Der folgende Katalogtest scheitert anschließend am noch offenen Entwurf und
+liefert keinen unabhängigen Produktbefund.
+
+Zusätzlicher Codebefund: mutateSnapshot verwendet input.snapshot aus dem Render,
+in dem der zurückgehaltene Fokuscallback entstand. Vor dem Fokusauftrag muss
+stattdessen der aktuelle Snapshot der ursprünglichen Kampagnenprojektion gelesen
+werden. Im bestehenden Mutation-Controller diesen lesenden Zugriff durchführen,
+abweichende geladene/aktive Campaign-ID vor Write abweisen und nach Antwort erneut
+prüfen. Kein Ersatz unbekannter Ergebnisse durch neue Writes. Gezielter Test
+hält die alte Callbackinstanz, ändert den Projektionsstand und erwartet die neue
+Revision; Campaign-Wechsel vor/nach Antwort muss ohne veraltete Publikation enden.
+
+Korrekturrundenstatus: 22 gezielte Fälle bestehen; Typecheck besteht. Lint meldet
+als einzigen Fehler den untypisierten setSnapshot-Testspy (.scene auf any).
+Korrektur nach Ende der laufenden App-Abnahme: Spy mit Dispatch<SetStateAction<
+LiveSessionSnapshot>> typisieren und das tatsächlich übergebene Snapshot-Objekt
+getrennt prüfen. Keine Produktlogik ändern, keinen Lintfilter abschwächen.
+
+Writer-Inventar für den weiteren Phase-4-Audit: partyCapabilities wird im Renderer
+nur noch von use-adventuring-day-calculation verwendet; die alten create/update/
+delete/membership/XP/rest-Adapter sind dort nicht mehr aufgerufene Altoberfläche.
+Aktive verbleibende Scene-Writes liegen unter anderem in setLocation, deleteGroup
+und setGroupArchived (SessionWorkspaceController und GroupManagerCommands).
+Diese Beobachtung ersetzt noch keine Verhaltensabnahme oder Entfernung.
+
+Weitere Korrekturrunde nach 76601 (exit 1): Screenshot belegt Produktfehler:
+Besetzungs-Save entfernt Reserve 4 und damit dessen sauberen XP-Editor. Der
+Koordinator meldet pauschal „Editor während Klärung geschlossen“, obwohl dort
+keine Änderungen vorhanden waren. Plan: anfängliche Dirty-Menge vor jedem
+Resolverlauf festhalten. Ein inzwischen entfernter Owner darf nur dann als erledigt
+gelten, wenn er sowohl zu Beginn als auch bei der Prüfung sauber ist. Entfernte
+ursprünglich schmutzige oder inzwischen schmutzige Owner bleiben Fehler. Neue
+registrierte Dirty-Owner werden unverändert im abschließenden Durchlauf geprüft.
+Gezielte Tests für sauberes Entfernen versus entfernten offenen Entwurf ergänzen;
+keine Fehler unterdrücken und keine spätere Änderung verwerfen. Danach E2E erneut.
+
+42 gezielte Fälle der Koordinatorkorrektur bestehen. Typecheck besteht; Lint
+beanstandet drei neue Testcallbacks ohne await. Nach Ende von E2E 55893 diese
+Callbacks ausdrücklich Promise.resolve(true) zurückgeben lassen, dann die
+betroffenen Tests und Lint wiederholen. Dies ist eine reine Testtyp-/Stilkorrektur.
+
+Noch offener Phase-4-Auditfall: Wenn eine Besetzungsänderung gleichzeitig einen
+wirklich schmutzigen XP-Editor entfernt, muss seine Klärung vor dem Entfernen
+geordnet werden bzw. sein Entwurf gehalten bleiben. Die neue Regel für saubere
+entfernte Owner löst nur den nachgewiesenen sauberen Fall; der schmutzige Fall
+bleibt absichtlich ein Fehler und benötigt weitere Abnahme über wiederholte
+Klärungsversuche hinweg. Keine pauschale Freigabe entfernter Owner.
+
+Szenenwechsel-App-Abnahme: Gesamthandle 55893 endet mit exit 0. Build, Smoke,
+Bundlebudget und alle sieben Desktop-E2E-Szenarien bestehen. Der erweiterte Fall
+prüft Reserve 4 ausdrücklich: Abbrechen erhält den Entwurf in Wald; Save übernimmt
+die Auswahl vor dem Wechsel nach Vorhut; Rückkehr liest die gespeicherte Auswahl;
+Discard beim nächsten Wechsel erhält die vorherige Besetzung. Summary:
+.tmp/e2e-runs/functional-1788912576699-564404/summary.json.
+
+Plan-Audit: Der Szenenselektor hält seine Originalaktion bis zur zentralen
+Klärung zurück und bleibt währenddessen gesperrt. Der Callback übernimmt das
+Ziel synchron, liest aber beim tatsächlichen Write den aktuellen Sessionstand
+seiner ursprünglichen Kampagne. Das beseitigt die durch vorangegangenes Save
+veraltete Revision. Saubere beim Besetzungs-Save entfernte XP-Owner verursachen
+keine falsche Blockade mehr. 42 gezielte Tests und die echte App-Abnahme belegen
+die beschriebenen Fälle; die nachgeschaltete Teststilkorrektur ändert keine
+Produktdatei des geprüften Builds.
+
+Roadmap-Audit: Dieser Szenenwechselpfad ist automatisiert geprüft; Phase 4 bleibt
+in Arbeit. Die explizit notierten Fälle für gleichzeitige schmutzige XP-/Besetzungs-
+Owner, weitere Scene-Writes und Update-/Offline-Bedienung bleiben offen. Die
+Korrektur für sauber entfernte Owner ist keine allgemeine Freigabe schmutziger
+entfernter Editoren. Handoff, Main-Promotion und Veröffentlichung sind weiterhin
+nicht erfolgt. Nach gezieltem korrigiertem Lint/Test und Format den aktuellen
+Stand auf Candidate sichern; Remote-Abnahme bleibt ein eigener Nachweis.
+
+Finale Korrekturprüfung 84702 endet mit exit 0: betroffenes Lint, 23 Fälle und
+vollständiger Formatcheck bestehen. Alle anderen Lintpartitionen bestanden bereits
+im vollständigen Lauf; dessen drei Testbeanstandungen sind damit korrigiert.
+git diff --check besteht. Candidate-Commit und Push jetzt durchführen.

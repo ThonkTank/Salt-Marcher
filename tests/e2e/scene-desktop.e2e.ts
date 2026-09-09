@@ -608,6 +608,51 @@ describe('per-scene desktop', () => {
     await popup().waitForExist({ reverse: true })
     await selectScene(client, 'Wald')
     await expect(info()).toHaveText(expect.stringContaining('Reserve 5'))
+    for (const choice of [
+      'Speichern und fortfahren',
+      'Verwerfen und fortfahren'
+    ]) {
+      await info().$('button=Besetzung').click()
+      await popup()
+        .$('input[aria-label="Charakter oder Spieler"]')
+        .setValue('Reserve 4')
+      await popup().$('input[type="checkbox"]').click()
+      await client.keys('Escape')
+      const originalScene = await client
+        .$('.scene-desktop')
+        .getAttribute('data-scene-id')
+      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
+      const confirmation = () =>
+        client.$('[role="alertdialog"][aria-label="Szene wechseln"]')
+      await confirmation().waitForDisplayed()
+      await expect(client.$('select[aria-label="Szene"]')).toBeDisabled()
+      await expect(client.$('.scene-desktop')).toHaveAttribute(
+        'data-scene-id',
+        originalScene!
+      )
+      await confirmation().$('button=Abbrechen').click()
+      await info().$('button=Besetzung').click()
+      await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
+      await client.keys('Escape')
+      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
+      await confirmation().waitForDisplayed()
+      await confirmation().$(`button=${choice}`).click()
+      await confirmation().waitForExist({ reverse: true })
+      await expect(
+        client.$('select[aria-label="Szene"] option:checked')
+      ).toHaveText('Vorhut')
+      await selectScene(client, 'Wald')
+      await info().$('button=Besetzung').click()
+      await popup()
+        .$('input[aria-label="Charakter oder Spieler"]')
+        .setValue('Reserve 4')
+      if (choice === 'Speichern und fortfahren') {
+        await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
+        await popup().$('input[type="checkbox"]').click()
+      } else await expect(popup().$('input[type="checkbox"]')).toBeSelected()
+      await popup().$('button=Übernehmen').click()
+      await popup().waitForExist({ reverse: true })
+    }
     await expectAccessibleInBothThemes(client)
     await waitSaved(client)
     await client.reloadSession()

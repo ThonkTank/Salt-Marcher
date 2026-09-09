@@ -79,6 +79,17 @@ export class MaintenanceDraftCoordinator {
         const failures: DraftResolutionFailure[] = []
         try {
           const snapshot = new Map(this.drafts)
+          const initiallyDirty = new Set(
+            [...snapshot]
+              .filter(([, draft]) => {
+                try {
+                  return draft.isDirty()
+                } catch {
+                  return true
+                }
+              })
+              .map(([id]) => id)
+          )
           const states = new Map<string, 'visiting' | 'succeeded' | 'failed'>()
           const resolveDraft = async (id: string): Promise<boolean> => {
             if (states.get(id) === 'succeeded') return true
@@ -111,6 +122,14 @@ export class MaintenanceDraftCoordinator {
                 throw new Error(
                   'Ein neuer abhängiger Editor ist hinzugekommen. Bitte erneut prüfen.'
                 )
+              if (
+                this.drafts.get(id) !== draft &&
+                !initiallyDirty.has(id) &&
+                !draft.isDirty()
+              ) {
+                states.set(id, 'succeeded')
+                return true
+              }
               if (this.drafts.get(id) !== draft)
                 throw new Error(
                   'Der Editor wurde während der Klärung geschlossen. Bitte den Bereich prüfen.'

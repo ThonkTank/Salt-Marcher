@@ -1,3 +1,4 @@
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { DesktopCharacters } from './desktop-characters.js'
@@ -40,6 +41,14 @@ export function SceneDesktop(
     title: message('desktop.confirmWindowChange'),
     text: message('desktop.resolveBeforeWindowChange')
   })
+  const editingBlocked = useMaintenanceEditingBlocked()
+  const sceneTransition = useDraftTransition(
+    `${props.campaignId}:${focused.id}`,
+    {
+      title: message('desktop.confirmSceneChange'),
+      text: message('desktop.resolveBeforeSceneChange')
+    }
+  )
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
   const requestedFocus = useRef<{ sceneId: string; windowId: string } | null>(
@@ -101,7 +110,12 @@ export function SceneDesktop(
           <select
             aria-label={message('desktop.scene')}
             value={focused.id}
-            onChange={(event) => actions.focusScene(event.target.value)}
+            disabled={editingBlocked}
+            onChange={(event) => {
+              const sceneId = event.target.value
+              if (sceneId !== focused.id)
+                sceneTransition.request(() => actions.focusScene(sceneId))
+            }}
           >
             {props.snapshot.scene.scenes.map((scene) => (
               <option key={scene.id} value={scene.id}>
@@ -335,6 +349,7 @@ export function SceneDesktop(
         )}
       </nav>
       {transition.dialog}
+      {sceneTransition.dialog}
       <SessionDialogHost
         model={model}
         actions={actions}

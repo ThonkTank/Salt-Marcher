@@ -379,3 +379,53 @@ describe('read-only maintenance confirmation', () => {
     resolution.release()
   })
 })
+
+it.each([false, true])(
+  'only permits removal of an initially clean dependent view (dirty=%s)',
+  async (initiallyDirty) => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    let rosterDirty = true
+    let removeXp = () => {}
+    coordinator.register('roster', {
+      label: 'Besetzung',
+      isDirty: () => rosterDirty,
+      save: () => {
+        rosterDirty = false
+        removeXp()
+        return Promise.resolve(true)
+      }
+    })
+    removeXp = coordinator.register('xp', {
+      label: 'XP',
+      isDirty: () => initiallyDirty,
+      save: () => Promise.resolve(true)
+    })
+    const resolution = coordinator.begin()
+    const failures = await resolution.resolve('save')
+    expect(failures).toHaveLength(initiallyDirty ? 1 : 0)
+    if (initiallyDirty) expect(failures[0]?.label).toBe('XP')
+    resolution.release()
+  }
+)
+it('blocks an initially clean removed view that becomes dirty during another save', async () => {
+  const coordinator = new MaintenanceDraftCoordinator()
+  let rosterDirty = true
+  let xpDirty = false
+  let removeXp = () => {}
+  coordinator.register('roster', {
+    label: 'Besetzung',
+    isDirty: () => rosterDirty,
+    save: () => {
+      rosterDirty = false
+      xpDirty = true
+      removeXp()
+      return Promise.resolve(true)
+    }
+  })
+  removeXp = coordinator.register('xp', { label: 'XP', isDirty: () => xpDirty })
+  const resolution = coordinator.begin()
+  const failures = await resolution.resolve('save')
+  expect(failures).toHaveLength(1)
+  expect(failures[0]?.label).toBe('XP')
+  resolution.release()
+})

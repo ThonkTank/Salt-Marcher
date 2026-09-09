@@ -1,3 +1,6 @@
+import { useContext } from 'react'
+import { CapabilityContext } from '../../capabilities/capability-context.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
   LiveSessionSnapshot,
@@ -14,6 +17,21 @@ export function useSessionMutationController(input: {
   onError: (message: string) => void
 }) {
   const commands = useAsyncCommandCoordinator()
+  const context = useContext(CapabilityContext)
+  if (!context) throw new Error('Capability provider missing')
+  const projection = context.campaignWorkspace
+  const campaignId = projection.snapshot().sessionCampaignId
+  const currentSession = () => {
+    const current = projection.snapshot()
+    if (
+      !campaignId ||
+      current.sessionCampaignId !== campaignId ||
+      current.campaigns.activeCampaignId !== campaignId ||
+      !current.session
+    )
+      throw new CapabilityError('stale', false)
+    return current.session
+  }
 
   return {
     mutateGroup: async (
@@ -39,7 +57,11 @@ export function useSessionMutationController(input: {
       const outcome = await commands.run({
         scope: 'session.snapshot-mutation',
         mode: 'latest-only',
-        execute: () => operation(input.snapshot)
+        execute: async () => {
+          const result = await operation(currentSession())
+          currentSession()
+          return result
+        }
       })
       if (outcome.status === 'success') input.setSnapshot(outcome.value)
       else if (outcome.status === 'failure')
