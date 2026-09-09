@@ -7734,3 +7734,43 @@ Phase-5-Zwischenstand einschließlich reward-v1-Produktkorrektur auf dem vorhand
 Candidate-Branch festhalten und dort prüfen lassen. Dieser Commit ist ein
 unveränderlicher Ausgangspunkt für weitere Qualifikation, kein Phasenabschluss
 und keine Freigabe auf Main. Keine Veränderung realer Installationen vorgesehen.
+
+Candidate-Zwischenstand 1703c25c96366a7ff76d1d119b2250afcbf35690 committed und
+auf candidate/release-artifact-qualification gepusht; ursprünglicher Checkout
+anschließend sauber. Draft-PR 672 eröffnet, weil Check ausschließlich auf PRs
+und Main-Push reagiert. Vollständiger Check-Lauf 34329224274 für exakt diesen SHA
+ist queued bestätigt; kein CI-Erfolg und kein Handoff behauptet.
+
+Nächster konkreter Schritt: diesen Commit als neuen gepinnten Quellkatalogeintrag
+corrected (42/41) aufnehmen und mit --fixture loot in neuem Artefaktverzeichnis
+bauen. Historischer current-Eintrag bd8b33c bleibt unverändert als vorheriger
+Vergleichsstand. Der Builder verwendet den gepinnten vollständigen Commit, keine
+Arbeitskopie der Produktquellen. Lokale Artefaktqualifikation verändert keine
+reale Installation und ersetzt das vollständige Candidate-/Handoff-Gate nicht.
+
+Corrected-Loot-AppImage aus 1703c25c erfolgreich gebaut (14341 Exit 0).
+CI Portable-Job 102393613684 scheitert ausschließlich an Prettier für den
+hashgebundenen Original-Readback source-profile.json; übrige CI-Jobs laufen noch.
+Korrekturplan: die beiden bytegenau eingefrorenen Original-Readbacks gezielt von
+Formatierung ausnehmen, analog zu bereits ausgenommenen generierten Ressourcen.
+DB-/Readback-Provenienz und Integrationstest bleiben verbindlich; keine Umformatierung
+und kein Neuberechnen des Originalhashes. Alle übrigen Dateien weiter formatprüfen.
+Danach Probe mit dem bereits gebauten korrigierten Loot-AppImage ausführen.
+
+Formatterkorrektur 78286 Exit 0: vollständiger Prettier-Check besteht, eingefrorene
+Readbackbytes unverändert. Korrigiertes Loot-AppImage (Originalquellcommit 1703c25c)
+hat SHA256 5d0bf81ae71d7d891a064485e88cc46cc4bb4aeeca324bf69205587243005be9.
+Probe 29781 Exit 0: Originalkampagne 30→41, Installation 30→42 und vollständiger
+Loot-/Generator-Readback im aktuellen AppImage erfolgreich; reward-v1 bleibt erhalten.
+Probeausgabe work/roadmap-phase5-migrate-loot-corrected-v3-probe.log und
+Runtime-Receipts unter work/historical-loot30-to-corrected-v3-probe. Dieser Probe
+fehlt noch der gesamte erwartete Profilvergleich samt weiterer Bearbeitung und
+separatem Neustart; nicht als vollständige Artefaktabnahme gewertet.
+
+Plan-Audit: Adapter funktioniert auch im tatsächlichen korrigierten AppImage.
+Roadmap-Audit: kontrollierter Feed/UI-Aktivierung, Fehler-/Abbruchmatrix und Restore
+weiter offen. Vollständiger generierter Loot-Artefaktqualifier muss den bereits
+nativen Erwartungsvertrag plus explizite Installation-/Partyformat-Ergänzungen
+verwenden. Erst danach diesen Bereich schließen. Jetzt gezielte Formatterausnahme
+und gepinnte corrected-Quellidentität als Folgecommit pushen; neue CI muss den
+neuen SHA prüfen. Keine Main-Promotion/Handoff in diesem Abschnitt.

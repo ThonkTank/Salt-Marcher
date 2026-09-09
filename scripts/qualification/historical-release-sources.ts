@@ -43,6 +43,11 @@ export const historicalReleaseSources: readonly HistoricalSource[] = [
     schemaVersions: { installation: 42, campaign: 41 }
   },
   {
+    id: 'corrected',
+    commit: '1703c25c96366a7ff76d1d119b2250afcbf35690',
+    schemaVersions: { installation: 42, campaign: 41 }
+  },
+  {
     id: 'loot30',
     commit: 'b4927dbc0979906f71b2ee4e106ec22668245dd7',
     schemaVersions: { installation: 30, campaign: 30 }
