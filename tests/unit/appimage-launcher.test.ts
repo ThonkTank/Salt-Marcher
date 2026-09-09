@@ -16,20 +16,19 @@ import {
 } from '../../src/shared/maintenance/appimage-launcher.js'
 import { sha256 } from '../../src/shared/maintenance/files.js'
 const mocks = vi.hoisted(() => ({
-  spawnSync:
-    vi.fn<
-      (
-        file: string,
-        args: string[],
-        options: { cwd: string; env: NodeJS.ProcessEnv }
-      ) => {
-        status: number | null
-        stdout?: string
-        stderr?: string
-        error?: Error
-        signal?: string
-      }
-    >()
+  spawnSync: vi.fn<
+    (
+      file: string,
+      args: string[],
+      options: { cwd: string; env: NodeJS.ProcessEnv }
+    ) => {
+      status: number | null
+      stdout?: string
+      stderr?: string
+      error?: Error
+      signal?: string
+    }
+  >()
 }))
 vi.mock('node:child_process', () => ({ spawnSync: mocks.spawnSync }))
 let root: string

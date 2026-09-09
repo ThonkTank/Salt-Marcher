@@ -8402,3 +8402,12 @@ bleiben. Beide SHA in historische Quellliste aufnehmen und zwei neue deklarierte
 Testversionen0.0.148/0.0.149 bauen, ohne bisherige Artefakte zu überschreiben.
 Bauten begrenzen; keine AppImageausführung auf Desktop. Vollständiges Candidate-
 Check/Handoff/Main erst nach Phase5-Abnahme, keine Freigabe durch bloßen Build.
+
+Candidate f633b89621a3307ba01ad3772dcaead51451f333 enthält Produktfix und bislang
+geprüfte Isolation/Testdiagnose. Formatprüfung meldete noch eine Testdatei; nach
+Commit in Folgeänderung korrigiert und erneut explizit grün geprüft. Keine
+falsche Format-/Checkfreigabe für f633 behauptet.
+Ausgangscommit ab32d4947ea8409bda679d60d3befe9103c176c0 von bd8b33c enthält nur
+Resource-Reader und Regressionstests. Quellliste benennt extraction-baseline
+42/41 und extraction-target42/42. Vor historischen Builds Metadaten/Tests prüfen,
+dann bounded build, keine Laufzeit auf Desktop.
