@@ -23,6 +23,7 @@ describe('dialog architecture', () => {
     await campaignName.setValue('Dialog Architecture')
     await (await client.$('button=Erstellen & öffnen')).click()
 
+    await client.$('.desktop-toolbar').waitForDisplayed({ timeout: 30_000 })
     await openCatalogSection(client, 'Encounter-Tabellen')
     await clickVisibleCatalogCreate(client)
     let manager = await client.$('section.encounter-table-manager')

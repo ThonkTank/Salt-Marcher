@@ -74,7 +74,10 @@ describe('permanent 0.2.0 persistence baseline', () => {
               revision: row.revision + 1,
               preferences_json: JSON.stringify({
                 schemaVersion: 2,
-                preferences: { theme: old.preferences.theme }
+                preferences: {
+                  theme: old.preferences.theme,
+                  partyQuickFields: ['armorClass', 'passivePerception']
+                }
               })
             }
           })

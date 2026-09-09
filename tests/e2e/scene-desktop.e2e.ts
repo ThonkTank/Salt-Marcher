@@ -52,6 +52,23 @@ describe('per-scene desktop', () => {
     await openSceneWindow(client, 'party')
     await expectAccessibleInBothThemes(client)
     await client.saveScreenshot('/tmp/saltmarcher-party-groups.png')
+    for (const kind of ['party', 'groups'] as const) {
+      const panel = await openSceneWindow(client, kind)
+      await panel.$('summary').click()
+      await panel.$('button=Freie Position wiederherstellen').click()
+      await panel.$('.desktop-resize-keyboard').click()
+      for (let i = 0; i < 14; i++) await client.keys('ArrowLeft')
+      for (let i = 0; i < 14; i++) await client.keys('ArrowUp')
+      await expect(panel).toHaveAttribute(
+        'style',
+        expect.stringContaining('width: 240px')
+      )
+      await expectAccessibleInBothThemes(client)
+      await client.saveScreenshot(`/tmp/saltmarcher-${kind}-minimum.png`)
+      await panel.$('.desktop-resize-keyboard').click()
+      for (let i = 0; i < 7; i++) await client.keys('ArrowRight')
+      for (let i = 0; i < 13; i++) await client.keys('ArrowDown')
+    }
     await waitSaved(client)
   })
 
@@ -481,7 +498,7 @@ describe('per-scene desktop', () => {
         .querySelector<HTMLElement>('[data-window-id="map"] .hex-canvas')!
         .focus()
     )
-    for (let index = 0; index < 8; index++) await client.keys('ArrowRight')
+    for (let index = 0; index < 24; index++) await client.keys('ArrowRight')
     await client.keys('Enter')
     await client
       .$('[data-window-id="map"] button[aria-label="Reise starten"]')
@@ -537,6 +554,18 @@ describe('per-scene desktop', () => {
         .$('[data-window-id="map"] .travel-current-location')
         .getText()
     ).not.toBe(startLocation)
+    // Pause just after an observed boundary, with plenty of route remaining.
+    // A fixed delay can otherwise race the next legitimate revision change.
+    const beforeBoundary = await client
+      .$('[data-window-id="map"] .travel-current-location')
+      .getText()
+    await client.waitUntil(
+      async () =>
+        (await client
+          .$('[data-window-id="map"] .travel-current-location')
+          .getText()) !== beforeBoundary,
+      { timeout: 15_000 }
+    )
     await client
       .$('[data-window-id="map"] button[aria-label="Pause"]')
       .waitForClickable()

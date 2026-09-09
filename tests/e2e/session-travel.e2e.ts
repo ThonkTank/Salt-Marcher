@@ -22,9 +22,9 @@ describe('Session map and travel console', () => {
       timeout: 10_000
     })
 
-    await openSceneWindow(client, 'groups')
-    expect(await client.$('.desktop-register').getText()).toContain('Alrik')
-    expect(await client.$$('.desktop-register li').length).toBe(1)
+    await openSceneWindow(client, 'party')
+    expect(await client.$('.desktop-party').getText()).toContain('Alrik')
+    expect(await client.$$('.desktop-party-entry').length).toBe(1)
     await client.$('.shell-quick-actions').$('button=Reise').click()
     await openSceneWindow(client, 'map', true)
 

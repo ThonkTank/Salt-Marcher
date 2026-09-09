@@ -1978,4 +1978,13 @@ Integration with the current maintenance owners also exposed stale journey
 revisions after reopening a travelling map. Explicit journey controls now use
 the existing read-only preparation step before the existing command owner;
 unknown outcomes still resolve through receipts without automatic write retries.
+The desktop acceptance covers both themes at 240 × 160 minimum window size.
+Group columns scroll within their content area at that width; the drag grip
+remains outside that scroller. Scene changes invalidate the active drop gesture.
+The V1 immutable economy oracle retains its original settings projection and
+separately asserts the additive AC/Per. default, including mutation detection;
+no historical fixture hash or visual tolerance is relaxed. The travel acceptance
+uses a longer authored route and observes a boundary before pausing, avoiding an
+intentional optimistic-revision conflict with an automatic hex transition.
+
 Delivery is pending candidate CI, exact-SHA canonical handoff, and main promotion.

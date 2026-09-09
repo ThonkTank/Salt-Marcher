@@ -215,22 +215,27 @@ describe('FR2F2C2A current-format economy qualification protocol', () => {
     expect(() => assertReadback(read())).toThrow()
   })
 
-  it('detects a public installation theme mutation', () => {
-    materialize()
-    const campaigns = new CampaignStore(root)
-    try {
-      const settings = campaigns.readSettings()
-      campaigns.updateSettings(
-        {
-          theme: settings.preferences.theme === 'dark' ? 'light' : 'dark'
-        },
-        settings.revision
-      )
-    } finally {
-      campaigns.close()
+  it.each(['theme', 'partyQuickFields'] as const)(
+    'detects a public installation %s mutation',
+    (field) => {
+      materialize()
+      const campaigns = new CampaignStore(root)
+      try {
+        const settings = campaigns.readSettings()
+        campaigns.updateSettings(
+          field === 'theme'
+            ? {
+                theme: settings.preferences.theme === 'dark' ? 'light' : 'dark'
+              }
+            : { partyQuickFields: ['passiveInvestigation'] },
+          settings.revision
+        )
+      } finally {
+        campaigns.close()
+      }
+      expect(() => assertReadback(read())).toThrow()
     }
-    expect(() => assertReadback(read())).toThrow()
-  })
+  )
 
   function materialize() {
     return materializeCurrentFormatEconomyFixture(

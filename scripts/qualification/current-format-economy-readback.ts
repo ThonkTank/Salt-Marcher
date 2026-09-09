@@ -357,6 +357,10 @@ export function assertCurrentFormatEconomyReadback(
   assert.equal(readback.fixtureIdentity, economyFixture.identity)
   assert.equal(readback.qualificationClaim, economyFixture.qualificationClaim)
   assert.deepStrictEqual(
+    readback.installation.settings.preferences.partyQuickFields,
+    ['armorClass', 'passivePerception']
+  )
+  assert.deepStrictEqual(
     readback.installation.settings.preferences.theme,
     economyFixture.installation.theme
   )
@@ -694,7 +698,12 @@ function semanticEconomyProjection(
     normalizeTimestamps({
       upstream: { preparationSemanticSha256 },
       installation: {
-        settings: economy.settings,
+        // V1's immutable semantic hash predates quick fields. Their additive
+        // default is asserted separately in assertCurrentFormatEconomyReadback.
+        settings: {
+          ...economy.settings,
+          preferences: { theme: economy.settings.preferences.theme }
+        },
         sharedSymbol,
         systemBiomes: economy.systemBiomes
       },

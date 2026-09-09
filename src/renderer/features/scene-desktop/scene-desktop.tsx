@@ -340,6 +340,7 @@ export function SceneDesktop(
                   }}
                   onDrop={(event) => {
                     event.preventDefault()
+                    if (!drag) return
                     const value = event.dataTransfer.getData(groupDragMime)
                     try {
                       void dropGroup(JSON.parse(value))

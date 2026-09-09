@@ -140,7 +140,7 @@ export function materializeSceneDesktopFixture(
         mapId: map.id,
         mode: 'paint',
         biomeId: 'grassland',
-        coordinates: Array.from({ length: 12 }, (_, q) => ({ q, r: 0 })),
+        coordinates: Array.from({ length: 40 }, (_, q) => ({ q, r: 0 })),
         expectedContentRevision: map.contentRevision
       })
       return map.id

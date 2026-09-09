@@ -605,3 +605,20 @@
   font-size: var(--text-ui);
   min-height: var(--control-h);
 }
+
+.desktop-groups .group-row > [role='cell'] {
+  min-width: 0;
+}
+.desktop-groups .group-name {
+  display: block;
+}
+.desktop-group-content {
+  overflow-x: auto;
+}
+.desktop-groups .group-register {
+  min-width: 290px;
+}
+
+.desktop-toolbar .desktop-scene-facts {
+  padding: 0;
+}
