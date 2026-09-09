@@ -5134,3 +5134,77 @@ Finale Korrekturprüfung 84702 endet mit exit 0: betroffenes Lint, 23 Fälle und
 vollständiger Formatcheck bestehen. Alle anderen Lintpartitionen bestanden bereits
 im vollständigen Lauf; dessen drei Testbeanstandungen sind damit korrigiert.
 git diff --check besteht. Candidate-Commit und Push jetzt durchführen.
+
+Phase 4 – Teilplan gekoppelte XP-/Besetzungsentwürfe:
+Voriger Turn war Fortschritt (6d7bfa33b, Szenenwechsel abgenommen). Desktop-XP-
+Owner erhalten stabile, szenengebundene IDs; der Besetzungsowner hängt explizit
+von den tatsächlich gerenderten XP-Ownern ab. So blockiert ein ungeklärter Betrag
+oder unbekannter XP-Ausgang die Besetzungsänderung vor dem Entfernen einer Zeile.
+Direktes Übernehmen bei schmutzigen XP-Abhängigkeiten öffnet dieselbe zentrale
+Klärung; ausschließlich die bewusste Save-/Discard-Wahl löst die Entwürfe auf.
+
+Nach erfolgreichem XP-Save kann sich die Partyrevision geändert haben. Ein noch
+nie gesendeter Besetzungsentwurf darf seine Partyrevision ausschließlich dann
+aktualisieren, wenn Scene-Revision und sämtliche Charakter-IDs/Aktivzustände
+unverändert sind. Dafür synchron den aktuellen, kampagnengebundenen Portzustand
+lesen; keine asynchrone Lücke vor dem neuen Originalbefehl. Unbekannte oder
+konfliktbehaftete bereits gesendete Befehle behalten ihre Originalrevisionen und
+werden weiterhin zuerst über ihre Quittung geklärt.
+
+Abnahme: gleichzeitiger XP-Betrag ohne gewählte Aktion blockiert Save und erhält
+beide Entwürfe; Discard verwirft beide ohne Write. Erfolgreich geklärte XP vor
+Besetzung verwenden den neuen revisionsgeschützten Stand; fehlgeschlagene XP
+verhindern Entfernen. Direkte Übernahme darf diese Reihenfolge nicht umgehen.
+Echte Desktopabnahme ergänzen; übrige Phase-4-Writer bleiben offen.
+
+Implementierungsreview vor gekoppelten Tests: Wenn ein ungesendeter Entwurf nach
+XP-Klärung eine neue Partyrevision übernimmt, muss genau diese Revision auch im
+Entwurf als ursprünglich gesendete Revision gehalten werden. Vor execute deshalb
+partyRevision aktualisieren und submitted setzen; spätere Statusklärung darf
+nicht auf die vor dem XP-Save geltende Revision zurückfallen.
+
+Typkorrekturplan nach 43 bestandenen Tests: exactOptionalPropertyTypes verlangt
+bei optionaler Maintenance-ID einen explizit passenden Propvertrag; optionales
+dependsOn wird als leere Liste übergeben. Der Befehlscontroller benötigt nur
+execute/status/refresh, nicht die neue synchrone Lesemethode des UI-Ports; seinen
+Porttyp entsprechend auf diese drei Fähigkeiten begrenzen. Keine Lockerung der
+Projekt-Typechecks. Anschließend Typecheck und relevante Controllerfälle erneut.
+
+Gekoppelte Abnahme: 53 gezielte Fälle bestehen; Typecheck 4926 endet mit exit 0,
+vollständiges Lint 46285 mit exit 0. Build, Smoke und Bundlegrenzen bestehen.
+E2E-Gesamthandle 16639 endet mit exit 0, alle sieben sceneDesktop-Szenarien:
+.tmp/e2e-runs/functional-1788913143356-567881/summary.json. Der neue echte Fall
+hält 77 als ungewählten XP-Betrag, versucht Reserve 4 aus der Besetzung zu
+entfernen, blockiert Save mit „XP: Reserve 4“, erhält nach Cancel beide Entwürfe
+und verwirft sie bewusst ohne Änderung der zuvor gespeicherten 100 XP/Besetzung.
+Renderergröße 1637524 Bytes, bestehende Bundlegrenze unverändert.
+
+Plan-Audit: XP-Owner-IDs enthalten Kampagne, Szene und Charakter. Der reale Desktop
+übergibt dieselben IDs als Besetzungsabhängigkeiten. Die zentrale Klärung arbeitet
+XP vor Besetzung ab; ein abhängiger Fehler verhindert den Besetzungs-Write.
+Direktes Übernehmen verwendet bei schmutzigen XP-Ownern denselben Dialog und
+umgeht die Reihenfolge nicht. Die synchrone revisionsgeschützte Lesemethode ist
+auf die ursprüngliche Kampagne begrenzt. Nur ungesendete Entwürfe mit unveränderter
+Scene-Revision und identischen Charakter-IDs/Aktivzuständen übernehmen eine neue
+Partyrevision. Die tatsächlich gesendete Revision wird danach im Entwurf gehalten.
+Bereits unbekannte Aufträge bleiben beim Original und durchlaufen Quittungsklärung.
+Controller-/Komponentenfälle belegen erfolgreiche XP-Recovery vor Besetzung,
+fehlende Aktionswahl, Discard und die Ablehnung geänderter Mitgliedschaften.
+
+Roadmap-Audit: Der zuvor offene konkrete XP-/Besetzungsfall ist implementiert
+und lokal automatisiert qualifiziert. Phase 4 bleibt offen für weitere aktive
+Scene-/Gruppen-/Karten-Writes und vollständige Update-/Offline-Bedienung; Phasen
+5–7 bleiben unverändert offen. Keine Main-Promotion, kein Local-Handoff und kein
+öffentlicher Release. Der letzte Candidate 6d7bfa33b hatte CI 34294070133 noch
+in Arbeit; eine neue Candidate-Abnahme wird durch Commit/Push dieses Stands
+angefordert. Die aktuelle Runde ersetzt keine vollständige Remote-Freigabe.
+
+Finale Prüfkorrektur: Gezieltes Lint und alle zwölf Portfälle bestehen, einschließlich
+synchroner Read-Abweisung bei geänderter aktiver/geladener Kampagne. Format meldet
+noch desktop-roster-actions.test.tsx; ausschließlich dieses Testfile mit Prettier
+normalisieren und Format erneut prüfen. Keine Produktänderung nach App-Abnahme.
+
+Formatkorrektur 35497 endet mit exit 0. Abschließend bestehen 55 gezielte Fälle
+(53 plus zwei neue synchrone Portidentitätsfälle), Typecheck, vollständiges Lint
+mit ergänzendem Lint der korrigierten Typdateien, Format, Build/Smoke/Budget und
+sieben Desktop-E2E-Szenarien. Candidate jetzt committen und pushen.

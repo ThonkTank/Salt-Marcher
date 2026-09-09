@@ -40,7 +40,10 @@ export class ScenePartyCommandController {
   private readonly ownerId = `scene-party-command-${crypto.randomUUID()}`
 
   constructor(
-    private readonly port: ScenePartyCommandPort,
+    private readonly port: Pick<
+      ScenePartyCommandPort,
+      'execute' | 'status' | 'refresh'
+    >,
     private readonly maintenance: MaintenanceDraftCoordinator = maintenanceDraftCoordinator
   ) {}
 

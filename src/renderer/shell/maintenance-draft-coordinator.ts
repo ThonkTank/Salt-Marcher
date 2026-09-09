@@ -40,8 +40,10 @@ export class MaintenanceDraftCoordinator {
       if (this.drafts.get(id) === draft) this.drafts.delete(id)
     }
   }
-  hasDirty(): boolean {
-    return [...this.drafts.values()].some((draft) => draft.isDirty())
+  hasDirty(ids?: readonly string[]): boolean {
+    return ids
+      ? ids.some((id) => this.drafts.get(id)?.isDirty() ?? false)
+      : [...this.drafts.values()].some((draft) => draft.isDirty())
   }
   async settleBackgroundWrites(): Promise<void> {
     if (this.locked) return

@@ -6,6 +6,9 @@ export const workspaceMessagesDe = {
   'desktop.confirmSceneChange': 'Szene wechseln',
   'desktop.resolveBeforeSceneChange':
     'Klär zuerst die offenen Änderungen. Danach wird die ausgewählte Szene geöffnet.',
+  'desktop.confirmRosterChange': 'Besetzung ändern',
+  'desktop.resolveBeforeRosterChange':
+    'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
   'rest.action': 'Rasten',
   'rest.short': 'Kurze Rast',
   'rest.long': 'Lange Rast',

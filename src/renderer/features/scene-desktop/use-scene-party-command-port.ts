@@ -12,6 +12,7 @@ export type ScenePartyCommandPort = Readonly<{
   status(
     input: ScenePartyCommand
   ): ReturnType<SaltMarcherApi['scene']['partyCommandStatus']>
+  current(): LiveSessionSnapshot
   refresh(): Promise<LiveSessionSnapshot>
 }>
 
@@ -32,6 +33,12 @@ export function useScenePartyCommandPort(
         throw new CapabilityError('stale', false)
     }
     return {
+      current: () => {
+        requireCampaign()
+        const session = projection.snapshot().session
+        if (!session) throw new CapabilityError('stale', false)
+        return session
+      },
       execute: async (input) => {
         requireCampaign()
         const receipt = await api.scene.executePartyCommand({

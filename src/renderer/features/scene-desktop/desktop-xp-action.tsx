@@ -13,6 +13,7 @@ import { useCharacterCommandPort } from '../party/use-character-command-port.js'
 type Mode = 'add' | 'subtract' | 'set'
 export function DesktopXpAction(props: {
   campaignId: string
+  maintenanceId?: string | undefined
   member: PartyCharacter
   revision: number
 }) {
@@ -41,28 +42,31 @@ export function DesktopXpAction(props: {
     controller.unresolved() ||
     intent.current !== null ||
     amountRef.current !== confirmedAmount.current
-  const blocked = useMaintenanceDraft({
-    label: `XP: ${props.member.name}`,
-    isDirty: dirty,
-    save: async () => {
-      if (!(await controller.settle())) return false
-      if (!dirty()) return true
-      if (intent.current) return write(intent.current, true)
-      setError(message('xp.chooseAction'))
-      throw new Error(message('xp.chooseAction'))
+  const blocked = useMaintenanceDraft(
+    {
+      label: `XP: ${props.member.name}`,
+      isDirty: dirty,
+      save: async () => {
+        if (!(await controller.settle())) return false
+        if (!dirty()) return true
+        if (intent.current) return write(intent.current, true)
+        setError(message('xp.chooseAction'))
+        throw new Error(message('xp.chooseAction'))
+      },
+      discard: async () => {
+        if (!(await controller.settle())) return false
+        if (!controller.reset()) return false
+        amountRef.current = ''
+        confirmedAmount.current = ''
+        intent.current = null
+        setAmount('')
+        setOpen(false)
+        setError(null)
+        return true
+      }
     },
-    discard: async () => {
-      if (!(await controller.settle())) return false
-      if (!controller.reset()) return false
-      amountRef.current = ''
-      confirmedAmount.current = ''
-      intent.current = null
-      setAmount('')
-      setOpen(false)
-      setError(null)
-      return true
-    }
-  })
+    props.maintenanceId
+  )
   const busy = blocked || command.busy || command.uncertain
   const publicBlocked = () =>
     maintenanceDraftCoordinator.isLocked() ||

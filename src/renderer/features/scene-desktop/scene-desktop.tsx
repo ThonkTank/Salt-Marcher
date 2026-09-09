@@ -1,3 +1,4 @@
+import { desktopXpDraftId } from './desktop-xp-draft-id.js'
 import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { DesktopRosterActions } from './desktop-roster-actions.js'
@@ -203,10 +204,14 @@ export function SceneDesktop(
             >
               {window.kind === 'characters' ? (
                 <DesktopCharacters
+                  sceneId={focused.id}
                   campaignId={props.campaignId}
                   partyRevision={props.snapshot.party.revision}
                   actions={
                     <DesktopRosterActions
+                      characterDraftIds={focused.partyMemberIds.map((id) =>
+                        desktopXpDraftId(props.campaignId, focused.id, id)
+                      )}
                       key={focused.id}
                       campaignId={props.campaignId}
                       sceneId={focused.id}

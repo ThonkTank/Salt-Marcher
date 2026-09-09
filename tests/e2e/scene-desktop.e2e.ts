@@ -608,6 +608,34 @@ describe('per-scene desktop', () => {
     await popup().waitForExist({ reverse: true })
     await selectScene(client, 'Wald')
     await expect(info()).toHaveText(expect.stringContaining('Reserve 5'))
+    await info().$('tbody').$('button=XP').click()
+    await client.$('.desktop-xp-popup input').setValue('77')
+    await client.keys('Escape')
+    await info().$('button=Besetzung').click()
+    await popup()
+      .$('input[aria-label="Charakter oder Spieler"]')
+      .setValue('Reserve 4')
+    await popup().$('input[type="checkbox"]').click()
+    await popup().$('button=Übernehmen').click()
+    const rosterConfirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Besetzung ändern"]')
+    await rosterConfirmation().waitForDisplayed()
+    await rosterConfirmation().$('button=Speichern und fortfahren').click()
+    await expect(rosterConfirmation().$('[role="alert"]')).toHaveText(
+      expect.stringContaining('XP: Reserve 4')
+    )
+    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
+    await rosterConfirmation().$('button=Abbrechen').click()
+    await rosterConfirmation().waitForExist({ reverse: true })
+    await popup().$('button=Übernehmen').click()
+    await rosterConfirmation().waitForDisplayed()
+    await rosterConfirmation().$('button=Verwerfen und fortfahren').click()
+    await rosterConfirmation().waitForExist({ reverse: true })
+    await popup().waitForExist({ reverse: true })
+    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
+    await expect(info().$('tbody')).toHaveText(
+      expect.stringContaining('XP 100 /')
+    )
     for (const choice of [
       'Speichern und fortfahren',
       'Verwerfen und fortfahren'

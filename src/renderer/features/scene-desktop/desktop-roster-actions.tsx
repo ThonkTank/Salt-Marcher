@@ -1,3 +1,5 @@
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { DesktopRestAction } from './desktop-rest-action.js'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
@@ -10,6 +12,13 @@ import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { ScenePartyCommandController } from './scene-party-command-controller.js'
 import { useScenePartyCommandPort } from './use-scene-party-command-port.js'
 
+function rosterBasis(snapshot: LiveSessionSnapshot): string {
+  return JSON.stringify(
+    snapshot.party.members
+      .map((member) => [member.id, member.active])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+  )
+}
 type Draft = {
   kind: 'roster' | 'move'
   anchor: HTMLElement
@@ -19,13 +28,24 @@ type Draft = {
   title: string
   revision: number
   partyRevision: number
+  rosterBasis: string
+  submitted: boolean
 }
 export function DesktopRosterActions(props: {
+  characterDraftIds?: readonly string[]
   campaignId: string
   sceneId: string
   snapshot: LiveSessionSnapshot
 }) {
   const port = useScenePartyCommandPort(props.campaignId)
+  const transition = useDraftTransition(
+    `${props.campaignId}:${props.sceneId}`,
+    {
+      title: message('desktop.confirmRosterChange'),
+      text: message('desktop.resolveBeforeRosterChange')
+    }
+  )
+  const [error, setError] = useState<string | null>(null)
   const [controller] = useState(() => new ScenePartyCommandController(port))
   const command = useSyncExternalStore(
     controller.subscribe,
@@ -41,6 +61,7 @@ export function DesktopRosterActions(props: {
     if (!publicBlocked()) setDraft(value)
   }
   function setDraft(value: Draft | null) {
+    setError(null)
     draftRef.current = value
     renderDraft(value)
   }
@@ -53,6 +74,7 @@ export function DesktopRosterActions(props: {
   useLayoutEffect(() => controller.detach, [controller])
   const blocked = useMaintenanceDraft({
     label: `Besetzung: ${source.title}`,
+    dependsOn: props.characterDraftIds ?? [],
     isDirty: () => controller.unresolved() || draftRef.current !== null,
     save: async () => {
       if (!(await controller.settle())) return false
@@ -99,7 +121,9 @@ export function DesktopRosterActions(props: {
           ?.id ?? '',
       title: '',
       revision: props.snapshot.scene.revision,
-      partyRevision: props.snapshot.party.revision
+      partyRevision: props.snapshot.party.revision,
+      rosterBasis: rosterBasis(props.snapshot),
+      submitted: false
     })
     setVisiblePopup(true)
   }
@@ -118,11 +142,37 @@ export function DesktopRosterActions(props: {
         (!original.target && !original.title.trim()))
     )
       return false
+    if (
+      !maintenance &&
+      maintenanceDraftCoordinator.hasDirty(props.characterDraftIds ?? [])
+    ) {
+      transition.request(() => {})
+      return false
+    }
+    let partyRevision = original.partyRevision
+    if (!original.submitted) {
+      try {
+        const current = port.current()
+        if (
+          current.scene.revision !== original.revision ||
+          rosterBasis(current) !== original.rosterBasis
+        ) {
+          setError(message('sceneParty.commandConflict'))
+          return false
+        }
+        partyRevision = current.party.revision
+      } catch (cause) {
+        setError(capabilityErrorText(cause))
+        return false
+      }
+    }
+    original.partyRevision = partyRevision
+    original.submitted = true
     const input = {
       sceneId: props.sceneId,
       memberIds: original.selected,
       expectedRevision: original.revision,
-      expectedPartyRevision: original.partyRevision
+      expectedPartyRevision: partyRevision
     }
     return controller.execute({
       commandId: crypto.randomUUID(),
@@ -260,7 +310,9 @@ export function DesktopRosterActions(props: {
                 )}
               </>
             )}
-            {command.error && <p role="alert">{command.error}</p>}
+            {(command.error || error) && (
+              <p role="alert">{command.error || error}</p>
+            )}
             {command.uncertain && (
               <button
                 disabled={blocked || command.busy}
@@ -288,6 +340,7 @@ export function DesktopRosterActions(props: {
           </>
         )}
       </AnchoredPopup>
+      {transition.dialog}
     </div>
   )
 }

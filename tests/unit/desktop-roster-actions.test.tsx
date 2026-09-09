@@ -32,6 +32,7 @@ vi.mock(
 )
 import type { ScenePartyCommandPort } from '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js'
 const scenePort = vi.hoisted(() => ({
+  current: vi.fn<ScenePartyCommandPort['current']>(),
   execute: vi.fn<ScenePartyCommandPort['execute']>(),
   status: vi.fn<ScenePartyCommandPort['status']>(),
   refresh: vi.fn<ScenePartyCommandPort['refresh']>()
@@ -72,6 +73,7 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
   const setRoster = scenePort.execute
     .mockReset()
     .mockResolvedValue({ snapshot })
+  scenePort.current.mockReset().mockReturnValue(snapshot)
   scenePort.refresh.mockReset().mockResolvedValue(snapshot)
   const api = {
     scene: { setRoster },
@@ -256,6 +258,7 @@ it('requires the same rest button twice and invalidates confirmation on selectio
     }
   } as unknown as LiveSessionSnapshot
   restSelected.mockResolvedValue({ snapshot })
+  scenePort.current.mockReset().mockReturnValue(snapshot)
   scenePort.refresh.mockReset().mockResolvedValue(snapshot)
   function view(value: LiveSessionSnapshot) {
     return (
@@ -298,7 +301,7 @@ it('requires the same rest button twice and invalidates confirmation on selectio
   )
 })
 
-function sceneFixture() {
+function sceneFixture(withXp = false) {
   const snapshot = {
     party: {
       revision: 7,
@@ -317,14 +320,32 @@ function sceneFixture() {
   scenePort.status
     .mockReset()
     .mockResolvedValue({ receipt: { snapshot }, snapshot })
+  scenePort.current.mockReset().mockReturnValue(snapshot)
   scenePort.refresh.mockReset().mockResolvedValue(snapshot)
+  xpPort.execute
+    .mockReset()
+    .mockResolvedValue({ characterId: 'a', party: snapshot.party })
+  xpPort.status.mockReset().mockResolvedValue({
+    receipt: { characterId: 'a', party: snapshot.party },
+    party: snapshot.party
+  })
+  xpPort.refresh.mockReset().mockResolvedValue(snapshot)
   render(
     <ModalLayerProvider>
       <DesktopRosterActions
+        characterDraftIds={withXp ? ['xp-a'] : []}
         campaignId="campaign"
         sceneId="source"
         snapshot={snapshot}
       />
+      {withXp && (
+        <DesktopXpAction
+          maintenanceId="xp-a"
+          campaignId="campaign"
+          member={{ id: 'a', name: 'Edrik' } as never}
+          revision={7}
+        />
+      )}
     </ModalLayerProvider>
   )
   return snapshot
@@ -425,4 +446,88 @@ it('recovers a confirmed new-scene move after refresh failure without creating a
     kind: 'move-roster',
     input: { target: { kind: 'new', title: 'Vorhut' } }
   })
+})
+
+it('direct roster apply cannot remove an unresolved XP editor and central discard clears both drafts', async () => {
+  sceneFixture(true)
+  fireEvent.click(screen.getByText('XP'))
+  fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
+  fireEvent.click(screen.getByText('XP'))
+  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getAllByRole('checkbox')[0]!)
+  fireEvent.click(screen.getByText('Übernehmen'))
+  await screen.findByRole('alertdialog', { name: 'Besetzung ändern' })
+  fireEvent.click(screen.getByText('Speichern und fortfahren'))
+  await waitFor(() =>
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('XP: Edrik')
+  )
+  expect(scenePort.execute).not.toHaveBeenCalled()
+  expect(xpPort.execute).not.toHaveBeenCalled()
+  expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked()
+  fireEvent.click(screen.getByText('Abbrechen'))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
+  fireEvent.click(screen.getByText('Übernehmen'))
+  await screen.findByRole('alertdialog')
+  fireEvent.click(screen.getByText('Verwerfen und fortfahren'))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  expect(scenePort.execute).not.toHaveBeenCalled()
+  expect(xpPort.execute).not.toHaveBeenCalled()
+})
+it('settles XP before roster save and uses the resulting Party revision without replaying XP', async () => {
+  const snapshot = sceneFixture(true)
+  const current = { ...snapshot, party: { ...snapshot.party, revision: 8 } }
+  xpPort.execute.mockRejectedValueOnce(new Error('lost'))
+  xpPort.status.mockResolvedValue({
+    receipt: { characterId: 'a', party: current.party },
+    party: current.party
+  })
+  xpPort.refresh.mockResolvedValue(current)
+  scenePort.current.mockReturnValue(current)
+  scenePort.refresh.mockResolvedValue(current)
+  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getAllByRole('checkbox')[0]!)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  fireEvent.click(screen.getByText('XP'))
+  fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
+  fireEvent.click(screen.getByText('+'))
+  await screen.findByText('Speicherstatus erneut prüfen')
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  await act(async () => {
+    expect(await resolution!.resolve('save')).toEqual([])
+  })
+  expect(xpPort.execute).toHaveBeenCalledOnce()
+  expect(xpPort.status.mock.invocationCallOrder[0]).toBeLessThan(
+    scenePort.execute.mock.invocationCallOrder[0]!
+  )
+  expect(scenePort.execute.mock.lastCall?.[0].command).toMatchObject({
+    kind: 'set-roster',
+    input: { memberIds: ['b'], expectedPartyRevision: 8, expectedRevision: 4 }
+  })
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+})
+it('does not rebase an unsubmitted roster across changed membership', async () => {
+  const snapshot = sceneFixture()
+  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getAllByRole('checkbox')[0]!)
+  scenePort.current.mockReturnValue({
+    ...snapshot,
+    party: {
+      ...snapshot.party,
+      revision: 8,
+      members: snapshot.party.members.map((member) => ({
+        ...member,
+        active: false
+      }))
+    }
+  })
+  fireEvent.click(screen.getByText('Übernehmen'))
+  await screen.findByText(
+    'Szene oder Gruppe wurden inzwischen geändert. Bitte den Entwurf verwerfen und neu öffnen.'
+  )
+  expect(scenePort.execute).not.toHaveBeenCalled()
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
 })

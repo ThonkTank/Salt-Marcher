@@ -41,7 +41,10 @@ function fixture() {
         partyCommandStatus: status
       }
     },
-    campaignWorkspace: { snapshot: () => root, refreshActiveSession: refresh }
+    campaignWorkspace: {
+      snapshot: () => ({ ...root, session }),
+      refreshActiveSession: refresh
+    }
   } as unknown as CapabilityContextValue
   const wrapper = ({ children }: { children: ReactNode }) => (
     <CapabilityContext.Provider value={context}>
@@ -69,6 +72,7 @@ function fixture() {
 describe('Character command original campaign port', () => {
   it('binds writes and status to the original campaign and awaits full refresh', async () => {
     const f = fixture()
+    expect(f.port.current()).toBe(f.session)
     await f.port.execute(input)
     await f.port.status(input)
     expect(f.execute).toHaveBeenCalledWith({ ...input, campaignId: 'original' })
@@ -141,3 +145,14 @@ describe('Character command original campaign port', () => {
     expect(f.execute).not.toHaveBeenCalled()
   })
 })
+
+it.each(['active', 'loaded'] as const)(
+  'rejects synchronous reads after the %s campaign changes',
+  (identity) => {
+    const f = fixture()
+    f.switchCampaign(identity)
+    expect(() => f.port.current()).toThrow()
+    expect(f.execute).not.toHaveBeenCalled()
+    expect(f.refresh).not.toHaveBeenCalled()
+  }
+)
