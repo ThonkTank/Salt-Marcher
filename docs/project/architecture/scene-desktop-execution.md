@@ -1978,6 +1978,11 @@ Integration with the current maintenance owners also exposed stale journey
 revisions after reopening a travelling map. Explicit journey controls and token positioning now use
 the existing read-only preparation step before the existing command owner;
 unknown outcomes still resolve through receipts without automatic write retries.
+Party roster dependencies include only dirty, registered XP editors. Closing the
+separate character window therefore leaves no missing maintenance dependency;
+open XP changes still precede a roster move. A Party-only maintenance check
+covers this alongside the travel E2E's consecutive token moves.
+
 The desktop acceptance covers both themes at 240 × 160 minimum window size.
 Group columns scroll within their content area at that width; the drag grip
 remains outside that scroller. Scene changes invalidate the active drop gesture.

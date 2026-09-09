@@ -1,7 +1,9 @@
+import { maintenanceDraftCoordinator } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
 import * as partyPort from '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js'
 // @vitest-environment jsdom
 import { useState } from 'react'
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -121,6 +123,15 @@ it('keeps all details available while changing only collapsed quick fields, and 
   await waitFor(() =>
     expect(screen.getByText('Schnellwerte')).not.toBeDisabled()
   )
+  // Party alone must not depend on XP editors in the closed character window.
+  await act(async () => {
+    const resolution = maintenanceDraftCoordinator.begin()
+    try {
+      expect(await resolution.resolve('check')).toEqual([])
+    } finally {
+      resolution.release()
+    }
+  })
   const quick = document.querySelector('.desktop-party-quick')!
   expect(quick.textContent).toContain('AC 15')
   expect(quick.parentElement?.textContent).toContain('Mira')

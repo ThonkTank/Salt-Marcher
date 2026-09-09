@@ -89,7 +89,10 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
               if (preparation.status !== 'success' || !isCurrent(target)) return
               const prepared = preparation.value
               const view = read()
-              if (original.kind === 'start' && view.mapId !== original.mapId)
+              if (
+                (original.kind === 'start' || original.kind === 'position') &&
+                view.mapId !== original.mapId
+              )
                 return
               const freshTarget = capture()
               if (

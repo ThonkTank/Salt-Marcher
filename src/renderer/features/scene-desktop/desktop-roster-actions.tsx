@@ -75,7 +75,11 @@ export function DesktopRosterActions(props: {
   useLayoutEffect(() => controller.detach, [controller])
   const blocked = useMaintenanceDraft({
     label: `Besetzung: ${source.title}`,
-    dependsOn: props.characterDraftIds ?? [],
+    get dependsOn() {
+      return (props.characterDraftIds ?? []).filter((id) =>
+        maintenanceDraftCoordinator.hasDirty([id])
+      )
+    },
     isDirty: () => controller.unresolved() || draftRef.current !== null,
     save: async () => {
       if (!(await controller.settle())) return false
