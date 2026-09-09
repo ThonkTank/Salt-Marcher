@@ -251,6 +251,7 @@ export default function CharacterCatalogSection(props: {
             key={editing.base?.id ?? 'new'}
             member={editing.base}
             busy={commandBusy || uncertain}
+            blocked={blocked}
             registerSave={registerSave}
             error={displayedError}
             save={save}

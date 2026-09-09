@@ -21,7 +21,10 @@ import type { GroupManagerPorts } from './use-group-manager-capability-ports.js'
 import { useGroupManagerCommands } from './use-group-manager-commands.js'
 import { useGroupManagerDraftRuntime } from './use-group-manager-draft-runtime.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useGroupManagerQueries } from './use-group-manager-queries.js'
 
 export function useGroupManagerController(
@@ -77,12 +80,20 @@ export function useGroupManagerController(
             ?.groups ?? []
       })
       if (!maintenanceDraftCoordinator.isLocked()) props.saved(current)
+    },
+    initialFocused.id
+  )
+  const archiveTransition = useDraftTransition(
+    initialFocused.id,
+    {
+      title: message('group.archiveTitle'),
+      text: message('group.resolveBeforeArchive')
+    },
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.groups(initialFocused.id)]
     }
   )
-  const archiveTransition = useDraftTransition(initialFocused.id, {
-    title: message('group.archiveTitle'),
-    text: message('group.resolveBeforeArchive')
-  })
   const dispatch = runtime.dispatch
   const focused = snapshot.scene.scenes.find(
     (scene) => scene.id === snapshot.scene.focusedSceneId
@@ -114,6 +125,10 @@ export function useGroupManagerController(
   }
   const maintenanceBlocked = useMaintenanceDraft({
     label: 'Gruppenverwaltung',
+    concerns: [
+      draftConcern.groups(initialFocused.id),
+      draftConcern.scene(initialFocused.id)
+    ],
     dependsOn: [lifecycle.ownerId, combatCommands.ownerId],
     isDirty: runtime.isDirty,
     save: async () => {

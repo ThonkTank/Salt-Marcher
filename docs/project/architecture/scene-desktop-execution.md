@@ -1992,4 +1992,9 @@ no historical fixture hash or visual tolerance is relaxed. The travel acceptance
 uses a longer authored route and observes a boundary before pausing, avoiding an
 intentional optimistic-revision conflict with an automatic hex transition.
 
-Delivery is pending candidate CI, exact-SHA canonical handoff, and main promotion.
+Party and Groups were delivered as application SHA
+`9ac241b2c96934cd21a1079b35cf0fe60889622c`. Candidate Check
+[34333945338](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34333945338),
+the exact-SHA canonical handoff, and promoted `main` Check
+[34336791631](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34336791631)
+all completed successfully.

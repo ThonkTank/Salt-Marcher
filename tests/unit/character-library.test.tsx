@@ -93,6 +93,7 @@ describe('character library and scene facts', () => {
       <CharacterProfileForm
         member={member}
         busy={false}
+        blocked={false}
         error={null}
         save={save}
         close={vi.fn()}

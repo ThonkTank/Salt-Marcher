@@ -111,7 +111,7 @@ describe('per-scene desktop', () => {
     await waitSaved(client)
     expect(await geometry(client)).toEqual(preferred)
     await client.$('button[aria-label="Minimieren"]').click()
-    await expect(client.$('.desktop-window')).not.toBeExisting()
+    await expect(client.$('.desktop-window')).not.toBeDisplayed()
     await client.$('.desktop-taskbar button').click()
     await waitSaved(client)
     expect(await geometry(client)).toEqual(preferred)
@@ -592,7 +592,7 @@ describe('per-scene desktop', () => {
     await client.$('select[aria-label="Szene"]').selectByVisibleText('Hafen')
     await client.$('.desktop-toolbar').$('button=Charaktere').click()
     const info = () => client.$('[data-window-id="characters"]')
-    await info().waitForDisplayed()
+    await info().waitForDisplayed({ timeout: 15_000 })
     await expect(info()).toHaveText(expect.stringContaining('Zuga'))
     await expect(info()).not.toHaveText(expect.stringContaining('Vivian'))
     const before = await info()
@@ -699,32 +699,34 @@ describe('per-scene desktop', () => {
     await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
     expect(await row().$('.desktop-character-burden').getText()).toBe(burden)
     await client.keys('Escape')
-    for (const action of ['Fenster schließen', 'Minimieren']) {
-      await row().$('button=XP').click()
-      await client.$('.desktop-xp-popup input').setValue('250')
-      await info().$(`button[aria-label="${action}"]`).click()
-      const confirmation = () =>
-        client.$(
-          '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
-        )
-      await confirmation().waitForDisplayed({ timeout: 10_000 })
-      await confirmation().$('button=Abbrechen').click()
-      await info().waitForDisplayed()
-      await row().$('button=XP').click()
-      await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
-      await info().$(`button[aria-label="${action}"]`).click()
-      await confirmation().waitForDisplayed({ timeout: 10_000 })
-      await confirmation().$('button=Speichern und fortfahren').click()
-      await expect(confirmation().$('[role="alert"]')).toHaveText(
-        expect.stringContaining('XP:')
-      )
-      await expect(info()).toBeExisting()
-      await confirmation().$('button=Verwerfen und fortfahren').click()
-      await info().waitForExist({ reverse: true })
-      await client.$('.desktop-toolbar').$('button=Charaktere').click()
-      await info().waitForDisplayed()
-      await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
-    }
+    await row().$('button=XP').click()
+    await client.$('.desktop-xp-popup input').setValue('250')
+    await info().$('button[aria-label="Minimieren"]').click()
+    await expect(client.$('[role="alertdialog"]')).not.toBeExisting()
+    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await info().waitForDisplayed()
+    await row().$('button=XP').click()
+    await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
+    const confirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Fensteränderung bestätigen"]')
+    await info().$('button[aria-label="Fenster schließen"]').click()
+    await confirmation().waitForDisplayed({ timeout: 10_000 })
+    await confirmation().$('button=Abbrechen').click()
+    await info().waitForDisplayed()
+    await row().$('button=XP').click()
+    await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
+    await info().$('button[aria-label="Fenster schließen"]').click()
+    await confirmation().waitForDisplayed({ timeout: 10_000 })
+    await confirmation().$('button=Speichern und fortfahren').click()
+    await expect(confirmation().$('[role="alert"]')).toHaveText(
+      expect.stringContaining('XP:')
+    )
+    await expect(info()).toBeExisting()
+    await confirmation().$('button=Verwerfen und fortfahren').click()
+    await info().waitForExist({ reverse: true })
+    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await info().waitForDisplayed()
+    await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
     await info().$('button=Rasten').click()
     await popup().$('button=Kurze Rast').click()
     await expect(popup().$('button=Kurze Rast bestätigen')).toBeDisplayed()
@@ -1122,7 +1124,7 @@ describe('per-scene desktop', () => {
     expect(restarted.combat).toBeNull()
     expect(restarted.party).toEqual(after.party)
   })
-  it('resolves an open XP draft before changing scene location and preserves it across restart', async () => {
+  it('changes scene location without resolving an independent XP draft', async () => {
     const client = browser as unknown as WdioBrowser
     const read = () =>
       client.execute(async () => {
@@ -1149,27 +1151,25 @@ describe('per-scene desktop', () => {
         .$('.desktop-toolbar .desktop-scene-facts select')
         .selectByAttribute('value', destination.id)
     }
-    const confirmation = () =>
-      client.$('[role="alertdialog"][aria-label="Szene ändern"]')
     await chooseLocation()
-    await confirmation().waitForDisplayed()
-    await confirmation().$('button=Abbrechen').click()
-    const cancelled = await read()
-    expect(
-      cancelled.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
-    ).toBe(original)
-    expect(cancelled.party).toEqual(before.party)
-    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
-    await chooseLocation()
-    await confirmation().waitForDisplayed()
-    await confirmation().$('button=Verwerfen und fortfahren').click()
     await client.waitUntil(
       async () =>
         (await read()).scene.scenes.find((scene) => scene.id === sceneId)!
           .locationId === destination.id
     )
+    await expect(client.$('[role="alertdialog"]')).not.toBeExisting()
+    await client.$('[data-window-id="characters"]').$('button=XP').click()
+    await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
     expect((await read()).party).toEqual(before.party)
     await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    await client
+      .$('[data-window-id="characters"] button[aria-label="Fenster schließen"]')
+      .click()
+    const confirmation = client.$(
+      '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
+    )
+    await confirmation.waitForDisplayed()
+    await confirmation.$('button=Verwerfen und fortfahren').click()
     await waitSaved(client)
     await client.reloadSession()
     await resumeCampaignFromScreen(client)

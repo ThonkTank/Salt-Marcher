@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-09",
-  "reason": "Account for journaled travel commands and persistent route drafts with central save/discard recovery.",
-  "dependencyRationale": "No added dependency or lockfile change. Reuse React, the existing command owner and maintenance dialog. Absolute budgets and the 16 KiB growth threshold are unchanged.",
-  "chunkRationale": "Route drafts and command recovery remain in the lazy SceneDesktop graph. Reachable growth is 17768 bytes since the combat baseline, including 5467 bytes since the qualified travel projection commit. Common workspace growth is 732 bytes; the shell is unchanged. No runtime schema library was added to the renderer.",
+  "reason": "Account for typed action-scoped draft concerns, targeted transition locking, and mounted minimized scene windows.",
+  "dependencyRationale": "No dependency or lockfile change. The implementation reuses React context and the existing draft coordinator and transition dialog.",
+  "chunkRationale": "Coordination metadata and selection logic remain in the existing lazy Workspace and SceneDesktop graphs. Measured growth is 18137 reachable bytes, including 3100 bytes in the common Workspace graph and 26 bytes in the shell graph; Pixi and unrelated routes remain isolated, and all absolute budgets plus the 16 KiB growth gate are unchanged.",
   "graphs": {
-    "shell": 420905,
-    "workspace": 526975,
+    "shell": 420931,
+    "workspace": 530075,
     "session": 1348,
     "catalog": 186677,
     "hex": 175900,
     "reference": 37404,
     "pixi": 409405,
-    "reachable": 1669010
+    "reachable": 1687147
   }
 }

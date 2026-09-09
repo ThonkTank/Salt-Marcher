@@ -104,6 +104,7 @@ export function DesktopParty(props: {
                 campaignId={props.campaignId}
                 sceneId={props.sceneId}
                 snapshot={props.snapshot}
+                windowId="party"
                 characterDraftIds={[
                   desktopXpDraftId(props.campaignId, props.sceneId, member.id)
                 ]}

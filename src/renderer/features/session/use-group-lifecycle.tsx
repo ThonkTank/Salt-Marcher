@@ -8,7 +8,10 @@ import {
 } from 'react'
 import type { SceneGroupLifecycleCommand } from '../../../shared/contracts/scene-group-lifecycle.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { GroupLifecycleController } from './group-lifecycle-controller.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
@@ -18,15 +21,22 @@ import {
 } from './use-group-lifecycle-port.js'
 export function useGroupLifecycle(
   campaignId: string,
-  onError: (text: string) => void
+  onError: (text: string) => void,
+  sceneId?: string
 ) {
-  return useGroupLifecycleOwner(useGroupLifecyclePort(campaignId), onError)
+  return useGroupLifecycleOwner(
+    useGroupLifecyclePort(campaignId),
+    onError,
+    undefined,
+    sceneId
+  )
 }
 
 export function useGroupLifecycleOwner(
   port: GroupLifecyclePort,
   onError: (text: string) => void,
-  onCompleted?: (snapshot: LiveSessionSnapshot) => void
+  onCompleted?: (snapshot: LiveSessionSnapshot) => void,
+  sceneId?: string
 ) {
   const ownerId = useId()
   const completion = useRef(onCompleted)
@@ -42,6 +52,7 @@ export function useGroupLifecycleOwner(
   const maintenance = useMaintenanceDraft(
     {
       label: 'Gruppenaktionen',
+      concerns: sceneId ? [draftConcern.scene(sceneId)] : [],
       isDirty: controller.held,
       save: controller.save,
       discard: controller.discard

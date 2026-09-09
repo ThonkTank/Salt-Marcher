@@ -1,7 +1,11 @@
 import { useCallback } from 'react'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftSelection
+} from '../../shell/maintenance-draft-coordinator.js'
 import { sameTravelScope, type TravelScope } from './travel-controller.js'
 import type {
   TravelProviderCommand,
@@ -12,7 +16,10 @@ import type { TravelRouteDraft } from './use-travel-route-draft.js'
 import type { useTravelQueries } from './use-travel-queries.js'
 
 export function useTravelCommandTransition<P, S, M, E>(options: {
-  requestTransition: (run: () => Promise<void>) => Promise<void> | undefined
+  requestTransition: (
+    run: () => Promise<void>,
+    selection?: MaintenanceDraftSelection
+  ) => Promise<void> | undefined
   prepareCommand: ReturnType<
     typeof useTravelQueries<P, S, M, E>
   >['prepareCommand']
@@ -56,7 +63,8 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
       const target = capture()
       if (!target) return Promise.resolve()
       const original = structuredClone(command)
-      const needsResolution = maintenanceDraftCoordinator.hasDirty()
+      const selection = travelDraftSelection(original.kind, original.sceneId)
+      const needsResolution = maintenanceDraftCoordinator.hasDirty(selection)
       return (
         requestTransition(() => {
           if (blocked() || !isCurrent(target)) return Promise.resolve()
@@ -65,7 +73,7 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
           if (!needsResolution && original.kind === 'start')
             return execute(original, clearDraft)
           return (async () => {
-            const held = maintenanceDraftCoordinator.begin()
+            const held = maintenanceDraftCoordinator.begin(selection)
             let next: TravelProviderCommand<P> | null = null
             try {
               if ((await held.resolve('check')).length)
@@ -117,7 +125,7 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
             if (next && isCurrent(target) && !blocked())
               await execute(next, clearDraft)
           })()
-        }) ?? Promise.resolve()
+        }, selection) ?? Promise.resolve()
       )
     },
     [
@@ -136,4 +144,23 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
       scope
     ]
   )
+}
+
+function travelDraftSelection(
+  kind: TravelProviderCommand<unknown>['kind'],
+  sceneId: string
+): MaintenanceDraftSelection {
+  if (kind === 'pause' || kind === 'abort' || kind === 'set-multiplier')
+    return {
+      kind: 'concerns',
+      concerns: [draftConcern.travelCommand(sceneId)]
+    }
+  return {
+    kind: 'concerns',
+    concerns: [
+      draftConcern.travelCommand(sceneId),
+      draftConcern.travelRoute(sceneId),
+      draftConcern.party(sceneId)
+    ]
+  }
 }

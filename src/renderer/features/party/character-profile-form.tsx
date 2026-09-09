@@ -1,7 +1,6 @@
 import { message } from '../../i18n/session-runtime.de.js'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
-import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import type {
   PartyCharacter,
   PartyCharacterDraft
@@ -15,6 +14,7 @@ import {
 export function CharacterProfileForm(props: {
   member: PartyCharacter | null
   busy: boolean
+  blocked: boolean
   error: string | null
   save: (draft: PartyCharacterDraft) => Promise<boolean>
   registerSave?: (save: () => Promise<boolean>) => () => void
@@ -22,7 +22,6 @@ export function CharacterProfileForm(props: {
 }) {
   const [values, setValues] = useState(() => characterFormValues(props.member))
   const valuesRef = useRef(values)
-  const blocked = useMaintenanceEditingBlocked()
   const [errors, setErrors] = useState<Record<string, string>>({})
   async function submit(): Promise<boolean> {
     if (props.busy) return false
@@ -69,7 +68,7 @@ export function CharacterProfileForm(props: {
             aria-describedby={
               errors[key] ? `character-error-${key}` : undefined
             }
-            disabled={props.busy || blocked}
+            disabled={props.busy || props.blocked}
             onChange={(event) => {
               if (props.busy || maintenanceDraftCoordinator.isLocked()) return
               valuesRef.current = {
@@ -94,14 +93,14 @@ export function CharacterProfileForm(props: {
       <footer className="character-wide character-actions">
         <button
           type="button"
-          disabled={props.busy || blocked}
+          disabled={props.busy || props.blocked}
           onClick={() => {
             if (!maintenanceDraftCoordinator.isLocked()) props.close()
           }}
         >
           {message('character.cancel')}
         </button>
-        <button type="submit" disabled={props.busy || blocked}>
+        <button type="submit" disabled={props.busy || props.blocked}>
           {message('character.save')}
         </button>
       </footer>

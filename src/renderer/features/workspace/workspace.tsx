@@ -1,5 +1,9 @@
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { MaintenanceDraftConcernProvider } from '../../shell/maintenance-drafts.js'
 import type { CatalogNavigation } from '../catalog/catalog-section-selector.js'
 import {
   lazy,
@@ -115,8 +119,15 @@ export function WorkspaceApp() {
   }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const draftWorkspaceId =
+    coordinator.screen === 'campaigns' ? 'campaigns' : coordinator.workspace
   const transition = useDraftTransition(
-    `${coordinator.campaigns.activeCampaignId ?? ''}:${coordinator.screen}:${coordinator.workspace}`
+    `${coordinator.campaigns.activeCampaignId ?? ''}:${coordinator.screen}:${coordinator.workspace}`,
+    undefined,
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.workspace(draftWorkspaceId)]
+    }
   )
   const requestTransition = transition.request
   const setWorkspace = coordinator.setWorkspace
@@ -293,19 +304,25 @@ export function WorkspaceApp() {
               <p role="status">{campaignMessage('campaign.loading')}</p>
             }
           >
-            <CampaignScreen
-              snapshot={coordinator.campaigns}
-              status={coordinator.catalogStatus}
-              error={coordinator.error}
-              busy={coordinator.busy || coreStatus !== 'ready'}
-              sessionRetry={coordinator.sessionRetry}
-              retryCatalog={coordinator.retryCatalog}
-              retrySession={coordinator.retrySession}
-              begin={coordinator.beginCampaignAction}
-              maintenanceDependencyId={coordinator.campaignMaintenanceId}
-              reconciliationPending={coordinator.campaignReconciliationPending}
-              reconcile={coordinator.reconcileCampaign}
-            />
+            <MaintenanceDraftConcernProvider
+              concerns={[draftConcern.workspace('campaigns')]}
+            >
+              <CampaignScreen
+                snapshot={coordinator.campaigns}
+                status={coordinator.catalogStatus}
+                error={coordinator.error}
+                busy={coordinator.busy || coreStatus !== 'ready'}
+                sessionRetry={coordinator.sessionRetry}
+                retryCatalog={coordinator.retryCatalog}
+                retrySession={coordinator.retrySession}
+                begin={coordinator.beginCampaignAction}
+                maintenanceDependencyId={coordinator.campaignMaintenanceId}
+                reconciliationPending={
+                  coordinator.campaignReconciliationPending
+                }
+                reconcile={coordinator.reconcileCampaign}
+              />
+            </MaintenanceDraftConcernProvider>
           </Suspense>
         ) : (
           <div className="shell-body">
@@ -317,12 +334,16 @@ export function WorkspaceApp() {
             <div
               className={`work-area layout-${active ? definition.layout : 'scroll'}`}
             >
-              <WorkspaceRouteHost
-                active={active}
-                workspace={coordinator.workspace}
-                surfaceProps={surfaceProps}
-                runtime={api.runtime}
-              />
+              <MaintenanceDraftConcernProvider
+                concerns={[draftConcern.workspace(coordinator.workspace)]}
+              >
+                <WorkspaceRouteHost
+                  active={active}
+                  workspace={coordinator.workspace}
+                  surfaceProps={surfaceProps}
+                  runtime={api.runtime}
+                />
+              </MaintenanceDraftConcernProvider>
             </div>
           </div>
         )}

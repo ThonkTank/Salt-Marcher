@@ -1,8 +1,32 @@
-import { useLayoutEffect, useRef, useId, useSyncExternalStore } from 'react'
+import {
+  createContext,
+  createElement,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useId,
+  useSyncExternalStore,
+  type ReactNode
+} from 'react'
 import {
   maintenanceDraftCoordinator,
-  type MaintenanceDraft
+  type MaintenanceDraft,
+  type MaintenanceDraftConcern
 } from './maintenance-draft-coordinator.js'
+
+const concernContext = createContext<readonly MaintenanceDraftConcern[]>([])
+
+export function MaintenanceDraftConcernProvider(props: {
+  concerns: readonly MaintenanceDraftConcern[]
+  children: ReactNode
+}) {
+  const inherited = useContext(concernContext)
+  return createElement(
+    concernContext.Provider,
+    { value: [...inherited, ...props.concerns] },
+    props.children
+  )
+}
 
 export function hasMaintenanceDrafts(): boolean {
   return maintenanceDraftCoordinator.hasDirty()
@@ -21,24 +45,34 @@ export function useMaintenanceDraft(
 ): boolean {
   const generatedId = useId()
   const id = ownerId ?? generatedId
-  const current = useRef(owner)
+  const inherited = useContext(concernContext)
+  const current = useRef({ owner, inherited })
   useLayoutEffect(() => {
-    current.current = owner
+    current.current = { owner, inherited }
   })
   useLayoutEffect(
     () =>
       maintenanceDraftCoordinator.register(id, {
         get label() {
-          return current.current.label
+          return current.current.owner.label
         },
         get dependsOn() {
-          return current.current.dependsOn ?? []
+          return current.current.owner.dependsOn ?? []
         },
-        isDirty: () => current.current.isDirty(),
-        save: () => current.current.save?.() ?? Promise.resolve(false),
-        discard: () => current.current.discard?.() ?? Promise.resolve(false)
+        get concerns() {
+          return [
+            ...current.current.inherited,
+            ...(current.current.owner.concerns ?? [])
+          ]
+        },
+        isDirty: () => current.current.owner.isDirty(),
+        save: () => current.current.owner.save?.() ?? Promise.resolve(false),
+        discard: () =>
+          current.current.owner.discard?.() ?? Promise.resolve(false)
       }),
     [id]
   )
-  return useMaintenanceEditingBlocked()
+  return useSyncExternalStore(maintenanceDraftCoordinator.subscribe, () =>
+    maintenanceDraftCoordinator.isDraftLocked(id)
+  )
 }

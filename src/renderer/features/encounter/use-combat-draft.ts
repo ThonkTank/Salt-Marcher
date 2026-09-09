@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import type { CombatCommand } from '../../../shared/contracts/combat-command.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { draftConcern } from '../../shell/maintenance-draft-coordinator.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import type { CombatCommands } from './use-combat-commands.js'
 
@@ -26,6 +27,10 @@ export function useCombatDraft<Value>(
   }
   useMaintenanceDraft({
     label,
+    concerns: [
+      draftConcern.combat(commands.current().scene.focusedSceneId),
+      draftConcern.scene(commands.current().scene.focusedSceneId)
+    ],
     dependsOn: [commands.ownerId],
     isDirty: () => draft.current !== null,
     save: async () => {

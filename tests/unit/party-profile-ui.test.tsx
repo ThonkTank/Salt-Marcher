@@ -44,6 +44,7 @@ describe('structured party profile UI', () => {
       <CharacterProfileForm
         member={character}
         busy={false}
+        blocked={false}
         error={null}
         save={save}
         close={vi.fn()}
@@ -66,5 +67,27 @@ describe('structured party profile UI', () => {
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({ languages: ['Common', 'Sylvan'] })
     )
+  })
+
+  it('blocks editing while allowing the registered transition save', async () => {
+    const save = vi.fn(() => Promise.resolve(true))
+    let transitionSave: (() => Promise<boolean>) | undefined
+    render(
+      <CharacterProfileForm
+        member={character}
+        busy={false}
+        blocked
+        error={null}
+        save={save}
+        registerSave={(submit) => {
+          transitionSave = submit
+          return () => undefined
+        }}
+        close={vi.fn()}
+      />
+    )
+    expect(screen.getByLabelText('Charaktername')).toBeDisabled()
+    expect(await transitionSave?.()).toBe(true)
+    expect(save).toHaveBeenCalledOnce()
   })
 })

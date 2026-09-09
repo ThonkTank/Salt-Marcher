@@ -28,15 +28,19 @@ export function useSessionWorkspaceController(input: {
   sceneBusy: boolean
 }> {
   const reference = useReferenceContext()
-  const lifecycle = useGroupLifecycle(input.campaignId, input.onError)
+  const focused = input.snapshot.scene.scenes.find(
+    (scene) => scene.id === input.snapshot.scene.focusedSceneId
+  )!
+  const lifecycle = useGroupLifecycle(
+    input.campaignId,
+    input.onError,
+    focused.id
+  )
   const { openCreature } = useSessionReferenceFollow({
     snapshot: input.snapshot,
     reference,
     follow: input.followCombat ?? true
   })
-  const focused = input.snapshot.scene.scenes.find(
-    (scene) => scene.id === input.snapshot.scene.focusedSceneId
-  )!
   const loot = useLootSceneController({
     sceneId: focused.id,
     locationId: focused.locationId,

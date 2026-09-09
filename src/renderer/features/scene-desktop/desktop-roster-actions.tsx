@@ -7,7 +7,10 @@ import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { characterShortId } from '../party/character-profile.js'
 
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { ScenePartyCommandController } from './scene-party-command-controller.js'
 import { useScenePartyCommandPort } from './use-scene-party-command-port.js'
@@ -34,6 +37,7 @@ type Draft = {
 export function DesktopRosterActions(props: {
   singleCharacter?: { id: string; name: string }
   characterDraftIds?: readonly string[]
+  windowId?: string
   campaignId: string
   sceneId: string
   snapshot: LiveSessionSnapshot
@@ -44,6 +48,10 @@ export function DesktopRosterActions(props: {
     {
       title: message('desktop.confirmRosterChange'),
       text: message('desktop.resolveBeforeRosterChange')
+    },
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.party(props.sceneId)]
     }
   )
   const [error, setError] = useState<string | null>(null)
@@ -75,9 +83,15 @@ export function DesktopRosterActions(props: {
   useLayoutEffect(() => controller.detach, [controller])
   const blocked = useMaintenanceDraft({
     label: `Besetzung: ${source.title}`,
+    concerns: [
+      draftConcern.party(props.sceneId),
+      draftConcern.scene(props.sceneId),
+      ...(props.windowId ? [draftConcern.window(props.windowId)] : [])
+    ],
     get dependsOn() {
+      if (!controller.unresolved() && draftRef.current === null) return []
       return (props.characterDraftIds ?? []).filter((id) =>
-        maintenanceDraftCoordinator.hasDirty([id])
+        maintenanceDraftCoordinator.hasDirty({ kind: 'ids', ids: [id] })
       )
     },
     isDirty: () => controller.unresolved() || draftRef.current !== null,
@@ -154,7 +168,10 @@ export function DesktopRosterActions(props: {
       return false
     if (
       !maintenance &&
-      maintenanceDraftCoordinator.hasDirty(props.characterDraftIds ?? [])
+      maintenanceDraftCoordinator.hasDirty({
+        kind: 'ids',
+        ids: props.characterDraftIds ?? []
+      })
     ) {
       transition.request(() => {})
       return false

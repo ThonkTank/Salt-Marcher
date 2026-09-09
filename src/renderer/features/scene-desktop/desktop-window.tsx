@@ -143,6 +143,7 @@ export function DesktopWindow(props: {
   return (
     <section
       ref={element}
+      hidden={props.window.minimized}
       className={`desktop-window${props.raised ? ' raised' : ''}`}
       data-window-id={props.window.id}
       aria-label={props.title ?? message('desktop.overview')}

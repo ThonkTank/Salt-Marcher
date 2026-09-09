@@ -6,6 +6,8 @@ export interface MaintenanceDraftHandle {
 
 export interface MaintenanceDraft {
   readonly label: string
+  /** Action and lifetime concerns used by targeted transitions. */
+  readonly concerns?: readonly MaintenanceDraftConcern[]
   /** Child editors whose results must be settled before this owner. */
   readonly dependsOn?: readonly string[]
   isDirty(): boolean
@@ -14,6 +16,29 @@ export interface MaintenanceDraft {
   /** Resolve true only when the owning editor confirmed successful persistence. */
   save?(): Promise<boolean>
   discard?(): Promise<boolean>
+}
+export type MaintenanceDraftConcern =
+  `${'workspace' | 'scene' | 'window' | 'party' | 'travel-route' | 'travel-command' | 'combat' | 'groups' | 'character' | 'group'}:${string}`
+export type MaintenanceDraftSelection =
+  | Readonly<{ kind: 'all' }>
+  | Readonly<{ kind: 'ids'; ids: readonly string[] }>
+  | Readonly<{
+      kind: 'concerns'
+      concerns: readonly MaintenanceDraftConcern[]
+    }>
+
+export const allMaintenanceDrafts: MaintenanceDraftSelection = { kind: 'all' }
+export const draftConcern = {
+  workspace: (workspaceId: string) => `workspace:${workspaceId}` as const,
+  scene: (sceneId: string) => `scene:${sceneId}` as const,
+  window: (windowId: string) => `window:${windowId}` as const,
+  party: (sceneId: string) => `party:${sceneId}` as const,
+  travelRoute: (sceneId: string) => `travel-route:${sceneId}` as const,
+  travelCommand: (sceneId: string) => `travel-command:${sceneId}` as const,
+  combat: (sceneId: string) => `combat:${sceneId}` as const,
+  groups: (sceneId: string) => `groups:${sceneId}` as const,
+  character: (characterId: string) => `character:${characterId}` as const,
+  group: (groupId: string) => `group:${groupId}` as const
 }
 export interface DraftResolutionFailure {
   readonly id: string
@@ -31,34 +56,70 @@ export interface MaintenanceDraftResolution {
 export class MaintenanceDraftCoordinator {
   private readonly drafts = new Map<string, MaintenanceDraft>()
   private readonly listeners = new Set<() => void>()
-  private locked = false
+  private globallyLocked = false
+  private readonly lockedDrafts = new Set<string>()
+  private activeSelection: MaintenanceDraftSelection | null = null
 
   register(id: string, draft: MaintenanceDraft): () => void {
     if (this.drafts.has(id)) throw new Error('Editor ist bereits registriert.')
     this.drafts.set(id, draft)
+    if (this.activeSelection && !this.globallyLocked) {
+      const selected = this.selected(this.activeSelection).some(
+        ([selectedId]) => selectedId === id
+      )
+      const required = [...this.lockedDrafts].some((lockedId) =>
+        (this.drafts.get(lockedId)?.dependsOn ?? []).includes(id)
+      )
+      if (selected || required) {
+        this.lockDraft(id)
+        this.publish()
+      }
+    }
     return () => {
       if (this.drafts.get(id) === draft) this.drafts.delete(id)
     }
   }
-  hasDirty(ids?: readonly string[]): boolean {
-    return ids
-      ? ids.some((id) => this.drafts.get(id)?.isDirty() ?? false)
-      : [...this.drafts.values()].some((draft) => draft.isDirty())
+  private selected(
+    selection: MaintenanceDraftSelection = allMaintenanceDrafts
+  ): readonly [string, MaintenanceDraft][] {
+    if (selection.kind === 'all') return [...this.drafts]
+    if (selection.kind === 'ids')
+      return selection.ids.flatMap((id) => {
+        const draft = this.drafts.get(id)
+        return draft ? ([[id, draft]] as const) : []
+      })
+    const concerns = new Set(selection.concerns)
+    return [...this.drafts].filter(([, draft]) =>
+      (draft.concerns ?? []).some((concern) => concerns.has(concern))
+    )
   }
-  async settleBackgroundWrites(): Promise<void> {
-    if (this.locked) return
+  hasDirty(
+    selection: MaintenanceDraftSelection = allMaintenanceDrafts
+  ): boolean {
+    return this.selected(selection).some(([, draft]) => draft.isDirty())
+  }
+  async settleBackgroundWrites(
+    selection: MaintenanceDraftSelection = allMaintenanceDrafts
+  ): Promise<void> {
+    if (this.isCoordinating()) return
     await Promise.allSettled(
-      [...this.drafts.values()].map((draft) =>
+      this.selected(selection).map(([, draft]) =>
         Promise.resolve().then(() => draft.settleBackgroundWrites?.())
       )
     )
   }
-  dirtyLabels(): readonly string[] {
-    return [...this.drafts.values()]
-      .filter((draft) => draft.isDirty())
-      .map((draft) => draft.label)
+  dirtyLabels(
+    selection: MaintenanceDraftSelection = allMaintenanceDrafts
+  ): readonly string[] {
+    return this.selected(selection)
+      .filter(([, draft]) => draft.isDirty())
+      .map(([, draft]) => draft.label)
   }
-  isLocked = (): boolean => this.locked
+  /** Application-wide editing barrier used by quit and maintenance. */
+  isLocked = (): boolean => this.globallyLocked
+  isCoordinating = (): boolean => this.activeSelection !== null
+  isDraftLocked = (id: string): boolean =>
+    this.globallyLocked || this.lockedDrafts.has(id)
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
@@ -66,10 +127,23 @@ export class MaintenanceDraftCoordinator {
   private publish(): void {
     for (const listener of this.listeners) listener()
   }
+  private lockDraft(id: string): void {
+    if (this.lockedDrafts.has(id)) return
+    const draft = this.drafts.get(id)
+    if (!draft) return
+    this.lockedDrafts.add(id)
+    for (const child of draft.dependsOn ?? []) this.lockDraft(child)
+  }
 
-  begin(): MaintenanceDraftResolution {
-    if (this.locked) throw new Error('Eine Wartungsklärung läuft bereits.')
-    this.locked = true
+  begin(
+    selection: MaintenanceDraftSelection = allMaintenanceDrafts
+  ): MaintenanceDraftResolution {
+    if (this.isCoordinating())
+      throw new Error('Eine Wartungsklärung läuft bereits.')
+    const initialRoots = this.selected(selection).map(([id]) => id)
+    this.activeSelection = selection
+    if (selection.kind === 'all') this.globallyLocked = true
+    else for (const id of initialRoots) this.lockDraft(id)
     this.publish()
     let released = false
     let resolving = false
@@ -81,6 +155,7 @@ export class MaintenanceDraftCoordinator {
         const failures: DraftResolutionFailure[] = []
         try {
           const snapshot = new Map(this.drafts)
+          const roots = this.selected(selection).map(([id]) => id)
           const initiallyDirty = new Set(
             [...snapshot]
               .filter(([, draft]) => {
@@ -176,8 +251,16 @@ export class MaintenanceDraftCoordinator {
               return false
             }
           }
-          for (const id of snapshot.keys()) await resolveDraft(id)
+          for (const id of roots) await resolveDraft(id)
           for (const [id, draft] of this.drafts) {
+            if (
+              selection.kind !== 'all' &&
+              !this.selected(selection).some(
+                ([selectedId]) => selectedId === id
+              ) &&
+              !this.lockedDrafts.has(id)
+            )
+              continue
             if (failures.some((failure) => failure.id === id)) continue
             try {
               if (!draft.isDirty()) continue
@@ -210,7 +293,9 @@ export class MaintenanceDraftCoordinator {
           )
         if (released) return
         released = true
-        this.locked = false
+        this.activeSelection = null
+        this.globallyLocked = false
+        this.lockedDrafts.clear()
         this.publish()
       }
     }

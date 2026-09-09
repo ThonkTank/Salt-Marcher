@@ -1,6 +1,10 @@
 import { useCombatCommands } from '../encounter/use-combat-commands.js'
 import { desktopXpDraftId } from './desktop-xp-draft-id.js'
-import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
+import {
+  MaintenanceDraftConcernProvider,
+  useMaintenanceEditingBlocked
+} from '../../shell/maintenance-drafts.js'
+import { draftConcern } from '../../shell/maintenance-draft-coordinator.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { useDesktopGroupDrop } from './use-desktop-group-drop.js'
 import { DesktopParty } from './desktop-party.js'
@@ -50,17 +54,22 @@ export function SceneDesktop(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
   const { projection, snapshot } = useSceneDesktop(props.campaignId, focused.id)
-  const transition = useDraftTransition(`${props.campaignId}:${focused.id}`, {
-    title: message('desktop.confirmWindowChange'),
-    text: message('desktop.resolveBeforeWindowChange')
-  })
+  const transition = useDraftTransition(
+    `${props.campaignId}:${focused.id}`,
+    {
+      title: message('desktop.confirmWindowChange'),
+      text: message('desktop.resolveBeforeWindowChange')
+    },
+    { kind: 'concerns', concerns: [] }
+  )
   const editingBlocked = useMaintenanceEditingBlocked()
   const sceneTransition = useDraftTransition(
     `${props.campaignId}:${focused.id}`,
     {
       title: message('desktop.confirmSceneChange'),
       text: message('desktop.resolveBeforeSceneChange')
-    }
+    },
+    { kind: 'concerns', concerns: [] }
   )
   const combatCommands = useCombatCommands(
     props.campaignId,
@@ -140,7 +149,10 @@ export function SceneDesktop(
             onChange={(event) => {
               const sceneId = event.target.value
               if (sceneId !== focused.id)
-                sceneTransition.request(() => actions.focusScene(sceneId))
+                sceneTransition.request(() => actions.focusScene(sceneId), {
+                  kind: 'concerns',
+                  concerns: [draftConcern.scene(focused.id)]
+                })
             }}
           >
             {props.snapshot.scene.scenes.map((scene) => (
@@ -221,7 +233,7 @@ export function SceneDesktop(
           if (event.key === 'Escape') setDrag(null)
         }}
       >
-        {[...visible]
+        {[...windows]
           .sort((a, b) => a.id.localeCompare(b.id))
           .map((window) => (
             <DesktopWindow
@@ -237,188 +249,213 @@ export function SceneDesktop(
                 .map((other) => desktopWindowBounds(other, size))}
               preview={(side) => setPreview({ sceneId: focused.id, side })}
               dispatch={(action) => {
-                if (action.type === 'close' || action.type === 'minimize') {
-                  transition.request(() => {
-                    projection.dispatch(action)
-                    launcher.current?.focus()
-                  })
+                if (action.type === 'close') {
+                  transition.request(
+                    () => {
+                      projection.dispatch(action)
+                      launcher.current?.focus()
+                    },
+                    {
+                      kind: 'concerns',
+                      concerns: [draftConcern.window(window.id)]
+                    }
+                  )
                 } else projection.dispatch(action)
               }}
             >
-              {window.kind === 'characters' ? (
-                <DesktopCharacters
-                  sceneId={focused.id}
-                  campaignId={props.campaignId}
-                  partyRevision={props.snapshot.party.revision}
-                  actions={
-                    <DesktopRosterActions
-                      characterDraftIds={focused.partyMemberIds.map((id) =>
-                        desktopXpDraftId(props.campaignId, focused.id, id)
-                      )}
-                      key={focused.id}
-                      campaignId={props.campaignId}
-                      sceneId={focused.id}
-                      snapshot={props.snapshot}
-                    />
-                  }
-                  members={focused.partyMemberIds.flatMap((id) =>
-                    props.snapshot.party.members.filter(
-                      (member) => member.id === id
-                    )
-                  )}
-                  comparison={window.comparison}
-                  change={(value) =>
-                    projection.dispatch({ type: 'character-comparison', value })
-                  }
-                  openCharacter={props.openCharacter}
-                  onError={props.onError}
-                />
-              ) : window.kind === 'search' ? (
-                <DesktopSearch
-                  window={window}
-                  dispatch={projection.dispatch.bind(projection)}
-                />
-              ) : window.kind === 'reader' || window.kind === 'reference' ? (
-                <DesktopReader
-                  window={window}
-                  dispatch={projection.dispatch.bind(projection)}
-                />
-              ) : window.kind === 'map' ? (
-                <div className="desktop-map">
-                  <button
-                    className="desktop-map-controls-toggle"
-                    aria-expanded={window.controlsOpen}
-                    onClick={() =>
-                      projection.dispatch({
-                        type: 'map-controls',
-                        value: !window.controlsOpen
-                      })
+              <MaintenanceDraftConcernProvider
+                concerns={[
+                  draftConcern.scene(focused.id),
+                  draftConcern.window(window.id)
+                ]}
+              >
+                {window.kind === 'characters' ? (
+                  <DesktopCharacters
+                    sceneId={focused.id}
+                    campaignId={props.campaignId}
+                    partyRevision={props.snapshot.party.revision}
+                    actions={
+                      <DesktopRosterActions
+                        characterDraftIds={focused.partyMemberIds.map((id) =>
+                          desktopXpDraftId(props.campaignId, focused.id, id)
+                        )}
+                        key={focused.id}
+                        campaignId={props.campaignId}
+                        sceneId={focused.id}
+                        snapshot={props.snapshot}
+                        windowId="characters"
+                      />
                     }
-                  >
-                    {message('desktop.travelControls')}
-                  </button>
-                  {window.controlsOpen && (
-                    <div className="desktop-travel-controls">
-                      {props.travel.renderScenario({
-                        openMap: () => {},
-                        mapActive: true
-                      })}
-                    </div>
-                  )}
-                  <div className="desktop-map-canvas">
-                    {props.travel.renderMap({
-                      view: snapshot.state!.mapView,
-                      renderActive: desktopWindowIsVisible(
-                        window,
-                        windows,
-                        size
-                      ),
-                      changed: (value) => {
-                        const state = projection.snapshot().state
-                        if (state)
-                          projection.dispatch({
-                            type: 'map-view',
-                            value: { ...state.mapView, cameras: value.cameras }
-                          })
-                      }
-                    })}
-                  </div>
-                </div>
-              ) : window.kind === 'combat' ? (
-                <div
-                  className={`desktop-combat${drag && droppableGroup(drag, props.campaignId, props.snapshot) ? ' desktop-drop-ready' : ''}`}
-                  tabIndex={0}
-                  aria-label={message('groupWindow.dropTarget')}
-                  onDragOver={(event) => {
-                    if (
-                      drag &&
-                      droppableGroup(drag, props.campaignId, props.snapshot)
-                    ) {
-                      event.preventDefault()
-                      event.dataTransfer.dropEffect = 'copy'
-                    }
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault()
-                    if (!drag) return
-                    const value = event.dataTransfer.getData(groupDragMime)
-                    try {
-                      void dropGroup(JSON.parse(value))
-                    } catch {
-                      setDrag(null)
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (drag && (event.key === 'Enter' || event.key === ' ')) {
-                      event.preventDefault()
-                      void dropGroup(drag)
-                    }
-                  }}
-                >
-                  <EncounterCrumbs
-                    commands={combatCommands}
-                    snapshot={props.snapshot}
-                    loot={model.loot}
-                    setSnapshot={props.setSnapshot}
-                    onError={props.onError}
-                  />
-                  <SessionEncounterPanel
-                    commands={combatCommands}
-                    snapshot={props.snapshot}
-                    loot={model.loot}
-                    setSnapshot={props.setSnapshot}
-                    onError={props.onError}
-                    selection={snapshot.state!.combatSelection.filter((id) =>
-                      focused.groups.some(
-                        (group) => group.id === id && !group.archived
+                    members={focused.partyMemberIds.flatMap((id) =>
+                      props.snapshot.party.members.filter(
+                        (member) => member.id === id
                       )
                     )}
-                    selectionChanged={(value) =>
-                      projection.dispatch({ type: 'combat-selection', value })
+                    comparison={window.comparison}
+                    change={(value) =>
+                      projection.dispatch({
+                        type: 'character-comparison',
+                        value
+                      })
                     }
-                    manageGroups={actions.manageGroups}
-                    reinforce={actions.reinforce}
-                    distribute={actions.distribute}
-                    inspect={(creature) =>
-                      actions.inspectCreature(creature.id, creature.name)
+                    openCharacter={props.openCharacter}
+                    onError={props.onError}
+                  />
+                ) : window.kind === 'search' ? (
+                  <DesktopSearch
+                    window={window}
+                    dispatch={projection.dispatch.bind(projection)}
+                  />
+                ) : window.kind === 'reader' || window.kind === 'reference' ? (
+                  <DesktopReader
+                    window={window}
+                    dispatch={projection.dispatch.bind(projection)}
+                  />
+                ) : window.kind === 'map' ? (
+                  <div className="desktop-map">
+                    <button
+                      className="desktop-map-controls-toggle"
+                      aria-expanded={window.controlsOpen}
+                      onClick={() =>
+                        projection.dispatch({
+                          type: 'map-controls',
+                          value: !window.controlsOpen
+                        })
+                      }
+                    >
+                      {message('desktop.travelControls')}
+                    </button>
+                    {window.controlsOpen && (
+                      <div className="desktop-travel-controls">
+                        {props.travel.renderScenario({
+                          openMap: () => {},
+                          mapActive: true
+                        })}
+                      </div>
+                    )}
+                    <div className="desktop-map-canvas">
+                      {props.travel.renderMap({
+                        view: snapshot.state!.mapView,
+                        renderActive: desktopWindowIsVisible(
+                          window,
+                          windows,
+                          size
+                        ),
+                        changed: (value) => {
+                          const state = projection.snapshot().state
+                          if (state)
+                            projection.dispatch({
+                              type: 'map-view',
+                              value: {
+                                ...state.mapView,
+                                cameras: value.cameras
+                              }
+                            })
+                        }
+                      })}
+                    </div>
+                  </div>
+                ) : window.kind === 'combat' ? (
+                  <div
+                    className={`desktop-combat${drag && droppableGroup(drag, props.campaignId, props.snapshot) ? ' desktop-drop-ready' : ''}`}
+                    tabIndex={0}
+                    aria-label={message('groupWindow.dropTarget')}
+                    onDragOver={(event) => {
+                      if (
+                        drag &&
+                        droppableGroup(drag, props.campaignId, props.snapshot)
+                      ) {
+                        event.preventDefault()
+                        event.dataTransfer.dropEffect = 'copy'
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      if (!drag) return
+                      const value = event.dataTransfer.getData(groupDragMime)
+                      try {
+                        void dropGroup(JSON.parse(value))
+                      } catch {
+                        setDrag(null)
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        drag &&
+                        (event.key === 'Enter' || event.key === ' ')
+                      ) {
+                        event.preventDefault()
+                        void dropGroup(drag)
+                      }
+                    }}
+                  >
+                    <EncounterCrumbs
+                      commands={combatCommands}
+                      snapshot={props.snapshot}
+                      loot={model.loot}
+                      setSnapshot={props.setSnapshot}
+                      onError={props.onError}
+                    />
+                    <SessionEncounterPanel
+                      commands={combatCommands}
+                      snapshot={props.snapshot}
+                      loot={model.loot}
+                      setSnapshot={props.setSnapshot}
+                      onError={props.onError}
+                      selection={snapshot.state!.combatSelection.filter((id) =>
+                        focused.groups.some(
+                          (group) => group.id === id && !group.archived
+                        )
+                      )}
+                      selectionChanged={(value) =>
+                        projection.dispatch({ type: 'combat-selection', value })
+                      }
+                      manageGroups={actions.manageGroups}
+                      reinforce={actions.reinforce}
+                      distribute={actions.distribute}
+                      inspect={(creature) =>
+                        actions.inspectCreature(creature.id, creature.name)
+                      }
+                    />
+                  </div>
+                ) : window.kind === 'loot' ? (
+                  <SessionLootPanel model={model.groups} actions={actions} />
+                ) : window.kind === 'party' ? (
+                  <DesktopParty
+                    key={focused.id}
+                    campaignId={props.campaignId}
+                    sceneId={focused.id}
+                    snapshot={props.snapshot}
+                    expanded={expanded[scopeKey] ?? []}
+                    toggle={(id) =>
+                      setExpanded((current) => {
+                        const ids = current[scopeKey] ?? []
+                        return {
+                          ...current,
+                          [scopeKey]: ids.includes(id)
+                            ? ids.filter((value) => value !== id)
+                            : [...ids, id]
+                        }
+                      })
                     }
                   />
-                </div>
-              ) : window.kind === 'loot' ? (
-                <SessionLootPanel model={model.groups} actions={actions} />
-              ) : window.kind === 'party' ? (
-                <DesktopParty
-                  key={focused.id}
-                  campaignId={props.campaignId}
-                  sceneId={focused.id}
-                  snapshot={props.snapshot}
-                  expanded={expanded[scopeKey] ?? []}
-                  toggle={(id) =>
-                    setExpanded((current) => {
-                      const ids = current[scopeKey] ?? []
-                      return {
-                        ...current,
-                        [scopeKey]: ids.includes(id)
-                          ? ids.filter((value) => value !== id)
-                          : [...ids, id]
-                      }
-                    })
-                  }
-                />
-              ) : (
-                <DesktopGroups
-                  disabled={editingBlocked || combatCommands.busy || sceneBusy}
-                  campaignId={props.campaignId}
-                  model={model}
-                  actions={actions}
-                  selection={
-                    props.snapshot.combat?.selectedGroupIds ??
-                    snapshot.state!.combatSelection
-                  }
-                  start={setDrag}
-                  cancel={() => setDrag(null)}
-                />
-              )}
+                ) : (
+                  <DesktopGroups
+                    disabled={
+                      editingBlocked || combatCommands.busy || sceneBusy
+                    }
+                    campaignId={props.campaignId}
+                    model={model}
+                    actions={actions}
+                    selection={
+                      props.snapshot.combat?.selectedGroupIds ??
+                      snapshot.state!.combatSelection
+                    }
+                    start={setDrag}
+                    cancel={() => setDrag(null)}
+                  />
+                )}
+              </MaintenanceDraftConcernProvider>
             </DesktopWindow>
           ))}
         {preview?.sceneId === focused.id && preview.side && (
@@ -459,11 +496,15 @@ export function SceneDesktop(
       {sceneDialog}
       {sceneNotice}
       {props.travel.notice}
-      <SessionDialogHost
-        model={model}
-        actions={actions}
-        onError={props.onError}
-      />
+      <MaintenanceDraftConcernProvider
+        concerns={[draftConcern.scene(focused.id)]}
+      >
+        <SessionDialogHost
+          model={model}
+          actions={actions}
+          onError={props.onError}
+        />
+      </MaintenanceDraftConcernProvider>
     </section>
   )
 }

@@ -5,7 +5,10 @@ import type {
 } from '../../../shared/contracts/party.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import { message } from '../../i18n/session-runtime.de.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { CharacterCommandController } from '../party/character-command-controller.js'
 import { useCharacterCommandPort } from '../party/use-character-command-port.js'
@@ -13,6 +16,8 @@ import { useCharacterCommandPort } from '../party/use-character-command-port.js'
 type Mode = 'add' | 'subtract' | 'set'
 export function DesktopXpAction(props: {
   campaignId: string
+  sceneId?: string
+  windowId?: string
   maintenanceId?: string | undefined
   member: PartyCharacter
   revision: number
@@ -45,6 +50,11 @@ export function DesktopXpAction(props: {
   const blocked = useMaintenanceDraft(
     {
       label: `XP: ${props.member.name}`,
+      concerns: [
+        draftConcern.character(props.member.id),
+        ...(props.sceneId ? [draftConcern.scene(props.sceneId)] : []),
+        ...(props.windowId ? [draftConcern.window(props.windowId)] : [])
+      ],
       isDirty: dirty,
       save: async () => {
         if (!(await controller.settle())) return false

@@ -7,7 +7,10 @@ import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type { ReactNode } from 'react'
 import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useCallback, useMemo } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
@@ -53,10 +56,17 @@ export function useTravelController<P, S, M, E>(options: {
 }): TravelController<P, S, M, E> {
   const { commandsBlocked, routeDraft, onError } = options
   const sceneId = options.snapshot.scene.focusedSceneId
-  const transition = useDraftTransition(sceneId, {
-    title: message('travel.resolveTitle'),
-    text: message('travel.resolveText')
-  })
+  const transition = useDraftTransition(
+    sceneId,
+    {
+      title: message('travel.resolveTitle'),
+      text: message('travel.resolveText')
+    },
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.travelRoute(sceneId)]
+    }
+  )
   const requestTransition = transition.request
   const transitionPending = transition.isPending
   const maintenance = useMaintenanceEditingBlocked()

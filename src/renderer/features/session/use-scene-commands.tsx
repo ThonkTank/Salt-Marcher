@@ -10,7 +10,11 @@ import {
 import type { SceneCommand } from '../../../shared/contracts/scene-command.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftSelection
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -61,16 +65,21 @@ export function useSceneCommandOwner(
   const maintenance = useMaintenanceDraft(
     {
       label: 'Szenenaktionen',
+      concerns: [draftConcern.scene(sceneId)],
       isDirty: controller.held,
       save: controller.save,
       discard: controller.discard
     },
     ownerId
   )
-  const transition = useDraftTransition(sceneId, {
-    title: message('scene.resolveTitle'),
-    text: message('scene.resolveText')
-  })
+  const transition = useDraftTransition(
+    sceneId,
+    {
+      title: message('scene.resolveTitle'),
+      text: message('scene.resolveText')
+    },
+    { kind: 'concerns', concerns: [] }
+  )
   const blocked = () =>
     maintenanceDraftCoordinator.isLocked() ||
     controller.held() ||
@@ -118,10 +127,10 @@ export function useSceneCommandOwner(
     current,
     perform,
     busy: maintenance || controller.held() || state.conflict,
-    request: (build: Build) =>
+    request: (build: Build, selection?: MaintenanceDraftSelection) =>
       transition.request(() => {
         void perform(build)
-      }),
+      }, selection),
     dialog: transition.dialog,
     notice: error ? (
       <aside role="alert">

@@ -3,7 +3,10 @@ import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import type { ScenePartyCommand } from '../../../shared/contracts/scene-party-command.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { ScenePartyCommandController } from './scene-party-command-controller.js'
 import { useScenePartyCommandPort } from './use-scene-party-command-port.js'
@@ -11,6 +14,7 @@ export function DesktopRestAction(props: {
   campaignId: string
   sceneId: string
   snapshot: LiveSessionSnapshot
+  windowId?: string
 }) {
   const port = useScenePartyCommandPort(props.campaignId)
   const [controller] = useState(() => new ScenePartyCommandController(port))
@@ -52,6 +56,11 @@ export function DesktopRestAction(props: {
   useLayoutEffect(() => controller.detach, [controller])
   const blocked = useMaintenanceDraft({
     label: `Rast: ${scene.title}`,
+    concerns: [
+      draftConcern.party(props.sceneId),
+      draftConcern.scene(props.sceneId),
+      ...(props.windowId ? [draftConcern.window(props.windowId)] : [])
+    ],
     isDirty: () => controller.unresolved() || selectedRef.current !== null,
     save: async () => {
       if (!(await controller.settle())) return false

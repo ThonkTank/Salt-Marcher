@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DesktopWindow } from '../../src/renderer/features/scene-desktop/desktop-window.js'
 import { initialPartyWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
+import { useState } from 'react'
 
 const size = { width: 900, height: 600 }
 afterEach(cleanup)
@@ -42,6 +43,35 @@ function pointer(target: Element, type: string, x: number, y: number) {
 }
 
 describe('desktop window interaction', () => {
+  it('keeps child draft state mounted while minimized', () => {
+    function StatefulWindow({ minimized }: { minimized: boolean }) {
+      const [value, setValue] = useState('')
+      return (
+        <DesktopWindow
+          window={{ ...initialPartyWindow, minimized }}
+          size={size}
+          others={[]}
+          raised={!minimized}
+          disabled={false}
+          dispatch={() => undefined}
+          preview={() => undefined}
+        >
+          <input
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+          />
+        </DesktopWindow>
+      )
+    }
+    const view = render(<StatefulWindow minimized={false} />)
+    const input = view.container.querySelector('input')!
+    fireEvent.change(input, { target: { value: '250' } })
+    view.rerender(<StatefulWindow minimized />)
+    expect(view.container.querySelector('section')).toHaveAttribute('hidden')
+    view.rerender(<StatefulWindow minimized={false} />)
+    expect(view.container.querySelector('input')).toHaveValue('250')
+  })
+
   it('closes arrangement choices after a selection or Escape', () => {
     const view = fixture()
     const menu = view.container.querySelector('details')!

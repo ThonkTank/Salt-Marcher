@@ -250,6 +250,19 @@ that could re-enter Combat, and reject without partial changes. Other scenes
 remain independent. Paused journeys retain their last committed position and
 paused status across restart. Transient dialogs are discarded on scene changes.
 
+Draft resolution follows the impact of the requested action. Pausing or
+aborting travel and changing its multiplier do not resolve independent editor
+drafts. Starting or resuming travel resolves the current scene's route and
+Party changes; positioning also resolves scene changes that would otherwise be
+discarded. Closing a desktop window resolves only drafts owned by that window,
+and changing scenes resolves only drafts whose editing context is being left.
+Quit, installation, update and recovery remain application-wide barriers.
+
+Draft dependencies describe real save ordering between open owners. An absent
+draft that is outside an action's impact cannot block that action. After a
+targeted resolution, domain commands re-read their current revision and retain
+the existing rules for conflicts and unknown outcomes.
+
 A legacy campaign that already contains actual Combat plus travelling is paused
 by the Utility travel tick before any further movement. A Pause definitely
 rejected because a travel boundary advanced its revision may refresh and retry

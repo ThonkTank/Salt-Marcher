@@ -59,6 +59,9 @@
   background: var(--surface-sheet);
   box-shadow: var(--shadow-panel);
 }
+.desktop-window[hidden] {
+  display: none;
+}
 .desktop-window.raised {
   z-index: 2;
 }
@@ -304,7 +307,7 @@
   gap: var(--space-4);
 }
 .desktop-search-result small {
-  color: var(--text-muted);
+  color: var(--text-3);
 }
 
 .desktop-section-heading {

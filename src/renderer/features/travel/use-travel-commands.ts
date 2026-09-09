@@ -10,12 +10,16 @@ import type {
   TravelMultiplier
 } from './travel-provider-port.js'
 import type { TravelViewProjection } from './travel-view-projection.js'
+import type { MaintenanceDraftSelection } from '../../shell/maintenance-draft-coordinator.js'
 
 const multipliers = [1, 2, 5, 10] as const
 /** Publishes command results; the provider owns durable execution and recovery. */
 export function useTravelCommands<P, S, M, E>(options: {
   blocked: () => boolean
-  requestTransition: (run: () => Promise<void>) => Promise<void> | undefined
+  requestTransition: <Result>(
+    run: () => Result,
+    selection?: MaintenanceDraftSelection
+  ) => Result | undefined
   prepareCommand: ReturnType<
     typeof useTravelQueries<P, S, M, E>
   >['prepareCommand']

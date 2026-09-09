@@ -117,50 +117,29 @@ function fixture(dirty = true) {
     current: () => current
   }
 }
-it.each(['save', 'discard', 'cancel'] as const)(
-  'resolves another editor with %s before changing the original scene location',
-  async (choice) => {
-    const f = fixture()
-    fireEvent.click(screen.getByText('Change location'))
-    await screen.findByRole('alertdialog', { name: 'Szene ändern' })
-    expect(f.execute).not.toHaveBeenCalled()
-    expect(
-      screen.getByText<HTMLButtonElement>('Change location').disabled
-    ).toBe(true)
-    fireEvent.click(
-      screen.getByText(
-        choice === 'save'
-          ? 'Speichern und fortfahren'
-          : choice === 'discard'
-            ? 'Verwerfen und fortfahren'
-            : 'Abbrechen'
-      )
-    )
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-    if (choice === 'cancel') {
-      expect(f.execute).not.toHaveBeenCalled()
-      expect(f.save).not.toHaveBeenCalled()
-      expect(f.discard).not.toHaveBeenCalled()
-      return
-    }
-    await waitFor(() => expect(f.completed).toHaveBeenCalledOnce())
-    expect(f.execute).toHaveBeenCalledOnce()
-    const submitted = f.execute.mock.calls[0]![0]
-    expect(submitted.commandId).toMatch(/^[0-9a-f-]{36}$/)
-    expect(submitted).toEqual({
-      commandId: submitted.commandId,
-      command: {
-        kind: 'set-location',
-        input: {
-          sceneId: 'source',
-          locationId: 'chosen',
-          expectedRevision: choice === 'save' ? 8 : 7
-        }
+it('changes scene location without resolving an independent editor', async () => {
+  const f = fixture()
+  fireEvent.click(screen.getByText('Change location'))
+  await waitFor(() => expect(f.completed).toHaveBeenCalledOnce())
+  expect(screen.queryByRole('alertdialog')).toBeNull()
+  expect(f.save).not.toHaveBeenCalled()
+  expect(f.discard).not.toHaveBeenCalled()
+  expect(f.execute).toHaveBeenCalledOnce()
+  const submitted = f.execute.mock.calls[0]![0]
+  expect(submitted.commandId).toMatch(/^[0-9a-f-]{36}$/)
+  expect(submitted).toEqual({
+    commandId: submitted.commandId,
+    command: {
+      kind: 'set-location',
+      input: {
+        sceneId: 'source',
+        locationId: 'chosen',
+        expectedRevision: 7
       }
-    })
-    expect(f.current().scene.scenes[0]!.locationId).toBe('chosen')
-  }
-)
+    }
+  })
+  expect(f.current().scene.scenes[0]!.locationId).toBe('chosen')
+})
 it('keeps a committed location with a lost reply recoverable after the view unmounts', async () => {
   const f = fixture(false)
   const write = f.execute.getMockImplementation()!

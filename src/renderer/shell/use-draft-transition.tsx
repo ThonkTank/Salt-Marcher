@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import {
   maintenanceDraftCoordinator,
+  type MaintenanceDraftSelection,
   type MaintenanceDraftResolution
 } from './maintenance-draft-coordinator.js'
 import { DraftResolutionDialog } from './draft-resolution-dialog.js'
@@ -11,17 +12,21 @@ type Transition = {
   cancelled: boolean
   resolving: boolean
   resolution: MaintenanceDraftResolution | null
+  selection: MaintenanceDraftSelection
 }
 
 /** Keep the originating editors mounted until their own save/discard confirms. */
 export function useDraftTransition(
   identity: string,
-  description?: { title: string; text: string }
+  description: { title: string; text: string } | undefined,
+  selection: MaintenanceDraftSelection
 ) {
   const pending = useRef<Transition | null>(null)
   const mounted = useRef(false)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [dialogSelection, setDialogSelection] =
+    useState<MaintenanceDraftSelection>(selection)
   const [errors, setErrors] = useState<readonly { id: string; text: string }[]>(
     []
   )
@@ -44,40 +49,46 @@ export function useDraftTransition(
     }
   }, [identity])
   const request = useCallback(
-    <Result,>(run: () => Result): Result | undefined => {
+    <Result,>(
+      run: () => Result,
+      requestedSelection: MaintenanceDraftSelection = selection
+    ): Result | undefined => {
       if (
         !mounted.current ||
         pending.current ||
-        maintenanceDraftCoordinator.isLocked()
+        maintenanceDraftCoordinator.isCoordinating()
       )
         return
-      if (!maintenanceDraftCoordinator.hasDirty()) return run()
+      if (!maintenanceDraftCoordinator.hasDirty(requestedSelection))
+        return run()
       const held: Transition = {
         run,
         cancelled: false,
         resolving: false,
-        resolution: null
+        resolution: null,
+        selection: requestedSelection
       }
       pending.current = held
       void (async () => {
-        await maintenanceDraftCoordinator.settleBackgroundWrites()
+        await maintenanceDraftCoordinator.settleBackgroundWrites(held.selection)
         if (held.cancelled || pending.current !== held || !mounted.current)
           return
-        if (maintenanceDraftCoordinator.isLocked()) {
+        if (maintenanceDraftCoordinator.isCoordinating()) {
           pending.current = null
           return
         }
-        if (!maintenanceDraftCoordinator.hasDirty()) {
+        if (!maintenanceDraftCoordinator.hasDirty(held.selection)) {
           pending.current = null
           held.run()
           return
         }
-        held.resolution = maintenanceDraftCoordinator.begin()
+        held.resolution = maintenanceDraftCoordinator.begin(held.selection)
+        setDialogSelection(held.selection)
         setErrors([])
         setOpen(true)
       })()
     },
-    []
+    [selection]
   )
   const cancel = () => {
     const held = pending.current
@@ -127,7 +138,7 @@ export function useDraftTransition(
         title={description?.title ?? message('draft.transitionTitle')}
         text={description?.text ?? message('draft.transitionText')}
         errors={errors}
-        draftLabels={maintenanceDraftCoordinator.dirtyLabels()}
+        draftLabels={maintenanceDraftCoordinator.dirtyLabels(dialogSelection)}
         busy={busy}
         needsDrafts
         cancel={cancel}

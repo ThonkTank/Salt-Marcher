@@ -375,6 +375,7 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
       <ul className="combat-cards">
         {props.combat.cards.map((card) => (
           <CombatCardView
+            sceneId={props.snapshot.scene.focusedSceneId}
             key={card.id}
             card={card}
             combat={props.combat}

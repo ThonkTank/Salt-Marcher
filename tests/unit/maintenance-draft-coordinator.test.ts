@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { MaintenanceDraftCoordinator } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  MaintenanceDraftCoordinator
+} from '../../src/renderer/shell/maintenance-draft-coordinator.js'
 
 describe('maintenance draft coordination', () => {
   it('keeps successful saves when another editor fails, and retries remaining drafts', async () => {
@@ -136,6 +139,96 @@ describe('maintenance draft coordination', () => {
     expect(await resolution.resolve('save')).toHaveLength(1)
     resolution.release()
     expect(changed).toHaveBeenCalledTimes(2)
+  })
+  it('resolves only matching drafts and their real dependencies', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    let routeDirty = true
+    let commandDirty = true
+    const route = vi.fn(() => {
+      routeDirty = false
+      return Promise.resolve(true)
+    })
+    const command = vi.fn(() => {
+      commandDirty = false
+      return Promise.resolve(true)
+    })
+    const xp = vi.fn()
+    coordinator.register('route', {
+      label: 'Route',
+      concerns: [draftConcern.travelRoute('scene-a')],
+      dependsOn: ['command'],
+      isDirty: () => routeDirty,
+      save: route
+    })
+    coordinator.register('command', {
+      label: 'Travel command',
+      isDirty: () => commandDirty,
+      save: command
+    })
+    coordinator.register('xp', {
+      label: 'XP',
+      concerns: [draftConcern.character('character-a')],
+      isDirty: () => true,
+      save: xp
+    })
+    const selection = {
+      kind: 'concerns' as const,
+      concerns: [draftConcern.travelRoute('scene-a')]
+    }
+    expect(coordinator.hasDirty(selection)).toBe(true)
+    const resolution = coordinator.begin(selection)
+    expect(coordinator.isLocked()).toBe(false)
+    expect(coordinator.isDraftLocked('route')).toBe(true)
+    expect(coordinator.isDraftLocked('command')).toBe(true)
+    expect(coordinator.isDraftLocked('xp')).toBe(false)
+    expect(await resolution.resolve('save')).toEqual([])
+    expect(command).toHaveBeenCalledBefore(route)
+    expect(xp).not.toHaveBeenCalled()
+    expect(coordinator.hasDirty()).toBe(true)
+    resolution.release()
+  })
+  it('ignores missing dependencies outside the selected roots', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    coordinator.register('unrelated', {
+      label: 'Unrelated',
+      concerns: [draftConcern.character('character-a')],
+      dependsOn: ['missing'],
+      isDirty: () => true
+    })
+    const selection = {
+      kind: 'concerns' as const,
+      concerns: [draftConcern.travelRoute('scene-a')]
+    }
+    const resolution = coordinator.begin(selection)
+    expect(await resolution.resolve('check')).toEqual([])
+    resolution.release()
+  })
+  it('locks a matching editor registered during targeted resolution', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    let routeDirty = true
+    coordinator.register('route', {
+      label: 'Route',
+      concerns: [draftConcern.travelRoute('scene-a')],
+      isDirty: () => routeDirty,
+      save: () => {
+        routeDirty = false
+        coordinator.register('late-route', {
+          label: 'Late route',
+          concerns: [draftConcern.travelRoute('scene-a')],
+          isDirty: () => true
+        })
+        expect(coordinator.isDraftLocked('late-route')).toBe(true)
+        return Promise.resolve(true)
+      }
+    })
+    const resolution = coordinator.begin({
+      kind: 'concerns',
+      concerns: [draftConcern.travelRoute('scene-a')]
+    })
+    expect(
+      (await resolution.resolve('save')).map((failure) => failure.id)
+    ).toEqual(['late-route'])
+    resolution.release()
   })
 })
 

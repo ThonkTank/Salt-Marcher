@@ -14,7 +14,10 @@ import type {
 } from '../../../shared/contracts/hex-travel-command.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { HexTravelCommandController } from './hex-travel-command-controller.js'
 import type { HexTravelCommandPort } from './use-hex-travel-command-port.js'
 
@@ -55,6 +58,10 @@ export function useHexTravelCommandOwner(
   const maintenance = useMaintenanceDraft(
     {
       label: message('travel.commands'),
+      concerns: [
+        draftConcern.travelCommand(sceneId),
+        draftConcern.scene(sceneId)
+      ],
       isDirty: controller.held,
       save: controller.save,
       discard: controller.discard
@@ -63,6 +70,7 @@ export function useHexTravelCommandOwner(
   )
   useMaintenanceDraft({
     label: message('travel.routeDraft'),
+    concerns: [draftConcern.travelRoute(sceneId), draftConcern.scene(sceneId)],
     get dependsOn() {
       return routeDraft.isDirty() ? [ownerId] : []
     },

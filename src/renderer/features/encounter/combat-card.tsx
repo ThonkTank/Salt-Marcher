@@ -1,6 +1,7 @@
 import { useCombatDraft } from './use-combat-draft.js'
 import type { CombatCommands } from './use-combat-commands.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
+import { draftConcern } from '../../shell/maintenance-draft-coordinator.js'
 import { useState } from 'react'
 import type {
   CombatCondition,
@@ -15,6 +16,7 @@ export function CombatCardView(props: {
   card: CombatSnapshot['cards'][number]
   combat: CombatSnapshot
   commands: CombatCommands
+  sceneId: string
 }) {
   const amountDraft = useCombatDraft(
     props.commands,
@@ -24,7 +26,12 @@ export function CombatCardView(props: {
   )
   const amount = amountDraft.value
   const closeTransition = useDraftTransition(
-    `${props.combat.id}:${props.card.id}`
+    `${props.combat.id}:${props.card.id}`,
+    undefined,
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.combat(props.sceneId)]
+    }
   )
   const [dialogOpen, setDialogOpen] = useState(false)
   const card = props.card

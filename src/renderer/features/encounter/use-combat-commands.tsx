@@ -10,7 +10,10 @@ import {
 import type { CombatCommand } from '../../../shared/contracts/combat-command.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import {
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -59,16 +62,24 @@ export function useCombatCommandOwner(
   const maintenance = useMaintenanceDraft(
     {
       label: 'Kampfaktionen',
+      concerns: [draftConcern.combat(sceneId), draftConcern.scene(sceneId)],
       isDirty: controller.held,
       save: controller.save,
       discard: controller.discard
     },
     ownerId
   )
-  const transition = useDraftTransition(sceneId, {
-    title: message('combat.resolveTitle'),
-    text: message('combat.resolveText')
-  })
+  const transition = useDraftTransition(
+    sceneId,
+    {
+      title: message('combat.resolveTitle'),
+      text: message('combat.resolveText')
+    },
+    {
+      kind: 'concerns',
+      concerns: [draftConcern.combat(sceneId), draftConcern.groups(sceneId)]
+    }
+  )
   const blocked = () =>
     maintenanceDraftCoordinator.isLocked() ||
     controller.held() ||

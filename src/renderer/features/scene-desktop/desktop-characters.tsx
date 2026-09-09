@@ -156,6 +156,8 @@ export function DesktopCharacters(props: {
                           : undefined
                       }
                       campaignId={props.campaignId}
+                      {...(props.sceneId ? { sceneId: props.sceneId } : {})}
+                      windowId="characters"
                       member={member}
                       revision={props.partyRevision}
                     />

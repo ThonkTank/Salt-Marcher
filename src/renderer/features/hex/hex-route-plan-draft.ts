@@ -8,6 +8,7 @@ import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import {
   maintenanceDraftCoordinator,
+  draftConcern,
   type MaintenanceDraftCoordinator
 } from '../../shell/maintenance-draft-coordinator.js'
 import type { TravelRoutePlanSnapshot } from '../travel/travel-provider-port.js'
@@ -64,6 +65,10 @@ export class HexRoutePlanDraft {
     if (!this.attached && this.isDirty() && !this.unregister)
       this.unregister = this.maintenance.register(this.ownerId, {
         label: message('travel.routeDraft'),
+        concerns: [
+          draftConcern.travelRoute(this.sceneId),
+          draftConcern.scene(this.sceneId)
+        ],
         isDirty: this.isDirty,
         save: this.save,
         discard: this.discard

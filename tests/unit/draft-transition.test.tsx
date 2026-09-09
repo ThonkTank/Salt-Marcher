@@ -11,14 +11,22 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { useState, useRef } from 'react'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 import { useDraftTransition } from '../../src/renderer/shell/use-draft-transition.js'
-import { useMaintenanceDraft } from '../../src/renderer/shell/maintenance-drafts.js'
-import { maintenanceDraftCoordinator } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import {
+  MaintenanceDraftConcernProvider,
+  useMaintenanceDraft
+} from '../../src/renderer/shell/maintenance-drafts.js'
+import {
+  allMaintenanceDrafts,
+  draftConcern,
+  maintenanceDraftCoordinator
+} from '../../src/renderer/shell/maintenance-draft-coordinator.js'
 
 const releases: (() => void)[] = []
 afterEach(() => {
   cleanup()
   releases.splice(0).forEach((release) => release())
   expect(maintenanceDraftCoordinator.isLocked()).toBe(false)
+  expect(maintenanceDraftCoordinator.isCoordinating()).toBe(false)
 })
 function deferred() {
   let resolve!: () => void
@@ -27,11 +35,17 @@ function deferred() {
   })
   return { promise, resolve }
 }
-function Editor({ save }: { save: (value: string) => Promise<boolean> }) {
+function Editor({
+  save,
+  label = 'Charaktername'
+}: {
+  save: (value: string) => Promise<boolean>
+  label?: string
+}) {
   const [name, setName] = useState('')
   const nameRef = useRef('')
   const blocked = useMaintenanceDraft({
-    label: 'Charaktername',
+    label,
     isDirty: () => nameRef.current !== '',
     save: async () => {
       if (!(await save(name))) return false
@@ -48,7 +62,7 @@ function Editor({ save }: { save: (value: string) => Promise<boolean> }) {
   })
   return (
     <input
-      aria-label="Charaktername"
+      aria-label={label}
       disabled={blocked}
       value={name}
       onChange={(event) => {
@@ -56,6 +70,51 @@ function Editor({ save }: { save: (value: string) => Promise<boolean> }) {
         setName(event.target.value)
       }}
     />
+  )
+}
+function ScopedHarness() {
+  const transition = useDraftTransition('scene-a', undefined, {
+    kind: 'concerns',
+    concerns: []
+  })
+  return (
+    <ModalLayerProvider>
+      <MaintenanceDraftConcernProvider
+        concerns={[draftConcern.scene('scene-a'), draftConcern.window('party')]}
+      >
+        <Editor label="Party-Entwurf" save={() => Promise.resolve(true)} />
+      </MaintenanceDraftConcernProvider>
+      <MaintenanceDraftConcernProvider
+        concerns={[
+          draftConcern.scene('scene-a'),
+          draftConcern.window('groups')
+        ]}
+      >
+        <Editor label="Gruppen-Entwurf" save={() => Promise.resolve(true)} />
+      </MaintenanceDraftConcernProvider>
+      <button>Party minimieren</button>
+      <button
+        onClick={() =>
+          transition.request(() => undefined, {
+            kind: 'concerns',
+            concerns: [draftConcern.window('party')]
+          })
+        }
+      >
+        Party schließen
+      </button>
+      <button
+        onClick={() =>
+          transition.request(() => undefined, {
+            kind: 'concerns',
+            concerns: [draftConcern.scene('scene-a')]
+          })
+        }
+      >
+        Szene wechseln
+      </button>
+      {transition.dialog}
+    </ModalLayerProvider>
   )
 }
 function Harness({
@@ -68,7 +127,11 @@ function Harness({
   navigated?: () => void
 }) {
   const [moved, setMoved] = useState(false)
-  const transition = useDraftTransition(identity)
+  const transition = useDraftTransition(
+    identity,
+    undefined,
+    allMaintenanceDrafts
+  )
   return (
     <ModalLayerProvider>
       {!moved && <Editor save={save} />}
@@ -103,6 +166,28 @@ it('keeps a never submitted editor mounted and cancels without writes', async ()
   expect(screen.getByLabelText('Charaktername')).toHaveValue('Arlik Entwurf')
   expect(screen.getByLabelText('Charaktername')).toBeEnabled()
   expect(save).not.toHaveBeenCalled()
+})
+it('limits close to its window, leaves minimize alone and selects the departed scene', async () => {
+  render(<ScopedHarness />)
+  fireEvent.change(screen.getByLabelText('Party-Entwurf'), {
+    target: { value: 'Party offen' }
+  })
+  fireEvent.change(screen.getByLabelText('Gruppen-Entwurf'), {
+    target: { value: 'Gruppe offen' }
+  })
+  fireEvent.click(screen.getByText('Party minimieren'))
+  expect(screen.queryByRole('alertdialog')).toBeNull()
+  fireEvent.click(screen.getByText('Party schließen'))
+  await screen.findByRole('alertdialog')
+  expect(screen.getByText('Party-Entwurf', { selector: 'li' })).toBeVisible()
+  expect(screen.queryByText('Gruppen-Entwurf', { selector: 'li' })).toBeNull()
+  expect(screen.getByLabelText('Party-Entwurf')).toBeDisabled()
+  expect(screen.getByLabelText('Gruppen-Entwurf')).toBeEnabled()
+  fireEvent.click(screen.getByText('Abbrechen'))
+  fireEvent.click(screen.getByText('Szene wechseln'))
+  await screen.findByRole('alertdialog')
+  expect(screen.getByText('Party-Entwurf', { selector: 'li' })).toBeVisible()
+  expect(screen.getByText('Gruppen-Entwurf', { selector: 'li' })).toBeVisible()
 })
 it.each(['save', 'discard'] as const)(
   'resolves the original editor with %s before navigating',
