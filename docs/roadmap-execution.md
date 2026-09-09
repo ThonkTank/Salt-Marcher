@@ -9062,3 +9062,32 @@ Plan-Audit Historiengrenze bestanden einschließlich echtem AppImage-Ablauf.
 Roadmap-Audit: Phase5 bleibt offen (u.a. gepackte Commit-/Starter-/Local-Fälle,
 Platz-/Zugriffs-/WAL-/Import- und weitere Fehlermatrix); Phasen6/7 unverändert offen.
 Keine Host-GUI gestartet, keine Nutzerdaten verändert, kein Release veröffentlicht.
+
+### Phase 5 – Dauerhafte Annahme des Updates
+
+Voriger Turn Fortschritt: historische Recoverygrenze mit AppImages grün,
+0585fd78b gepusht. Arbeitsbaum sauber, kein Qualifikationscontainer aktiv.
+Plan: UI-Qualifier um --commit-crash ergänzen. Historischen Beobachter vor
+normalem UI-Update auf journal:committed scharfstellen; nach erfolgreichem
+Original-fsync Ziel-Main anhand eigener Prozesse zuordnen und SIGKILL auslösen.
+Beim nächsten echten Appstart müssen dasselbe committed-Journal und Zielprogramm
+bestehen bleiben. Anschließend vollständigen Datenvergleich, Weiterarbeiten,
+zusätzlichen --accepted-crash nach gespeicherter Arbeit und Restore prüfen.
+Vorhandene unveränderte0.0.154/0.0.155 unterstützen diesen Beobachterpunkt bereits.
+Nur Testdriver ändern; Lint/Typprüfung ohne GUI, dann ein isolierter Gastlauf mit
+neuem Payload und vollständigem Berichtsexport. Keine Test-/Quelländerung während
+Lauf, keine Freigabe allein anhand eines beobachteten Journalwerts.
+
+27042 terminalExit0: Lint und beide Typprüfungen grün. 26121 terminalExit0,
+commit-crash-run-1 TestExit0 und vollständiger Export. Unveränderte Testartefakte
+0.0.154/0.0.155. BerichtSHA f8040582fe0e01126580ac984b5ebb7de8077ef7525b1f3b9843048752bd36df
+Abbruch unmittelbar nach dauerhaftem journal:committed; echter Neustart behält
+dasselbe vollständige Journal und Zieldeployment. after/restored/unchanged==seeded.
+Spätere gespeicherte XP-Änderung überlebt zusätzlichen SIGKILL und Neustart;
+acceptedCrash.readback==continued==protectedRead, dieser Stand unterscheidet sich
+vom Seed. Wiederherstellung erhält spätere Arbeit in vorgeschalteter Sicherung.
+
+Plan-Audit Annahmegrenze bestanden. Roadmap-Audit Phase5 bleibt offen für
+Starter-/Local-Integration und übrige Daten-/Umgebungsfehlermatrix. Remote Check
+34350796115 für35a486c41 ist vollständig grün; daraus folgt keine Freigabe des
+geänderten aktuellen Candidate-Stands. Keine Host-GUI, kein Main-/Nutzerhandoff.

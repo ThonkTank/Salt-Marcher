@@ -46,6 +46,7 @@ const { values } = parseArgs({
   options: {
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
+    'commit-crash': { type: 'boolean', default: false },
     'maintenance-crash': { type: 'boolean', default: false },
     'activation-crash': { type: 'string' },
     'recovery-crash': { type: 'string' },
@@ -174,6 +175,7 @@ const exits: Array<
 const expectedKills = new Set<number>()
 let maintenanceCrash: unknown = null
 let activationCrash: unknown = null
+let commitCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
 function spawnApplication(): void {
   const temporary = join(home, `ui-launch-${exits.length}`)
@@ -510,6 +512,17 @@ try {
     )
   }
   const startingJournal = new MaintenanceCoordinator(root).read()
+  const commitCrashId = values['commit-crash'] ? randomUUID() : null
+  const publicationArm = join(root, 'qualification-publication-crash.json')
+  const publicationBarrier = join(root, 'qualification-publication-boundary.json')
+  if (commitCrashId) {
+    rmSync(publicationBarrier, { force: true })
+    writeFileSync(
+      publicationArm,
+      JSON.stringify({ id: commitCrashId, point: 'journal:committed' }),
+      { flag: 'wx' }
+    )
+  }
   const healthyRequestStart = requests.length
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
@@ -538,6 +551,50 @@ try {
   assert.deepEqual(new MaintenanceCoordinator(root).read(), startingJournal)
   await ui.click('Installieren und neu starten')
   await ui.click('Bestätigen', '[role="alertdialog"]')
+  if (commitCrashId) {
+    const boundary = await waitFor(
+      () =>
+        existsSync(publicationBarrier)
+          ? z
+              .object({
+                id: z.literal(commitCrashId),
+                point: z.literal('journal:committed'),
+                pid: z.number().int().positive(),
+                journal: maintenanceJournalSchema
+              })
+              .strict()
+              .parse(JSON.parse(readFileSync(publicationBarrier, 'utf8')))
+          : null,
+      (value) => value !== null,
+      'durable update acceptance before normal use'
+    )
+    assert(boundary)
+    assert.equal(boundary.journal.phase, 'committed')
+    assert.notEqual(boundary.journal.id, startingJournal?.id)
+    const killedPids = isolatedProcesses(home)
+    assert(killedPids.includes(boundary.pid))
+    for (const pid of killedPids) {
+      expectedKills.add(pid)
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+      }
+    }
+    await waitFor(
+      () => isolatedProcesses(home),
+      (pids) => pids.length === 0,
+      'committed target crash processes exit'
+    )
+    ui.disconnect()
+    rmSync(publicationArm)
+    ui = await launch()
+    await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    const recovered = new MaintenanceCoordinator(root).read()
+    assert.deepEqual(recovered, boundary.journal)
+    assert.equal(currentProgram(root)?.deployment, boundary.journal.next.deployment)
+    commitCrash = { boundary, killedPids, recovered }
+  }
   const updated = await waitFor(
     () => new MaintenanceCoordinator(root).read(),
     (state) =>
@@ -793,6 +850,7 @@ try {
         requests,
         transportFailures,
         acceptedCrash,
+        commitCrash,
         maintenanceCrash,
         activationCrash,
         processExits,
