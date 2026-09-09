@@ -60,7 +60,13 @@ export function useTravelCommandTransition<P, S, M, E>(options: {
       return (
         requestTransition(() => {
           if (blocked() || !isCurrent(target)) return Promise.resolve()
-          if (!needsResolution) return execute(original, clearDraft)
+          // A running journey can advance while its window is closed. Re-read
+          // its revision before sending an explicit control intent.
+          if (
+            !needsResolution &&
+            (original.kind === 'start' || original.kind === 'position')
+          )
+            return execute(original, clearDraft)
           return (async () => {
             const held = maintenanceDraftCoordinator.begin()
             let next: TravelProviderCommand<P> | null = null

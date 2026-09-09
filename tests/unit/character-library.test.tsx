@@ -150,7 +150,14 @@ describe('character library and scene facts', () => {
       characterShortId(other, [member, other])
     )
     const previous = reduceDesktop(initialDesktopState(), { type: 'open-map' })
-    const upgraded = readStoredDesktopState({ ...previous, schemaVersion: 3 })
+    const upgraded = readStoredDesktopState({
+      ...previous,
+      schemaVersion: 3,
+      windows: [
+        { ...previous.windows[0]!, id: 'overview', kind: 'overview' },
+        ...previous.windows.slice(2)
+      ]
+    })
     expect(upgraded).toEqual(previous)
     const opened = reduceDesktop(upgraded, { type: 'open-characters' })
     expect(readStoredDesktopState(opened)).toEqual(opened)

@@ -131,8 +131,8 @@ describe('scene desktop maintenance', () => {
           finish = resolve
         })
       )
-      f.model.dispatch({ type: 'minimize', id: 'overview' })
-      f.model.dispatch({ type: 'close', id: 'overview' })
+      f.model.dispatch({ type: 'minimize', id: 'party' })
+      f.model.dispatch({ type: 'close', id: 'party' })
       const first = f.api.save.mock.calls[0]![0]
       const confirmed = { ...first, revision: 2 }
       const resolution = f.maintenance.begin()
@@ -164,7 +164,7 @@ describe('scene desktop maintenance', () => {
       return Promise.reject(new Error('lost response'))
     })
     f.api.read.mockRejectedValueOnce(new Error('offline'))
-    f.model.dispatch({ type: 'close', id: 'overview' })
+    f.model.dispatch({ type: 'close', id: 'party' })
     await vi.waitFor(() => expect(f.model.snapshot().error).not.toBeNull())
     const resolution = f.maintenance.begin()
     try {
@@ -181,14 +181,16 @@ describe('scene desktop maintenance', () => {
     const f = fixture()
     await f.model.load()
     f.api.save.mockRejectedValueOnce(new Error('not saved'))
-    f.model.dispatch({ type: 'close', id: 'overview' })
+    f.model.dispatch({ type: 'close', id: 'party' })
     await vi.waitFor(() => expect(f.model.snapshot().error).not.toBeNull())
     const resolution = f.maintenance.begin()
     try {
       expect(await resolution.resolve('save')).toEqual([])
       expect(f.api.save).toHaveBeenCalledTimes(2)
       expect(f.api.save.mock.calls[1]?.[0].expectedRevision).toBe(1)
-      expect(f.stored().state?.windows).toEqual([])
+      expect(f.stored().state?.windows.map((window) => window.id)).toEqual([
+        'groups'
+      ])
     } finally {
       resolution.release()
     }
@@ -200,7 +202,7 @@ describe('scene desktop maintenance', () => {
     const newer = { ...f.stored(), revision: 8 }
     f.api.save.mockRejectedValueOnce(new Error('stale'))
     f.replace(newer)
-    f.model.dispatch({ type: 'close', id: 'overview' })
+    f.model.dispatch({ type: 'close', id: 'party' })
     await vi.waitFor(() => expect(f.model.snapshot().error).not.toBeNull())
     const resolution = f.maintenance.begin()
     try {

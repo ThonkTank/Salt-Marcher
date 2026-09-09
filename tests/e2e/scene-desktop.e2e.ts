@@ -537,6 +537,9 @@ describe('per-scene desktop', () => {
         .$('[data-window-id="map"] .travel-current-location')
         .getText()
     ).not.toBe(startLocation)
+    await client
+      .$('[data-window-id="map"] button[aria-label="Pause"]')
+      .waitForClickable()
     await client.$('[data-window-id="map"] button[aria-label="Pause"]').click()
     await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
       expect.stringContaining('Reise pausiert.')
@@ -884,7 +887,7 @@ describe('per-scene desktop', () => {
       await client.refresh()
       await resumeCampaignFromScreen(client)
       await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
-      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client.$('.desktop-toolbar').$('button=Gruppen').click()
       await client.$('button[aria-label="Lifecycle E2E aufklappen"]').click()
     }
     const readGroup = () =>
@@ -902,11 +905,9 @@ describe('per-scene desktop', () => {
       await client.refresh()
       await resumeCampaignFromScreen(client)
       await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
-      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client.$('.desktop-toolbar').$('button=Gruppen').click()
       await client
-        .$(
-          '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
-        )
+        .$('[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]')
         .click()
       const manager = client.$('section[aria-labelledby="group-builder-title"]')
       await manager.waitForDisplayed({ timeout: 10_000 })
@@ -932,17 +933,17 @@ describe('per-scene desktop', () => {
     await archiveGroup(true)
     await openGroup()
     await client
-      .$('[data-window-id="overview"]')
+      .$('[data-window-id="groups"]')
       .$('button=Wiederherstellen')
       .click()
     await client.waitUntil(async () => (await readGroup())?.archived === false)
     expect((await readGroup())?.note).toBe('Preserve through restore')
     await archiveGroup(false)
     await openGroup()
-    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('[data-window-id="groups"]').$('button=Löschen').click()
     await client.$('.group-delete-confirm').$('button=Abbrechen').click()
     expect((await readGroup())?.archived).toBe(true)
-    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('[data-window-id="groups"]').$('button=Löschen').click()
     await client.$('.group-delete-confirm').$('button=Wirklich löschen').click()
     await client.waitUntil(async () => (await readGroup()) === null)
     await expect(client.$('.group-name=Lifecycle E2E')).not.toBeExisting()
@@ -1114,12 +1115,9 @@ describe('per-scene desktop', () => {
     await client.$('[data-window-id="characters"]').$('button=XP').click()
     await client.$('.desktop-xp-popup input').setValue('250')
     const chooseLocation = async () => {
-      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client.$('.desktop-toolbar .desktop-scene-facts button').click()
       await client
-        .$('[data-window-id="overview"] .desktop-scene-facts button')
-        .click()
-      await client
-        .$('[data-window-id="overview"] .desktop-scene-facts select')
+        .$('.desktop-toolbar .desktop-scene-facts select')
         .selectByAttribute('value', destination.id)
     }
     const confirmation = () =>

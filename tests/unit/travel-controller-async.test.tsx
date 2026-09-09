@@ -48,6 +48,9 @@ describe('Travel async controller boundaries', () => {
       fixture.read.mockResolvedValueOnce(
         travelResult('scene-a', 1, 'travelling')
       )
+      fixture.read.mockResolvedValueOnce(
+        travelResult('scene-a', 2, 'travelling')
+      )
       fixture.execute.mockRejectedValueOnce(new CapabilityError(code, true))
       render(fixture.harness())
       await expectState('provider:1')
@@ -55,10 +58,10 @@ describe('Travel async controller boundaries', () => {
       expect(fixture.execute).toHaveBeenCalledExactlyOnceWith({
         kind: 'pause',
         sceneId: 'scene-a',
-        expectedRevision: 1,
-        expectedSceneRevision: 1
+        expectedRevision: 2,
+        expectedSceneRevision: 2
       })
-      expect(fixture.read).toHaveBeenCalledOnce()
+      expect(fixture.read).toHaveBeenCalledTimes(2)
       expect(fixture.onError).toHaveBeenCalledOnce()
     }
   )
@@ -66,6 +69,7 @@ describe('Travel async controller boundaries', () => {
   it('does not publish a late write failure into another scene', async () => {
     const pending = deferred<ReadResult>()
     const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
     fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
     fixture.read.mockResolvedValueOnce(result('scene-b', 4, 'map-b'))
     fixture.execute.mockImplementationOnce(() => pending.promise)

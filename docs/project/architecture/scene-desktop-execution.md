@@ -1968,5 +1968,14 @@ facts move to the desktop toolbar. Group drag/drop reuses combat selection and
 
 Validation includes legacy migrations, singleton lifecycle, independent expanded
 rows, quick-field settings, feet and English rules terminology, invalid drops,
-inline move failures, and desktop E2E keyboard drop before initiative. Delivery
-is pending candidate CI, exact-SHA canonical handoff, and main promotion.
+inline move failures, mouse and keyboard drops before initiative, and both-theme
+accessibility. The drag guard validates local identifiers against the current
+scene without importing the Zod runtime into the lazy desktop chunk; IPC
+contracts retain their existing boundary validation. Renderer growth remains
+within the unchanged bundle baseline allowance.
+
+Integration with the current maintenance owners also exposed stale journey
+revisions after reopening a travelling map. Explicit journey controls now use
+the existing read-only preparation step before the existing command owner;
+unknown outcomes still resolve through receipts without automatic write retries.
+Delivery is pending candidate CI, exact-SHA canonical handoff, and main promotion.

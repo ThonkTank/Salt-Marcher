@@ -254,7 +254,10 @@ describe('persistence preflight', () => {
     expect(migrated.revision).toBe(9)
     expect(JSON.parse(migrated.preferencesJson)).toEqual({
       schemaVersion: 2,
-      preferences: { theme: 'dark' }
+      preferences: {
+        theme: 'dark',
+        partyQuickFields: ['armorClass', 'passivePerception']
+      }
     })
 
     expect(
@@ -320,7 +323,13 @@ describe('persistence preflight', () => {
           .pluck()
           .get() as string
       )
-    ).toEqual({ schemaVersion: 2, preferences: { theme: 'light' } })
+    ).toEqual({
+      schemaVersion: 2,
+      preferences: {
+        theme: 'light',
+        partyQuickFields: ['armorClass', 'passivePerception']
+      }
+    })
     database.close()
   })
 

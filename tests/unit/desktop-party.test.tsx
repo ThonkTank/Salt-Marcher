@@ -154,7 +154,7 @@ it('keeps all details available while changing only collapsed quick fields, and 
   fireEvent.click(screen.getByRole('button', { name: 'Wald' }))
   await waitFor(() => expect(screen.queryByText('Verschieben nach')).toBeNull())
   expect(moveRoster).toHaveBeenLastCalledWith({
-    commandId: expect.any(String),
+    commandId: expect.any(String) as string,
     command: {
       kind: 'move-roster',
       input: {
