@@ -14,7 +14,7 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 | 3 — Travel and combat | Complete | a8f679e2e; candidate, canonical handoff and main evidence below |
 | 4 — Character catalog | Complete | 63b427900; candidate, canonical handoff and main evidence below |
 | 5 — Membership, XP, rest | Complete | e6ad4389b; candidate, canonical handoff and main evidence below |
-| 6 — Default and cleanup | In progress | Plan below; all preceding phases delivered |
+| 6 — Default and cleanup | Complete | c084ff2f1; all required candidate checks, canonical installed-artifact handoff and green main |
 
 ## 2026-09-08 — Initial state verification
 
@@ -1903,3 +1903,56 @@ It is not promoted. The next candidate includes the verified corrections.
 Bundle measurement is 1,565,449 reachable bytes, 421 above its downward baseline
 within unchanged allowances; the workspace shrinks 169 bytes to 507,912, which is
 ratcheted down under the existing policy. No upward baseline or budget change.
+
+
+### Phase 6 — Immutable delivery closure
+
+Delivered application SHA: `c084ff2f1022bf0d92486e96a9489ec3396bd416`, PR #669.
+Candidate Check run [34272740178](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34272740178)
+passes all 15 required jobs, including all platform/runtime, functional, visual,
+packaged-artifact and exact-SHA aggregate requirements. Candidate 96a0992e was
+rejected by the two recorded discrepancies and was never promoted.
+
+Canonical `pnpm handoff:app` completed on the ordinary handoff host:
+
+- State `d03d3df9-daa0-40bc-b635-8bed6fee6e81`; origin/active attempt
+  `62ad59aa-f706-49ae-ac2f-a3a156a61277`.
+- CI artifact ID `10074603133`, run 34272740178 attempt 1;
+  `salt-marcher-local-c084ff2f1022bf0d92486e96a9489ec3396bd416-attempt-1`.
+- Artifact and installed SHA-256 both
+  `643a5c04d40a07aa6e0653a4a061d874b1e5dace4c157e37120e883c13d2480e`.
+- App input fingerprint
+  `79b5e2096e7aa639b418a1c8fbf9084133db68deb735ddc4e22abef02353e642`.
+- Backup `2026-09-08T20-20-55-034Z-79b5e2096e7a-7e58c433`, manifest SHA-256
+  `89c560bf5751ffa8aac82481e7ca464a705e51982cbc11b6c647e7afa8b58afc`.
+- Downloaded actual-package smoke and installed runtime pass: two quick checks,
+  four domain readbacks, 51.82ms core bootstrap. Storage retention completes.
+
+`pnpm delivery:promote` fast-forwards main from e6ad4389b to the same c084ff2f1.
+Main Check [34274381374](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34274381374)
+is successful; `readSuccessfulPostPromotionEvidence` confirms manifest v4 and the
+required post-promotion attestation for the exact application SHA.
+
+### Final cross-phase audit — Complete
+
+All six canonical phases are implemented and separately delivered. The final
+source, contracts, migration chain, access inventory, 20 recorded corrective
+rounds and accepted tests match the unchanged roadmap. Phase-6 corrections restore
+cross-platform titlebar geometry and defer shortcut focus until its scoped frame
+exists; their acceptance includes seven desktop E2E cases, the actual SwiftShader
+route interaction, nine focused projection/layout cases, typecheck and lint.
+The complete candidate's remote qualification confirms all functional and visual
+suites, including the previously failing paths, with unchanged assertion budgets.
+
+There is one regular scene surface, one window model and one set of domain
+controllers. Character CRUD lives in the campaign catalog; scene windows expose
+quickinfos, stable roster/move, immediate XP, selected two-click rests, loot,
+references, map/travel and combat. The independent day-budget calculator remains.
+Desktop persistence, scope isolation, null facts, history, map lifecycle and
+restart behavior are covered by the recorded evidence. No unresolved roadmap
+discrepancy, migration ambiguity or delivery blocker remains.
+
+This documentation-only closure records the already delivered application SHA
+without changing any app-build input. It follows the repository's `pnpm check`
+and clean candidate/remote qualification/promotion process. Its own qualification
+is separate from, and cannot substitute for, the completed application handoff above.

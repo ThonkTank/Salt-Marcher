@@ -6801,3 +6801,34 @@ portablen Async-Architekturtest; der genaue Test besteht jetzt lokal. Noch
 laufende Remotejobs des alten SHA werden nicht als Prüfung dieses Diffs gewertet.
 Nächster Schritt: diesen geprüften Fix committen/pushen und seine eigenen Gates
 verfolgen. Keine Mainpromotion, kein Handoff und keine öffentliche Freigabe.
+
+### Phase 4 – Vollständige Kandidatenprüfung und aktualisierte Main-Basis
+
+CI 34315593773 für 0f47d10814f8fe7e6ea52b6ff11a5c3cf7113ed7 ist vollständig
+success, einschließlich aller Plattform-, Paket-, funktionalen, visuellen und
+Exact-SHA-Aggregatjobs. Die vorherigen Warteturns waren jeweils verifiziertes
+Warten auf diesen aktiven Lauf. Lokale Handoff-Ressourcenprüfung ist bestanden:
+Local läuft nicht, rund 229 GB verfügbar, Kampagnendaten etwa 3 MB; keine
+Profil- oder Installationsänderung.
+
+Die anschließende delivery:verify-candidate-Prüfung stoppt vor dem Handoff:
+remote main enthält inzwischen c01dc6159c25a1215f467194cbb70c8d38a7299e,
+der nicht Vorfahr des Kandidaten ist. Genau ein fehlender Main-Commit,
+ausschließlich Abschlussdokumentation für die separat ausgelieferte Scene-
+Desktop-Roadmap (zwei Dokumente). Keine fehlenden Laufzeitänderungen.
+
+Integrationsplan vor Merge: diesen Main-Commit unverändert übernehmen, unsere
+Wartungsänderungen erhalten, Konflikte gegebenenfalls anhand beider Roadmaps
+auflösen. Nachweisen, dass src/resources/Abhängigkeiten/Buildkonfiguration
+gegenüber 0f47d1081 unverändert sind. Dokumentformat prüfen, sauberen Mergecommit
+pushen und seine eigenen vollständigen CI-/Artefaktnachweise abwarten. Kein
+Umgehen der aktuellen Main-Abstammung oder Umdeuten alter Artefakte auf den neuen
+SHA. Danach kanonischer Handoff und Main-Gates; Phase-4-Abschluss bleibt bis zur
+abschließenden Auslieferungsprüfung offen. Phasen 5–7 bleiben vollständig im Ziel.
+
+Mergeprüfung: konfliktfrei. Die vollständige Dateidifferenz gegenüber 0f47d1081
+besteht aus den zwei übernommenen Main-Dokumenten und diesem Ausführungslog.
+Expliziter Diff für src/resources/Abhängigkeiten/scripts/Workflows/Electron-
+Buildkonfiguration ist leer. Volles Repositoryformat 99009 bestanden. Der
+Laufzeitstand der grünen Prüfung bleibt erhalten; SHA-gebundene Handoffbelege
+werden erst aus der neuen CI übernommen.
