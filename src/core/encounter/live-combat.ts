@@ -1,3 +1,31 @@
+import {
+  sceneCommandSchema,
+  type SceneCommand
+} from '../../shared/contracts/scene-command.js'
+import {
+  combatCommandSchema,
+  type CombatCommand
+} from '../../shared/contracts/combat-command.js'
+import { CombatCommandJournal } from './combat-command-journal.js'
+import {
+  sceneGroupLifecycleCommandSchema,
+  type SceneGroupLifecycleCommand
+} from '../../shared/contracts/scene-group-lifecycle.js'
+import {
+  scenePartyCommandSchema,
+  type ScenePartyCommand
+} from '../../shared/contracts/scene-party-command.js'
+import { ScenePartyCommandJournal } from '../scene/scene-party-command-journal.js'
+import { PartyCharacterCommandJournal } from '../party/party-character-command-journal.js'
+import {
+  partyCharacterCommandSchema,
+  type PartyCharacterCommand
+} from '../../shared/contracts/party.js'
+import { SceneGroupCommandJournal } from '../scene/scene-group-command-journal.js'
+import {
+  saveSceneGroupInputSchema,
+  type SaveSceneGroupInput
+} from '../../shared/contracts/scene.js'
 import { sceneHasActiveCombat } from './combat-repository.js'
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
@@ -236,6 +264,133 @@ export class LivePlayService {
     )
   }
 
+  executeScenePartyCommand(value: ScenePartyCommand) {
+    return this.executeSceneCommand(scenePartyCommandSchema.parse(value))
+  }
+
+  executeSceneCommand(value: SceneCommand) {
+    const input = sceneCommandSchema.parse(value)
+    return this.withStores(({ db, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new ScenePartyCommandJournal(db)
+        const existing = journal.read(input)
+        if (existing) return existing
+        const command = input.command
+        const snapshot = (() => {
+          switch (command.kind) {
+            case 'set-location':
+              if (
+                this.readSession().scene.focusedSceneId !==
+                command.input.sceneId
+              )
+                throw new CapabilityError('stale', false)
+              return this.setSceneLocation(
+                command.input.sceneId,
+                command.input.locationId,
+                command.input.expectedRevision
+              )
+            case 'focus':
+              if (
+                this.readSession().scene.focusedSceneId !==
+                command.input.sourceSceneId
+              )
+                throw new CapabilityError('stale', false)
+              return this.focusScene(
+                command.input.sceneId,
+                command.input.expectedRevision
+              )
+            case 'set-roster':
+              return this.setSceneRoster(command.input)
+            case 'move-roster':
+              return this.moveSceneRoster(command.input)
+            case 'rest-selected':
+              this.restSceneParty(command.input)
+              return this.readSession()
+          }
+        })()
+        const receipt = { snapshot }
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+
+  scenePartyCommandStatus(value: ScenePartyCommand) {
+    return this.sceneCommandStatus(scenePartyCommandSchema.parse(value))
+  }
+
+  sceneCommandStatus(value: SceneCommand) {
+    const input = sceneCommandSchema.parse(value)
+    return this.withStores(({ db }) => ({
+      receipt: new ScenePartyCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
+  }
+
+  executePartyCharacterCommand(value: PartyCharacterCommand) {
+    const input = partyCharacterCommandSchema.parse(value)
+    return this.withStores(({ db, party, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new PartyCharacterCommandJournal(db)
+        const existing = journal.read(input)
+        if (existing) return existing
+        const before = party.read()
+        const command = input.command
+        const result = (() => {
+          switch (command.kind) {
+            case 'create':
+              return this.createPartyCharacter(
+                command.input.character,
+                command.input.expectedRevision
+              )
+            case 'update':
+              return this.updatePartyCharacter(
+                command.input.id,
+                command.input.character,
+                command.input.expectedRevision
+              )
+            case 'delete':
+              return this.deletePartyCharacter(
+                command.input.id,
+                command.input.expectedRevision
+              )
+            case 'adjust-xp':
+              return this.adjustPartyXp(
+                command.input.id,
+                command.input.delta,
+                command.input.expectedRevision
+              )
+            case 'set-xp':
+              return this.setPartyXp(
+                command.input.id,
+                command.input.amount,
+                command.input.expectedRevision
+              )
+          }
+        })()
+        const characterId =
+          command.kind === 'create'
+            ? result.members.find(
+                (member) =>
+                  !before.members.some((previous) => previous.id === member.id)
+              )?.id
+            : command.input.id
+        if (!characterId) throw new CapabilityError('validation_failed', false)
+        const receipt = { characterId, party: result }
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+
+  partyCharacterCommandStatus(value: PartyCharacterCommand) {
+    const input = partyCharacterCommandSchema.parse(value)
+    return this.withStores(({ db, party }) => ({
+      receipt: new PartyCharacterCommandJournal(db).read(input),
+      party: party.read()
+    }))
+  }
+
   createPartyCharacter(
     character: PartyCharacterDraft,
     expectedRevision: number
@@ -347,6 +502,75 @@ export class LivePlayService {
     })
   }
 
+  saveSceneGroupCommand(raw: SaveSceneGroupInput): SceneGroupCommandResult {
+    const input = saveSceneGroupInputSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new CampaignUnitOfWork(db).run(() => {
+        const journal = new SceneGroupCommandJournal(db)
+        const previous = journal.read(input)
+        if (previous) return previous
+        const result = this.saveSceneGroup(
+          input.sceneId,
+          input.groupId,
+          input.name,
+          input.note,
+          input.disposition,
+          input.entries,
+          input.expectedRevision,
+          input.expectedGroupRevision
+        )
+        journal.record(input, result)
+        return result
+      })
+    )
+  }
+
+  executeSceneGroupLifecycle(
+    raw: SceneGroupLifecycleCommand
+  ): SceneGroupCommandResult {
+    const input = sceneGroupLifecycleCommandSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new CampaignUnitOfWork(db).run(() => {
+        const journal = new SceneGroupCommandJournal(db)
+        const previous = journal.read(input)
+        if (previous) return previous
+        const command = input.command
+        const result =
+          command.kind === 'archive'
+            ? this.setSceneGroupArchived(
+                command.input.sceneId,
+                command.input.groupId,
+                command.input.archived,
+                command.input.expectedGroupRevision
+              )
+            : this.deleteSceneGroup(
+                command.input.sceneId,
+                command.input.groupId,
+                command.input.expectedGroupRevision
+              )
+        journal.record(input, result)
+        return result
+      })
+    )
+  }
+
+  sceneGroupLifecycleStatus(raw: SceneGroupLifecycleCommand) {
+    const input = sceneGroupLifecycleCommandSchema.parse(raw)
+    return this.campaignDatabase.use((db) => ({
+      receipt: new SceneGroupCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
+  }
+
+  sceneGroupSaveReceipt(
+    raw: SaveSceneGroupInput
+  ): SceneGroupCommandResult | null {
+    const input = saveSceneGroupInputSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new SceneGroupCommandJournal(db).read(input)
+    )
+  }
+
   saveSceneGroup(
     sceneId: string,
     groupId: string | null,
@@ -409,8 +633,9 @@ export class LivePlayService {
     archived: boolean,
     expectedGroupRevision: number
   ): SceneGroupCommandResult {
-    return this.withStores(({ party, scene, combat, unitOfWork }) => {
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) => {
       return unitOfWork.run(() => {
+        const combat = combatFor(sceneId)
         scene.setGroupArchived(
           sceneId,
           groupId,
@@ -451,7 +676,8 @@ export class LivePlayService {
     groupId: string,
     expectedGroupRevision: number
   ): SceneGroupCommandResult {
-    return this.withStores(({ party, scene, combat }) => {
+    return this.withStores(({ party, scene, combatFor }) => {
+      const combat = combatFor(sceneId)
       scene.deleteGroup(sceneId, groupId, expectedGroupRevision)
       return this.sceneGroupResultFromStores(party, scene, combat, sceneId, [
         groupId
@@ -581,6 +807,150 @@ export class LivePlayService {
         groupIds
       )
     })
+  }
+
+  executeCombatCommand(value: CombatCommand): CombatCommandResult {
+    const input = combatCommandSchema.parse(value)
+    return this.withStores(({ db, scene, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new CombatCommandJournal(db)
+        const prior = journal.read(input)
+        if (prior) return prior
+        if (scene.focusedSceneId() !== input.sceneId)
+          throw new CapabilityError('stale', false)
+        if (
+          'sceneId' in input.command.input &&
+          input.command.input.sceneId !== input.sceneId
+        )
+          throw new CapabilityError('validation_failed', false)
+        const receipt = this.dispatchCombatCommand(input.command)
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+  combatCommandStatus(value: CombatCommand) {
+    const input = combatCommandSchema.parse(value)
+    return this.campaignDatabase.use((db) => ({
+      receipt: new CombatCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
+  }
+  private dispatchCombatCommand(
+    command: CombatCommand['command']
+  ): CombatCommandResult {
+    switch (command.kind) {
+      case 'prepare':
+        return this.prepareCombat(
+          command.input.sceneId,
+          command.input.expectedSceneRevision,
+          command.input.groupIds
+        )
+      case 'joinGroup':
+        return this.joinCombatGroup(
+          command.input.sceneId,
+          command.input.groupId,
+          command.input.expectedGroupRevision,
+          command.input.expectedCombatRevision
+        )
+      case 'rollInitiative':
+        return this.rollInitiative(command.input.expectedRevision)
+      case 'saveInitiative':
+        return this.mutateCombat(command.input.expectedRevision, (combat) =>
+          combat.saveInitiative(command.input.values)
+        )
+      case 'finishResolution': {
+        let awardedParty: CombatCommandResult['party'] = null
+        let combat = this.readSession().combat
+        if (!combat) throw new CapabilityError('not_found', false)
+        if (combat.revision !== command.input.expectedRevision)
+          throw new CapabilityError('stale', false)
+        if (!combat.resolution?.xpAwarded) {
+          combat = this.updateResolution(
+            command.input.expectedRevision,
+            command.input.selectedEnemyIds,
+            command.input.mode,
+            command.input.xpFraction
+          ).combat
+          if (!combat?.resolution)
+            throw new CapabilityError('validation_failed', false)
+          if (combat.resolution.perPlayerXp > 0) {
+            const awarded = this.awardXp(
+              combat.revision,
+              command.input.expectedCampaignRulesRevision
+            )
+            combat = awarded.combat
+            awardedParty = awarded.party
+          }
+        }
+        if (!combat) throw new CapabilityError('not_found', false)
+        return { ...this.completeCombat(combat.revision), party: awardedParty }
+      }
+      case 'confirmInitiative':
+        return this.confirmInitiative(
+          command.input.expectedRevision,
+          command.input.values
+        )
+      case 'advanceTurn':
+        return this.advanceTurn(command.input.expectedRevision)
+      case 'retreatTurn':
+        return this.retreatTurn(command.input.expectedRevision)
+      case 'adjustInitiative':
+        return this.adjustInitiative(
+          command.input.expectedRevision,
+          command.input.id,
+          command.input.initiative
+        )
+      case 'changeHp':
+        return this.changeHp(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.amount,
+          command.input.healing
+        )
+      case 'toggleCondition':
+        return this.toggleCombatCondition(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.condition,
+          command.input.active
+        )
+      case 'setConcentration':
+        return this.setCombatConcentration(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.concentrating
+        )
+      case 'setExhaustion':
+        return this.setCombatExhaustion(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.exhaustionLevel
+        )
+      case 'undo':
+        return this.undoCombat(command.input.expectedRevision)
+      case 'end':
+        return this.endCombat(command.input.expectedRevision)
+      case 'moveToPhase':
+        return this.moveCombatToPhase(
+          command.input.expectedRevision,
+          command.input.target
+        )
+      case 'updateResolution':
+        return this.updateResolution(
+          command.input.expectedRevision,
+          command.input.selectedEnemyIds,
+          command.input.mode,
+          command.input.xpFraction
+        )
+      case 'awardXp':
+        return this.awardXp(
+          command.input.expectedRevision,
+          command.input.expectedCampaignRulesRevision
+        )
+      case 'complete':
+        return this.completeCombat(command.input.expectedRevision)
+    }
   }
 
   prepareCombat(

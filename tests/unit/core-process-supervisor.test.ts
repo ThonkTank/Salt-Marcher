@@ -112,6 +112,38 @@ describe('CoreProcessSupervisor', () => {
     vi.useRealTimers()
   })
 
+  it('waits for an actual exit before resolving concurrent shutdown requests', async () => {
+    const { supervisor, children } = harness()
+    void supervisor.waitUntilReady().catch(() => undefined)
+    vi.spyOn(children[0]!, 'kill').mockReturnValue(true)
+    const completed = vi.fn()
+    const closing = supervisor.closeGracefully()
+    expect(supervisor.closeGracefully()).toBe(closing)
+    void closing.then(completed)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(completed).not.toHaveBeenCalled()
+    expect(supervisor.status()).not.toBe('closed')
+    children[0]!.emit('exit', 0)
+    await closing
+    expect(completed).toHaveBeenCalledOnce()
+    expect(supervisor.status()).toBe('closed')
+  })
+
+  it('rejects maintenance admission when the killed process has not exited', async () => {
+    const { supervisor, children } = harness()
+    void supervisor.waitUntilReady().catch(() => undefined)
+    vi.spyOn(children[0]!, 'kill').mockReturnValue(true)
+    const closing = supervisor.closeGracefully()
+    const rejected = expect(closing).rejects.toThrow(
+      'Datenprozess ist noch nicht beendet'
+    )
+    await vi.advanceTimersByTimeAsync(2_000)
+    await rejected
+    expect(supervisor.status()).not.toBe('closed')
+    children[0]!.emit('exit', 0)
+    await expect(supervisor.closeGracefully()).resolves.toBeUndefined()
+  })
+
   it('starts every generation with one validated configuration envelope', async () => {
     const { supervisor, spawnArguments } = harness()
     void supervisor.waitUntilReady().catch(() => undefined)
@@ -286,6 +318,51 @@ describe('CoreProcessSupervisor', () => {
     children[0]?.emit('exit', 1)
 
     expect(await errorCode(result)).toBe('core_unavailable')
+    await supervisor.closeGracefully()
+  })
+
+  it('cannot read an absent receipt while a timed-out writer has not actually exited', async () => {
+    const { supervisor, children } = harness()
+    children[0]!.ready()
+    vi.spyOn(children[0]!, 'kill').mockReturnValue(true)
+    const input = {
+      commandId: '00000000-0000-4000-8000-000000000001',
+      sceneId: '00000000-0000-4000-8000-000000000002',
+      groupId: null,
+      name: 'Pending save',
+      note: '',
+      disposition: 'hostile' as const,
+      entries: [],
+      expectedRevision: 1,
+      expectedGroupRevision: null
+    }
+    const outcome = errorCode(
+      supervisor.requestOperation('scene.saveGroup', input)
+    )
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(await outcome).toBe('outcome_unknown')
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(children).toHaveLength(1)
+    const readInput = {
+      ...input,
+      campaignId: '00000000-0000-4000-8000-000000000003'
+    }
+    expect(
+      await errorCode(
+        supervisor.requestOperation('scene.groupSaveReceipt', readInput)
+      )
+    ).toBe('core_unavailable')
+    children[0]!.emit('exit', 1)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(children).toHaveLength(2)
+    children[1]!.ready()
+    const receipt = supervisor.requestOperation(
+      'scene.groupSaveReceipt',
+      readInput
+    )
+    children[1]!.succeed(null)
+    expect(await receipt).toBeNull()
+    children[1]!.emit('exit', 0)
     await supervisor.closeGracefully()
   })
 

@@ -1,50 +1,73 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useState, useSyncExternalStore } from 'react'
+import { RewardDistributionController } from './reward-distribution-controller.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { Treasure } from '../../../shared/contracts/loot.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
 import './loot-dialogs.css'
 import { useRewardDistributionPort } from './use-loot-ports.js'
 
-type ShareDraft = { characterId: string; quantity: number }
-
-export function RewardDistributionDialog(props: {
+type RewardDistributionDialogProps = {
   treasure: Treasure
   snapshot: LiveSessionSnapshot
   close: () => void
-  completed: () => void
+  completed: () => void | Promise<void>
+  maintenanceId?: string
   onError: (message: string) => void
   context?: Readonly<{
     kind: 'encounter' | 'quest'
     label: string
     xp: number | null
   }>
-}) {
+}
+export function RewardDistributionDialog(props: RewardDistributionDialogProps) {
+  return <RewardDistributionContent key={props.treasure.id} {...props} />
+}
+function RewardDistributionContent(props: RewardDistributionDialogProps) {
   const loot = useRewardDistributionPort()
-  const commandId = useRef(crypto.randomUUID())
-  const availableItems = props.treasure.items.filter(
-    (item) => item.quantity > item.allocatedQuantity
+  const [controller] = useState(
+    () =>
+      new RewardDistributionController(
+        loot,
+        props.treasure,
+        props.snapshot.party.revision,
+        { completed: props.completed, close: props.close }
+      )
   )
-  const [shares, setShares] = useState<Record<string, ShareDraft[]>>(() =>
-    Object.fromEntries(
-      availableItems.map((item) => [
-        item.id,
-        [
-          {
-            characterId: '',
-            quantity: item.quantity - item.allocatedQuantity
-          }
-        ]
-      ])
-    )
+  useLayoutEffect(() => {
+    controller.updateCallbacks({
+      completed: props.completed,
+      close: props.close
+    })
+  }, [controller, props.completed, props.close])
+  const {
+    shares,
+    busy: submitting,
+    uncertain,
+    closed,
+    error
+  } = useSyncExternalStore(controller.subscribe, controller.snapshot)
+  const blocked = useMaintenanceDraft(
+    {
+      label: `Beuteverteilung: ${props.treasure.label}`,
+      isDirty: controller.dirty,
+      save: controller.maintenanceSave,
+      discard: controller.maintenanceDiscard
+    },
+    props.maintenanceId
   )
-  const [submitting, setSubmitting] = useState(false)
+  const editingBlocked = blocked || submitting || uncertain || closed
+  const availableItems = controller.availableItems
+  const close = () => {
+    void controller.close()
+  }
+  const changeShare = controller.change
   const activeParty = props.snapshot.party.members.filter(
     (member) => member.active
   )
-  const validation = validateDistribution(availableItems, shares)
+  const validation = controller.validation()
   const totalAvailable = availableItems.reduce(
     (sum, item) => sum + item.quantity - item.allocatedQuantity,
     0
@@ -58,58 +81,12 @@ export function RewardDistributionDialog(props: {
     0
   )
 
-  function changeShare(
-    itemId: string,
-    index: number,
-    patch: Partial<ShareDraft>
-  ) {
-    setShares((current) => ({
-      ...current,
-      [itemId]: (current[itemId] ?? []).map((row, rowIndex) =>
-        rowIndex === index ? { ...row, ...patch } : row
-      )
-    }))
-  }
-
-  async function complete() {
-    if (validation) return
-    setSubmitting(true)
-    try {
-      await loot.distribute({
-        commandId: commandId.current,
-        treasureId: props.treasure.id,
-        expectedTreasureRevision: props.treasure.revision,
-        expectedPartyRevision: props.snapshot.party.revision,
-        items: availableItems.flatMap((item) => {
-          const selected = (shares[item.id] ?? []).filter(
-            (row) => row.characterId
-          )
-          return selected.length > 0
-            ? [
-                {
-                  itemId: item.id,
-                  shares: selected.map((row) => ({
-                    characterId: row.characterId,
-                    quantity: row.quantity
-                  }))
-                }
-              ]
-            : []
-        })
-      })
-      props.completed()
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   return (
     <ModalDialog
       className="loot-distribution-dialog"
       labelledBy="loot-distribution-title"
-      onClose={props.close}
+      onClose={close}
+      busy={editingBlocked}
     >
       <header>
         <div>
@@ -120,11 +97,22 @@ export function RewardDistributionDialog(props: {
           type="button"
           className="compact"
           aria-label={message('ui.dialog.schliessen')}
-          onClick={props.close}
+          onClick={close}
+          disabled={editingBlocked}
         >
           ×
         </button>
       </header>
+      {error && <p role="alert">{error}</p>}
+      {uncertain && (
+        <button
+          type="button"
+          disabled={blocked || submitting}
+          onClick={() => void controller.retry()}
+        >
+          {message('loot.distributionCheck')}
+        </button>
+      )}
       <p className="panel-hint">{message('loot.distributionHint')}</p>
       {props.context && (
         <div className="loot-distribution-context">
@@ -152,7 +140,7 @@ export function RewardDistributionDialog(props: {
           })}
         </span>
       </div>
-      <div className="loot-distribution-items">
+      <div className="loot-distribution-items" inert={editingBlocked}>
         {availableItems.length === 0 ? (
           <p className="session-empty-state">
             {message('loot.allDistributed')}
@@ -211,14 +199,7 @@ export function RewardDistributionDialog(props: {
                     <button
                       type="button"
                       aria-label={message('loot.removeSplit')}
-                      onClick={() =>
-                        setShares((current) => ({
-                          ...current,
-                          [item.id]: current[item.id]!.filter(
-                            (_, rowIndex) => rowIndex !== index
-                          )
-                        }))
-                      }
+                      onClick={() => controller.remove(item.id, index)}
                     >
                       −
                     </button>
@@ -228,15 +209,7 @@ export function RewardDistributionDialog(props: {
                   <button
                     type="button"
                     className="loot-split-action"
-                    onClick={() =>
-                      setShares((current) => ({
-                        ...current,
-                        [item.id]: [
-                          ...(current[item.id] ?? []),
-                          { characterId: '', quantity: 1 }
-                        ]
-                      }))
-                    }
+                    onClick={() => controller.add(item.id)}
                   >
                     {message('loot.split')}
                   </button>
@@ -258,14 +231,14 @@ export function RewardDistributionDialog(props: {
         </p>
       )}
       <footer>
-        <button type="button" onClick={props.close}>
+        <button type="button" onClick={close} disabled={editingBlocked}>
           {message('loot.cancel')}
         </button>
         <button
           type="button"
           className="primary-action"
-          disabled={Boolean(validation) || submitting}
-          onClick={() => void complete()}
+          disabled={Boolean(validation) || editingBlocked}
+          onClick={() => void controller.save()}
         >
           {submitting
             ? message('loot.saving')
@@ -274,34 +247,4 @@ export function RewardDistributionDialog(props: {
       </footer>
     </ModalDialog>
   )
-}
-
-function validateDistribution(
-  items: Treasure['items'],
-  shares: Readonly<Record<string, readonly ShareDraft[]>>
-): string | null {
-  let assigned = 0
-  for (const item of items) {
-    const selected = (shares[item.id] ?? []).filter((row) => row.characterId)
-    const recipients = new Set(selected.map((row) => row.characterId))
-    const quantity = selected.reduce((sum, row) => sum + row.quantity, 0)
-    if (recipients.size !== selected.length)
-      return message('loot.recipientUnique')
-    if (selected.some((row) => row.quantity < 1))
-      return message('loot.quantityPositive')
-    if (quantity > item.quantity - item.allocatedQuantity)
-      return formatMessage('loot.overAllocated', {
-        name: item.definition.name
-      })
-    if (
-      !item.definition.stackable &&
-      quantity !== 0 &&
-      quantity !== item.quantity - item.allocatedQuantity
-    )
-      return formatMessage('loot.notStackable', {
-        name: item.definition.name
-      })
-    assigned += quantity
-  }
-  return assigned > 0 ? null : message('loot.assignmentRequired')
 }

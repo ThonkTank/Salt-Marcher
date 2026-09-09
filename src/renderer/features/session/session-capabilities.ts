@@ -4,7 +4,8 @@ import type { EncounterTuningOverride } from '../../../shared/contracts/encounte
 import type {
   GroupGenerationMode,
   SceneGroupDisposition,
-  SceneGroupDraftEntry
+  SceneGroupDraftEntry,
+  SaveSceneGroupInput
 } from '../../../shared/contracts/scene.js'
 
 /** Positional convenience is local to the Session renderer adapter. */
@@ -12,13 +13,8 @@ export function sessionCapabilities(api: SaltMarcherApi) {
   return {
     references: api.references,
     scene: {
-      focus: (sceneId: string, expectedRevision: number) =>
-        api.scene.focus({ sceneId, expectedRevision }),
-      setLocation: (
-        sceneId: string,
-        locationId: string | null,
-        expectedRevision: number
-      ) => api.scene.setLocation({ sceneId, locationId, expectedRevision }),
+      groupSaveReceipt: (input: SaveSceneGroupInput, campaignId: string) =>
+        api.scene.groupSaveReceipt({ ...input, campaignId }),
       saveGroup: (
         sceneId: string,
         groupId: string | null,
@@ -27,9 +23,11 @@ export function sessionCapabilities(api: SaltMarcherApi) {
         disposition: SceneGroupDisposition,
         entries: readonly SceneGroupDraftEntry[],
         expectedRevision: number,
-        expectedGroupRevision: number | null
+        expectedGroupRevision: number | null,
+        commandId: string = crypto.randomUUID()
       ) =>
         api.scene.saveGroup({
+          commandId,
           sceneId,
           groupId,
           name,
@@ -37,23 +35,6 @@ export function sessionCapabilities(api: SaltMarcherApi) {
           disposition,
           entries: [...entries],
           expectedRevision,
-          expectedGroupRevision
-        }),
-      deleteGroup: (
-        sceneId: string,
-        groupId: string,
-        expectedGroupRevision: number
-      ) => api.scene.deleteGroup({ sceneId, groupId, expectedGroupRevision }),
-      setGroupArchived: (
-        sceneId: string,
-        groupId: string,
-        archived: boolean,
-        expectedGroupRevision: number
-      ) =>
-        api.scene.setGroupArchived({
-          sceneId,
-          groupId,
-          archived,
           expectedGroupRevision
         }),
       evaluateGroupDraft: (

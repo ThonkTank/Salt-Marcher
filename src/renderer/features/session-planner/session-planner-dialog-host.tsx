@@ -35,13 +35,17 @@ export function SessionPlannerDialogHost(props: {
   name: string
   deleteConfirm: boolean
   treasureEditor: Treasure | null | false
+  distributionMaintenanceId: string
+  closeDistribution: () => void
+  completeDistribution: () => Promise<void>
+  treasureMaintenanceId: string
+  closeTreasureEditor: () => void
+  completeTreasureEditor: () => Promise<void>
   distribution: Treasure | null
   setConfirmation: (value: null) => void
   setNameDialog: (value: 'create' | 'rename' | null) => void
   setName: (name: string) => void
   setDeleteConfirm: (value: boolean) => void
-  setTreasureEditor: (value: Treasure | null | false) => void
-  setDistribution: (value: Treasure | null) => void
   cancelPreparation: () => Promise<void>
   requestPreparation: (
     target: SessionPlannerWorkspace,
@@ -51,7 +55,6 @@ export function SessionPlannerDialogHost(props: {
   ) => Promise<void>
   submitName: () => Promise<void>
   deleteSession: () => Promise<void>
-  refreshWorkspace: () => void
 }) {
   return (
     <>
@@ -160,11 +163,9 @@ export function SessionPlannerDialogHost(props: {
             snapshot={props.snapshot}
             initialAnchor={{ kind: 'unplaced' }}
             treasure={props.treasureEditor}
-            close={() => props.setTreasureEditor(false)}
-            saved={() => {
-              props.setTreasureEditor(false)
-              props.refreshWorkspace()
-            }}
+            maintenanceId={props.treasureMaintenanceId}
+            close={props.closeTreasureEditor}
+            saved={props.completeTreasureEditor}
             onError={props.onError}
           />
         )}
@@ -183,11 +184,9 @@ export function SessionPlannerDialogHost(props: {
                   ? props.selectedProjection.encounter.summary.adjustedXp
                   : null
             }}
-            close={() => props.setDistribution(null)}
-            completed={() => {
-              props.setDistribution(null)
-              props.refreshWorkspace()
-            }}
+            maintenanceId={props.distributionMaintenanceId}
+            close={props.closeDistribution}
+            completed={props.completeDistribution}
             onError={props.onError}
           />
         )}

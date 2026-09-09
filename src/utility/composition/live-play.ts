@@ -21,9 +21,20 @@ const encounterHandlerOperations = composeOperationDefinitions(
 )
 
 export function createPartyHandlers(
-  play: LivePlayService
+  play: LivePlayService,
+  activeCampaignId: () => string
 ): OperationHandlers<typeof partyOperationDefinitions> {
   return defineOperationHandlers('party_handlers', partyOperationDefinitions, {
+    'party.executeCharacterCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executePartyCharacterCommand(command)
+    },
+    'party.characterCommandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.partyCharacterCommandStatus(command)
+    },
     'party.restSelected': (input) => play.restSceneParty(input),
     'party.setXp': (input) =>
       play.setPartyXp(input.id, input.amount, input.expectedRevision),
@@ -58,6 +69,26 @@ export function createSessionHandlers(
         throw new CapabilityError('stale', true)
       return play.readSession()
     },
+    'scene.executeCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeSceneCommand(command)
+    },
+    'scene.commandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneCommandStatus(command)
+    },
+    'scene.executePartyCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeScenePartyCommand(command)
+    },
+    'scene.partyCommandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.scenePartyCommandStatus(command)
+    },
     'scene.setRoster': (input) => play.setSceneRoster(input),
     'scene.moveRoster': (input) => play.moveSceneRoster(input),
     'scene.focus': (input) =>
@@ -68,17 +99,22 @@ export function createSessionHandlers(
         input.locationId,
         input.expectedRevision
       ),
-    'scene.saveGroup': (input) =>
-      play.saveSceneGroup(
-        input.sceneId,
-        input.groupId,
-        input.name,
-        input.note,
-        input.disposition,
-        input.entries,
-        input.expectedRevision,
-        input.expectedGroupRevision
-      ),
+    'scene.executeGroupLifecycle': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeSceneGroupLifecycle(command)
+    },
+    'scene.groupLifecycleStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneGroupLifecycleStatus(command)
+    },
+    'scene.saveGroup': (input) => play.saveSceneGroupCommand(input),
+    'scene.groupSaveReceipt': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneGroupSaveReceipt(command)
+    },
     'scene.deleteGroup': (input) =>
       play.deleteSceneGroup(
         input.sceneId,
@@ -119,7 +155,8 @@ export function createSessionHandlers(
 }
 
 export function createEncounterHandlers(
-  play: LivePlayService
+  play: LivePlayService,
+  activeCampaignId: () => string
 ): OperationHandlers<typeof encounterHandlerOperations> {
   return defineOperationHandlers(
     'encounter_handlers',
@@ -131,6 +168,16 @@ export function createEncounterHandlers(
           input.groupIds,
           input.expectedRevision
         ),
+      'combat.executeCommand': ({ campaignId, ...command }) => {
+        if (campaignId !== activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return play.executeCombatCommand(command)
+      },
+      'combat.commandStatus': ({ campaignId, ...command }) => {
+        if (campaignId !== activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return play.combatCommandStatus(command)
+      },
       'combat.prepare': (input) =>
         play.prepareCombat(
           input.sceneId,

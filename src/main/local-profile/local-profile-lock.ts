@@ -114,6 +114,38 @@ export function acquireProfileLock(
   throw new ProfileLockedError(lockPath, 'unknown')
 }
 
+/** Read-only admission for a child working under its parent's retained lease. */
+export function assertProfileLockOwner(
+  lockPath: string,
+  pid: number,
+  owner: ProfileLockOwner,
+  options: Pick<AcquireProfileLockOptions, 'procRoot' | 'bootIdPath'> = {}
+): void {
+  const procRoot = options.procRoot ?? '/proc'
+  const bootIdPath =
+    options.bootIdPath ?? join(procRoot, 'sys/kernel/random/boot_id')
+  try {
+    const metadata = profileLockSchema.parse(
+      JSON.parse(readFileSync(lockPath, 'utf8'))
+    )
+    const identity = readProcessIdentity(pid, procRoot, bootIdPath)
+    if (
+      metadata.pid !== pid ||
+      metadata.owner !== owner ||
+      identity.kind !== 'known' ||
+      identity.value !== metadata.processIdentity
+    ) {
+      throw new Error(
+        'Die Profilsperre gehört nicht zum lebenden Auftraggeber.'
+      )
+    }
+  } catch (error) {
+    throw new Error('Die Profilsperre des Wartungsauftrags ist nicht gültig.', {
+      cause: error
+    })
+  }
+}
+
 type ProcessIdentity =
   | Readonly<{ kind: 'known'; value: string }>
   | Readonly<{ kind: 'missing' | 'unknown' }>

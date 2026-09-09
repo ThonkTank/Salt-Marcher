@@ -1,3 +1,10 @@
+import type {
+  CampaignActionAttempt,
+  CampaignManagementCommand
+} from './campaign-action-attempt.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { useRef, useState, type FormEvent } from 'react'
 import type {
   CampaignSnapshot,
@@ -12,16 +19,17 @@ import {
 import './campaign-screen.css'
 
 export interface CampaignActions {
-  create: (name: string) => Promise<boolean>
-  activate: (id: string) => Promise<boolean>
-  rename: (id: string, name: string) => Promise<boolean>
-  trash: (id: string) => Promise<boolean>
-  restore: (id: string) => Promise<boolean>
-  deleteForever: (id: string, confirmationName: string) => Promise<boolean>
+  begin: (
+    command: CampaignManagementCommand,
+    maintenance?: boolean
+  ) => CampaignActionAttempt
   reconciliationPending: boolean
-  reconcile: () => Promise<CampaignCommandReceipt | null>
+  reconcile: (
+    stayOnCampaigns?: boolean
+  ) => Promise<CampaignCommandReceipt | null>
 }
 export interface CampaignScreenProps extends CampaignActions {
+  maintenanceDependencyId?: string
   snapshot: CampaignSnapshot
   status: 'loading' | 'ready' | 'failure'
   error: string
@@ -32,19 +40,72 @@ export interface CampaignScreenProps extends CampaignActions {
 }
 type Popup =
   | { kind: 'new' }
-  | { kind: 'edit'; id: string }
+  | { kind: 'edit'; id: string; originalName: string }
   | { kind: 'trash' }
   | { kind: 'delete'; id: string }
 
 export function CampaignScreen(props: CampaignScreenProps) {
-  const [popup, setPopup] = useState<Popup | null>(null)
-  const [name, setName] = useState('')
-  const [confirmation, setConfirmation] = useState('')
+  const [popup, setPopupState] = useState<Popup | null>(null)
+  const [name, setNameState] = useState('')
+  const [confirmation, setConfirmationState] = useState('')
   const [notice, setNotice] = useState('')
   const [localBusy, setLocalBusy] = useState(false)
-  const pending = useRef(false)
+  const popupRef = useRef<Popup | null>(null)
+  const nameRef = useRef('')
+  const confirmationRef = useRef('')
+  const [localError, setLocalError] = useState('')
+  const [uncertain, setUncertain] = useState(false)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const attempt = useRef<{
+    handle: CampaignActionAttempt
+    accepted?: () => void
+  } | null>(null)
+  const setPopup = (value: Popup | null) => {
+    popupRef.current = value
+    setPopupState(value)
+  }
+  const setName = (value: string) => {
+    nameRef.current = value
+    setNameState(value)
+  }
+  const setConfirmation = (value: string) => {
+    confirmationRef.current = value
+    setConfirmationState(value)
+  }
   const createButton = useRef<HTMLButtonElement>(null)
-  const blocked = props.busy || localBusy || props.reconciliationPending
+  const maintenanceBlocked = useMaintenanceDraft({
+    label: 'Kampagnenverwaltung',
+    dependsOn: props.maintenanceDependencyId
+      ? [props.maintenanceDependencyId]
+      : [],
+    isDirty: () =>
+      Boolean(popupRef.current || pending.current || attempt.current),
+    save: async () => {
+      if (!(await drain())) return false
+      if (popupRef.current?.kind === 'new' || popupRef.current?.kind === 'edit')
+        return saveName(true)
+      close()
+      return true
+    },
+    discard: async () => {
+      if (!(await drain())) return false
+      close()
+      return true
+    }
+  })
+  const blocked =
+    props.busy ||
+    localBusy ||
+    props.reconciliationPending ||
+    uncertain ||
+    maintenanceBlocked
+  const publicBlocked = () =>
+    Boolean(
+      blocked ||
+      pending.current ||
+      attempt.current ||
+      maintenanceDraftCoordinator.isLocked()
+    )
   const editing =
     popup?.kind === 'edit'
       ? props.snapshot.campaigns.find((c) => c.id === popup.id)
@@ -57,54 +118,131 @@ export function CampaignScreen(props: CampaignScreenProps) {
     setPopup(null)
     setName('')
     setConfirmation('')
+    setLocalError('')
   }
   const removedFocus = () => {
     close()
     requestAnimationFrame(() => createButton.current?.focus())
   }
 
-  async function run(action: () => Promise<boolean>, accepted?: () => void) {
-    if (pending.current || blocked) return
-    pending.current = true
+  function track(operation: () => Promise<boolean>): Promise<boolean> {
+    if (pending.current) return pending.current
     setLocalBusy(true)
-    setNotice('')
-    try {
-      if (await action()) accepted?.()
-    } finally {
-      pending.current = false
-      setLocalBusy(false)
+    setLocalError('')
+    const request = Promise.resolve()
+      .then(operation)
+      .catch((cause: unknown) => {
+        if (attempt.current) setUncertain(true)
+        setLocalError(capabilityErrorText(cause))
+        return false
+      })
+      .finally(() => {
+        pending.current = null
+        setLocalBusy(false)
+      })
+    pending.current = request
+    return request
+  }
+  function run(
+    input: CampaignManagementCommand,
+    accepted?: () => void,
+    maintenance = false
+  ): Promise<boolean> {
+    if (pending.current || attempt.current || (!maintenance && publicBlocked()))
+      return Promise.resolve(false)
+    const held = {
+      handle: props.begin(input, maintenance),
+      ...(accepted ? { accepted } : {})
     }
+    attempt.current = held
+    setNotice('')
+    return track(async () => {
+      if (!(await held.handle.completion)) {
+        setUncertain(true)
+        return false
+      }
+      held.accepted?.()
+      attempt.current = null
+      setUncertain(false)
+      return true
+    })
+  }
+  async function drain(): Promise<boolean> {
+    await pending.current
+    const held = attempt.current
+    if (!held) return true
+    return track(async () => {
+      const result = await held.handle.settle()
+      if (result === 'pending') {
+        setUncertain(true)
+        return false
+      }
+      if (result === 'confirmed') held.accepted?.()
+      attempt.current = null
+      setUncertain(false)
+      if (result === 'absent') setLocalError(message('campaign.commandAbsent'))
+      return true
+    })
   }
   async function reconcile() {
-    if (pending.current || props.busy) return
-    pending.current = true
-    setLocalBusy(true)
-    try {
-      const receipt = await props.reconcile()
-      if (!receipt) return
-      if (receipt.kind === 'restored') setNotice(message('campaign.restored'))
-      else if (receipt.kind === 'deleted') {
-        setPopup({ kind: 'trash' })
-        setNotice(message('campaign.deleted'))
-      } else removedFocus()
-    } finally {
-      pending.current = false
-      setLocalBusy(false)
+    if (pending.current || props.busy || maintenanceDraftCoordinator.isLocked())
+      return
+    if (attempt.current) {
+      await drain()
+      return
     }
+    await track(async () => {
+      const receipt = await props.reconcile(true)
+      if (!receipt) return false
+      if (receipt.kind === 'restored') setNotice(message('campaign.restored'))
+      else if (receipt.kind === 'deleted')
+        setNotice(message('campaign.deleted'))
+      else setNotice(message('campaign.reconciled'))
+      return true
+    })
+  }
+  function saveName(maintenance = false): Promise<boolean> {
+    const original = popupRef.current
+    const value = nameRef.current.trim()
+    if (!original || (original.kind !== 'new' && original.kind !== 'edit'))
+      return Promise.resolve(false)
+    if (!value || value.length > 100) {
+      setLocalError(message('campaign.nameInvalid'))
+      return Promise.resolve(false)
+    }
+    if (original.kind === 'edit') {
+      const current = props.snapshot.campaigns.find(
+        (campaign) => campaign.id === original.id
+      )
+      if (!current || current.name !== original.originalName) {
+        setLocalError(message('campaign.nameConflict'))
+        return Promise.resolve(false)
+      }
+      if (value === original.originalName) {
+        close()
+        return Promise.resolve(true)
+      }
+      return run(
+        { kind: 'rename', id: original.id, name: value },
+        close,
+        maintenance
+      )
+    }
+    return run({ kind: 'create', name: value }, close, maintenance)
   }
   const status = (
     <>
-      {props.error && (
+      {(localError || props.error) && (
         <p role="alert" className="error-message">
-          {props.error}
+          {localError || props.error}
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      {props.reconciliationPending && (
+      {(props.reconciliationPending || uncertain) && (
         <div className="campaign-reconciliation" role="status">
           <p>{message('campaign.reconciliationPending')}</p>
           <button
-            disabled={props.busy || localBusy}
+            disabled={props.busy || localBusy || maintenanceBlocked}
             onClick={() => void reconcile()}
           >
             {message('campaign.reconciliationCheck')}
@@ -115,15 +253,9 @@ export function CampaignScreen(props: CampaignScreenProps) {
   )
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (!name.trim()) return
-    void run(
-      () =>
-        editing
-          ? props.rename(editing.id, name.trim())
-          : props.create(name.trim()),
-      close
-    )
+    if (!publicBlocked()) void saveName()
   }
+
   const title =
     popup?.kind === 'new'
       ? message('campaign.new')
@@ -143,7 +275,12 @@ export function CampaignScreen(props: CampaignScreenProps) {
         <p role="status">{message('campaign.loading')}</p>
       )}
       {props.status === 'failure' && (
-        <button onClick={() => void props.retryCatalog()}>
+        <button
+          disabled={blocked}
+          onClick={() => {
+            if (!publicBlocked()) void props.retryCatalog()
+          }}
+        >
           {message('campaign.retry')}
         </button>
       )}
@@ -161,6 +298,7 @@ export function CampaignScreen(props: CampaignScreenProps) {
             className="primary"
             disabled={blocked}
             onClick={() => {
+              if (publicBlocked()) return
               setName('')
               setNotice('')
               setPopup({ kind: 'new' })
@@ -171,7 +309,9 @@ export function CampaignScreen(props: CampaignScreenProps) {
           {props.sessionRetry && (
             <button
               disabled={blocked}
-              onClick={() => void run(props.retrySession)}
+              onClick={() => {
+                if (!publicBlocked()) void track(props.retrySession)
+              }}
             >
               {message('campaign.sessionRetry')}
             </button>
@@ -194,7 +334,7 @@ export function CampaignScreen(props: CampaignScreenProps) {
                     aria-label={formatMessage('campaign.openNamed', {
                       name: c.name
                     })}
-                    onClick={() => void run(() => props.activate(c.id))}
+                    onClick={() => void run({ kind: 'activate', id: c.id })}
                   >
                     {message(
                       props.snapshot.activeCampaignId === c.id
@@ -209,9 +349,10 @@ export function CampaignScreen(props: CampaignScreenProps) {
                       name: c.name
                     })}
                     onClick={() => {
+                      if (publicBlocked()) return
                       setName(c.name)
                       setNotice('')
-                      setPopup({ kind: 'edit', id: c.id })
+                      setPopup({ kind: 'edit', id: c.id, originalName: c.name })
                     }}
                   >
                     <span aria-hidden="true">✎</span>
@@ -229,6 +370,7 @@ export function CampaignScreen(props: CampaignScreenProps) {
             <button
               disabled={blocked}
               onClick={() => {
+                if (publicBlocked()) return
                 setNotice('')
                 setPopup({ kind: 'trash' })
               }}
@@ -247,9 +389,11 @@ export function CampaignScreen(props: CampaignScreenProps) {
           role={popup.kind === 'delete' ? 'alertdialog' : 'dialog'}
           busy={blocked}
           dismissOnBackdrop={false}
-          onClose={
-            popup.kind === 'delete' ? () => setPopup({ kind: 'trash' }) : close
-          }
+          onClose={() => {
+            if (publicBlocked()) return
+            if (popup.kind === 'delete') setPopup({ kind: 'trash' })
+            else close()
+          }}
         >
           <header>
             <h2>{title}</h2>
@@ -260,7 +404,7 @@ export function CampaignScreen(props: CampaignScreenProps) {
             )}
           </header>
           {status}
-          {(popup.kind === 'new' || editing) && (
+          {(popup.kind === 'new' || popup.kind === 'edit') && (
             <>
               <form onSubmit={submit}>
                 <label htmlFor="campaign-name">
@@ -274,14 +418,20 @@ export function CampaignScreen(props: CampaignScreenProps) {
                   required
                   disabled={blocked}
                   placeholder={message('campaign.namePlaceholder')}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    if (!publicBlocked()) setName(e.target.value)
+                  }}
                 />
                 <div className="campaign-popup-actions">
                   <button
                     className="primary"
                     disabled={blocked || !name.trim()}
                   >
-                    {message(editing ? 'action.save' : 'campaign.createOpen')}
+                    {message(
+                      popup.kind === 'edit'
+                        ? 'action.save'
+                        : 'campaign.createOpen'
+                    )}
                   </button>
                 </div>
               </form>
@@ -297,13 +447,10 @@ export function CampaignScreen(props: CampaignScreenProps) {
                     className="campaign-danger"
                     disabled={blocked}
                     onClick={() =>
-                      void run(
-                        () => props.trash(editing.id),
-                        () => {
-                          removedFocus()
-                          setNotice(message('campaign.trashed'))
-                        }
-                      )
+                      void run({ kind: 'trash', id: editing.id }, () => {
+                        removedFocus()
+                        setNotice(message('campaign.trashed'))
+                      })
                     }
                   >
                     {message('campaign.toTrash')}
@@ -338,19 +485,16 @@ export function CampaignScreen(props: CampaignScreenProps) {
                       <button
                         disabled={blocked}
                         onClick={() =>
-                          void run(
-                            () => props.restore(c.id),
-                            () => {
-                              setNotice(message('campaign.restored'))
-                              requestAnimationFrame(() =>
-                                document
-                                  .querySelector<HTMLButtonElement>(
-                                    '.campaign-management-popup header button'
-                                  )
-                                  ?.focus()
-                              )
-                            }
-                          )
+                          void run({ kind: 'restore', id: c.id }, () => {
+                            setNotice(message('campaign.restored'))
+                            requestAnimationFrame(() =>
+                              document
+                                .querySelector<HTMLButtonElement>(
+                                  '.campaign-management-popup header button'
+                                )
+                                ?.focus()
+                            )
+                          })
                         }
                       >
                         {message('campaign.restore')}
@@ -359,6 +503,7 @@ export function CampaignScreen(props: CampaignScreenProps) {
                         className="campaign-danger"
                         disabled={blocked}
                         onClick={() => {
+                          if (publicBlocked()) return
                           setConfirmation('')
                           setNotice('')
                           setPopup({ kind: 'delete', id: c.id })
@@ -376,9 +521,16 @@ export function CampaignScreen(props: CampaignScreenProps) {
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                if (confirmation === deleting.name)
+                if (
+                  !publicBlocked() &&
+                  confirmationRef.current === deleting.name
+                )
                   void run(
-                    () => props.deleteForever(deleting.id, confirmation),
+                    {
+                      kind: 'delete',
+                      id: deleting.id,
+                      confirmationName: confirmationRef.current
+                    },
                     () => {
                       setPopup({ kind: 'trash' })
                       setNotice(message('campaign.deleted'))
@@ -399,13 +551,17 @@ export function CampaignScreen(props: CampaignScreenProps) {
                 autoFocus
                 disabled={blocked}
                 value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
+                onChange={(e) => {
+                  if (!publicBlocked()) setConfirmation(e.target.value)
+                }}
               />
               <div className="campaign-popup-actions">
                 <button
                   type="button"
                   disabled={blocked}
-                  onClick={() => setPopup({ kind: 'trash' })}
+                  onClick={() => {
+                    if (!publicBlocked()) setPopup({ kind: 'trash' })
+                  }}
                 >
                   {message('action.cancel')}
                 </button>

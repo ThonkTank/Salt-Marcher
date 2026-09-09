@@ -1,3 +1,4 @@
+import { desktopXpDraftId } from './desktop-xp-draft-id.js'
 import { DesktopXpAction } from './desktop-xp-action.js'
 import type { ReactNode } from 'react'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
@@ -33,6 +34,7 @@ function characterMatchesComparison(
 }
 
 export function DesktopCharacters(props: {
+  sceneId?: string
   campaignId?: string
   partyRevision?: number
   actions?: ReactNode
@@ -144,6 +146,15 @@ export function DesktopCharacters(props: {
                   <span>{member.languages.join(', ') || '—'}</span>
                   {props.campaignId && props.partyRevision !== undefined && (
                     <DesktopXpAction
+                      maintenanceId={
+                        props.sceneId
+                          ? desktopXpDraftId(
+                              props.campaignId,
+                              props.sceneId,
+                              member.id
+                            )
+                          : undefined
+                      }
                       campaignId={props.campaignId}
                       member={member}
                       revision={props.partyRevision}

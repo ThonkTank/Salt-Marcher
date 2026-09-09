@@ -52,6 +52,50 @@ describe('Campaign Workspace projection', () => {
     })
   })
 
+  it.each(['ready', 'failure', 'disposed'] as const)(
+    'follows repeated read supersession until the current owner is %s',
+    async (ending) => {
+      const reads = [
+        deferred<LiveSessionSnapshot>(),
+        deferred<LiveSessionSnapshot>(),
+        deferred<LiveSessionSnapshot>()
+      ]
+      const read = vi.fn<SaltMarcherApi['session']['read']>()
+      for (const pending of reads) read.mockReturnValueOnce(pending.promise)
+      const projection = new CampaignWorkspaceProjection(
+        api(vi.fn<SaltMarcherApi['campaigns']['list']>(), read)
+      )
+      projection.publishCampaigns(catalog(campaignA))
+      const flush = () => new Promise<void>((resolve) => setImmediate(resolve))
+      const first = projection.refreshActiveSession()
+      await flush()
+      const second = projection.refreshActiveSession()
+      await flush()
+      reads[0]!.resolve(session(1))
+      await flush()
+      const third = projection.refreshActiveSession()
+      await flush()
+      reads[1]!.resolve(session(2))
+      await flush()
+      const cause = new CapabilityError('internal', false)
+      if (ending === 'disposed') projection.dispose()
+      reads[2]!.resolve(
+        ending === 'failure' ? Promise.reject(cause) : session(3)
+      )
+      const outcomes = await Promise.all([first, second, third])
+      for (const outcome of outcomes)
+        expect(outcome).toMatchObject(
+          ending === 'ready'
+            ? { status: 'ready', value: { session: session(3) } }
+            : ending === 'failure'
+              ? { status: 'failure', cause }
+              : { status: 'stale' }
+        )
+      expect(read).toHaveBeenCalledTimes(3)
+      projection.dispose()
+    }
+  )
+
   it('reuses only the matching cached Session across A/B/A publication', () => {
     const projection = new CampaignWorkspaceProjection(
       api(

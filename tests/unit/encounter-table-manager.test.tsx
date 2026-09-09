@@ -144,7 +144,7 @@ describe('EncounterTableManager', () => {
     const saveButton = screen.getByRole('button', { name: 'Speichern' })
     fireEvent.click(saveButton)
     fireEvent.click(saveButton)
-    expect(save).toHaveBeenCalledOnce()
+    await waitFor(() => expect(save).toHaveBeenCalledOnce())
     expect(saveButton).toBeDisabled()
 
     resolveSave({ snapshot, saved: table })

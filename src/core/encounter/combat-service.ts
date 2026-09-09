@@ -341,6 +341,26 @@ export class CombatService {
     this.reduce(state, { kind: 'set-sources', sources })
   }
 
+  saveInitiative(values: readonly { id: string; initiative: number }[]): void {
+    const state = this.require()
+    if (state.phase !== 'initiative')
+      throw new CapabilityError('validation_failed', false)
+    const input = new Map(values.map((value) => [value.id, value.initiative]))
+    if (
+      values.some(
+        (value) => !state.sources.some((source) => source.rowId === value.id)
+      )
+    )
+      throw new CapabilityError('not_found', false)
+    this.reduce(state, {
+      kind: 'set-sources',
+      sources: state.sources.map((source) => ({
+        ...source,
+        initiative: input.get(source.rowId) ?? source.initiative
+      }))
+    })
+  }
+
   confirmInitiative(
     values: readonly { id: string; initiative: number }[]
   ): void {

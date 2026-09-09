@@ -1,5 +1,12 @@
+import { DraftResolutionDialog } from './draft-resolution-dialog.js'
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftResolution
+} from './maintenance-draft-coordinator.js'
+import type { CoreProcessStatus } from '../../shared/contracts/runtime.js'
+import { ProfileRecoveryNotice } from './profile-recovery-notice.js'
 import { hasMaintenanceDrafts } from './maintenance-drafts.js'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import type { ReleaseStatus } from '../../shared/contracts/release.js'
 import { ModalDialog } from './modal-dialog.js'
@@ -12,6 +19,7 @@ export function ReleaseSettings({
   const api = useCapabilityApi()
   const [status, setStatus] = useState<ReleaseStatus | null>(null)
   const [open, setOpen] = useState(false)
+  const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   const [backups, setBackups] = useState<
     Awaited<ReturnType<typeof api.backups.list>>
   >([])
@@ -24,6 +32,106 @@ export function ReleaseSettings({
     run: () => Promise<ReleaseStatus>
   } | null>(null)
   const [busy, setBusy] = useState(false)
+  const resolution = useRef<MaintenanceDraftResolution | null>(null)
+  const resolving = useRef(false)
+  const mounted = useRef(true)
+  const [needsDrafts, setNeedsDrafts] = useState(false)
+  const [draftErrors, setDraftErrors] = useState<
+    readonly { id: string; text: string }[]
+  >([])
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      if (!resolving.current) {
+        resolution.current?.release()
+        resolution.current = null
+      }
+    }
+  }, [])
+  function requestMaintenance(value: {
+    text: string
+    run: () => Promise<ReleaseStatus>
+  }) {
+    if (
+      resolution.current ||
+      busy ||
+      status?.phase === 'checking' ||
+      status?.phase === 'downloading' ||
+      status?.phase === 'maintenance'
+    )
+      return
+    resolution.current = maintenanceDraftCoordinator.begin()
+    setNeedsDrafts(hasMaintenanceDrafts())
+    setDraftErrors([])
+    setConfirmation(value)
+  }
+  function cancelMaintenance() {
+    if (resolving.current) return
+    resolution.current?.release()
+    resolution.current = null
+    setConfirmation(null)
+    setDraftErrors([])
+  }
+  async function confirmMaintenance(choice?: 'save' | 'discard') {
+    if (!confirmation || !resolution.current || resolving.current) return
+    if (hasMaintenanceDrafts() && !choice) {
+      setNeedsDrafts(true)
+      return
+    }
+    resolving.current = true
+    setBusy(true)
+    setDraftErrors([])
+    try {
+      const failures = await resolution.current.resolve(choice ?? 'check')
+      if (failures.length) {
+        setNeedsDrafts(hasMaintenanceDrafts())
+        setDraftErrors(
+          failures.map((failure) => ({
+            id: failure.id,
+            text: `${failure.label}: ${failure.message}`
+          }))
+        )
+        return
+      }
+      if (!mounted.current) return
+      const next = await confirmation.run()
+      setStatus(next)
+      setConfirmation(null)
+      if (next.phase !== 'maintenance') {
+        resolution.current.release()
+        resolution.current = null
+      }
+    } catch {
+      setDraftErrors([
+        {
+          id: 'maintenance',
+          text: 'Der Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen oder abbrechen.'
+        }
+      ])
+    } finally {
+      resolving.current = false
+      if (!mounted.current) {
+        resolution.current?.release()
+        resolution.current = null
+      } else setBusy(false)
+    }
+  }
+  useEffect(() => {
+    let active = true
+    const accept = (value: CoreProcessStatus) => {
+      if (active) setCoreStatus(value)
+    }
+    void api.runtime
+      .coreStatus()
+      .then(accept)
+      .catch(() => accept('unavailable'))
+    const unsubscribe = api.runtime.onCoreStatus(accept)
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [api])
   useEffect(() => {
     let active = true
     void api.updates
@@ -69,16 +177,16 @@ export function ReleaseSettings({
   }, [api, open])
   if (!status?.enabled) return null
   async function run(action: () => Promise<ReleaseStatus>) {
-    if (confirmation && hasMaintenanceDrafts()) {
-      setError(
-        'Bitte offene Änderungen zuerst im jeweiligen Editor speichern oder verwerfen. Danach kannst du den Neustart bestätigen.'
-      )
-      setConfirmation(null)
+    if (
+      resolution.current ||
+      busy ||
+      status?.phase === 'checking' ||
+      status?.phase === 'downloading' ||
+      status?.phase === 'maintenance'
+    )
       return
-    }
     setBusy(true)
     setError('')
-    setConfirmation(null)
     try {
       setStatus(await action())
     } catch {
@@ -90,8 +198,18 @@ export function ReleaseSettings({
     }
   }
   const maintenance = status.phase === 'maintenance'
+  const actionBusy =
+    busy ||
+    maintenance ||
+    status.phase === 'checking' ||
+    status.phase === 'downloading'
+  const closeBlocked = maintenance || confirmation !== null
   return (
     <>
+      <ProfileRecoveryNotice
+        status={coreStatus}
+        openRecovery={() => setOpen(true)}
+      />
       <button
         className="release-settings-trigger"
         onClick={() => setOpen(true)}
@@ -103,15 +221,15 @@ export function ReleaseSettings({
           className="release-settings"
           ariaLabel="Einstellungen: Updates und Sicherungen"
           onClose={() => setOpen(false)}
-          busy={busy || maintenance}
+          busy={closeBlocked}
         >
           <h2>Updates</h2>
           <p>Installierte Version: {status.currentVersion}</p>
           {!status.installed && (
             <button
-              disabled={busy}
+              disabled={actionBusy}
               onClick={() =>
-                setConfirmation({
+                requestMaintenance({
                   text: 'SaltMarcher auf diesem Rechner installieren und neu starten?',
                   run: () => api.updates.setup({ confirmed: true })
                 })
@@ -121,7 +239,7 @@ export function ReleaseSettings({
             </button>
           )}
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() => void run(() => api.updates.check())}
           >
             Jetzt prüfen
@@ -131,7 +249,7 @@ export function ReleaseSettings({
               <h3>Version {status.availableVersion}</h3>
               <p className="release-notes">{status.notes}</p>
               <button
-                disabled={busy || maintenance}
+                disabled={actionBusy}
                 onClick={() => void run(() => api.updates.download())}
               >
                 Herunterladen
@@ -147,9 +265,9 @@ export function ReleaseSettings({
           )}
           {status.phase === 'downloaded' && (
             <button
-              disabled={busy}
+              disabled={actionBusy}
               onClick={() =>
-                setConfirmation({
+                requestMaintenance({
                   text: 'Speichere offene Änderungen vor dem Neustart. Jetzt sichern, installieren und neu starten?',
                   run: () => api.updates.install({ confirmed: true })
                 })
@@ -160,14 +278,50 @@ export function ReleaseSettings({
           )}
           <p role="status">{status.message}</p>
           {error && <p role="alert">{error}</p>}
-          <h2>Vorhandene Profile</h2>
+          <button
+            disabled={actionBusy}
+            onClick={() =>
+              requestMaintenance({
+                text: 'Ein vollständiges Profil auswählen? Der aktuelle Stand wird vor der Übernahme gesichert.',
+                run: () =>
+                  api.updates.importProfile({
+                    confirmed: true,
+                    mode: 'profile'
+                  })
+              })
+            }
+          >
+            Profilordner übernehmen
+          </button>
+          <h2>Sicherung eines vorhandenen Profils übernehmen</h2>
+          {profiles
+            .filter((profile) => profile.id === 'local')
+            .map((profile) => (
+              <button
+                key={`direct-${profile.id}`}
+                disabled={actionBusy}
+                onClick={() =>
+                  requestMaintenance({
+                    text: `Das vollständige Profil von ${profile.label} auswählen? Der aktuelle Stand wird vorher gesichert.`,
+                    run: () =>
+                      api.updates.importProfile({
+                        confirmed: true,
+                        id: profile.id,
+                        mode: 'profile'
+                      })
+                  })
+                }
+              >
+                Profil von {profile.label} übernehmen
+              </button>
+            ))}
           {profiles.map((profile) => (
             <button
               key={profile.id}
-              disabled={busy || maintenance}
+              disabled={actionBusy}
               onClick={() =>
-                setConfirmation({
-                  text: 'Bitte die Quell-App vollständig schließen. Dieses Profil übernehmen? Der aktuelle Stand wird vorher gesichert.',
+                requestMaintenance({
+                  text: 'Eine geprüfte Sicherung dieses Profils auswählen und übernehmen? Der aktuelle Stand wird vorher gesichert.',
                   run: () =>
                     api.updates.importProfile({
                       confirmed: true,
@@ -176,13 +330,13 @@ export function ReleaseSettings({
                 })
               }
             >
-              {profile.label} übernehmen
+              Sicherung von {profile.label} auswählen
             </button>
           ))}
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() =>
-              setConfirmation({
+              requestMaintenance({
                 text: 'Mit einem leeren Profil neu anfangen? Das bisherige Profil wird vorher vollständig gesichert.',
                 run: () => api.updates.newProfile({ confirmed: true })
               })
@@ -201,12 +355,18 @@ export function ReleaseSettings({
               <li key={backup.id}>
                 {new Date(backup.createdAt).toLocaleString('de-DE')} · Version{' '}
                 {backup.version} · {(backup.bytes / 1024 / 1024).toFixed(1)} MB
-                · {backup.valid ? 'Geprüft' : 'Beschädigt'}{' '}
+                · {backup.valid ? 'Geprüft' : 'Beschädigt'} ·{' '}
+                {backup.scope === 'profile'
+                  ? 'Vollständiges Profil'
+                  : 'Ältere Kampagnendatensicherung'}{' '}
                 <button
-                  disabled={busy || maintenance || !backup.valid}
+                  disabled={actionBusy || !backup.valid}
                   onClick={() =>
-                    setConfirmation({
-                      text: 'Das gesamte Profil auf diese Sicherung zurücksetzen? Aktuelle Daten werden vorher gesichert.',
+                    requestMaintenance({
+                      text:
+                        backup.scope === 'profile'
+                          ? 'Das gesamte Profil auf diese Sicherung zurücksetzen? Aktuelle Daten werden vorher gesichert.'
+                          : 'Diese ältere Sicherung enthält nur Kampagnendaten. Sie ersetzt das Profil; zusätzliche Dateien des aktuellen Profils bleiben in der vorher erstellten Sicherung erhalten. Fortfahren?',
                       run: () =>
                         api.backups.restore({ id: backup.id, confirmed: true })
                     })
@@ -218,32 +378,32 @@ export function ReleaseSettings({
             ))}
           </ul>
           <button
-            disabled={busy || maintenance}
+            disabled={actionBusy}
             onClick={() =>
-              setConfirmation({
-                text: 'Ein vorhandenes Electron-Profil übernehmen? Das aktuelle Profil wird vorher gesichert; die Quelle bleibt erhalten.',
+              requestMaintenance({
+                text: 'Eine geprüfte SaltMarcher-Sicherung übernehmen? Der aktuelle Stand wird vorher gesichert; die Quelle bleibt erhalten.',
                 run: () => api.updates.importProfile({ confirmed: true })
               })
             }
           >
-            Vorhandenes Profil übernehmen
+            Sicherungsordner auswählen
           </button>
-          <button disabled={busy || maintenance} onClick={() => setOpen(false)}>
+          <button disabled={closeBlocked} onClick={() => setOpen(false)}>
             Schließen
           </button>
         </ModalDialog>
       )}
       {confirmation && (
-        <ModalDialog
-          className="release-settings"
-          ariaLabel="Neustart bestätigen"
-          role="alertdialog"
-          onClose={() => setConfirmation(null)}
-        >
-          <p>{confirmation.text}</p>
-          <button onClick={() => setConfirmation(null)}>Zurück</button>
-          <button onClick={() => void run(confirmation.run)}>Bestätigen</button>
-        </ModalDialog>
+        <DraftResolutionDialog
+          title="Neustart bestätigen"
+          text={confirmation.text}
+          errors={draftErrors}
+          draftLabels={maintenanceDraftCoordinator.dirtyLabels()}
+          needsDrafts={needsDrafts}
+          busy={busy}
+          cancel={cancelMaintenance}
+          confirm={(choice) => void confirmMaintenance(choice)}
+        />
       )}
     </>
   )

@@ -1,4 +1,46 @@
 export const workspaceMessagesDe = {
+  'travel.routeDraft': 'Routenentwurf',
+  'travel.saveRoute': 'Route speichern',
+  'travel.planConflict':
+    'Die gespeicherte Route wurde inzwischen geändert. Verwirf den Entwurf, um den aktuellen Stand zu laden.',
+  'travel.commands': 'Reiseaktionen',
+  'travel.commandConflict':
+    'Die Reise oder Szene wurde inzwischen geändert. Bitte den alten Auftrag verwerfen und neu prüfen.',
+  'travel.commandAbsent':
+    'Der Reiseauftrag wurde nicht ausgeführt. Erneut versuchen oder verwerfen.',
+
+  'rest.confirmBeforeSave':
+    'Bitte bestätige die gewünschte Rast zuerst im Rastfenster oder verwirf die Auswahl.',
+  'sceneParty.commandConflict':
+    'Szene oder Gruppe wurden inzwischen geändert. Bitte den Entwurf verwerfen und neu öffnen.',
+  'desktop.confirmSceneChange': 'Szene wechseln',
+  'desktop.resolveBeforeSceneChange':
+    'Klär zuerst die offenen Änderungen. Danach wird die ausgewählte Szene geöffnet.',
+  'desktop.confirmRosterChange': 'Besetzung ändern',
+  'desktop.resolveBeforeRosterChange':
+    'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
+  'travel.resolveTitle': 'Reiseaktion bestätigen',
+  'travel.resolveText':
+    'Es gibt offene Änderungen. Bitte vor der Reiseaktion speichern oder verwerfen.',
+  'scene.resolveTitle': 'Szene ändern',
+  'scene.resolveText':
+    'Vor dieser Szenenänderung die offenen Änderungen speichern oder verwerfen.',
+  'scene.commandConflict':
+    'Die Szene wurde inzwischen geändert. Bitte den offenen Auftrag verwerfen und den aktuellen Stand prüfen.',
+  'combat.commandConflict':
+    'Der Kampf wurde inzwischen geändert. Bitte den offenen Auftrag verwerfen und den aktuellen Stand prüfen.',
+  'combat.resolveTitle': 'Kampfaktion fortsetzen',
+  'combat.resolveText':
+    'Vor dieser Kampfaktion die offenen Änderungen speichern oder verwerfen.',
+  'combat.hpChooseAction':
+    'Bitte für den eingegebenen HP-Betrag zuerst Schaden oder Heilung wählen, oder den Betrag verwerfen.',
+  'group.archiveTitle': 'Gruppe archivieren',
+  'group.resolveBeforeArchive':
+    'Vor dem Archivieren die offenen Änderungen speichern oder verwerfen.',
+  'group.retryLifecycle': 'Auftrag erneut ausführen',
+  'group.discardLifecycle': 'Auftrag verwerfen',
+  'group.lifecycleConflict':
+    'Die Gruppe wurde inzwischen geändert oder entfernt. Bitte den offenen Auftrag verwerfen und die Gruppe erneut prüfen.',
   'rest.action': 'Rasten',
   'rest.short': 'Kurze Rast',
   'rest.long': 'Lange Rast',
@@ -9,6 +51,11 @@ export const workspaceMessagesDe = {
   'rest.unknown': 'Basis ungesichert',
   'rest.shortDue': 'Kurze Rast empfohlen',
   'rest.longDue': 'Lange Rast empfohlen',
+  'xp.chooseAction':
+    'Bitte zuerst +, − oder Überschreiben wählen. Der Betrag wurde noch nicht verbucht.',
+  'desktop.confirmWindowChange': 'Fensteränderung bestätigen',
+  'desktop.resolveBeforeWindowChange':
+    'Es gibt offene Änderungen. Bitte diese vor dem Schließen oder Minimieren speichern oder verwerfen.',
   'xp.action': 'XP',
   'xp.amount': 'Betrag',
   'xp.set': 'Überschreiben',
@@ -61,6 +108,11 @@ export const workspaceMessagesDe = {
   'character.languagesTitle': 'Sprachen',
   'character.nameError': 'Name erforderlich (max. 100 Zeichen).',
   'character.valueError': 'Bitte einen gültigen Wert eingeben.',
+  'character.checkSavedState': 'Speicherstatus erneut prüfen',
+  'character.commandConflict':
+    'Der Charakterstand wurde inzwischen geändert. Bitte den Entwurf verwerfen und neu öffnen.',
+  'character.commandAbsent':
+    'Die Änderung wurde nicht gespeichert. Der Entwurf kann erneut gespeichert oder verworfen werden.',
   'character.conflict':
     'Dieser Charakter wurde inzwischen geändert. Bitte erneut öffnen; deine Eingaben bleiben bis dahin erhalten.',
   'character.identifier': 'Kennung: {id}',

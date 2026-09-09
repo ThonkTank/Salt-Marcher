@@ -88,6 +88,9 @@ export const generatorMessagesDe = {
     'Der Encounter-Multiplikator für Gegnerzahl und Partygröße wird einbezogen.',
   'g.reward.status.loading': 'Kampagnenregel wird geladen …',
   'g.reward.status.saving': 'Kampagnenregel wird gespeichert …',
+  'g.reward.check': 'Ergebnis erneut prüfen',
+  'g.reward.status.unknown':
+    'Der Ausgang des Speicherns ist noch unklar. Bitte Ergebnis erneut prüfen.',
   'g.reward.status.saved': 'Kampagnenregel gespeichert.',
   'g.reward.status.stale':
     'Die Regel wurde zwischenzeitlich geändert. Der aktuelle Stand wurde geladen.'

@@ -215,6 +215,38 @@ describe('Session map and travel console', () => {
       document.documentElement.dataset['theme'] = 'light'
     })
 
+    const beforeSave = await readTravelState(client)
+    await client.$('button=Route speichern').click()
+    await client.waitUntil(
+      async () =>
+        (await readTravelState(client)).routePlan.revision >
+        beforeSave.routePlan.revision,
+      { timeout: 5_000, timeoutMsg: 'Route save did not persist.' }
+    )
+    const saved = await readTravelState(client)
+    expect(saved.routePlan.plan).toMatchObject({
+      waypoints: [{ q: 1, r: 0 }],
+      multiplier: 1
+    })
+    expect(saved.context.travel).toEqual(beforeSave.context.travel)
+    expect(saved.context.session.scene.revision).toBe(
+      beforeSave.context.session.scene.revision
+    )
+    await client.refresh()
+    await resumeCampaignFromScreen(client)
+    await client.$('.shell-quick-actions').$('button=Reise').click()
+    await openSceneWindow(client, 'map', true)
+    await client.$('button=Route planen').click()
+    await client.waitUntil(
+      () => client.$('button[aria-label="Reise starten"]').isEnabled(),
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Saved route was not restored after renderer restart.'
+      }
+    )
+    expect((await readTravelState(client)).routePlan).toEqual(saved.routePlan)
+    await expect(await client.$('button=Route speichern')).toBeDisabled()
+
     await (await client.$('button[aria-label="Reise starten"]')).click()
     const pause = await client.$('button[aria-label="Pause"]')
     await client.waitUntil(() => pause.isEnabled(), {
@@ -256,23 +288,29 @@ describe('Session map and travel console', () => {
     )
 
     await (await client.$('button=Route planen')).click()
-    await client.execute(() => {
-      const map = document.querySelector<HTMLElement>(
-        '[role="region"][aria-label="Hex-Karte Reiseküste"]'
-      )
-      map?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
-      )
-    })
     await (
       await client.$('.travel-route-facts*=4 Std.')
-    ).waitForExist({
-      timeout: 5_000
-    })
+    ).waitForExist({ timeout: 5_000 })
+    expect((await readTravelState(client)).routePlan).toEqual(saved.routePlan)
+    await expect(await client.$('.travel-multiplier')).toHaveText('1×')
+    await (await client.$('button[aria-label="Schneller"]')).click()
+    await expect(await client.$('.travel-multiplier')).toHaveText('2×')
     await (await client.$('button[aria-label="Schneller"]')).click()
     await expect(await client.$('.travel-multiplier')).toHaveText('5×')
     await (await client.$('button[aria-label="Schneller"]')).click()
     await expect(await client.$('.travel-multiplier')).toHaveText('10×')
+    await client.$('button=Route speichern').click()
+    await client.waitUntil(
+      async () =>
+        (await readTravelState(client)).routePlan.plan?.multiplier === 10,
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Updated route multiplier did not persist.'
+      }
+    )
+    await client
+      .$('button[aria-label="Reise starten"]')
+      .waitForClickable({ timeout: 5_000 })
     await (await client.$('button[aria-label="Reise starten"]')).click()
 
     const completed = await client.waitUntil(
@@ -381,4 +419,16 @@ function readRuntimeEvidence(client: WdioBrowser): Promise<RuntimeEvidence> {
       throw new Error('E2E runtime evidence bridge is unavailable.')
     return await e2eWindow.__saltMarcherE2e.runtimeEvidence()
   }) as unknown as Promise<RuntimeEvidence>
+}
+
+async function readTravelState(client: WdioBrowser) {
+  return client.execute(async () => {
+    const campaignId = (await window.saltMarcher.campaigns.list())
+      .activeCampaignId!
+    const session = await window.saltMarcher.session.read({ campaignId })
+    return window.saltMarcher.hexTravel.readState({
+      campaignId,
+      sceneId: session.scene.focusedSceneId
+    })
+  })
 }

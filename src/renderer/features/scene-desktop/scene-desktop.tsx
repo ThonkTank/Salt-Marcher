@@ -1,3 +1,7 @@
+import { useCombatCommands } from '../encounter/use-combat-commands.js'
+import { desktopXpDraftId } from './desktop-xp-draft-id.js'
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
@@ -27,7 +31,14 @@ import './scene-desktop.css'
 export function SceneDesktop(
   props: WorkspaceSurfaceProps & { travel: SessionTravelSlots }
 ) {
-  const { model, actions } = useSessionWorkspaceController({
+  const {
+    model,
+    actions,
+    lifecycleNotice,
+    sceneNotice,
+    sceneDialog,
+    sceneBusy
+  } = useSessionWorkspaceController({
     ...props,
     followCombat: false
   })
@@ -35,6 +46,18 @@ export function SceneDesktop(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
   const { projection, snapshot } = useSceneDesktop(props.campaignId, focused.id)
+  const transition = useDraftTransition(`${props.campaignId}:${focused.id}`, {
+    title: message('desktop.confirmWindowChange'),
+    text: message('desktop.resolveBeforeWindowChange')
+  })
+  const editingBlocked = useMaintenanceEditingBlocked()
+  const sceneTransition = useDraftTransition(
+    `${props.campaignId}:${focused.id}`,
+    {
+      title: message('desktop.confirmSceneChange'),
+      text: message('desktop.resolveBeforeSceneChange')
+    }
+  )
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
   const requestedFocus = useRef<{ sceneId: string; windowId: string } | null>(
@@ -81,6 +104,11 @@ export function SceneDesktop(
       window.removeEventListener('resize', measure)
     }
   }, [])
+  const combatCommands = useCombatCommands(
+    props.campaignId,
+    focused.id,
+    props.onError
+  )
   const windows = snapshot.state?.windows ?? []
   const visible = windows.filter((window) => !window.minimized)
   const raised = visible.at(-1)?.id
@@ -96,7 +124,12 @@ export function SceneDesktop(
           <select
             aria-label={message('desktop.scene')}
             value={focused.id}
-            onChange={(event) => actions.focusScene(event.target.value)}
+            disabled={editingBlocked || sceneBusy}
+            onChange={(event) => {
+              const sceneId = event.target.value
+              if (sceneId !== focused.id)
+                sceneTransition.request(() => actions.focusScene(sceneId))
+            }}
           >
             {props.snapshot.scene.scenes.map((scene) => (
               <option key={scene.id} value={scene.id}>
@@ -174,17 +207,24 @@ export function SceneDesktop(
                 .map((other) => desktopWindowBounds(other, size))}
               preview={(side) => setPreview({ sceneId: focused.id, side })}
               dispatch={(action) => {
-                projection.dispatch(action)
-                if (action.type === 'close' || action.type === 'minimize')
-                  launcher.current?.focus()
+                if (action.type === 'close' || action.type === 'minimize') {
+                  transition.request(() => {
+                    projection.dispatch(action)
+                    launcher.current?.focus()
+                  })
+                } else projection.dispatch(action)
               }}
             >
               {window.kind === 'characters' ? (
                 <DesktopCharacters
+                  sceneId={focused.id}
                   campaignId={props.campaignId}
                   partyRevision={props.snapshot.party.revision}
                   actions={
                     <DesktopRosterActions
+                      characterDraftIds={focused.partyMemberIds.map((id) =>
+                        desktopXpDraftId(props.campaignId, focused.id, id)
+                      )}
                       key={focused.id}
                       campaignId={props.campaignId}
                       sceneId={focused.id}
@@ -257,12 +297,14 @@ export function SceneDesktop(
               ) : window.kind === 'combat' ? (
                 <div className="desktop-combat">
                   <EncounterCrumbs
+                    commands={combatCommands}
                     snapshot={props.snapshot}
                     loot={model.loot}
                     setSnapshot={props.setSnapshot}
                     onError={props.onError}
                   />
                   <SessionEncounterPanel
+                    commands={combatCommands}
                     snapshot={props.snapshot}
                     loot={model.loot}
                     setSnapshot={props.setSnapshot}
@@ -287,6 +329,7 @@ export function SceneDesktop(
                 <SessionLootPanel model={model.groups} actions={actions} />
               ) : (
                 <DesktopOverview
+                  busy={sceneBusy || editingBlocked}
                   model={model}
                   actions={actions}
                   openCharacters={() =>
@@ -326,6 +369,14 @@ export function SceneDesktop(
           <small>{message('desktop.empty')}</small>
         )}
       </nav>
+      {lifecycleNotice}
+      {combatCommands.notice}
+      {combatCommands.dialog}
+      {transition.dialog}
+      {sceneTransition.dialog}
+      {sceneDialog}
+      {sceneNotice}
+      {props.travel.notice}
       <SessionDialogHost
         model={model}
         actions={actions}

@@ -52,6 +52,25 @@ export class CharacterLootService {
     return characterLootLedgerSchema.parse(context.ledger.ledger(characterId))
   }
 
+  correctionStatus(input: CorrectCharacterLootInput) {
+    const parsed = correctCharacterLootInputSchema.parse(input)
+    const context = this.context()
+    const receipt = context.journal.read({
+      commandId: parsed.commandId,
+      operationType: 'correct_ledger',
+      requestFingerprint: fingerprintExcluding(parsed, ['commandId']),
+      targetId: parsed.characterId,
+      schema: characterLootLedgerSchema
+    })
+    this.requireCharacter(context, parsed.characterId)
+    return {
+      receipt: receipt?.result ?? null,
+      ledger: characterLootLedgerSchema.parse(
+        context.ledger.ledger(parsed.characterId)
+      )
+    }
+  }
+
   correct(input: CorrectCharacterLootInput): CharacterLootLedger {
     const parsed = correctCharacterLootInputSchema.parse(input)
     return this.transact(() => {

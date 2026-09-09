@@ -1,3 +1,4 @@
+import type { MaintenanceDraftHandle } from '../../shell/maintenance-draft-coordinator.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type {
   EncounterTableSnapshot,
@@ -16,6 +17,7 @@ export type CreatureFactsPort = Readonly<{
 
 /** Generic render contract used by catalog and nested workspace flows. */
 export type WorldFactionEditorRenderProps = Readonly<{
+  maintenanceId?: string
   faction: WorldFaction | null
   tableSnapshot: EncounterTableSnapshot
   close: () => void
@@ -23,7 +25,7 @@ export type WorldFactionEditorRenderProps = Readonly<{
   saved: (result: WorldFactionSaveResult) => void
   requestTableCreation: (
     saved: (result: EncounterTableSaveResult) => void
-  ) => void
+  ) => MaintenanceDraftHandle
   onError: (message: string) => void
   inspect: (creature: Creature) => void
   creatures: CreatureFactsPort

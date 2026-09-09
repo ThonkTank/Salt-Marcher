@@ -1,5 +1,8 @@
-import { useCallback, useState } from 'react'
-import type { SessionPlannerWorkspace } from '../../../shared/contracts/session-planner.js'
+import { useCallback, useRef, useState } from 'react'
+import type {
+  SessionPlannerCommand,
+  SessionPlannerWorkspace
+} from '../../../shared/contracts/session-planner.js'
 import type {
   AsyncCommandCoordinator,
   AsyncCommandOutcome
@@ -15,6 +18,7 @@ type Dependencies = Readonly<{
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   mergeCatalog: (sessions: SessionPlannerWorkspace['sessions']) => void
   resetEncounterQuery: () => void
+  failed?: (cause: unknown, reconcile?: () => Promise<boolean>) => void
   onError: (message: string) => void
 }>
 
@@ -22,6 +26,7 @@ type Dependencies = Readonly<{
 export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
   const {
     applyWorkspace,
+    failed,
     coordinator,
     mergeCatalog,
     onError,
@@ -29,16 +34,45 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     read,
     resetEncounterQuery
   } = dependencies
-  const [nameDialog, setNameDialog] = useState<'create' | 'rename' | null>(null)
-  const [name, setName] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [nameDialog, setNameDialogState] = useState<'create' | 'rename' | null>(
+    null
+  )
+  const [name, setNameState] = useState('')
+  const nameValue = useRef('')
+  const setName = useCallback((value: string) => {
+    nameValue.current = value
+    setNameState(value)
+  }, [])
+  const [deleteConfirm, setDeleteConfirmState] = useState(false)
+
+  const dialogs = useRef<{
+    name: { kind: 'create' | 'rename'; sessionId: string | null } | null
+    delete: boolean
+  }>({ name: null, delete: false })
+  const setNameDialog = useCallback(
+    (value: 'create' | 'rename' | null) => {
+      dialogs.current.name = value
+        ? { kind: value, sessionId: read().workspace?.session.id ?? null }
+        : null
+      setNameDialogState(value)
+    },
+    [read]
+  )
+  const setDeleteConfirm = useCallback((value: boolean) => {
+    dialogs.current.delete = value
+    setDeleteConfirmState(value)
+  }, [])
 
   const execute = useCallback(
     async (
       target: SessionPlannerAuthority,
-      transport: () => Promise<SessionPlannerWorkspace>,
+      command: SessionPlannerCommand['command'],
       accepted?: () => void
     ): Promise<SessionPlannerWorkspace | null> => {
+      const input: SessionPlannerCommand = {
+        commandId: crypto.randomUUID(),
+        command: structuredClone(command)
+      }
       let published = false
       const entityKey = target.workspace
         ? `session:${target.workspace.session.id}`
@@ -47,7 +81,7 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
         scope: 'planner.session-command',
         entityKey,
         mode: 'queue',
-        execute: transport,
+        execute: () => planner.executeCommand(input),
         accept: (next) => {
           if (sameAuthority(read(), target)) {
             applyWorkspace(next)
@@ -58,18 +92,35 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
           }
         }
       })
+      if (outcome.status === 'failure')
+        failed?.(outcome.cause, async () => {
+          const status = await planner.commandStatus(input)
+          if (status.receipt && sameAuthority(read(), target)) {
+            applyWorkspace(status.workspace)
+            accepted?.()
+          } else if (
+            !status.receipt &&
+            !read().dirty &&
+            sameAuthority(read(), target)
+          ) {
+            applyWorkspace(status.workspace)
+          } else {
+            mergeCatalog(status.workspace.sessions)
+          }
+          return true
+        })
       reportCommandFailure(outcome, onError)
       return outcome.status === 'success' && published ? outcome.value : null
     },
-    [applyWorkspace, coordinator, mergeCatalog, onError, read]
+    [applyWorkspace, coordinator, failed, mergeCatalog, onError, planner, read]
   )
 
   const saveDraft =
     useCallback(async (): Promise<SessionPlannerWorkspace | null> => {
       const target = read()
       if (!target.draft) return target.workspace
-      return execute(target, () => planner.save(target.draft!))
-    }, [execute, planner, read])
+      return execute(target, { kind: 'save', input: target.draft })
+    }, [execute, read])
 
   const openSession = useCallback(
     async (sessionId: string): Promise<void> => {
@@ -77,23 +128,31 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
       if (!target.workspace || sessionId === target.workspace.session.id) return
       const opened = await execute(
         target,
-        () =>
-          target.dirty && target.draft
-            ? planner.switch(sessionId, target.draft)
-            : planner.open(sessionId),
+        target.dirty && target.draft
+          ? {
+              kind: 'switch',
+              input: { targetSessionId: sessionId, source: target.draft }
+            }
+          : { kind: 'open', input: { sessionId } },
         resetEncounterQuery
       )
       void opened
     },
-    [execute, planner, read, resetEncounterQuery]
+    [execute, read, resetEncounterQuery]
   )
 
   const submitName = useCallback(async (): Promise<void> => {
-    const operation = nameDialog
-    const requestedName = name
+    const operation = dialogs.current.name
+    const requestedName = nameValue.current
     if (!operation || !requestedName.trim()) return
     let target = read()
     if (!target.workspace) return
+    if (target.workspace.session.id !== operation.sessionId) {
+      onError(
+        'Die Sitzung des Namensdialogs hat sich geändert. Bitte den Dialog schließen und erneut öffnen.'
+      )
+      return
+    }
     if (target.dirty) {
       const saved = await saveDraft()
       if (!saved) return
@@ -103,17 +162,21 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     if (!current) return
     await execute(
       target,
-      () =>
-        operation === 'create'
-          ? planner.create(requestedName)
-          : planner.rename(
-              current.session.id,
-              current.session.revision,
-              requestedName
-            ),
-      () => setNameDialog(null)
+      operation.kind === 'create'
+        ? { kind: 'create', input: { name: requestedName } }
+        : {
+            kind: 'rename',
+            input: {
+              sessionId: current.session.id,
+              expectedRevision: current.session.revision,
+              name: requestedName
+            }
+          },
+      () => {
+        if (dialogs.current.name === operation) setNameDialog(null)
+      }
     )
-  }, [execute, name, nameDialog, planner, read, saveDraft])
+  }, [execute, onError, read, saveDraft, setNameDialog])
 
   const deleteSession = useCallback(async (): Promise<void> => {
     const target = read()
@@ -121,12 +184,38 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     if (!current) return
     await execute(
       target,
-      () => planner.delete(current.session.id, current.session.revision),
+      {
+        kind: 'delete',
+        input: {
+          sessionId: current.session.id,
+          expectedRevision: current.session.revision
+        }
+      },
       () => setDeleteConfirm(false)
     )
-  }, [execute, planner, read])
+  }, [execute, read, setDeleteConfirm])
+
+  const settleDialogs = async (
+    choice: 'save' | 'discard'
+  ): Promise<boolean> => {
+    if (choice === 'discard') setNameDialog(null)
+    else if (dialogs.current.name) {
+      if (!nameValue.current.trim())
+        throw new Error(
+          'Bitte einen Sitzungsnamen eingeben oder die offenen Änderungen verwerfen.'
+        )
+      await submitName()
+      if (dialogs.current.name) return false
+    }
+    // A general maintenance decision never confirms a pending destructive action.
+    setDeleteConfirm(false)
+    return true
+  }
 
   return {
+    hasOpenDialog: () =>
+      Boolean(dialogs.current.name) || dialogs.current.delete,
+    settleDialogs,
     nameDialog,
     name,
     deleteConfirm,
@@ -146,6 +235,7 @@ function sameAuthority(
 ): boolean {
   return (
     current.authoredRevision === target.authoredRevision &&
+    current.workspace?.session.id === target.workspace?.session.id &&
     Boolean(current.workspace) === Boolean(target.workspace)
   )
 }

@@ -10,6 +10,7 @@ import type {
   LootSceneProjection,
   MoveTreasureInput,
   Treasure,
+  TreasureEditorCommand,
   TreasureAnchor,
   UpdateTreasureInput
 } from '../../shared/contracts/loot.js'
@@ -116,6 +117,10 @@ export class LootService {
     return this.queries.inbox(input)
   }
 
+  editorStatus(input: TreasureEditorCommand) {
+    return this.commands.editorStatus(input)
+  }
+
   create(input: CreateTreasureInput): Treasure {
     return this.commands.create(input)
   }
@@ -128,8 +133,16 @@ export class LootService {
     return this.commands.move(input)
   }
 
+  generatedAcceptanceStatus(input: AcceptGeneratedTreasureInput) {
+    return this.commands.generatedAcceptanceStatus(input)
+  }
+
   acceptGenerated(input: AcceptGeneratedTreasureInput): Treasure {
     return this.commands.acceptGenerated(input)
+  }
+
+  distributionStatus(input: CompleteLootDistributionInput) {
+    return this.distribution.status(input)
   }
 
   distribute(input: CompleteLootDistributionInput): LootDistributionResult {
@@ -138,6 +151,10 @@ export class LootService {
 
   ledger(characterId: string): CharacterLootLedger {
     return this.characters.read(characterId)
+  }
+
+  ledgerCorrectionStatus(input: CorrectCharacterLootInput) {
+    return this.characters.correctionStatus(input)
   }
 
   correctLedger(input: CorrectCharacterLootInput): CharacterLootLedger {

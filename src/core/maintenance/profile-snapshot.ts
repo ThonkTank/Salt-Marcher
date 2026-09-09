@@ -32,6 +32,14 @@ export async function onlineBackupDatabase(
         copyFileSync(`${source}${suffix}`, `${snapshot}${suffix}`)
     database = new Database(snapshot, { readonly: true, fileMustExist: true })
     await database.backup(destination)
+    // A completed backup is standalone: even read-only inspection must not
+    // create WAL/SHM files next to its immutable inventory.
+    const completed = new Database(destination, { fileMustExist: true })
+    try {
+      completed.pragma('journal_mode = DELETE')
+    } finally {
+      completed.close()
+    }
   } finally {
     database?.close()
     rmSync(scratch, { recursive: true, force: true })
@@ -68,6 +76,10 @@ export async function snapshotProfile(
         force: true
       })
   syncTree(target)
+  if (JSON.stringify(inventory(source)) !== JSON.stringify(files))
+    throw new Error(
+      'Das Quellprofil wurde während der Sicherung verändert. Bitte die Quell-App schließen und erneut versuchen.'
+    )
 }
 export function migrateProfile(
   root: string,

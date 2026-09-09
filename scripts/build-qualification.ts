@@ -5,5 +5,6 @@ runNodeCli(electronViteEntry, ['build'], {
   SALT_MARCHER_BUILD_TARGET: 'qualification'
 })
 runNodeCli(tsxEntry, ['scripts/build-passive-preload.ts'])
+runNodeCli(tsxEntry, ['scripts/build-maintenance-launcher.ts'])
 runNodeCli(tsxEntry, ['scripts/write-build-info.ts', '--channel', 'release'])
 runNodeCli(tsxEntry, ['scripts/write-build-receipt.ts'])

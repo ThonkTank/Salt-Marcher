@@ -504,7 +504,8 @@ export class CampaignStore {
 
   visitCampaignDatabase<T>(
     campaignId: string,
-    visitor: (database: Database.Database) => T
+    visitor: (database: Database.Database) => T,
+    access: 'read' | 'write' = 'write'
   ): T | null {
     const row = this.installationOwner.registry
       .readyRows()
@@ -515,9 +516,13 @@ export class CampaignStore {
     const path = row.trashedAt
       ? `${this.filesystem.trashDirectory(row.id)}/campaign.sqlite`
       : this.filesystem.campaignPath(row.id)
-    const database = new Database(path)
+    const database = new Database(path, {
+      readonly: access === 'read',
+      fileMustExist: true
+    })
     try {
-      configureSqlite(database)
+      if (access === 'write') configureSqlite(database)
+      else database.pragma('busy_timeout = 5000')
       assertSchemaVersion(database, undefined, 'campaign')
       return visitor(database)
     } finally {

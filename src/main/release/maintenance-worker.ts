@@ -1,13 +1,14 @@
 import { utilityProcess } from 'electron'
 import { z } from 'zod'
 import { outputPath } from '../application-lifecycle/runtime-paths.js'
-export function maintenanceWorker(input: {
-  root: string
-  version: string
-  operation: 'list' | 'prepare' | 'activate' | 'commit' | 'rollback' | 'restore'
-  source?: string
-  id?: string
-}): Promise<unknown> {
+import {
+  maintenanceWorkerRequestSchema,
+  type MaintenanceWorkerRequest
+} from '../../shared/contracts/maintenance.js'
+export function maintenanceWorker(
+  input: MaintenanceWorkerRequest
+): Promise<unknown> {
+  maintenanceWorkerRequestSchema.parse(input)
   return new Promise((resolve, reject) => {
     const worker = utilityProcess.fork(
       outputPath('main', 'maintenance.js'),

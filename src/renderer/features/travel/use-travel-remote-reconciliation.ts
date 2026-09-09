@@ -49,6 +49,7 @@ export function useTravelRemoteReconciliation<P, S, M, E>(options: {
     })
 
     return () => {
+      deactivate()
       unsubscribe()
       coordinator.cancelAll()
     }

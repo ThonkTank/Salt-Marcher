@@ -12,9 +12,16 @@ export const currentFormatRootRegistrations = Object.freeze([
   'world-factions',
   'world-locations',
   'party',
+  'session-planner-receipts',
   'world-npcs',
   'campaign-import',
+  'hex-travel-receipts',
+  'party-character-receipts',
+  'hex-route-plans',
+  'scene-group-receipts',
+  'scene-party-receipts',
   'schema-metadata',
+  'combat-receipts',
   'schema-version'
 ] as const)
 

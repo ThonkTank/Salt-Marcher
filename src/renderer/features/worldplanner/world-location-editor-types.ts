@@ -1,3 +1,4 @@
+import type { MaintenanceDraftHandle } from '../../shell/maintenance-draft-coordinator.js'
 import type {
   EncounterTable,
   WorldFaction
@@ -84,8 +85,12 @@ export type WorldLocationEditorRenderProps = Readonly<{
 }>
 
 export type WorldLocationRelatedCreation = Readonly<{
-  requestFactionCreation: (created: (faction: WorldFaction) => void) => void
-  requestTableCreation: (created: (table: EncounterTable) => void) => void
+  requestFactionCreation: (
+    created: (faction: WorldFaction) => void
+  ) => MaintenanceDraftHandle
+  requestTableCreation: (
+    created: (table: EncounterTable) => void
+  ) => MaintenanceDraftHandle
 }>
 
 export type WorldLocationPlacementDialogRenderProps = Readonly<{

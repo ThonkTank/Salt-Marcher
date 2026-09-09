@@ -1,15 +1,18 @@
+import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
+import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { generationSeed } from './generation-seed.js'
 import { groupDraftEntries, newGroupDraftKey } from './group-draft.js'
-import {
-  applyCombatCommandResult,
-  applySceneGroupCommandResult
-} from './session-patches.js'
+import { applySceneGroupCommandResult } from './session-patches.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
-import { useGroupManagerLootCommands } from './use-group-manager-loot-commands.js'
+import { acknowledgeGroupSave } from './group-manager-save-result.js'
+import {
+  createGroupManagerLootCommands,
+  useGroupManagerLootCommands
+} from './use-group-manager-loot-commands.js'
 
 const tuning: EncounterTuningOverride = {
   difficulty: 'preset',
@@ -18,7 +21,7 @@ const tuning: EncounterTuningOverride = {
   diversity: 'preset'
 }
 
-export function useGroupManagerCommands(
+export function createGroupManagerCommands(
   input: GroupManagerCommandInput,
   commands: AsyncCommandCoordinator
 ): Readonly<{
@@ -29,10 +32,9 @@ export function useGroupManagerCommands(
     key?: string | null
   ) => Promise<boolean>
   commitLoot: ReturnType<typeof useGroupManagerLootCommands>['commitLoot']
-  save: () => Promise<void>
-  archive: () => Promise<void>
-  joinCombat: () => Promise<void>
+  save: () => Promise<LiveSessionSnapshot | null>
   busy: boolean
+  pending: boolean
 }> {
   const {
     canGenerate,
@@ -46,7 +48,7 @@ export function useGroupManagerCommands(
     snapshot,
     state
   } = input
-  const lootCommands = useGroupManagerLootCommands(input, commands)
+  const lootCommands = createGroupManagerLootCommands(input, commands)
 
   async function generateRoster(mode: 'fill' | 'replace'): Promise<void> {
     const key = state.activeKey
@@ -110,57 +112,65 @@ export function useGroupManagerCommands(
     } else if (outcome.status === 'failure') failCommand(key, outcome.cause)
   }
 
-  async function save(): Promise<void> {
+  async function save(): Promise<LiveSessionSnapshot | null> {
     const key = state.activeKey
-    if (!key || !validateAvailableMonster()) return
-    const outcome = await runCommand(key, () =>
-      ports.scene.saveGroup(
-        focused.id,
-        key === newGroupDraftKey ? null : key,
-        group.name.trim(),
-        group.note.trim(),
-        group.disposition,
-        entries,
-        snapshot.scene.revision,
-        selectedPersistedGroup?.revision ?? null
-      )
-    )
-    if (outcome) saved(applySceneGroupCommandResult(snapshot, outcome))
-  }
-
-  async function archive(): Promise<void> {
-    const key = state.activeKey
-    if (!key || key === newGroupDraftKey || !selectedPersistedGroup) return
-    const outcome = await runCommand(key, () =>
-      ports.scene.setGroupArchived(
-        focused.id,
-        key,
-        true,
-        selectedPersistedGroup.revision
-      )
-    )
-    if (outcome) saved(applySceneGroupCommandResult(snapshot, outcome))
-  }
-
-  async function joinCombat(): Promise<void> {
-    const key = state.activeKey
-    const combat = snapshot.combat
-    if (!key || key === newGroupDraftKey || !selectedPersistedGroup || !combat)
-      return
-    const outcome = await runCommand(key, () =>
-      ports.combat.joinGroup({
-        sceneId: focused.id,
-        groupId: key,
-        expectedGroupRevision: selectedPersistedGroup.revision,
-        expectedCombatRevision: combat.revision
+    if (!key || !validateAvailableMonster()) return null
+    const request: SaveSceneGroupInput = {
+      commandId: crypto.randomUUID(),
+      sceneId: focused.id,
+      groupId: key === newGroupDraftKey ? null : key,
+      name: group.name.trim(),
+      note: group.note.trim(),
+      disposition: group.disposition,
+      entries: [...entries],
+      expectedRevision: snapshot.scene.revision,
+      expectedGroupRevision: selectedPersistedGroup?.revision ?? null
+    }
+    const reconcile = async () => {
+      const receipt = await ports.scene.groupSaveReceipt(request)
+      const fresh = await ports.session.read()
+      if (receipt) acknowledgeGroupSave(input, receipt)
+      else
+        dispatch({
+          kind: 'group-message',
+          key,
+          message: message('group.saveNotApplied')
+        })
+      dispatch({
+        kind: 'sync-external',
+        groups:
+          fresh.scene.scenes.find((scene) => scene.id === focused.id)?.groups ??
+          []
       })
+      return fresh
+    }
+    const outcome = await runCommand(
+      key,
+      () =>
+        ports.scene.saveGroup(
+          request.sceneId,
+          request.groupId,
+          request.name,
+          request.note,
+          request.disposition,
+          request.entries,
+          request.expectedRevision,
+          request.expectedGroupRevision,
+          request.commandId
+        ),
+      reconcile
     )
-    if (outcome) saved(applyCombatCommandResult(snapshot, outcome))
+    if (!outcome) return null
+    acknowledgeGroupSave(input, outcome)
+    const next = applySceneGroupCommandResult(snapshot, outcome)
+    saved(next)
+    return next
   }
 
   async function runCommand<Value>(
     key: string,
-    execute: () => Promise<Value>
+    execute: () => Promise<Value>,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
   ): Promise<Value | null> {
     const outcome = await commands.run({
       scope: 'group-manager.command',
@@ -168,11 +178,16 @@ export function useGroupManagerCommands(
       execute
     })
     if (outcome.status === 'success') return outcome.value
-    if (outcome.status === 'failure') failCommand(key, outcome.cause)
+    if (outcome.status === 'failure') failCommand(key, outcome.cause, reconcile)
     return null
   }
 
-  function failCommand(key: string, cause: unknown): void {
+  function failCommand(
+    key: string,
+    cause: unknown,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
+  ): void {
+    input.failed?.(cause, reconcile)
     dispatch({
       kind: 'group-message',
       key,
@@ -204,10 +219,11 @@ export function useGroupManagerCommands(
     generateLoot: lootCommands.generateLoot,
     commitLoot: lootCommands.commitLoot,
     save,
-    archive,
-    joinCombat,
-    busy:
-      commands.state({ scope: 'group-manager.command' }).status === 'pending'
+    busy: commands.hasPending(['group-manager.command', 'group-manager.loot']),
+    pending: commands.hasPending([
+      'group-manager.command',
+      'group-manager.loot'
+    ])
   }
 }
 
@@ -216,4 +232,12 @@ function totalQuantity(quantities: Readonly<Record<string, number>>): number {
     (total, quantity) => total + quantity,
     0
   )
+}
+
+/** React-facing adapter; command construction itself owns no hooks. */
+export function useGroupManagerCommands(
+  input: GroupManagerCommandInput,
+  commands: AsyncCommandCoordinator
+) {
+  return createGroupManagerCommands(input, commands)
 }

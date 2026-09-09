@@ -1,6 +1,9 @@
 import { partySnapshotSchema } from '../live-session.js'
 import {
   restScenePartyInputSchema,
+  campaignPartyCharacterCommandSchema,
+  partyCharacterCommandReceiptSchema,
+  partyCharacterCommandStatusSchema,
   setPartyXpInputSchema,
   adjustPartyXpInputSchema,
   adventuringDayCalculationSchema,
@@ -14,6 +17,16 @@ import {
 import { none, read, utilityOperationFragment, write } from './registry.js'
 
 export const partyOperationDefinitions = utilityOperationFragment({
+  'party.executeCharacterCommand': write(
+    'party:execute-character-command',
+    campaignPartyCharacterCommandSchema,
+    partyCharacterCommandReceiptSchema
+  ),
+  'party.characterCommandStatus': read(
+    'party:character-command-status',
+    campaignPartyCharacterCommandSchema,
+    partyCharacterCommandStatusSchema
+  ),
   'party.restSelected': write(
     'party:restSelected',
     restScenePartyInputSchema,

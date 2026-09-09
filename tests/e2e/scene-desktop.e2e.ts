@@ -304,18 +304,55 @@ describe('per-scene desktop', () => {
       .$('[data-window-id="combat"]')
       .$('button=Initiative vorbereiten')
       .click()
-    await client
-      .$('[data-window-id="combat"]')
-      .$('button=Kampf starten')
-      .click()
+    const initiative = () =>
+      client.$('[data-window-id="combat"] .initiative-list input')
+    await initiative().setValue('23')
+    const startCombat = () =>
+      client.$('[data-window-id="combat"]').$('button=Kampf starten')
+    const combatConfirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Kampfaktion fortsetzen"]')
+    await startCombat().click()
+    await combatConfirmation().waitForDisplayed()
+    await combatConfirmation().$('button=Abbrechen').click()
+    await expect(initiative()).toHaveValue('23')
+    await startCombat().click()
+    await combatConfirmation().waitForDisplayed()
+    await combatConfirmation().$('button=Speichern und fortfahren').click()
     await expect(
       client.$('[data-window-id="combat"] .combat-panel')
     ).toBeExisting()
+    await expect(
+      client.$('.combat-card.player-character .initiative-gutter')
+    ).toHaveText('23')
+    const monster = () => client.$('.combat-card:not(.player-character)')
+    const hpBefore = await monster().$('.hp-value').getText()
+    await monster().$('.hp-bar').click()
+    const hpDialog = () => client.$('.hp-dialog-controls').$('..')
+    await hpDialog().$('input[type="number"]').setValue('2')
+    await hpDialog().$('.hp-dialog-close').click()
+    const hpConfirmation = () => client.$('[role="alertdialog"]')
+    await hpConfirmation().waitForDisplayed()
+    await hpConfirmation().$('button=Abbrechen').click()
+    await expect(hpDialog().$('input[type="number"]')).toHaveValue('2')
+    await hpDialog().$('.hp-dialog-close').click()
+    await hpConfirmation().waitForDisplayed()
+    await hpConfirmation().$('button=Verwerfen und fortfahren').click()
+    await expect(monster().$('.hp-value')).toHaveText(hpBefore)
+    await monster().$('.hp-bar').click()
+    await expect(hpDialog().$('input[type="number"]')).toHaveValue('1')
+    await hpDialog().$('.damage').click()
+    await client.waitUntil(
+      async () => await hpDialog().$('input[type="number"]').isEnabled()
+    )
+    await hpDialog().$('.hp-dialog-close').click()
+    await expect(monster().$('.hp-value')).not.toHaveText(hpBefore)
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     const readerTitle = await client.$('[data-window-id="reader"] h2').getText()
     await client
       .$('[data-window-id="combat"]')
       .$('button[aria-label="Maximieren"]')
       .click()
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     const countSelector = '[data-window-id="map"] [data-render-count]'
     await client.pause(200)
     const count = await client
@@ -330,6 +367,7 @@ describe('per-scene desktop', () => {
       .$('[data-window-id="combat"]')
       .$('button[aria-label="Minimieren"]')
       .click()
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
     await expect(client.$(cameraSelector)).toHaveAttribute('transform', camera)
     await client.$('.desktop-toolbar').$('button=Kampf').click()
@@ -397,6 +435,14 @@ describe('per-scene desktop', () => {
     await client
       .$('[data-window-id="map"] button[aria-label="Reise starten"]')
       .click()
+    const routeConfirmation = client.$(
+      '[role="alertdialog"][aria-label="Reiseaktion bestätigen"]'
+    )
+    await routeConfirmation.waitForDisplayed()
+    await expect(
+      routeConfirmation.$('ul[aria-label="Offene Änderungen"]')
+    ).toHaveText(expect.stringContaining('Routenentwurf'))
+    await routeConfirmation.$('button=Speichern und fortfahren').click()
     await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
       expect.stringContaining('Reise läuft.')
     )
@@ -410,6 +456,22 @@ describe('per-scene desktop', () => {
       .$('[data-window-id="map"]')
       .$('button[aria-label="Fenster schließen"]')
       .click()
+    await client
+      .$('[data-window-id="map"]')
+      .waitForExist({ reverse: true, timeout: 5_000 })
+    const savedRoute = await client.execute(async () => {
+      const campaignId = (await window.saltMarcher.campaigns.list())
+        .activeCampaignId!
+      const session = await window.saltMarcher.session.read({ campaignId })
+      return (
+        await window.saltMarcher.hexTravel.readState({
+          campaignId,
+          sceneId: session.scene.focusedSceneId
+        })
+      ).routePlan
+    })
+    expect(savedRoute.plan?.waypoints).toHaveLength(1)
+    expect(savedRoute.revision).toBeGreaterThan(0)
     await client.pause(1200)
     await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
     await client.$('[data-window-id="map"]').$('button=Reiseplanung').click()
@@ -551,6 +613,32 @@ describe('per-scene desktop', () => {
     await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
     expect(await row().$('.desktop-character-burden').getText()).toBe(burden)
     await client.keys('Escape')
+    for (const action of ['Fenster schließen', 'Minimieren']) {
+      await row().$('button=XP').click()
+      await client.$('.desktop-xp-popup input').setValue('250')
+      await info().$(`button[aria-label="${action}"]`).click()
+      const confirmation = () =>
+        client.$(
+          '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
+        )
+      await confirmation().waitForDisplayed({ timeout: 10_000 })
+      await confirmation().$('button=Abbrechen').click()
+      await info().waitForDisplayed()
+      await row().$('button=XP').click()
+      await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
+      await info().$(`button[aria-label="${action}"]`).click()
+      await confirmation().waitForDisplayed({ timeout: 10_000 })
+      await confirmation().$('button=Speichern und fortfahren').click()
+      await expect(confirmation().$('[role="alert"]')).toHaveText(
+        expect.stringContaining('XP:')
+      )
+      await expect(info()).toBeExisting()
+      await confirmation().$('button=Verwerfen und fortfahren').click()
+      await info().waitForExist({ reverse: true })
+      await client.$('.desktop-toolbar').$('button=Charaktere').click()
+      await info().waitForDisplayed()
+      await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
+    }
     await info().$('button=Rasten').click()
     await popup().$('button=Kurze Rast').click()
     await expect(popup().$('button=Kurze Rast bestätigen')).toBeDisplayed()
@@ -559,8 +647,8 @@ describe('per-scene desktop', () => {
     await expect(popup().$('button=Kurze Rast bestätigen')).not.toBeExisting()
     await popup().$('button=Lange Rast').click()
     await popup().$('button=Lange Rast bestätigen').click()
-    await expect(popup().$('button=Lange Rast')).toBeEnabled()
-    await client.keys('Escape')
+    await popup().waitForExist({ reverse: true })
+    await expect(info().$('button=Rasten')).toBeEnabled()
     await info().$('button=Verschieben').click()
     await popup().$('button=Alle auswählen').click()
     await popup()
@@ -582,6 +670,84 @@ describe('per-scene desktop', () => {
     await popup().waitForExist({ reverse: true })
     await selectScene(client, 'Wald')
     await expect(info()).toHaveText(expect.stringContaining('Reserve 5'))
+    await info().$('tbody').$('button=XP').click()
+    await client.$('.desktop-xp-popup input').setValue('77')
+    await client.keys('Escape')
+    await info().$('button=Besetzung').click()
+    await popup()
+      .$('input[aria-label="Charakter oder Spieler"]')
+      .setValue('Reserve 4')
+    await popup().$('input[type="checkbox"]').click()
+    await popup().$('button=Übernehmen').click()
+    const rosterConfirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Besetzung ändern"]')
+    await rosterConfirmation().waitForDisplayed()
+    await rosterConfirmation().$('button=Speichern und fortfahren').click()
+    await expect(rosterConfirmation().$('[role="alert"]')).toHaveText(
+      expect.stringContaining('XP: Reserve 4')
+    )
+    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
+    await rosterConfirmation().$('button=Abbrechen').click()
+    await rosterConfirmation().waitForExist({ reverse: true })
+    await popup().$('button=Übernehmen').click()
+    await rosterConfirmation().waitForDisplayed()
+    await rosterConfirmation().$('button=Verwerfen und fortfahren').click()
+    await rosterConfirmation().waitForExist({ reverse: true })
+    await popup().waitForExist({ reverse: true })
+    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
+    await expect(info().$('tbody')).toHaveText(
+      expect.stringContaining('XP 100 /')
+    )
+    for (const choice of [
+      'Speichern und fortfahren',
+      'Verwerfen und fortfahren'
+    ]) {
+      await info().$('button=Besetzung').click()
+      await popup()
+        .$('input[aria-label="Charakter oder Spieler"]')
+        .setValue('Reserve 4')
+      await popup().$('input[type="checkbox"]').click()
+      await client.keys('Escape')
+      const originalScene = await client
+        .$('.scene-desktop')
+        .getAttribute('data-scene-id')
+      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
+      const confirmation = () =>
+        client.$('[role="alertdialog"][aria-label="Szene wechseln"]')
+      await confirmation().waitForDisplayed()
+      await expect(client.$('select[aria-label="Szene"]')).toBeDisabled()
+      await expect(client.$('.scene-desktop')).toHaveAttribute(
+        'data-scene-id',
+        originalScene!
+      )
+      await confirmation().$('button=Abbrechen').click()
+      await info().$('button=Besetzung').click()
+      await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
+      await client.keys('Escape')
+      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
+      await confirmation().waitForDisplayed()
+      await confirmation().$(`button=${choice}`).click()
+      await confirmation().waitForExist({ reverse: true })
+      const targetOption = client
+        .$('select[aria-label="Szene"]')
+        .$('option=Vorhut')
+      await expect(targetOption).toBeSelected()
+      await expect(client.$('.scene-desktop')).toHaveAttribute(
+        'data-scene-id',
+        (await targetOption.getAttribute('value'))!
+      )
+      await selectScene(client, 'Wald')
+      await info().$('button=Besetzung').click()
+      await popup()
+        .$('input[aria-label="Charakter oder Spieler"]')
+        .setValue('Reserve 4')
+      if (choice === 'Speichern und fortfahren') {
+        await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
+        await popup().$('input[type="checkbox"]').click()
+      } else await expect(popup().$('input[type="checkbox"]')).toBeSelected()
+      await popup().$('button=Übernehmen').click()
+      await popup().waitForExist({ reverse: true })
+    }
     await expectAccessibleInBothThemes(client)
     await waitSaved(client)
     await client.reloadSession()
@@ -635,6 +801,303 @@ describe('per-scene desktop', () => {
     )
     await waitSaved(client)
     await expectAccessibleInBothThemes(client)
+  })
+  it('restores archived groups and deletes only after confirmation across restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    const target = await client.execute(async () => {
+      const api = window.saltMarcher
+      const campaignId = (await api.campaigns.list()).activeCampaignId!
+      const snapshot = await api.session.read({ campaignId })
+      const sceneId = snapshot.scene.focusedSceneId
+      await api.scene.saveGroup({
+        commandId: crypto.randomUUID(),
+        sceneId,
+        groupId: null,
+        name: 'Lifecycle E2E',
+        note: 'Preserve through restore',
+        disposition: 'neutral',
+        entries: [],
+        expectedRevision: snapshot.scene.revision,
+        expectedGroupRevision: null
+      })
+      const current = await api.session.read({ campaignId })
+      const group = current.scene.scenes
+        .find((scene) => scene.id === sceneId)!
+        .groups.find((group) => group.name === 'Lifecycle E2E')!
+      return { campaignId, sceneId, groupId: group.id }
+    })
+    const openGroup = async () => {
+      await client.refresh()
+      await resumeCampaignFromScreen(client)
+      await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client.$('button[aria-label="Lifecycle E2E aufklappen"]').click()
+    }
+    const readGroup = () =>
+      client.execute(async (input) => {
+        const snapshot = await window.saltMarcher.session.read({
+          campaignId: input.campaignId
+        })
+        return (
+          snapshot.scene.scenes
+            .find((scene) => scene.id === input.sceneId)!
+            .groups.find((group) => group.id === input.groupId) ?? null
+        )
+      }, target)
+    const archiveGroup = async (edit: boolean) => {
+      await client.refresh()
+      await resumeCampaignFromScreen(client)
+      await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client
+        .$(
+          '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+        )
+        .click()
+      const manager = client.$('section[aria-labelledby="group-builder-title"]')
+      await manager.waitForDisplayed({ timeout: 10_000 })
+      await manager
+        .$('select[aria-label="Gruppe auswählen"]')
+        .selectByVisibleText('Lifecycle E2E')
+      if (edit)
+        await manager
+          .$('.group-manager-disposition')
+          .selectByAttribute('value', 'allied')
+      await manager.$('button=Archivieren').click()
+      if (edit) {
+        const confirmation = client.$(
+          '[role="alertdialog"][aria-label="Gruppe archivieren"]'
+        )
+        await confirmation.waitForDisplayed()
+        await confirmation.$('button=Speichern und fortfahren').click()
+      }
+      await manager.waitForExist({ reverse: true, timeout: 10_000 })
+      expect((await readGroup())?.archived).toBe(true)
+      expect((await readGroup())?.disposition).toBe('allied')
+    }
+    await archiveGroup(true)
+    await openGroup()
+    await client
+      .$('[data-window-id="overview"]')
+      .$('button=Wiederherstellen')
+      .click()
+    await client.waitUntil(async () => (await readGroup())?.archived === false)
+    expect((await readGroup())?.note).toBe('Preserve through restore')
+    await archiveGroup(false)
+    await openGroup()
+    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('.group-delete-confirm').$('button=Abbrechen').click()
+    expect((await readGroup())?.archived).toBe(true)
+    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('.group-delete-confirm').$('button=Wirklich löschen').click()
+    await client.waitUntil(async () => (await readGroup()) === null)
+    await expect(client.$('.group-name=Lifecycle E2E')).not.toBeExisting()
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    expect(await readGroup()).toBeNull()
+    await waitSaved(client)
+  })
+  it('resolves result drafts and awards XP exactly once through completion and restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    const target = await client.execute(async () => {
+      let stage = 'read session'
+      try {
+        const api = window.saltMarcher
+        const campaignId = (await api.campaigns.list()).activeCampaignId!
+        let snapshot = await api.session.read({ campaignId })
+        stage = 'clear previous combat'
+        if (snapshot.combat)
+          await api.combat.complete({
+            expectedRevision: snapshot.combat.revision
+          })
+        snapshot = await api.session.read({ campaignId })
+        stage = 'set a combat-ready roster'
+        const member = snapshot.party.members.find(
+          (entry) => entry.level !== null
+        )
+        if (!member)
+          throw new Error('Fixture requires a character with a level')
+        const sceneId = snapshot.scene.focusedSceneId
+        if (
+          !snapshot.scene.scenes
+            .find((scene) => scene.id === sceneId)!
+            .partyMemberIds.includes(member.id)
+        ) {
+          if (!member.active) {
+            await api.party.setMembership({
+              id: member.id,
+              active: true,
+              expectedRevision: snapshot.party.revision
+            })
+          } else {
+            await api.scene.assignPartyMember({
+              sceneId,
+              partyMemberId: member.id,
+              assigned: true,
+              expectedRevision: snapshot.scene.revision
+            })
+          }
+          snapshot = await api.session.read({ campaignId })
+        }
+        await api.scene.setRoster({
+          sceneId,
+          memberIds: [member.id],
+          expectedRevision: snapshot.scene.revision,
+          expectedPartyRevision: snapshot.party.revision
+        })
+        snapshot = await api.session.read({ campaignId })
+        stage = 'create resolution group'
+        await api.scene.saveGroup({
+          commandId: crypto.randomUUID(),
+          sceneId,
+          groupId: null,
+          name: 'Resolution E2E',
+          note: '',
+          disposition: 'hostile',
+          entries: [{ creatureId: 'wolf', quantity: 2 }],
+          expectedRevision: snapshot.scene.revision,
+          expectedGroupRevision: null
+        })
+        snapshot = await api.session.read({ campaignId })
+        const groupId = snapshot.scene.scenes
+          .find((scene) => scene.id === sceneId)!
+          .groups.find((group) => group.name === 'Resolution E2E')!.id
+        stage = 'prepare resolution combat'
+        await api.combat.prepare({
+          sceneId,
+          groupIds: [groupId],
+          expectedSceneRevision: snapshot.scene.revision
+        })
+        return { campaignId, sceneId, memberId: member.id }
+      } catch (cause) {
+        return {
+          failureText: `${stage}: ${cause instanceof Error ? cause.message : JSON.stringify(cause)}`
+        }
+      }
+    })
+    if ('failureText' in target) throw new Error(target.failureText)
+    const read = () =>
+      client.execute(
+        async (campaignId) => window.saltMarcher.session.read({ campaignId }),
+        target.campaignId
+      )
+    await client.refresh()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    await client.$('.desktop-toolbar').$('button=Kampf').click()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button=Kampf starten')
+      .click()
+    await client.$('.combat-panel footer').$('button*=Auflösung').click()
+    const panel = () => client.$('.resolution-panel')
+    await panel().waitForDisplayed()
+    const before = await read()
+    await panel()
+      .$('.resolution-controls select')
+      .selectByAttribute('value', 'manual')
+    const enemies = await panel().$$('input[type="checkbox"]')
+    for (const enemy of enemies)
+      if (!(await enemy.isSelected())) await enemy.click()
+    const award = Number(
+      (
+        await panel().$('.resolution-award div:last-child dd').getText()
+      ).replace(/[^0-9]/g, '')
+    )
+    expect(award).toBeGreaterThan(0)
+    await panel().$('button=XP vergeben und beenden').click()
+    const confirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Kampfaktion fortsetzen"]')
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Abbrechen').click()
+    expect((await read()).party).toEqual(before.party)
+    await expect(panel().$('.resolution-controls select')).toHaveValue('manual')
+    await panel().$('button=XP vergeben und beenden').click()
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Speichern und fortfahren').click()
+    await panel().waitForExist({ reverse: true })
+    await client.waitUntil(async () => (await read()).combat === null)
+    const after = await read()
+    const assigned = before.scene.scenes.find(
+      (scene) => scene.id === target.sceneId
+    )!.partyMemberIds
+    for (const member of before.party.members) {
+      expect(
+        after.party.members.find((entry) => entry.id === member.id)!.xp
+      ).toBe(
+        member.xp + (member.active && assigned.includes(member.id) ? award : 0)
+      )
+    }
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    await waitSaved(client)
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    const restarted = await read()
+    expect(restarted.combat).toBeNull()
+    expect(restarted.party).toEqual(after.party)
+  })
+  it('resolves an open XP draft before changing scene location and preserves it across restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    const read = () =>
+      client.execute(async () => {
+        const campaignId = (await window.saltMarcher.campaigns.list())
+          .activeCampaignId!
+        return window.saltMarcher.session.read({ campaignId })
+      })
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    const before = await read()
+    const sceneId = before.scene.focusedSceneId
+    const original = before.scene.scenes.find(
+      (scene) => scene.id === sceneId
+    )!.locationId
+    const destination = before.scene.locationChoices.find(
+      (location) => location.id !== original
+    )
+    if (!destination) throw new Error('Fixture requires another location')
+    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await client.$('[data-window-id="characters"]').$('button=XP').click()
+    await client.$('.desktop-xp-popup input').setValue('250')
+    const chooseLocation = async () => {
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client
+        .$('[data-window-id="overview"] .desktop-scene-facts button')
+        .click()
+      await client
+        .$('[data-window-id="overview"] .desktop-scene-facts select')
+        .selectByAttribute('value', destination.id)
+    }
+    const confirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Szene ändern"]')
+    await chooseLocation()
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Abbrechen').click()
+    const cancelled = await read()
+    expect(
+      cancelled.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
+    ).toBe(original)
+    expect(cancelled.party).toEqual(before.party)
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    await chooseLocation()
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Verwerfen und fortfahren').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.find((scene) => scene.id === sceneId)!
+          .locationId === destination.id
+    )
+    expect((await read()).party).toEqual(before.party)
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    await waitSaved(client)
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    const restarted = await read()
+    expect(
+      restarted.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
+    ).toBe(destination.id)
+    expect(restarted.party).toEqual(before.party)
   })
 })
 

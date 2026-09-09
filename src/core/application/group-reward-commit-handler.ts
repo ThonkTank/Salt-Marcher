@@ -109,18 +109,27 @@ export class GroupRewardCommitHandler {
     private readonly transact: <T>(work: () => T) => T
   ) {}
 
+  commandReceipt(raw: CommitGroupRewardInput): CommitGroupRewardResult | null {
+    const input = commitGroupRewardInputSchema.parse(raw)
+    return this.#receipt(this.context(), input)?.result ?? null
+  }
+
+  #receipt(context: GroupRewardCommitContext, input: CommitGroupRewardInput) {
+    return context.journal.read({
+      commandId: input.commandId,
+      operationType: 'commit_group_reward',
+      requestFingerprint: fingerprintExcluding(input, ['commandId']),
+      targetId: input.groupId,
+      schema: commitGroupRewardResultSchema
+    })
+  }
+
   commit(raw: CommitGroupRewardInput): CommitGroupRewardResult {
     const input = commitGroupRewardInputSchema.parse(raw)
     return this.transact(() => {
       const context = this.context()
       const requestFingerprint = fingerprintExcluding(input, ['commandId'])
-      const receipt = context.journal.read({
-        commandId: input.commandId,
-        operationType: 'commit_group_reward',
-        requestFingerprint,
-        targetId: input.groupId,
-        schema: commitGroupRewardResultSchema
-      })
+      const receipt = this.#receipt(context, input)
       if (receipt) return receipt.result
 
       const { run, generated, existingGroup } = new GroupRewardRevisionGuard(

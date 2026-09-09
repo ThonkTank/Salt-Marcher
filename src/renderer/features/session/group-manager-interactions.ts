@@ -30,7 +30,10 @@ export function createGroupManagerInteractions(input: {
   session: GroupDraftSession | null
   group: GroupDraftState
   entries: ReturnType<typeof groupDraftEntries>
-  commands: ReturnType<typeof useGroupManagerCommands>
+  commands: ReturnType<typeof useGroupManagerCommands> & {
+    archive(): Promise<void>
+    joinCombat(): Promise<void>
+  }
   ports: GroupManagerPorts
   dispatch: Dispatch<GroupManagerAction>
   close: () => void

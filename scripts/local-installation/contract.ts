@@ -70,6 +70,12 @@ export interface InstallLocalAppOptions {
   /** Test seam for a failed promotion. Rollback always uses native rename. */
   readonly renameForInstall?: (source: string, target: string) => void
   readonly schemaMigrations?: readonly import('../../src/core/persistence/sqlite/schema-migrations.js').SchemaMigration[]
+  /** Test-only extraction seam for synthetic, non-executable artifact fixtures. */
+  readonly readLauncherForTest?: (
+    appImage: string,
+    expectedHash: string
+  ) => Buffer
+  readonly afterMaintenanceBoundaryForTest?: (boundary: string) => void
   readonly afterJournalWriteForTest?: (journal: LocalInstallJournal) => void
 }
 
@@ -88,7 +94,6 @@ export interface InstallationReplacement {
   readonly target: string
   readonly source?: string
   readonly content?: string
-  readonly symlinkTarget?: string
   readonly mode?: number
 }
 

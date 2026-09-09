@@ -1,3 +1,4 @@
+import { createLootComposition } from '../../src/utility/composition/loot.js'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -65,6 +66,232 @@ function campaign() {
 }
 
 describe('loot vertical slice', () => {
+  it('reads original create/update receipts and current treasure state without writes', () => {
+    const { campaigns, db } = campaign()
+    const loot = new LootService(campaigns.activeCampaignPersistence())
+    const create = {
+      commandId: randomUUID(),
+      label: 'Original',
+      anchor: { kind: 'unplaced' as const },
+      containers: [],
+      items: []
+    }
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'create', input: create })).toEqual({
+      receipt: null,
+      treasure: null
+    })
+    db.pragma('query_only = OFF')
+    const original = loot.create(create)
+    const update = {
+      ...create,
+      commandId: randomUUID(),
+      treasureId: original.id,
+      expectedRevision: original.revision,
+      label: 'Updated'
+    }
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'update', input: update })).toEqual({
+      receipt: null,
+      treasure: original
+    })
+    db.pragma('query_only = OFF')
+    const updated = loot.update(update)
+    const latest = loot.update({
+      ...update,
+      commandId: randomUUID(),
+      expectedRevision: updated.revision,
+      label: 'Later work'
+    })
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'create', input: create })).toEqual({
+      receipt: original,
+      treasure: latest
+    })
+    expect(loot.editorStatus({ kind: 'update', input: update })).toEqual({
+      receipt: updated,
+      treasure: latest
+    })
+    expectIdempotencyConflict(() =>
+      loot.editorStatus({
+        kind: 'create',
+        input: { ...create, label: 'Changed request' }
+      })
+    )
+    expectIdempotencyConflict(() =>
+      loot.editorStatus({
+        kind: 'update',
+        input: { ...update, expectedRevision: 999 }
+      })
+    )
+    db.pragma('query_only = OFF')
+    expect(loot.read(original.id)).toEqual(latest)
+  })
+
+  it('guards all ledger maintenance operations with the original campaign', () => {
+    const { campaigns, db, members } = campaign()
+    const unused = (): never => {
+      throw new Error('unexpected domain work')
+    }
+    const handlers = createLootComposition({
+      activeCampaignId: () => campaigns.activeCampaignId(),
+      activeDatabase: fixedSqliteDatabaseAccess(db),
+      rules: { read: unused },
+      generation: { generateGroupReward: unused },
+      loadCatalog: unused,
+      currentCatalogReference: unused,
+      groupCommands: { save: unused, result: unused }
+    }).createHandlers(unused)
+    const editorInput = {
+      commandId: randomUUID(),
+      label: 'Editor',
+      anchor: { kind: 'unplaced' as const },
+      containers: [],
+      items: []
+    }
+    const wrongCampaign = randomUUID()
+    expect(() =>
+      handlers['loot.createForCampaign']({
+        ...editorInput,
+        campaignId: wrongCampaign
+      })
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.updateForCampaign']({
+        ...editorInput,
+        campaignId: wrongCampaign,
+        treasureId: randomUUID(),
+        expectedRevision: 0
+      })
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.editorStatus']({
+        campaignId: wrongCampaign,
+        command: { kind: 'create', input: editorInput }
+      })
+    ).toThrow('stale')
+    const distributionInput = {
+      campaignId: wrongCampaign,
+      commandId: randomUUID(),
+      treasureId: randomUUID(),
+      expectedTreasureRevision: 1,
+      expectedPartyRevision: 1,
+      items: [
+        {
+          itemId: randomUUID(),
+          shares: [{ characterId: members[0]!.id, quantity: 1 }]
+        }
+      ]
+    }
+    expect(() =>
+      handlers['loot.distributeForCampaign'](distributionInput)
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.distributionStatus'](distributionInput)
+    ).toThrow('stale')
+    const generatedInput = {
+      campaignId: randomUUID(),
+      commandId: randomUUID(),
+      runId: randomUUID(),
+      generatedTreasureId: 'generated',
+      label: 'Reward',
+      anchor: { kind: 'unplaced' as const }
+    }
+    expect(() =>
+      handlers['loot.generatedAcceptanceStatus'](generatedInput)
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.acceptGeneratedForCampaign'](generatedInput)
+    ).toThrow('stale')
+    const input = {
+      campaignId: randomUUID(),
+      characterId: members[0]!.id,
+      commandId: randomUUID(),
+      entryId: randomUUID(),
+      expectedRevision: 0,
+      quantity: 1,
+      status: 'sold' as const,
+      reason: 'Test'
+    }
+    expectCapabilityCode(
+      () =>
+        handlers['loot.ledgerForCampaign']({
+          campaignId: input.campaignId,
+          characterId: input.characterId
+        }),
+      'stale'
+    )
+    expectCapabilityCode(
+      () => handlers['loot.ledgerCorrectionStatus'](input),
+      'stale'
+    )
+    expectCapabilityCode(
+      () => handlers['loot.correctLedgerForCampaign'](input),
+      'stale'
+    )
+    db.pragma('query_only = ON')
+    try {
+      expect(
+        handlers['loot.ledgerCorrectionStatus']({
+          ...input,
+          campaignId: campaigns.activeCampaignId()
+        })
+      ).toMatchObject({
+        receipt: null,
+        ledger: { characterId: input.characterId, entries: [] }
+      })
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+  })
+
+  it('requires the original campaign for an authoritative absent reward receipt', () => {
+    const { campaigns, db } = campaign()
+    const unused = (): never => {
+      throw new Error('unexpected domain work')
+    }
+    const handlers = createLootComposition({
+      activeCampaignId: () => campaigns.activeCampaignId(),
+      activeDatabase: fixedSqliteDatabaseAccess(db),
+      rules: { read: unused },
+      generation: { generateGroupReward: unused },
+      loadCatalog: unused,
+      currentCatalogReference: unused,
+      groupCommands: { save: unused, result: unused }
+    }).createHandlers(unused)
+    const input = {
+      commandId: randomUUID(),
+      runId: randomUUID(),
+      generatedTreasureId: null,
+      treasureDraft: null,
+      sceneId: randomUUID(),
+      groupId: randomUUID(),
+      expectedSceneRevision: 1,
+      expectedGroupRevision: null,
+      name: 'Absent',
+      note: '',
+      disposition: 'hostile' as const,
+      entries: [{ creatureId: randomUUID(), quantity: 1, deadQuantity: 0 }]
+    }
+    expect(() =>
+      handlers['loot.groupRewardReceipt']({
+        ...input,
+        campaignId: randomUUID()
+      })
+    ).toThrow('stale')
+    db.pragma('query_only = ON')
+    try {
+      expect(
+        handlers['loot.groupRewardReceipt']({
+          ...input,
+          campaignId: campaigns.activeCampaignId()
+        })
+      ).toBeNull()
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+  })
+
   it('keeps the durable Loot receipt schema frozen with one versioned result envelope', () => {
     const { db } = campaign()
     expect(columns(db, 'loot_operation_receipt')).toEqual([
@@ -649,7 +876,33 @@ describe('loot vertical slice', () => {
     expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
     expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
 
+    expect(commit.commandReceipt(input)).toBeNull()
     const result = commit.commit(input)
+    const countsAfterCommit = {
+      groups: scenes.groups(sceneId).length,
+      treasures: tableCount(db, 'loot_treasure'),
+      receipts: tableCount(db, 'loot_operation_receipt'),
+      revision: new LootProjectionStore(db).revision()
+    }
+    db.pragma('query_only = ON')
+    try {
+      expect(commit.commandReceipt(input)).toEqual(result)
+      expect(
+        commit.commandReceipt({ ...input, commandId: randomUUID() })
+      ).toBeNull()
+      expectCapabilityCode(
+        () => commit.commandReceipt({ ...input, name: 'Changed request' }),
+        'idempotency_conflict'
+      )
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+    expect({
+      groups: scenes.groups(sceneId).length,
+      treasures: tableCount(db, 'loot_treasure'),
+      receipts: tableCount(db, 'loot_operation_receipt'),
+      revision: new LootProjectionStore(db).revision()
+    }).toEqual(countsAfterCommit)
     if (!result.treasure) throw new Error('Expected committed treasure')
     expect(result.groupResult.scenePatch.sceneRevision).toBe(
       expectedSceneRevision + 1
@@ -819,6 +1072,13 @@ describe('loot vertical slice', () => {
         }
       ]
     }
+    db.pragma('query_only = ON')
+    expect(loot.distributionStatus(input)).toEqual({
+      receipt: null,
+      treasure,
+      partyRevision: party.read().revision
+    })
+    db.pragma('query_only = OFF')
     const result = loot.distribute(input)
     expect(result.treasure.items[0]?.allocatedQuantity).toBe(3)
     expect(result.createdEntries).toHaveLength(2)
@@ -848,6 +1108,30 @@ describe('loot vertical slice', () => {
       }))
     })
     expect(changed.label).toBe('Nach dem Award umbenannt')
+    db.pragma('query_only = ON')
+    expect(loot.distributionStatus(input)).toEqual({
+      receipt: result,
+      treasure: changed,
+      partyRevision: party.read().revision
+    })
+    expectIdempotencyConflict(() =>
+      loot.distributionStatus({
+        ...input,
+        expectedPartyRevision: input.expectedPartyRevision + 1
+      })
+    )
+    expectIdempotencyConflict(() =>
+      loot.distributionStatus({
+        ...input,
+        items: [
+          {
+            ...input.items[0]!,
+            shares: [{ characterId: members[0]!.id, quantity: 2 }]
+          }
+        ]
+      })
+    )
+    db.pragma('query_only = OFF')
     expect(
       new LootService(campaigns.activeCampaignPersistence()).distribute(input)
     ).toEqual(result)
@@ -866,6 +1150,35 @@ describe('loot vertical slice', () => {
     expect(
       new CharacterLootStore(db).ledger(members[0]!.id).entries
     ).toHaveLength(1)
+    const final = loot.distribute({
+      ...input,
+      commandId: randomUUID(),
+      expectedTreasureRevision: changed.revision,
+      items: [
+        {
+          itemId: changed.items[0]!.id,
+          shares: [{ characterId: members[1]!.id, quantity: 1 }]
+        }
+      ]
+    })
+    party.setMembership(members[1]!.id, false, party.read().revision)
+    const ledger = loot.ledger(members[1]!.id)
+    db.pragma('query_only = ON')
+    expect(
+      new LootService(campaigns.activeCampaignPersistence()).distributionStatus(
+        input
+      )
+    ).toEqual({
+      receipt: result,
+      treasure: final.treasure,
+      partyRevision: party.read().revision
+    })
+    expect(loot.ledger(members[1]!.id)).toEqual(ledger)
+    db.pragma('query_only = OFF')
+    db.prepare(
+      'UPDATE loot_operation_receipt SET target_id = ? WHERE command_id = ?'
+    ).run(randomUUID(), input.commandId)
+    expectIdempotencyConflict(() => loot.distributionStatus(input))
   })
 
   it('rolls back the whole distribution when a recipient is not active', () => {
@@ -1183,6 +1496,12 @@ describe('loot vertical slice', () => {
       label: 'Generated reward',
       anchor: { kind: 'unplaced' }
     } as const
+    db.pragma('query_only = ON')
+    expect(loot.generatedAcceptanceStatus(acceptInput)).toEqual({
+      receipt: null,
+      treasure: null
+    })
+    db.pragma('query_only = OFF')
     const accepted = loot.acceptGenerated(acceptInput)
     const repeated = loot.acceptGenerated({
       commandId: randomUUID(),
@@ -1230,6 +1549,15 @@ describe('loot vertical slice', () => {
         acceptInput
       )
     ).toEqual(accepted)
+    db.pragma('query_only = ON')
+    expect(loot.generatedAcceptanceStatus(acceptInput)).toEqual({
+      receipt: accepted,
+      treasure: edited
+    })
+    expectIdempotencyConflict(() =>
+      loot.generatedAcceptanceStatus({ ...acceptInput, label: 'Other input' })
+    )
+    db.pragma('query_only = OFF')
     expect(loot.acceptGenerated(acceptInput)).toEqual(accepted)
     expectIdempotencyConflict(() =>
       loot.acceptGenerated({ ...acceptInput, label: 'Konflikt' })
@@ -1252,6 +1580,14 @@ describe('loot vertical slice', () => {
         }
       ]
     }).createdEntries[0]!
+    db.pragma('query_only = ON')
+    const afterDistribution = loot.generatedAcceptanceStatus(acceptInput)
+    expect(afterDistribution.receipt).toEqual(accepted)
+    expect(afterDistribution.treasure).toEqual(loot.read(accepted.id))
+    expect(afterDistribution.treasure?.revision).toBeGreaterThan(
+      edited.revision
+    )
+    db.pragma('query_only = OFF')
     expect(awarded.rewardProvenance).toEqual({
       runId: generated.run.id,
       generatedTreasureId: source.id,
@@ -1290,6 +1626,15 @@ describe('loot vertical slice', () => {
       status: 'sold',
       reason: 'Identifikation beim Händler'
     } as const
+    db.pragma('query_only = ON')
+    try {
+      expect(loot.ledgerCorrectionStatus(correctionInput)).toEqual({
+        receipt: null,
+        ledger: before
+      })
+    } finally {
+      db.pragma('query_only = OFF')
+    }
     const corrected = loot.correctLedger(correctionInput)
     expect(corrected.revision).toBe(before.revision + 1)
     expect(corrected.entries).toHaveLength(2)
@@ -1313,6 +1658,34 @@ describe('loot vertical slice', () => {
       )
     ).toEqual(corrected)
     expect(loot.correctLedger(correctionInput)).toEqual(corrected)
+    const later = loot.correctLedger({
+      ...correctionInput,
+      commandId: randomUUID(),
+      entryId: correction.id,
+      expectedRevision: corrected.revision,
+      status: 'given_away',
+      reason: 'Spätere Änderung'
+    })
+    const changes = db.prepare('SELECT total_changes() AS count').get()
+    db.pragma('query_only = ON')
+    try {
+      const status = new LootService(
+        campaigns.activeCampaignPersistence()
+      ).ledgerCorrectionStatus(correctionInput)
+      expect(status).toEqual({ receipt: corrected, ledger: later })
+      expectIdempotencyConflict(() =>
+        loot.ledgerCorrectionStatus({
+          ...correctionInput,
+          reason: 'Anderer Request'
+        })
+      )
+      expect(db.prepare('SELECT total_changes() AS count').get()).toEqual(
+        changes
+      )
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+
     expectIdempotencyConflict(() =>
       loot.correctLedger({
         ...correctionInput,

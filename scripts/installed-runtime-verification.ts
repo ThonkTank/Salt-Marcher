@@ -1,3 +1,4 @@
+import { verifyLocalRuntimeStartup } from './local-installation/runtime-start.js'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -24,27 +25,36 @@ const evidencePath = parseEvidencePath(process.argv.slice(2))
 const manifest = localArtifactManifestSchema.parse(
   JSON.parse(readFileSync(paths.installedManifest, 'utf8'))
 )
-const result = spawnSync(
-  paths.appImage,
-  [
-    '--smoke-test',
-    '--session-generation-smoke',
-    '--installed-runtime-verification',
-    '--no-sandbox',
-    `--user-data-dir=${paths.profile}`
-  ],
-  {
-    encoding: 'utf8',
-    timeout: 30_000,
-    env: { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1' }
+const result = verifyLocalRuntimeStartup(
+  paths.root,
+  manifest.artifactSha256,
+  (completion) => {
+    const result = spawnSync(
+      paths.appImage,
+      [
+        '--smoke-test',
+        '--session-generation-smoke',
+        '--installed-runtime-verification',
+        '--no-sandbox',
+        `--user-data-dir=${paths.profile}`,
+        ...completion
+      ],
+      {
+        encoding: 'utf8',
+        timeout: 30_000,
+        env: { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1' }
+      }
+    )
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      process.stderr.write(result.stderr)
+      process.stdout.write(result.stdout)
+      throw new Error(`Installed AppImage exited with ${result.status}`)
+    }
+
+    return result
   }
 )
-if (result.error) throw result.error
-if (result.status !== 0) {
-  process.stderr.write(result.stderr)
-  process.stdout.write(result.stdout)
-  throw new Error(`Installed AppImage exited with ${result.status}`)
-}
 
 const records = `${result.stdout}\n${result.stderr}`
   .split(/\r?\n/)

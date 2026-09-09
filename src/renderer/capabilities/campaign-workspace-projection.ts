@@ -148,7 +148,7 @@ export class CampaignWorkspaceProjection {
   public async load(loadSession = true): Promise<CampaignWorkspaceReadOutcome> {
     if (this.#disposed) return Object.freeze({ status: 'stale' })
     if (loadSession) this.#sessionEnabled = true
-    const catalog = await settleRead(
+    const catalog = await this.#settleRead(
       this.#catalog.invalidate(this.#catalogExecution),
       () => this.#catalog.ensure(this.#catalogExecution)
     )
@@ -163,7 +163,7 @@ export class CampaignWorkspaceProjection {
       session.status === 'failure' &&
       capabilityErrorCode(session.cause) === 'stale'
     ) {
-      const latest = await settleRead(
+      const latest = await this.#settleRead(
         this.#catalog.invalidate(this.#catalogExecution),
         () => this.#catalog.ensure(this.#catalogExecution)
       )
@@ -430,6 +430,17 @@ export class CampaignWorkspaceProjection {
     this.#snapshot = idleSnapshot
   }
 
+  async #settleRead<Value>(
+    pending: Promise<ReadProjectionOutcome<Value>>,
+    ensure: () => Promise<ReadProjectionOutcome<Value>>
+  ): Promise<ReadProjectionOutcome<Value>> {
+    let outcome = await pending
+    // Superseded transports are also aborted; the owner lifetime is decisive.
+    while (outcome.status === 'stale' && !this.#disposed)
+      outcome = await ensure()
+    return outcome
+  }
+
   async #refreshSession(
     campaignId: string
   ): Promise<ReadProjectionOutcome<LiveSessionSnapshot>> {
@@ -442,7 +453,7 @@ export class CampaignWorkspaceProjection {
       authority,
       operation: this.#api.session.read
     })
-    return settleRead(
+    return this.#settleRead(
       this.#sessions.invalidate(execution, { campaignId }),
       () => this.#sessions.ensure(execution, { campaignId })
     )
@@ -451,7 +462,7 @@ export class CampaignWorkspaceProjection {
   async #registryRevision(): Promise<number> {
     const current = this.#catalog.current(campaignCatalogAuthority)
     if (current) return current.revision
-    const outcome = await settleRead(
+    const outcome = await this.#settleRead(
       this.#catalog.ensure(this.#catalogExecution),
       () => this.#catalog.ensure(this.#catalogExecution)
     )
@@ -543,15 +554,6 @@ export class CampaignWorkspaceProjection {
   readonly #reconcileCampaignTruth = async (): Promise<void> => {
     await this.load()
   }
-}
-
-async function settleRead<Value>(
-  pending: Promise<ReadProjectionOutcome<Value>>,
-  ensure: () => Promise<ReadProjectionOutcome<Value>>
-): Promise<ReadProjectionOutcome<Value>> {
-  let outcome = await pending
-  if (outcome.status === 'stale') outcome = await ensure()
-  return outcome
 }
 
 function projectWorkspaceOutcome(

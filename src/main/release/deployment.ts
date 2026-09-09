@@ -1,17 +1,23 @@
+import { readAppImageLauncher } from '../../shared/maintenance/appimage-launcher.js'
+import { installMaintenanceLauncher } from '../../shared/maintenance/launcher.js'
 import {
   chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
+  lstatSync,
   readFileSync,
   readlinkSync,
   renameSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { z } from 'zod'
+import {
+  maintenanceProgramSchema,
+  type MaintenanceProgram
+} from '../../shared/contracts/maintenance.js'
 import {
   durableJson,
   sha256,
@@ -21,20 +27,36 @@ import {
   releaseManifestSchema,
   type ReleaseManifest
 } from '../../shared/contracts/release.js'
-export const activationSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    id: z.uuid(),
-    previous: z.uuid().nullable(),
-    next: z.uuid(),
-    phase: z.enum(['pending', 'committed', 'rolled-back'])
+export function deploymentProgram(
+  root: string,
+  deployment: string
+): MaintenanceProgram {
+  const manifest = releaseManifestSchema.parse(
+    JSON.parse(
+      readFileSync(
+        join(root, 'deployments', deployment, 'manifest.json'),
+        'utf8'
+      )
+    )
+  )
+  return maintenanceProgramSchema.parse({
+    deployment,
+    version: manifest.version,
+    sha256: manifest.artifact.sha256
   })
-  .strict()
-export function readActivation(root: string) {
-  const path = join(root, 'activation.json')
-  return existsSync(path)
-    ? activationSchema.parse(JSON.parse(readFileSync(path, 'utf8')))
-    : null
+}
+export function currentProgram(root: string): MaintenanceProgram | null {
+  const current = join(root, 'current')
+  const stat = lstatSync(current, { throwIfNoEntry: false })
+  if (!stat) return null
+  if (!stat.isSymbolicLink()) throw new Error('Ungültiger Programmstartpunkt.')
+  const deployment = basename(readlinkSync(current))
+  if (
+    resolve(root, readlinkSync(current)) !==
+    resolve(root, 'deployments', deployment)
+  )
+    throw new Error('Der Programmstartpunkt liegt außerhalb der Installation.')
+  return deploymentProgram(root, deployment)
 }
 export function setCurrent(root: string, deployment: string): void {
   const target = join(root, 'deployments', deployment)
@@ -71,46 +93,32 @@ export function stageDeployment(
   syncPath(dirname(directory))
   return id
 }
-export function beginActivation(root: string, next: string) {
-  const previous = existsSync(join(root, 'current'))
-    ? readlinkSync(join(root, 'current')).split('/').at(-1)!
-    : null
-  const state = activationSchema.parse({
-    formatVersion: 1,
-    id: randomUUID(),
-    previous,
-    next,
-    phase: 'pending'
-  })
-  durableJson(join(root, 'activation.json'), state)
-  return state
-}
-export function installLauncher(root: string): void {
-  const quote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`
+export function installLauncher(
+  root: string,
+  target: MaintenanceProgram
+): void {
+  const executable = join(
+    root,
+    'deployments',
+    target.deployment,
+    'SaltMarcher.AppImage'
+  )
+  const bundle = readAppImageLauncher(executable, target.sha256)
+  const runtime = currentProgram(root) ?? target
+  installMaintenanceLauncher(
+    root,
+    {
+      path: join(
+        root,
+        'deployments',
+        runtime.deployment,
+        'SaltMarcher.AppImage'
+      ),
+      sha256: runtime.sha256
+    },
+    bundle
+  )
   const launcher = join(root, 'start')
-  const state = readActivation(root)
-  const fallback = state?.previous
-    ? join(root, 'deployments', state.previous, 'SaltMarcher.AppImage')
-    : null
-  const script = `#!/bin/sh
-${quote(join(root, 'current', 'SaltMarcher.AppImage'))} "$@"
-salt_status=$?
-if [ "$salt_status" -ne 0 ]; then
-  case "$(cat ${quote(join(root, 'activation.json'))} 2>/dev/null)" in
-    *'"phase":"pending"'*)
-      case "$(cat ${quote(join(root, 'maintenance-journal.json'))} 2>/dev/null)" in
-        *'"phase":"committed"'*) ;;
-        *) ${fallback ? `exec ${quote(fallback)} --release-recover` : ':'} ;;
-      esac ;;
-  esac
-fi
-exit "$salt_status"
-`
-  const temporary = `${launcher}.${randomUUID()}.tmp`
-  writeFileSync(temporary, script, { mode: 0o700, flag: 'wx' })
-  syncPath(temporary)
-  renameSync(temporary, launcher)
-  syncPath(root)
   const applications = join(dirname(root), 'applications')
   mkdirSync(applications, { recursive: true })
   const desktopPath = join(applications, 'org.saltmarcher.app.desktop')

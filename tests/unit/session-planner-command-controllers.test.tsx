@@ -1,3 +1,4 @@
+import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -13,6 +14,42 @@ import type { SessionPlannerAuthority } from '../../src/renderer/features/sessio
 const sessionId = '01900000-0000-7000-8000-000000000001'
 
 describe('Session Planner command controllers', () => {
+  it('publishes both reward child dependencies synchronously and keeps their IDs stable', () => {
+    const fixture = authorityFixture(false)
+    const { result, unmount } = renderHook(() =>
+      useSessionRewardMaterialization({
+        coordinator: new AsyncCommandCoordinator(),
+        loot: {} as never,
+        planner: {} as never,
+        read: fixture.read,
+        applyWorkspace: vi.fn(),
+        saveDraft: () => Promise.resolve(fixture.workspace),
+        onError: vi.fn()
+      })
+    )
+    const treasureId = result.current.treasureMaintenanceId
+    const distributionId = result.current.distributionMaintenanceId
+    expect(treasureId).not.toBe(distributionId)
+    act(() => {
+      result.current.setTreasureEditor(null)
+      expect(result.current.dialogDependencies()).toEqual([treasureId])
+      result.current.setDistribution({ id: 'treasure' } as never)
+      expect(result.current.dialogDependencies()).toEqual([
+        treasureId,
+        distributionId
+      ])
+    })
+    act(() => {
+      result.current.setTreasureEditor(false)
+      expect(result.current.dialogDependencies()).toEqual([distributionId])
+      result.current.setDistribution(null)
+      expect(result.current.dialogDependencies()).toEqual([])
+    })
+    expect(result.current.distributionMaintenanceId).toBe(distributionId)
+    expect(result.current.treasureMaintenanceId).toBe(treasureId)
+    unmount()
+  })
+
   it('does not replace newer authored state with a delayed save result', async () => {
     const saved = deferred<SessionPlannerWorkspace>()
     const fixture = authorityFixture()
@@ -22,7 +59,7 @@ describe('Session Planner command controllers', () => {
     const { result } = renderHook(() =>
       useSessionPlannerSessionCommands({
         coordinator: new AsyncCommandCoordinator(),
-        planner: { save: () => saved.promise } as never,
+        planner: { executeCommand: () => saved.promise } as never,
         read: fixture.read,
         applyWorkspace,
         mergeCatalog,
@@ -50,7 +87,7 @@ describe('Session Planner command controllers', () => {
       useSessionPlannerSessionCommands({
         coordinator: new AsyncCommandCoordinator(),
         planner: {
-          save: () => Promise.reject(new Error('save failed'))
+          executeCommand: () => Promise.reject(new Error('save failed'))
         } as never,
         read: fixture.read,
         applyWorkspace: vi.fn(),
@@ -66,50 +103,82 @@ describe('Session Planner command controllers', () => {
     expect(onError).toHaveBeenCalledOnce()
   })
 
-  it('reuses the Reward command identity and publishes only current authority', async () => {
-    const fixture = authorityFixture(false)
-    const first = deferred<never>()
-    const commandIds: string[] = []
-    const treasure = { id: 'treasure-1' }
-    const acceptGenerated = vi.fn((input: { commandId: string }) => {
-      commandIds.push(input.commandId)
-      return commandIds.length === 1 ? first.promise : Promise.resolve(treasure)
-    })
-    const applyWorkspace = vi.fn()
-    const onError = vi.fn()
-    const coordinator = new AsyncCommandCoordinator()
-    const { result } = renderHook(() =>
-      useSessionRewardMaterialization({
-        coordinator,
-        loot: { acceptGenerated } as never,
-        planner: { read: () => Promise.resolve(fixture.workspace) } as never,
-        read: fixture.read,
-        applyWorkspace,
-        saveDraft: () => Promise.resolve(fixture.workspace),
-        onError
-      })
-    )
-    const invoke = () =>
-      result.current.materializeReward(
-        'run-1',
-        'generated-1',
-        'Reward',
-        true,
-        null
+  it.each(['write', 'refresh', 'absent', 'newer-local', 'placed'] as const)(
+    'reconciles reward %s without replay and opens only a current treasure',
+    async (mode) => {
+      const fixture = authorityFixture(false)
+      const old = { id: 'treasure-1', label: 'Original' }
+      const latest = { ...old, label: 'Later work' }
+      const acceptGenerated = vi.fn().mockResolvedValue(old)
+      if (mode !== 'refresh' && mode !== 'placed')
+        acceptGenerated.mockRejectedValueOnce(
+          new CapabilityError('outcome_unknown', true)
+        )
+      const generatedAcceptanceStatus = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('read unavailable'))
+        .mockResolvedValue({
+          receipt: mode === 'absent' ? null : old,
+          treasure: mode === 'absent' ? null : latest
+        })
+      const workspaceRead = vi.fn().mockResolvedValue(fixture.workspace)
+      if (mode === 'refresh')
+        workspaceRead.mockRejectedValueOnce(new Error('refresh failed'))
+      const failed = vi.fn()
+      const applyWorkspace = vi.fn()
+      const { result } = renderHook(() =>
+        useSessionRewardMaterialization({
+          coordinator: new AsyncCommandCoordinator(),
+          loot: { acceptGenerated, generatedAcceptanceStatus } as never,
+          planner: { read: workspaceRead } as never,
+          read: fixture.read,
+          applyWorkspace,
+          saveDraft: () => Promise.resolve(fixture.workspace),
+          failed,
+          onError: vi.fn()
+        })
       )
-    let failed!: Promise<void>
-    act(() => {
-      failed = invoke()
-    })
-    first.reject(new Error('lost response'))
-    await act(async () => failed)
-    expect(onError).toHaveBeenCalledOnce()
-
-    await act(async () => invoke())
-    expect(commandIds[1]).toBe(commandIds[0])
-    expect(applyWorkspace).toHaveBeenCalledWith(fixture.workspace)
-    expect(result.current.treasureEditor).toBe(treasure)
-  })
+      await act(async () => {
+        await result.current.materializeReward(
+          'run',
+          'generated',
+          'Label',
+          true,
+          mode === 'placed' ? (old as never) : null
+        )
+      })
+      expect(failed).toHaveBeenCalledOnce()
+      expect(failed.mock.calls[0]![0]).toMatchObject({
+        code: 'outcome_unknown'
+      })
+      const reconcile = failed.mock.calls[0]![1] as () => Promise<boolean>
+      if (mode === 'newer-local')
+        fixture.author({ ...fixture.draft, adventureDayFraction: '0.5' })
+      if (mode !== 'placed')
+        await act(async () => {
+          await expect(reconcile()).rejects.toThrow('read unavailable')
+        })
+      await act(async () => {
+        expect(await reconcile()).toBe(true)
+      })
+      expect(acceptGenerated).toHaveBeenCalledTimes(mode === 'placed' ? 0 : 1)
+      const original: unknown =
+        mode === 'placed'
+          ? generatedAcceptanceStatus.mock.calls[0]![0]
+          : acceptGenerated.mock.calls[0]![0]
+      for (const call of generatedAcceptanceStatus.mock.calls)
+        expect(call[0]).toEqual(original)
+      if (mode === 'newer-local') {
+        expect(applyWorkspace).not.toHaveBeenCalled()
+        expect(result.current.treasureEditor).toBe(false)
+      } else {
+        expect(applyWorkspace).toHaveBeenCalledWith(fixture.workspace)
+        expect(result.current.treasureEditor).toBe(
+          mode === 'absent' ? false : latest
+        )
+      }
+    }
+  )
 })
 
 function authorityFixture(dirty = true) {

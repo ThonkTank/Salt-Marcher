@@ -1,4 +1,19 @@
 import {
+  campaignSceneCommandSchema,
+  sceneCommandReceiptSchema,
+  sceneCommandStatusSchema
+} from '../scene-command.js'
+import {
+  campaignSceneGroupLifecycleCommandSchema,
+  sceneGroupLifecycleStatusSchema
+} from '../scene-group-lifecycle.js'
+import {
+  campaignScenePartyCommandSchema,
+  scenePartyCommandReceiptSchema,
+  scenePartyCommandStatusSchema
+} from '../scene-party-command.js'
+import { z } from 'zod'
+import {
   liveSessionSnapshotSchema,
   sceneGroupCommandResultSchema
 } from '../live-session.js'
@@ -19,6 +34,36 @@ import {
 import { read, utilityOperationFragment, write } from './registry.js'
 
 export const sceneOperationDefinitions = utilityOperationFragment({
+  'scene.executeCommand': write(
+    'scene:execute-command',
+    campaignSceneCommandSchema,
+    sceneCommandReceiptSchema
+  ),
+  'scene.commandStatus': read(
+    'scene:command-status',
+    campaignSceneCommandSchema,
+    sceneCommandStatusSchema
+  ),
+  'scene.executeGroupLifecycle': write(
+    'scene:execute-group-lifecycle',
+    campaignSceneGroupLifecycleCommandSchema,
+    sceneGroupCommandResultSchema
+  ),
+  'scene.groupLifecycleStatus': read(
+    'scene:group-lifecycle-status',
+    campaignSceneGroupLifecycleCommandSchema,
+    sceneGroupLifecycleStatusSchema
+  ),
+  'scene.executePartyCommand': write(
+    'scene:execute-party-command',
+    campaignScenePartyCommandSchema,
+    scenePartyCommandReceiptSchema
+  ),
+  'scene.partyCommandStatus': read(
+    'scene:party-command-status',
+    campaignScenePartyCommandSchema,
+    scenePartyCommandStatusSchema
+  ),
   'scene.setRoster': write(
     'scene:setRoster',
     setSceneRosterInputSchema,
@@ -38,6 +83,11 @@ export const sceneOperationDefinitions = utilityOperationFragment({
     'scene:setLocation',
     setSceneLocationInputSchema,
     liveSessionSnapshotSchema
+  ),
+  'scene.groupSaveReceipt': read(
+    'scene:group-save-receipt',
+    saveSceneGroupInputSchema.extend({ campaignId: z.uuid() }),
+    sceneGroupCommandResultSchema.nullable()
   ),
   'scene.saveGroup': write(
     'scene:saveGroup',

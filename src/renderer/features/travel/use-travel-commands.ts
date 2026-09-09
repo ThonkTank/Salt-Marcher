@@ -1,6 +1,7 @@
-import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
+import type { useTravelQueries } from './use-travel-queries.js'
+import { useTravelCommandTransition } from './use-travel-command-transition.js'
+import type { TravelRouteDraft } from './use-travel-route-draft.js'
 import { useCallback, useEffect, useRef } from 'react'
-import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { sameTravelScope, type TravelScope } from './travel-controller.js'
 import type {
@@ -9,18 +10,31 @@ import type {
   TravelMultiplier
 } from './travel-provider-port.js'
 import type { TravelViewProjection } from './travel-view-projection.js'
-import { travelEntityKey } from './use-travel-queries.js'
 
 const multipliers = [1, 2, 5, 10] as const
-/** Owns Scene-scoped FIFO Travel mutations and their domain failures. */
+/** Publishes command results; the provider owns durable execution and recovery. */
 export function useTravelCommands<P, S, M, E>(options: {
-  coordinator: AsyncCommandCoordinator
+  blocked: () => boolean
+  requestTransition: (run: () => Promise<void>) => Promise<void> | undefined
+  prepareCommand: ReturnType<
+    typeof useTravelQueries<P, S, M, E>
+  >['prepareCommand']
+  routeDraft: TravelRouteDraft<P> | undefined
   port: TravelProviderPort<P, S, M, E> | null
   scope: TravelScope | null
   projection: TravelViewProjection<P, S, M, E>
   onError: (message: string) => void
 }) {
-  const { coordinator, onError, port, projection, scope } = options
+  const {
+    blocked,
+    onError,
+    port,
+    projection,
+    scope,
+    routeDraft,
+    requestTransition,
+    prepareCommand
+  } = options
   const onErrorRef = useRef(onError)
   useEffect(() => {
     onErrorRef.current = onError
@@ -42,6 +56,7 @@ export function useTravelCommands<P, S, M, E>(options: {
       clearDraft: boolean
     ): Promise<void> => {
       if (
+        blocked() ||
         !port ||
         !scope ||
         read().lifecycle !== 'ready' ||
@@ -52,58 +67,26 @@ export function useTravelCommands<P, S, M, E>(options: {
       const target = capture()
       if (!target) return
       started('command')
-      const outcome = await coordinator.run({
-        scope: 'travel.command',
-        entityKey: travelEntityKey(scope),
-        mode: 'queue',
-        execute: async ({ signal }) => {
-          try {
-            const result = await port.execute(command)
-            signal.throwIfAborted()
-            return result
-          } catch (cause) {
-            // A boundary tick may advance the CAS revision while Pause is in flight.
-            // Only a definite non-write can be retried, and Pause never toggles Resume.
-            if (
-              command.kind !== 'pause' ||
-              capabilityErrorCode(cause) !== 'stale'
-            )
-              throw cause
-            signal.throwIfAborted()
-            if (!sameTravelScope(read().scope, scope)) throw cause
-            const current = await port.read({ sceneId: command.sceneId })
-            signal.throwIfAborted()
-            if (!sameTravelScope(read().scope, scope)) throw cause
-            const descriptor = port.describe(current.providerState)
-            if (descriptor.status === 'paused') return current
-            if (descriptor.status !== 'travelling') throw cause
-            const result = await port.execute({
-              ...command,
-              expectedRevision: descriptor.revision
-            })
-            signal.throwIfAborted()
-            return result
-          }
-        },
-        accept: (result) =>
-          acceptCommand({
-            target,
-            result,
-            descriptor: port.describe(result.providerState),
-            clearDraft,
-            describe: port.describe
-          })
-      })
-      if (outcome.status !== 'failure') return
-      const message = capabilityErrorText(outcome.cause)
-      if (failed(target, 'scope', 'command', message))
-        onErrorRef.current(message)
+      try {
+        const result = await port.execute(command)
+        acceptCommand({
+          target,
+          result,
+          descriptor: port.describe(result.providerState),
+          clearDraft,
+          describe: port.describe
+        })
+      } catch (cause) {
+        const message = capabilityErrorText(cause)
+        if (failed(target, 'scope', 'command', message))
+          onErrorRef.current(message)
+      }
     },
     [
       acceptCommand,
       beginIntent,
+      blocked,
       capture,
-      coordinator,
       failed,
       port,
       read,
@@ -112,8 +95,21 @@ export function useTravelCommands<P, S, M, E>(options: {
     ]
   )
 
+  const requestCommand = useTravelCommandTransition({
+    requestTransition,
+    prepareCommand,
+    blocked,
+    port,
+    scope,
+    projection,
+    routeDraft,
+    execute: applyCommand,
+    onError
+  })
+
   const positionParty = useCallback(
     async (position: P): Promise<void> => {
+      if (blocked()) return
       const current = read()
       local({ type: 'selected', position }, 'intent')
       if (
@@ -127,7 +123,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         local({ type: 'token-preview', position: null }, 'transient')
         return
       }
-      await applyCommand(
+      await requestCommand(
         {
           kind: 'position',
           sceneId: current.scope!.sceneId,
@@ -138,7 +134,7 @@ export function useTravelCommands<P, S, M, E>(options: {
         true
       )
     },
-    [applyCommand, local, port, read, sceneRevision]
+    [requestCommand, blocked, local, port, read, sceneRevision]
   )
 
   const start = useCallback(async (): Promise<void> => {
@@ -152,18 +148,19 @@ export function useTravelCommands<P, S, M, E>(options: {
       !port.canStart(current.evaluation)
     )
       return
-    await applyCommand(
+    await requestCommand(
       {
         kind: 'start',
         sceneId: current.scope!.sceneId,
         mapId: current.mapId,
         waypoints: current.waypoints,
         multiplier: current.multiplier,
-        expectedRevision: port.describe(current.providerState).revision
+        expectedRevision: port.describe(current.providerState).revision,
+        expectedSceneRevision: sceneRevision()
       },
       true
     )
-  }, [applyCommand, port, read])
+  }, [requestCommand, port, read, sceneRevision])
 
   const pauseOrResume = useCallback(async (): Promise<void> => {
     const current = read()
@@ -176,37 +173,51 @@ export function useTravelCommands<P, S, M, E>(options: {
           ? 'resume'
           : null
     if (!kind) return
-    await applyCommand(
+    await requestCommand(
       {
         kind,
         sceneId: current.scope!.sceneId,
-        expectedRevision: descriptor.revision
+        expectedRevision: descriptor.revision,
+        expectedSceneRevision: sceneRevision()
       },
       false
     )
-  }, [applyCommand, port, read])
+  }, [requestCommand, port, read, sceneRevision])
 
   const abort = useCallback(async (): Promise<void> => {
     const current = read()
     if (current.lifecycle !== 'ready' || !port || !current.providerState) return
     const descriptor = port.describe(current.providerState)
     if (!['travelling', 'paused', 'blocked'].includes(descriptor.status)) return
-    await applyCommand(
+    await requestCommand(
       {
         kind: 'abort',
         sceneId: current.scope!.sceneId,
-        expectedRevision: descriptor.revision
+        expectedRevision: descriptor.revision,
+        expectedSceneRevision: sceneRevision()
       },
       false
     )
-  }, [applyCommand, port, read])
+  }, [requestCommand, port, read, sceneRevision])
 
   const stepMultiplier = useCallback(
     async (direction: -1 | 1): Promise<void> => {
+      if (blocked()) return
       const current = read()
       const index = multipliers.indexOf(current.multiplier)
       const multiplier = multipliers[index + direction]
       if (multiplier === undefined) return
+      if (routeDraft && current.mode === 'plan') {
+        const plan = routeDraft.snapshot().plan
+        if (
+          plan &&
+          plan.mapId === current.mapId &&
+          !routeDraft.edit({ ...plan, multiplier })
+        )
+          return
+        publishLocalMultiplier(local, multiplier)
+        return
+      }
       if (!port || !current.providerState) {
         publishLocalMultiplier(local, multiplier)
         return
@@ -217,17 +228,19 @@ export function useTravelCommands<P, S, M, E>(options: {
         return
       }
       if (current.lifecycle !== 'ready') return
-      await applyCommand(
+      await requestCommand(
         {
           kind: 'set-multiplier',
           sceneId: current.scope!.sceneId,
           multiplier,
-          expectedRevision: descriptor.revision
+          expectedRevision: descriptor.revision,
+          expectedSceneRevision: sceneRevision()
         },
-        false
+        false,
+        direction
       )
     },
-    [applyCommand, local, port, read]
+    [requestCommand, blocked, local, port, read, sceneRevision, routeDraft]
   )
 
   return { positionParty, start, pauseOrResume, abort, stepMultiplier }

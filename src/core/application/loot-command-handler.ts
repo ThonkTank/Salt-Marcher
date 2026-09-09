@@ -3,6 +3,8 @@ import {
   createTreasureInputSchema,
   moveTreasureInputSchema,
   treasureSchema,
+  treasureEditorCommandSchema,
+  type TreasureEditorCommand,
   updateTreasureInputSchema,
   type AcceptGeneratedTreasureInput,
   type CreateTreasureInput,
@@ -72,6 +74,24 @@ export class LootCommandHandler {
 
   read(treasureId: string): Treasure {
     return this.context().treasures.require(treasureId)
+  }
+
+  editorStatus(input: TreasureEditorCommand) {
+    const command = treasureEditorCommandSchema.parse(input)
+    const context = this.context()
+    const receipt = readReceipt(
+      context,
+      command.input.commandId,
+      command.kind,
+      commandFingerprint(command.input),
+      command.kind === 'update' ? command.input.treasureId : undefined
+    )
+    const treasureId =
+      command.kind === 'update' ? command.input.treasureId : receipt?.id
+    return {
+      receipt,
+      treasure: treasureId ? context.treasures.require(treasureId) : null
+    }
   }
 
   create(input: CreateTreasureInput): Treasure {
@@ -164,6 +184,23 @@ export class LootCommandHandler {
       )
       return result
     })
+  }
+
+  generatedAcceptanceStatus(input: AcceptGeneratedTreasureInput) {
+    const parsed = acceptGeneratedTreasureInputSchema.parse(input)
+    const context = this.context()
+    return {
+      receipt: readReceipt(
+        context,
+        parsed.commandId,
+        'accept_generated',
+        commandFingerprint(parsed)
+      ),
+      treasure: context.treasures.findByGenerated(
+        parsed.runId,
+        parsed.generatedTreasureId
+      )
+    }
   }
 
   acceptGenerated(input: AcceptGeneratedTreasureInput): Treasure {

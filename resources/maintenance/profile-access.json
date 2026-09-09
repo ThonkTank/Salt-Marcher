@@ -1,0 +1,6 @@
+{
+  "formatVersion": 1,
+  "locking": "canonical-profile-v1",
+  "scope": "complete-profile",
+  "browserStorage": "outside-profile"
+}

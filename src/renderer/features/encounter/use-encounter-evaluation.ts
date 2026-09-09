@@ -8,13 +8,15 @@ export function useEncounterEvaluation(
   sceneId: string,
   selectedGroupIds: readonly string[],
   sceneRevision: number,
-  onError: (message: string) => void
+  onError: (message: string) => void,
+  enabled = true
 ): EncounterSelectionEvaluation | null {
   const api = useCapabilityApi()
   const [evaluation, setEvaluation] =
     useState<EncounterSelectionEvaluation | null>(null)
 
   useEffect(() => {
+    if (!enabled) return
     let current = true
     void encounterCapabilities(api)
       .encounter.evaluate({
@@ -31,7 +33,7 @@ export function useEncounterEvaluation(
     return () => {
       current = false
     }
-  }, [api, sceneId, sceneRevision, selectedGroupIds, onError])
+  }, [api, sceneId, sceneRevision, selectedGroupIds, onError, enabled])
 
-  return evaluation
+  return enabled ? evaluation : null
 }

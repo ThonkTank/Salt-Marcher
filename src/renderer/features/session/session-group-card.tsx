@@ -97,11 +97,15 @@ export function SessionGroupCard(props: {
             </button>
           ) : (
             <>
-              <button onClick={() => props.actions.restoreGroup(group)}>
+              <button
+                disabled={props.actions.groupLifecycleBusy}
+                onClick={() => props.actions.restoreGroup(group)}
+              >
                 {message('group.restore')}
               </button>
               <button
                 className="danger"
+                disabled={props.actions.groupLifecycleBusy}
                 onClick={() => props.actions.requestGroupDelete(group.id)}
               >
                 {message('ui.loeschen')}
@@ -141,6 +145,7 @@ export function SessionGroupCard(props: {
             </button>
             <button
               className="danger"
+              disabled={props.actions.groupLifecycleBusy}
               onClick={() => props.actions.confirmGroupDelete(group)}
             >
               {message('ui.wirklich.loeschen')}

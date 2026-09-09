@@ -544,12 +544,27 @@ function TestWorldFactionDialog(
   const [created, setCreated] = useState<
     ((result: EncounterTableMutationReceipt) => void) | null
   >(null)
-  const close = () => setCreated(null)
+  const [childHandle, setChildHandle] = useState<{ close: () => void } | null>(
+    null
+  )
+  const close = () => {
+    childHandle?.close()
+    setCreated(null)
+  }
   return (
     <>
       <WorldFactionDialog
         {...dialogProps}
-        requestTableCreation={(next) => setCreated(() => next)}
+        requestTableCreation={(next) => {
+          let open = true
+          setChildHandle({
+            close: () => {
+              open = false
+            }
+          })
+          setCreated(() => next)
+          return { id: 'test-table', isOpen: () => open }
+        }}
       />
       {created &&
         tableCreator?.({

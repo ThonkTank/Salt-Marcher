@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 /** Session-owned layout seam; travel providers remain workspace integrations. */
 export type SessionTravelSlots = Readonly<{
+  notice?: ReactNode
   renderMap: (presentation?: {
     view: DesktopMapView
     changed: (view: DesktopMapView) => void

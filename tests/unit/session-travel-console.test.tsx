@@ -1,6 +1,16 @@
+import type { HexTravelContextResult } from '../../src/shared/contracts/live-session.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import { useHexTravelCommandOwner } from '../../src/renderer/features/hex/use-hex-travel-command-owner.js'
+import { maintenanceDraftCoordinator as maintenance } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import type {
+  HexRoutePlanSnapshot,
+  HexTravelCommandState,
+  HexTravelCommand
+} from '../../src/shared/contracts/hex-travel-command.js'
 // @vitest-environment jsdom
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -8,6 +18,7 @@ import {
   waitFor
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useDraftTransition } from '../../src/renderer/shell/use-draft-transition.js'
 import { useEffect, useMemo, type ReactNode } from 'react'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { HexMapCanvasProps } from '../../src/renderer/features/hex/hex-map-canvas-pixi.js'
@@ -89,6 +100,18 @@ function travel(overrides: Partial<HexTravelSnapshot> = {}): HexTravelSnapshot {
 }
 
 function fixture(initialTravel: HexTravelSnapshot = travel()) {
+  let routePlan: HexRoutePlanSnapshot = { sceneId, revision: 0, plan: null }
+  const receipts = new Map<string, HexTravelCommandState>()
+  const writePlan = vi.fn<
+    (
+      input: Extract<
+        HexTravelCommand['command'],
+        { kind: 'save-plan' }
+      >['input']
+    ) => void
+  >((input) => {
+    routePlan = { sceneId, revision: routePlan.revision + 1, plan: input.plan }
+  })
   let sessionChanged: ((notice: SessionChangeNotice) => void) | null = null
   const ready = initialTravel
   const travelling = travel({
@@ -114,27 +137,41 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
       effectiveSpeedFeet: 30,
       assumedSpeedMemberNames: []
     }),
-    position: vi.fn().mockResolvedValue({ travel: ready, session }),
-    start: vi.fn().mockResolvedValue({ travel: travelling, session }),
-    pause: vi.fn().mockResolvedValue({
-      travel: travel({ ...travelling, revision: 2, status: 'paused' }),
-      session
-    }),
-    resume: vi.fn().mockResolvedValue({
-      travel: travel({ ...travelling, revision: 3, status: 'travelling' }),
-      session
-    }),
-    abort: vi.fn().mockResolvedValue({
-      travel: travel({
-        ...travelling,
-        revision: 4,
-        status: 'aborted',
-        path: []
+    position: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({ travel: ready, session }),
+    start: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({ travel: travelling, session }),
+    pause: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({ ...travelling, revision: 2, status: 'paused' }),
+        session
       }),
-      session
-    }),
+    resume: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({ ...travelling, revision: 3, status: 'travelling' }),
+        session
+      }),
+    abort: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({
+          ...travelling,
+          revision: 4,
+          status: 'aborted',
+          path: []
+        }),
+        session
+      }),
     setMultiplier: vi
-      .fn()
+      .fn<
+        (input: {
+          multiplier: 1 | 2 | 5 | 10
+        }) => Promise<HexTravelContextResult>
+      >()
       .mockImplementation((input: { multiplier: 1 | 2 | 5 | 10 }) =>
         Promise.resolve({
           travel: travel({
@@ -146,7 +183,9 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
         })
       )
   }
-  const readTravel = vi.fn().mockResolvedValue({ travel: ready, session })
+  const readTravel = vi
+    .fn<() => Promise<HexTravelContextResult>>()
+    .mockResolvedValue({ travel: ready, session })
   const api = {
     runtime: {},
     hex: {
@@ -221,6 +260,31 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
     biomes: { onChanged: vi.fn().mockReturnValue(() => undefined) },
     hexTravel: {
       read: readTravel,
+      readState: async () => ({
+        context: await readTravel(),
+        routePlan
+      }),
+      executeCommand: async ({ commandId, command }: HexTravelCommand) => {
+        if (command.kind === 'save-plan') {
+          writePlan(command.input)
+          const state = { context: await readTravel(), routePlan }
+          receipts.set(commandId, state)
+          return state
+        }
+        const context =
+          command.kind === 'set-multiplier'
+            ? await commands.setMultiplier(command.input)
+            : await commands[command.kind](command.input)
+        readTravel.mockResolvedValue(context)
+        const state = { context, routePlan }
+        receipts.set(commandId, state)
+        return state
+      },
+      commandStatus: async ({ commandId }: HexTravelCommand) => ({
+        context: await readTravel(),
+        routePlan,
+        receipt: receipts.get(commandId) ?? null
+      }),
       ...commands
     },
     session: {
@@ -239,6 +303,8 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
   } as unknown as SaltMarcherApi
   return {
     api,
+    writePlan,
+    savedPlan: () => routePlan,
     commands,
     readTravel,
     emitSessionChange: () =>
@@ -253,7 +319,9 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
 
 function Providers(props: { api: SaltMarcherApi; children: ReactNode }) {
   return (
-    <CapabilityProvider api={props.api}>{props.children}</CapabilityProvider>
+    <CapabilityProvider api={props.api}>
+      <ModalLayerProvider>{props.children}</ModalLayerProvider>
+    </CapabilityProvider>
   )
 }
 
@@ -261,11 +329,41 @@ function TravelSurfaces(props: {
   api: SaltMarcherApi
   openMap: () => void
   mapActive: boolean
+  persistent?: boolean
+  onLeave?: () => void
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
 }) {
-  const port = useMemo(
-    () => createHexTravelProviderPort(props.api),
+  const original = useMemo(
+    () => ({
+      current: () => session,
+      execute: (input: HexTravelCommand) =>
+        props.api.hexTravel.executeCommand({ ...input, campaignId }),
+      status: (input: HexTravelCommand) =>
+        props.api.hexTravel.commandStatus({ ...input, campaignId }),
+      refresh: () => props.api.hexTravel.readState({ campaignId, sceneId })
+    }),
     [props.api]
+  )
+  const owner = useHexTravelCommandOwner(
+    original,
+    (current) => props.setSnapshot(current.context.session),
+    sceneId
+  )
+  const transition = useDraftTransition('travel-test')
+  const port = useMemo(
+    () =>
+      createHexTravelProviderPort(
+        props.api,
+        props.persistent
+          ? owner.executor
+          : {
+              execute: (input) =>
+                props.api.hexTravel.executeCommand({ ...input, campaignId }),
+              refresh: () =>
+                props.api.hexTravel.readState({ campaignId, sceneId })
+            }
+      ),
+    [props.api, props.persistent, owner.executor]
   )
   useEffect(() => () => port.dispose(), [port])
   const controller = useTravelController({
@@ -273,10 +371,23 @@ function TravelSurfaces(props: {
     snapshot: session,
     setSnapshot: props.setSnapshot,
     onError: vi.fn(),
-    active: true
+    active: true,
+    ...(props.persistent
+      ? {
+          routeDraft: owner.routeDraft,
+          commandBusy: owner.busy,
+          commandsBlocked: owner.blocked
+        }
+      : {})
   })
   return (
     <>
+      {owner.notice}
+      {controller.notice}
+      {transition.dialog}
+      <button onClick={() => transition.request(() => props.onLeave?.())}>
+        Bereich wechseln
+      </button>
       <SessionHexMap controller={controller} />
       <TravelScenario
         controller={controller}
@@ -287,9 +398,295 @@ function TravelSurfaces(props: {
   )
 }
 
-afterEach(cleanup)
+afterEach(async () => {
+  cleanup()
+  const resolution = maintenance.begin()
+  try {
+    expect(await resolution.resolve('discard')).toEqual([])
+  } finally {
+    resolution.release()
+  }
+})
 
 describe('Session travel console', () => {
+  it.each(['Speichern und fortfahren', 'Verwerfen und fortfahren'])(
+    'resolves the route before Start using %s without captured discarded waypoints',
+    async (choice) => {
+      const f = fixture()
+      showPersistent(f)
+      await planRoute()
+      fireEvent.click(screen.getByRole('button', { name: 'Reise starten' }))
+      await screen.findByRole('alertdialog')
+      expect(f.commands.start).not.toHaveBeenCalled()
+      await confirmDrafts(choice)
+      await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+      if (choice.startsWith('Speichern')) {
+        await waitFor(() => expect(f.commands.start).toHaveBeenCalledOnce())
+        expect(f.commands.start.mock.calls[0]![0]).toMatchObject({
+          waypoints: [{ q: 1, r: 0 }],
+          expectedRevision: 0,
+          expectedSceneRevision: 4
+        })
+        expect(f.writePlan).toHaveBeenCalledOnce()
+      } else {
+        expect(f.commands.start).not.toHaveBeenCalled()
+        expect(f.writePlan).not.toHaveBeenCalled()
+        expect(
+          screen.getByRole('button', { name: 'Reise starten' })
+        ).toBeDisabled()
+      }
+    }
+  )
+
+  it('keeps Pause as a no-op after another editor has already paused the journey', async () => {
+    const f = fixture(travel({ status: 'travelling', revision: 3 }))
+    showPersistent(f)
+    await screen.findByRole('button', { name: 'Pause' })
+    let dirty = true
+    const savedSession = {
+      ...session,
+      scene: { ...session.scene, revision: 8 }
+    }
+    const save = vi.fn(() => {
+      dirty = false
+      f.readTravel.mockResolvedValue({
+        travel: travel({ status: 'paused', revision: 6 }),
+        session: savedSession
+      })
+      return Promise.resolve(true)
+    })
+    const unregister = maintenance.register('other-editor', {
+      label: 'EP-Entwurf',
+      isDirty: () => dirty,
+      save
+    })
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+      await confirmDrafts('Speichern und fortfahren')
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Fortsetzen' })).toBeEnabled()
+      )
+      expect(save).toHaveBeenCalledOnce()
+      expect(f.commands.pause).not.toHaveBeenCalled()
+      expect(f.commands.resume).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
+  })
+
+  it('keeps another successful save when route save fails and does not Start after discard', async () => {
+    const f = fixture()
+    let dirty = true
+    let savedValue = 0
+    const save = vi.fn(() => {
+      dirty = false
+      savedValue = 12
+      return Promise.resolve(true)
+    })
+    const unregister = maintenance.register('first-editor', {
+      label: 'EP-Entwurf',
+      isDirty: () => dirty,
+      save
+    })
+    try {
+      showPersistent(f)
+      await planRoute()
+      f.writePlan.mockImplementationOnce(() => {
+        throw new Error('route storage unavailable')
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Reise starten' }))
+      await confirmDrafts('Speichern und fortfahren')
+      await waitFor(() =>
+        expect(screen.getByRole('alertdialog')).toHaveTextContent(
+          'Routenentwurf'
+        )
+      )
+      expect(savedValue).toBe(12)
+      expect(dirty).toBe(false)
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(maintenance.isLocked()).toBe(true)
+      await confirmDrafts('Verwerfen und fortfahren')
+      await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+      expect(savedValue).toBe(12)
+      expect(save).toHaveBeenCalledOnce()
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(f.writePlan).toHaveBeenCalledOnce()
+    } finally {
+      unregister()
+    }
+  })
+
+  it.each([false, true])(
+    'blocks input during fresh preparation and abandons an unmounted view (%s)',
+    async (unmount) => {
+      const f = fixture(travel({ status: 'travelling', revision: 3 }))
+      const view = showPersistent(f)
+      await screen.findByRole('button', { name: 'Pause' })
+      const freshSession = {
+        ...session,
+        scene: { ...session.scene, revision: 8 }
+      }
+      const fresh = {
+        context: {
+          travel: travel({ status: 'travelling', revision: 6 }),
+          session: freshSession
+        },
+        routePlan: f.savedPlan()
+      }
+      f.commands.pause.mockResolvedValue({
+        travel: travel({ status: 'paused', revision: 7 }),
+        session: freshSession
+      })
+      let finish!: (value: HexTravelCommandState) => void
+      const pending = new Promise<HexTravelCommandState>((resolve) => {
+        finish = resolve
+      })
+      let dirty = true
+      const prepareRead = vi.fn(() => pending)
+      const unregister = maintenance.register('delayed-editor', {
+        label: 'EP-Entwurf',
+        isDirty: () => dirty,
+        save: () => {
+          dirty = false
+          vi.spyOn(f.api.hexTravel, 'readState').mockImplementationOnce(
+            prepareRead
+          )
+          return Promise.resolve(true)
+        }
+      })
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+        await confirmDrafts('Speichern und fortfahren')
+        await waitFor(() => expect(prepareRead).toHaveBeenCalledOnce())
+        expect(maintenance.isLocked()).toBe(true)
+        const faster = screen.getByRole('button', { name: 'Schneller' })
+        expect(faster).toBeDisabled()
+        fireEvent.click(faster)
+        fireEvent.click(screen.getByRole('button', { name: 'Token ziehen' }))
+        expect(f.commands.setMultiplier).not.toHaveBeenCalled()
+        expect(f.commands.position).not.toHaveBeenCalled()
+        if (unmount) view.unmount()
+        await act(async () => {
+          finish(fresh)
+          await pending
+        })
+        await waitFor(() => expect(maintenance.isLocked()).toBe(false))
+        if (unmount) expect(f.commands.pause).not.toHaveBeenCalled()
+        else {
+          await waitFor(() =>
+            expect(f.commands.pause).toHaveBeenCalledExactlyOnceWith({
+              sceneId,
+              expectedRevision: 6,
+              expectedSceneRevision: 8
+            })
+          )
+          expect(
+            await screen.findByRole('button', { name: 'Fortsetzen' })
+          ).toBeEnabled()
+        }
+      } finally {
+        await act(async () => {
+          finish(fresh)
+          await pending
+        })
+        unregister()
+      }
+    }
+  )
+
+  it('saves and reloads a route without starting a journey', async () => {
+    const f = fixture()
+    const element = (
+      <Providers api={f.api}>
+        <TravelSurfaces
+          api={f.api}
+          setSnapshot={vi.fn()}
+          openMap={vi.fn()}
+          mapActive
+          persistent
+        />
+      </Providers>
+    )
+    const view = render(element)
+    await screen.findByLabelText('Hex-Karte')
+    fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Schneller' }))
+    const save = screen.getByRole('button', { name: 'Route speichern' })
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+    await waitFor(() => expect(save).toBeDisabled())
+    expect(f.writePlan).toHaveBeenCalledOnce()
+    expect(f.savedPlan().plan).toEqual({
+      mapId,
+      waypoints: [{ q: 1, r: 0 }],
+      multiplier: 2
+    })
+    expect(f.commands.start).not.toHaveBeenCalled()
+    expect(maintenance.hasDirty()).toBe(false)
+    view.unmount()
+    render(element)
+    await screen.findByLabelText('Hex-Karte')
+    fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('Sichtbare Route')).toHaveTextContent(
+        '"q":1'
+      )
+    )
+    expect(screen.getByText('2×')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Route speichern' })
+    ).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Route speichern' }))
+    await waitFor(() =>
+      expect(f.savedPlan()).toMatchObject({ revision: 2, plan: null })
+    )
+    expect(f.commands.start).not.toHaveBeenCalled()
+  })
+
+  it.each(['Speichern und fortfahren', 'Verwerfen und fortfahren'])(
+    'resolves a route through the central %s dialog after cancellation',
+    async (choice) => {
+      const f = fixture()
+      const leave = vi.fn()
+      render(
+        <Providers api={f.api}>
+          <TravelSurfaces
+            api={f.api}
+            setSnapshot={vi.fn()}
+            openMap={vi.fn()}
+            onLeave={leave}
+            mapActive
+            persistent
+          />
+        </Providers>
+      )
+      await screen.findByLabelText('Hex-Karte')
+      fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+      const saveRoute = screen.getByRole('button', { name: 'Route speichern' })
+      fireEvent.click(screen.getByRole('button', { name: 'Bereich wechseln' }))
+      await screen.findByRole('alertdialog')
+      expect(saveRoute).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }))
+      expect(leave).not.toHaveBeenCalled()
+      expect(maintenance.hasDirty()).toBe(true)
+      fireEvent.click(screen.getByRole('button', { name: 'Bereich wechseln' }))
+      await screen.findByRole('alertdialog')
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: choice }))
+        await Promise.resolve()
+      })
+      await waitFor(() => expect(leave).toHaveBeenCalledOnce())
+      expect(f.writePlan).toHaveBeenCalledTimes(
+        choice.startsWith('Speichern') ? 1 : 0
+      )
+      expect(f.commands.start).not.toHaveBeenCalled()
+      expect(maintenance.hasDirty()).toBe(false)
+    }
+  )
+
   it('hides a completed route while retaining its final position and status', async () => {
     const completed = travel({
       revision: 2,
@@ -369,7 +766,8 @@ describe('Session travel console', () => {
         mapId,
         waypoints: [{ q: 1, r: 0 }],
         multiplier: 2,
-        expectedRevision: 0
+        expectedRevision: 0,
+        expectedSceneRevision: session.scene.revision
       })
     )
 
@@ -433,3 +831,32 @@ describe('Session travel console', () => {
     ).toBeDisabled()
   })
 })
+
+function showPersistent(f: ReturnType<typeof fixture>) {
+  return render(
+    <Providers api={f.api}>
+      <TravelSurfaces
+        api={f.api}
+        setSnapshot={vi.fn()}
+        openMap={vi.fn()}
+        mapActive
+        persistent
+      />
+    </Providers>
+  )
+}
+async function planRoute() {
+  await screen.findByLabelText('Hex-Karte')
+  fireEvent.click(screen.getByRole('button', { name: 'Route planen' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Wegpunkt wählen' }))
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Reise starten' })).toBeEnabled()
+  )
+}
+async function confirmDrafts(choice: string) {
+  await screen.findByRole('alertdialog')
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: choice }))
+    await Promise.resolve()
+  })
+}

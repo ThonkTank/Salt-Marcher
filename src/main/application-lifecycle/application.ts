@@ -1,10 +1,16 @@
+import { recoverWithDialog } from './startup-recovery.js'
+import {
+  recoverLocalMaintenance,
+  completeLocalMaintenance,
+  rollbackLocalMaintenance
+} from '../local-profile/maintenance.js'
 import { relaunchRelease } from '../release/relaunch.js'
 import {
   configureReleaseQualification,
   qualifyRelease,
   releaseQualificationEnabled
 } from '../release/qualification.js'
-import { mkdirSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { ReleaseController } from '../release/controller.js'
 import { releaseRoot } from '../release/paths.js'
 import {
@@ -32,39 +38,62 @@ import { capabilityEvents } from '../../shared/contracts/events.js'
 import { isE2eRuntime } from './e2e-runtime.js'
 import { loadBuildInfo, windowTitleForBuild } from './build-info.js'
 import { runtimeEvidenceSchema } from '../../shared/contracts/runtime-evidence.js'
-import {
-  acquireProfileLock,
-  type ProfileLock
-} from '../local-profile/local-profile-lock.js'
+import { type ProfileLock } from '../local-profile/local-profile-lock.js'
+
+import { openApplicationProfile } from '../local-profile/application-profile.js'
 
 let core: CoreProcessSupervisor | undefined
 let localProfileLock: ProfileLock | undefined
 
 export async function startApplication(): Promise<void> {
-  await app.whenReady()
-  configureSecurity()
-  configureReleaseQualification()
   const buildInfo = loadBuildInfo()
   const windowTitle = windowTitleForBuild(buildInfo)
   const release =
     buildInfo?.channel === 'release' &&
     process.platform === 'linux' &&
     process.arch === 'x64'
-  if (release) {
-    mkdirSync(join(releaseRoot(), 'profile'), { recursive: true })
-    app.setPath('userData', join(releaseRoot(), 'profile'))
-  }
-  if (buildInfo?.channel === 'local' || release)
-    localProfileLock = acquireProfileLock(
-      join(dirname(app.getPath('userData')), 'runtime.lock'),
-      'application'
+  let profile = release
+    ? join(releaseRoot(), 'profile')
+    : app.getPath('userData')
+  if (isE2eRuntime()) {
+    const selected = process.argv.find((argument) =>
+      argument.startsWith('--salt-marcher-profile=')
     )
+    if (selected) profile = selected.slice('--salt-marcher-profile='.length)
+  }
+  if (process.platform === 'linux') {
+    const access = openApplicationProfile(
+      profile,
+      app,
+      buildInfo?.channel === 'local' || release ? dirname(profile) : undefined
+    )
+    localProfileLock = access
+    profile = access.profile
+  }
   try {
-    const recovery = release ? await recoverRelease() : 'normal'
+    await app.whenReady()
+    configureSecurity()
+    configureReleaseQualification()
+    const installationRoot = dirname(profile)
+    const local = buildInfo?.channel === 'local'
+    const recovery = await recoverWithDialog(
+      () =>
+        release
+          ? recoverRelease()
+          : local
+            ? recoverLocalMaintenance(installationRoot, buildInfo.commit)
+            : 'normal',
+      installationRoot,
+      !process.argv.includes('--smoke-test')
+    )
+    if (recovery === null) {
+      app.quit()
+      return
+    }
     if (recovery === 'relaunch') {
       relaunchRelease(
-        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
-        []
+        join(installationRoot, 'current', 'SaltMarcher.AppImage'),
+        local ? [`--user-data-dir=${profile}`] : []
       )
       app.quit()
       return
@@ -72,11 +101,14 @@ export async function startApplication(): Promise<void> {
     await startApplicationWithProfileLock(
       buildInfo,
       windowTitle,
+      profile,
       recovery === 'verify'
     )
   } catch (error) {
-    localProfileLock?.release()
-    localProfileLock = undefined
+    if (core === undefined || core.status() === 'closed') {
+      localProfileLock?.release()
+      localProfileLock = undefined
+    }
     throw error
   }
 }
@@ -84,7 +116,8 @@ export async function startApplication(): Promise<void> {
 async function startApplicationWithProfileLock(
   buildInfo: ReturnType<typeof loadBuildInfo>,
   windowTitle: string,
-  verifyRelease = false
+  profile: string,
+  verifyMaintenance = false
 ): Promise<void> {
   if (buildInfo !== undefined)
     console.info(
@@ -97,13 +130,10 @@ async function startApplicationWithProfileLock(
   const packaged = app.isPackaged
   core = new CoreProcessSupervisor(
     {
-      dataRoot: join(
-        app.getPath('userData'),
-        packaged ? 'campaign-data' : 'development-data'
-      ),
+      dataRoot: join(profile, packaged ? 'campaign-data' : 'development-data'),
       referenceDatabasePath: resourcePath('reference', 'srd-5.1.sqlite'),
       sessionGenerationCatalogRoot: resourcePath('sessiongeneration'),
-      incompatibleDataPolicy: packaged ? 'preserve' : 'reset'
+      incompatibleDataPolicy: 'preserve'
     },
     outputPath('main', 'utility.js')
   )
@@ -147,17 +177,23 @@ async function startApplicationWithProfileLock(
     },
     () => supervisor.resumeAfterMaintenance()
   )
-  if (verifyRelease) {
+  if (verifyMaintenance) {
     try {
       await supervisor.waitUntilReady()
-      await completeRelease()
+      if (buildInfo?.channel === 'local')
+        completeLocalMaintenance(dirname(profile), buildInfo.commit)
+      else completeRelease()
     } catch (error) {
       await supervisor.closeGracefully()
-      await rollbackRelease()
-      relaunchRelease(
-        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
-        []
-      )
+      const installationRoot = dirname(profile)
+      if (buildInfo?.channel === 'local')
+        rollbackLocalMaintenance(installationRoot)
+      else rollbackRelease()
+      if (existsSync(join(installationRoot, 'current')))
+        relaunchRelease(
+          join(installationRoot, 'current', 'SaltMarcher.AppImage'),
+          buildInfo?.channel === 'local' ? [`--user-data-dir=${profile}`] : []
+        )
       app.quit()
       throw error
     }
@@ -166,7 +202,7 @@ async function startApplicationWithProfileLock(
   createMainWindow(windowTitle)
   if (releaseQualificationEnabled()) {
     await supervisor.waitUntilReady()
-    void qualifyRelease(releases, verifyRelease, async () => {
+    void qualifyRelease(releases, verifyMaintenance, async () => {
       await supervisor.requestOperation('campaign.create', {
         commandId: crypto.randomUUID(),
         expectedRegistryRevision: 0,
@@ -294,21 +330,30 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
 }
 
 export async function stopApplication(): Promise<void> {
-  try {
-    await core?.closeGracefully()
-  } finally {
-    core = undefined
-    localProfileLock?.release()
-    localProfileLock = undefined
-    if (isE2eRuntime())
-      ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
-    if (isE2eRuntime())
-      ipcMain.removeHandler(
-        'salt-marcher-e2e:interrupt-generator-preset-create'
-      )
-    if (isE2eRuntime())
-      ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
-  }
+  await core?.closeGracefully()
+  core = undefined
+  localProfileLock?.release()
+  localProfileLock = undefined
+  if (isE2eRuntime())
+    ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
+  if (isE2eRuntime())
+    ipcMain.removeHandler('salt-marcher-e2e:interrupt-generator-preset-create')
+  if (isE2eRuntime()) ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
+}
+
+/** Observe an already requested shutdown without releasing the live profile lease. */
+export function waitForCoreTermination(): Promise<void> {
+  const supervisor = core
+  if (supervisor === undefined || supervisor.status() === 'closed')
+    return Promise.resolve()
+  return new Promise((resolve) => {
+    let unsubscribe = () => {}
+    unsubscribe = supervisor.onStatus((status) => {
+      if (status !== 'closed') return
+      unsubscribe()
+      resolve()
+    })
+  })
 }
 
 export function waitForCoreReady(): Promise<void> {

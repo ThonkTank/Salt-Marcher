@@ -1,3 +1,5 @@
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import type { CatalogNavigation } from '../catalog/catalog-section-selector.js'
 import {
   lazy,
@@ -24,7 +26,10 @@ import { WorkspaceErrors } from './workspace-errors.js'
 import { WorkspaceRail } from './workspace-rail.js'
 import { WorkspaceRouteHost } from './workspace-route-host.js'
 import { WorkspaceTopBar } from './workspace-top-bar.js'
-import { workspaceDefinition } from './workspace-definition.js'
+import {
+  workspaceDefinition,
+  type WorkspaceId
+} from './workspace-definition.js'
 import './workspace.css'
 import type {
   GeneratorPresetApplicationLoader,
@@ -110,36 +115,57 @@ export function WorkspaceApp() {
   }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const transition = useDraftTransition(
+    `${coordinator.campaigns.activeCampaignId ?? ''}:${coordinator.screen}:${coordinator.workspace}`
+  )
+  const requestTransition = transition.request
   const setWorkspace = coordinator.setWorkspace
+  const changeWorkspace = useCallback(
+    (target: WorkspaceId, run?: () => void) => {
+      if (maintenanceDraftCoordinator.isLocked()) return
+      const change = () => {
+        setWorkspace(target)
+        run?.()
+      }
+      if (
+        target === coordinator.workspace &&
+        coordinator.screen === 'workspace'
+      )
+        change()
+      else requestTransition(change)
+    },
+    [coordinator.workspace, coordinator.screen, setWorkspace, requestTransition]
+  )
   const routeDesktopReference = useCallback(
     (target: ReferenceTarget, title: string | undefined, separate: boolean) => {
       const campaignId = coordinator.campaigns.activeCampaignId
       const sceneId = focusedSceneId
       if (!campaignId || !sceneId) return
-      setWorkspace('session')
-      void import('../scene-desktop/desktop-projection.js')
-        .then(async ({ desktopProjection }) => {
-          const projection = desktopProjection(api.sceneDesktop, {
-            campaignId,
-            sceneId
+      changeWorkspace('session', () => {
+        void import('../scene-desktop/desktop-projection.js')
+          .then(async ({ desktopProjection }) => {
+            const projection = desktopProjection(api.sceneDesktop, {
+              campaignId,
+              sceneId
+            })
+            await projection.load()
+            projection.dispatch({
+              type: 'open-reference',
+              entry: {
+                target,
+                title: title?.slice(0, 300) || message('desktop.reference'),
+                scrollTop: 0
+              },
+              ...(separate ? { separateId: crypto.randomUUID() } : {})
+            })
           })
-          await projection.load()
-          projection.dispatch({
-            type: 'open-reference',
-            entry: {
-              target,
-              title: title?.slice(0, 300) || message('desktop.reference'),
-              scrollTop: 0
-            },
-            ...(separate ? { separateId: crypto.randomUUID() } : {})
-          })
-        })
-        .catch(() => featureError(message('desktop.referenceOpenFailed')))
+          .catch(() => featureError(message('desktop.referenceOpenFailed')))
+      })
     },
     [
       api.sceneDesktop,
       coordinator.campaigns.activeCampaignId,
-      setWorkspace,
+      changeWorkspace,
       focusedSceneId,
       featureError
     ]
@@ -156,18 +182,19 @@ export function WorkspaceApp() {
   const activeCampaignId = coordinator.campaigns.activeCampaignId
   const openSceneWindow = (type: 'open-map' | 'open-characters') => {
     if (!activeCampaignId || !focusedSceneId) return
-    coordinator.setWorkspace('session')
-    const scope = { campaignId: activeCampaignId, sceneId: focusedSceneId }
-    void import('../scene-desktop/desktop-projection.js')
-      .then(async ({ desktopProjection }) => {
-        const projection = desktopProjection(api.sceneDesktop, scope)
-        await projection.load()
-        projection.dispatch({ type })
-        if (type === 'open-map')
-          projection.dispatch({ type: 'map-controls', value: true })
-        projection.requestFocus(type === 'open-map' ? 'map' : 'characters')
-      })
-      .catch(() => featureError(message('desktop.referenceOpenFailed')))
+    changeWorkspace('session', () => {
+      const scope = { campaignId: activeCampaignId, sceneId: focusedSceneId }
+      void import('../scene-desktop/desktop-projection.js')
+        .then(async ({ desktopProjection }) => {
+          const projection = desktopProjection(api.sceneDesktop, scope)
+          await projection.load()
+          projection.dispatch({ type })
+          if (type === 'open-map')
+            projection.dispatch({ type: 'map-controls', value: true })
+          projection.requestFocus(type === 'open-map' ? 'map' : 'characters')
+        })
+        .catch(() => featureError(message('desktop.referenceOpenFailed')))
+    })
   }
   const surfaceProps =
     coordinator.session && activeCampaignId
@@ -182,18 +209,19 @@ export function WorkspaceApp() {
               ...current,
               [activeCampaignId]: navigation
             })),
-          openCharacter: (characterId: string) => {
-            setCatalogNavigation((current) => ({
-              ...current,
-              [activeCampaignId]: { section: 'characters', characterId }
-            }))
-            coordinator.setWorkspace('catalog')
-          },
+          openCharacter: (characterId: string) =>
+            requestTransition(() => {
+              setCatalogNavigation((current) => ({
+                ...current,
+                [activeCampaignId]: { section: 'characters', characterId }
+              }))
+              coordinator.setWorkspace('catalog')
+            }),
           snapshot: coordinator.session,
           setSnapshot,
           inspect: setInspected,
           onError: featureError,
-          returnToSession: () => coordinator.setWorkspace('session')
+          returnToSession: () => changeWorkspace('session')
         }
       : null
   const definition = workspaceDefinition(coordinator.workspace)
@@ -242,7 +270,11 @@ export function WorkspaceApp() {
           campaignMenuOpen={coordinator.campaignMenuOpen}
           setCampaignMenuOpen={coordinator.setCampaignMenuOpen}
           screen={coordinator.screen}
-          showCampaigns={coordinator.showCampaigns}
+          showCampaigns={() =>
+            requestTransition(() => {
+              void coordinator.showCampaigns()
+            })
+          }
           workspace={coordinator.workspace}
           session={coordinator.session}
           dayOpen={dayOpen}
@@ -269,12 +301,8 @@ export function WorkspaceApp() {
               sessionRetry={coordinator.sessionRetry}
               retryCatalog={coordinator.retryCatalog}
               retrySession={coordinator.retrySession}
-              create={coordinator.createCampaign}
-              activate={coordinator.switchCampaign}
-              rename={coordinator.renameCampaign}
-              trash={coordinator.trashCampaign}
-              restore={coordinator.restoreCampaign}
-              deleteForever={coordinator.deleteCampaignForever}
+              begin={coordinator.beginCampaignAction}
+              maintenanceDependencyId={coordinator.campaignMaintenanceId}
               reconciliationPending={coordinator.campaignReconciliationPending}
               reconcile={coordinator.reconcileCampaign}
             />
@@ -284,7 +312,7 @@ export function WorkspaceApp() {
             <WorkspaceRail
               active={active}
               workspace={coordinator.workspace}
-              select={coordinator.setWorkspace}
+              select={changeWorkspace}
             />
             <div
               className={`work-area layout-${active ? definition.layout : 'scroll'}`}
@@ -298,6 +326,7 @@ export function WorkspaceApp() {
             </div>
           </div>
         )}
+        {transition.dialog}
         <WorkspaceErrors errors={errors} dismiss={dismiss} />
         {inspected && (
           <CreatureInspector

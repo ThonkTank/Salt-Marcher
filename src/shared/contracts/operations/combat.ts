@@ -1,4 +1,8 @@
 import {
+  campaignCombatCommandSchema,
+  combatCommandStatusSchema
+} from '../combat-command.js'
+import {
   adjustInitiativeInputSchema,
   awardCombatXpInputSchema,
   changeHpInputSchema,
@@ -13,9 +17,19 @@ import {
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../live-session.js'
-import { utilityOperationFragment, write } from './registry.js'
+import { utilityOperationFragment, read, write } from './registry.js'
 
 export const combatOperationDefinitions = utilityOperationFragment({
+  'combat.executeCommand': write(
+    'combat:executeCommand',
+    campaignCombatCommandSchema,
+    combatCommandResultSchema
+  ),
+  'combat.commandStatus': read(
+    'combat:commandStatus',
+    campaignCombatCommandSchema,
+    combatCommandStatusSchema
+  ),
   'combat.prepare': write(
     'combat:prepare',
     prepareCombatInputSchema,

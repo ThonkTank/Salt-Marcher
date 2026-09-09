@@ -217,3 +217,38 @@ describe('scene desktop projection', () => {
     expect(api.save).toHaveBeenCalledTimes(1)
   })
 })
+
+it.each(['running', 'scheduled', 'failed'] as const)(
+  'settles %s desktop autosave before navigation without replaying failures',
+  async (kind) => {
+    const { MaintenanceDraftCoordinator } =
+      await import('../../src/renderer/shell/maintenance-draft-coordinator.js')
+    const maintenance = new MaintenanceDraftCoordinator()
+    const api = mockApi()
+    const completion = deferred<SceneDesktopSnapshot>()
+    if (kind === 'failed')
+      api.save.mockRejectedValue(new Error('disk unavailable'))
+    else api.save.mockReturnValue(completion.promise)
+    const model = new DesktopProjection(api, scope, maintenance)
+    await model.load()
+    model.dispatch(
+      kind === 'scheduled'
+        ? { type: 'query', value: 'preserved search' }
+        : { type: 'open-search' }
+    )
+    let settled = false
+    const waiting = maintenance.settleBackgroundWrites().then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    if (kind !== 'failed') {
+      completion.resolve(stored(1, model.snapshot().state))
+    }
+    await waiting
+    expect(api.save).toHaveBeenCalledOnce()
+    expect(maintenance.hasDirty()).toBe(kind === 'failed')
+    await maintenance.settleBackgroundWrites()
+    expect(api.save).toHaveBeenCalledOnce()
+  }
+)

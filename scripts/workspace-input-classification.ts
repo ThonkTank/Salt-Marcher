@@ -26,6 +26,7 @@ const appBuildFiles = new Set([
   'scripts/build-app.ts',
   'scripts/build-identity.ts',
   'scripts/build-passive-preload.ts',
+  'scripts/build-maintenance-launcher.ts',
   'scripts/build-qualification.ts',
   'scripts/build-receipt.ts',
   'scripts/file-hash.ts',

@@ -1,3 +1,4 @@
+import { browserRuntimePath } from './src/main/local-profile/application-profile.js'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { electronTestApplication } from './scripts/electron-test-application.js'
@@ -24,7 +25,8 @@ const testApplication = electronTestApplication(
     '--no-sandbox',
     '--salt-marcher-e2e-runtime',
     '--passive-e2e',
-    `--user-data-dir=${userData}`,
+    `--user-data-dir=${browserRuntimePath(userData)}`,
+    `--salt-marcher-profile=${userData}`,
     '--disable-gpu'
   ]
 )

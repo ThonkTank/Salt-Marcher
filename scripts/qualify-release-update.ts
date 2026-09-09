@@ -18,7 +18,7 @@ import {
 } from '../src/shared/contracts/release.js'
 import { stageDeployment, setCurrent } from '../src/main/release/deployment.js'
 import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
-import { ProfileTransaction } from '../src/core/maintenance/profile-transaction.js'
+import { ProfileMaintenance } from '../src/core/maintenance/profile-maintenance.js'
 import { durableJson } from '../src/shared/maintenance/files.js'
 const baselineDirectory = resolve(process.argv[2] ?? 'release/baseline')
 const targetDirectory = resolve(process.argv[3] ?? 'release/release')
@@ -126,7 +126,7 @@ try {
   if (reader.list().campaigns[0]?.name !== 'Update-Abnahme')
     throw new Error('Campaign failed readback')
   reader.close()
-  const backups = new ProfileTransaction(root, target.version).backups()
+  const backups = new ProfileMaintenance(root, target.version).backups()
   if (!backups[0]?.valid) throw new Error('No verified pre-update backup')
   writeFileSync(join(data, 'acceptance.txt'), 'nach dem Update')
   await run(['restore', backups[0].id])

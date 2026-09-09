@@ -1,10 +1,12 @@
+import { registerQuitBarrier } from './application-lifecycle/quit-barrier.js'
 import { app } from 'electron'
 import {
   runSessionGenerationSmoke,
   reportInstalledRuntimeVerification,
   startApplication,
   stopApplication,
-  waitForCoreReady
+  waitForCoreReady,
+  waitForCoreTermination
 } from './application-lifecycle/application.js'
 
 const smokeTest = process.argv.includes('--smoke-test')
@@ -31,23 +33,36 @@ void (
         )
         .then(() => app.quit())
         .catch((error: unknown) => {
-          console.error('SaltMarcher core failed smoke readiness', error)
-          app.exit(1)
+          failAfterShutdown('SaltMarcher core failed smoke readiness', error)
         })
   })
   .catch((error: unknown) => {
-    console.error('SaltMarcher failed to start', error)
-    app.exit(1)
+    failAfterShutdown('SaltMarcher failed to start', error)
   })
+
+function failAfterShutdown(message: string, error: unknown): void {
+  console.error(message, error)
+  void stopApplication().then(
+    () => app.exit(1),
+    (shutdownError: unknown) => {
+      console.error(
+        'SaltMarcher retains its profile lock until the data process exits',
+        shutdownError
+      )
+      void waitForCoreTermination()
+        .then(() => stopApplication())
+        .then(() => app.exit(1))
+        .catch((error) =>
+          console.error('SaltMarcher could not finish shutdown', error)
+        )
+    }
+  )
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-let shuttingDown = false
-app.on('before-quit', (event) => {
-  if (shuttingDown) return
-  event.preventDefault()
-  shuttingDown = true
-  void stopApplication().finally(() => app.quit())
+registerQuitBarrier(app, stopApplication, (error) => {
+  console.error('SaltMarcher could not finish closing its data process', error)
 })

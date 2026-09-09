@@ -1,5 +1,12 @@
 # Linux release operations
 
+The public Electron target is 0.3.0. Publication is pending the
+[maintenance roadmap](../project/architecture/release-maintenance-roadmap.md).
+The steps below describe the current tooling, not proof that the new release
+has been accepted. The hard-coded baseline selection and missing verified
+environment protection are tracked in Phase 6. Package metadata stays at the
+internal 0.2.0 version until that tooling is migrated together.
+
 1. Finish the required exact-SHA candidate checks and canonical Local handoff,
    then promote the unchanged candidate to main. The version must already match
    package.json and docs/releases/<version>.md.

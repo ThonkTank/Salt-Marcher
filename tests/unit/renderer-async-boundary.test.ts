@@ -8,11 +8,14 @@ const migratedOwners = readdirSync(sessionDirectory)
   .filter(
     (name) =>
       name === 'group-manager-state.ts' ||
-      name === 'use-session-mutation-controller.ts' ||
+      name === 'use-session-scene-controller.ts' ||
+      name === 'use-scene-commands.tsx' ||
       name.startsWith('use-group-manager-')
   )
   .map((name) => `${sessionDirectory}/${name}`)
   .concat([
+    'src/renderer/features/travel/use-travel-commands.ts',
+    'src/renderer/features/hex/use-hex-travel-command-owner.tsx',
     'src/renderer/features/session-planner/use-session-planner-controller.ts',
     'src/renderer/features/session-planner/use-encounter-plan-search.ts'
   ])

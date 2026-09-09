@@ -1,4 +1,5 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type {
   Creature,
@@ -31,7 +32,8 @@ import {
   createEncounterTableDraftState,
   encounterTableDraftDirty,
   encounterTableDraftReducer,
-  encounterTableDraftValue
+  encounterTableDraftValue,
+  type EncounterTableDraftAction
 } from './encounter-table-draft.js'
 import type { EncounterTableEditorRenderProps } from './encounter-table-editor-types.js'
 import type { EncounterTableSaveResult } from './encounter-table-editor-types.js'
@@ -46,7 +48,7 @@ import {
 export type { EncounterTableSaveResult } from './encounter-table-editor-types.js'
 
 export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
-  const [draft, dispatch] = useReducer(
+  const [draft, rawDispatch] = useReducer(
     encounterTableDraftReducer,
     props.table,
     createEncounterTableDraftState
@@ -67,21 +69,52 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
     {}
   )
   const [discardOpen, setDiscardOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [saving, setBusy] = useState(false)
   const [persisted, setPersisted] = useState(false)
   const submission = useRef(
     new PersistedSubmissionLifecycle<EncounterTableSaveResult>()
   )
   const [reconciliationFailed, setReconciliationFailed] = useState(false)
   const [error, setError] = useState('')
-  const [creationScope, setCreationScope] =
+  const [creationScope, rawSetCreationScope] =
     useState<EncounterTableScope>('campaign')
   const creaturePort = props.creaturePort
 
   const dirty =
     encounterTableDraftDirty(draft) ||
     (!props.table && creationScope !== 'campaign')
-  useMaintenanceDraftGuard(dirty)
+  const draftRef = useRef(draft)
+  const scopeRef = useRef(creationScope)
+  const settled = useRef(false)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const blocked = useMaintenanceDraft(
+    {
+      label: `Begegnungstabelle: ${draft.displayName.trim() || 'Neue Tabelle'}`,
+      isDirty: () =>
+        !settled.current &&
+        (pending.current !== null ||
+          encounterTableDraftDirty(draftRef.current) ||
+          (!props.table && scopeRef.current !== 'campaign')),
+      save: saveDraft,
+      discard: discardDraft
+    },
+    props.maintenanceId
+  )
+  const busy = saving || blocked
+  const inputBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() || pending.current !== null
+  const dispatch = (action: EncounterTableDraftAction) => {
+    if (inputBlocked() || submission.current.persistedValue !== null) return
+    draftRef.current = encounterTableDraftReducer(draftRef.current, action)
+    settled.current = false
+    rawDispatch(action)
+  }
+  const setCreationScope = (scope: EncounterTableScope) => {
+    if (inputBlocked() || submission.current.persistedValue !== null) return
+    scopeRef.current = scope
+    settled.current = false
+    rawSetCreationScope(scope)
+  }
   const creatureIdsKey = [...draft.order].toSorted().join('\u0000')
   const entries = useMemo(
     () =>
@@ -136,60 +169,72 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
   }, [creatureIdsKey, creaturePort])
 
   const requestClose = () => {
-    if (busy) return
+    if (inputBlocked()) return
     if (dirty) setDiscardOpen(true)
     else props.close()
   }
 
-  async function save() {
+  function saveDraft(): Promise<boolean> {
+    if (pending.current) return pending.current
+    if (submission.current.phase === 'reconciled') return Promise.resolve(true)
     const submissionDraft = parseEncounterTableEditorSubmission(
-      encounterTableDraftValue(draft)
+      encounterTableDraftValue(draftRef.current)
     )
-    if (busy || persisted || !submissionDraft.success) return
+    if (!submissionDraft.success) return Promise.resolve(false)
+    const scope = props.table?.scope ?? scopeRef.current
     setBusy(true)
     setError('')
-    const outcome = await executePersistedSubmission(
-      submission.current,
-      () =>
-        props.save(
-          props.table,
-          submissionDraft.data,
-          props.table?.scope ?? creationScope
-        ),
-      props.saved
-    )
-    if (
-      outcome.status === 'reconciled' ||
-      outcome.status === 'reconciliation-failed'
-    )
-      setPersisted(true)
-    if (
-      outcome.status === 'mutation-failed' ||
-      outcome.status === 'reconciliation-failed'
-    ) {
-      const nextError = presentCapabilityError(outcome.cause, props.onError)
-      setError(nextError)
-    }
-    setReconciliationFailed(outcome.status === 'reconciliation-failed')
-    setBusy(false)
+    const operation = Promise.resolve()
+      .then(() =>
+        submission.current.persistedValue !== null
+          ? retryPersistedSubmissionReconciliation(
+              submission.current,
+              props.saved
+            )
+          : executePersistedSubmission(
+              submission.current,
+              () => props.save(props.table, submissionDraft.data, scope),
+              props.saved
+            )
+      )
+      .then((outcome) => {
+        if (
+          outcome.status === 'reconciled' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setPersisted(true)
+        if (
+          outcome.status === 'mutation-failed' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setError(presentCapabilityError(outcome.cause, props.onError))
+        setReconciliationFailed(outcome.status === 'reconciliation-failed')
+        settled.current = outcome.status === 'reconciled'
+        return settled.current
+      })
+      .finally(() => {
+        pending.current = null
+        setBusy(false)
+      })
+    pending.current = operation
+    return operation
   }
-
-  async function retryReconciliation() {
-    if (busy || !reconciliationFailed) return
-    setBusy(true)
-    setError('')
-    const outcome = await retryPersistedSubmissionReconciliation(
-      submission.current,
-      props.saved
-    )
-    setReconciliationFailed(outcome.status === 'reconciliation-failed')
-    if (outcome.status === 'reconciliation-failed')
-      setError(presentCapabilityError(outcome.cause, props.onError))
-    setBusy(false)
+  async function discardDraft(): Promise<boolean> {
+    if (pending.current) await pending.current.catch(() => false)
+    props.close()
+    settled.current = true
+    return true
+  }
+  const save = () => {
+    if (!inputBlocked() && !persisted) return saveDraft()
+  }
+  const retryReconciliation = () => {
+    if (!inputBlocked() && reconciliationFailed) return saveDraft()
   }
 
   const catalog = (
     <EncounterTableCreatureCatalogTable
+      disabled={busy || persisted}
       query={query}
       options={options}
       searchBiomeOptions={searchBiomeOptions}
@@ -202,6 +247,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
         total: page?.total ?? 0
       })}
       add={(creature) => {
+        if (inputBlocked() || submission.current.persistedValue !== null) return
         dispatch({ kind: 'add', creatureId: creature.id })
         setFacts((known) => ({ ...known, [creature.id]: creature }))
       }}
@@ -219,7 +265,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
           required
           aria-label={message('ui.tabellenname')}
           maxLength={100}
-          disabled={busy}
+          disabled={busy || persisted}
           value={draft.displayName}
           onChange={(event) =>
             dispatch({ kind: 'name', value: event.target.value })
@@ -231,7 +277,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
           {message('encounterTable.scope')}
           <select
             aria-label={message('encounterTable.scopeLabel')}
-            disabled={busy}
+            disabled={busy || persisted}
             value={creationScope}
             onChange={(event) =>
               setCreationScope(event.target.value as EncounterTableScope)
@@ -252,7 +298,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
           aria-label={message('ui.tabellenbeschreibung')}
           rows={3}
           maxLength={20_000}
-          disabled={busy}
+          disabled={busy || persisted}
           value={draft.description}
           onChange={(event) =>
             dispatch({ kind: 'description', value: event.target.value })
@@ -307,7 +353,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
                   aria-label={formatMessage('encounterTable.decreaseWeight', {
                     name
                   })}
-                  disabled={weight <= 1 || busy}
+                  disabled={weight <= 1 || busy || persisted}
                   onClick={() =>
                     dispatch({
                       kind: 'weight',
@@ -324,7 +370,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
                   aria-label={formatMessage('encounterTable.increaseWeight', {
                     name
                   })}
-                  disabled={weight >= 10 || busy}
+                  disabled={weight >= 10 || busy || persisted}
                   onClick={() =>
                     dispatch({
                       kind: 'weight',
@@ -345,7 +391,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
                 aria-label={formatMessage('encounterTable.removeCreature', {
                   name
                 })}
-                disabled={busy}
+                disabled={busy || persisted}
                 onClick={() => dispatch({ kind: 'remove', creatureId: id })}
               >
                 ×
@@ -449,8 +495,12 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
           message={message('ui.ungespeicherte.aenderungen.verwerfen')}
           cancelLabel={message('action.cancel')}
           discardLabel={message('ui.aenderungen.verwerfen')}
-          onCancel={() => setDiscardOpen(false)}
-          onDiscard={props.close}
+          onCancel={() => {
+            if (!inputBlocked()) setDiscardOpen(false)
+          }}
+          onDiscard={() => {
+            if (!inputBlocked()) void discardDraft()
+          }}
         />
       )}
     </>

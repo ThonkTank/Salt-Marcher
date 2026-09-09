@@ -77,9 +77,7 @@ export function publicCoreStatus(state: CoreLifecycleState): CoreProcessStatus {
     case 'terminating':
       return state.disposition === 'terminal'
         ? terminalStatus(state.reason)
-        : state.disposition === 'closed'
-          ? 'closed'
-          : 'recovering'
+        : 'recovering'
     case 'backing-off':
       return 'recovering'
     case 'unavailable':
@@ -87,7 +85,7 @@ export function publicCoreStatus(state: CoreLifecycleState): CoreProcessStatus {
     case 'terminal':
       return terminalStatus(state.reason)
     case 'closing':
-      return state.child === undefined ? 'closed' : 'ready'
+      return 'recovering'
     case 'closed':
       return 'closed'
   }

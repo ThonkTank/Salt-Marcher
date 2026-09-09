@@ -18,7 +18,27 @@ architectureGate(
   () => {
     const sources = sourceMap('src/renderer')
     expect(rendererControllerBoundaryViolations(sources)).toEqual([])
+    const sceneOwner = 'src/renderer/features/session/use-scene-commands.tsx'
+    expect(
+      rendererControllerBoundaryViolations({
+        ...sources,
+        [sceneOwner]: sources[sceneOwner]!.replace(
+          'useMaintenanceDraft(',
+          'missingMaintenance('
+        )
+      })
+    ).toContainEqual(
+      expect.objectContaining({
+        path: sceneOwner,
+        code: 'missing_required_call'
+      })
+    )
     const mutations = [
+      {
+        path: 'src/renderer/features/session/use-group-manager-controller.ts',
+        append: '\ngroupManagerReducer(state, action)\n',
+        code: 'multiple_group_reducer_owners'
+      },
       {
         path: 'src/renderer/features/session/session-group-card.tsx',
         append: '\nuseCapabilityApi()\n',
@@ -183,8 +203,19 @@ architectureGate(
     const commands = readTypeScriptModule(
       'src/renderer/features/travel/use-travel-commands.ts'
     )
-    expect(commands.stringLiterals).toContain('queue')
-    expect(commands.stringLiterals).toContain('travel.command')
+    expect(commands.stringLiterals).not.toContain('queue')
+    expect(hasCall(commands, 'execute')).toBe(true)
+    const owner = readTypeScriptModule(
+      'src/renderer/features/hex/use-hex-travel-command-owner.tsx'
+    )
+    expect(hasCall(owner, 'useMaintenanceDraft')).toBe(true)
+    expect(hasCall(owner, 'useSyncExternalStore')).toBe(true)
+    expect(owner.identifiers.has('HexTravelCommandController')).toBe(true)
+    const integration = readTypeScriptModule(
+      'src/renderer/features/workspace/integrations/session-travel.tsx'
+    )
+    expect(hasCall(integration, 'useHexTravelCommandPort')).toBe(true)
+    expect(hasCall(integration, 'useHexTravelCommandOwner')).toBe(true)
 
     const reconciliation = readTypeScriptModule(
       'src/renderer/features/travel/use-travel-remote-reconciliation.ts'

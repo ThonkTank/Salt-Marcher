@@ -1,4 +1,16 @@
 export const lootMessagesDe = {
+  'loot.distributionCheck': 'Gespeicherte Verteilung prüfen',
+  'loot.distributionConflict':
+    'Schatz oder Gruppe wurden inzwischen geändert. Bitte die Verteilung verwerfen und mit dem aktuellen Stand erneut öffnen.',
+  'loot.distributionNotSaved':
+    'Die Verteilung wurde nicht gespeichert. Du kannst die Anteile bestätigen oder verwerfen.',
+  'loot.editorCheck': 'Gespeicherten Schatz prüfen',
+  'loot.editorInvalid':
+    'Bitte Bezeichnung, Gegenstände und Behälter prüfen oder den Entwurf verwerfen.',
+  'loot.editorConflict':
+    'Der gespeicherte Schatz hat sich geändert. Bitte den Entwurf verwerfen und den aktuellen Schatz erneut öffnen.',
+  'loot.editorNotSaved':
+    'Der Entwurf wurde nicht gespeichert. Du kannst ihn speichern oder verwerfen.',
   'loot.title': 'Schatz',
   'loot.add': 'Schatz hinzufügen',
   'loot.edit': 'Schatz bearbeiten',
@@ -142,6 +154,16 @@ export const lootMessagesDe = {
   'loot.correctTitle': 'Eintrag korrigieren',
   'loot.status': 'Status',
   'loot.reason': 'Grund',
+  'loot.correctionCheck': 'Gespeicherten Stand prüfen',
+  'loot.ledgerReload': 'Beute erneut laden',
+  'loot.correctionInvalid':
+    'Bitte eine ganze positive Menge und einen Grund mit höchstens 500 Zeichen eingeben.',
+  'loot.correctionConflict':
+    'Die Beuteliste hat sich geändert. Bitte die Korrektur verwerfen und den aktuellen Eintrag erneut bearbeiten.',
+  'loot.correctionReadMismatch':
+    'Der gespeicherte Beutestand passt nicht zum ursprünglichen Auftrag. Bitte erneut prüfen.',
+  'loot.correctionNotSaved':
+    'Die Korrektur wurde nicht gespeichert. Du kannst sie erneut speichern oder verwerfen.',
   'loot.correctSave': 'Korrektur speichern',
   'loot.unresolvedKicker': 'Zuordnung fehlt',
   'loot.unresolvedTitle': 'Frühere Beute',

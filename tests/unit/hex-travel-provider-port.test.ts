@@ -1,3 +1,4 @@
+import type { HexTravelCommandState } from '../../src/shared/contracts/hex-travel-command.js'
 import { describe, expect, it, vi } from 'vitest'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import type { HexCapabilities } from '../../src/renderer/features/hex/hex-capabilities.js'
@@ -6,7 +7,7 @@ import { createHexTravelProviderPort } from '../../src/renderer/features/hex/hex
 const sceneId = '01900000-0000-7000-8000-000000000080'
 const mapId = '01900000-0000-7000-8000-000000000081'
 const session = { scene: { focusedSceneId: sceneId } } as LiveSessionSnapshot
-const travel = {
+const travel: HexTravelCommandState['context']['travel'] = {
   revision: 4,
   sceneId,
   status: 'ready',
@@ -27,7 +28,7 @@ const travel = {
   assumedSpeedMemberNames: [],
   multiplier: 1,
   hintCode: 'ready'
-} as const
+}
 
 function fixture() {
   const result = { travel, session }
@@ -89,13 +90,21 @@ function fixture() {
     },
     hexTravel
   } as unknown as HexCapabilities
-  return { capabilities, hexTravel, sessionRead }
+  const state: HexTravelCommandState = {
+    context: result,
+    routePlan: { sceneId, revision: 0, plan: null }
+  }
+  const executor = {
+    execute: vi.fn().mockResolvedValue(state),
+    refresh: vi.fn().mockResolvedValue(state)
+  }
+  return { capabilities, hexTravel, sessionRead, executor, state }
 }
 
 describe('Hex travel provider port', () => {
   it('bootstraps one consistent provider/session projection', async () => {
     const test = fixture()
-    const port = createHexTravelProviderPort(test.capabilities)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
     await expect(port.read({ sceneId })).resolves.toMatchObject({
       providerState: { travel },
       session
@@ -107,9 +116,62 @@ describe('Hex travel provider port', () => {
     port.dispose()
   })
 
+  it('carries the saved plan through reads, descriptions and command replies', async () => {
+    const test = fixture()
+    const plan = {
+      sceneId,
+      revision: 7,
+      plan: { mapId, waypoints: [{ q: 2, r: -1 }], multiplier: 5 as const }
+    }
+    test.executor.refresh.mockResolvedValue({ ...test.state, routePlan: plan })
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
+    const loaded = await port.read({ sceneId })
+    expect(loaded.providerState.routePlan).toEqual(plan)
+    expect(port.describe(loaded.providerState).routePlan).toEqual(plan)
+    const cleared = { sceneId, revision: 8, plan: null }
+    test.executor.execute.mockResolvedValue({
+      ...test.state,
+      routePlan: cleared
+    })
+    const applied = await port.execute({
+      kind: 'pause',
+      sceneId,
+      expectedRevision: 4,
+      expectedSceneRevision: 3
+    })
+    expect(applied.providerState.routePlan).toEqual(cleared)
+    expect(port.describe(applied.providerState).routePlan).toEqual(cleared)
+    expect(test.executor.refresh).toHaveBeenCalledOnce()
+    expect(test.hexTravel.read).not.toHaveBeenCalled()
+    port.dispose()
+  })
+
+  it('rejects a foreign plan in both read and command state', async () => {
+    const test = fixture()
+    const foreign = {
+      ...test.state,
+      routePlan: { sceneId: 'another-scene', revision: 2, plan: null }
+    }
+    test.executor.refresh.mockResolvedValue(foreign)
+    test.executor.execute.mockResolvedValue(foreign)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
+    await expect(port.read({ sceneId })).rejects.toMatchObject({
+      code: 'stale'
+    })
+    await expect(
+      port.execute({
+        kind: 'pause',
+        sceneId,
+        expectedRevision: 4,
+        expectedSceneRevision: 3
+      })
+    ).rejects.toMatchObject({ code: 'stale' })
+    port.dispose()
+  })
+
   it('translates every generic command without a follow-up session read', async () => {
     const test = fixture()
-    const port = createHexTravelProviderPort(test.capabilities)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
     await port.read({ sceneId })
     await port.execute({
       kind: 'position',
@@ -124,47 +186,74 @@ describe('Hex travel provider port', () => {
       mapId,
       waypoints: [{ q: 2, r: 0 }],
       multiplier: 2,
-      expectedRevision: 4
+      expectedRevision: 4,
+      expectedSceneRevision: 3
     })
     for (const kind of ['pause', 'resume', 'abort'] as const)
-      await port.execute({ kind, sceneId, expectedRevision: 4 })
+      await port.execute({
+        kind,
+        sceneId,
+        expectedRevision: 4,
+        expectedSceneRevision: 3
+      })
     await port.execute({
       kind: 'set-multiplier',
       sceneId,
       multiplier: 5,
-      expectedRevision: 4
-    })
-
-    expect(test.hexTravel.position).toHaveBeenCalledWith({
-      sceneId,
-      mapId,
-      coordinate: { q: 1, r: 0 },
+      expectedRevision: 4,
       expectedSceneRevision: 3
     })
-    expect(test.hexTravel.start).toHaveBeenCalledWith({
-      sceneId,
-      mapId,
-      waypoints: [{ q: 2, r: 0 }],
-      multiplier: 2,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.pause).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.resume).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.abort).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.setMultiplier).toHaveBeenCalledWith({
-      sceneId,
-      multiplier: 5,
-      expectedRevision: 4
-    })
+
+    const submitted = test.executor.execute.mock.calls.map(
+      ([input]) => input as { commandId: string; command: unknown }
+    )
+    expect(new Set(submitted.map((input) => input.commandId)).size).toBe(6)
+    for (const input of submitted)
+      expect(input.commandId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(submitted.map((input) => input.command)).toEqual([
+      {
+        kind: 'position',
+        input: {
+          sceneId,
+          mapId,
+          coordinate: { q: 1, r: 0 },
+          expectedSceneRevision: 3
+        }
+      },
+      {
+        kind: 'start',
+        input: {
+          sceneId,
+          mapId,
+          waypoints: [{ q: 2, r: 0 }],
+          multiplier: 2,
+          expectedRevision: 4,
+          expectedSceneRevision: 3
+        }
+      },
+      ...['pause', 'resume', 'abort'].map((kind) => ({
+        kind,
+        input: { sceneId, expectedRevision: 4, expectedSceneRevision: 3 }
+      })),
+      {
+        kind: 'set-multiplier',
+        input: {
+          sceneId,
+          multiplier: 5,
+          expectedRevision: 4,
+          expectedSceneRevision: 3
+        }
+      }
+    ])
+    for (const legacy of [
+      test.hexTravel.position,
+      test.hexTravel.start,
+      test.hexTravel.pause,
+      test.hexTravel.resume,
+      test.hexTravel.abort,
+      test.hexTravel.setMultiplier
+    ])
+      expect(legacy).not.toHaveBeenCalled()
     expect(test.sessionRead).not.toHaveBeenCalled()
     port.dispose()
   })

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 35,
+    "campaignDatabaseSchemaVersion": 41,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -103,6 +103,14 @@
       "oraclePlan": "Compare the complete PartySnapshot and Scene Party membership."
     },
     {
+      "registration": "session-planner-receipts",
+      "authority": "campaign.session-planner-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the planner command journal through CampaignSchemaBootstrapper; current-format materializers use internal planner operations without IPC receipts.",
+      "oraclePlan": "Keep the journal empty during current-format materialization; atomic commands, query-only recovery and durable receipts after restart are covered by session-planner-vertical-slice integration tests."
+    },
+    {
       "registration": "world-location-save-journal",
       "authority": "campaign.world-location-save-reconciliation",
       "stateClass": "reconciliation",
@@ -135,6 +143,22 @@
       "oraclePlan": "Compare ledger revisions, entries, balances, and source identities."
     },
     {
+      "registration": "hex-travel-receipts",
+      "authority": "campaign.hex-travel-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Hex-owned table through CampaignSchemaBootstrapper; current-format materializers use legacy travel operations.",
+      "oraclePlan": "Root readback requires zero rows across campaign switching and restart. Populated plan and receipt recovery is qualified separately in hex-travel-command-receipts.test.ts."
+    },
+    {
+      "registration": "party-character-receipts",
+      "authority": "campaign.party-character-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Party command journal through CampaignSchemaBootstrapper; current-format materializers use internal Party operations without IPC receipts.",
+      "oraclePlan": "Require an empty journal in materialized fixtures; atomic character commands, query-only recovery and durable receipts across deletion/restart are covered by party-character-command-receipts integration tests."
+    },
+    {
       "registration": "scene",
       "authority": "campaign.running-scenes",
       "stateClass": "durable-truth",
@@ -151,6 +175,30 @@
       "oraclePlan": "Compare the focused Combat memento through A/B/A and restart."
     },
     {
+      "registration": "hex-route-plans",
+      "authority": "campaign.hex-route-plans",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Hex-owned table through CampaignSchemaBootstrapper; current-format materializers use legacy travel operations.",
+      "oraclePlan": "Root readback requires zero rows across campaign switching and restart. Populated plan and receipt recovery is qualified separately in hex-travel-command-receipts.test.ts."
+    },
+    {
+      "registration": "scene-group-receipts",
+      "authority": "campaign.scene-group-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the scene group command journal through CampaignSchemaBootstrapper; current-format materializers use internal scene saves without IPC receipts.",
+      "oraclePlan": "Retain the empty journal across current-format switching; atomic command and receipt recovery is covered separately by scene-group-command-receipts integration tests."
+    },
+    {
+      "registration": "scene-party-receipts",
+      "authority": "campaign.scene-party-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Scene Party command journal through CampaignSchemaBootstrapper; current-format materializers use internal roster and rest operations without IPC receipts.",
+      "oraclePlan": "Require an empty journal across current-format switching; atomic roster, move and rest commands, read-only recovery and durable receipts across restart are covered by scene-party-command-receipts integration tests."
+    },
+    {
       "registration": "schema-metadata",
       "authority": "campaign.schema-metadata",
       "stateClass": "durable-truth",
@@ -159,12 +207,20 @@
       "oraclePlan": "Assert the current metadata row set before accepting the fixture."
     },
     {
+      "registration": "combat-receipts",
+      "authority": "campaign.combat-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the durable combat command receipt journal through CampaignSchemaBootstrapper.",
+      "oraclePlan": "Assert the journal table shape and preserve original combat receipts during forward migration."
+    },
+    {
       "registration": "schema-version",
       "authority": "campaign.sqlite-user-version",
       "stateClass": "durable-truth",
       "disposition": "initialize-only",
       "fixturePlan": "Set SQLite user_version only through the schema bootstrap owner.",
-      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 35."
+      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly the current project schema (41)."
     }
   ],
   "installationDependencies": [

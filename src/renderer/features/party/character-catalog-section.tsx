@@ -1,17 +1,23 @@
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import { partyCharacterMatchesSearch } from './party-search.js'
-import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
-import { lazy, Suspense, useMemo, useState, useContext } from 'react'
+import {
+  lazy,
+  Suspense,
+  useState,
+  useLayoutEffect,
+  useSyncExternalStore,
+  useRef,
+  useCallback
+} from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type {
   PartyCharacter,
-  PartyCharacterDraft,
-  PartySnapshot
+  PartyCharacterDraft
 } from '../../../shared/contracts/party.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
-import { partyCapabilities } from './party-capabilities.js'
+import { CharacterCommandController } from './character-command-controller.js'
+import { useCharacterCommandPort } from './use-character-command-port.js'
 import { CharacterProfileForm } from './character-profile-form.js'
 import {
   characterFields,
@@ -32,19 +38,81 @@ export default function CharacterCatalogSection(props: {
   select: (id: string | null) => void
   onError: (message: string) => void
 }) {
-  const api = useCapabilityApi()
-  const workspace = useContext(CapabilityContext)!.campaignWorkspace
-  const party = useMemo(() => partyCapabilities(api).party, [api])
-  const commands = useAsyncCommandCoordinator()
+  const port = useCharacterCommandPort(props.campaignId)
+  const [controller] = useState(() => new CharacterCommandController(port))
+  const command = useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot
+  )
   const [query, setQuery] = useState('')
-  const [editing, setEditing] = useState<{
+  const [editing, setEditingState] = useState<{
     base: PartyCharacter | null
   } | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDeleteState] = useState<string | null>(null)
   const [ledger, setLedger] = useState<PartyCharacter | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const target = { scope: 'character-catalog', entityKey: props.campaignId }
-  const busy = commands.state(target).status === 'pending'
+  const editingRef = useRef(editing)
+  const confirmRef = useRef<string | null>(null)
+  const submitRef = useRef<(() => Promise<boolean>) | null>(null)
+  const registerSave = useCallback((submit: () => Promise<boolean>) => {
+    submitRef.current = submit
+    return () => {
+      if (submitRef.current === submit) submitRef.current = null
+    }
+  }, [])
+  const setEditing = (value: typeof editing) => {
+    editingRef.current = value
+    setEditingState(value)
+  }
+  const setConfirmDelete = (value: string | null) => {
+    confirmRef.current = value
+    setConfirmDeleteState(value)
+  }
+  useLayoutEffect(() => {
+    controller.attach((receipt, current) => {
+      editingRef.current = null
+      setEditingState(null)
+      confirmRef.current = null
+      setConfirmDeleteState(null)
+      setError(null)
+      props.select(
+        current.party.members.some(
+          (member) => member.id === receipt.characterId
+        )
+          ? receipt.characterId
+          : null
+      )
+    })
+  })
+  useLayoutEffect(() => controller.detach, [controller])
+  async function drain() {
+    return controller.settle()
+  }
+  const blocked = useMaintenanceDraft({
+    label: 'Charakterkatalog',
+    isDirty: () =>
+      Boolean(
+        editingRef.current || confirmRef.current || controller.unresolved()
+      ),
+    save: async () => {
+      if (!(await drain())) return false
+      if (editingRef.current && !(await submitRef.current?.())) return false
+      setConfirmDelete(null)
+      return !editingRef.current && !controller.unresolved()
+    },
+    discard: async () => {
+      if (!(await drain())) return false
+      setEditing(null)
+      setConfirmDelete(null)
+      setError(null)
+      controller.reset()
+      return true
+    }
+  })
+  const commandBusy = command.busy
+  const uncertain = command.uncertain
+  const busy = commandBusy || blocked || uncertain
+  const displayedError = command.error ?? error
   const members = props.snapshot.party.members
   const selected =
     members.find((member) => member.id === props.selectedId) ?? null
@@ -59,67 +127,61 @@ export default function CharacterCatalogSection(props: {
       ? message('character.unassigned')
       : message('character.inactive'))
   function select(id: string | null) {
-    if (busy) return
+    if (
+      editingRef.current ||
+      confirmRef.current ||
+      busy ||
+      maintenanceDraftCoordinator.isLocked() ||
+      controller.unresolved()
+    )
+      return
     setEditing(null)
     setConfirmDelete(null)
     setError(null)
+    controller.reset()
     props.select(id)
   }
-  async function mutate(
-    execute: () => Promise<PartySnapshot>,
-    accept: (result: PartySnapshot) => void
-  ) {
-    if (commands.state(target).status === 'pending') return
-    setError(null)
-    const outcome = await commands.run({
-      ...target,
-      mode: 'latest-only',
-      execute: async () => {
-        const result = await execute()
-        workspace.publishSession(props.campaignId, (current) =>
-          result.revision < current.party.revision
-            ? current
-            : { ...current, party: result }
-        )
-        void workspace.refreshActiveSession().then((outcome) => {
-          if (outcome.status === 'failure')
-            props.onError(capabilityErrorText(outcome.cause))
-        })
-        return result
-      },
-      accept
-    })
-    if (outcome.status === 'failure')
-      setError(capabilityErrorText(outcome.cause))
-  }
-  function save(draft: PartyCharacterDraft) {
-    if (!editing) return
-    const base = editing.base
+  function save(draft: PartyCharacterDraft): Promise<boolean> {
+    if (!editingRef.current) return Promise.resolve(false)
+    const base = editingRef.current.base
     const current = base && members.find((member) => member.id === base.id)
     if (
       base &&
       (!current || characterProfileKey(base) !== characterProfileKey(current))
     ) {
       setError(message('character.conflict'))
-      return
+      return Promise.resolve(false)
     }
-    void mutate(
-      () =>
-        base
-          ? party.update(base.id, draft, props.snapshot.party.revision)
-          : party.create(draft, props.snapshot.party.revision),
-      (result) => {
-        setEditing(null)
-        props.select(
-          base?.id ??
-            result.members.find(
-              (member) => !members.some((existing) => existing.id === member.id)
-            )?.id ??
-            null
-        )
-      }
-    )
+    const character = {
+      ...draft,
+      species: draft.species ?? null,
+      characterClass: draft.characterClass ?? null,
+      languages: draft.languages ?? [],
+      passiveInvestigation: draft.passiveInvestigation ?? null,
+      passiveInsight: draft.passiveInsight ?? null,
+      movementSpeedFeet: draft.movementSpeedFeet ?? null
+    }
+    return controller.execute({
+      commandId: crypto.randomUUID(),
+      command: base
+        ? {
+            kind: 'update',
+            input: {
+              id: base.id,
+              character,
+              expectedRevision: props.snapshot.party.revision
+            }
+          }
+        : {
+            kind: 'create',
+            input: {
+              character,
+              expectedRevision: props.snapshot.party.revision
+            }
+          }
+    })
   }
+
   return (
     <div className="character-catalog-layout">
       <aside className="character-catalog-list">
@@ -131,8 +193,16 @@ export default function CharacterCatalogSection(props: {
             onChange={(event) => setQuery(event.target.value)}
           />
           <button
-            disabled={busy}
+            disabled={busy || !!editing || !!confirmDelete}
             onClick={() => {
+              if (
+                editingRef.current ||
+                confirmRef.current ||
+                maintenanceDraftCoordinator.isLocked() ||
+                controller.unresolved() ||
+                command.uncertain
+              )
+                return
               select(null)
               setEditing({ base: null })
             }}
@@ -147,7 +217,7 @@ export default function CharacterCatalogSection(props: {
           {visible.map((member) => (
             <button
               key={member.id}
-              disabled={busy}
+              disabled={busy || !!editing || !!confirmDelete}
               aria-pressed={selected?.id === member.id}
               onClick={() => select(member.id)}
             >
@@ -180,12 +250,14 @@ export default function CharacterCatalogSection(props: {
           <CharacterProfileForm
             key={editing.base?.id ?? 'new'}
             member={editing.base}
-            busy={busy}
-            error={error}
+            busy={commandBusy || uncertain}
+            registerSave={registerSave}
+            error={displayedError}
             save={save}
             close={() => {
               setEditing(null)
               setError(null)
+              controller.reset()
             }}
           />
         ) : selected ? (
@@ -197,15 +269,42 @@ export default function CharacterCatalogSection(props: {
               </span>
             </header>
             <div className="character-actions">
-              <button onClick={() => setEditing({ base: selected })}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !controller.unresolved() &&
+                    !command.uncertain
+                  )
+                    setEditing({ base: selected })
+                }}
+              >
                 {message('character.edit')}
               </button>
-              <button onClick={() => setLedger(selected)}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !controller.unresolved() &&
+                    !command.uncertain
+                  )
+                    setLedger(selected)
+                }}
+              >
                 {message('character.loot')}
               </button>
               <button
                 disabled={busy}
-                onClick={() => setConfirmDelete(characterProfileKey(selected))}
+                onClick={() => {
+                  if (
+                    !maintenanceDraftCoordinator.isLocked() &&
+                    !controller.unresolved() &&
+                    !command.uncertain
+                  )
+                    setConfirmDelete(characterProfileKey(selected))
+                }}
               >
                 {message('character.delete')}
               </button>
@@ -230,19 +329,19 @@ export default function CharacterCatalogSection(props: {
                   </button>
                   <button
                     disabled={busy}
-                    onClick={() =>
-                      void mutate(
-                        () =>
-                          party.delete(
-                            selected.id,
-                            props.snapshot.party.revision
-                          ),
-                        () => {
-                          setConfirmDelete(null)
-                          props.select(null)
+                    onClick={() => {
+                      if (maintenanceDraftCoordinator.isLocked()) return
+                      void controller.execute({
+                        commandId: crypto.randomUUID(),
+                        command: {
+                          kind: 'delete',
+                          input: {
+                            id: selected.id,
+                            expectedRevision: props.snapshot.party.revision
+                          }
                         }
-                      )
-                    }
+                      })
+                    }}
                   >
                     {message('character.deleteForever')}
                   </button>
@@ -278,10 +377,21 @@ export default function CharacterCatalogSection(props: {
             <small className="character-identifier">
               {formatMessage('character.identifier', { id: selected.id })}
             </small>
-            {error && <p role="alert">{error}</p>}
+            {displayedError && <p role="alert">{displayedError}</p>}
           </>
         ) : (
           <p>{message('character.select')}</p>
+        )}
+        {!editing && !selected && displayedError && (
+          <p role="alert">{displayedError}</p>
+        )}
+        {uncertain && (
+          <button
+            disabled={commandBusy || blocked}
+            onClick={() => void controller.settle()}
+          >
+            {message('character.checkSavedState')}
+          </button>
         )}
       </section>
       <Suspense fallback={null}>

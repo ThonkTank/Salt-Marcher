@@ -21,11 +21,13 @@ const sections: readonly {
 
 export function CatalogSectionSelector(props: {
   section: CatalogSection
+  blocked?: boolean
   select: (section: CatalogSection) => void
 }) {
   return (
     <header className="catalog-section-selector">
       <button
+        disabled={props.blocked}
         aria-pressed={props.section === 'characters'}
         onClick={() => props.select('characters')}
       >
@@ -34,6 +36,7 @@ export function CatalogSectionSelector(props: {
       {sections.map((section) => (
         <button
           key={section.id}
+          disabled={props.blocked}
           aria-pressed={props.section === section.id}
           onClick={() => props.select(section.id)}
         >
