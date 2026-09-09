@@ -735,6 +735,88 @@ describe('per-scene desktop', () => {
     await waitSaved(client)
     await expectAccessibleInBothThemes(client)
   })
+  it('restores archived groups and deletes only after confirmation across restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    const target = await client.execute(async () => {
+      const api = window.saltMarcher
+      const campaignId = (await api.campaigns.list()).activeCampaignId!
+      const snapshot = await api.session.read({ campaignId })
+      const sceneId = snapshot.scene.focusedSceneId
+      await api.scene.saveGroup({
+        commandId: crypto.randomUUID(),
+        sceneId,
+        groupId: null,
+        name: 'Lifecycle E2E',
+        note: 'Preserve through restore',
+        disposition: 'neutral',
+        entries: [],
+        expectedRevision: snapshot.scene.revision,
+        expectedGroupRevision: null
+      })
+      const current = await api.session.read({ campaignId })
+      const group = current.scene.scenes
+        .find((scene) => scene.id === sceneId)!
+        .groups.find((group) => group.name === 'Lifecycle E2E')!
+      await api.scene.setGroupArchived({
+        sceneId,
+        groupId: group.id,
+        archived: true,
+        expectedGroupRevision: group.revision
+      })
+      return { campaignId, sceneId, groupId: group.id }
+    })
+    const openGroup = async () => {
+      await client.refresh()
+      await resumeCampaignFromScreen(client)
+      await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client.$('button[aria-label="Lifecycle E2E aufklappen"]').click()
+    }
+    const readGroup = () =>
+      client.execute(async (input) => {
+        const snapshot = await window.saltMarcher.session.read({
+          campaignId: input.campaignId
+        })
+        return (
+          snapshot.scene.scenes
+            .find((scene) => scene.id === input.sceneId)!
+            .groups.find((group) => group.id === input.groupId) ?? null
+        )
+      }, target)
+    await openGroup()
+    await client
+      .$('[data-window-id="overview"]')
+      .$('button=Wiederherstellen')
+      .click()
+    await client.waitUntil(async () => (await readGroup())?.archived === false)
+    expect((await readGroup())?.note).toBe('Preserve through restore')
+    await client.execute(async (input) => {
+      const api = window.saltMarcher
+      const snapshot = await api.session.read({ campaignId: input.campaignId })
+      const group = snapshot.scene.scenes
+        .find((scene) => scene.id === input.sceneId)!
+        .groups.find((group) => group.id === input.groupId)!
+      await api.scene.setGroupArchived({
+        sceneId: input.sceneId,
+        groupId: input.groupId,
+        archived: true,
+        expectedGroupRevision: group.revision
+      })
+    }, target)
+    await openGroup()
+    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('.group-delete-confirm').$('button=Abbrechen').click()
+    expect((await readGroup())?.archived).toBe(true)
+    await client.$('[data-window-id="overview"]').$('button=Löschen').click()
+    await client.$('.group-delete-confirm').$('button=Wirklich löschen').click()
+    await client.waitUntil(async () => (await readGroup()) === null)
+    await expect(client.$('.group-name=Lifecycle E2E')).not.toBeExisting()
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    expect(await readGroup()).toBeNull()
+    await waitSaved(client)
+  })
 })
 
 async function waitSaved(client: WdioBrowser) {

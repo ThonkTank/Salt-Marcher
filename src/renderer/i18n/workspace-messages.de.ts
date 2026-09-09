@@ -9,6 +9,10 @@ export const workspaceMessagesDe = {
   'desktop.confirmRosterChange': 'Besetzung ändern',
   'desktop.resolveBeforeRosterChange':
     'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
+  'group.retryLifecycle': 'Auftrag erneut ausführen',
+  'group.discardLifecycle': 'Auftrag verwerfen',
+  'group.lifecycleConflict':
+    'Die Gruppe wurde inzwischen geändert oder entfernt. Bitte den offenen Auftrag verwerfen und die Gruppe erneut prüfen.',
   'rest.action': 'Rasten',
   'rest.short': 'Kurze Rast',
   'rest.long': 'Lange Rast',

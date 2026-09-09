@@ -30,7 +30,7 @@ import './scene-desktop.css'
 export function SceneDesktop(
   props: WorkspaceSurfaceProps & { travel: SessionTravelSlots }
 ) {
-  const { model, actions } = useSessionWorkspaceController({
+  const { model, actions, lifecycleNotice } = useSessionWorkspaceController({
     ...props,
     followCombat: false
   })
@@ -353,6 +353,7 @@ export function SceneDesktop(
           <small>{message('desktop.empty')}</small>
         )}
       </nav>
+      {lifecycleNotice}
       {transition.dialog}
       {sceneTransition.dialog}
       <SessionDialogHost

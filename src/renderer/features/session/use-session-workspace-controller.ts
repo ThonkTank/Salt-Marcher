@@ -1,10 +1,10 @@
+import { useGroupLifecycle } from './use-group-lifecycle.js'
 import type { Dispatch, SetStateAction } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { useLootSceneController } from '../loot/use-loot-scene-controller.js'
 import { useReferenceContext } from '../reference/reference-context.js'
-import { sessionCapabilities } from './session-capabilities.js'
 import { useSessionDialogController } from './use-session-dialog-controller.js'
 import { useSessionGroupController } from './use-session-group-controller.js'
 import { useSessionMutationController } from './use-session-mutation-controller.js'
@@ -16,6 +16,7 @@ import type {
 } from './session-workspace-model.js'
 
 export function useSessionWorkspaceController(input: {
+  campaignId: string
   followCombat?: boolean
   snapshot: LiveSessionSnapshot
   setSnapshot: Dispatch<SetStateAction<LiveSessionSnapshot>>
@@ -23,10 +24,12 @@ export function useSessionWorkspaceController(input: {
 }): Readonly<{
   model: SessionWorkspaceViewModel
   actions: SessionWorkspaceActions
+  lifecycleNotice: ReturnType<typeof useGroupLifecycle>['notice']
 }> {
   const api = useCapabilityApi()
   const reference = useReferenceContext()
-  const { mutateGroup, mutateSnapshot } = useSessionMutationController(input)
+  const lifecycle = useGroupLifecycle(input.campaignId, input.onError)
+  const { mutateSnapshot } = useSessionMutationController(input)
   const { openCreature } = useSessionReferenceFollow({
     snapshot: input.snapshot,
     reference,
@@ -46,15 +49,14 @@ export function useSessionWorkspaceController(input: {
     scene: focused,
     groupTreasures: loot.scene.groupTreasures,
     onDelete: (group) =>
-      void mutateGroup(
-        (current) =>
-          sessionCapabilities(api).scene.deleteGroup(
-            focused.id,
-            current.id,
-            current.revision
-          ),
-        group
-      )
+      lifecycle.execute({
+        kind: 'delete',
+        input: {
+          sceneId: focused.id,
+          groupId: group.id,
+          expectedGroupRevision: group.revision
+        }
+      })
   })
 
   const actions: SessionWorkspaceActions = {
@@ -66,20 +68,24 @@ export function useSessionWorkspaceController(input: {
     editGroup: dialog.editGroup,
     manageGroups: dialog.manageGroups,
     reinforce: dialog.reinforce,
+    groupLifecycleBusy: lifecycle.busy,
     restoreGroup: (group) =>
-      void mutateGroup(
-        (current) =>
-          sessionCapabilities(api).scene.setGroupArchived(
-            focused.id,
-            current.id,
-            false,
-            current.revision
-          ),
-        group
-      ),
-    requestGroupDelete: groups.requestDelete,
+      lifecycle.execute({
+        kind: 'archive',
+        input: {
+          sceneId: focused.id,
+          groupId: group.id,
+          archived: false,
+          expectedGroupRevision: group.revision
+        }
+      }),
+    requestGroupDelete: (id) => {
+      if (!lifecycle.blocked()) groups.requestDelete(id)
+    },
     cancelGroupDelete: groups.cancelDelete,
-    confirmGroupDelete: groups.confirmDelete,
+    confirmGroupDelete: (group) => {
+      if (!lifecycle.blocked()) groups.confirmDelete(group)
+    },
     openLootInbox: () => void loot.openInbox(),
     loadMoreLoot: () => void loot.loadMore(),
     createLoot: dialog.createLoot,
@@ -139,5 +145,5 @@ export function useSessionWorkspaceController(input: {
     },
     dialog: dialog.dialog
   }
-  return { model, actions }
+  return { model, actions, lifecycleNotice: lifecycle.notice }
 }

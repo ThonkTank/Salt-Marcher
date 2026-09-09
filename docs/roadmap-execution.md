@@ -5346,3 +5346,100 @@ Finale lokale Prüfungen: 69943 endet mit exit 0 (123 Tests, Typecheck,
 vollständiges Lint), 20298 mit exit 0 (vollständiges Format). git diff --check
 prüfen, den Backendstand als Candidate committen/pushen. Remote-Gates bleiben
 vor kanonischem Handoff und Main-Promotion verpflichtend.
+
+Phase 4 – Teilplan Renderer-Gruppenquittungen, Sessionaktionen:
+Voriger Turn war Fortschritt (4994e6de9), CI 34295945998 läuft. Einen eigenen
+Lifecycle-Controller/Port für die vorhandenen Gruppenquittungen ergänzen. Er hält
+Originalauftrag und bekannte Abwesenheit auch bei Unmount, liest vor jeder Klärung
+die Originalquittung und veröffentlicht nur den frisch gelesenen Kampagnenstand.
+Fehlende Quittung prüft die Revision der konkreten Gruppe in der Originalszene;
+geänderte/entfernte Gruppen blockieren erneutes Speichern, bis ausdrücklich
+verworfen wird. Save und Discard klären unbekannte Ausgänge zuerst.
+
+Session-Wiederherstellen und bestätigtes Löschen auf diesen Owner umstellen;
+Wartungssperre vor neuem Write prüfen und eine lesende Wiederholungsaktion bei
+unbekanntem Ergebnis anbieten. Keine neue Löschaktion aus zentralem Save erfinden:
+Controller speichert nur bereits ausdrücklich ausgelöste Originalaufträge erneut.
+Gruppenmanager-Archivierung folgt danach mit dessen eigenem Draft-Runtime und
+bleibt in dieser Teilrunde offen. Abnahme: alle Lifecyclevarianten, Statusfehler,
+Refreshfehler, Konflikt/Abwesenheit, detached Save/Discard, Originalkampagne sowie
+Sessionintegration und bestehende Type-/Lint-/Buildprüfungen.
+
+Implementierungsreview: lifecycleNotice muss im tatsächlichen Rückgabeobjekt des
+Workspacecontrollers enthalten sein. Ein nachweislich fehlender Auftrag bleibt
+ein offener Originalauftrag und darf nicht durch einen zweiten Gruppenbutton
+ersetzt werden. Deshalb held statt nur unresolved für neue UI-Aufträge sperren;
+bei bekannt fehlendem Auftrag explizites Wiederholen/Verwerfen anbieten, bei
+Konflikt ausschließlich Verwerfen. Diese Korrektur vor Verhaltensprüfungen umsetzen.
+
+Workspace-Testkorrektur: Der bestehende setLocation-Test hat seit dem früheren
+aktuellen-Snapshot-Guard keine aktive Kampagnenprojektion im Fixture. Er darf
+keinen ungeprüften Inputsnapshot als Autorität simulieren. Das Fixture erhält
+eine explizite aktive/geladene Originalkampagne und einen veränderbaren Session-
+Snapshot. Den Fehlerfall auf executeGroupLifecycle umstellen und die unbekannte
+Antwort danach über Status/Refresh klären, damit kein offener Wartungsowner in
+nachfolgende Tests ausläuft. Keine Abschwächung der Produktions-Campaign-Prüfung.
+
+Session-Lifecycle-Abnahme erweitern: 47 gezielte Tests bestehen, Typecheck und
+Lint sind ohne Diagnose beendet. Build/Smoke/Bundlebudget (77339) bestehen;
+Renderergraph 1642845 Bytes bei unveränderten Grenzen. Der vorhandene Desktop-
+E2E deckt bislang keine archivierten Gruppen ab. Einen zusätzlichen Fall im
+bestehenden Desktop-Fixture ergänzen: abgegrenzte Testgruppe anlegen/archivieren,
+über die sichtbare Session wiederherstellen, erneut als Fixture archivieren,
+Löschbestätigung abbrechen, dann bestätigen und nach Prozessneustart Abwesenheit
+prüfen. Archivierung im Gruppenmanager bleibt ausdrücklich der nächste Teilplan.
+
+Korrekturrunde vor erneuter Abnahme: Electronlauf 3295 ist terminal, sieben
+bestehende Desktopfälle bestehen, neuer Lifecyclefall scheitert beim Aufklappen
+an einem überlagernden Fenster (click intercepted), vor jedem Lifecyclewrite.
+Die Szenenübersicht über ihre Werkzeugleistenaktion ausdrücklich fokussieren,
+auch wenn sie bereits existiert. Kein synthetischer DOM-Klick. Außerdem die von
+Prettier gemeldete Workspace-Testformatierung korrigieren; vollständiges Lint
+besteht bereits. Anschließend Format/Typecheck und Desktop-E2E wiederholen.
+
+CI-Audit 4994e6de9: Run 34295945998 ist failure, kein laufender Gate-Wait mehr.
+Portable meldet fünf Fehler in session-workspace-controller (1),
+session-mutation-controller (3) und version-truth (1); die übrigen 1336 Fälle
+bestehen. Workspace-Fixture wurde in dieser Runde bereits korrigiert.
+Korrekturplan nach Ende des unveränderten E2E-Laufs: Mutationstests erhalten den
+in Produktion erforderlichen Capability-Kontext mit ursprünglicher Campaign-ID
+und aktueller Sessionprojektion. Zusätzlich die tatsächliche Verwendung eines
+neueren Snapshot und Abweisung bei Campaign-Wechsel prüfen. Version-Truth-Test
+von Campaign 38 auf den im Migrationsregister nachgewiesenen Pfad 38 -> 39
+aktualisieren; eingefrorene Altfixtures und Migrationsketten bleiben unverändert.
+Dann betroffene Tests und vollständige Portable-Testpartition prüfen. Diese
+Fehler dürfen nicht durch Abschwächung der Produktionsguards beseitigt werden.
+
+Die korrigierte Desktop-Abnahme besteht vollständig: 8 Fälle, Lauf 48031 exit 0,
+Summary .tmp/e2e-runs/functional-1788915522544-579968/summary.json. Die zehn
+CI-Korrekturtests bestehen. Vollständige Portable-Architekturprüfung findet
+jedoch zwei neue statische JSX-Texte im Lifecycle-Hook, die gemäß Repositoryregel
+hinter typisierten Message-Keys liegen müssen. Vor Korrektur: beide bestehenden
+Wortlaute unverändert in workspace-messages.de.ts übernehmen und über message
+aufrufen; keine UI-Verhaltensänderung. Portable/Type/Lint/Format wiederholen,
+danach Build/Smoke/Bundle erneut für die geänderten Appinputs ausführen.
+
+Zwischen-Audit der Session-Lifecycle-Umstellung: Der konkrete Teilplan ist
+implementiert. Originalauftrag/Campaign-ID bleiben beim Controller, Status und
+frischer Snapshot klären Antworten ohne Replay, fehlende/geänderte Gruppen
+verlangen ausdrückliche Auflösung. Wiederherstellen und bestätigtes Löschen
+verwenden diesen Owner; globaler Save erfindet keinen unbestätigten Löschauftrag.
+47 gezielte Fälle und acht echte Electron-Desktopfälle bestehen. Die letzte
+Appänderung verschiebt ausschließlich zwei unveränderte Wortlaute in typisierte
+Message-Keys; der anschließende Architekturtest besteht (87 Fälle).
+
+Roadmap-Audit bleibt offen: Session-Lifecycle ist nur ein Teil von Phase 4.
+Gruppenmanager-Archivierung und verbleibende aktive Writer sowie Phasen 5–7 sind
+weiter erforderlich. Noch kein Candidate-Commit für diese Runde, kein Handoff,
+keine Main-Promotion, kein Release. Lauf 31997 prüft aktuell die vollständige
+Portable-Partition, danach Type/Lint/Format und neuen Build/Smoke/Bundle.
+Ergebnis vor Commit erneut am Prozesshandle und den Logs überprüfen.
+
+Voriger Goal-Turn war Fortschritt: Session-Lifecycle, echter Desktopfall und
+CI-Fixtures wurden geändert und qualifiziert. Lauf 31997 ist nun vollständig
+exit 0: 87 Architekturtests, 1369 Portable-Unittests und 349 Integrationstests;
+Typecheck, vollständiges Lint/Format, Build, Smoke und Bundlebudget bestehen.
+Renderergraph 1642947 Bytes bei unveränderten Grenzen. Plan-Audit dieses
+Session-Teilplans bestanden; Roadmap-Audit weiterhin Phase 4 in Arbeit, 5–7 offen.
+Den qualifizierten Zwischenstand auf Candidate committen/pushen; der nächste
+Teilplan ist die Gruppenmanager-Archivierung inklusive offener Entwürfe.
