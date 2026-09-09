@@ -1,71 +1,117 @@
-import { useContext, useState } from 'react'
-import type { PartyCharacter } from '../../../shared/contracts/party.js'
-import { CapabilityContext } from '../../capabilities/capability-context.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import type {
+  PartyCharacter,
+  PartyCharacterCommand
+} from '../../../shared/contracts/party.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import { message } from '../../i18n/session-runtime.de.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { CharacterCommandController } from '../party/character-command-controller.js'
+import { useCharacterCommandPort } from '../party/use-character-command-port.js'
+
+type Mode = 'add' | 'subtract' | 'set'
 export function DesktopXpAction(props: {
   campaignId: string
+  maintenanceId?: string | undefined
   member: PartyCharacter
   revision: number
 }) {
-  const api = useCapabilityApi()
-  const workspace = useContext(CapabilityContext)!.campaignWorkspace
-  const commands = useAsyncCommandCoordinator()
+  const port = useCharacterCommandPort(props.campaignId)
+  const [controller] = useState(() => new CharacterCommandController(port))
+  const command = useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot
+  )
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
+  const amountRef = useRef('')
+  const confirmedAmount = useRef('')
+  const intent = useRef<Mode | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const target = {
-    scope: 'desktop-xp',
-    entityKey: `${props.campaignId}:${props.member.id}`
-  }
-  const busy = commands.state(target).status === 'pending'
-  async function write(mode: 'add' | 'subtract' | 'set') {
-    if (commands.state(target).status === 'pending') return
-    const value = Number(amount)
+  useLayoutEffect(() => {
+    controller.attach(() => {
+      confirmedAmount.current = amountRef.current
+      intent.current = null
+      setError(null)
+    })
+  })
+  useLayoutEffect(() => controller.detach, [controller])
+  const dirty = () =>
+    controller.unresolved() ||
+    intent.current !== null ||
+    amountRef.current !== confirmedAmount.current
+  const blocked = useMaintenanceDraft(
+    {
+      label: `XP: ${props.member.name}`,
+      isDirty: dirty,
+      save: async () => {
+        if (!(await controller.settle())) return false
+        if (!dirty()) return true
+        if (intent.current) return write(intent.current, true)
+        setError(message('xp.chooseAction'))
+        throw new Error(message('xp.chooseAction'))
+      },
+      discard: async () => {
+        if (!(await controller.settle())) return false
+        if (!controller.reset()) return false
+        amountRef.current = ''
+        confirmedAmount.current = ''
+        intent.current = null
+        setAmount('')
+        setOpen(false)
+        setError(null)
+        return true
+      }
+    },
+    props.maintenanceId
+  )
+  const busy = blocked || command.busy || command.uncertain
+  const publicBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() ||
+    controller.unresolved() ||
+    controller.snapshot().conflict
+  async function write(mode: Mode, maintenance = false): Promise<boolean> {
     if (
-      !amount.trim() ||
+      (!maintenance && publicBlocked()) ||
+      controller.unresolved() ||
+      controller.snapshot().conflict
+    )
+      return false
+    const text = amountRef.current
+    const value = Number(text)
+    if (
+      !text.trim() ||
       !Number.isSafeInteger(value) ||
       value < 0 ||
       value > 1_000_000
     ) {
       setError(message('character.valueError'))
-      return
+      return false
     }
     setError(null)
-    const outcome = await commands.run({
-      ...target,
-      mode: 'latest-only',
-      execute: async () => {
-        const base = { id: props.member.id, expectedRevision: props.revision }
-        const result =
-          mode === 'set'
-            ? await api.party.setXp({ ...base, amount: value })
-            : await api.party.adjustXp({
-                ...base,
-                delta: mode === 'add' ? value : -value
-              })
-        workspace.publishSession(props.campaignId, (current) =>
-          result.revision < current.party.revision
-            ? current
-            : { ...current, party: result }
-        )
-        return result
-      }
-    })
-    if (outcome.status === 'failure')
-      setError(capabilityErrorText(outcome.cause))
+    intent.current = mode
+    const base = { id: props.member.id, expectedRevision: props.revision }
+    const input: PartyCharacterCommand = {
+      commandId: crypto.randomUUID(),
+      command:
+        mode === 'set'
+          ? { kind: 'set-xp', input: { ...base, amount: value } }
+          : {
+              kind: 'adjust-xp',
+              input: { ...base, delta: mode === 'add' ? value : -value }
+            }
+    }
+    return controller.execute(input)
   }
   return (
     <>
       <button
+        disabled={blocked || command.busy}
         onClick={(event) => {
+          if (maintenanceDraftCoordinator.isLocked() || command.busy) return
           setAnchor(event.currentTarget)
-          setAmount('')
-          setError(null)
           setOpen(!open)
         }}
       >
@@ -74,7 +120,13 @@ export function DesktopXpAction(props: {
       <AnchoredPopup
         open={open}
         anchor={anchor}
-        onDismiss={() => setOpen(false)}
+        onDismiss={() => {
+          if (
+            !maintenanceDraftCoordinator.isLocked() &&
+            !controller.unresolved()
+          )
+            setOpen(false)
+        }}
         className="desktop-xp-popup"
       >
         <div>
@@ -84,19 +136,47 @@ export function DesktopXpAction(props: {
             min={0}
             max={1_000_000}
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            disabled={busy || command.conflict}
+            onChange={(event) => {
+              if (publicBlocked()) return
+              amountRef.current = event.target.value
+              intent.current = null
+              setAmount(event.target.value)
+            }}
           />
-          <button disabled={busy} onClick={() => void write('add')}>
+          <button
+            disabled={busy || command.conflict}
+            onClick={() => void write('add')}
+          >
             +
           </button>
-          <button disabled={busy} onClick={() => void write('subtract')}>
+          <button
+            disabled={busy || command.conflict}
+            onClick={() => void write('subtract')}
+          >
             −
           </button>
-          <button disabled={busy} onClick={() => void write('set')}>
+          <button
+            disabled={busy || command.conflict}
+            onClick={() => void write('set')}
+          >
             {message('xp.set')}
           </button>
         </div>
-        {error && <p role="alert">{error}</p>}
+        {(command.error || error) && (
+          <p role="alert">{command.error || error}</p>
+        )}
+        {command.uncertain && (
+          <button
+            disabled={blocked || command.busy}
+            onClick={() => {
+              if (!maintenanceDraftCoordinator.isLocked())
+                void controller.settle()
+            }}
+          >
+            {message('character.checkSavedState')}
+          </button>
+        )}
       </AnchoredPopup>
     </>
   )

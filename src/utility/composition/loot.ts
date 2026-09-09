@@ -1,3 +1,4 @@
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 import { lootOperationDefinitions } from '../../shared/contracts/operations/loot.js'
@@ -39,6 +40,7 @@ export type LootComposition = Readonly<{
 }>
 
 export function createLootComposition(dependencies: {
+  activeCampaignId(): string
   activeDatabase: SqliteDatabaseAccess
   rules: Readonly<{ read(): CampaignRules }>
   generation: GroupRewardGenerationPort
@@ -121,6 +123,11 @@ export function createLootComposition(dependencies: {
           'loot.read': (input) => loot.read(input.treasureId),
           'loot.catalog': (input) => catalog.search(input),
           'loot.generateForGroupDraft': (input) => rewards.generate(input),
+          'loot.groupRewardReceipt': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return commits.commandReceipt(command)
+          },
           'loot.commitGroupReward': (input) =>
             publish(
               lootOperationDefinitions['loot.commitGroupReward'],
@@ -129,6 +136,29 @@ export function createLootComposition(dependencies: {
             ),
           'loot.scene': (input) => loot.sceneProjection(input.sceneId),
           'loot.inbox': (input) => loot.inbox(input),
+          'loot.editorStatus': ({ campaignId, command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.editorStatus(command)
+          },
+          'loot.createForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.createForCampaign'],
+              'created',
+              () => loot.create(input)
+            )
+          },
+          'loot.updateForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.updateForCampaign'],
+              'updated',
+              () => loot.update(input)
+            )
+          },
           'loot.create': (input) =>
             publish(lootOperationDefinitions['loot.create'], 'created', () =>
               loot.create(input)
@@ -141,12 +171,40 @@ export function createLootComposition(dependencies: {
             publish(lootOperationDefinitions['loot.move'], 'moved', () =>
               loot.move(input)
             ),
+          'loot.generatedAcceptanceStatus': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.generatedAcceptanceStatus(input)
+          },
+          'loot.acceptGeneratedForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.acceptGeneratedForCampaign'],
+              'accepted',
+              () => loot.acceptGenerated(input)
+            )
+          },
           'loot.acceptGenerated': (input) =>
             publish(
               lootOperationDefinitions['loot.acceptGenerated'],
               'accepted',
               () => loot.acceptGenerated(input)
             ),
+          'loot.distributionStatus': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.distributionStatus(input)
+          },
+          'loot.distributeForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.distributeForCampaign'],
+              'distributed',
+              () => loot.distribute(input)
+            )
+          },
           'loot.distribute': (input) =>
             publish(
               lootOperationDefinitions['loot.distribute'],
@@ -154,6 +212,21 @@ export function createLootComposition(dependencies: {
               () => loot.distribute(input)
             ),
           'loot.ledger': (input) => loot.ledger(input.characterId),
+          'loot.ledgerForCampaign': ({ campaignId, characterId }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.ledger(characterId)
+          },
+          'loot.ledgerCorrectionStatus': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.ledgerCorrectionStatus(command)
+          },
+          'loot.correctLedgerForCampaign': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.correctLedger(command)
+          },
           'loot.correctLedger': (input) => loot.correctLedger(input)
         }
       )

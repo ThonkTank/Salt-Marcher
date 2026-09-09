@@ -45,6 +45,7 @@ export function useTravelViewProjection<P, S, M, E>(options: {
     presentation.current = options.presentation
   }, [options.presentation])
   const stateRef = useRef(state)
+  const providerSceneRevision = useRef<number | null>(null)
   const snapshotRef = useRef(options.snapshot)
   const setSnapshotRef = useRef(options.setSnapshot)
   const revisions = useRef({ intent: 0, map: 0, route: 0, publication: 0 })
@@ -126,6 +127,7 @@ export function useTravelViewProjection<P, S, M, E>(options: {
   const activate = useCallback(
     (scope: TravelScope) => {
       if (!sameTravelScope(stateRef.current.scope, scope)) {
+        providerSceneRevision.current = null
         revisions.current.intent += 1
         revisions.current.map += 1
         revisions.current.route += 1
@@ -190,10 +192,12 @@ export function useTravelViewProjection<P, S, M, E>(options: {
           snapshotRef.current,
           input.result.session,
           input.describe,
+          providerSceneRevision.current,
           !intentIsCurrent || !publicationIsCurrent
         )
       )
         return false
+      providerSceneRevision.current = input.result.session.scene.revision
       publishSessionIfCurrent(input.result.session, snapshotRef, setSnapshotRef)
       if (intentIsCurrent)
         publish({
@@ -232,10 +236,12 @@ export function useTravelViewProjection<P, S, M, E>(options: {
           snapshotRef.current,
           input.result.session,
           input.describe,
+          providerSceneRevision.current,
           false
         )
       )
         return false
+      providerSceneRevision.current = input.result.session.scene.revision
       publishSessionIfCurrent(input.result.session, snapshotRef, setSnapshotRef)
       publish({
         type: 'command-applied',
@@ -309,17 +315,30 @@ function remoteVersionIsOlder<P, S>(
   currentSession: LiveSessionSnapshot,
   nextSession: LiveSessionSnapshot,
   describe: (state: S) => TravelProviderDescriptor<P>,
+  currentProviderSceneRevision: number | null,
   requireNewer = false
 ): boolean {
-  if (current === null) return false
-  const currentRevision = describe(current).revision
-  const nextRevision = describe(next).revision
-  if (nextRevision !== currentRevision) return nextRevision < currentRevision
+  const nextDescriptor = describe(next)
   if (nextSession.scene.focusedSceneId !== currentSession.scene.focusedSceneId)
     return true
-  return requireNewer
-    ? nextSession.scene.revision <= currentSession.scene.revision
-    : nextSession.scene.revision < currentSession.scene.revision
+  if (nextDescriptor.routePlan.sceneId !== nextSession.scene.focusedSceneId)
+    return true
+  if (nextSession.scene.revision < currentSession.scene.revision) return true
+  if (current === null) return false
+  const currentDescriptor = describe(current)
+  // A position reset may reset the journey revision, but never the saved plan.
+  if (nextDescriptor.routePlan.revision < currentDescriptor.routePlan.revision)
+    return true
+  const publishedSceneRevision =
+    currentProviderSceneRevision ?? currentSession.scene.revision
+  if (nextSession.scene.revision !== publishedSceneRevision)
+    return nextSession.scene.revision < publishedSceneRevision
+  if (nextDescriptor.revision < currentDescriptor.revision) return true
+  return (
+    requireNewer &&
+    nextDescriptor.revision === currentDescriptor.revision &&
+    nextDescriptor.routePlan.revision === currentDescriptor.routePlan.revision
+  )
 }
 
 function publishSessionIfCurrent(

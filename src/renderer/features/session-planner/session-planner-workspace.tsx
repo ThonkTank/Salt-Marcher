@@ -1,3 +1,4 @@
+import { PlannerRecoveryNotice } from './planner-recovery-notice.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import type { WorkspaceSurfaceProps } from '../workspace/workspace-surface-props.js'
 import { BudgetPanel } from './budget-panel.js'
@@ -21,102 +22,115 @@ export function SessionPlannerWorkspace(props: WorkspaceSurfaceProps) {
     )
 
   return (
-    <section className="session-planner" aria-label={message('planner.title')}>
-      <SessionCatalog
-        workspace={workspace}
-        draft={draft}
-        dirty={controller.dirty}
-        participantsOpen={controller.participantsOpen}
-        seed={controller.seed}
-        preparationRunning={controller.preparationRunning}
-        openSession={(sessionId) => void controller.openSession(sessionId)}
-        createSession={() => {
-          controller.setName(message('planner.newSession'))
-          controller.setNameDialog('create')
-        }}
-        renameSession={() => {
-          controller.setName(workspace.session.name)
-          controller.setNameDialog('rename')
-        }}
-        deleteSession={() => controller.setDeleteConfirm(true)}
-        toggleParticipants={() =>
-          controller.setParticipantsOpen(!controller.participantsOpen)
-        }
-        mutate={controller.mutate}
-        setSeed={controller.setSeed}
-        save={() => void controller.saveDraft()}
-        prepare={() => void controller.generate()}
-        cancelPreparation={() => void controller.cancelPreparation()}
+    <div className="planner-workspace">
+      <PlannerRecoveryNotice
+        uncertain={controller.uncertain}
+        canReconcile={controller.canReconcile}
+        blocked={controller.reconciliationBlocked}
+        retry={controller.retryUnknown}
       />
-      <PreparationStatus
-        stage={controller.stage}
-        detail={controller.stageMessage}
-      />
-
-      <div className="planner-body">
-        <SceneSequence
-          draft={draft}
-          mutate={controller.mutate}
-          patchScene={controller.patchScene}
-        />
-        <SceneInspector
+      <section
+        className="session-planner"
+        aria-label={message('planner.title')}
+        inert={controller.maintenanceBlocked}
+      >
+        <SessionCatalog
           workspace={workspace}
           draft={draft}
-          selectedScene={controller.selectedScene}
-          selectedProjection={controller.selectedProjection}
-          encounterQuery={controller.encounterQuery}
-          encounterSearch={controller.encounterSearch}
-          setEncounterQuery={controller.setEncounterQuery}
+          dirty={controller.dirty}
+          participantsOpen={controller.participantsOpen}
+          seed={controller.seed}
+          preparationRunning={controller.preparationRunning}
+          openSession={(sessionId) => void controller.openSession(sessionId)}
+          createSession={() => {
+            controller.setName(message('planner.newSession'))
+            controller.setNameDialog('create')
+          }}
+          renameSession={() => {
+            controller.setName(workspace.session.name)
+            controller.setNameDialog('rename')
+          }}
+          deleteSession={() => controller.setDeleteConfirm(true)}
+          toggleParticipants={() =>
+            controller.setParticipantsOpen(!controller.participantsOpen)
+          }
           mutate={controller.mutate}
-          patchScene={controller.patchScene}
-          materializeReward={(
-            runId,
-            generatedTreasureId,
-            label,
-            edit,
-            placed
-          ) =>
-            void controller.materializeReward(
+          setSeed={controller.setSeed}
+          save={() => void controller.saveDraft()}
+          prepare={() => void controller.generate()}
+          cancelPreparation={() => void controller.cancelPreparation()}
+        />
+        <PreparationStatus
+          stage={controller.stage}
+          detail={controller.stageMessage}
+        />
+
+        <div className="planner-body">
+          <SceneSequence
+            draft={draft}
+            mutate={controller.mutate}
+            patchScene={controller.patchScene}
+          />
+          <SceneInspector
+            workspace={workspace}
+            draft={draft}
+            selectedScene={controller.selectedScene}
+            selectedProjection={controller.selectedProjection}
+            encounterQuery={controller.encounterQuery}
+            encounterSearch={controller.encounterSearch}
+            setEncounterQuery={controller.setEncounterQuery}
+            mutate={controller.mutate}
+            patchScene={controller.patchScene}
+            materializeReward={(
               runId,
               generatedTreasureId,
               label,
               edit,
               placed
-            )
-          }
-          distribute={controller.setDistribution}
-        />
-        <BudgetPanel budget={draftProjection.budget} />
-      </div>
+            ) =>
+              void controller.materializeReward(
+                runId,
+                generatedTreasureId,
+                label,
+                edit,
+                placed
+              )
+            }
+            distribute={controller.setDistribution}
+          />
+          <BudgetPanel budget={draftProjection.budget} />
+        </div>
 
-      <SessionPlannerDialogHost
-        snapshot={props.snapshot}
-        onError={props.onError}
-        workspace={workspace}
-        selectedScene={controller.selectedScene}
-        selectedProjection={controller.selectedProjection}
-        seed={controller.seed}
-        stageMessage={controller.stageMessage}
-        confirmation={controller.confirmation}
-        nameDialog={controller.nameDialog}
-        name={controller.name}
-        deleteConfirm={controller.deleteConfirm}
-        treasureEditor={controller.treasureEditor}
-        distribution={controller.distribution}
-        setConfirmation={controller.setConfirmation}
-        setNameDialog={controller.setNameDialog}
-        setName={controller.setName}
-        setDeleteConfirm={controller.setDeleteConfirm}
-        setTreasureEditor={controller.setTreasureEditor}
-        setDistribution={controller.setDistribution}
-        cancelPreparation={controller.cancelPreparation}
-        requestPreparation={controller.requestPreparation}
-        submitName={controller.submitName}
-        deleteSession={controller.deleteSession}
-        refreshWorkspace={() =>
-          void controller.planner.read().then(controller.applyWorkspace)
-        }
-      />
-    </section>
+        <SessionPlannerDialogHost
+          snapshot={props.snapshot}
+          onError={props.onError}
+          workspace={workspace}
+          selectedScene={controller.selectedScene}
+          selectedProjection={controller.selectedProjection}
+          seed={controller.seed}
+          stageMessage={controller.stageMessage}
+          confirmation={controller.confirmation}
+          nameDialog={controller.nameDialog}
+          name={controller.name}
+          deleteConfirm={controller.deleteConfirm}
+          treasureEditor={controller.treasureEditor}
+          distributionMaintenanceId={controller.distributionMaintenanceId}
+          closeDistribution={controller.closeDistribution}
+          completeDistribution={controller.completeDistribution}
+          treasureMaintenanceId={controller.treasureMaintenanceId}
+          closeTreasureEditor={controller.closeTreasureEditor}
+          completeTreasureEditor={controller.completeTreasureEditor}
+          distribution={controller.distribution}
+          setConfirmation={controller.setConfirmation}
+          setNameDialog={controller.setNameDialog}
+          setName={controller.setName}
+          setDeleteConfirm={controller.setDeleteConfirm}
+          cancelPreparation={controller.cancelPreparation}
+          requestPreparation={controller.requestPreparation}
+          submitName={controller.submitName}
+          deleteSession={controller.deleteSession}
+        />
+      </section>
+    </div>
   )
 }

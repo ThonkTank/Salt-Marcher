@@ -38,6 +38,12 @@ const creatureResolver = {
 
 type StructuralReadback = Readonly<{
   campaignRuntimeRows: number
+  hexRoutePlanRows: number
+  hexTravelReceiptRows: number
+  scenePartyReceiptRows: number
+  partyCharacterReceiptRows: number
+  plannerCommandReceiptRows: number
+  sceneGroupReceiptRows: number
   migrationMetadataRows: number
   userVersion: number
 }>
@@ -186,6 +192,12 @@ function assertCampaignReadback(
   )
   assert.deepStrictEqual(actual.structure, {
     campaignRuntimeRows: 0,
+    hexRoutePlanRows: 0,
+    hexTravelReceiptRows: 0,
+    scenePartyReceiptRows: 0,
+    partyCharacterReceiptRows: 0,
+    plannerCommandReceiptRows: 0,
+    sceneGroupReceiptRows: 0,
     migrationMetadataRows: 0,
     userVersion: databaseSchemaVersions.campaign
   })
@@ -359,6 +371,40 @@ function structuralReadback(database: Database.Database): StructuralReadback {
         .get() as {
         value: number
       }
+    ).value,
+    hexRoutePlanRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM hex_route_plan')
+        .get() as { value: number }
+    ).value,
+    hexTravelReceiptRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM hex_travel_command_receipt')
+        .get() as { value: number }
+    ).value,
+    scenePartyReceiptRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM scene_party_command_receipt')
+        .get() as { value: number }
+    ).value,
+    partyCharacterReceiptRows: (
+      database
+        .prepare(
+          'SELECT COUNT(*) AS value FROM party_character_command_receipt'
+        )
+        .get() as { value: number }
+    ).value,
+    plannerCommandReceiptRows: (
+      database
+        .prepare(
+          'SELECT COUNT(*) AS value FROM session_planner_command_receipt'
+        )
+        .get() as { value: number }
+    ).value,
+    sceneGroupReceiptRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM scene_group_command_receipt')
+        .get() as { value: number }
     ).value,
     migrationMetadataRows: (
       database

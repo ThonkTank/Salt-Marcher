@@ -56,6 +56,7 @@ const maintenanceDefinitions = {
     z
       .object({
         confirmed: z.literal(true),
+        mode: z.enum(['backup', 'profile']).optional(),
         id: z.enum(['local', 'electron', 'development']).optional()
       })
       .strict(),

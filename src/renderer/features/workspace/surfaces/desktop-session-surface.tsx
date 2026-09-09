@@ -21,6 +21,7 @@ export function DesktopSessionSurface(props: WorkspaceSurfaceProps) {
     [projection]
   )
   const travel = useSessionTravelIntegration({
+    campaignId: props.campaignId,
     snapshot: props.snapshot,
     setSnapshot: props.setSnapshot,
     onError: props.onError,

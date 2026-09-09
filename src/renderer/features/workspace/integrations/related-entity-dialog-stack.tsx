@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import type { MaintenanceDraftHandle } from '../../../shell/maintenance-draft-coordinator.js'
+import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import type { SaltMarcherApi } from '../../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../../shared/contracts/encounter.js'
 import type {
@@ -39,19 +40,34 @@ export function useRelatedEntityDialogStack(options: {
 }) {
   const [frames, setFrames] = useState<readonly DialogFrame[]>([])
   const nextId = useRef(0)
-  const close = useCallback((id: number) => {
-    setFrames((current) => {
-      const index = current.findIndex((frame) => frame.id === id)
-      return index < 0 ? current : current.slice(0, index)
-    })
+  const stackId = useId()
+  const framesRef = useRef<readonly DialogFrame[]>([])
+  const updateFrames = useCallback((next: readonly DialogFrame[]) => {
+    framesRef.current = next
+    setFrames(next)
   }, [])
+  const handle = useCallback(
+    (id: number): MaintenanceDraftHandle => ({
+      id: `${stackId}/related/${id}`,
+      isOpen: () => framesRef.current.some((frame) => frame.id === id)
+    }),
+    [stackId]
+  )
+  const close = useCallback(
+    (id: number) => {
+      const index = framesRef.current.findIndex((frame) => frame.id === id)
+      if (index >= 0) updateFrames(framesRef.current.slice(0, index))
+    },
+    [updateFrames]
+  )
 
   const requestFactionCreation = useCallback(
     (created: (faction: WorldFaction) => void) => {
       const id = ++nextId.current
-      setFrames((current) => [...current, { id, kind: 'faction', created }])
+      updateFrames([...framesRef.current, { id, kind: 'faction', created }])
+      return handle(id)
     },
-    []
+    [handle, updateFrames]
   )
 
   const requestTableCreation = useCallback(
@@ -60,12 +76,13 @@ export function useRelatedEntityDialogStack(options: {
       created: (receipt: EncounterTableMutationReceipt) => void
     ) => {
       const id = ++nextId.current
-      setFrames((current) => [
-        ...current,
+      updateFrames([
+        ...framesRef.current,
         { id, kind: 'table', invocation, created }
       ])
+      return handle(id)
     },
-    []
+    [handle, updateFrames]
   )
 
   const dialogs = useMemo(
@@ -74,6 +91,7 @@ export function useRelatedEntityDialogStack(options: {
         frame.kind === 'faction' ? (
           <LazyIntegratedWorldFactionCreation
             key={frame.id}
+            maintenanceId={handle(frame.id).id}
             port={options.port}
             inspect={options.inspect}
             onError={options.onError}
@@ -89,6 +107,7 @@ export function useRelatedEntityDialogStack(options: {
         ) : (
           <LazyIntegratedEncounterTableCreation
             key={frame.id}
+            maintenanceId={handle(frame.id).id}
             port={options.port}
             inspect={options.inspect}
             onError={options.onError}
@@ -104,6 +123,7 @@ export function useRelatedEntityDialogStack(options: {
     [
       close,
       frames,
+      handle,
       options.inspect,
       options.onError,
       options.port,

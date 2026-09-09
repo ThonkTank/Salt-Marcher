@@ -12,6 +12,7 @@ export type EncounterTableSaveResult = EncounterTableMutationReceipt
 
 /** Entity-focused contract shared by direct and nested table-dialog callers. */
 export type EncounterTableEditorRenderProps = Readonly<{
+  maintenanceId?: string
   table: EncounterTable | null
   close: () => void
   save: (

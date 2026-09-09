@@ -1,4 +1,10 @@
 import type {
+  HexRoutePlanSnapshot,
+  HexTravelCommand,
+  HexTravelCommandState
+} from '../../../shared/contracts/hex-travel-command.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
+import type {
   AxialCoordinate,
   HexBiomeCatalog,
   HexMapCatalogSnapshot,
@@ -20,6 +26,7 @@ export type HexTravelProviderState = Readonly<{
   catalog: HexMapCatalogSnapshot
   biomes: HexBiomeCatalog
   travel: HexTravelSnapshot
+  routePlan: HexRoutePlanSnapshot
 }>
 
 export type HexTravelMapProjection = HexMapView &
@@ -38,7 +45,8 @@ export type HexTravelProviderPort = TravelProviderPort<
   HexTravelProviderState,
   HexTravelMapProjection,
   HexRouteEvaluation
->
+> &
+  Readonly<{ acceptRecovery: (state: HexTravelCommandState) => void }>
 
 export type HexTravelController = TravelController<
   AxialCoordinate,
@@ -48,7 +56,11 @@ export type HexTravelController = TravelController<
 >
 
 export function createHexTravelProviderPort(
-  api: SaltMarcherApi | HexCapabilities
+  api: SaltMarcherApi | HexCapabilities,
+  commands: {
+    execute: (input: HexTravelCommand) => Promise<HexTravelCommandState>
+    refresh: () => Promise<HexTravelCommandState>
+  }
 ): HexTravelProviderPort {
   const capabilities = 'campaigns' in api ? hexCapabilities(api) : api
   const maps = createHexMapProjectionPort(api)
@@ -91,17 +103,23 @@ export function createHexTravelProviderPort(
     const [nextCatalog, nextBiomes, context] = await Promise.all([
       maps.readCatalog(),
       maps.readBiomeCatalog(),
-      capabilities.hexTravel.read(input)
+      commands.refresh()
     ])
+    if (
+      context.context.travel.sceneId !== input.sceneId ||
+      context.routePlan.sceneId !== input.sceneId
+    )
+      throw new CapabilityError('stale', false)
     catalog = nextCatalog
     biomes = nextBiomes
     return {
       providerState: {
         catalog: nextCatalog,
         biomes: nextBiomes,
-        travel: context.travel
+        travel: context.context.travel,
+        routePlan: context.routePlan
       },
-      session: context.session
+      session: context.context.session
     }
   }
 
@@ -122,6 +140,9 @@ export function createHexTravelProviderPort(
 
   return {
     kind: 'hex',
+    acceptRecovery(state) {
+      emit({ kind: 'context', sceneId: state.context.travel.sceneId })
+    },
     read,
     async readMap(input) {
       const [view, overlayProjection] = await Promise.all([
@@ -147,49 +168,75 @@ export function createHexTravelProviderPort(
       }),
     async execute(command) {
       const supporting = await requireSupportingData()
-      const context = await (async () => {
-        switch (command.kind) {
-          case 'position':
-            return capabilities.hexTravel.position({
-              sceneId: command.sceneId,
-              mapId: command.mapId,
-              coordinate: command.position,
-              expectedSceneRevision: command.expectedSceneRevision
-            })
-          case 'start':
-            return capabilities.hexTravel.start({
-              sceneId: command.sceneId,
-              mapId: command.mapId,
-              waypoints: [...command.waypoints],
-              multiplier: command.multiplier,
-              expectedRevision: command.expectedRevision
-            })
-          case 'pause':
-          case 'resume':
-          case 'abort':
-            return capabilities.hexTravel[command.kind]({
-              sceneId: command.sceneId,
-              expectedRevision: command.expectedRevision
-            })
-          case 'set-multiplier':
-            return capabilities.hexTravel.setMultiplier({
-              sceneId: command.sceneId,
-              multiplier: command.multiplier,
-              expectedRevision: command.expectedRevision
-            })
-        }
-      })()
+      const input: HexTravelCommand = {
+        commandId: crypto.randomUUID(),
+        command: (() => {
+          switch (command.kind) {
+            case 'position':
+              return {
+                kind: command.kind,
+                input: {
+                  sceneId: command.sceneId,
+                  mapId: command.mapId,
+                  coordinate: command.position,
+                  expectedSceneRevision: command.expectedSceneRevision
+                }
+              }
+            case 'start':
+              return {
+                kind: command.kind,
+                input: {
+                  sceneId: command.sceneId,
+                  mapId: command.mapId,
+                  waypoints: [...command.waypoints],
+                  multiplier: command.multiplier,
+                  expectedRevision: command.expectedRevision,
+                  expectedSceneRevision: command.expectedSceneRevision
+                }
+              }
+            case 'pause':
+            case 'resume':
+            case 'abort':
+              return {
+                kind: command.kind,
+                input: {
+                  sceneId: command.sceneId,
+                  expectedRevision: command.expectedRevision,
+                  expectedSceneRevision: command.expectedSceneRevision
+                }
+              }
+            case 'set-multiplier':
+              return {
+                kind: command.kind,
+                input: {
+                  sceneId: command.sceneId,
+                  multiplier: command.multiplier,
+                  expectedRevision: command.expectedRevision,
+                  expectedSceneRevision: command.expectedSceneRevision
+                }
+              }
+          }
+        })()
+      }
+      const context = await commands.execute(input)
+      if (
+        context.context.travel.sceneId !== command.sceneId ||
+        context.routePlan.sceneId !== command.sceneId
+      )
+        throw new CapabilityError('stale', false)
       return {
         providerState: {
           ...supporting,
-          travel: context.travel
+          travel: context.context.travel,
+          routePlan: context.routePlan
         },
-        session: context.session
+        session: context.context.session
       }
     },
     describe(state) {
       return {
         revision: state.travel.revision,
+        routePlan: state.routePlan,
         status: state.travel.status,
         mapOptions: state.catalog.maps.map((map) => ({
           id: map.id,

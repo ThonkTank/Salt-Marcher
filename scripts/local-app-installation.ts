@@ -1,9 +1,15 @@
-import { mkdirSync, renameSync } from 'node:fs'
-import type { LocalArtifactManifest } from '../src/shared/contracts/build-info.js'
+import { readAppImageLauncher } from '../src/shared/maintenance/appimage-launcher.js'
+import { installMaintenanceLauncher } from '../src/shared/maintenance/launcher.js'
+import { cpSync, existsSync, mkdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { basename, join } from 'node:path'
+import { MaintenanceCoordinator } from '../src/shared/maintenance/coordinator.js'
 import {
-  schemaMigrations,
-  type SchemaMigration
-} from '../src/core/persistence/sqlite/schema-migrations.js'
+  currentLocalProgram,
+  localProgram
+} from '../src/shared/maintenance/local-program.js'
+import { migratePreparedCompleteProfile } from '../src/core/maintenance/profile-maintenance.js'
+import type { LocalArtifactManifest } from '../src/shared/contracts/build-info.js'
 import {
   createInstallJournal,
   readInstallJournal,
@@ -27,25 +33,20 @@ import {
 } from './local-installation/contract.js'
 import {
   backupCampaignData,
+  completeBackupPayload,
   campaignDataHash,
-  validateBackupCheckpoint
+  validateBackupCheckpoint,
+  writeActivatedProfileCheckpoint
 } from './local-installation/campaign-backup.js'
+import { readPersistencePreflight } from './local-installation/campaign-migration.js'
 import {
-  migrateCampaignData,
-  readPersistencePreflight
-} from './local-installation/campaign-migration.js'
-import {
-  activationReplacements,
+  desktopIntegration,
   deploymentManifestSha256,
   stageDeployment,
   validateCompletedInstallation,
   validateDeploymentCheckpoint
 } from './local-installation/deployment.js'
-import {
-  recoverActivationState,
-  recoverCampaignMigrationArtifacts,
-  replaceAtomically
-} from './local-installation/recovery.js'
+import { adoptLegacyLocalMaintenance } from './local-installation/legacy-maintenance.js'
 import {
   isInstalledLocalAppRunning,
   withInstallationLock
@@ -106,6 +107,41 @@ function advanceLocalAppInstallationLocked(
     candidate.appBuildInputFingerprint ===
       manifest.receipt.build.appBuildInputFingerprint &&
     candidate.artifactSha256 === manifest.artifactSha256
+  if (journal) adoptLegacyLocalMaintenance(paths, journal)
+  const coordinator = new MaintenanceCoordinator(
+    paths.root,
+    options.afterMaintenanceBoundaryForTest,
+    options.renameForInstall
+  )
+  const pending = coordinator.read()
+  if (pending && !['committed', 'rolled-back'].includes(pending.phase)) {
+    if (
+      pending.phase === 'awaiting-start' &&
+      matches(journal) &&
+      journal &&
+      pending.next.sha256 === manifest.artifactSha256 &&
+      pending.next.deployment === manifest.receipt.build.workspaceFingerprint
+    ) {
+      writeActivatedProfileCheckpoint(paths, journal)
+      journal = writeInstallJournal(
+        paths.journal,
+        {
+          ...journal,
+          phase: 'completed',
+          campaignDataHash: campaignDataHash(paths)
+        },
+        now
+      )
+    } else {
+      coordinator.rollback()
+      if (journal)
+        journal = writeInstallJournal(
+          paths.journal,
+          { ...journal, phase: 'rolled-back' },
+          now
+        )
+    }
+  }
   if (
     journal !== null &&
     (!matches(journal) ||
@@ -113,7 +149,7 @@ function advanceLocalAppInstallationLocked(
         journal.phase
       ))
   ) {
-    recoverInterruptedInstallation(paths, options.schemaMigrations, now)
+    recoverInterruptedInstallation(paths, now)
     journal = readInstallJournal(paths.journal)
   }
   if (matches(journal) && journal !== null)
@@ -219,35 +255,105 @@ function advanceLocalAppInstallationLocked(
       return installationResult(paths, manifest, activeJournal)
 
     validateBackupCheckpoint(paths, activeJournal)
-    const preflight = readPersistencePreflight(paths, options.schemaMigrations)
-    if (preflight.kind === 'migration-required')
-      migrateCampaignData(
+    if (
+      activeJournal.backupPath &&
+      !completeBackupPayload(activeJournal.backupPath)
+    ) {
+      const preflight = readPersistencePreflight(
         paths,
-        preflight,
-        options.schemaMigrations ?? schemaMigrations,
-        updateJournal
+        options.schemaMigrations
       )
-
+      const complete = backupCampaignData(
+        paths,
+        manifest.receipt.build,
+        readPreviousInstalledBuild(paths.installedManifest),
+        preflight.databases,
+        now
+      )
+      if (!complete)
+        throw new Error(
+          'Existing profile requires a complete backup before activation'
+        )
+      updateJournal({
+        backupPath: complete.path,
+        backupManifestSha256: complete.manifestSha256,
+        sourceDataHash: complete.sourceDataHash,
+        campaignDataHash: complete.sourceDataHash
+      })
+      validateBackupCheckpoint(paths, activeJournal)
+    }
     const deployment = activeJournal.deploymentPath
     if (deployment === null)
       throw new Error('Installation journal has no staged deployment')
-    replaceAtomically(
-      activationReplacements(
-        paths,
-        deployment,
-        options.iconSourcePath,
-        manifest.receipt.build
-      ),
-      options.renameForInstall ?? renameSync,
-      updateJournal
+    const id = randomUUID()
+    const staging = join(paths.root, `staged-${id}`)
+    const source = activeJournal.backupPath
+      ? completeBackupPayload(activeJournal.backupPath)
+      : paths.profile
+    if (source && existsSync(source))
+      cpSync(source, staging, {
+        recursive: true,
+        errorOnExist: true,
+        force: false,
+        filter: (path) =>
+          path !== join(activeJournal.backupPath ?? '', 'backup-manifest.json')
+      })
+    else mkdirSync(staging)
+    try {
+      migratePreparedCompleteProfile(staging, options.schemaMigrations)
+    } catch (cause) {
+      throw new LocalInstallationError(
+        'migration-failed',
+        'Prepared profile failed migration or domain validation; current data is unchanged',
+        { cause }
+      )
+    }
+    const previousProgram = currentLocalProgram(paths.root)
+    const nextProgram = localProgram(paths.root, basename(deployment))
+    const targetAppImage = join(deployment, 'SaltMarcher.AppImage')
+    const launcher = (options.readLauncherForTest ?? readAppImageLauncher)(
+      targetAppImage,
+      nextProgram.sha256
     )
-    mkdirSync(paths.profile, { recursive: true })
-    updateJournal({ phase: 'completed' })
+    const interpreter = previousProgram ?? nextProgram
+    installMaintenanceLauncher(
+      paths.root,
+      {
+        path: join(
+          paths.deployments,
+          interpreter.deployment,
+          'SaltMarcher.AppImage'
+        ),
+        sha256: interpreter.sha256
+      },
+      launcher
+    )
+    coordinator.begin({
+      id,
+      formatVersion: 3,
+      operation: previousProgram ? 'update' : 'install',
+      previous: previousProgram,
+      next: nextProgram,
+      backup: activeJournal.backupPath
+        ? basename(activeJournal.backupPath)
+        : null,
+      integration: desktopIntegration(
+        paths,
+        join(deployment, 'icon.png'),
+        manifest.receipt.build
+      )
+    })
+    coordinator.activate()
+    writeActivatedProfileCheckpoint(paths, activeJournal)
+    updateJournal({
+      phase: 'completed',
+      campaignDataHash: campaignDataHash(paths)
+    })
     validateCompletedInstallation(paths, manifest, options.iconSourcePath)
     return installationResult(paths, manifest, activeJournal)
   } catch (error) {
     if (error instanceof LocalInstallCrashForTest) throw error
-    recoverInterruptedInstallation(paths, options.schemaMigrations, now)
+    recoverInterruptedInstallation(paths, now)
     if (error instanceof LocalInstallationError) throw error
     throw new LocalInstallationError(
       'atomic-replace-failed',
@@ -280,6 +386,15 @@ export function inspectLocalAppInstallation(
       validateDeploymentCheckpoint(paths, manifest, options, journal)
     if (target === 'activated') {
       if (journal.phase !== 'completed') return null
+      const maintenance = new MaintenanceCoordinator(paths.root).read()
+      if (
+        maintenance &&
+        (!['awaiting-start', 'committed'].includes(maintenance.phase) ||
+          maintenance.next.sha256 !== manifest.artifactSha256 ||
+          maintenance.next.deployment !==
+            manifest.receipt.build.workspaceFingerprint)
+      )
+        return null
       validateCompletedInstallation(paths, manifest, options.iconSourcePath)
     } else if (
       target === 'deployment-staged' &&
@@ -301,23 +416,21 @@ export function inspectLocalAppInstallation(
 
 function recoverInterruptedInstallation(
   paths: LocalInstallationPaths,
-  migrations: readonly SchemaMigration[] = schemaMigrations,
   now: () => Date = () => new Date()
 ): void {
   const journal = readInstallJournal(paths.journal)
-  if (
-    journal === null ||
-    journal.phase === 'completed' ||
-    journal.phase === 'rolled-back'
-  )
-    return
-  recoverCampaignMigrationArtifacts(paths, journal, migrations)
-  let recovered = recoverActivationState(paths, journal)
-  if (journal.replacements.length === 0)
-    recovered = {
-      ...recovered,
-      campaignDataHash: campaignDataHash(paths),
-      migration: null
-    }
-  writeInstallJournal(paths.journal, recovered, now)
+  if (journal) adoptLegacyLocalMaintenance(paths, journal)
+  const coordinator = new MaintenanceCoordinator(paths.root)
+  coordinator.rollback()
+  if (journal && !['completed', 'rolled-back'].includes(journal.phase))
+    writeInstallJournal(
+      paths.journal,
+      {
+        ...journal,
+        phase: 'rolled-back',
+        migration: null,
+        replacements: []
+      },
+      now
+    )
 }

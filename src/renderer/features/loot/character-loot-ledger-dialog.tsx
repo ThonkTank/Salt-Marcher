@@ -1,45 +1,54 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { CharacterLedgerController } from './character-ledger-controller.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import type { PartyCharacter } from '../../../shared/contracts/party.js'
-import type {
-  CharacterLootEntry,
-  CharacterLootLedger
-} from '../../../shared/contracts/loot.js'
+import type { CharacterLootEntry } from '../../../shared/contracts/loot.js'
 import { itemDefinitionLineValueCp } from '../../../shared/values/item-definition-values.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
 import './loot-dialogs.css'
 import { useCharacterLootPort } from './use-loot-ports.js'
 
-export function CharacterLootLedgerDialog(props: {
+type CharacterLootLedgerDialogProps = {
   character: PartyCharacter
   close: () => void
   onError: (message: string) => void
-}) {
+}
+export function CharacterLootLedgerDialog(
+  props: CharacterLootLedgerDialogProps
+) {
+  return <CharacterLootLedgerContent key={props.character.id} {...props} />
+}
+function CharacterLootLedgerContent(props: CharacterLootLedgerDialogProps) {
   const loot = useCharacterLootPort()
-  const { character, close, onError } = props
-  const [ledger, setLedger] = useState<CharacterLootLedger | null>(null)
+  const { character } = props
+  const [controller] = useState(
+    () => new CharacterLedgerController(loot, character.id)
+  )
+  const { ledger, correction, busy, uncertain, error } = useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot
+  )
+  const blocked = useMaintenanceDraft({
+    label: `Persönliche Beute: ${character.name}`,
+    isDirty: controller.dirty,
+    save: controller.maintenanceSave,
+    discard: controller.maintenanceDiscard
+  })
+  const editingBlocked = blocked || busy || uncertain
+  const close = () => {
+    if (!controller.blocked()) {
+      controller.cancel()
+      props.close()
+    }
+  }
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [source, setSource] = useState('all')
-  const [correction, setCorrection] = useState<{
-    entry: CharacterLootEntry
-    commandId: string
-    quantity: number
-    status: 'received' | 'given_away' | 'sold'
-    reason: string
-  } | null>(null)
   useEffect(() => {
-    let current = true
-    void loot
-      .ledger({ characterId: character.id })
-      .then((value) => current && setLedger(value))
-      .catch((cause: unknown) => onError(capabilityErrorText(cause)))
-    return () => {
-      current = false
-    }
-  }, [character.id, loot, onError])
+    void controller.load()
+  }, [controller])
   const visibleEntries = (ledger?.entries ?? []).filter(
     (entry) =>
       (status === 'all' || entry.status === status) &&
@@ -49,30 +58,12 @@ export function CharacterLootLedgerDialog(props: {
         .includes(query.trim().toLocaleLowerCase('de-DE'))
   )
 
-  async function saveCorrection() {
-    if (!ledger || !correction || !correction.reason.trim()) return
-    try {
-      setLedger(
-        await loot.correctLedger({
-          commandId: correction.commandId,
-          characterId: character.id,
-          entryId: correction.entry.id,
-          expectedRevision: ledger.revision,
-          quantity: correction.quantity,
-          status: correction.status,
-          reason: correction.reason
-        })
-      )
-      setCorrection(null)
-    } catch (cause) {
-      onError(capabilityErrorText(cause))
-    }
-  }
   return (
     <ModalDialog
       className="character-loot-dialog"
       labelledBy="character-loot-title"
       onClose={close}
+      busy={editingBlocked}
     >
       <header>
         <div>
@@ -83,11 +74,31 @@ export function CharacterLootLedgerDialog(props: {
           type="button"
           className="compact"
           aria-label={message('ui.dialog.schliessen')}
+          disabled={editingBlocked}
           onClick={close}
         >
           ×
         </button>
       </header>
+      {error && <p role="alert">{error}</p>}
+      {uncertain && (
+        <button
+          type="button"
+          disabled={blocked || busy}
+          onClick={() => void controller.retry()}
+        >
+          {message('loot.correctionCheck')}
+        </button>
+      )}
+      {!ledger && !uncertain && (
+        <button
+          type="button"
+          disabled={blocked || busy}
+          onClick={() => void controller.load()}
+        >
+          {message('loot.ledgerReload')}
+        </button>
+      )}
       {!ledger ? (
         <p className="session-empty-state">{message('loot.ledgerLoading')}</p>
       ) : ledger.entries.length === 0 ? (
@@ -175,15 +186,8 @@ export function CharacterLootLedgerDialog(props: {
                   {!entry.supersededByEntryId && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setCorrection({
-                          entry,
-                          commandId: crypto.randomUUID(),
-                          quantity: entry.quantity,
-                          status: entry.status,
-                          reason: ''
-                        })
-                      }
+                      disabled={editingBlocked || Boolean(correction)}
+                      onClick={() => controller.open(entry)}
                     >
                       {message('loot.correct')}
                     </button>
@@ -202,10 +206,10 @@ export function CharacterLootLedgerDialog(props: {
             <input
               type="number"
               min={1}
+              disabled={editingBlocked}
               value={correction.quantity}
               onChange={(event) =>
-                setCorrection({
-                  ...correction,
+                controller.patch({
                   quantity: Math.max(1, Number(event.target.value) || 1)
                 })
               }
@@ -214,10 +218,10 @@ export function CharacterLootLedgerDialog(props: {
           <label>
             {message('loot.status')}
             <select
+              disabled={editingBlocked}
               value={correction.status}
               onChange={(event) =>
-                setCorrection({
-                  ...correction,
+                controller.patch({
                   status: event.target.value as typeof correction.status
                 })
               }
@@ -232,20 +236,26 @@ export function CharacterLootLedgerDialog(props: {
           <label className="character-loot-correction-reason">
             {message('loot.reason')}
             <input
+              disabled={editingBlocked}
+              maxLength={500}
               value={correction.reason}
               onChange={(event) =>
-                setCorrection({ ...correction, reason: event.target.value })
+                controller.patch({ reason: event.target.value })
               }
             />
           </label>
           <div>
-            <button type="button" onClick={() => setCorrection(null)}>
+            <button
+              type="button"
+              disabled={editingBlocked}
+              onClick={controller.cancel}
+            >
               {message('loot.cancel')}
             </button>
             <button
               type="button"
-              disabled={!correction.reason.trim()}
-              onClick={() => void saveCorrection()}
+              disabled={editingBlocked || !correction.reason.trim()}
+              onClick={() => void controller.save()}
             >
               {message('loot.correctSave')}
             </button>
@@ -253,7 +263,7 @@ export function CharacterLootLedgerDialog(props: {
         </section>
       )}
       <footer>
-        <button type="button" onClick={close}>
+        <button type="button" disabled={editingBlocked} onClick={close}>
           {message('loot.close')}
         </button>
       </footer>

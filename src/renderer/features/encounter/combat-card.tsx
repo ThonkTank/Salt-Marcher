@@ -1,23 +1,31 @@
+import { useCombatDraft } from './use-combat-draft.js'
+import type { CombatCommands } from './use-combat-commands.js'
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { useState } from 'react'
 import type {
   CombatCondition,
-  CombatCommandResult,
   CombatSnapshot
 } from '../../../shared/contracts/live-session.js'
 import { combatConditions } from '../../../shared/values/combat-values.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
-import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function CombatCardView(props: {
   card: CombatSnapshot['cards'][number]
   combat: CombatSnapshot
-  action: (operation: () => Promise<CombatCommandResult>) => Promise<void>
+  commands: CombatCommands
 }) {
-  const api = useCapabilityApi()
-  const [amount, setAmount] = useState(1)
+  const amountDraft = useCombatDraft(
+    props.commands,
+    'Trefferpunkte',
+    1,
+    props.combat.revision
+  )
+  const amount = amountDraft.value
+  const closeTransition = useDraftTransition(
+    `${props.combat.id}:${props.card.id}`
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const card = props.card
   const hpPercentage =
@@ -44,13 +52,20 @@ export function CombatCardView(props: {
     Number(card.exhaustionLevel > 0)
 
   function changeHp(healing: boolean) {
-    void props.action(() =>
-      encounterCapabilities(api).combat.changeHp({
-        cardId: card.id,
-        amount,
-        healing,
-        expectedRevision: props.combat.revision
-      })
+    void props.commands.perform(
+      (current) =>
+        current.combat
+          ? {
+              kind: 'changeHp',
+              input: {
+                cardId: card.id,
+                amount,
+                healing,
+                expectedRevision: current.combat.revision
+              }
+            }
+          : null,
+      amountDraft.clear
     )
   }
 
@@ -124,8 +139,10 @@ export function CombatCardView(props: {
           backdropClassName="hp-dialog-backdrop"
           className="hp-dialog"
           ariaLabel={formatMessage('encounter.hpDialog', { name: card.name })}
-          onClose={() => setDialogOpen(false)}
+          onClose={() => closeTransition.request(() => setDialogOpen(false))}
+          busy={props.commands.busy}
         >
+          {props.commands.notice}
           <header>
             <span>{displayName}</span>
             {!card.playerCharacter && (
@@ -146,9 +163,15 @@ export function CombatCardView(props: {
                 })}
                 type="number"
                 min="1"
+                disabled={props.commands.busy}
                 value={amount}
                 onChange={(event) =>
-                  setAmount(Math.max(1, Number(event.target.value) || 1))
+                  amountDraft.set(
+                    Math.min(
+                      Number.MAX_SAFE_INTEGER,
+                      Math.max(1, Number(event.target.value) || 1)
+                    )
+                  )
                 }
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') changeHp(false)
@@ -157,7 +180,7 @@ export function CombatCardView(props: {
               <button
                 className="damage"
                 aria-label={message('encounter.damage')}
-                disabled={!card.alive}
+                disabled={props.commands.busy || !card.alive}
                 onClick={() => changeHp(false)}
               >
                 −
@@ -165,7 +188,7 @@ export function CombatCardView(props: {
               <button
                 className="heal"
                 aria-label={message('encounter.heal')}
-                disabled={!card.alive}
+                disabled={props.commands.busy || !card.alive}
                 onClick={() => changeHp(true)}
               >
                 +
@@ -194,16 +217,22 @@ export function CombatCardView(props: {
                 return (
                   <button
                     key={condition}
+                    disabled={props.commands.busy}
                     className={active ? 'active' : undefined}
                     aria-pressed={active}
                     onClick={() =>
-                      void props.action(() =>
-                        encounterCapabilities(api).combat.toggleCondition({
-                          cardId: card.id,
-                          condition,
-                          active: !active,
-                          expectedRevision: props.combat.revision
-                        })
+                      void props.commands.perform((current) =>
+                        current.combat
+                          ? {
+                              kind: 'toggleCondition',
+                              input: {
+                                cardId: card.id,
+                                condition,
+                                active: !active,
+                                expectedRevision: current.combat.revision
+                              }
+                            }
+                          : null
                       )
                     }
                   >
@@ -219,13 +248,19 @@ export function CombatCardView(props: {
             <button
               className={card.concentrating ? 'active' : undefined}
               aria-pressed={card.concentrating}
+              disabled={props.commands.busy}
               onClick={() =>
-                void props.action(() =>
-                  encounterCapabilities(api).combat.setConcentration({
-                    cardId: card.id,
-                    concentrating: !card.concentrating,
-                    expectedRevision: props.combat.revision
-                  })
+                void props.commands.perform((current) =>
+                  current.combat
+                    ? {
+                        kind: 'setConcentration',
+                        input: {
+                          cardId: card.id,
+                          concentrating: !card.concentrating,
+                          expectedRevision: current.combat.revision
+                        }
+                      }
+                    : null
                 )
               }
             >
@@ -238,13 +273,19 @@ export function CombatCardView(props: {
               {message('encounter.exhaustionLevel')}
               <select
                 value={card.exhaustionLevel}
+                disabled={props.commands.busy}
                 onChange={(event) =>
-                  void props.action(() =>
-                    encounterCapabilities(api).combat.setExhaustion({
-                      cardId: card.id,
-                      exhaustionLevel: Number(event.target.value),
-                      expectedRevision: props.combat.revision
-                    })
+                  void props.commands.perform((current) =>
+                    current.combat
+                      ? {
+                          kind: 'setExhaustion',
+                          input: {
+                            cardId: card.id,
+                            exhaustionLevel: Number(event.target.value),
+                            expectedRevision: current.combat.revision
+                          }
+                        }
+                      : null
                   )
                 }
               >
@@ -258,12 +299,13 @@ export function CombatCardView(props: {
           </div>
           <button
             className="hp-dialog-close"
-            onClick={() => setDialogOpen(false)}
+            onClick={() => closeTransition.request(() => setDialogOpen(false))}
           >
             {message('action.close')}
           </button>
         </ModalDialog>
       )}
+      {closeTransition.dialog}
     </>
   )
 }

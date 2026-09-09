@@ -3,7 +3,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
+import {
+  CapabilityContext,
+  type CapabilityContextValue
+} from '../../src/renderer/capabilities/capability-context.js'
+import { maintenanceDraftCoordinator } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
 import { ReferenceContext } from '../../src/renderer/features/reference/reference-context.js'
 import { useSessionWorkspaceController } from '../../src/renderer/features/session/use-session-workspace-controller.js'
 import type { ReferenceContextValue } from '../../src/renderer/features/reference/reference-context.js'
@@ -20,12 +24,16 @@ describe('session workspace controller', () => {
     const updated = snapshot(5)
     const setSnapshot = vi.fn()
     const onError = vi.fn()
-    const setLocation = vi.fn().mockResolvedValue(updated)
-    const api = sessionApi({ setLocation })
-    const wrapper = controllerWrapper(api)
+    const executeCommand = vi
+      .fn<SaltMarcherApi['scene']['executeCommand']>()
+      .mockResolvedValue({ snapshot: updated })
+    const api = sessionApi({ executeCommand })
+    let current = initial
+    const wrapper = controllerWrapper(api, () => current)
     const view = renderHook(
       ({ value }: { value: LiveSessionSnapshot }) =>
         useSessionWorkspaceController({
+          campaignId: 'campaign',
           snapshot: value,
           setSnapshot,
           onError
@@ -57,14 +65,25 @@ describe('session workspace controller', () => {
       expanded: false
     })
 
+    current = updated
     view.rerender({ value: updated })
     act(() => view.result.current.actions.setSceneLocation(null))
     await waitFor(() =>
-      expect(setLocation).toHaveBeenCalledWith({
-        sceneId,
-        locationId: null,
-        expectedRevision: updated.scene.revision
+      expect(executeCommand.mock.calls[0]?.[0]).toMatchObject({
+        campaignId: 'campaign',
+        command: {
+          kind: 'set-location',
+          input: {
+            sceneId,
+            locationId: null,
+            expectedRevision: updated.scene.revision
+          }
+        }
       })
+    )
+    expect(executeCommand).toHaveBeenCalledOnce()
+    expect(executeCommand.mock.calls[0]![0].commandId).toMatch(
+      /^[0-9a-f-]{36}$/
     )
     await waitFor(() => expect(setSnapshot).toHaveBeenCalledWith(updated))
   })
@@ -72,18 +91,25 @@ describe('session workspace controller', () => {
   it('routes command failures through the controller error boundary', async () => {
     const value = snapshot(3, true)
     const failure = new Error('restore failed')
-    const setGroupArchived = vi.fn().mockRejectedValue(failure)
+    const executeGroupLifecycle = vi.fn().mockRejectedValue(failure)
     const onError = vi.fn()
     const setSnapshot = vi.fn()
-    const api = sessionApi({ setGroupArchived })
+    const api = sessionApi({
+      executeGroupLifecycle,
+      groupLifecycleStatus: vi.fn().mockResolvedValue({
+        receipt: { scenePatch: {}, combat: null },
+        snapshot: value
+      })
+    })
     const view = renderHook(
       () =>
         useSessionWorkspaceController({
+          campaignId: 'campaign',
           snapshot: value,
           setSnapshot,
           onError
         }),
-      { wrapper: controllerWrapper(api) }
+      { wrapper: controllerWrapper(api, () => value) }
     )
     const row = view.result.current.model.groups.archivedRows[0]
     expect(row?.kind).toBe('archived-group')
@@ -94,6 +120,12 @@ describe('session workspace controller', () => {
     await waitFor(() =>
       expect(onError).toHaveBeenCalledWith(expect.any(String))
     )
+    expect(executeGroupLifecycle).toHaveBeenCalledOnce()
+    const resolution = maintenanceDraftCoordinator.begin()
+    await act(async () => {
+      expect(await resolution.resolve('discard')).toEqual([])
+    })
+    resolution.release()
   })
 })
 
@@ -159,18 +191,35 @@ function sessionApi(sceneOverrides: Record<string, unknown>): SaltMarcherApi {
   } as unknown as SaltMarcherApi
 }
 
-function controllerWrapper(api: SaltMarcherApi) {
+function controllerWrapper(
+  api: SaltMarcherApi,
+  session: () => LiveSessionSnapshot
+) {
+  const root = () => ({
+    sessionCampaignId: 'campaign',
+    campaigns: { activeCampaignId: 'campaign' },
+    session: session()
+  })
+  const context = {
+    api,
+    campaignWorkspace: {
+      snapshot: root,
+      subscribe: () => () => {},
+      refreshActiveSession: () =>
+        Promise.resolve({ status: 'ready', value: root() })
+    }
+  } as unknown as CapabilityContextValue
   const reference = {
     openReference: vi.fn(),
     navigation: { entries: [], index: -1, document: null, loading: false }
   } as unknown as ReferenceContextValue
   return function Wrapper(props: { children: ReactNode }) {
     return (
-      <CapabilityProvider api={api}>
+      <CapabilityContext.Provider value={context}>
         <ReferenceContext.Provider value={reference}>
           {props.children}
         </ReferenceContext.Provider>
-      </CapabilityProvider>
+      </CapabilityContext.Provider>
     )
   }
 }

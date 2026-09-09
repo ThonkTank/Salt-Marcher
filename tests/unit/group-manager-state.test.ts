@@ -4,10 +4,19 @@ import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session
 import {
   activeGroupSession,
   createGroupManagerState,
+  groupManagerAnyDirty,
+  groupManagerAnyLootDirty,
+  groupManagerCurrentLootDirty,
   groupManagerReducer
 } from '../../src/renderer/features/session/group-manager-state.js'
-import { groupDraftStateFromGroup } from '../../src/renderer/features/session/group-draft.js'
-import { groupLootDraftFromRun } from '../../src/renderer/features/loot/group-loot-draft.js'
+import {
+  groupDraftStateFromGroup,
+  groupDraftSignature
+} from '../../src/renderer/features/session/group-draft.js'
+import {
+  groupLootDraftFromRun,
+  groupLootDraftSignature
+} from '../../src/renderer/features/loot/group-loot-draft.js'
 import {
   groupManagerIntentGuard,
   groupManagerIntentNeedsConfirmation,
@@ -16,6 +25,196 @@ import {
 import { groupManagerHistoryShortcut } from '../../src/renderer/features/session/group-manager-shortcuts.js'
 
 describe('group manager state', () => {
+  it('does not replace a newer acknowledged revision with a delayed older result', () => {
+    let state = stateWithLoot()
+    const submitted = signature(state.sessions['group-a']!.group)
+    state = groupManagerReducer(state, {
+      kind: 'group-saved',
+      key: 'group-a',
+      submittedSignature: submitted,
+      persisted: persistedGroup(3, 'Neu bestätigt'),
+      nextProspectiveGroupId: 'next'
+    })
+    const confirmed = state
+    state = groupManagerReducer(state, {
+      kind: 'group-saved',
+      key: 'group-a',
+      submittedSignature: submitted,
+      persisted: persistedGroup(2, 'Älter'),
+      nextProspectiveGroupId: 'next'
+    })
+    expect(state).toBe(confirmed)
+  })
+
+  it('acknowledges a normalized group while preserving its pending loot', () => {
+    let state = stateWithLoot()
+    state = groupManagerReducer(state, {
+      kind: 'mutate-group',
+      mutation: { kind: 'name', update: '  Gespeichert  ' }
+    })
+    const draft = state.sessions['group-a']!.group
+    const loot = state.sessions['group-a']!.loot
+    state = groupManagerReducer(state, {
+      kind: 'group-saved',
+      key: 'group-a',
+      submittedSignature: signature(draft),
+      persisted: persistedGroup(2, 'Gespeichert'),
+      nextProspectiveGroupId: 'next'
+    })
+    expect(state.sessions['group-a']?.group.name).toBe('Gespeichert')
+    expect(state.sessions['group-a']?.sourceRevision).toBe(2)
+    expect(state.sessions['group-a']?.loot).toBe(loot)
+    expect(groupManagerAnyDirty(state)).toBe(true)
+  })
+
+  it('retains later changes after a partial save of an inactive group', () => {
+    let state = stateWithLoot()
+    const submitted = state.sessions['group-a']!.group
+    state = groupManagerReducer(state, {
+      kind: 'mutate-group',
+      mutation: { kind: 'name', update: 'Später geändert' }
+    })
+    state = groupManagerReducer(state, {
+      kind: 'activate',
+      key: 'group-b',
+      fallback: groupDraftStateFromGroup(null),
+      sourceRevision: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'mutate-group',
+      mutation: { kind: 'name', update: 'Weitere Gruppe' }
+    })
+    const other = state.sessions['group-b']
+    state = groupManagerReducer(state, {
+      kind: 'group-saved',
+      key: 'group-a',
+      submittedSignature: signature(submitted),
+      persisted: persistedGroup(2, 'Gruppe'),
+      nextProspectiveGroupId: 'next'
+    })
+    expect(state.activeKey).toBe('group-b')
+    expect(state.sessions['group-b']).toBe(other)
+    expect(state.sessions['group-a']?.group.name).toBe('Später geändert')
+    expect(state.sessions['group-a']?.group.baseline).toBe(
+      groupDraftStateFromGroup(persistedGroup(2, 'Gruppe')).baseline
+    )
+    expect(state.sessions['group-a']?.sourceRevision).toBe(2)
+  })
+
+  it('rekeys a new group after acknowledgement without losing its draft history', () => {
+    let state = createGroupManagerState({
+      activeKey: 'new',
+      initialGroup: null,
+      prospectiveGroupId: 'created',
+      locationId: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'mutate-group',
+      mutation: { kind: 'name', update: 'Neue Gruppe' }
+    })
+    const submitted = state.sessions['new']!.group
+    state = groupManagerReducer(state, {
+      kind: 'group-saved',
+      key: 'new',
+      submittedSignature: signature(submitted),
+      persisted: { ...persistedGroup(1, 'Neue Gruppe'), id: 'created' },
+      nextProspectiveGroupId: 'next'
+    })
+    expect(state.activeKey).toBe('created')
+    expect(state.sessions['new']).toBeUndefined()
+    expect(state.sessions['created']?.sourceRevision).toBe(1)
+    expect(state.sessions['created']?.group.history).toBe(submitted.history)
+    expect(state.prospectiveGroupId).toBe('next')
+    expect(groupManagerAnyDirty(state)).toBe(false)
+  })
+
+  it('retains an unmodified generated reward in an inactive session', () => {
+    let state = stateWithLoot()
+    expect(groupManagerAnyDirty(state)).toBe(true)
+    expect(groupManagerCurrentLootDirty(state)).toBe(true)
+    state = groupManagerReducer(state, {
+      kind: 'activate',
+      key: 'group-b',
+      fallback: groupDraftStateFromGroup(null),
+      sourceRevision: null
+    })
+    expect(groupManagerCurrentLootDirty(state)).toBe(false)
+    expect(groupManagerAnyLootDirty(state)).toBe(true)
+    expect(groupManagerAnyDirty(state)).toBe(true)
+    state = groupManagerReducer(state, {
+      kind: 'sync-external',
+      groups: [persistedGroup(2, 'Extern')]
+    })
+    expect(state.sessions['group-a']?.loot.run?.id).toBe(generatedRun().id)
+    expect(state.sessions['group-a']?.externalConflict).toBe(true)
+  })
+
+  it('keeps failed rewards pending and acknowledges only the submitted draft', () => {
+    let state = stateWithLoot()
+    const submitted = state.sessions['group-a']!.loot.history!.draft
+    state = groupManagerReducer(state, {
+      kind: 'loot-failed',
+      key: 'group-a',
+      error: 'write failed',
+      issues: []
+    })
+    expect(groupManagerAnyLootDirty(state)).toBe(true)
+    state = groupManagerReducer(state, {
+      kind: 'loot-command',
+      key: 'group-a',
+      command: { kind: 'set-label', label: 'Spätere Änderung' }
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-committed',
+      key: 'group-a',
+      runId: generatedRun().id,
+      signature: groupLootDraftSignature(submitted)
+    })
+    expect(groupManagerAnyDirty(state)).toBe(true)
+    state = groupManagerReducer(state, {
+      kind: 'loot-history',
+      key: 'group-a',
+      direction: 'undo'
+    })
+    expect(groupManagerAnyDirty(state)).toBe(false)
+    state = groupManagerReducer(state, {
+      kind: 'loot-history',
+      key: 'group-a',
+      direction: 'redo'
+    })
+    expect(groupManagerAnyLootDirty(state)).toBe(true)
+  })
+
+  it('does not acknowledge a replacement run with an older commit result', () => {
+    let state = stateWithLoot()
+    const signature = groupLootDraftSignature(
+      state.sessions['group-a']!.loot.history!.draft
+    )
+    state = groupManagerReducer(state, {
+      kind: 'loot-committed',
+      key: 'group-a',
+      runId: generatedRun().id,
+      signature
+    })
+    expect(groupManagerAnyDirty(state)).toBe(false)
+    const run = generatedRun('01900000-0000-7000-8000-000000000011')
+    state = groupManagerReducer(state, {
+      kind: 'loot-generated',
+      key: 'group-a',
+      run,
+      draft: groupLootDraftFromRun(run, () => 'draft-item'),
+      seed: 2
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-committed',
+      key: 'group-a',
+      runId: generatedRun().id,
+      signature
+    })
+    expect(groupManagerAnyDirty(state)).toBe(true)
+    expect(state.sessions['group-a']?.loot.committedSignature).toBeNull()
+  })
+
   it('owns and restores the complete per-group session cache', () => {
     let state = createGroupManagerState({
       activeKey: 'group-a',
@@ -238,14 +437,16 @@ describe('group manager state', () => {
   })
 })
 
-function generatedRun(): GroupRewardGeneratedRun {
+function generatedRun(
+  id = '01900000-0000-7000-8000-000000000010'
+): GroupRewardGeneratedRun {
   const itemReference = {
     kind: 'generated' as const,
-    runId: '01900000-0000-7000-8000-000000000010',
+    runId: id,
     definitionId: 'generated:definition:1'
   }
   return {
-    id: '01900000-0000-7000-8000-000000000010',
+    id,
     itemDefinitions: [
       {
         reference: itemReference,
@@ -301,4 +502,32 @@ function persistedGroup(revision: number, name: string): SceneGroup {
     position: 0,
     entries: []
   }
+}
+
+function stateWithLoot() {
+  const initial = persistedGroup(1, 'Gruppe')
+  const state = createGroupManagerState({
+    activeKey: initial.id,
+    initialGroup: initial,
+    prospectiveGroupId: 'prospective',
+    locationId: null
+  })
+  const run = generatedRun()
+  return groupManagerReducer(state, {
+    kind: 'loot-generated',
+    key: initial.id,
+    run,
+    draft: groupLootDraftFromRun(run, () => 'draft-item'),
+    seed: 1
+  })
+}
+
+function signature(group: ReturnType<typeof groupDraftStateFromGroup>): string {
+  return groupDraftSignature(
+    group.name,
+    group.note,
+    group.disposition,
+    group.quantities,
+    group.deadQuantities
+  )
 }

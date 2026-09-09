@@ -2,11 +2,14 @@
 
 ## Boundary
 
-Release 0.2.0 establishes the persistent Electron real-use baseline. Installation
-schema 39 and Campaign schema 34 are versioned independently from the application.
+The planned first public Electron real-use release is 0.3.0. The existing
+0.2.0-named fixture is an internal baseline, not proof of a published Electron
+release. Installation schema 39 and Campaign schema 34 are versioned independently
+from the application. Release acceptance remains pending under the
+[maintenance roadmap](../architecture/release-maintenance-roadmap.md).
 Every later public release must retain a tested, complete forward migration path
 from every earlier public release. Packaged data is never implicitly reset.
-Development-only reset behavior remains confined to the isolated development-data root.
+Development data remains isolated, and normal startup preserves incompatible profiles.
 
 `installation.sqlite` contains installation-wide registry and settings truth;
 each Campaign has the separate `campaigns/<id>/campaign.sqlite` store. The utility
@@ -18,8 +21,8 @@ main owns process lifecycle and permissions, but does not execute domain SQL.
 
 ## Current Development Format
 
-Development builds may recreate their fixed development-data directory under the
-explicit reset policy. Local and Release data are preserved. Unsupported schemas,
+Development, Local and Release startup preserve existing data. Creating an empty
+profile requires an explicit user action. Unsupported schemas,
 missing forward paths, corruption and access errors never trigger a reset.
 
 Campaign creation is an explicit exception to a single-file transaction:
@@ -60,9 +63,9 @@ installation settings and user files participate in one maintenance operation.
 
 The utility process snapshots locked sources without changing their bytes, uses
 SQLite Online Backup on that snapshot, migrates a separate working tree, validates
-integrity, foreign keys and campaign/party/scene readback, then promotes the tree.
-The application activation journal binds the old and new executable deployments.
-The data journal records intent before moves and completion only after target startup.
+integrity, foreign keys and campaign/party/scene readback, and returns the prepared tree to the shared maintenance coordinator.
+Its single journal binds data and executable deployments, records intent before
+moves, and records completion only after target startup.
 Before completion recovery restores the prior pair; after completion later user work
 must never be rolled back automatically. Backups are permanent and restoration first
 backs up current data. The renderer receives validated status and backup IDs only.
@@ -71,3 +74,39 @@ backs up current data. The renderer receives validated status and backup IDs onl
 
 - [Electron Target Architecture](../architecture/target-architecture.md)
 - [Campaign Registry Persistence Contract](../../campaign/contract/contract-campaign-registry-persistence.md)
+
+## Source compatibility for the planned public baseline
+
+Format compatibility and source consistency are separate admission checks. Both
+must pass before activation. Existing migration edges are retained; a path alone
+is not evidence of preserved user content. Installation 39 / Campaign 34 is the
+frozen internal baseline. Older role-version combinations need a complete path
+and representative semantic fixtures before being advertised as supported.
+Unknown old versions remain unqualified, not silently reset or deleted.
+
+Linux Development, Local and Release now use one canonical external profile lock;
+Local and Release also retain the older runtime.lock for compatibility. Direct
+cross-version profile import remains unqualified until complete-content and
+producer-cooperation checks pass. The import UI currently selects a manifest-bearing
+SaltMarcher backup, never an arbitrary raw database folder. Format-1 campaign-data
+backups are hash-checked before and after Utility preparation, then migrated on a
+working copy. This is not yet a full Electron-profile compatibility claim.
+Legacy sources without a qualified complete backup/export remain unsupported.
+The diagnostic JSON from scripts/export-development-data.ts explicitly declares
+supportedMigrationContract:false and is not such an export. Java import is excluded.
+
+Backups produced by the current profile transaction have inventory/hash validation;
+public acceptance additionally requires the complete-content and concurrency cases
+in the [acceptance matrix](../architecture/release-maintenance-acceptance-matrix.md).
+A newer schema or incomplete migration path must be rejected before replacement.
+Restoration preserves the current profile first and migrates only a working copy.
+No implicit database downgrade, profile reset or backup pruning is permitted.
+
+## Maintenance ownership transition
+
+Local and Release use the shared maintenance coordinator and journal. Main/headless
+runtime owns locking, process lifecycle and executable activation; Utility owns
+snapshots, migrations and semantic readback. Aggregate owners retain SQL. Handoff
+receipts remain provenance evidence only. Existing journals are admitted through
+validated legacy adapters before new maintenance starts. Complete-profile transport
+and user-facing recovery remain Phase 3 work; see the execution log for evidence.

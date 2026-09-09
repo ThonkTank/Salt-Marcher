@@ -1,3 +1,6 @@
+import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
+import type { PlannerPreparationMaintenanceStatus } from '../../../shared/contracts/session-planner.js'
+import { settlePlannerPreparations } from './settle-planner-preparations.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   SessionPreparationReceipt,
@@ -29,24 +32,121 @@ export function useSessionPreparation(options: {
   read: () => SessionPlannerAuthority
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   saveDraft: () => Promise<SessionPlannerWorkspace | null>
+  failed?: (cause: unknown, reconcile?: () => Promise<boolean>) => void
   onError: (message: string) => void
 }) {
-  const { applyWorkspace, coordinator, onError, planner, read, saveDraft } =
-    options
+  const {
+    applyWorkspace,
+    coordinator,
+    failed,
+    onError,
+    planner,
+    read,
+    saveDraft
+  } = options
   const [seed, setSeed] = useState(179_974)
   const [stage, setStage] = useState<PreparationStage>('idle')
   const [stageMessage, setStageMessage] = useState('')
-  const [confirmation, setConfirmation] = useState<{
+  const [confirmation, setConfirmationState] = useState<{
     operationId: string
     target: SessionPlannerWorkspace
   } | null>(null)
+  const confirmationOpen = useRef(false)
+  const setConfirmation = useCallback(
+    (
+      value: { operationId: string; target: SessionPlannerWorkspace } | null
+    ) => {
+      confirmationOpen.current = value !== null
+      setConfirmationState(value)
+    },
+    []
+  )
   const activeTarget = useRef<PreparationTarget | null>(null)
   const activeAbort = useRef<AbortController | null>(null)
   const observedReceipt = useRef<string | null>(null)
+  const unsettled = useRef(new Set<string>())
+  const settled = useRef(new Set<string>())
+  const maintenanceDiscovered = useRef(false)
 
   useEffect(
     () => () => activeAbort.current?.abort('preparation-controller-unmounted'),
     []
+  )
+
+  const observeMaintenance = useCallback(
+    (operations: PlannerPreparationMaintenanceStatus['operations']) => {
+      maintenanceDiscovered.current = true
+
+      for (const { operationId, receipt } of operations) {
+        if (receipt && !isPreparationTerminal(receipt.status)) {
+          unsettled.current.add(operationId)
+          continue
+        }
+        unsettled.current.delete(operationId)
+        settled.current.add(operationId)
+        if (activeTarget.current?.operationId === operationId) {
+          activeAbort.current?.abort('preparation-settled-for-maintenance')
+          activeAbort.current = null
+          activeTarget.current = null
+        }
+        if (receipt && receipt.sessionId === read().workspace?.session.id) {
+          setStage(preparationStageForStatus(receipt.status))
+          setStageMessage(preparationStatusMessage(receipt))
+        }
+      }
+    },
+    [read]
+  )
+
+  const reconcileUnknownPreparation = useCallback(
+    async (
+      target: PreparationTarget,
+      kind: 'start' | 'cancel'
+    ): Promise<boolean> => {
+      const status = await planner.preparationMaintenanceStatus([
+        target.operationId
+      ])
+      const operation = status.operations.find(
+        ({ operationId }) => operationId === target.operationId
+      )
+      if (!operation || (!operation.receipt && kind === 'cancel'))
+        throw new Error(
+          'Die erwartete Vorbereitungsquittung fehlt. Bitte den Speicherstand erneut prüfen.'
+        )
+      const receipt = operation.receipt
+      if (receipt && receipt.sessionId !== target.sessionId)
+        throw new Error(
+          'Die Vorbereitungsquittung gehört zu einer anderen Sitzung.'
+        )
+      if (!read().dirty) applyWorkspace(status.workspace)
+      observeMaintenance(status.operations)
+      setConfirmation(null)
+      const current = read()
+      if (
+        receipt &&
+        !isPreparationTerminal(receipt.status) &&
+        current.workspace?.session.id === target.sessionId
+      ) {
+        activeAbort.current?.abort('preparation-reconciled')
+        activeAbort.current = new AbortController()
+        activeTarget.current = preparationTarget(
+          target.operationId,
+          current.workspace,
+          current.intentRevision
+        )
+        setStage(preparationStageForStatus(receipt.status))
+        setStageMessage(
+          kind === 'cancel' && !receipt.cancelRequested
+            ? message('planner.cancelNotApplied')
+            : preparationStatusMessage(receipt)
+        )
+      } else if (!receipt) {
+        setStage('ready')
+        setStageMessage(message('planner.preparationNotStarted'))
+      }
+      return true
+    },
+    [applyWorkspace, observeMaintenance, planner, read, setConfirmation]
   )
 
   const publishReceipt = useCallback(
@@ -55,6 +155,9 @@ export function useSessionPreparation(options: {
       target: PreparationTarget,
       refreshSucceeded = true
     ): Promise<void> => {
+      if (isPreparationTerminal(receipt.status))
+        unsettled.current.delete(receipt.operationId)
+      else unsettled.current.add(receipt.operationId)
       if (!preparationTargetIsCurrent(activeTarget.current, target, read()))
         return
       setSeed(receipt.seed)
@@ -85,13 +188,14 @@ export function useSessionPreparation(options: {
         signal,
         acceptReceipt: (receipt) => publishReceipt(receipt, target)
       })
+      if (outcome.status === 'failure') failed?.(outcome.cause)
       if (
         outcome.status === 'failure' &&
         preparationTargetIsCurrent(activeTarget.current, target, read())
       )
         onError(capabilityErrorText(outcome.cause))
     },
-    [coordinator, onError, planner, publishReceipt, read]
+    [coordinator, failed, onError, planner, publishReceipt, read]
   )
 
   const requestPreparation = useCallback(
@@ -150,6 +254,13 @@ export function useSessionPreparation(options: {
           await publishReceipt(started.receipt, target)
         }
       })
+      if (outcome.status === 'failure') {
+        if (capabilityErrorCode(outcome.cause) === 'outcome_unknown')
+          unsettled.current.add(operationId)
+        failed?.(outcome.cause, () =>
+          reconcileUnknownPreparation(target, 'start')
+        )
+      }
       if (
         outcome.status === 'failure' &&
         preparationTargetIsCurrent(activeTarget.current, target, read())
@@ -162,7 +273,16 @@ export function useSessionPreparation(options: {
         onError(capabilityErrorText(outcome.cause))
       }
     },
-    [coordinator, onError, planner, publishReceipt, read]
+    [
+      coordinator,
+      failed,
+      onError,
+      planner,
+      publishReceipt,
+      read,
+      reconcileUnknownPreparation,
+      setConfirmation
+    ]
   )
 
   const generate = useCallback(async (): Promise<void> => {
@@ -197,10 +317,23 @@ export function useSessionPreparation(options: {
         planner.cancelPreparation({ operationId: target.operationId }),
       accept: ({ receipt }) => publishReceipt(receipt, target)
     })
-    if (outcome.status === 'failure')
+    if (outcome.status === 'failure') {
+      failed?.(outcome.cause, () =>
+        reconcileUnknownPreparation(target, 'cancel')
+      )
       onError(capabilityErrorText(outcome.cause))
+    }
     setConfirmation(null)
-  }, [confirmation, coordinator, onError, planner, publishReceipt])
+  }, [
+    confirmation,
+    coordinator,
+    failed,
+    onError,
+    planner,
+    publishReceipt,
+    reconcileUnknownPreparation,
+    setConfirmation
+  ])
 
   const authority = read()
   const sessionId = authority.workspace?.session.id ?? null
@@ -216,7 +349,7 @@ export function useSessionPreparation(options: {
       setStage('stale')
       setStageMessage(message('planner.statusStale'))
     }
-  }, [intentRevision, read, sessionId, sessionRevision])
+  }, [intentRevision, read, sessionId, sessionRevision, setConfirmation])
 
   const preparation = authority.workspace?.preparation ?? null
   useEffect(() => {
@@ -241,13 +374,74 @@ export function useSessionPreparation(options: {
   useEffect(
     () =>
       planner.onPreparationChanged((notice) => {
+        unsettled.current.add(notice.operationId)
         const target = activeTarget.current
         if (target?.operationId === notice.operationId) void reconcile(target)
       }),
     [planner, reconcile]
   )
 
+  useEffect(() => {
+    maintenanceDiscovered.current = false
+    const abort = new AbortController()
+    void coordinator
+      .run({
+        scope: 'planner.preparation-maintenance-discovery',
+        mode: 'latest-only',
+        signal: abort.signal,
+        execute: () => planner.preparationMaintenanceStatus([]),
+        accept: (status) => observeMaintenance(status.operations)
+      })
+      .then((outcome) => {
+        if (outcome.status === 'failure')
+          onError(capabilityErrorText(outcome.cause))
+      })
+    return () => abort.abort('planner-maintenance-discovery-ended')
+  }, [coordinator, observeMaintenance, onError, planner])
+
+  const settleForMaintenance = async (choice: 'save' | 'discard') => {
+    const known = new Set(unsettled.current)
+    const active = activeTarget.current
+    if (active) known.add(active.operationId)
+    const preparation = read().workspace?.preparation
+    if (preparation) known.add(preparation.operationId)
+    if (confirmationOpen.current) {
+      if (choice === 'save')
+        throw new Error(
+          'Bitte die Ersetzung der Sitzung zuerst im Vorbereitungsdialog bestätigen oder abbrechen.'
+        )
+      activeAbort.current?.abort(
+        'maintenance-discards-preparation-confirmation'
+      )
+      activeTarget.current = null
+      activeAbort.current = null
+      setConfirmation(null)
+    }
+    return settlePlannerPreparations({
+      planner,
+      choice,
+      operationIds: [...known],
+      observed: observeMaintenance
+    })
+  }
+
   return {
+    hasActiveOperation: () => {
+      const receipt = read().workspace?.preparation
+      const unobserved =
+        receipt &&
+        !isPreparationTerminal(receipt.status) &&
+        !settled.current.has(receipt.operationId) &&
+        observedReceipt.current !==
+          `${receipt.operationId}:${receipt.updatedAt}`
+      return (
+        !maintenanceDiscovered.current ||
+        activeTarget.current !== null ||
+        unsettled.current.size > 0 ||
+        Boolean(unobserved)
+      )
+    },
+    settleForMaintenance,
     seed,
     stage,
     stageMessage,

@@ -77,7 +77,7 @@ function mainHandlers(
     'updates.install': () => releases.install(),
     'updates.setup': () => releases.setup(),
     'updates.importProfile': (_event, input) =>
-      releases.importProfile(input.id),
+      releases.importProfile(input.id, input.mode),
     'backups.list': () => releases.backups(),
     'backups.restore': (_event, input) => releases.restore(input.id),
     'runtime.memory': () =>

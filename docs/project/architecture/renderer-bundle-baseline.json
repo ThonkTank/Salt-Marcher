@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-08",
-  "reason": "Phase 6 retires legacy Party and Session columns; desktop becomes the regular scene surface.",
-  "dependencyRationale": "No dependency changes. All hard ceilings and growth thresholds remain unchanged.",
-  "chunkRationale": "Session entry loads the productive desktop lazily. Removed legacy UI reduces both Workspace and total reachable renderer; personal loot, references and Pixi remain lazy. Only downward ratchets are applied. Retired reference navigation and global pin windows remove a further 5719 reachable bytes.",
+  "recordedAt": "2026-09-09",
+  "reason": "Account for journaled travel commands and persistent route drafts with central save/discard recovery.",
+  "dependencyRationale": "No added dependency or lockfile change. Reuse React, the existing command owner and maintenance dialog. Absolute budgets and the 16 KiB growth threshold are unchanged.",
+  "chunkRationale": "Route drafts and command recovery remain in the lazy SceneDesktop graph. Reachable growth is 17768 bytes since the combat baseline, including 5467 bytes since the qualified travel projection commit. Common workspace growth is 732 bytes; the shell is unchanged. No runtime schema library was added to the renderer.",
   "graphs": {
-    "shell": 420420,
-    "workspace": 507912,
-    "session": 1311,
-    "catalog": 186259,
-    "hex": 176693,
-    "reference": 37455,
-    "pixi": 409364,
-    "reachable": 1565028
+    "shell": 420905,
+    "workspace": 526975,
+    "session": 1348,
+    "catalog": 186677,
+    "hex": 175900,
+    "reference": 37404,
+    "pixi": 409405,
+    "reachable": 1669010
   }
 }

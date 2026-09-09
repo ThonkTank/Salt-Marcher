@@ -89,6 +89,7 @@ export type SessionWorkspaceViewModel = Readonly<{
 }>
 
 export type SessionWorkspaceActions = Readonly<{
+  groupLifecycleBusy?: boolean
   toggleRow: (target: Exclude<SessionExpansionTarget, null>) => void
   focusScene: (sceneId: string) => void
   setSceneLocation: (locationId: string | null) => void

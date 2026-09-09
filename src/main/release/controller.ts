@@ -1,9 +1,18 @@
+import { z } from 'zod'
+import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
+import { withQualifiedSourceProfile } from '../local-profile/source-profile-admission.js'
+import { profileBackupSchema } from '../../shared/contracts/profile-backup.js'
+import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
+import {
+  profilePreparationSchema,
+  type ProfilePreparation
+} from '../../shared/contracts/maintenance.js'
 import { relaunchRelease } from './relaunch.js'
 import { tmpdir } from 'node:os'
 import { rollbackRelease } from './recovery.js'
 import { capabilityEvents } from '../../shared/contracts/events.js'
 import { app, BrowserWindow, dialog } from 'electron'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import {
   existsSync,
@@ -26,14 +35,13 @@ import {
   type AvailableRelease
 } from './github-release.js'
 import {
-  beginActivation,
   installLauncher,
   stageDeployment,
-  setCurrent
+  currentProgram,
+  deploymentProgram
 } from './deployment.js'
 import { maintenanceWorker } from './maintenance-worker.js'
 import { releaseRoot } from './paths.js'
-import { acquireProfileLock } from '../local-profile/local-profile-lock.js'
 
 export class ReleaseController {
   private value: ReleaseStatus
@@ -223,65 +231,154 @@ export class ReleaseController {
       this.activateCurrent({ source: join(this.root, `empty-${randomUUID()}`) })
     )
   }
-  importProfile(id?: 'local' | 'electron' | 'development') {
+  importProfile(
+    id?: 'local' | 'electron' | 'development',
+    mode: 'backup' | 'profile' = 'backup'
+  ) {
     return this.operation(async () => {
-      let source = id
+      const source = id
         ? this.profileCandidates().find((entry) => entry.id === id)?.path
         : undefined
       if (id && !source)
         throw new Error('Das ausgewählte Profil ist nicht mehr vorhanden.')
-      if (!source) {
-        const selection = await dialog.showOpenDialog({
-          title:
-            'Datenordner einer vollständig geschlossenen Electron-App auswählen',
-          properties: ['openDirectory']
-        })
-        if (selection.canceled || !selection.filePaths[0]) return
-        source = selection.filePaths[0]
+      if (mode === 'profile') {
+        await this.importDirectProfile(source ? dirname(source) : undefined)
+        return
       }
-      if (existsSync(join(dirname(source), 'SingletonLock')))
-        throw new Error(
-          'Bitte die Quell-App vor der Übernahme vollständig schließen.'
-        )
-      if (!existsSync(join(source, 'installation.sqlite')))
-        throw new Error(
-          'Bitte den Datenordner mit installation.sqlite auswählen.'
-        )
-      if (source === join(this.root, 'profile', 'campaign-data'))
-        throw new Error('Dieses Profil wird bereits verwendet.')
-      // Both Local and new Release runtimes hold the parent profile lock.
-      const lock = acquireProfileLock(
-        join(dirname(dirname(source)), 'runtime.lock'),
-        'installer'
-      )
+      const selection = await dialog.showOpenDialog({
+        title:
+          'Geprüfte SaltMarcher-Sicherung auswählen (Ordner mit manifest.json und data)',
+        properties: ['openDirectory'],
+        ...(source
+          ? { defaultPath: join(dirname(dirname(source)), 'backups') }
+          : {})
+      })
+      if (selection.canceled || !selection.filePaths[0]) return
+      const backupDirectory = selection.filePaths[0]
+      let bytes: Buffer
+      let manifest: ReturnType<typeof profileBackupSchema.parse>
       try {
-        await this.activateCurrent({ source })
-      } finally {
-        lock.release()
+        bytes = readFileSync(join(backupDirectory, 'manifest.json'))
+        manifest = profileBackupSchema.parse(JSON.parse(bytes.toString('utf8')))
+      } catch (cause) {
+        throw new Error(
+          'Dieser Ordner enthält kein lesbares SaltMarcher-Sicherungsmanifest. Bitte einen Sicherungsordner mit manifest.json und data auswählen.',
+          { cause }
+        )
       }
+      if (!manifest.restorable)
+        throw new Error(
+          'Diese Sicherung ist nicht wiederherstellbar. Bitte eine andere Sicherung auswählen.'
+        )
+      const expectedManifestSha256 = createHash('sha256')
+        .update(bytes)
+        .digest('hex')
+      const confirmation = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Ausgewählte Sicherung übernehmen',
+        message:
+          manifest.formatVersion === 2
+            ? 'Das gesamte Profil durch diese Sicherung ersetzen?'
+            : 'Diese ältere Sicherung enthält nur Kampagnendaten. Das gesamte Profil ersetzen?',
+        detail: `Version ${manifest.version} · ${new Date(manifest.createdAt).toLocaleString('de-DE')}\n${
+          manifest.formatVersion === 2
+            ? 'Die Sicherung umfasst das vollständige Profil einschließlich eigener Dateien.'
+            : 'Zusätzliche Dateien des aktuellen Profils sind darin nicht enthalten; sie bleiben in der vorher erstellten Sicherung erhalten.'
+        }\nDer aktuelle Stand wird zuerst gesichert. Die Quelle bleibt erhalten. Vor der Übernahme werden Inhalt und Kompatibilität geprüft.`,
+        buttons: ['Abbrechen', 'Sicherung übernehmen'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true
+      })
+      if (confirmation.response !== 1) return
+      await this.activateCurrent({ backupDirectory, expectedManifestSha256 })
     })
+  }
+  private async importDirectProfile(defaultPath?: string): Promise<void> {
+    if (!this.value.installed)
+      throw new Error('Bitte SaltMarcher zuerst installieren.')
+    const selection = await dialog.showOpenDialog({
+      title: 'Profilordner einer installierten SaltMarcher-App auswählen',
+      properties: ['openDirectory'],
+      ...(defaultPath ? { defaultPath } : {})
+    })
+    if (selection.canceled || !selection.filePaths[0]) return
+    const profile = canonicalProfilePath(selection.filePaths[0])
+    const sourceRoot = dirname(profile)
+    if (profile !== join(sourceRoot, 'profile'))
+      throw new Error(
+        'Bitte den Profilordner „profile“ einer installierten App auswählen. Für ältere Profile eine geprüfte Sicherung verwenden.'
+      )
+    const confirmation = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Vollständiges Profil übernehmen',
+      message:
+        'Das gesamte aktuelle Profil durch das ausgewählte Profil ersetzen?',
+      detail:
+        'Einstellungen, Kampagnen und eigene Dateien werden vollständig übernommen. Das aktuelle Profil wird vorher gesichert. Die Quelle bleibt unverändert und muss während der Kopie geschlossen bleiben.',
+      buttons: ['Abbrechen', 'Profil übernehmen'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    })
+    if (confirmation.response !== 1) return
+    const cache = join(this.root, 'cache')
+    mkdirSync(cache, { recursive: true })
+    const exported = mkdtempSync(join(cache, 'profile-import-'))
+    try {
+      const expectedManifestSha256 = await withQualifiedSourceProfile(
+        sourceRoot,
+        join(this.root, 'profile'),
+        async (source) => {
+          const state = new MaintenanceCoordinator(sourceRoot).read()!
+          const program =
+            state.phase === 'committed' ? state.next : state.previous!
+          return z
+            .string()
+            .regex(/^[a-f0-9]{64}$/)
+            .parse(
+              await maintenanceWorker({
+                operation: 'export-profile',
+                root: this.root,
+                version: program.version,
+                source,
+                destination: exported
+              })
+            )
+        }
+      )
+      await this.activateCurrent({
+        backupDirectory: exported,
+        expectedManifestSha256
+      })
+    } finally {
+      rmSync(exported, { recursive: true, force: true })
+    }
   }
   restore(id: string) {
     return this.operation(() => this.activateCurrent({ id }))
   }
-  private async activateCurrent(options: { source?: string; id?: string }) {
+  private async activateCurrent(options: {
+    source?: string
+    id?: string
+    backupDirectory?: string
+    expectedManifestSha256?: string
+  }) {
     if (!this.value.installed)
       throw new Error('Bitte SaltMarcher zuerst installieren.')
-    const manifest = releaseManifestSchema.parse(
-      JSON.parse(
-        readFileSync(join(this.root, 'current', 'manifest.json'), 'utf8')
-      )
-    )
-    const deployment = stageDeployment(
-      this.root,
-      join(this.root, 'current', 'SaltMarcher.AppImage'),
-      manifest
-    )
+    const installed = currentProgram(this.root)
+    if (!installed) throw new Error('Die installierte Programmversion fehlt.')
+    const deployment = installed.deployment
     await this.activate(deployment, options)
   }
   private async activate(
     deployment: string,
-    options: { source?: string; id?: string } = {}
+    options: {
+      source?: string
+      id?: string
+      backupDirectory?: string
+      expectedManifestSha256?: string
+    } = {}
   ) {
     this.update({
       phase: 'maintenance',
@@ -295,31 +392,56 @@ export class ReleaseController {
       'SaltMarcher.AppImage'
     )
     try {
-      await this.runTarget(target, options.id ? 'restore' : 'prepare', options)
-      const activation = beginActivation(this.root, deployment)
-      await this.runTarget(target, 'activate')
-      setCurrent(this.root, deployment)
-      installLauncher(this.root)
+      const transactionId = randomUUID()
+      const prepared = await this.runTarget(target, transactionId, options)
+      const coordinator = new MaintenanceCoordinator(this.root)
+      const previous = currentProgram(this.root)
+      const activation = coordinator.begin({
+        id: prepared.id,
+        formatVersion: prepared.journalVersion ?? 2,
+        backup: prepared.backup,
+        previous,
+        next: deploymentProgram(this.root, deployment),
+        operation: options.id
+          ? 'restore'
+          : options.source || options.backupDirectory
+            ? 'import'
+            : previous
+              ? 'update'
+              : 'install'
+      })
+      installLauncher(this.root, activation.next)
+      coordinator.activate()
       relaunchRelease(target, ['--release-complete', activation.id])
       app.quit()
     } catch (error) {
-      await rollbackRelease()
+      rollbackRelease()
       this.resumeCore()
       throw error
     }
   }
   private runTarget(
     target: string,
-    operation: 'prepare' | 'activate' | 'restore',
-    options: { source?: string; id?: string } = {}
-  ): Promise<void> {
+    transactionId: string,
+    options: {
+      source?: string
+      id?: string
+      backupDirectory?: string
+      expectedManifestSha256?: string
+    } = {}
+  ): Promise<ProfilePreparation> {
     const token = randomUUID()
     mkdirSync(this.root, { recursive: true })
     durableJson(join(this.root, 'maintenance-request.json'), {
       token,
       parent: process.pid,
       sourceVersion: app.getVersion(),
-      operation,
+      operation: options.id
+        ? 'restore'
+        : options.backupDirectory
+          ? 'import-backup'
+          : 'prepare',
+      transactionId,
       ...options
     })
     return new Promise((resolve, reject) => {
@@ -340,11 +462,17 @@ export class ReleaseController {
           const result = JSON.parse(readFileSync(path, 'utf8')) as {
             ok: boolean
             message?: string
+            result?: unknown
           }
           rmSync(path)
           if (!result.ok)
             throw new Error(result.message ?? 'Wartung fehlgeschlagen.')
-          resolve()
+          const prepared = profilePreparationSchema.parse(result.result)
+          if (prepared.id !== transactionId)
+            throw new Error(
+              'Die Arbeitskopie gehört zu einem anderen Wartungsauftrag.'
+            )
+          resolve(prepared)
         } catch (error) {
           reject(
             error instanceof Error

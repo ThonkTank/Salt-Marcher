@@ -1,3 +1,7 @@
+import {
+  usePlannerMaintenance,
+  usePlannerMaintenanceRuntime
+} from './use-planner-maintenance.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import { useEncounterPlanSearch } from './use-encounter-plan-search.js'
 import { useSessionPlannerPorts } from './use-session-planner-ports.js'
@@ -12,6 +16,7 @@ export function useSessionPlannerController(
 ) {
   const { planner, encounters, loot } = useSessionPlannerPorts()
   const coordinator = useAsyncCommandCoordinator()
+  const runtime = usePlannerMaintenanceRuntime()
   const workspace = useSessionPlannerWorkspace({
     coordinator,
     planner,
@@ -28,6 +33,7 @@ export function useSessionPlannerController(
   })
   const sessions = useSessionPlannerSessionCommands({
     coordinator,
+    failed: runtime.failed,
     planner,
     read: workspace.read,
     applyWorkspace: workspace.applyWorkspace,
@@ -37,6 +43,7 @@ export function useSessionPlannerController(
   })
   const preparation = useSessionPreparation({
     coordinator,
+    failed: runtime.failed,
     planner,
     read: workspace.read,
     applyWorkspace: workspace.applyWorkspace,
@@ -45,6 +52,7 @@ export function useSessionPlannerController(
   })
   const rewards = useSessionRewardMaterialization({
     coordinator,
+    failed: runtime.failed,
     loot,
     planner,
     read: workspace.read,
@@ -53,7 +61,28 @@ export function useSessionPlannerController(
     onError
   })
 
+  const maintenance = usePlannerMaintenance({
+    runtime,
+    onError,
+    coordinator,
+    read: workspace.read,
+    applyWorkspace: workspace.applyWorkspace,
+    saveDraft: sessions.saveDraft,
+    settlePreparations: preparation.settleForMaintenance,
+    dialogs: { isOpen: sessions.hasOpenDialog, settle: sessions.settleDialogs },
+    dependencies: rewards.dialogDependencies,
+    readUnresolved: () => {
+      if (preparation.hasActiveOperation())
+        return 'Die Sitzungsvorbereitung ist noch offen. Bitte Wartung abbrechen und die Vorbereitung abschließen oder abbrechen.'
+      return null
+    }
+  })
   return {
+    maintenanceBlocked: maintenance.blocked,
+    uncertain: maintenance.uncertain,
+    canReconcile: maintenance.canReconcile,
+    reconciliationBlocked: maintenance.reconciliationBlocked,
+    retryUnknown: maintenance.retryUnknown,
     workspace: workspace.workspace,
     draft: workspace.draft,
     draftProjection: workspace.draftProjection,
@@ -72,27 +101,52 @@ export function useSessionPlannerController(
     encounterQuery: search.query,
     encounterSearch: search.state,
     treasureEditor: rewards.treasureEditor,
+    treasureMaintenanceId: rewards.treasureMaintenanceId,
+    closeTreasureEditor: () => rewards.setTreasureEditor(false),
+    completeTreasureEditor: async () => {
+      const fresh = await planner.read()
+      if (workspace.read().dirty) workspace.mergeCatalog(fresh.sessions)
+      else workspace.applyWorkspace(fresh)
+      rewards.setTreasureEditor(false)
+    },
+    distributionMaintenanceId: rewards.distributionMaintenanceId,
+    closeDistribution: () => rewards.setDistribution(null),
+    completeDistribution: async () => {
+      const fresh = await planner.read()
+      if (workspace.read().dirty) workspace.mergeCatalog(fresh.sessions)
+      else workspace.applyWorkspace(fresh)
+      rewards.setDistribution(null)
+    },
     distribution: rewards.distribution,
     preparationRunning: preparation.preparationRunning,
-    setParticipantsOpen: workspace.setParticipantsOpen,
-    setSeed: preparation.setSeed,
-    setConfirmation: preparation.setConfirmation,
-    setNameDialog: sessions.setNameDialog,
-    setName: sessions.setName,
-    setDeleteConfirm: sessions.setDeleteConfirm,
-    setEncounterQuery: search.setQuery,
-    setTreasureEditor: rewards.setTreasureEditor,
-    setDistribution: rewards.setDistribution,
-    mutate: workspace.mutate,
-    patchScene: workspace.patchScene,
-    saveDraft: sessions.saveDraft,
-    openSession: sessions.openSession,
-    submitName: sessions.submitName,
-    deleteSession: sessions.deleteSession,
-    requestPreparation: preparation.requestPreparation,
-    generate: preparation.generate,
-    cancelPreparation: preparation.cancelPreparation,
-    materializeReward: rewards.materializeReward,
+    setParticipantsOpen: maintenance.edit(workspace.setParticipantsOpen),
+    setSeed: maintenance.edit(preparation.setSeed),
+    setConfirmation: maintenance.edit(preparation.setConfirmation),
+    setNameDialog: maintenance.edit(sessions.setNameDialog),
+    setName: maintenance.edit(sessions.setName),
+    setDeleteConfirm: maintenance.edit(sessions.setDeleteConfirm),
+    setEncounterQuery: maintenance.edit(search.setQuery),
+    setTreasureEditor: maintenance.edit(rewards.setTreasureEditor),
+    setDistribution: maintenance.edit(rewards.setDistribution),
+    mutate: maintenance.edit(workspace.mutate),
+    patchScene: maintenance.edit(workspace.patchScene),
+    saveDraft: maintenance.command(sessions.saveDraft, null),
+    openSession: maintenance.command(sessions.openSession, undefined),
+    submitName: maintenance.command(sessions.submitName, undefined),
+    deleteSession: maintenance.command(sessions.deleteSession, undefined),
+    requestPreparation: maintenance.command(
+      preparation.requestPreparation,
+      undefined
+    ),
+    generate: maintenance.command(preparation.generate, undefined),
+    cancelPreparation: maintenance.command(
+      preparation.cancelPreparation,
+      undefined
+    ),
+    materializeReward: maintenance.command(
+      rewards.materializeReward,
+      undefined
+    ),
     applyWorkspace: workspace.applyWorkspace,
     planner
   }

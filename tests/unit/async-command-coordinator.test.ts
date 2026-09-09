@@ -2,6 +2,116 @@ import { describe, expect, it, vi } from 'vitest'
 import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-coordinator.js'
 
 describe('async command coordinator', () => {
+  it('drains a superseded transport after its replacement has already succeeded', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const delayed = deferred<number>()
+    const first = coordinator.run({
+      scope: 'write',
+      mode: 'latest-only',
+      execute: () => delayed.promise
+    })
+    await coordinator.run({
+      scope: 'write',
+      mode: 'latest-only',
+      execute: () => Promise.resolve(2)
+    })
+    expect(coordinator.state({ scope: 'write' }).status).toBe('success')
+    expect(coordinator.hasPending(['write'])).toBe(true)
+    const drained = vi.fn()
+    const idle = coordinator.whenIdle(['write']).then(drained)
+    await Promise.resolve()
+    expect(drained).not.toHaveBeenCalled()
+    delayed.resolve(1)
+    expect(await first).toMatchObject({ status: 'stale' })
+    await idle
+    expect(coordinator.hasPending()).toBe(false)
+  })
+
+  it('keeps canceled transports pending until they actually settle', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const delayed = deferred<number>()
+    const first = coordinator.run({
+      scope: 'write',
+      mode: 'latest-only',
+      execute: () => delayed.promise
+    })
+    coordinator.cancelAll()
+    expect(coordinator.state({ scope: 'write' }).status).toBe('stale')
+    expect(coordinator.hasPending()).toBe(true)
+    const drained = vi.fn()
+    const idle = coordinator.whenIdle().then(drained)
+    await Promise.resolve()
+    expect(drained).not.toHaveBeenCalled()
+    delayed.reject(new Error('transport ended'))
+    expect(await first).toMatchObject({ status: 'stale' })
+    await idle
+    expect(coordinator.hasPending()).toBe(false)
+  })
+
+  it('drains waiting queue entries and asynchronous acceptance', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const accepted = deferred<void>()
+    const secondGate = deferred<void>()
+    const first = coordinator.run({
+      scope: 'write',
+      mode: 'queue',
+      execute: () => Promise.resolve(1),
+      accept: () => accepted.promise
+    })
+    const second = coordinator.run({
+      scope: 'write',
+      mode: 'queue',
+      execute: () => secondGate.promise
+    })
+    expect(coordinator.hasPending()).toBe(true)
+    const drained = vi.fn()
+    const idle = coordinator.whenIdle().then(drained)
+    await Promise.resolve()
+    accepted.resolve()
+    await first
+    expect(drained).not.toHaveBeenCalled()
+    secondGate.resolve()
+    await second
+    await idle
+    expect(coordinator.hasPending()).toBe(false)
+  })
+
+  it('includes work started during draining while excluding unrelated scopes', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const gate = deferred<void>()
+    const laterGate = deferred<void>()
+    const readGate = deferred<void>()
+    const first = coordinator.run({
+      scope: 'write',
+      mode: 'latest-only',
+      execute: () => gate.promise
+    })
+    const reading = coordinator.run({
+      scope: 'catalog',
+      mode: 'latest-only',
+      execute: () => readGate.promise
+    })
+    const drained = vi.fn()
+    const idle = coordinator.whenIdle(['write']).then(drained)
+    const later = coordinator.run({
+      scope: 'write',
+      entityKey: 'b',
+      mode: 'latest-only',
+      execute: () => laterGate.promise
+    })
+    gate.resolve()
+    await first
+    expect(drained).not.toHaveBeenCalled()
+    laterGate.resolve()
+    await later
+    await idle
+    expect(coordinator.hasPending(['write'])).toBe(false)
+    expect(coordinator.hasPending()).toBe(true)
+    readGate.resolve()
+    await reading
+    expect(coordinator.hasPending()).toBe(false)
+  })
+
   it('marks an older latest-only result stale without replacing newer state', async () => {
     const coordinator = new AsyncCommandCoordinator()
     const older = deferred<number>()

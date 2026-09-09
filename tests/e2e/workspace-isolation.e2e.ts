@@ -90,3 +90,54 @@ describe('isolated workspace routes', () => {
       )
   })
 })
+
+describe('workspace draft transitions', () => {
+  it('keeps an unsubmitted character on cancel, then saves or discards before leaving', async () => {
+    const client = browser as unknown as WdioBrowser
+    const openCharacters = async () => {
+      await client.$('button[aria-label="Katalog"]').click()
+      await client.$('.catalog-workspace').waitForExist({ timeout: 10_000 })
+      await client.$('.catalog-section-selector').$('button=Charaktere').click()
+      await client
+        .$('.character-catalog-host')
+        .$('button=Neu')
+        .waitForClickable({ timeout: 10_000 })
+    }
+    await openCharacters()
+    await client.$('.character-catalog-host').$('button=Neu').click()
+    const input = () => client.$('.character-profile-form input[name="name"]')
+    await input().setValue('Entwurf vor Bereichswechsel')
+    await client.$('button[aria-label="Session"]').click()
+    const dialog = () =>
+      client.$('[role="alertdialog"][aria-label="Arbeitsbereich wechseln"]')
+    await dialog().waitForDisplayed({ timeout: 10_000 })
+    await expect(input()).toHaveValue('Entwurf vor Bereichswechsel')
+    await expect(input()).toBeDisabled()
+    await dialog().$('button=Abbrechen').click()
+    await expect(input()).toHaveValue('Entwurf vor Bereichswechsel')
+    await expect(input()).toBeEnabled()
+    await client.$('button[aria-label="Session"]').click()
+    await dialog().waitForDisplayed({ timeout: 10_000 })
+    await dialog().$('button=Speichern und fortfahren').click()
+    await client.$('.scene-desktop').waitForExist({ timeout: 10_000 })
+    await openCharacters()
+    await expect(client.$('.character-catalog-host')).toHaveText(
+      expect.stringContaining('Entwurf vor Bereichswechsel')
+    )
+    await client.$('.character-catalog-host').$('button=Neu').click()
+    await input().setValue('Dieser Entwurf wird verworfen')
+    await client.$('button[aria-label="Session"]').click()
+    await dialog().waitForDisplayed({ timeout: 10_000 })
+    await dialog().$('button=Verwerfen und fortfahren').click()
+    await client.$('.scene-desktop').waitForExist({ timeout: 10_000 })
+    await openCharacters()
+    await expect(client.$('.character-catalog-host')).not.toHaveText(
+      expect.stringContaining('Dieser Entwurf wird verworfen')
+    )
+    await expect(client.$('.character-catalog-host')).toHaveText(
+      expect.stringContaining('Entwurf vor Bereichswechsel')
+    )
+    await client.$('button[aria-label="Session"]').click()
+    await client.$('.scene-desktop').waitForExist({ timeout: 10_000 })
+  })
+})

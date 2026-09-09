@@ -1,5 +1,6 @@
 import {
   lootDistributionResultSchema,
+  completeLootDistributionInputSchema,
   type CharacterLootEntry,
   type CompleteLootDistributionInput,
   type LootDistributionResult,
@@ -49,6 +50,7 @@ export type DistributeLootContext = Readonly<{
     read(input: {
       commandId: string
       operationType: 'distribute'
+      targetId?: string
       requestFingerprint: string
       schema: typeof lootDistributionResultSchema
     }): Readonly<{ targetId: string; result: LootDistributionResult }> | null
@@ -72,7 +74,25 @@ export class DistributeLootCommandHandler {
   ) {}
 
   distribute(input: CompleteLootDistributionInput): LootDistributionResult {
-    return this.transact(() => this.execute(input))
+    const parsed = completeLootDistributionInputSchema.parse(input)
+    return this.transact(() => this.execute(parsed))
+  }
+
+  status(value: CompleteLootDistributionInput) {
+    const input = completeLootDistributionInputSchema.parse(value)
+    const context = this.context()
+    const receipt = context.journal.read({
+      commandId: input.commandId,
+      operationType: 'distribute',
+      requestFingerprint: fingerprintExcluding(input, ['commandId']),
+      targetId: input.treasureId,
+      schema: lootDistributionResultSchema
+    })
+    return {
+      receipt: receipt?.result ?? null,
+      treasure: context.treasures.require(input.treasureId),
+      partyRevision: context.party.read().revision
+    }
   }
 
   private execute(
@@ -83,6 +103,7 @@ export class DistributeLootCommandHandler {
     const receipt = context.journal.read({
       commandId: input.commandId,
       operationType: 'distribute',
+      targetId: input.treasureId,
       requestFingerprint,
       schema: lootDistributionResultSchema
     })

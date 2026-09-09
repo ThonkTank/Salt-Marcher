@@ -1,3 +1,4 @@
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { encounterPlansOperationDefinitions } from '../../shared/contracts/operations/encounter-plans.js'
 import { sessionPlannerOperationDefinitions } from '../../shared/contracts/operations/session-planner.js'
 import {
@@ -14,6 +15,7 @@ const sessionPlannerHandlerOperations = composeOperationDefinitions(
 )
 
 export function createSessionPlannerHandlers(dependencies: {
+  activeCampaignId(): string
   encounterPlans: GeneratedEncounterPlanService
   sessionPlanner: SessionPlannerService
 }): OperationHandlers<typeof sessionPlannerHandlerOperations> {
@@ -24,6 +26,37 @@ export function createSessionPlannerHandlers(dependencies: {
     {
       'encounterPlans.summaries': (input) => encounterPlans.summaries(input),
       'encounterPlans.search': (input) => encounterPlans.search(input),
+      'sessionPlanner.preparationMaintenanceStatus': ({
+        campaignId,
+        operationIds
+      }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.preparationMaintenanceStatus(operationIds)
+      },
+      'sessionPlanner.cancelPreparationForMaintenance': ({
+        campaignId,
+        operationId
+      }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.cancelPreparation({ operationId })
+      },
+      'sessionPlanner.executeCommand': ({ campaignId, ...input }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.executeCommand(input)
+      },
+      'sessionPlanner.commandStatus': ({ campaignId, ...input }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.commandStatus(input)
+      },
+      'sessionPlanner.readForCampaign': ({ campaignId }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.read()
+      },
       'sessionPlanner.read': () => sessionPlanner.read(),
       'sessionPlanner.create': (input) => sessionPlanner.create(input),
       'sessionPlanner.open': (input) => sessionPlanner.open(input),

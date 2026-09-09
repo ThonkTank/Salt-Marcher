@@ -1,9 +1,8 @@
+import { acquireProfileAccess } from '../../src/main/local-profile/profile-access.js'
+import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  acquireProfileLock,
-  ProfileLockedError
-} from '../../src/main/local-profile/local-profile-lock.js'
+import { ProfileLockedError } from '../../src/main/local-profile/local-profile-lock.js'
 import {
   LocalInstallationError,
   type LocalInstallationPaths
@@ -13,9 +12,27 @@ export function withInstallationLock<T>(
   paths: LocalInstallationPaths,
   operation: () => T
 ): T {
+  try {
+    return withLaunchReservation(paths.root, () =>
+      withProfileLock(paths, operation)
+    )
+  } catch (error) {
+    if (!(error instanceof ProfileLockedError)) throw error
+    throw new LocalInstallationError(
+      'installation-locked',
+      'An application startup owns the installation reservation',
+      { cause: error }
+    )
+  }
+}
+
+function withProfileLock<T>(
+  paths: LocalInstallationPaths,
+  operation: () => T
+): T {
   let lock
   try {
-    lock = acquireProfileLock(paths.lock, 'installer')
+    lock = acquireProfileAccess(paths.profile, 'installer', paths.root)
   } catch (error) {
     if (!(error instanceof ProfileLockedError)) throw error
     throw new LocalInstallationError(

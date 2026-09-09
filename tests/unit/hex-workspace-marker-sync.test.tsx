@@ -211,7 +211,15 @@ const location = {
 
 function IntegratedSessionMap(props: { api: SaltMarcherApi }) {
   const port = useMemo(
-    () => createHexTravelProviderPort(props.api),
+    () =>
+      createHexTravelProviderPort(props.api, {
+        execute: () =>
+          Promise.reject(new Error('Unexpected write in marker read test')),
+        refresh: async () => ({
+          context: await props.api.hexTravel.read({ sceneId }),
+          routePlan: { sceneId, revision: 0, plan: null }
+        })
+      }),
     [props.api]
   )
   useEffect(() => () => port.dispose(), [port])

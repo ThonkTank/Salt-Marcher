@@ -6,8 +6,12 @@ import { groupDraftStateFromGroup } from '../../src/renderer/features/session/gr
 import {
   activeGroupSession,
   createGroupManagerState,
+  groupManagerReducer,
+  groupManagerAnyDirty,
   type GroupManagerAction
 } from '../../src/renderer/features/session/group-manager-state.js'
+import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session-generation.js'
+import { groupLootDraftSignature } from '../../src/renderer/features/loot/group-loot-draft.js'
 import { useGroupManagerCommands } from '../../src/renderer/features/session/use-group-manager-commands.js'
 import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-coordinator.js'
 import type { GroupManagerPorts } from '../../src/renderer/features/session/use-group-manager-capability-ports.js'
@@ -17,6 +21,211 @@ import type {
 } from '../../src/shared/contracts/live-session.js'
 
 describe('group manager commands', () => {
+  it('acknowledges the run and exact treasure draft submitted for commit', async () => {
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    const draft = { label: 'Beute', items: [], containers: [] }
+    const state = groupManagerReducer(input.state, {
+      kind: 'loot-generated',
+      key: 'group-a',
+      run: {
+        id: 'run-a',
+        treasures: [{ id: 'treasure-a' }]
+      } as GroupRewardGeneratedRun,
+      draft,
+      seed: 1
+    })
+    const commitGroupReward = vi.fn().mockResolvedValue({
+      treasure: null,
+      groupResult: groupResult(2)
+    })
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          state,
+          session: activeGroupSession(state),
+          ports: {
+            ...input.ports,
+            loot: { commitGroupReward }
+          } as unknown as GroupManagerPorts
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      await controller.result.current.commitLoot()
+    })
+    expect(commitGroupReward).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run-a',
+        treasureDraft: { label: 'Beute', items: [], containers: [] }
+      })
+    )
+    expect(input.dispatch).toHaveBeenCalledWith({
+      kind: 'loot-committed',
+      key: 'group-a',
+      runId: 'run-a',
+      signature: groupLootDraftSignature(draft)
+    })
+    expect(input.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'group-saved',
+        key: 'group-a',
+        persisted: groupResult(2).scenePatch.upsertedGroups[0]
+      })
+    )
+    expect(input.saved).toHaveBeenCalledWith(
+      expect.objectContaining({ revision: 2 })
+    )
+  })
+
+  it('acknowledges a newly committed group and loot before publication', async () => {
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    let state = createGroupManagerState({
+      activeKey: 'new',
+      initialGroup: null,
+      prospectiveGroupId: 'created-group',
+      locationId: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-generated',
+      key: 'new',
+      run: {
+        id: 'run-a',
+        treasures: [{ id: 'treasure-a' }]
+      } as GroupRewardGeneratedRun,
+      draft: { label: 'Beute', items: [], containers: [] },
+      seed: 1
+    })
+    const dispatch = (action: GroupManagerAction) => {
+      state = groupManagerReducer(state, action)
+    }
+    const result = groupResult(2)
+    const confirmed = {
+      ...result,
+      scenePatch: {
+        ...result.scenePatch,
+        upsertedGroups: [
+          { ...result.scenePatch.upsertedGroups[0]!, id: 'created-group' }
+        ]
+      }
+    }
+    const commitGroupReward = vi
+      .fn()
+      .mockResolvedValue({ treasure: null, groupResult: confirmed })
+    const saved = vi.fn(() => {
+      expect(state.activeKey).toBe('created-group')
+      expect(state.sessions['new']).toBeUndefined()
+      expect(state.sessions['created-group']?.sourceRevision).toBe(2)
+      expect(state.prospectiveGroupId).not.toBe('created-group')
+      expect(groupManagerAnyDirty(state)).toBe(false)
+    })
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          state,
+          session: activeGroupSession(state),
+          rewardGroupId: 'created-group',
+          dispatch,
+          saved,
+          ports: {
+            ...input.ports,
+            loot: { commitGroupReward }
+          } as unknown as GroupManagerPorts
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      expect(await controller.result.current.commitLoot()).not.toBeNull()
+    })
+    expect(saved).toHaveBeenCalledOnce()
+    expect(commitGroupReward).toHaveBeenCalledOnce()
+  })
+
+  it('counts loot commands for an inactive group but not catalog reads', async () => {
+    const coordinator = new AsyncCommandCoordinator()
+    const catalogGate = deferred<void>()
+    const lootGate = deferred<void>()
+    const catalog = coordinator.run({
+      scope: 'group-manager.loot-catalog',
+      mode: 'latest-only',
+      execute: () => catalogGate.promise
+    })
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    const controller = renderHook(() =>
+      useGroupManagerCommands(input, coordinator)
+    )
+    expect(controller.result.current.pending).toBe(false)
+    const loot = coordinator.run({
+      scope: 'group-manager.loot',
+      entityKey: 'inactive-group',
+      mode: 'latest-only',
+      execute: () => lootGate.promise
+    })
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(true)
+    lootGate.resolve()
+    await loot
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(false)
+    catalogGate.resolve()
+    await catalog
+  })
+
+  it('does not acknowledge a currently failed save', async () => {
+    const saveGroup = vi.fn().mockRejectedValue(new Error('write failed'))
+    const saved = vi.fn()
+    const dispatch = vi.fn<(action: GroupManagerAction) => void>()
+    const input = commandInput(saveGroup, saved, dispatch)
+    const controller = renderHook(() =>
+      useGroupManagerCommands(input, new AsyncCommandCoordinator())
+    )
+    await act(async () => {
+      expect(await controller.result.current.save()).toBeNull()
+    })
+    expect(saved).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'group-saved' })
+    )
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'group-message', key: 'group-a' })
+    )
+  })
+  it('does not acknowledge a draft whose creatures are unavailable', async () => {
+    const saveGroup = vi.fn()
+    const saved = vi.fn()
+    const dispatch = vi.fn<(action: GroupManagerAction) => void>()
+    const input = commandInput(saveGroup, saved, dispatch)
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          entries: [{ creatureId: 'missing', quantity: 1, deadQuantity: 0 }]
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      expect(await controller.result.current.save()).toBeNull()
+    })
+    expect(saveGroup).not.toHaveBeenCalled()
+    expect(saved).not.toHaveBeenCalled()
+  })
+  it('does not acknowledge saving without an active group', async () => {
+    const saveGroup = vi.fn()
+    const input = commandInput(saveGroup, vi.fn(), vi.fn())
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        { ...input, state: { ...input.state, activeKey: null } },
+        new AsyncCommandCoordinator()
+      )
+    )
+    expect(await controller.result.current.save()).toBeNull()
+    expect(saveGroup).not.toHaveBeenCalled()
+  })
+
   it('publishes only the latest save and suppresses an obsolete failure', async () => {
     const older = deferred<SceneGroupCommandResult>()
     const newer = deferred<SceneGroupCommandResult>()
@@ -36,11 +245,27 @@ describe('group manager commands', () => {
     const second = controller.result.current.save()
     await act(async () => {
       newer.resolve(groupResult(3))
-      await second
+      expect(await second).toMatchObject({ revision: 3 })
     })
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(true)
+    expect(controller.result.current.busy).toBe(true)
     older.reject(new Error('obsolete failure'))
-    await first
+    expect(await first).toBeNull()
+    controller.rerender()
+    expect(controller.result.current.pending).toBe(false)
+    expect(controller.result.current.busy).toBe(false)
 
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'group-saved',
+        key: 'group-a',
+        persisted: groupResult(3).scenePatch.upsertedGroups[0]
+      })
+    )
+    expect(dispatch.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      saved.mock.invocationCallOrder[0]!
+    )
     expect(saved).toHaveBeenCalledOnce()
     expect(saved.mock.calls[0]?.[0]).toMatchObject({ revision: 3 })
     expect(dispatch).not.toHaveBeenCalledWith(
@@ -107,7 +332,19 @@ function groupResult(revision: number): SceneGroupCommandResult {
     scenePatch: {
       sceneId: 'scene-a',
       sceneRevision: revision,
-      upsertedGroups: [],
+      upsertedGroups: [
+        {
+          id: 'group-a',
+          revision,
+          name: '',
+          note: '',
+          disposition: 'hostile',
+          archived: false,
+          baseXp: 0,
+          position: 0,
+          entries: []
+        }
+      ],
       removedGroupIds: []
     }
   } as SceneGroupCommandResult

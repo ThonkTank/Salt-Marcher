@@ -1,3 +1,4 @@
+import { browserRuntimePath } from './src/main/local-profile/application-profile.js'
 import { cpSync, mkdirSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
@@ -62,7 +63,8 @@ const testApplication = electronTestApplication(
   [
     '--no-sandbox',
     '--salt-marcher-e2e-runtime',
-    `--user-data-dir=${userData}`,
+    `--user-data-dir=${browserRuntimePath(userData)}`,
+    `--salt-marcher-profile=${userData}`,
     '--use-angle=swiftshader',
     '--enable-unsafe-swiftshader'
   ]

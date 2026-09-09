@@ -56,6 +56,7 @@ export class CoreProcessSupervisor {
   #firstReadySettled = false
   #readyTimer: NodeJS.Timeout | undefined
   #restartTimer: NodeJS.Timeout | undefined
+  #closePromise: Promise<void> | undefined
   readonly #exitTimes: number[] = []
   readonly #statusListeners = new Set<(status: CoreProcessStatus) => void>()
   readonly #events = new CoreEventRouter()
@@ -161,6 +162,7 @@ export class CoreProcessSupervisor {
   /** Reopen only after maintenance has restored the original profile. */
   resumeAfterMaintenance(): void {
     if (this.#lifecycle.phase !== 'closed') return
+    this.#closePromise = undefined
     this.transition({
       phase: 'unavailable',
       generation: this.#lifecycle.generation
@@ -251,9 +253,16 @@ export class CoreProcessSupervisor {
     return result
   }
 
-  async closeGracefully(): Promise<void> {
+  closeGracefully(): Promise<void> {
+    if (this.#lifecycle.phase === 'closed') return Promise.resolve()
+    this.#closePromise ??= this.closeProfile()
+    return this.#closePromise
+  }
+
+  private async closeProfile(): Promise<void> {
     const state = this.#lifecycle
-    if (state.phase === 'closed' || state.phase === 'closing') return
+    if (state.phase === 'closed') return
+    if (state.phase === 'closing') return this.waitForClosed()
     this.clearRestartTimer()
     const child = lifecycleChild(state)
     this.transition({
@@ -280,6 +289,28 @@ export class CoreProcessSupervisor {
       return
     }
     this.beginTermination(current.generation, child, 'closed', 'shutdown')
+    await this.waitForClosed()
+  }
+
+  private waitForClosed(): Promise<void> {
+    if (this.#lifecycle.phase === 'closed') return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const listener = (status: CoreProcessStatus) => {
+        if (status !== 'closed' || this.#lifecycle.phase !== 'closed') return
+        clearTimeout(timeout)
+        this.#statusListeners.delete(listener)
+        resolve()
+      }
+      const timeout = setTimeout(() => {
+        this.#statusListeners.delete(listener)
+        reject(
+          new Error(
+            'Der Datenprozess ist noch nicht beendet. Die Wartung wurde nicht gestartet. Bitte erneut versuchen.'
+          )
+        )
+      }, SHUTDOWN_DEADLINE_MS)
+      this.#statusListeners.add(listener)
+    })
   }
 
   private request<T>(

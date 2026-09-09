@@ -1,10 +1,14 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { generatorRoles } from '../../../shared/generator/generator-config-model.js'
 import {
   lazy,
   Suspense,
   useCallback,
   useEffect,
   useReducer,
+  useRef,
+  useId,
   useState
 } from 'react'
 import './encounter-generator-settings.css'
@@ -55,22 +59,106 @@ export function EncounterGeneratorSettings(props: {
   onClose: () => void
   onError: (message: string) => void
 }) {
-  const [editor, dispatch] = useReducer(
+  const [editor, rawDispatch] = useReducer(
     generatorPresetEditorReducer,
     initialGeneratorPresetEditorState
   )
+  const current = useRef(initialGeneratorPresetEditorState)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const rewardId = useId()
+  const dispatch = useCallback((action: GeneratorPresetEditorAction) => {
+    current.current = generatorPresetEditorReducer(current.current, action)
+    rawDispatch(action)
+  }, [])
   const { snapshot, presetId, presetName, config, status, discardIntent } =
     editor
-  const [combinationDraft, setCombinationDraft] = useState<GeneratorRole[]>([])
-  const reconciliationPending = editor.phase === 'reconciliation-pending'
-  const busy = editor.phase === 'saving' || reconciliationPending
+  const [combinationDraft, rawSetCombinationDraft] = useState<GeneratorRole[]>(
+    []
+  )
+  const reconciliationPending =
+    editor.phase === 'reconciliation-pending' ||
+    props.application.reconciliationPending()
+  const saving = editor.phase === 'saving' || reconciliationPending
   const conflict = editor.phase === 'conflict'
-  const dirty = generatorPresetEditorDirty(editor)
-  useMaintenanceDraftGuard(dirty)
+  const dirty =
+    generatorPresetEditorDirty(editor) || combinationDraft.length > 0
+  const combination = useRef<GeneratorRole[]>([])
+  const settled = useRef(false)
+  const blocked = useMaintenanceDraft({
+    label: `Generator-Preset: ${presetName || 'Einstellungen'}`,
+    dependsOn: props.campaignRules ? [rewardId] : [],
+    isDirty: () =>
+      !settled.current &&
+      (pending.current !== null ||
+        props.application.reconciliationPending() ||
+        generatorPresetEditorDirty(current.current) ||
+        combination.current.length > 0),
+    save: saveForMaintenance,
+    discard: discardForMaintenance
+  })
+  const busy = saving || blocked
+  const inputBlocked = useCallback(
+    () =>
+      maintenanceDraftCoordinator.isLocked() ||
+      pending.current !== null ||
+      current.current.phase === 'reconciliation-pending' ||
+      props.application.reconciliationPending(),
+    [props.application]
+  )
+  const edit = useCallback(
+    (action: GeneratorPresetEditorAction) => {
+      if (inputBlocked()) return
+      settled.current = false
+      dispatch(action)
+    },
+    [dispatch, inputBlocked]
+  )
+  const setCombinationDraft = (roles: GeneratorRole[]) => {
+    if (inputBlocked()) return
+    combination.current = roles
+    rawSetCombinationDraft(roles)
+    settled.current = false
+  }
+  function track(operation: () => Promise<boolean>): Promise<boolean> {
+    if (pending.current) return pending.current
+    const result = Promise.resolve()
+      .then(operation)
+      .finally(() => {
+        pending.current = null
+      })
+    pending.current = result
+    return result
+  }
+  async function saveForMaintenance(): Promise<boolean> {
+    if (pending.current && !(await pending.current)) return false
+    if (props.application.reconciliationPending() && !(await track(reconcile)))
+      return false
+    if (current.current.phase === 'conflict') return false
+    if (
+      generatorPresetEditorDirty(current.current) ||
+      combination.current.length
+    )
+      return track(() => savePreset())
+    return true
+  }
+  async function discardForMaintenance(): Promise<boolean> {
+    if (pending.current) await pending.current
+    if (props.application.reconciliationPending() && !(await track(reconcile)))
+      return false
+    dispatch({ type: 'reset', status: message('g.status.reset') })
+    combination.current = []
+    rawSetCombinationDraft([])
+    props.onClose()
+    settled.current = true
+    return true
+  }
+  const requestSave = (copy = false) => {
+    if (!inputBlocked()) return track(() => savePreset(copy))
+  }
   const changeConfig = useCallback(
     (next: GeneratorPresetConfigV3) =>
-      dispatch({ type: 'draft-config', config: next }),
-    []
+      edit({ type: 'draft-config', config: next }),
+    [edit]
   )
 
   useEffect(() => {
@@ -93,24 +181,63 @@ export function EncounterGeneratorSettings(props: {
     return () => {
       live = false
     }
-  }, [props.application, props.onError])
+  }, [dispatch, props.application, props.onError])
 
   const selectedPreset = snapshot?.registry.presets.find(
     (preset) => preset.id === presetId
   )
 
-  const save = async (forceCopy = false) => {
-    if (!snapshot || !config || (!selectedPreset && !forceCopy)) return
+  const savePreset = async (forceCopy = false): Promise<boolean> => {
+    const state = current.current
+    let config = state.config
+    const snapshot = state.snapshot
+    const presetName = state.presetName
+    const selectedPreset = snapshot?.registry.presets.find(
+      (preset) => preset.id === state.presetId
+    )
+    if (
+      !snapshot ||
+      !config ||
+      (!selectedPreset && !forceCopy) ||
+      (state.phase === 'conflict' && !forceCopy)
+    )
+      return false
+    if (combination.current.length) {
+      const roles = generatorRoles.filter((role) =>
+        combination.current.includes(role)
+      )
+      const existing = config.composition.roleCombinations
+      const duplicate = existing.some(
+        (entry) => entry.join('|') === roles.join('|')
+      )
+      if (
+        !roles.length ||
+        roles.length > 3 ||
+        (!duplicate && existing.length >= 32)
+      )
+        return false
+      if (!duplicate)
+        config = {
+          ...config,
+          composition: {
+            ...config.composition,
+            roleCombinations: [...existing, roles]
+          }
+        }
+      dispatch({ type: 'draft-config', config })
+      combination.current = []
+      rawSetCombinationDraft([])
+    }
     if (presetName.trim().length === 0) {
       dispatch({
         type: 'status',
         status: message('g.status.nameRequired')
       })
-      return
+      return false
     }
     if (!validGeneratorDraft(config)) {
       dispatch({ type: 'status', status: message('g.status.invalid') })
-      return
+      return false
     }
     dispatch({ type: 'saving' })
     try {
@@ -131,33 +258,46 @@ export function EncounterGeneratorSettings(props: {
         presetId: saved.id,
         status: copy ? message('g.status.copied') : message('g.status.saved')
       })
+      return true
     } catch (error) {
       await handleMutationError(error, true)
+      return false
     }
   }
 
   const assign = async () => {
-    if (!snapshot || !presetId || !props.activeCampaignId) return
-    await runMutation(
-      () => props.application.assign(presetId),
-      (next) => ({
-        type: 'registry-updated',
-        snapshot: next,
-        status: message('g.status.assigned')
-      })
+    if (inputBlocked() || !snapshot || !presetId || !props.activeCampaignId)
+      return
+    await track(() =>
+      runMutation(
+        () => props.application.assign(presetId),
+        (next) => ({
+          type: 'registry-updated',
+          snapshot: next,
+          status: message('g.status.assigned')
+        })
+      )
     )
   }
 
   const remove = async () => {
-    if (!snapshot || !selectedPreset || selectedPreset.protected) return
-    await runMutation(
-      () => props.application.delete(selectedPreset.id),
-      (next) => ({
-        type: 'registry-updated',
-        snapshot: next,
-        status: message('g.status.deleted'),
-        selectEffective: true
-      })
+    if (
+      inputBlocked() ||
+      !snapshot ||
+      !selectedPreset ||
+      selectedPreset.protected
+    )
+      return
+    await track(() =>
+      runMutation(
+        () => props.application.delete(selectedPreset.id),
+        (next) => ({
+          type: 'registry-updated',
+          snapshot: next,
+          status: message('g.status.deleted'),
+          selectEffective: true
+        })
+      )
     )
   }
 
@@ -170,12 +310,14 @@ export function EncounterGeneratorSettings(props: {
     dispatch({ type: 'saving' })
     try {
       dispatch(completed((await mutate()).snapshot))
+      return true
     } catch (error) {
       await handleMutationError(error, false)
+      return false
     }
   }
 
-  const reconcile = async () => {
+  const reconcile = async (): Promise<boolean> => {
     dispatch({ type: 'saving' })
     try {
       const result = await props.application.reconcile()
@@ -189,14 +331,14 @@ export function EncounterGeneratorSettings(props: {
             presetId: receipt.saved.id,
             status: message('g.reconciliation.confirmed')
           })
-          return
+          return true
         case 'assigned':
           dispatch({
             type: 'registry-updated',
             snapshot: result.snapshot,
             status: message('g.reconciliation.confirmed')
           })
-          return
+          return true
         case 'deleted':
           dispatch({
             type: 'registry-updated',
@@ -204,20 +346,23 @@ export function EncounterGeneratorSettings(props: {
             status: message('g.reconciliation.confirmed'),
             selectEffective: true
           })
-          return
+          return true
       }
     } catch (error) {
       await handleMutationError(error, false)
+      return false
     }
   }
 
   const requestClose = () => {
-    if (dirty) dispatch({ type: 'request-discard', intent: { kind: 'close' } })
+    if (inputBlocked()) return
+    if (dirty || combination.current.length)
+      dispatch({ type: 'request-discard', intent: { kind: 'close' } })
     else props.onClose()
   }
 
   const requestPreset = (id: string) => {
-    if (!snapshot || id === presetId) return
+    if (inputBlocked() || !snapshot || id === presetId) return
     if (dirty) {
       dispatch({ type: 'request-discard', intent: { kind: 'preset', id } })
       return
@@ -226,8 +371,11 @@ export function EncounterGeneratorSettings(props: {
   }
 
   const discardChanges = () => {
+    if (inputBlocked()) return
     const intent = discardIntent
     if (!intent) return
+    combination.current = []
+    rawSetCombinationDraft([])
     if (intent.kind === 'close') {
       props.onClose()
       return
@@ -286,6 +434,7 @@ export function EncounterGeneratorSettings(props: {
             <Suspense fallback={null}>
               <LazyCampaignRewardRulesCard
                 key={props.activeCampaignId}
+                maintenanceId={rewardId}
                 campaignRules={props.campaignRules}
                 activeCampaignId={props.activeCampaignId}
                 onError={props.onError}
@@ -308,8 +457,8 @@ export function EncounterGeneratorSettings(props: {
                   dirty={dirty}
                   activeCampaignId={props.activeCampaignId}
                   select={requestPreset}
-                  rename={(name) => dispatch({ type: 'draft-name', name })}
-                  save={() => void save()}
+                  rename={(name) => edit({ type: 'draft-name', name })}
+                  save={() => void requestSave()}
                   assign={() => void assign()}
                   remove={() => void remove()}
                 />
@@ -351,7 +500,17 @@ export function EncounterGeneratorSettings(props: {
               )}
               {reconciliationPending && (
                 <div className="generator-conflict-actions">
-                  <button type="button" onClick={() => void reconcile()}>
+                  <button
+                    type="button"
+                    disabled={blocked}
+                    onClick={() => {
+                      if (
+                        !maintenanceDraftCoordinator.isLocked() &&
+                        !pending.current
+                      )
+                        void track(reconcile)
+                    }}
+                  >
                     {message('g.reconciliation.check')}
                   </button>
                 </div>
@@ -362,8 +521,7 @@ export function EncounterGeneratorSettings(props: {
                     type="button"
                     disabled={busy || !presetId}
                     onClick={() => {
-                      if (presetId)
-                        dispatch({ type: 'loaded', snapshot, presetId })
+                      if (presetId) edit({ type: 'loaded', snapshot, presetId })
                     }}
                   >
                     {message('g.conflict.discard')}
@@ -371,7 +529,7 @@ export function EncounterGeneratorSettings(props: {
                   <button
                     type="button"
                     disabled={busy || presetName.trim().length === 0}
-                    onClick={() => void save(true)}
+                    onClick={() => void requestSave(true)}
                   >
                     {message('g.conflict.copy')}
                   </button>
@@ -388,10 +546,11 @@ export function EncounterGeneratorSettings(props: {
                 type="button"
                 disabled={busy}
                 onClick={() => {
-                  dispatch({
+                  edit({
                     type: 'reset',
                     status: message('g.status.reset')
                   })
+                  setCombinationDraft([])
                 }}
               >
                 {message('g.reset')}
@@ -408,7 +567,7 @@ export function EncounterGeneratorSettings(props: {
           message={message('g.discardQuestion')}
           cancelLabel={message('g.continueEditing')}
           discardLabel={message('g.discard')}
-          onCancel={() => dispatch({ type: 'cancel-discard' })}
+          onCancel={() => edit({ type: 'cancel-discard' })}
           onDiscard={discardChanges}
         />
       )}

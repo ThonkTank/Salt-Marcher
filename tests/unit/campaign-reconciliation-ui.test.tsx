@@ -31,6 +31,10 @@ describe('Campaign receipt reconciliation UI', () => {
       error: '',
       busy: false,
       sessionRetry: false,
+      begin: vi.fn(() => ({
+        completion: Promise.resolve(false),
+        settle: () => Promise.resolve('absent' as const)
+      })),
       retryCatalog: vi.fn(() => Promise.resolve()),
       retrySession: vi.fn(() => Promise.resolve(true)),
       dismiss: vi.fn(),
@@ -78,6 +82,10 @@ describe('Campaign receipt reconciliation UI', () => {
       error: '',
       busy: false,
       sessionRetry: false,
+      begin: vi.fn(() => ({
+        completion: Promise.resolve(false),
+        settle: () => Promise.resolve('absent' as const)
+      })),
       retryCatalog: vi.fn(() => Promise.resolve()),
       retrySession: vi.fn(() => Promise.resolve(true)),
       anchor: null,

@@ -1,4 +1,8 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftHandle
+} from '../../shell/maintenance-draft-coordinator.js'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import type { EncounterTableSnapshot } from '../../../shared/contracts/encounter-source.js'
 import { presentCapabilityError } from '../../capabilities/capability-errors.js'
@@ -15,7 +19,8 @@ import {
   createWorldFactionDraftState,
   worldFactionDraftDirty,
   worldFactionDraftReducer,
-  worldFactionDraftValue
+  worldFactionDraftValue,
+  type WorldFactionDraftAction
 } from './world-faction-draft.js'
 import type {
   WorldFactionEditorRenderProps,
@@ -26,7 +31,7 @@ import { useCreatureFacts } from './use-creature-facts.js'
 export function useWorldFactionEditorController(
   props: WorldFactionEditorRenderProps
 ) {
-  const [draft, dispatch] = useReducer(
+  const [draft, rawDispatch] = useReducer(
     worldFactionDraftReducer,
     props.faction,
     createWorldFactionDraftState
@@ -56,82 +61,142 @@ export function useWorldFactionEditorController(
   )
   const facts = useCreatureFacts(selectedCreatureIds, props.creatures)
   const dirty = worldFactionDraftDirty(draft)
-  useMaintenanceDraftGuard(dirty)
+  const draftRef = useRef(draft)
+  const settled = useRef(false)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const child = useRef<MaintenanceDraftHandle | null>(null)
+  const blocked = useMaintenanceDraft(
+    {
+      label: `Fraktion: ${draft.displayName.trim() || 'Neue Fraktion'}`,
+      get dependsOn() {
+        return child.current?.isOpen() ? [child.current.id] : []
+      },
+      isDirty: () =>
+        !settled.current &&
+        (pending.current !== null || worldFactionDraftDirty(draftRef.current)),
+      save: saveDraft,
+      discard: discardDraft
+    },
+    props.maintenanceId
+  )
+  const inputBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() || pending.current !== null
+  const apply = (action: WorldFactionDraftAction) => {
+    if (submission.current.persistedValue !== null)
+      throw new Error(
+        'Die Fraktion wurde bereits gespeichert. Bitte erneut öffnen.'
+      )
+    draftRef.current = worldFactionDraftReducer(draftRef.current, action)
+    settled.current = false
+    rawDispatch(action)
+  }
+  const dispatch = (action: WorldFactionDraftAction) => {
+    if (!inputBlocked() && !persisted) apply(action)
+  }
 
   const selectPrimaryTable = (
     id: string | null,
-    availableTables = tableSnapshot
+    availableTables = tableSnapshot,
+    fromChild = false
   ) => {
-    if (id === draft.primaryEncounterTableId) return
+    if (!fromChild && (inputBlocked() || persisted)) return
+    if (id === draftRef.current.primaryEncounterTableId) return
     const allowed = new Set(
       encounterTables(availableTables)
         .find((table) => table.id === id)
         ?.entries.map((entry) => entry.creatureId) ?? []
     )
-    dispatch({ kind: 'primary-table', id, creatureIds: allowed })
+    apply({ kind: 'primary-table', id, creatureIds: allowed })
   }
 
   const requestClose = () => {
-    if (busy) return
+    if (inputBlocked()) return
     if (dirty) setDiscardOpen(true)
     else props.close()
   }
 
-  const submit = async () => {
-    const name = draft.displayName.trim()
-    if (!name || busy || persisted) return
-    setBusy(true)
-    setError('')
-    const outcome = await executePersistedSubmission(
-      submission.current,
-      () => props.save({ ...worldFactionDraftValue(draft), displayName: name }),
-      props.saved
-    )
-    if (
-      outcome.status === 'reconciled' ||
-      outcome.status === 'reconciliation-failed'
-    )
-      setPersisted(true)
-    if (
-      outcome.status === 'mutation-failed' ||
-      outcome.status === 'reconciliation-failed'
-    ) {
-      const nextError = presentCapabilityError(outcome.cause, props.onError)
-      setError(nextError)
+  function saveDraft(): Promise<boolean> {
+    if (pending.current) return pending.current
+    if (submission.current.phase === 'reconciled') return Promise.resolve(true)
+    const name = draftRef.current.displayName.trim()
+    if (!name) return Promise.resolve(false)
+    const value = {
+      ...worldFactionDraftValue(draftRef.current),
+      displayName: name
     }
-    setReconciliationFailed(outcome.status === 'reconciliation-failed')
-    setBusy(false)
-  }
-
-  const retryReconciliation = async () => {
-    if (busy || !reconciliationFailed) return
     setBusy(true)
     setError('')
-    const outcome = await retryPersistedSubmissionReconciliation(
-      submission.current,
-      props.saved
-    )
-    setReconciliationFailed(outcome.status === 'reconciliation-failed')
-    if (outcome.status === 'reconciliation-failed')
-      setError(presentCapabilityError(outcome.cause, props.onError))
-    setBusy(false)
+    const operation = Promise.resolve()
+      .then(() =>
+        submission.current.persistedValue !== null
+          ? retryPersistedSubmissionReconciliation(
+              submission.current,
+              props.saved
+            )
+          : executePersistedSubmission(
+              submission.current,
+              () => props.save(value),
+              props.saved
+            )
+      )
+      .then((outcome) => {
+        if (
+          outcome.status === 'reconciled' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setPersisted(true)
+        if (
+          outcome.status === 'mutation-failed' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setError(presentCapabilityError(outcome.cause, props.onError))
+        setReconciliationFailed(outcome.status === 'reconciliation-failed')
+        settled.current = outcome.status === 'reconciled'
+        return settled.current
+      })
+      .finally(() => {
+        pending.current = null
+        setBusy(false)
+      })
+    pending.current = operation
+    return operation
   }
-
-  const requestTableCreation = () =>
-    props.requestTableCreation((result) => {
+  async function discardDraft(): Promise<boolean> {
+    if (pending.current) await pending.current.catch(() => false)
+    props.close()
+    settled.current = true
+    return true
+  }
+  const submit = () => {
+    if (inputBlocked() || persisted || child.current?.isOpen()) return
+    return saveDraft()
+  }
+  const retryReconciliation = () => {
+    if (inputBlocked() || !reconciliationFailed) return
+    return saveDraft()
+  }
+  const requestTableCreation = () => {
+    if (inputBlocked() || persisted || child.current?.isOpen()) return
+    child.current = props.requestTableCreation((result) => {
+      selectPrimaryTable(result.saved.id, result.snapshot, true)
       setInlineTableSnapshot(result.snapshot)
-      selectPrimaryTable(result.saved.id, result.snapshot)
     })
+  }
 
   return {
     draft,
     dispatch,
-    busy,
+    busy: busy || blocked,
     persisted,
     reconciliationFailed,
     error,
     discardOpen,
-    setDiscardOpen,
+    setDiscardOpen: (open: boolean) => {
+      if (!inputBlocked()) setDiscardOpen(open)
+    },
+    discard: () => {
+      if (!inputBlocked()) return discardDraft()
+    },
     selectedTable,
     tableSummaries,
     facts,

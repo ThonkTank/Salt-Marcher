@@ -23,4 +23,8 @@ export type GroupManagerCommandInput = {
   dispatch: Dispatch<GroupManagerAction>
   saved: (snapshot: LiveSessionSnapshot) => void
   lootChanged: () => void
+  failed?: (
+    cause: unknown,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
+  ) => void
 }

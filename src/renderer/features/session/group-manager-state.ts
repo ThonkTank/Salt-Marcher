@@ -14,7 +14,7 @@ import {
   beginGroupLootDraftTransaction,
   createGroupLootDraftHistory,
   endGroupLootDraftTransaction,
-  groupLootDraftDirty,
+  groupLootDraftSignature,
   mutateGroupLootDraft,
   redoGroupLootDraft,
   undoGroupLootDraft,
@@ -28,6 +28,7 @@ import {
 } from '../creatures/creature-state.js'
 import {
   groupDraftReducer,
+  groupDraftSignature,
   groupDraftStateDirty,
   groupDraftStateFromGroup,
   type DraftCreatureFact,
@@ -44,6 +45,7 @@ export type GroupDraftLootPhase =
 export type GroupManagerLootState = Readonly<{
   run: GroupRewardGeneratedRun | null
   history: GroupLootDraftHistory | null
+  committedSignature: string | null
   seed: number | null
   phase: GroupDraftLootPhase
   error: string
@@ -94,6 +96,13 @@ export type GroupManagerAction =
   | { kind: 'mutate-group'; mutation: GroupDraftMutation }
   | { kind: 'group-message'; key: string; message: string }
   | {
+      kind: 'group-saved'
+      key: string
+      submittedSignature: string
+      persisted: SceneGroup
+      nextProspectiveGroupId: string
+    }
+  | {
       kind: 'facts-result'
       key: string
       facts: Readonly<Record<string, DraftCreatureFact>>
@@ -128,7 +137,7 @@ export type GroupManagerAction =
       draft: GroupLootDraft
       seed: number
     }
-  | { kind: 'loot-committed'; key: string }
+  | { kind: 'loot-committed'; key: string; runId: string; signature: string }
   | {
       kind: 'loot-failed'
       key: string
@@ -250,6 +259,57 @@ export function groupManagerReducer(
       pendingIntent: null
     }
   }
+  if (action.kind === 'group-saved') {
+    const session = state.sessions[action.key]
+    if (!session) return state
+    if (
+      session.sourceRevision !== null &&
+      session.sourceRevision > action.persisted.revision
+    )
+      return state
+    const id = action.persisted.id
+    // Never replace another open draft while acknowledging a newly created group.
+    if (id !== action.key && state.sessions[id]) return state
+    const persisted = groupDraftStateFromGroup(action.persisted)
+    const unchanged =
+      groupDraftSignature(
+        session.group.name,
+        session.group.note,
+        session.group.disposition,
+        session.group.quantities,
+        session.group.deadQuantities
+      ) === action.submittedSignature
+    const sessions = { ...state.sessions }
+    delete sessions[action.key]
+    sessions[id] = {
+      ...session,
+      sourceRevision: action.persisted.revision,
+      externalConflict: false,
+      group: {
+        ...session.group,
+        ...(unchanged
+          ? {
+              name: persisted.name,
+              note: persisted.note,
+              disposition: persisted.disposition,
+              quantities: persisted.quantities,
+              deadQuantities: persisted.deadQuantities
+            }
+          : {}),
+        baseline: persisted.baseline,
+        message: ''
+      }
+    }
+    return {
+      ...state,
+      sessions,
+      activeKey: state.activeKey === action.key ? id : state.activeKey,
+      prospectiveGroupId:
+        state.prospectiveGroupId === id
+          ? action.nextProspectiveGroupId
+          : state.prospectiveGroupId
+    }
+  }
   if (action.kind === 'mutate-group')
     return updateActiveSession(state, (session) => ({
       ...session,
@@ -331,6 +391,7 @@ export function groupManagerReducer(
         loot: {
           run: action.run,
           history: createGroupLootDraftHistory(action.draft),
+          committedSignature: null,
           phase: 'ready',
           error: '',
           issues: [],
@@ -340,15 +401,20 @@ export function groupManagerReducer(
     )
   }
   if (action.kind === 'loot-committed')
-    return updateSession(state, action.key, (session) => ({
-      ...session,
-      loot: {
-        ...session.loot,
-        phase: 'ready',
-        error: '',
-        issues: []
-      }
-    }))
+    return updateSession(state, action.key, (session) =>
+      session.loot.run?.id === action.runId
+        ? {
+            ...session,
+            loot: {
+              ...session.loot,
+              committedSignature: action.signature,
+              phase: 'ready',
+              error: '',
+              issues: []
+            }
+          }
+        : session
+    )
   if (action.kind === 'loot-failed')
     return updateSession(state, action.key, (session) => ({
       ...session,
@@ -473,14 +539,13 @@ export function groupManagerAnyDirty(state: GroupManagerState): boolean {
 
 export function groupDraftSessionDirty(session: GroupDraftSession): boolean {
   return (
-    groupDraftStateDirty(session.group) ||
-    Boolean(session.loot.history && groupLootDraftDirty(session.loot.history))
+    groupDraftStateDirty(session.group) || groupManagerLootDirty(session.loot)
   )
 }
 
 export function groupManagerAnyLootDirty(state: GroupManagerState): boolean {
   return Object.values(state.sessions).some((session) =>
-    Boolean(session.loot.history && groupLootDraftDirty(session.loot.history))
+    groupManagerLootDirty(session.loot)
   )
 }
 
@@ -488,8 +553,13 @@ export function groupManagerCurrentLootDirty(
   state: GroupManagerState
 ): boolean {
   const session = activeGroupSession(state)
+  return session ? groupManagerLootDirty(session.loot) : false
+}
+
+export function groupManagerLootDirty(loot: GroupManagerLootState): boolean {
   return Boolean(
-    session?.loot.history && groupLootDraftDirty(session.loot.history)
+    loot.history &&
+    groupLootDraftSignature(loot.history.draft) !== loot.committedSignature
   )
 }
 
@@ -509,6 +579,7 @@ function emptyLoot(): GroupManagerLootState {
   return {
     run: null,
     history: null,
+    committedSignature: null,
     seed: null,
     phase: 'idle',
     error: '',

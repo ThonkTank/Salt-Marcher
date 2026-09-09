@@ -5,7 +5,6 @@ import type {
   SceneGroup,
   SceneGroupDisposition
 } from '../../../shared/contracts/scene.js'
-import { groupLootDraftDirty } from '../loot/group-loot-draft.js'
 import type {
   TreasureContainerPatch,
   TreasureItemPatch
@@ -20,6 +19,7 @@ import {
   groupDraftSessionDirty,
   groupManagerAnyDirty,
   groupManagerAnyLootDirty,
+  groupManagerCurrentLootDirty,
   type GroupCatalogMode,
   type GroupDraftSession,
   type GroupManagerAction,
@@ -29,6 +29,8 @@ import type { useGroupManagerCommands } from './use-group-manager-commands.js'
 import type { useGroupManagerQueries } from './use-group-manager-queries.js'
 
 export function projectGroupManagerView(input: {
+  archive(): Promise<void>
+  joinCombat(): Promise<void>
   snapshot: LiveSessionSnapshot
   reinforcementMode: boolean
   state: GroupManagerState
@@ -65,9 +67,7 @@ export function projectGroupManagerView(input: {
   } = input
   const loot = session?.loot ?? null
   const lootHistory = loot?.history ?? null
-  const currentLootDirty = Boolean(
-    lootHistory && groupLootDraftDirty(lootHistory)
-  )
+  const currentLootDirty = groupManagerCurrentLootDirty(state)
 
   return {
     state,
@@ -98,6 +98,7 @@ export function projectGroupManagerView(input: {
       loot?.phase === 'committing',
     dirty: session ? groupDraftSessionDirty(session) : false,
     anyDirty: groupManagerAnyDirty(state),
+    pending: commands.pending,
     anyLootDirty: groupManagerAnyLootDirty(state),
     currentLootDirty,
     effectiveCatalogMode: (state.catalogMode === 'loot' && loot?.run
@@ -200,8 +201,8 @@ export function projectGroupManagerView(input: {
     inspectCreature: interactions.inspectCreature,
     close: () => interactions.requestIntent({ kind: 'close' }),
     save: () => interactions.requestIntent({ kind: 'save' }),
-    archive: () => interactions.requestIntent({ kind: 'archive' }),
-    joinCombat: () => interactions.requestIntent({ kind: 'join-combat' }),
+    archive: () => void input.archive(),
+    joinCombat: () => void input.joinCombat(),
     cancelPendingIntent: () =>
       dispatch({ kind: 'pending-intent', pending: null }),
     confirmPendingIntent: () => {

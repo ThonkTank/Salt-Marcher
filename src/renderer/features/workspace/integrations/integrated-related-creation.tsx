@@ -1,3 +1,4 @@
+import type { MaintenanceDraftHandle } from '../../../shell/maintenance-draft-coordinator.js'
 import { useEffect, useMemo, useState } from 'react'
 import type { SaltMarcherApi } from '../../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../../shared/contracts/encounter.js'
@@ -24,6 +25,7 @@ type RelatedCreationPort = Pick<
 >
 
 export function IntegratedWorldFactionCreation(props: {
+  maintenanceId?: string
   port: RelatedCreationPort
   close: () => void
   created: (faction: WorldFaction) => void
@@ -31,7 +33,7 @@ export function IntegratedWorldFactionCreation(props: {
   onError: (message: string) => void
   requestTableCreation: (
     created: (receipt: EncounterTableMutationReceipt) => void
-  ) => void
+  ) => MaintenanceDraftHandle
 }) {
   const onError = props.onError
   const application = useMemo(
@@ -61,6 +63,7 @@ export function IntegratedWorldFactionCreation(props: {
 
   return (
     <WorldFactionDialog
+      {...(props.maintenanceId ? { maintenanceId: props.maintenanceId } : {})}
       faction={null}
       tableSnapshot={tables}
       close={props.close}
@@ -81,6 +84,7 @@ export function IntegratedWorldFactionCreation(props: {
 }
 
 export function IntegratedEncounterTableCreation(props: {
+  maintenanceId?: string
   port: RelatedCreationPort
   close: () => void
   created: (result: EncounterTableMutationReceipt) => void
@@ -102,6 +106,7 @@ export function IntegratedEncounterTableCreation(props: {
   )
   return (
     <EncounterTableDialog
+      {...(props.maintenanceId ? { maintenanceId: props.maintenanceId } : {})}
       table={null}
       close={props.close}
       save={application.save}

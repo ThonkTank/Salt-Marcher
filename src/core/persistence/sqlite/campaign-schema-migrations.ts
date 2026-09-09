@@ -1,3 +1,10 @@
+import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
+import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
+import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
+import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
+import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
+import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
+import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import {
@@ -210,6 +217,115 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('campaign-34-to-35-party-burden', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-35-to-36-unified-burden-and-group-receipts',
+      role: 'campaign',
+      fromVersion: 35,
+      toVersion: 36,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        // Main-35 has burden facts; the earlier maintenance candidate-35 has receipts.
+        // Both owners preserve existing data and only add the missing schema.
+        migratePartyBurden34To35(database)
+        initializeSceneGroupCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-35-to-36-unified-burden-and-group-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-36-to-37-planner-command-receipts',
+      role: 'campaign',
+      fromVersion: 36,
+      toVersion: 37,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeSessionPlannerCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-36-to-37-planner-command-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-37-to-38-party-character-receipts',
+      role: 'campaign',
+      fromVersion: 37,
+      toVersion: 38,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializePartyCharacterCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-37-to-38-party-character-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-38-to-39-scene-party-receipts',
+      role: 'campaign',
+      fromVersion: 38,
+      toVersion: 39,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeScenePartyCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-38-to-39-scene-party-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-39-to-40-combat-receipts',
+      role: 'campaign',
+      fromVersion: 39,
+      toVersion: 40,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeCombatCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('campaign-39-to-40-combat-receipts', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-40-to-41-hex-route-plans-and-receipts',
+      role: 'campaign',
+      fromVersion: 40,
+      toVersion: 41,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeHexRoutePlanSchema(database)
+        initializeHexTravelCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-40-to-41-hex-route-plans-and-receipts',
+            new Date().toISOString()
+          )
       }
     }
   ])

@@ -164,7 +164,7 @@ describe('Loot UI', () => {
       }
     } as unknown as LiveSessionSnapshot
     const api = {
-      loot: { distribute },
+      loot: { distributeForCampaign: distribute },
       session: {
         read: vi.fn(),
         onChanged: vi.fn(() => () => undefined)
@@ -196,7 +196,7 @@ describe('Loot UI', () => {
     )
 
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(close).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(close).toHaveBeenCalledTimes(1))
     expect(distribute).not.toHaveBeenCalled()
     view.unmount()
 

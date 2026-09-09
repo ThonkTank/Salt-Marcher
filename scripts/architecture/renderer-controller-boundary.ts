@@ -40,8 +40,7 @@ const groupCommands =
   'src/renderer/features/session/use-group-manager-commands.ts'
 const groupQueries =
   'src/renderer/features/session/use-group-manager-queries.ts'
-const sessionMutations =
-  'src/renderer/features/session/use-session-mutation-controller.ts'
+const sessionMutations = 'src/renderer/features/session/use-scene-commands.tsx'
 const plannerController =
   'src/renderer/features/session-planner/use-session-planner-controller.ts'
 const npcCatalogController =
@@ -206,15 +205,19 @@ function inspectGroupManager(
       module.path.includes('/features/session/') &&
       /(?:^|\/)(?:group-|use-group-)/.test(module.path)
   )
-  const reducerOwners = groupModules.filter((module) =>
-    hasCall(module, 'useReducer')
+  const reducerOwners = groupModules.filter(
+    (module) =>
+      hasCall(module, 'useReducer') || hasCall(module, 'groupManagerReducer')
   )
   if (
     reducerOwners.length !== 1 ||
-    reducerOwners[0]?.path !== groupController
+    reducerOwners[0]?.path !==
+      'src/renderer/features/session/group-manager-draft-runtime.ts'
   ) {
     const unexpected = reducerOwners.find(
-      (module) => module.path !== groupController
+      (module) =>
+        module.path !==
+        'src/renderer/features/session/group-manager-draft-runtime.ts'
     )
     violations.push({
       path: unexpected?.path ?? groupController,
@@ -245,27 +248,16 @@ function inspectGroupManager(
   }
 
   const mutationOwner = requireSource(sessionMutations, factsByPath, violations)
-  if (
-    mutationOwner &&
-    (!hasImportFrom(
-      mutationOwner,
-      'useAsyncCommandCoordinator',
-      '../../async/use-async-command-coordinator.js'
-    ) ||
-      !hasImportedCall(
-        mutationOwner,
-        'useAsyncCommandCoordinator',
-        '../../async/use-async-command-coordinator.js'
-      ))
-  )
-    violations.push(
-      violation(
-        mutationOwner,
-        1,
-        'async_owner_missing_coordinator',
-        'useAsyncCommandCoordinator'
-      )
-    )
+  if (mutationOwner) {
+    for (const [binding, specifier] of [
+      ['useMaintenanceDraft', '../../shell/maintenance-drafts.js'],
+      ['useDraftTransition', '../../shell/use-draft-transition.js'],
+      ['useSceneCommandPort', './use-scene-command-port.js']
+    ] as const) {
+      requireImport(mutationOwner, binding, specifier, violations)
+      requireCall(mutationOwner, binding, specifier, violations)
+    }
+  }
 
   for (const path of [groupCommands, groupQueries]) {
     const module = requireSource(path, factsByPath, violations)

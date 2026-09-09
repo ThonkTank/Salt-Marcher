@@ -1,3 +1,10 @@
+import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
+import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
+import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
+import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
+import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
+import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
+import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
 import { initializeCampaignImportSchema } from '../../campaign-import/campaign-import-store.js'
@@ -50,6 +57,11 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
     ),
     registration('party', initializePartySchema, ['campaign-runtime']),
     registration(
+      'party-character-receipts',
+      initializePartyCharacterCommandJournal,
+      ['party']
+    ),
+    registration(
       'scene',
       (database) =>
         initializeSceneSchema(
@@ -61,6 +73,13 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
         ),
       ['party']
     ),
+    registration('scene-group-receipts', initializeSceneGroupCommandJournal, [
+      'scene'
+    ]),
+    registration('combat-receipts', initializeCombatCommandJournal, ['combat']),
+    registration('scene-party-receipts', initializeScenePartyCommandJournal, [
+      'scene'
+    ]),
     registration('combat', initializeCombatSchema, ['scene']),
     registration('world-locations', initializeWorldLocationSchema),
     registration('encounter-tables', initializeEncounterTableSchema),
@@ -70,6 +89,13 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
       'world-factions'
     ]),
     registration('hex', initializeHexSchema, ['world-locations']),
+    registration('hex-route-plans', initializeHexRoutePlanSchema, [
+      'scene',
+      'hex'
+    ]),
+    registration('hex-travel-receipts', initializeHexTravelCommandJournal, [
+      'hex'
+    ]),
     registration(
       'world-location-save-journal',
       initializeWorldLocationSaveJournalSchema,
@@ -79,6 +105,11 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
     registration('session-generation', initializeSessionGenerationSchema),
     registration('encounter-plans', initializeEncounterPlanSchema),
     registration('session-planner', initializeSessionPlannerSchema),
+    registration(
+      'session-planner-receipts',
+      initializeSessionPlannerCommandJournal,
+      ['session-planner']
+    ),
     registration('legacy-items', initializeLegacyItemDefinitionSchema),
     registration('loot', initializeLootSchema, ['legacy-items']),
     registration('character-loot', initializeCharacterLootSchema, ['loot']),

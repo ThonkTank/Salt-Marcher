@@ -434,3 +434,74 @@ function validateSession(
       })
   })
 }
+
+export const plannerPreparationMaintenanceInputSchema = z
+  .object({
+    campaignId: z.uuid(),
+    operationIds: z.array(z.uuid())
+  })
+  .strict()
+export const plannerPreparationMaintenanceStatusSchema = z
+  .object({
+    operations: z.array(
+      z
+        .object({
+          operationId: z.uuid(),
+          receipt: sessionPreparationReceiptSchema.nullable()
+        })
+        .strict()
+    ),
+    workspace: sessionPlannerWorkspaceSchema
+  })
+  .strict()
+export type PlannerPreparationMaintenanceStatus = Readonly<
+  z.infer<typeof plannerPreparationMaintenanceStatusSchema>
+>
+
+/** Stable original request used for both execution and read-only recovery. */
+export const sessionPlannerCommandSchema = z
+  .object({
+    commandId: z.uuid(),
+    command: z.discriminatedUnion('kind', [
+      z
+        .object({
+          kind: z.literal('create'),
+          input: createSessionPlanInputSchema
+        })
+        .strict(),
+      z
+        .object({ kind: z.literal('open'), input: openSessionPlanInputSchema })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('switch'),
+          input: switchSessionPlanInputSchema
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('rename'),
+          input: renameSessionPlanInputSchema
+        })
+        .strict(),
+      z
+        .object({ kind: z.literal('save'), input: saveSessionPlanInputSchema })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('delete'),
+          input: deleteSessionPlanInputSchema
+        })
+        .strict()
+    ])
+  })
+  .strict()
+export const campaignSessionPlannerCommandSchema =
+  sessionPlannerCommandSchema.extend({ campaignId: z.uuid() })
+export const sessionPlannerCommandStatusSchema = z
+  .object({
+    receipt: sessionPlannerWorkspaceSchema.nullable(),
+    workspace: sessionPlannerWorkspaceSchema
+  })
+  .strict()
+export type SessionPlannerCommand = z.infer<typeof sessionPlannerCommandSchema>

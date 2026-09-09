@@ -74,6 +74,9 @@ export class AsyncCommandCoordinator {
   readonly #slots = new Map<string, Slot>()
   readonly #states = new Map<string, AsyncCommandState>()
   readonly #listeners = new Set<() => void>()
+  readonly #pending = new Set<
+    Readonly<{ scope: string; done: Promise<void> }>
+  >()
   #revision = 0
   #lifecycle = 0
 
@@ -89,6 +92,49 @@ export class AsyncCommandCoordinator {
   }
 
   public run<Value>(
+    command: AsyncCommand<Value>
+  ): Promise<AsyncCommandOutcome<Value>> {
+    let complete!: () => void
+    const pending = {
+      scope: command.scope,
+      done: new Promise<void>((resolve) => {
+        complete = resolve
+      })
+    }
+    this.#pending.add(pending)
+    this.#notify()
+    const finished = () => {
+      this.#pending.delete(pending)
+      complete()
+      this.#notify()
+    }
+    try {
+      return this.#run(command).finally(finished)
+    } catch (cause) {
+      finished()
+      throw cause
+    }
+  }
+
+  /** Includes queued, superseded and canceled work until execution actually ends. */
+  public hasPending(scopes?: readonly string[]): boolean {
+    return [...this.#pending].some(
+      (pending) => !scopes || scopes.includes(pending.scope)
+    )
+  }
+
+  /** Drains execution and accept callbacks; callers must prevent new user work. */
+  public async whenIdle(scopes?: readonly string[]): Promise<void> {
+    while (true) {
+      const pending = [...this.#pending].filter(
+        (entry) => !scopes || scopes.includes(entry.scope)
+      )
+      if (pending.length === 0) return
+      await Promise.all(pending.map((entry) => entry.done))
+    }
+  }
+
+  #run<Value>(
     command: AsyncCommand<Value>
   ): Promise<AsyncCommandOutcome<Value>> {
     const key = scopeKey(command)
@@ -239,6 +285,10 @@ export class AsyncCommandCoordinator {
 
   #setState(key: string, state: AsyncCommandState): void {
     this.#states.set(key, state)
+    this.#notify()
+  }
+
+  #notify(): void {
     this.#revision += 1
     for (const listener of this.#listeners) listener()
   }

@@ -1,3 +1,4 @@
+import { HexTravelCommandService } from '../core/hex/hex-travel-command-service.js'
 import type Database from 'better-sqlite3'
 import {
   coreReadySchema,
@@ -173,6 +174,7 @@ const play = new LivePlayService(activePersistence, biomeProjection, () => {
   }
 })
 const lootComposition = createLootComposition({
+  activeCampaignId: () => campaigns.activeCampaignId(),
   activeDatabase: activePersistence,
   rules: campaignRules,
   generation: sessionGenerationService,
@@ -370,7 +372,9 @@ const campaignHandlers = createCampaignHandlers({
   mutateReferences,
   recoverPendingPreparations: () => sessionPlanner.recoverPendingPreparations()
 })
-const partyHandlers = createPartyHandlers(play)
+const partyHandlers = createPartyHandlers(play, () =>
+  campaigns.activeCampaignId()
+)
 const creatureHandlers = createReferenceHandlers({ creatures, references })
 
 const biomeHandlers = createBiomeHandlers({
@@ -405,11 +409,14 @@ const sessionHandlers = createSessionHandlers(play, () =>
   campaigns.activeCampaignId()
 )
 const sessionPlannerHandlers = createSessionPlannerHandlers({
+  activeCampaignId: () => campaigns.activeCampaignId(),
   encounterPlans,
   sessionPlanner
 })
 const lootHandlers = lootComposition.createHandlers(publishLootChange)
-const encounterHandlers = createEncounterHandlers(play)
+const encounterHandlers = createEncounterHandlers(play, () =>
+  campaigns.activeCampaignId()
+)
 
 const hexHandlers = createHexHandlers({
   hex,
@@ -422,6 +429,8 @@ const hexHandlers = createHexHandlers({
   publishChange: publishHexChange
 })
 const travelHandlers = createTravelHandlers({
+  commands: new HexTravelCommandService(activePersistence, hexTravel, play),
+  activeCampaignId: () => campaigns.activeCampaignId(),
   travel: hexTravel,
   play,
   publishChange: publishSessionChange
