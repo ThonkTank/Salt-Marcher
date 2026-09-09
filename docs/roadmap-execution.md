@@ -5817,3 +5817,92 @@ kanonischer Handoff, Main-Promotion und öffentliche Freigabe bleiben offen.
 77587 exit 0: abschließender Typecheck bestanden. Combat-Integration als geprüften
 Candidate-Zwischenstand sichern und pushen; unveränderte vollständige Remote-
 Check-Gates gelten weiterhin vor jeglichem Handoff oder Main-Promotion.
+
+Phase 4 – Szenenmetadaten-/Fokusplan. Voriger Turn war Fortschritt; HEAD 5ff524103
+sauber, CI 34303180324 in_progress. setLocation/focus benutzen noch einen
+latest-only-Callback ohne gehaltenen Originalauftrag. UI-Sperre allein klärt
+verlorene Antworten oder einen Unmount während des Writes nicht.
+
+Gemeinsamer Vertrag: scene-command ergänzt die bestehenden SceneParty-Varianten
+um set-location und focus. Vorhandenes Scene-Aggregat-Journal und dessen
+unveränderlicher Full-Snapshot-Beleg bleiben der einzige Speicherpfad; historische
+Tabelle/Bootstrap/Schema-Version bleiben unverändert. Alte Party-Operationen
+validieren weiter ihren engen Vertrag und delegieren an den gemeinsamen Executor.
+Neue Szenenoperationen binden Campaign-ID in Utility und Ursprungsszene in die
+Absicht ein. Replay liest Originalbeleg vor Fokus-/Revisionsprüfung, Status schreibt
+nichts. Neue Ausführung verlangt weiterhin Originalfokus und aktuelle Revision.
+
+Zunächst Backend und native Nachweise: Beleginsertfehler rollt Orts-/Fokusänderung
+zurück; alte und neue Belege bleiben nach späterer Arbeit und Neustart lesbar;
+geänderte Absicht/falsche Campaign-ID werden abgewiesen. Danach originalgebundener
+Renderer-Port/Owner, zentraler Übergang und Speichern-/Verwerfen-Statusanzeige;
+aktive direkte setLocation-/focus-Writes abschalten. Fehlender Beleg mit geändertem
+Stand darf nicht automatisch überschrieben werden. UI- und Electron-Nachweis
+bleiben verbindlich; der Backendabschnitt allein schließt diesen Teilplan nicht.
+
+Erste Grundlagenprüfung: 76 bestehende Fälle bestehen; vier neue Szenenfälle
+scheitern vor ihrer Aktion am ungültigen Ortsfixture (Tags dürfen nicht leer sein).
+Korrekturplan: einen gültigen Ortstag setzen, ohne den Ortsvertrag zu verändern;
+dann dieselben nativen Beleg-/Rollbackfälle erneut ausführen.
+
+Grundlagen: 11 native Fälle (inklusive alter Partybelege) sowie 23 Originalport-/
+Controllerfälle bestehen. Typecheck/Lint der Backendbasis bestanden. UI-Cutover
+umgesetzt: Szenenort und Fokus verwenden den neuen gehaltenen Owner; Status und
+zentrale Klärung stehen im SceneDesktop, Ortseingabe/Fokus sind bei offenem Auftrag
+gesperrt. Bestehende Szenenwechsel-Klärung bleibt erhalten. Der bisherige
+Workspace-Controller-Test muss seinen transportnahen Mock auf executeCommand plus
+Full-Snapshot-Beleg umstellen; die bisherige Ergebnis-/Revisionsassertion bleibt
+bestehen. Zusätzlich echte UI-Owner-Tests für Save/Discard/Cancel und Unmount.
+
+UI-Prüfung: 94 Workspace-/Port-/Controller-/Architekturfälle plus vier zentrale
+Scene-Ownerfälle bestehen. Letztere belegen Save/Discard/Cancel anderer Editoren,
+frische Szenenrevision nach Save, gesperrte Aktion während Klärung sowie verlorene
+bereits ausgeführte Ortsänderung nach Unmount ohne erneuten Write.
+
+Electronplan: bestehenden neun Fällen einen Ortswechsel bei offenem XP-Betrags-
+entwurf hinzufügen. Abbrechen erhält alten Ort/Party; explizites Verwerfen klärt
+den Betrag und führt nur den gewählten Ortswechsel aus. Neustart muss Ort und
+unveränderte Party bestätigen. Bestehende Fokus-/Fenster-/Combatfälle bleiben
+vollständig bestehen. Danach passende statische und Bundle-/Smokeprüfungen.
+
+13489 exit 0: alle zehn SceneDesktop-Electronfälle bestanden, einschließlich
+Ortswechsel mit XP-Entwurf, Abbrechen/Verwerfen und unverändertem Partyzustand nach
+Neustart. Full Lint meldet ausschließlich fünf neue Testhilfenstellen: async ohne
+await, unnötiger DOM-Cast und untypisierte expect.any-Zuweisungen. Fixplan: echte
+Promise-Rückgabe, generische DOM-Abfrage und getrennte UUID-/Payloadassertionen mit
+typisierten Transportmocks. Keine fachliche Assertion oder Prüfung entfernen.
+
+Cleanup-Plan nach erfolgreichem UI-Cutover: useSessionMutationController hat keine
+Produktaufrufer mehr; seine zwei Testdateien prüfen nur den ersetzten latest-only-
+Mechanismus. Entfernen und den Baselineeintrag/Architektur-Inventar auf die neuen
+Szenenowner umstellen. Die relevanten Sicherheitszusagen sind jetzt stärker durch
+scene-command-port (Originalkampagne vor/während Writes/Reads), scene-command-
+maintenance (frische Revision nach Draft-Save) und scene-command-controller
+(gehaltene Originalantworten statt verlorener älterer Writes) abgedeckt. Bestehende
+Gruppenowner-Tests behalten deren unabhängige Recovery-Abnahme. Danach passende
+Architektur-/Ownerprüfungen, vollständiges Lint/Type/Format und erneuter Build/Smoke.
+
+Abschließende Qualifikation: 94790 exit 0 (37 Cleanup-/Owner-/Architekturregressions-
+fälle, Typecheck, vollständiges Lint/Format). 73016 exit 0 (neuer Build, Smoke und
+Bundle; Renderer 1656365 Bytes innerhalb unveränderter Limits). 82630 exit 0
+(Version-Truth sowie zwölf Root-/Baseline-/Bridge-/Autorisierungsfälle). Zehn
+Electronfälle im Lauf functional-1788921422808-619158 bestanden. Nach der Electron-
+Abnahme wurden ausschließlich ungenutzter Altcontroller/alte ausschließlich ihn
+prüfende Tests entfernt und neue Testhilfen typisiert; neue Runtimepfade unverändert.
+
+Plan-Audit Szenenort/Fokus: gemeinsamer Executor nutzt vorhandene Journal-Tabelle,
+Party-Kompatibilitätsvertrag bleibt eng und delegiert. Replay ist vor aktueller
+Fokusprüfung, Status read-only; Nativebelege bleiben nach späteren Änderungen und
+Neustart unverändert. Neue Writes prüfen Originalfokus und CAS, Utility prüft die
+Originalkampagne. Renderer hält Originalauftrag über Unmount, klärt fremde
+Entwürfe zentral und blockiert erneute Änderungen; kein aktiver direkter alter
+Session-Mutationspfad bleibt. Definierte UI-/E2E- und technische Abnahme bestanden.
+
+Roadmap-Audit: dieser Szenen-Teilplan erfüllt; Phase 4 noch nicht geschlossen.
+Reiseplanung/-aktionen in useTravelViewProjection/useTravelCommands besitzen noch
+keinen vollständigen Draft-/Wartungsowner. Nächster Teilplan muss Route speichern
+von Reise starten trennen und aktive Aufträge vor Wartung klären, ohne durch
+„Speichern“ eine Reise zu erfinden. Phasen 5–7 bleiben offen. Voriger Candidate
+5ff524103/CI 34303180324 zuletzt in_progress, keine fehlgeschlagenen Jobs gesehen;
+kein Handoff oder Main-Abschluss behauptet. Diesen qualifizierten Zwischenstand
+als neuen Candidate sichern; vollständige exakte Remote-Gates bleiben verbindlich.

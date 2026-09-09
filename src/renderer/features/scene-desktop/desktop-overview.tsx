@@ -11,11 +11,13 @@ import '../session/session-groups-panel.css'
 export function DesktopOverview({
   model,
   actions,
-  openCharacters
+  openCharacters,
+  busy = false
 }: {
   model: SessionWorkspaceViewModel
   actions: SessionWorkspaceActions
   openCharacters: () => void
+  busy?: boolean
 }) {
   const [editingLocation, setEditingLocation] = useState(false)
   const focused = model.focused
@@ -28,6 +30,7 @@ export function DesktopOverview({
       <div className="desktop-scene-facts">
         {editingLocation ? (
           <select
+            disabled={busy}
             autoFocus
             aria-label={message('ui.scene.ort')}
             value={focused.locationId ?? ''}
@@ -36,6 +39,7 @@ export function DesktopOverview({
               if (event.key === 'Escape') setEditingLocation(false)
             }}
             onChange={(event) => {
+              if (busy) return
               actions.setSceneLocation(event.target.value || null)
               setEditingLocation(false)
             }}
@@ -53,7 +57,12 @@ export function DesktopOverview({
             ))}
           </select>
         ) : (
-          <button onClick={() => setEditingLocation(true)}>
+          <button
+            disabled={busy}
+            onClick={() => {
+              if (!busy) setEditingLocation(true)
+            }}
+          >
             {model.control.focusedLocationLabel}
           </button>
         )}

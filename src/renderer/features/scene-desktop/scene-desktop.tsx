@@ -31,7 +31,14 @@ import './scene-desktop.css'
 export function SceneDesktop(
   props: WorkspaceSurfaceProps & { travel: SessionTravelSlots }
 ) {
-  const { model, actions, lifecycleNotice } = useSessionWorkspaceController({
+  const {
+    model,
+    actions,
+    lifecycleNotice,
+    sceneNotice,
+    sceneDialog,
+    sceneBusy
+  } = useSessionWorkspaceController({
     ...props,
     followCombat: false
   })
@@ -117,7 +124,7 @@ export function SceneDesktop(
           <select
             aria-label={message('desktop.scene')}
             value={focused.id}
-            disabled={editingBlocked}
+            disabled={editingBlocked || sceneBusy}
             onChange={(event) => {
               const sceneId = event.target.value
               if (sceneId !== focused.id)
@@ -322,6 +329,7 @@ export function SceneDesktop(
                 <SessionLootPanel model={model.groups} actions={actions} />
               ) : (
                 <DesktopOverview
+                  busy={sceneBusy || editingBlocked}
                   model={model}
                   actions={actions}
                   openCharacters={() =>
@@ -366,6 +374,8 @@ export function SceneDesktop(
       {combatCommands.dialog}
       {transition.dialog}
       {sceneTransition.dialog}
+      {sceneDialog}
+      {sceneNotice}
       <SessionDialogHost
         model={model}
         actions={actions}

@@ -9,6 +9,11 @@ export const workspaceMessagesDe = {
   'desktop.confirmRosterChange': 'Besetzung ändern',
   'desktop.resolveBeforeRosterChange':
     'Klär zuerst die offenen Charakteränderungen und die Besetzung. Speichern übernimmt die Änderungen, Verwerfen verwirft die Entwürfe.',
+  'scene.resolveTitle': 'Szene ändern',
+  'scene.resolveText':
+    'Vor dieser Szenenänderung die offenen Änderungen speichern oder verwerfen.',
+  'scene.commandConflict':
+    'Die Szene wurde inzwischen geändert. Bitte den offenen Auftrag verwerfen und den aktuellen Stand prüfen.',
   'combat.commandConflict':
     'Der Kampf wurde inzwischen geändert. Bitte den offenen Auftrag verwerfen und den aktuellen Stand prüfen.',
   'combat.resolveTitle': 'Kampfaktion fortsetzen',

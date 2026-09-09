@@ -1009,6 +1009,65 @@ describe('per-scene desktop', () => {
     expect(restarted.combat).toBeNull()
     expect(restarted.party).toEqual(after.party)
   })
+  it('resolves an open XP draft before changing scene location and preserves it across restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    const read = () =>
+      client.execute(async () => {
+        const campaignId = (await window.saltMarcher.campaigns.list())
+          .activeCampaignId!
+        return window.saltMarcher.session.read({ campaignId })
+      })
+    const before = await read()
+    const sceneId = before.scene.focusedSceneId
+    const original = before.scene.scenes.find(
+      (scene) => scene.id === sceneId
+    )!.locationId
+    const destination = before.scene.locationChoices.find(
+      (location) => location.id !== original
+    )
+    if (!destination) throw new Error('Fixture requires another location')
+    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await client.$('[data-window-id="characters"]').$('button=XP').click()
+    await client.$('.desktop-xp-popup input').setValue('250')
+    const chooseLocation = async () => {
+      await client.$('.desktop-toolbar').$('button=Szenenübersicht').click()
+      await client
+        .$('[data-window-id="overview"] .desktop-scene-facts button')
+        .click()
+      await client
+        .$('[data-window-id="overview"] .desktop-scene-facts select')
+        .selectByAttribute('value', destination.id)
+    }
+    const confirmation = () =>
+      client.$('[role="alertdialog"][aria-label="Szene ändern"]')
+    await chooseLocation()
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Abbrechen').click()
+    const cancelled = await read()
+    expect(
+      cancelled.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
+    ).toBe(original)
+    expect(cancelled.party).toEqual(before.party)
+    await chooseLocation()
+    await confirmation().waitForDisplayed()
+    await confirmation().$('button=Verwerfen und fortfahren').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.find((scene) => scene.id === sceneId)!
+          .locationId === destination.id
+    )
+    expect((await read()).party).toEqual(before.party)
+    await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    await waitSaved(client)
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    const restarted = await read()
+    expect(
+      restarted.scene.scenes.find((scene) => scene.id === sceneId)!.locationId
+    ).toBe(destination.id)
+    expect(restarted.party).toEqual(before.party)
+  })
 })
 
 async function waitSaved(client: WdioBrowser) {

@@ -1,10 +1,10 @@
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
-  scenePartyCommandReceiptSchema,
-  type ScenePartyCommand,
-  type ScenePartyCommandReceipt
-} from '../../shared/contracts/scene-party-command.js'
+  sceneCommandReceiptSchema,
+  type SceneCommand,
+  type SceneCommandReceipt
+} from '../../shared/contracts/scene-command.js'
 import { fingerprintExcluding } from '../fingerprint.js'
 
 export function initializeScenePartyCommandJournal(
@@ -18,10 +18,10 @@ export function initializeScenePartyCommandJournal(
   )`)
 }
 
-/** The original cross-aggregate outcome is immutable, even after later work. */
+/** Scene commands share this historical table; original outcomes remain immutable. */
 export class ScenePartyCommandJournal {
   constructor(private readonly database: Database.Database) {}
-  read(input: ScenePartyCommand): ScenePartyCommandReceipt | null {
+  read(input: SceneCommand): SceneCommandReceipt | null {
     const row = this.database
       .prepare(
         `SELECT request_fingerprint AS fingerprint,
@@ -36,11 +36,9 @@ export class ScenePartyCommandJournal {
       row.fingerprint !== fingerprintExcluding(input, ['commandId'])
     )
       throw new CapabilityError('idempotency_conflict', false)
-    return scenePartyCommandReceiptSchema.parse(
-      JSON.parse(row.result) as unknown
-    )
+    return sceneCommandReceiptSchema.parse(JSON.parse(row.result) as unknown)
   }
-  record(input: ScenePartyCommand, receipt: ScenePartyCommandReceipt): void {
+  record(input: SceneCommand, receipt: SceneCommandReceipt): void {
     this.database
       .prepare(
         `INSERT INTO scene_party_command_receipt
@@ -49,7 +47,7 @@ export class ScenePartyCommandJournal {
       .run(
         input.commandId,
         fingerprintExcluding(input, ['commandId']),
-        JSON.stringify(scenePartyCommandReceiptSchema.parse(receipt))
+        JSON.stringify(sceneCommandReceiptSchema.parse(receipt))
       )
   }
 }

@@ -24,8 +24,10 @@ describe('session workspace controller', () => {
     const updated = snapshot(5)
     const setSnapshot = vi.fn()
     const onError = vi.fn()
-    const setLocation = vi.fn().mockResolvedValue(updated)
-    const api = sessionApi({ setLocation })
+    const executeCommand = vi
+      .fn<SaltMarcherApi['scene']['executeCommand']>()
+      .mockResolvedValue({ snapshot: updated })
+    const api = sessionApi({ executeCommand })
     let current = initial
     const wrapper = controllerWrapper(api, () => current)
     const view = renderHook(
@@ -67,11 +69,21 @@ describe('session workspace controller', () => {
     view.rerender({ value: updated })
     act(() => view.result.current.actions.setSceneLocation(null))
     await waitFor(() =>
-      expect(setLocation).toHaveBeenCalledWith({
-        sceneId,
-        locationId: null,
-        expectedRevision: updated.scene.revision
+      expect(executeCommand.mock.calls[0]?.[0]).toMatchObject({
+        campaignId: 'campaign',
+        command: {
+          kind: 'set-location',
+          input: {
+            sceneId,
+            locationId: null,
+            expectedRevision: updated.scene.revision
+          }
+        }
       })
+    )
+    expect(executeCommand).toHaveBeenCalledOnce()
+    expect(executeCommand.mock.calls[0]![0].commandId).toMatch(
+      /^[0-9a-f-]{36}$/
     )
     await waitFor(() => expect(setSnapshot).toHaveBeenCalledWith(updated))
   })

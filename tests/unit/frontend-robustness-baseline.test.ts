@@ -48,11 +48,6 @@ describe('FR0 frontend robustness baseline', () => {
   it('records current latest-only mutation owners without accepting them as target behavior', () => {
     const baseline = [
       {
-        path: 'src/renderer/features/session/use-session-mutation-controller.ts',
-        modes: 2,
-        scopes: ['session.group-mutation', 'session.snapshot-mutation']
-      },
-      {
         path: 'src/renderer/features/session/use-group-manager-commands.ts',
         modes: 2,
         scopes: ['group-manager.command']

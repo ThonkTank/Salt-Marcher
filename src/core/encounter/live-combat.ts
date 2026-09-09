@@ -1,4 +1,8 @@
 import {
+  sceneCommandSchema,
+  type SceneCommand
+} from '../../shared/contracts/scene-command.js'
+import {
   combatCommandSchema,
   type CombatCommand
 } from '../../shared/contracts/combat-command.js'
@@ -261,7 +265,11 @@ export class LivePlayService {
   }
 
   executeScenePartyCommand(value: ScenePartyCommand) {
-    const input = scenePartyCommandSchema.parse(value)
+    return this.executeSceneCommand(scenePartyCommandSchema.parse(value))
+  }
+
+  executeSceneCommand(value: SceneCommand) {
+    const input = sceneCommandSchema.parse(value)
     return this.withStores(({ db, unitOfWork }) =>
       unitOfWork.run(() => {
         const journal = new ScenePartyCommandJournal(db)
@@ -270,6 +278,27 @@ export class LivePlayService {
         const command = input.command
         const snapshot = (() => {
           switch (command.kind) {
+            case 'set-location':
+              if (
+                this.readSession().scene.focusedSceneId !==
+                command.input.sceneId
+              )
+                throw new CapabilityError('stale', false)
+              return this.setSceneLocation(
+                command.input.sceneId,
+                command.input.locationId,
+                command.input.expectedRevision
+              )
+            case 'focus':
+              if (
+                this.readSession().scene.focusedSceneId !==
+                command.input.sourceSceneId
+              )
+                throw new CapabilityError('stale', false)
+              return this.focusScene(
+                command.input.sceneId,
+                command.input.expectedRevision
+              )
             case 'set-roster':
               return this.setSceneRoster(command.input)
             case 'move-roster':
@@ -287,7 +316,11 @@ export class LivePlayService {
   }
 
   scenePartyCommandStatus(value: ScenePartyCommand) {
-    const input = scenePartyCommandSchema.parse(value)
+    return this.sceneCommandStatus(scenePartyCommandSchema.parse(value))
+  }
+
+  sceneCommandStatus(value: SceneCommand) {
+    const input = sceneCommandSchema.parse(value)
     return this.withStores(({ db }) => ({
       receipt: new ScenePartyCommandJournal(db).read(input),
       snapshot: this.readSession()

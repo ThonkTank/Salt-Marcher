@@ -69,6 +69,16 @@ export function createSessionHandlers(
         throw new CapabilityError('stale', true)
       return play.readSession()
     },
+    'scene.executeCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeSceneCommand(command)
+    },
+    'scene.commandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneCommandStatus(command)
+    },
     'scene.executePartyCommand': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())
         throw new CapabilityError('stale', false)

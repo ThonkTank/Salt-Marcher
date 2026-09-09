@@ -1,29 +1,39 @@
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import type { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { sessionCapabilities } from './session-capabilities.js'
-
-type CapabilityApi = ReturnType<typeof useCapabilityApi>
+import { useSceneCommands } from './use-scene-commands.js'
 
 export function useSessionSceneController(input: {
-  api: CapabilityApi
-  mutateSnapshot: (
-    operation: (snapshot: LiveSessionSnapshot) => Promise<LiveSessionSnapshot>
-  ) => Promise<void>
+  campaignId: string
+  sceneId: string
+  onError: (text: string) => void
+  applied: (snapshot: LiveSessionSnapshot) => void
 }) {
-  const capabilities = sessionCapabilities(input.api).scene
-
+  const commands = useSceneCommands(
+    input.campaignId,
+    input.sceneId,
+    input.onError,
+    input.applied
+  )
   return {
     focus: (sceneId: string) =>
-      void input.mutateSnapshot((current) =>
-        capabilities.focus(sceneId, current.scene.revision)
-      ),
+      commands.request((current) => ({
+        kind: 'focus',
+        input: {
+          sceneId,
+          sourceSceneId: input.sceneId,
+          expectedRevision: current.scene.revision
+        }
+      })),
     setLocation: (locationId: string | null) =>
-      void input.mutateSnapshot((current) =>
-        capabilities.setLocation(
-          current.scene.focusedSceneId,
+      commands.request((current) => ({
+        kind: 'set-location',
+        input: {
+          sceneId: input.sceneId,
           locationId,
-          current.scene.revision
-        )
-      )
-  } as const
+          expectedRevision: current.scene.revision
+        }
+      })),
+    notice: commands.notice,
+    dialog: commands.dialog,
+    busy: commands.busy
+  }
 }

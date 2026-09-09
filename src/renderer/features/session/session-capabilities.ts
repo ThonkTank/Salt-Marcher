@@ -15,13 +15,6 @@ export function sessionCapabilities(api: SaltMarcherApi) {
     scene: {
       groupSaveReceipt: (input: SaveSceneGroupInput, campaignId: string) =>
         api.scene.groupSaveReceipt({ ...input, campaignId }),
-      focus: (sceneId: string, expectedRevision: number) =>
-        api.scene.focus({ sceneId, expectedRevision }),
-      setLocation: (
-        sceneId: string,
-        locationId: string | null,
-        expectedRevision: number
-      ) => api.scene.setLocation({ sceneId, locationId, expectedRevision }),
       saveGroup: (
         sceneId: string,
         groupId: string | null,
