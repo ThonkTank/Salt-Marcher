@@ -113,3 +113,46 @@ Report SHA256: `dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a
 Exact retained report location and run command are in `../../roadmap-execution.md`.
 This is synthetic-data automated qualification, not user-data live acceptance,
 a public release, or a completed Phase 5 interruption/capacity matrix.
+
+## Isolated schema-changing UI qualification (2026-09-09)
+
+The new immutable pair 0.0.148 (42/41) → 0.0.149 (42/42) passes the full UI
+check/download/install/restart/continue/restore case in a bounded KVM guest.
+The accepted-crash case now also passes: a deliberate SIGKILL after saved work
+is followed by a full readback equal to that later state. Explicit restore
+returns the complete seeded profile and first protects the complete later state.
+Source-profile readback remains equal to the original. Report SHA256:
+83a9c615116a180d35fc689711aa9301282d4524fddae609aad9b61fe8f97731.
+
+This covers the explicit UI case, not the whole Phase 5 fault matrix. In
+particular, the stable installed launcher still uses AppRun in Node mode and
+needs the separately identified platform fix and its own packaged test. The
+successful update relaunches the target directly and does not prove that path.
+
+The revised installed shell launcher now also passes a separate KVM test without
+FUSE: actual application startup confirms installation, the subsequent `root/start`
+launch uses the packaged helper and retained Electron runtime, both exits are zero,
+and the complete profile is unchanged. Temporary interpreter extraction is cleaned.
+Report SHA256: e6f7af9f3b2a0c5427a1e238038d422244272f53a604e165e54d76a004a6fbd2.
+This uses the uncommitted launcher fix with unchanged 0.0.149 runtime bytes;
+it does not replace the forthcoming immutable package/handoff gates or signal
+and interrupted-recovery qualification.
+
+The installed launcher additionally passes SIGTERM after visible readiness in
+KVM: only the starter receives the signal; its isolated process group exits,
+no tracked application processes remain within ten seconds, temporary extraction
+is removed, and a subsequent normal launch succeeds with the complete profile
+unchanged and the journal still committed. Report SHA256:
+9a9e8f3571952d0879ae2262b86e73ffecf3788c4fbc515ce42955a6071a4084.
+Signals during extraction/startup and migration interruption remain separate cases.
+
+The final launcher, including interruptible extraction, passes that same complete
+normal-start/SIGTERM/restart/profile case in `launcher-run-10`. Report SHA256:
+978b2febb8249832ebb533509c50704fd9bc6541456d97023182c2cc5b022980.
+The preceding failed runs remain recorded: the UI driver accessed the document
+before its body existed and attempted interaction before the campaign screen was
+ready. The qualifier now waits for visible startup and preserves failure text,
+screenshot and journal; no version or content assertion was relaxed. A separate
+synthetic slow-extractor regression proves SIGTERM during extraction exits 143
+and removes the owned child and temporary directory. It does not prove SIGKILL
+inside a real migration. Candidate CI and immutable packaging remain required.

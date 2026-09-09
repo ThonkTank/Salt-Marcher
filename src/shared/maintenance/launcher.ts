@@ -44,7 +44,35 @@ case "$salt_helper_hash" in
   ${quote(hash)}' '*) ;;
   *) printf '%s\\n' 'Der Starthelfer wurde verändert. Bitte Installation prüfen.' >&2; exit 1 ;;
 esac
-exec env ELECTRON_RUN_AS_NODE=1 APPIMAGE_EXTRACT_AND_RUN=1 ${quote(runtime.path)} ${quote(helper)} ${quote(root)} "$@"
+salt_work=$(mktemp -d "\${TMPDIR:-/tmp}/salt-launcher.XXXXXXXX") || exit 1
+salt_child=''
+salt_cleanup() {
+  if [ -n "$salt_child" ]; then
+    kill -TERM "-$salt_child" 2>/dev/null || kill -TERM "$salt_child" 2>/dev/null || :
+    wait "$salt_child" 2>/dev/null || :
+  fi
+  rm -rf -- "$salt_work"
+}
+trap salt_cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+(cd "$salt_work" && exec setsid --wait env -u ELECTRON_RUN_AS_NODE -u APPIMAGE_EXTRACT_AND_RUN ${quote(runtime.path)} --appimage-extract >/dev/null) &
+salt_child=$!
+wait "$salt_child"
+salt_extract_result=$?
+salt_child=''
+[ "$salt_extract_result" -eq 0 ] || exit 1
+salt_runtime_after=$(sha256sum -- ${quote(runtime.path)}) || exit 1
+[ "$salt_runtime_after" = "$salt_runtime_hash" ] || exit 1
+salt_binary="$salt_work/squashfs-root/salt-marcher"
+[ -d "$salt_work/squashfs-root" ] && [ ! -L "$salt_work/squashfs-root" ] || exit 1
+[ -f "$salt_binary" ] && [ ! -L "$salt_binary" ] && [ -x "$salt_binary" ] || exit 1
+setsid --wait env -u APPIMAGE -u APPDIR ELECTRON_RUN_AS_NODE=1 APPIMAGE_EXTRACT_AND_RUN=1 "$salt_binary" ${quote(helper)} ${quote(root)} "$@" &
+salt_child=$!
+wait "$salt_child"
+salt_result=$?
+salt_child=''
+exit "$salt_result"
 `
   const target = join(root, 'start')
   const temporary = `${target}.${randomUUID()}.tmp`

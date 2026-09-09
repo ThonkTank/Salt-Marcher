@@ -8411,3 +8411,255 @@ Ausgangscommit ab32d4947ea8409bda679d60d3befe9103c176c0 von bd8b33c enthält nur
 Resource-Reader und Regressionstests. Quellliste benennt extraction-baseline
 42/41 und extraction-target42/42. Vor historischen Builds Metadaten/Tests prüfen,
 dann bounded build, keine Laufzeit auf Desktop.
+
+Quellen/Tests:49716 Exit0,25Tests für Quellinspektion und Ressourcenleser.
+Candidate796c3017dab9ead17de61d04562c99f99426121c und separater Baselinebranch
+gepusht; Check34340503082 auf genau796c läuft noch (abgefragt nach Builds).
+Erster bounded Aufruf42328 Exit1 vor Build: systemd löste anderes pnpm auf,
+Purge wurde mangelsTTY abgewiesen. Korrigiert durch absolutes Node22-Corepack;
+keine CI=true-/Purge-Umgehung und keine Quellenmutation während Build.
+
+10147 terminal Exit0,44.7s,Peak2.8GiB:0.0.148 ausab32d4947,Schema42/41,
+SHA25629404e318b4bd0a0da08df952c21cc9f971879d05b6db2abf96698f93fa6bfbb.
+11277 terminal Exit0,43.1s,Peak2.5GiB:0.0.149 ausf633b8962,Schema42/42,
+SHA256fce8c543bbdbd289e529e8f2f5f0c66cb3b2a1bf92d32d5479a702643263a7e0.
+Beide Manifeste und tatsächlichen Bytes nach Build erneut verglichen; Original-
+Quelltrees im Builder unverändert geprüft. Begrenzung10GiB/256Tasks/2CPU ohne
+Swap tatsächlich beim laufenden Baseline-Service gelesen. Keine Appausführung
+auf Desktop. Plan-Audit: neue unveränderliche Vergleichsartefakte fertig.
+Roadmap-Audit: Laufzeitabnahme dieser Bytes fehlt; Phase5 weiterhin offen.
+Nächster Schritt: aktuelle Qualifier-Payload mit genau diesen zwei Artefakten,
+frischer Offline-Gast, accepted-crash plus Update/Weiterarbeit/Restore.
+
+### Phase 5 – Aktualisiertes Artefaktpaar im vollständigen Gastlauf
+
+Voriger Turn Fortschritt: unveränderliche42/41→42/42-Artefakte neu gebaut und
+hashgeprüft. Plan: aktuelle796c-Qualifierquellen bündeln,0.0.148/0.0.149 und
+Receipts unverändert in frische Payload übertragen, alle Eingabehashes im Gast
+prüfen. Vollständiger accepted-crash-Update-/Restorefall; Host nurVM-Prozess.
+Keine Quellenänderung während dieses Laufs. Testexit und Vollprofilbericht sind
+maßgeblich, nicht QEMU-Exit. CI34340503082 gesondert nachverfolgen.
+
+Gastlauf76613 terminal Exit0 UND TestExit0: kompletter UI-Update/Weiterarbeit/
+accepted-crash/Restorefall mit0.0.148→0.0.149 bestanden, ServicePeak2.5GiB.
+ReportSHA25683a9c615116a180d35fc689711aa9301282d4524fddae609aad9b61fe8f97731
+unter work/qualification-vm/ui-run-3/evidence/qualification/ui-update-evidence.json.
+Update50dc8b4c-4bbd-4ed1-a3c8-c4f9d685b214 committed;
+Restore62b6991d-b3ad-4797-b039-6dee86e920b0 committed;
+Schutzbackupd2926da8-eb1e-42ec-b217-3adb4f9211aa.
+Prozessausgänge:963/1314/1555/1721 Exit0,1469 erwarteter SIGKILL. Akzeptierter
+Absturz enthält eigene Nachher-Lesung; keine stillschweigende Todesannahme.
+
+Export enthielt eingestreute cloud-init-SSH-Meldungen. Nur vollständige Base64-
+Zeilen zwischen Markern rekonstruiert; striktes Base64, gzip/tar-Prüfung und
+sicheres data-Filter-Entpacken erfolgreich. Bericht zusätzlich unabhängig gelesen:
+alle eigenen Runtime-Ausgänge0/response.ok; after/restored/unchanged vollständig
+==seeded; acceptedCrash.readback/protectedRead vollständig==continued;
+continued!=seeded. Damit Quellerhalt und spätere Arbeit explizit nachgewiesen.
+Kein Datenbank-/Dateifeld beim Vergleich entfernt. CI34340503082 weiterhin laufend,
+bisher kein fehlgeschlagener Job; kein Handoff/Main-Abschluss.
+
+Plan-Audit dieses Testfalls: bestanden. Roadmap-Audit: Phase5 NICHT abgeschlossen.
+Weiterhin Faultmatrix, Erststartfälle und andere Annahmen offen. Zusätzlich
+Codeprüfung findet denselben Node/AppRun-Fehler im stabilen Startpunkt:
+src/shared/maintenance/launcher.ts startet retained AppImage mit
+ELECTRON_RUN_AS_NODE=1. UI-Update relauncht Ziel direkt und deckt diesen Pfad nicht
+ab. Nächster Fixplan: stabilen Startpunkt auf direkt entpackte, hashgeprüfte
+Electron-Laufzeit umstellen, ohne AppRun im Node-Modus; Argumente/Exit/Cleanup und
+Recovery-Sperren bewahren, tatsächlichen installierten Start im Gast prüfen.
+Keine Behauptung, dass erfolgreicher UI-Fall bereits Desktopstart/Recovery beweist.
+
+### Phase 5 – Stabilen Startpunkt von AppRun entkoppeln
+
+Voriger Turn Fortschritt: kompletter UI-/accepted-crash-Fall bestanden, getrennte
+Launcher-Lücke benannt. Konkreter Fix: Shellstart prüft weiter Runtime/Helperhash,
+extrahiert zurückgehaltenes AppImage in eigenes temporäres Verzeichnis ohne
+AppRun/Node-Modus, prüft Runtimehash erneut und startet enthaltenes Electron
+im Node-Modus direkt. Shell erhält Exitcode/Argumente, räumt auch bei Signal auf;
+keine Änderung von Wartungsjournal/Profilsperren. Unit-Interpreterfixtures müssen
+AppImage-Extraktion statt direktem Node-Proxy modellieren. Danach tatsächlicher
+installierter Startpunkt im Gast; kein Ersatz durch direktes Zielrelaunch.
+
+Launcherfix implementiert: Hashprüfungen, direkte Extraktion, regular/non-symlink
+Laufzeit, Node-Ausführung ohne AppRun, Signaltraps und Cleanup.30684 terminalExit0:
+20Tests für Reader/Launcher inklusive Extraktionsfehler, fehlender Laufzeit,
+Helper-Exit23, Leerzeichen/Apostrophen, geerbten Startmodi und Tempbereinigung.
+Typ-/Lintlauf1785 separat nachverfolgt; echte installierte Gastlaufzeit und
+Signalprüfung noch nicht durch Unit-Erfolg ersetzt.
+
+### Phase 5 – Installierten Startpunkt mit vollständigem Profil prüfen
+
+Voriger Turn Fortschritt: Launcherfix und20gezielte Tests, Typen/Lint grün.
+Plan: eigenständiger Qualifier seedet Profil über tatsächliches Target-AppImage,
+installiert aktuellen Shellstart mit original verpacktem Helper, startet nur
+root/start, prüft sichtbare Version und reguläres Beenden, vergleicht danach
+vollständiges Profil und Temp-Cleanup. Gast-/cgroup-Guard zwingend. Separater
+Signaltest folgt, damit normaler Start nicht als Signal-/Recoverybeweis gilt.
+
+16353 terminal GastExit0, TestExit1: Starthelper meldet „Der Wartungsbeleg fehlt“.
+Kein Electronstartfehler, sondern unvollständiger Fixtureaufbau: Qualifier setzte
+nur current und installierte Launcher ohne Initialtransaktion. Fixplan: eigenes
+vollständig geschlossenes Seedprofil als Arbeitskopie bereitstellen, gemeinsamen
+MaintenanceCoordinator.begin/activate mit Profiljournal3 nutzen und Start NICHT
+im Test committen. Tatsächliche App muss über root/start die Startprüfung und
+committed-Übergang durchführen. Dann UI/Exit/Vollprofilvergleich wie geplant.
+
+41309 terminal GastExit0, TestExit1: „Keine bestätigte Installation vorhanden“.
+Quellprüfung admitDesktopStart erklärt dies: stabiler Desktopstart ruft rollback
+für unbestätigte Wartung auf; eine Erstinstallation ohne previous darf daher
+nicht über ihn bestätigt werden. Zweiter Fixtureaufbau ebenfalls unzutreffend,
+kein neuer Produktfehler belegt. Typprüfung40559 bestanden, ursprünglicher
+Qualifierlint leer; beide Gastfehler bleiben dokumentiert.
+
+Korrekturplan: authentischen Installationsabschluss nachbilden: begin/activate,
+direkter Ziel-AppImage-Start mit --release-complete <Transaktion> wie produktiver
+Controller, App selbst committed prüfen und regulär schließen. Erst anschließend
+root/start mit original verpacktem Helper starten, Version/Profil/Cleanup prüfen.
+Kein manuelles Journal-commit im Test; stabile Recovery-Semantik nicht lockern.
+Zusätzlich abgewiesene fehlende/unbestätigte Installation später als eigene
+Negativfälle behalten, nicht als normalen Start auswerten. Phase5 offen.
+
+82214 terminal GastExit0, TestExit1. Initialer direkter Zielstart bestätigt die
+Installation und endet0. Danach root/start scheitert konkret mit fehlender
+libfuse.so.2. Ursache der Launcheränderung: APPIMAGE_EXTRACT_AND_RUN wurde auch
+beim direkten Nodebinary entfernt; der echte Helper übernimmt sein Environment
+für den späteren AppImage-Appstart. Fixplan: nur bei Extraktion entfernen, bei
+direkt ausgeführtem Nodebinary ausdrücklich1 setzen (dieses führt kein AppRun aus).
+Regression muss diese vererbte FUSE-freie Appstartoption prüfen. Danach neuer
+Gastlauf, ohne FUSE zu installieren und damit den Produktfehler zu verdecken.
+
+65452 Exit0:6Launcher-Unitfälle inklusive FUSE-freier Environmentweitergabe.
+Gast47872 terminal GastExit0 UND TestExit0: installierter Startpfad bestanden.
+Bericht work/qualification-vm/launcher-run-4/evidence/qualification/
+installed-launcher-evidence.json SHA256
+e6f7af9f3b2a0c5427a1e238038d422244272f53a604e165e54d76a004a6fbd2.
+Initialer echter Zielstart bestätigt Installation (committed), endet0;
+anschließendes root/start mit originalem AppImage/Helper endet0, sichtbare
+Version0.0.149, vollständiger Nachherstand gleich Seed, keine salt-launcher-
+Tempverzeichnisse. Bericht unabhängig geparst und Profil/Journal/Exit geprüft.
+FUSE wurde nicht nachinstalliert. Payload enthält ausdrücklich uncommitteten
+Launcherfix; kein falscher exact-SHA-AppImagebuildnachweis.
+
+CI34340503082 auf796c3017d jetzt completed success. Diese CI umfasst NICHT die
+noch uncommittierten Launcher-/Qualifieränderungen. Plan-Audit normaler Start:
+bestanden. Signalabbruch des echten Starthelfers und Wiederherstellungsfälle
+bleiben separat offen; Phase5-Faultmatrix sowie erneute Candidate/Handoff/Main-
+Gates nach Produktänderung weiterhin erforderlich. Kein Phasenabschluss.
+
+### Phase 5 – Signalabbruch des bestätigten Startpunkts
+
+Voriger Turn Fortschritt: echter stabiler Start und vollständiger Datenvergleich
+bestanden. Plan: optionaler --signal-abort-Fall nach regulärem erfolgreichen Start:
+erneut root/start, sichtbare Bereitschaft, SIGTERM ausschließlich an Starter-PID,
+Exit143 und keine verbleibenden Testprozesse binnen10s. Journal bleibt committed,
+Tempverzeichnisse weg; danach voller Readback und erneuter regulärer Start mit
+Beenden. Nicht durch Kill aller Prozesse als erfolgreichen Signalpfad ersetzen.
+Fehlercleanup bleibt getrennt und zählt nicht als Abnahme.
+
+Signaltest33878 terminal GastExit0, TestExit1: nach10s verbleiben8Testprozesse
+(1198,1200,1203,1204,1225,1229,1256,1262). Cleanup separat im Gast; kein Pass.
+Fixplan: direkte Node-Laufzeit durch setsid in eigene Prozessgruppe starten;
+Starter-Signal beendet diese Gruppe statt nur unmittelbaren Node-PID, sodass
+spawnSync-Kinder nicht übrig bleiben. Rückgabecode/normaler Start unverändert,
+keine globalen Prozessnamenkills. Launcher-Units und echter Signal-/Neustartfall
+wiederholen. Typen/Lint des erweiterten Qualifiers zuvor bestanden.
+
+81930 Exit0:6Launcher-Unitfälle nach Prozessgruppenfix.31061 terminal GastExit0
+UND TestExit0: ursprünglicher Normalstart, SIGTERM nuranStarter, Exit143,
+keine erkannten Testprozesse binnen10s, Tempbereinigung, erneuter Normalstart
+und vollständiger Profilvergleich bestanden. ReportSHA256
+9a9e8f3571952d0879ae2262b86e73ffecf3788c4fbc515ce42955a6071a4084 unter
+work/qualification-vm/launcher-run-6/evidence/qualification/
+installed-launcher-evidence.json. Unabhängiger Berichtvergleich bestätigt
+seeded==after und committed; signalAbort={code:143,signal:null}. Fehlercleanup
+war nicht Teil des erfolgreichen Abbruchnachweises. AppImage0.0.149 unverändert,
+installierter Shellfix weiterhin als uncommittierte Testeingabe gekennzeichnet.
+
+Plan-Audit des Signal-nach-Bereitschaft-Falls: bestanden. Kein Nachweis für Signale
+während Extraktion/Prozessgruppenanlage oder SIGKILL innerhalb Migration. Phase5
+bleibt offen; übrige Faultmatrix und exakte neue CI/Handoff/Main-Gates fehlen.
+
+### Phase 5 – Unterbrechung während Launcher-Extraktion
+
+Voriger Turn Fortschritt: Signal nach UI-Bereitschaft korrigiert und Gastpass.
+Jetzt fokussierter Regressionstest mit langsamem synthetischem Extraktor (nur
+Node, keine GUI): nach sicherem Extraktionsbeginn SIGTERM nuranStarter, binnen3s
+Exit143, Extraktor beendet, Tempverzeichnis weg. Vorher-/Nachhernachweis. Falls
+Vordergrund-Warten verzögert reagiert, Extraktion ebenfalls in eigene Prozess-
+gruppe mit unterbrechbarem wait überführen. Keine Änderung am Profiljournal.
+
+60397 terminalExit1: neuer Test scheitert genau an ausbleibendem Exit143 nach3s,
+6bestehende Fälle bestehen. Diagnosecleanup beendet nur bekannte Test-PIDs.
+Bestätigter Fix: Entpacken asynchron mit setsid --wait, salt_child während
+Extraktion gesetzt; Waitstatus prüfen, danach Identität leeren. Cleanup versucht
+zuerst Prozessgruppe, vor Gruppenanlage fallback unmittelbarer eigener Kind-PID.
+
+59996:21gezielte Reader-/Launcherfälle bestanden; neuer Extraktions-Signaltest
+nun grün nach vorherigem Fehlbeleg. Extraktor nicht mehr lebend, Starter143,
+Tempverzeichnis weg. Lint ohne Befund; vollständige Typprüfung im selben Lauf.
+Dies ist ein synthetischer Nicht-GUI-Extraktionsabbruch, kein zusätzlicher echter
+AppImage-Migrationsabbruch. Normal-/Signal-Gastfall auf finalem Launcherstand
+nochmals erforderlich, anschließend Quelle/CI sichern und Faultmatrix fortsetzen.
+Phase5 weiterhin offen; keine anderen Profildaten angefasst.
+
+### Phase 5 – Finaler Launcher-Gastlauf: UI-Timeout diagnostizieren
+
+Fortsetzung nach erneuter Desktop-Diagnose: alter D-Bus-/EMFILE-Befund bestätigt;
+keine Host-GUI-Tests autorisiert. Lauf39900 ist terminal, QEMUExit0 aber
+QUALIFICATION_TEST_EXIT=1. launcher-run-7 exportierte Logs zeigen erfolgreiche
+Installationsbestätigung sowie gestarteten Main/Utility beim stabilen Start,
+anschließend Timeout der sichtbaren Versionsanzeige. Kein Pass und kein Beleg
+für einen Extraktionsfehler. Export separat unter launcher-run-7/evidence gelesen.
+
+Korrekturrundenplan vor Änderung: Qualifier speichert beim Fehler aktuelle Stufe,
+sichtbaren DOM-Text, Screenshot (als JSON für bestehenden Export), Journal und
+zugeordnete Prozess-IDs. Diagnostikfehler dürfen Originalfehler nicht ersetzen.
+Assertions bleiben unverändert. Danach gezielte Typ-/Lintprüfung und ein neuer
+begrenzter Gastlauf mit gleicher unveränderter AppImage-Datei. Erst dessen
+Bild-/Textnachweis entscheidet über Produkt- oder Treiberkorrektur.
+Plan-Audit: letzter Signal-Regressionstest grün, aktueller vollständiger Gastlauf
+rot; Roadmap-Audit: Phase5 weiterhin offen, spätere Phasen nicht begonnen.
+
+14067 terminal: launcher-run-8 GastExit0, TestExit1 erneut beim ersten stabilen
+Start. launcher-failure.json zeigt committed und vollständige Kampagnenübersicht,
+keinen geöffneten Einstellungsdialog. Screenshot failure.png visuell geprüft:
+Einstellungen unten rechts, keine Fehleransicht/überlagernder Dialog. Main lädt
+Fenster zunächst verborgen und zeigt erst bei ready-to-show; CDP-Verfügbarkeit
+allein ist keine sichtbare Startbereitschaft. Qualifier klickt bislang unmittelbar
+nach CDP-Verbindung. Kausalität noch Hypothese, nicht als Produktfehler verbuchen.
+
+Fixplan: Im installierten Launcherfall vor jeder Settings-Interaktion auf sichtbares
+Dokument und geladene Kampagnenauswahl warten. Dieser Fall hat explizit gesäten
+Kampagnenstand; Recoveryfälle behalten andere Bereitschaftskriterien. Kein
+wiederholtes Blindklicken, keine längeren Timeouts, kein direkter DOM-click oder
+Capability-Aufruf. Diagnose bleibt aktiv; gleicher finaler Launcher/AppImagestand
+in frischem Gast muss Normalstart, Signal, Neustart und Datenvergleich bestehen.
+
+29211 terminal: launcher-run-9 TestExit1 nach29s, sichtbare Dokumentprüfung
+bestand, nachfolgende Textprüfung scheiterte an document.body=null. Damit ist
+vorzeitiger DOM-Zugriff konkret belegt, nicht nur vermutet. Fixplan: text() liest
+fehlenden Body als leeren Ladezustand, sodass bestehendes begrenztes expectText
+weiter wartet. Andere DOM-Ausnahmen bleiben Fehler. Keine Timeoutverlängerung.
+Danach erneuter Gastfall und gezielte Typ-/Lintprüfung des gemeinsamen Treibers.
+
+86738 terminal: launcher-run-10 QEMUExit0 UND TestExit0 nach46s. Bericht
+installed-launcher-evidence.json SHA256
+978b2febb8249832ebb533509c50704fd9bc6541456d97023182c2cc5b022980.
+Unabhängig aus Export validiert: gesamter fachlicher seeded/readback-Inhalt gleich,
+committed, normaler LauncherExit0, SIGTERM nuranStarter ergibt143, anschließender
+regulärer Neustart und Beenden erfolgreich. Assertions für Prozessende und
+Tempbereinigung bestanden. Finaler Launcher mit asynchroner Extraktion unverändert
+gegenüber run7; nur belegte Test-Bereitschaft/Diagnostik korrigiert. Originales
+AppImage0.0.149 hashgleich, Quelle als uncommittierte Qualifiereingabe deklariert.
+
+Plan-Audit Launcher-Normal-/Signal-/Neustartfall nun bestanden. Roadmap-Audit:
+Phase5 bleibt offen; echte Migrations-/Aktivierungs-SIGKILL-Matrix und weitere
+Fehlerfälle sowie neue exakte CI/Handoff/Main-Gates fehlen. Keine Freigabe einer
+Installation auf dem Desktop oder Veröffentlichung aus diesem Nachweis.
+
+39780 terminalExit0: 21 Reader-/Launcher-Unitfälle, gezielter ESLint und beide
+vollständigen TypeScript-Projekte bestanden. Begrenzter Host-Nicht-GUI-Service
+salt-marcher-launcher-final-check; Log work/roadmap-phase5-launcher-current-check.log.
+Vorheriger versehentlicher pnpm11-Aufruf brach vor Dependencies-Purge ab; korrekt
+wiederholt über explizites Node22/corepack/pnpm10, kein Install-/Purge-Override.
+Änderungsstand wird als Candidate gesichert; kein Main-/Handoffabschluss daraus.

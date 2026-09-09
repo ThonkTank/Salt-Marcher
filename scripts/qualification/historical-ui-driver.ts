@@ -256,7 +256,9 @@ export class HistoricalUiDriver {
     await this.command('Input.insertText', { text: value })
   }
   async text(): Promise<string> {
-    return z.string().parse(await this.inspect('document.body.innerText'))
+    return z
+      .string()
+      .parse(await this.inspect('document.body?.innerText ?? ""'))
   }
   async expectText(text: string): Promise<void> {
     await waitFor(
