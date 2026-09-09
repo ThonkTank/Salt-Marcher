@@ -1,5 +1,5 @@
-const conflictText =
-  'Die Reise oder Szene wurde inzwischen geändert. Bitte den alten Auftrag verwerfen und neu prüfen.'
+import { message } from '../../i18n/session-runtime.de.js'
+const conflictText = message('travel.commandConflict')
 import type { HexTravelCommand } from '../../../shared/contracts/hex-travel-command.js'
 import type { HexTravelCommandState } from '../../../shared/contracts/hex-travel-command.js'
 import type { HexTravelCommandReceipt } from '../../../shared/contracts/hex-travel-command.js'
@@ -75,7 +75,7 @@ export class HexTravelCommandController {
   private retainDetachedAttempt(): void {
     if (this.attached || !this.held() || this.unregister) return
     this.unregister = this.maintenance.register(this.ownerId, {
-      label: 'Reiseaktionen',
+      label: message('travel.commands'),
       isDirty: this.held,
       save: this.save,
       discard: this.discard
@@ -149,9 +149,7 @@ export class HexTravelCommandController {
       this.publish({
         uncertain: false,
         conflict,
-        error: conflict
-          ? conflictText
-          : 'Der Reiseauftrag wurde nicht ausgeführt. Erneut versuchen oder verwerfen.'
+        error: conflict ? conflictText : message('travel.commandAbsent')
       })
       return true
     })

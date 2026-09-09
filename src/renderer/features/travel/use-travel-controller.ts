@@ -1,3 +1,5 @@
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { useCallback, useMemo } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
@@ -9,6 +11,7 @@ import { useTravelQueries } from './use-travel-queries.js'
 import { useTravelRemoteReconciliation } from './use-travel-remote-reconciliation.js'
 
 export type TravelController<P, S, M, E> = Readonly<{
+  busy: boolean
   state: TravelControllerState<P, S, M, E>
   selectMap: (mapId: string) => Promise<void>
   selectPosition: (position: P) => void
@@ -32,8 +35,17 @@ export function useTravelController<P, S, M, E>(options: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
   active: boolean
+  commandBusy?: boolean
+  commandsBlocked?: () => boolean
   presentation?: { mapId: string | null; selected: P | null }
 }): TravelController<P, S, M, E> {
+  const { commandsBlocked } = options
+  const maintenance = useMaintenanceEditingBlocked()
+  const blocked = useCallback(
+    () =>
+      maintenanceDraftCoordinator.isLocked() || commandsBlocked?.() === true,
+    [commandsBlocked]
+  )
   const coordinator = useAsyncCommandCoordinator()
   const projection = useTravelViewProjection<P, S, M, E>({
     snapshot: options.snapshot,
@@ -60,8 +72,9 @@ export function useTravelController<P, S, M, E>(options: {
     projection,
     onError: options.onError
   })
+  const selectMap = queries.selectMap
   const commands = useTravelCommands({
-    coordinator,
+    blocked,
     port: options.port,
     scope,
     projection,
@@ -81,6 +94,7 @@ export function useTravelController<P, S, M, E>(options: {
 
   const activatePosition = useCallback(
     (position: P) => {
+      if (blocked()) return
       const current = projection.read()
       if (
         !options.port ||
@@ -95,17 +109,22 @@ export function useTravelController<P, S, M, E>(options: {
       else if (current.mode === 'position') void positionParty(position)
       else projection.local({ type: 'selected', position }, 'intent')
     },
-    [options.port, positionParty, projection]
+    [blocked, options.port, positionParty, projection]
   )
 
   return useMemo(
     () => ({
+      busy: maintenance || options.commandBusy === true,
       state: projection.state,
-      selectMap: queries.selectMap,
+      selectMap: async (mapId: string) => {
+        if (!blocked()) await selectMap(mapId)
+      },
       selectPosition: (position: P) =>
+        !blocked() &&
         projection.local({ type: 'selected', position }, 'intent'),
       activatePosition,
       togglePlanning: () =>
+        !blocked() &&
         projection.local(
           {
             type: 'mode',
@@ -114,6 +133,7 @@ export function useTravelController<P, S, M, E>(options: {
           'route'
         ),
       togglePositioning: () =>
+        !blocked() &&
         projection.local(
           {
             type: 'mode',
@@ -121,9 +141,12 @@ export function useTravelController<P, S, M, E>(options: {
           },
           'route'
         ),
-      clearRoute: () => projection.local({ type: 'route-cleared' }, 'route'),
+      clearRoute: () => {
+        if (!blocked()) projection.local({ type: 'route-cleared' }, 'route')
+      },
       readViewport: queries.readViewport,
       previewToken: (position: P | null) =>
+        !blocked() &&
         projection.local({ type: 'token-preview', position }, 'transient'),
       dropToken: (position: P) => void positionParty(position),
       start,
@@ -133,12 +156,15 @@ export function useTravelController<P, S, M, E>(options: {
     }),
     [
       activatePosition,
+      blocked,
+      maintenance,
+      options.commandBusy,
       abort,
       pauseOrResume,
       positionParty,
       projection,
       queries.readViewport,
-      queries.selectMap,
+      selectMap,
       start,
       stepMultiplier
     ]

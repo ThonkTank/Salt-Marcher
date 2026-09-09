@@ -39,77 +39,48 @@ type ReadResult = TravelProviderReadResult<ProviderState>
 afterEach(cleanup)
 
 describe('Travel async controller boundaries', () => {
-  it('retries only a definitely stale Pause once against a fresh travelling revision', async () => {
-    const fixture = createFixture()
-    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
-    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 2, 'travelling'))
-    fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
-    fixture.execute.mockResolvedValueOnce(travelResult('scene-a', 3, 'paused'))
-    render(fixture.harness())
-    await expectState('provider:1')
-    await act(async () => fixture.controller().pauseOrResume())
-    expect(fixture.execute.mock.calls.map(([command]) => command)).toEqual([
-      { kind: 'pause', sceneId: 'scene-a', expectedRevision: 1 },
-      { kind: 'pause', sceneId: 'scene-a', expectedRevision: 2 }
-    ])
-    await expectState('provider:3')
-    expect(fixture.onError).not.toHaveBeenCalled()
-  })
-
-  it.each(['paused', 'completed'])(
-    'does not replay a stale Pause when readback is already %s',
-    async (status) => {
+  it.each(['stale', 'outcome_unknown'] as const)(
+    'delegates %s recovery to the owner without retrying Pause',
+    async (code) => {
       const fixture = createFixture()
       fixture.read.mockResolvedValueOnce(
         travelResult('scene-a', 1, 'travelling')
       )
-      fixture.read.mockResolvedValueOnce(travelResult('scene-a', 2, status))
-      fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
+      fixture.execute.mockRejectedValueOnce(new CapabilityError(code, true))
       render(fixture.harness())
       await expectState('provider:1')
       await act(async () => fixture.controller().pauseOrResume())
-      expect(fixture.execute).toHaveBeenCalledTimes(1)
-      if (status === 'paused') {
-        await expectState('provider:2')
-        expect(fixture.onError).not.toHaveBeenCalled()
-      } else expect(fixture.onError).toHaveBeenCalledTimes(1)
+      expect(fixture.execute).toHaveBeenCalledExactlyOnceWith({
+        kind: 'pause',
+        sceneId: 'scene-a',
+        expectedRevision: 1,
+        expectedSceneRevision: 1
+      })
+      expect(fixture.read).toHaveBeenCalledOnce()
+      expect(fixture.onError).toHaveBeenCalledOnce()
     }
   )
 
-  it('never replays Pause after an unknown outcome', async () => {
-    const fixture = createFixture()
-    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
-    fixture.execute.mockRejectedValueOnce(
-      new CapabilityError('outcome_unknown', true)
-    )
-    render(fixture.harness())
-    await expectState('provider:1')
-    await act(async () => fixture.controller().pauseOrResume())
-    expect(fixture.execute).toHaveBeenCalledTimes(1)
-    expect(fixture.read).toHaveBeenCalledTimes(1)
-    expect(fixture.onError).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not retry a stale Pause after leaving its scene during fresh readback', async () => {
+  it('does not publish a late write failure into another scene', async () => {
     const pending = deferred<ReadResult>()
     const fixture = createFixture()
     fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
-    fixture.read.mockImplementationOnce(() => pending.promise)
     fixture.read.mockResolvedValueOnce(result('scene-b', 4, 'map-b'))
-    fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
+    fixture.execute.mockImplementationOnce(() => pending.promise)
     const view = render(fixture.harness())
     await expectState('provider:1')
     act(() => {
       void fixture.controller().pauseOrResume()
     })
-    await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fixture.execute).toHaveBeenCalledOnce())
     view.rerender(fixture.harness(snapshot('scene-b', 4)))
     await expectState('provider:4')
-    pending.resolve(travelResult('scene-a', 2, 'travelling'))
-    await act(async () => pending.promise)
-    expect(fixture.execute).toHaveBeenCalledTimes(1)
+    pending.reject(new CapabilityError('outcome_unknown', true))
+    await act(async () => {
+      await pending.promise.catch(() => undefined)
+    })
+    expect(fixture.execute).toHaveBeenCalledOnce()
     expect(fixture.onError).not.toHaveBeenCalled()
-    await expectState('provider:4')
   })
 
   it('accepts only the newest out-of-order Context response', async () => {
@@ -206,33 +177,57 @@ describe('Travel async controller boundaries', () => {
     expect(fixture.unsubscribe).toHaveBeenCalled()
   })
 
-  it('preserves FIFO command order and exposes a domain failure', async () => {
+  it('blocks additional commands while the owner is held instead of queueing them', async () => {
     const first = deferred<ReadResult>()
-    const second = deferred<ReadResult>()
     const fixture = createFixture()
     fixture.read.mockResolvedValue(result('scene-a', 1, 'map-a'))
-    fixture.execute.mockImplementationOnce(() => first.promise)
-    fixture.execute.mockImplementationOnce(() => second.promise)
+    fixture.execute.mockImplementationOnce(() => {
+      fixture.block()
+      return first.promise
+    })
     render(fixture.harness())
     await expectState('provider:1 map:map-a')
-
     act(() => fixture.controller().dropToken({ id: 'position-1' }))
-    await waitFor(() => expect(fixture.execute).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(fixture.execute).toHaveBeenCalledOnce())
     act(() => fixture.controller().dropToken({ id: 'position-2' }))
-    await act(async () => await Promise.resolve())
-    expect(fixture.execute).toHaveBeenCalledTimes(1)
+    act(() => {
+      fixture.controller().togglePlanning()
+      fixture.controller().clearRoute()
+      fixture.controller().activatePosition({ id: 'position-3' })
+    })
+    first.reject(new CapabilityError('outcome_unknown', true))
+    await waitFor(() => expect(fixture.onError).toHaveBeenCalledOnce())
+    expect(fixture.execute).toHaveBeenCalledOnce()
+    expect(fixture.controller().state.selected).toEqual({ id: 'position-1' })
+    expect(fixture.controller().state.mode).toBe('inspect')
+  })
 
-    first.reject({ code: 'stale' })
-    await waitFor(() => expect(fixture.execute).toHaveBeenCalledTimes(2))
-    expect(fixture.onError).toHaveBeenCalledTimes(1)
-    expect(screen.getByTestId('travel-state')).not.toHaveTextContent('error:-')
+  it('accepts a newer scene after position resets its journey revision', async () => {
+    const fixture = createFixture()
+    fixture.read.mockResolvedValue(result('scene-a', 5, 'map-a', 'old', 5))
+    fixture.execute.mockResolvedValue(
+      result('scene-a', 0, 'map-a', 'positioned', 6)
+    )
+    render(fixture.harness(snapshot('scene-a', 5)))
+    await expectState('provider:5')
+    act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    await expectState('provider:0 map:map-a marker:positioned')
+  })
 
-    second.resolve(result('scene-a', 2, 'map-a'))
-    await expectState('provider:2 map:map-a')
-    expect(fixture.execute.mock.calls.map(([command]) => command)).toEqual([
-      expect.objectContaining({ position: { id: 'position-1' } }),
-      expect.objectContaining({ position: { id: 'position-2' } })
-    ])
+  it('accepts a reset journey after the workspace has already refreshed to the newer scene', async () => {
+    const pending = deferred<ReadResult>()
+    const fixture = createFixture()
+    fixture.read.mockResolvedValue(result('scene-a', 5, 'map-a', 'old', 5))
+    fixture.execute.mockImplementationOnce(() => pending.promise)
+    const view = render(fixture.harness(snapshot('scene-a', 5)))
+    await expectState('provider:5')
+    act(() => fixture.controller().dropToken({ id: 'position-1' }))
+    view.rerender(fixture.harness(snapshot('scene-a', 6)))
+    await act(async () => {
+      pending.resolve(result('scene-a', 0, 'map-a', 'fresh', 6))
+      await pending.promise
+    })
+    await expectState('provider:0 map:map-a marker:fresh')
   })
 
   it('terminates pending work on unmount without publishing late results', async () => {
@@ -252,6 +247,7 @@ describe('Travel async controller boundaries', () => {
 })
 
 function createFixture() {
+  let blocked = false
   let listener:
     | Parameters<
         TravelProviderPort<
@@ -303,7 +299,8 @@ function createFixture() {
       snapshot: props.snapshot,
       setSnapshot,
       onError,
-      active: true
+      active: true,
+      commandsBlocked: () => blocked
     })
     const state = currentController.state
     return (
@@ -315,6 +312,9 @@ function createFixture() {
   }
 
   return {
+    block: () => {
+      blocked = true
+    },
     read,
     execute,
     setSnapshot,

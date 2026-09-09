@@ -203,8 +203,19 @@ architectureGate(
     const commands = readTypeScriptModule(
       'src/renderer/features/travel/use-travel-commands.ts'
     )
-    expect(commands.stringLiterals).toContain('queue')
-    expect(commands.stringLiterals).toContain('travel.command')
+    expect(commands.stringLiterals).not.toContain('queue')
+    expect(hasCall(commands, 'execute')).toBe(true)
+    const owner = readTypeScriptModule(
+      'src/renderer/features/hex/use-hex-travel-command-owner.tsx'
+    )
+    expect(hasCall(owner, 'useMaintenanceDraft')).toBe(true)
+    expect(hasCall(owner, 'useSyncExternalStore')).toBe(true)
+    expect(owner.identifiers.has('HexTravelCommandController')).toBe(true)
+    const integration = readTypeScriptModule(
+      'src/renderer/features/workspace/integrations/session-travel.tsx'
+    )
+    expect(hasCall(integration, 'useHexTravelCommandPort')).toBe(true)
+    expect(hasCall(integration, 'useHexTravelCommandOwner')).toBe(true)
 
     const reconciliation = readTypeScriptModule(
       'src/renderer/features/travel/use-travel-remote-reconciliation.ts'

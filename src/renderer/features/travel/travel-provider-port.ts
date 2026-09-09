@@ -18,33 +18,37 @@ export type TravelProviderInvalidation =
   | Readonly<{ kind: 'map'; mapId: string }>
   | Readonly<{ kind: 'supporting-data' }>
 
-export type TravelProviderCommand<P> =
-  | Readonly<{
-      kind: 'position'
-      sceneId: string
-      mapId: string
-      position: P
-      expectedSceneRevision: number
-    }>
-  | Readonly<{
-      kind: 'start'
-      sceneId: string
-      mapId: string
-      waypoints: readonly P[]
-      multiplier: TravelMultiplier
-      expectedRevision: number
-    }>
-  | Readonly<{
-      kind: 'pause' | 'resume' | 'abort'
-      sceneId: string
-      expectedRevision: number
-    }>
-  | Readonly<{
-      kind: 'set-multiplier'
-      sceneId: string
-      multiplier: TravelMultiplier
-      expectedRevision: number
-    }>
+export type TravelProviderCommand<P> = Readonly<{
+  expectedSceneRevision: number
+}> &
+  (
+    | Readonly<{
+        kind: 'position'
+        sceneId: string
+        mapId: string
+        position: P
+        expectedSceneRevision: number
+      }>
+    | Readonly<{
+        kind: 'start'
+        sceneId: string
+        mapId: string
+        waypoints: readonly P[]
+        multiplier: TravelMultiplier
+        expectedRevision: number
+      }>
+    | Readonly<{
+        kind: 'pause' | 'resume' | 'abort'
+        sceneId: string
+        expectedRevision: number
+      }>
+    | Readonly<{
+        kind: 'set-multiplier'
+        sceneId: string
+        multiplier: TravelMultiplier
+        expectedRevision: number
+      }>
+  )
 
 export type TravelProviderReadResult<S> = Readonly<{
   providerState: S

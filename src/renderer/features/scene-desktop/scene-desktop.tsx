@@ -376,6 +376,7 @@ export function SceneDesktop(
       {sceneTransition.dialog}
       {sceneDialog}
       {sceneNotice}
+      {props.travel.notice}
       <SessionDialogHost
         model={model}
         actions={actions}

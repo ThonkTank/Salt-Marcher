@@ -40,7 +40,8 @@ export function TravelScenario(props: {
   const pauseOrResume =
     state.travel?.status === 'paused' || state.travel?.status === 'blocked'
   const travelActive = activeTravelStatuses.has(state.travel?.status ?? '')
-  const mutationsEnabled = props.controller.state.lifecycle === 'ready'
+  const mutationsEnabled =
+    props.controller.state.lifecycle === 'ready' && !props.controller.busy
   const multiplierIndex = multipliers.indexOf(state.multiplier)
   const currentLocation =
     state.travel?.locationName ||
@@ -82,7 +83,11 @@ export function TravelScenario(props: {
         <select
           aria-label={message('ui.hex.karte')}
           value={state.map?.map.id ?? ''}
-          disabled={!state.catalog || state.catalog.maps.length === 0}
+          disabled={
+            props.controller.busy ||
+            !state.catalog ||
+            state.catalog.maps.length === 0
+          }
           onChange={(event) => void state.selectMap(event.target.value)}
         >
           {!state.catalog ? (
@@ -113,13 +118,16 @@ export function TravelScenario(props: {
           <button
             className="primary-action"
             aria-pressed={state.mode === 'plan'}
-            disabled={!state.map}
+            disabled={props.controller.busy || !state.map}
             onClick={() => activateMapMode(state.togglePlanning)}
           >
             {message('ui.route.planen')}
           </button>
           <button
-            disabled={state.waypoints.length === 0 && !state.evaluation}
+            disabled={
+              props.controller.busy ||
+              (state.waypoints.length === 0 && !state.evaluation)
+            }
             onClick={state.clearRoute}
           >
             {message('ui.loeschen')}
@@ -317,7 +325,9 @@ export function SessionHexMap(props: {
         route={route}
         overlays={overlays}
         draggableToken={
-          props.controller.state.lifecycle === 'ready' ? token : null
+          props.controller.state.lifecycle === 'ready' && !props.controller.busy
+            ? token
+            : null
         }
         onTokenDrag={state.previewToken}
         onTokenDrop={state.dropToken}

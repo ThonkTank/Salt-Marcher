@@ -1,5 +1,16 @@
+import { useHexTravelCommandPort } from '../../hex/use-hex-travel-command-port.js'
+import { useHexTravelCommandOwner } from '../../hex/use-hex-travel-command-owner.js'
+import type { HexTravelCommandState } from '../../../../shared/contracts/hex-travel-command.js'
 import type { DesktopMapView } from '../../../../shared/contracts/scene-desktop.js'
-import { useEffect, useMemo, useState, type ComponentType } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType
+} from 'react'
 import type { LiveSessionSnapshot } from '../../../../shared/contracts/live-session.js'
 import type {
   HexTravelController,
@@ -32,6 +43,7 @@ const loadScenario = () =>
   }))
 
 export function useSessionTravelIntegration(options: {
+  campaignId: string
   snapshot: LiveSessionSnapshot
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
@@ -49,27 +61,56 @@ export function useSessionTravelIntegration(options: {
     presentation,
     presentationChanged
   } = options
+  const onErrorRef = useRef(onError)
+  useLayoutEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
   const api = useCapabilityApi()
-  const [port, setPort] = useState<HexTravelProviderPort | null>(null)
-
+  const [loaded, setLoaded] = useState<{
+    owner: object
+    port: HexTravelProviderPort
+  } | null>(null)
+  const portRef = useRef<HexTravelProviderPort | null>(null)
+  const original = useHexTravelCommandPort(
+    options.campaignId,
+    snapshot.scene.focusedSceneId
+  )
+  const recovered = useCallback(
+    (state: HexTravelCommandState) => {
+      setSnapshot(state.context.session)
+      portRef.current?.acceptRecovery(state)
+    },
+    [setSnapshot]
+  )
+  const commands = useHexTravelCommandOwner(original, recovered)
+  const port = loaded?.owner === commands.executor ? loaded.port : null
+  useLayoutEffect(() => {
+    portRef.current = port
+  }, [port])
   useEffect(() => {
-    if (!active || port) return
+    if (!active) return
     let current = true
+    let owned: HexTravelProviderPort | null = null
     void import('../../hex/hex-travel-provider-port.js').then(
       (module) => {
-        if (current) setPort(module.createHexTravelProviderPort(api))
+        if (!current) return
+        owned = module.createHexTravelProviderPort(api, commands.executor)
+        setLoaded({ owner: commands.executor, port: owned })
       },
-      (cause: unknown) => onError(capabilityErrorText(cause))
+      (cause: unknown) => {
+        if (current) onErrorRef.current(capabilityErrorText(cause))
+      }
     )
     return () => {
       current = false
+      owned?.dispose()
     }
-  }, [active, api, onError, port])
-
-  useEffect(() => () => port?.dispose(), [port])
+  }, [active, api, commands.executor])
 
   const controller = useTravelController({
     port,
+    commandBusy: commands.busy,
+    commandsBlocked: commands.blocked,
     snapshot,
     setSnapshot,
     onError,
@@ -122,6 +163,7 @@ export function useSessionTravelIntegration(options: {
 
   return useMemo(
     () => ({
+      notice: commands.notice,
       renderMap: (
         presentation?: Parameters<SessionTravelSlots['renderMap']>[0]
       ) => (
@@ -142,6 +184,6 @@ export function useSessionTravelIntegration(options: {
         />
       )
     }),
-    [common, controller]
+    [commands.notice, common, controller]
   )
 }

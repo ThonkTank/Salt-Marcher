@@ -89,13 +89,21 @@ function fixture() {
     },
     hexTravel
   } as unknown as HexCapabilities
-  return { capabilities, hexTravel, sessionRead }
+  const state = {
+    context: result,
+    routePlan: { sceneId, revision: 0, plan: null }
+  }
+  const executor = {
+    execute: vi.fn().mockResolvedValue(state),
+    refresh: vi.fn().mockResolvedValue(state)
+  }
+  return { capabilities, hexTravel, sessionRead, executor }
 }
 
 describe('Hex travel provider port', () => {
   it('bootstraps one consistent provider/session projection', async () => {
     const test = fixture()
-    const port = createHexTravelProviderPort(test.capabilities)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
     await expect(port.read({ sceneId })).resolves.toMatchObject({
       providerState: { travel },
       session
@@ -109,7 +117,7 @@ describe('Hex travel provider port', () => {
 
   it('translates every generic command without a follow-up session read', async () => {
     const test = fixture()
-    const port = createHexTravelProviderPort(test.capabilities)
+    const port = createHexTravelProviderPort(test.capabilities, test.executor)
     await port.read({ sceneId })
     await port.execute({
       kind: 'position',
@@ -124,47 +132,74 @@ describe('Hex travel provider port', () => {
       mapId,
       waypoints: [{ q: 2, r: 0 }],
       multiplier: 2,
-      expectedRevision: 4
+      expectedRevision: 4,
+      expectedSceneRevision: 3
     })
     for (const kind of ['pause', 'resume', 'abort'] as const)
-      await port.execute({ kind, sceneId, expectedRevision: 4 })
+      await port.execute({
+        kind,
+        sceneId,
+        expectedRevision: 4,
+        expectedSceneRevision: 3
+      })
     await port.execute({
       kind: 'set-multiplier',
       sceneId,
       multiplier: 5,
-      expectedRevision: 4
-    })
-
-    expect(test.hexTravel.position).toHaveBeenCalledWith({
-      sceneId,
-      mapId,
-      coordinate: { q: 1, r: 0 },
+      expectedRevision: 4,
       expectedSceneRevision: 3
     })
-    expect(test.hexTravel.start).toHaveBeenCalledWith({
-      sceneId,
-      mapId,
-      waypoints: [{ q: 2, r: 0 }],
-      multiplier: 2,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.pause).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.resume).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.abort).toHaveBeenCalledWith({
-      sceneId,
-      expectedRevision: 4
-    })
-    expect(test.hexTravel.setMultiplier).toHaveBeenCalledWith({
-      sceneId,
-      multiplier: 5,
-      expectedRevision: 4
-    })
+
+    const submitted = test.executor.execute.mock.calls.map(
+      ([input]) => input as { commandId: string; command: unknown }
+    )
+    expect(new Set(submitted.map((input) => input.commandId)).size).toBe(6)
+    for (const input of submitted)
+      expect(input.commandId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(submitted.map((input) => input.command)).toEqual([
+      {
+        kind: 'position',
+        input: {
+          sceneId,
+          mapId,
+          coordinate: { q: 1, r: 0 },
+          expectedSceneRevision: 3
+        }
+      },
+      {
+        kind: 'start',
+        input: {
+          sceneId,
+          mapId,
+          waypoints: [{ q: 2, r: 0 }],
+          multiplier: 2,
+          expectedRevision: 4,
+          expectedSceneRevision: 3
+        }
+      },
+      ...['pause', 'resume', 'abort'].map((kind) => ({
+        kind,
+        input: { sceneId, expectedRevision: 4, expectedSceneRevision: 3 }
+      })),
+      {
+        kind: 'set-multiplier',
+        input: {
+          sceneId,
+          multiplier: 5,
+          expectedRevision: 4,
+          expectedSceneRevision: 3
+        }
+      }
+    ])
+    for (const legacy of [
+      test.hexTravel.position,
+      test.hexTravel.start,
+      test.hexTravel.pause,
+      test.hexTravel.resume,
+      test.hexTravel.abort,
+      test.hexTravel.setMultiplier
+    ])
+      expect(legacy).not.toHaveBeenCalled()
     expect(test.sessionRead).not.toHaveBeenCalled()
     port.dispose()
   })

@@ -6167,3 +6167,141 @@ Candidate f3b485af2 in CI 34305976464 beim Abruf noch in_progress; Vorgänger
 978860ec7 ist inzwischen terminal failure (der hier bereits korrigierte alte
 Architekturpfad). Diesen geprüften Abschnitt als neuen Candidate committen und
 pushen; vollständige exakte Remote-Prüfungen bleiben ausstehend.
+
+### Phase 4 – Reisebefehle in der produktiven Oberfläche, Cutoverplan (2026-09-09)
+
+Voriger Zielturn: Fortschritt, Originalport/Controller c0ef61744 committed/gepusht;
+Worktree jetzt sauber. Vor vollständiger Routenentwurf-Anbindung zuerst den
+produktiven Befehlsweg umstellen: ein React-Owner hält HexTravelCommandController,
+registriert ihn auch bei offenem Fenster zentral und zeigt Statusprüfung/
+expliziten Retry/Discard außerhalb der einzelnen Reisefenster. Hook bleibt an
+Originalkampagne und Originalszene gebunden; bei Unmount übernimmt der vorhandene
+gehaltene Controller. Keine Legacy-Write-Alternative im produktiven Provider.
+
+Der Hex-Provider erhält den originalgebundenen Executor und liest konsistente
+Reise-/Plan-/Sessionzustände; generische Reisebefehle tragen Szenenrevisionen.
+useTravelCommands führt keine abbrechbare FIFO-Writequeue mehr und wiederholt bei
+stale keine Aktion selbständig. Diese Wiederholung konnte eine inzwischen neue
+Reise treffen; allein der gehaltene Owner klärt und wiederholt explizit. Query-
+Koordinator und deren Abbruch bleiben unverändert. Read-only Recovery aktualisiert
+die Reiseprojektion über eine Providerinvalidierung, nicht durch Einspielen des
+alten Belegs. Bei abgeschlossenem Auftrag wird frischer Zustand verwendet.
+
+Eingabesperre: Controller-/UI-Aktionen berücksichtigen laufende/ungeklärte Befehle
+und zentrale Wartungssperre. Reiseroute, Modus, Karte, Multiplikator und Token dürfen
+während dieser Sperre nicht weiter verändert werden; Handler prüfen synchron,
+nicht nur über disabled-Attribute. Abnahme: alle generischen Befehle gehen an den
+journalisierten Executor, alter FIFO-/Retrypfad entfällt; echte Hooktests mit
+zentraler Klärung bei offenem und geschlossenem Owner, Recoveryfehlern und
+Eingabesperre. Bestehende Travel-/Provider-/Controller-/UIregresse aktualisieren
+und durch neue Sicherheitsnachweise ergänzen. Type/Lint/Build folgen.
+
+Noch nach diesem Befehls-Cutover offen: persistierten Routenstand in die lokale
+Projektion übernehmen, echte Plan-Dirtybasis mit Save/Discard/Cancel registrieren,
+vor Aktionen andere offene Editoren zentral klären und Electron-Gesamtabnahme.
+Insbesondere Start darf nach Discard nicht die verworfenen Wegpunkte aus einer
+alten Closure benutzen; Pause darf nach zwischenzeitlichem Save nicht zu Resume
+umgedeutet werden. Dies im anschließenden Routen-/Transitionteilplan ausdrücklich
+prüfen. Kein Abschluss von Phase 4 allein durch den Befehls-Cutover.
+
+Cutover-Implementierung: produktiver Provider benötigt jetzt zwingend den
+originalgebundenen Executor. Er meldet Recovery als Kontextinvalidierung. Hook
+registriert laufende/unklare Aufträge im geöffneten Fenster; SceneDesktop rendert
+Status außerhalb der einzelnen Fenster. Direktes FIFO und impliziter Pause-Retry
+entfallen. Handler und Buttons prüfen Wartung/Owner-Sperre.
+
+Typecheck 40091 fand erwartete Anpassungen in vier Tests, die den Provider noch
+mit einem Argument/alten Payloads konstruieren. Test-Anpassungsplan: Providerfälle
+auf zwingenden Belegexecutor und UUID-/Payloadassertionen umstellen; bestehende
+Console-/Markerfixtures erhalten explizite Testexecutoren. Alte FIFO-/Stale-Retry-
+Assertions ersetzen durch Nachweis eines einzigen delegierten Auftrags, Sperre
+weiterer Aktionen und keine selbständige Wiederholung. Gehaltene Recovery wird
+zusätzlich am realen Ownerhook geprüft, nicht vom Providerfake behauptet.
+
+Weiterer Reviewfund: remoteVersionIsOlder priorisiert bisher die Reiserevision;
+position kann diese zurücksetzen, obwohl die Szenenrevision fortgeschritten ist.
+Korrekturplan: zuerst gleiche Szene und Szenenrevision vergleichen, erst bei
+gleicher Szenenrevision die Reiserevision. Native Reset-Invariante besteht bereits;
+Controllerregression soll frische Positionierung mit kleinerer Reiserevision
+akzeptieren und weiterhin alte Szenenstände abweisen.
+
+24 Provider-/Controller-/Console-/Markerregressionen und sechs echte Ownerhook-
+Fälle bestanden. Letztere belegen zentrale Klärung im geöffneten Fenster,
+Unmount-Recovery ohne fremden Callback, expliziten Retry mit neuer UUID sowie
+blockierende Recoveryfehler. Review vor breiter Prüfung: Providerladen darf nicht
+von der Identität des UI-Fehlercallbacks abhängen; sonst kann ein Parent-Rerender
+unnötig den Provider und lokale Route ersetzen. Fixplan: Fehlercallback über
+committed Ref halten, Provider-Lifecycle nur an aktiv/API/Originalexecutor binden.
+Danach technische Gates und echte Reise-Electronfälle, nicht nur Hooktests.
+
+Breitere Prüfung 57807: Typecheck bestand, Lint stoppte mit zwei Hook-Abhängigkeits-
+warnungen in useTravelController. Architektur/Build starteten deshalb noch nicht.
+Fixplan: commandsBlocked und selectMap vor den Closures als konkrete Bindungen
+entnehmen; deren tatsächliche Abhängigkeiten verwenden, ohne instabile komplette
+options-/queries-Objekte einzuführen. Danach betroffene Rendererdatei und gesamte
+Testpartition linten, geplante Regressionen sowie Build/Smoke/Bundle ausführen.
+
+62290 stoppte in der Test-Lintpartition: zwei untypisierte Mockrückgaben im Console-
+Fixture. Fixplan: Reisecontext-Rückgaben der betroffenen Mocks ausdrücklich typisieren
+und den Multiplikator separat diskriminieren; keine unsafe Casts in die Payloads.
+
+Reviewkorrektur zum frischen Positionsresultat: der Originalport aktualisiert den
+Workspace bereits vor der finalen Reiseantwort. Deshalb reicht die globale
+Szenenrevision allein nicht als Zeitstempel der alten Providerprojektion. Zusätzlich
+merken wir deren bei der Veröffentlichung gültige Szenenrevision. Eine Regression
+schiebt das neue globale Session-Snapshot vor die verspätete Positionsantwort;
+diese muss trotzdem akzeptiert werden. Ältere globale Szenenstände bleiben gesperrt.
+
+72747: Typecheck und verbleibende Lintprüfung bestanden. 140/142 gezielte Tests
+bestanden; zwei Architekturabweichungen: neue sichtbare JSX-Texte sind noch nicht
+hinter typisierten Messagekeys, und der Travel-Architekturtest fordert weiterhin
+die ausdrücklich ersetzte FIFO-Queue. Fixplan: bestehende Status-/Retry-/Discard-
+Keys verwenden, Reiselabel/-konflikte im Workspacekatalog ergänzen. Architekturtest
+verlangt stattdessen Providerdelegation, tatsächlichen Owner und dessen zentrale
+Maintenance-Anmeldung sowie Originalport in der produktiven Integration; Query-
+Koordinatorprüfungen bleiben bestehen. Die entfernte automatische Wiederholung
+bleibt durch konkrete Recovery-/Sperrtests ersetzt, nicht durch ein gelockertes Gate.
+
+Abnahme Befehls-Cutover: 55673 exit 0, alle 142 geplanten Architektur-/Owner-/Port-/
+Provider-/Controller-/UIregressionen bestanden; Build/Smoke/Bundle bestanden.
+Renderergraph 1663183 Bytes innerhalb unveränderter Limits, keine Baselineänderung.
+95906 exit 0: echter Reise-Electronfall bestanden (Planen, Positionieren, Start,
+Pause, Fortsetzen, Stopp, Fortschritt und stabile Kartenprojektion), Summary
+functional-1788925102421-636656. 29834 exit 0: alle zehn SceneDesktop-Electronfälle
+bestanden, Summary functional-1788925209423-637107; danach gezieltes Lint der letzten
+Message-/Architekturänderungen, beide Typechecks und vollständiges Format bestanden.
+Vorherige Lintpartitionen/Korrekturprüfungen decken die übrigen Änderungen ab.
+Nach diesen GUI-Läufen keine Runtimeänderung. Keine laufenden lokalen Prozesse.
+Installation 42/Kampagne 41/Registry 21 und Frozen-0.2-Fixtures unverändert.
+
+Plan-Audit Befehls-Cutover: alle sechs produktiven Reiseaktionen gehen durch den
+zwingenden Originalexecutor zu den journalisierten Capabilities. Kein aktiver
+Legacy-Write oder abbrechbarer FIFO-/impliziter Stale-Retry im Travelprovider.
+Queryabbruch bleibt auf Reads beschränkt; verlorene/noch laufende Writes leben
+beim gehaltenen Owner weiter. Owner ist bereits im geöffneten Desktop zentral
+registriert, Fehler/Status/Retry/Discard bleiben außerhalb der einzelnen Fenster
+erreichbar. Eingabehandler und UI prüfen Owner-/Wartungssperre. Planen-/Karten-/
+Tokenänderungen können während Klärung nicht neue lokale Fakten erzeugen.
+Provider-Lifecycle hängt an Originalexecutor/API, nicht Fehlercallbackidentität.
+Neue Positionierung wird auch nach vorherigem Workspace-Refresh anhand des
+Zeitstempels der Providerprojektion korrekt übernommen; alte globale Szenenstände
+bleiben abgewiesen. Gezielte Tests und elf echte Electronfälle bestanden.
+
+Roadmap-Audit: produktiver Befehlsweg dieses Teilplans abgeschlossen. Phase 4
+bleibt offen: Routenentwürfe sind weiterhin flüchtige Projektion und müssen als
+persistierbarer Editor angemeldet werden; auch die vor einer Aktion notwendige
+Klärung anderer Editoren folgt im Routen-/Transitionabschnitt. Nicht behaupten,
+dass Updates jetzt schon sämtliche offenen Reiserouten erhalten. Phasen 5–7
+unverändert offen. Nächster Teilplan: routePlan aus readState im Provider
+weiterreichen, eindeutige Dirty-/Basisrevision pro Szene/Plan und Save/Discard/
+Cancel integrieren. Save während der Wartung benötigt einen ausdrücklich auf
+Plan-Save begrenzten internen Executorpfad; der normale execute-Guard muss für
+Benutzereingaben während der Sperre geschlossen bleiben. Fremde offene Aufträge
+zuerst klären; keine alte Start-Closure nach Discard und kein Pause→Resume-Toggle
+nach zwischenzeitlichem Speichern. Danach Route-/Mehrfacheditor-Electronabnahme.
+
+Candidate c0ef61744/CI 34306628897 jetzt terminal success. Der aktuelle Cutover
+ist davon nicht abgedeckt; neuen SHA sauber committen/pushen und dessen eigene
+Remote-Gates abwarten. Kein Handoff/Main-/Releaseabschluss durch diesen lokalen
+Qualifikationsbuild. Worktree vor diesem Abschnitt war sauber, Änderungen gehören
+vollständig zum dokumentierten Cutover.

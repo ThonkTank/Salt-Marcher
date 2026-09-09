@@ -1,4 +1,10 @@
 export const workspaceMessagesDe = {
+  'travel.commands': 'Reiseaktionen',
+  'travel.commandConflict':
+    'Die Reise oder Szene wurde inzwischen geändert. Bitte den alten Auftrag verwerfen und neu prüfen.',
+  'travel.commandAbsent':
+    'Der Reiseauftrag wurde nicht ausgeführt. Erneut versuchen oder verwerfen.',
+
   'rest.confirmBeforeSave':
     'Bitte bestätige die gewünschte Rast zuerst im Rastfenster oder verwirf die Auswahl.',
   'sceneParty.commandConflict':

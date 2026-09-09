@@ -1,3 +1,5 @@
+import type { HexTravelContextResult } from '../../src/shared/contracts/live-session.js'
+import type { HexTravelCommand } from '../../src/shared/contracts/hex-travel-command.js'
 // @vitest-environment jsdom
 
 import {
@@ -114,27 +116,41 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
       effectiveSpeedFeet: 30,
       assumedSpeedMemberNames: []
     }),
-    position: vi.fn().mockResolvedValue({ travel: ready, session }),
-    start: vi.fn().mockResolvedValue({ travel: travelling, session }),
-    pause: vi.fn().mockResolvedValue({
-      travel: travel({ ...travelling, revision: 2, status: 'paused' }),
-      session
-    }),
-    resume: vi.fn().mockResolvedValue({
-      travel: travel({ ...travelling, revision: 3, status: 'travelling' }),
-      session
-    }),
-    abort: vi.fn().mockResolvedValue({
-      travel: travel({
-        ...travelling,
-        revision: 4,
-        status: 'aborted',
-        path: []
+    position: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({ travel: ready, session }),
+    start: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({ travel: travelling, session }),
+    pause: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({ ...travelling, revision: 2, status: 'paused' }),
+        session
       }),
-      session
-    }),
+    resume: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({ ...travelling, revision: 3, status: 'travelling' }),
+        session
+      }),
+    abort: vi
+      .fn<(input: unknown) => Promise<HexTravelContextResult>>()
+      .mockResolvedValue({
+        travel: travel({
+          ...travelling,
+          revision: 4,
+          status: 'aborted',
+          path: []
+        }),
+        session
+      }),
     setMultiplier: vi
-      .fn()
+      .fn<
+        (input: {
+          multiplier: 1 | 2 | 5 | 10
+        }) => Promise<HexTravelContextResult>
+      >()
       .mockImplementation((input: { multiplier: 1 | 2 | 5 | 10 }) =>
         Promise.resolve({
           travel: travel({
@@ -146,7 +162,9 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
         })
       )
   }
-  const readTravel = vi.fn().mockResolvedValue({ travel: ready, session })
+  const readTravel = vi
+    .fn<() => Promise<HexTravelContextResult>>()
+    .mockResolvedValue({ travel: ready, session })
   const api = {
     runtime: {},
     hex: {
@@ -221,6 +239,21 @@ function fixture(initialTravel: HexTravelSnapshot = travel()) {
     biomes: { onChanged: vi.fn().mockReturnValue(() => undefined) },
     hexTravel: {
       read: readTravel,
+      readState: async () => ({
+        context: await readTravel(),
+        routePlan: { sceneId, revision: 0, plan: null }
+      }),
+      executeCommand: async ({ command }: HexTravelCommand) => {
+        if (command.kind === 'save-plan') throw new Error('Not a plan fixture')
+        const context =
+          command.kind === 'set-multiplier'
+            ? await commands.setMultiplier(command.input)
+            : await commands[command.kind](command.input)
+        return {
+          context,
+          routePlan: { sceneId, revision: 0, plan: null }
+        }
+      },
       ...commands
     },
     session: {
@@ -264,7 +297,12 @@ function TravelSurfaces(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
 }) {
   const port = useMemo(
-    () => createHexTravelProviderPort(props.api),
+    () =>
+      createHexTravelProviderPort(props.api, {
+        execute: (input) =>
+          props.api.hexTravel.executeCommand({ ...input, campaignId }),
+        refresh: () => props.api.hexTravel.readState({ campaignId, sceneId })
+      }),
     [props.api]
   )
   useEffect(() => () => port.dispose(), [port])
@@ -369,7 +407,8 @@ describe('Session travel console', () => {
         mapId,
         waypoints: [{ q: 1, r: 0 }],
         multiplier: 2,
-        expectedRevision: 0
+        expectedRevision: 0,
+        expectedSceneRevision: session.scene.revision
       })
     )
 
