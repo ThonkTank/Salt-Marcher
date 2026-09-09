@@ -8922,3 +8922,63 @@ CI34347682840 für unveränderten Candidate f6406409f ist jetzt terminal success
 Dieser Nachweis deckt den vorigen Utility-Abbruchstand ab, nicht die noch
 uncommittierte neue Aktivierungsbeobachtung. Letztere wird separat gesichert und
 benötigt ihren eigenen vollständigen Check; kein Main-/Handoffabschluss daraus.
+
+### Phase 5 – Übrige Aktivierungsgrenzen mit unveränderten Artefakten
+
+Voriger Turn Fortschritt:drei echte Aktivierungsfälle grün, Candidate23d418557
+gepusht. Plan:die übrigen fünf Vorwärtsgrenzen journal:prepared,
+journal:data-moving, old-data-moved, journal:program-moving,
+journal:awaiting-start nacheinander mit unveränderten0.0.152/0.0.153 und
+Payload-publication-crash-2 prüfen. Jeweils frisches Testhome, kompletter
+App-Recovery-/Retry-/Weiterarbeiten-/Restorefall, Stop bei erstem Fehler.
+VM-Laufzeitlimit900s; keine Host-Appstarts oder Daten-/Codeänderung während Lauf.
+Dies schließt weder Recovery-Unterbrechungen noch Commit-/Local-/Starterfälle.
+
+Folgerundenplan nach Ende des laufenden Tests: Recovery-Unterbrechung ohne
+vorweggenommene Renderer-Verbindung. launch() in unveränderten Spawnteil und
+anschließende CDP-Verbindung trennen; nach initialem Aktivierungstod neuen
+Arm-Auftrag setzen, App nur starten, vor Fenstererstellung erreichte Recovery-
+Barriere abwarten, dieselbe Journal-ID und zugeordnete PID prüfen, erneut SIGKILL.
+Erst danach normal starten und vollständige alte sowie erhaltene fehlgeschlagene
+Profilbäume mit ihren AppImages lesen. Kein hängender connect()-Versuch darf in
+einen späteren Start hineinreichen. Historischen Observer für dauerhaftes
+maintenance-history-Journal ergänzen; Originalfunktionen/SQL unverändert.
+Codeänderungen erst nach terminalem Status des aktuellen VM-Laufs.
+
+9230 terminal:GastExit0/TestExit0 nach403.96s, alle5 übrigen Vorwärtsfälle grün.
+Export unabhängig geprüft:jeweils activationCrash.readback==seeded,
+after==restored==unchanged==seeded, continued==protectedRead, App-Recovery
+rolled-back. Berichtindex unter publication-remaining-run-1/validated-report-index.json:
+- journal:prepared ef7156071e7a89e3154572125927ce96d0cb5894407fb204f40f963c6dda7c54
+- journal:data-moving 7d1dbcfaa73d16527718ccb7ff037d1aad837e06cf2848657daa81fc9ed7eb33
+- old-data-moved 1dc3dead23ea927f7659f09ff36773b18a2971e6c9096e66f08bfbc96437c931
+- journal:program-moving 97fc82ca9a17df26bc9c6ab77bd668c8066d925d1f1502cc76a1522c34d5f509
+- journal:awaiting-start a0c100ca2757d6d068079bd177d3ef481efb145f272bde4b8940c7d5a5a55f89
+Zusammen mit den3 vorigen Fällen acht Vorwärtsgrenzen vor Bestätigung geprüft.
+Keine Aussage über Unterbrechung während Recovery oder nach committed daraus.
+
+Konkreter nächster Pilot gemäß Folgerundenplan: --activation-crash new-data-moved
+plus --recovery-crash failed-data-preserved mit unveränderten0.0.152/0.0.153.
+Beobachter unterstützt diesen Punkt bereits; keine neue Artefaktdatei notwendig.
+Wiederhergestelltes altes Profil UND aufbewahrtes fehlgeschlagenes Zielprofil
+mit ihrer jeweiligen Runtime vollständig lesen. Historiengrenze erst danach
+ergänzen. Arbeitsbaumänderung erst nach terminalem9230.
+
+21870 terminalExit0:Lint/Typprüfung des erweiterten Qualifiers.42105 terminal:
+recovery-crash-run-1 GastExit0/TestExit0 nach91.53s. BerichtSHA
+06c6910d166cb8031fe92708622846094c5955cfafc1993368d80a9745f7c09c.
+Zweiter Abbruch failed-data-preserved, Journal rollback-preserving derselben
+Transaktion. Zwei explizite AppImage-PIDs967/1146 beobachtet SIGKILL, anschließend
+vier normale Exit0. Kein wartender CDP-Verbindungsversuch beim Vorfenster-Abbruch.
+Unabhängige Exportprüfung:altes readback UND failedReadback==seeded;
+Recovery rolled-back; after==restored==unchanged==seeded;
+continued==protectedRead. Beide Profilbäume vollständig erhalten und mit passender
+AppImage-Runtime gelesen, anschließend ganzer UI-Retry-/Restorefall bestanden.
+
+Plan-Audit Recovery-Pilot bestanden. Roadmap-Audit übrige Recoverygrenzen,
+Historienübergang, committed/Starter/Local und weitere Fehlermatrix bleiben offen.
+Nächste unveränderte Matrix:Activation program-linked, dann Recovery an
+journal:rollback-started, journal:rollback-preserving, journal:rollback-restoring,
+old-data-restored, journal:rollback-program, program-linked, journal:rolled-back.
+So wird auch Rückkehr vom bereits ausgewählten Zielprogramm geprüft. Historien-
+beobachtung erfordert separat ergänzte Testartefakte, keine Produktionsänderung.

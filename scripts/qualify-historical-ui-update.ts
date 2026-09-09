@@ -48,11 +48,16 @@ const { values } = parseArgs({
     'accepted-crash': { type: 'boolean', default: false },
     'maintenance-crash': { type: 'boolean', default: false },
     'activation-crash': { type: 'string' },
+    'recovery-crash': { type: 'string' },
     baseline: { type: 'string' },
     target: { type: 'string' },
     home: { type: 'string' }
   }
 })
+if (values['recovery-crash'] && !values['activation-crash'])
+  throw new Error(
+    'Recovery interruption requires a preceding activation interruption'
+  )
 const baselineDirectory = resolve(z.string().parse(values.baseline))
 const targetDirectory = resolve(z.string().parse(values.target))
 const home = resolve(z.string().parse(values.home))
@@ -170,7 +175,7 @@ const expectedKills = new Set<number>()
 let maintenanceCrash: unknown = null
 let activationCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
-async function launch(): Promise<HistoricalUiDriver> {
+function spawnApplication(): void {
   const temporary = join(home, `ui-launch-${exits.length}`)
   mkdirSync(temporary)
   const log = openSync(join(home, `ui-launch-${exits.length}.log`), 'wx')
@@ -198,6 +203,9 @@ async function launch(): Promise<HistoricalUiDriver> {
       )
     })
   )
+}
+async function launch(): Promise<HistoricalUiDriver> {
+  spawnApplication()
   return HistoricalUiDriver.connect(home)
 }
 try {
@@ -399,6 +407,53 @@ try {
     )
     ui.disconnect()
     rmSync(arm)
+    let recoveryCrash: unknown = null
+    if (values['recovery-crash']) {
+      const recoveryId = randomUUID()
+      rmSync(barrier)
+      writeFileSync(
+        arm,
+        JSON.stringify({ id: recoveryId, point: values['recovery-crash'] }),
+        { flag: 'wx' }
+      )
+      // Recovery can stop before a renderer exists: do not start a CDP connection.
+      spawnApplication()
+      const recoveryBoundary = await waitFor(
+        () =>
+          existsSync(barrier)
+            ? z
+                .object({
+                  id: z.literal(recoveryId),
+                  point: z.literal(values['recovery-crash']!),
+                  pid: z.number().int().positive(),
+                  journal: maintenanceJournalSchema
+                })
+                .strict()
+                .parse(JSON.parse(readFileSync(barrier, 'utf8')))
+            : null,
+        (value) => value !== null,
+        'durable recovery boundary'
+      )
+      assert(recoveryBoundary)
+      assert.equal(recoveryBoundary.journal.id, boundary.journal.id)
+      const recoveryPids = isolatedProcesses(home)
+      assert(recoveryPids.includes(recoveryBoundary.pid))
+      for (const pid of recoveryPids) {
+        expectedKills.add(pid)
+        try {
+          process.kill(pid, 'SIGKILL')
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+        }
+      }
+      await waitFor(
+        () => isolatedProcesses(home),
+        (pids) => pids.length === 0,
+        'recovery crash processes exit'
+      )
+      rmSync(arm)
+      recoveryCrash = { boundary: recoveryBoundary, killedPids: recoveryPids }
+    }
     ui = await launch()
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     await ui.click('Einstellungen', 'body', true)
@@ -419,7 +474,35 @@ try {
       readback.result.response.result,
       seeded.result.response.result
     )
-    activationCrash = { boundary, killedPids, recovered, readback }
+    let failedReadback: unknown = null
+    if (values['recovery-crash']) {
+      const failedHome = `${home}-failed-candidate`
+      mkdirSync(join(failedHome, 'salt-marcher'), { recursive: true })
+      cpSync(
+        join(root, `failed-${boundary.journal.id}`),
+        join(failedHome, 'salt-marcher/profile'),
+        { recursive: true, errorOnExist: true, force: false }
+      )
+      const failed = await runHistoricalArtifact(
+        targetDirectory,
+        failedHome,
+        'read'
+      )
+      assert(failed.result.response.ok)
+      assert.deepEqual(
+        failed.result.response.result,
+        seeded.result.response.result
+      )
+      failedReadback = failed
+    }
+    activationCrash = {
+      boundary,
+      killedPids,
+      recoveryCrash,
+      recovered,
+      readback,
+      failedReadback
+    }
     writeFileSync(
       join(home, 'activation-crash-evidence.json'),
       JSON.stringify(activationCrash, null, 2),

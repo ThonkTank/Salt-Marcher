@@ -228,3 +228,33 @@ readback, then successful UI update/restart/continue/restore with preserved late
 work. Previous rollback journals and backups remain; retry completion is matched
 to a new transaction ID. Other activation boundaries, interrupted recovery,
 stable shell admission and the Local adapter still require separate coverage.
+
+The remaining five pre-acceptance Release activation boundaries also pass with
+the same 0.0.152/0.0.153 artifacts and complete recovery/retry/restore assertions:
+
+| Durable boundary | Full UI report SHA256 |
+|---|---|
+| Prepared journal | ef7156071e7a89e3154572125927ce96d0cb5894407fb204f40f963c6dda7c54 |
+| Data-moving journal | 7d1dbcfaa73d16527718ccb7ff037d1aad837e06cf2848657daa81fc9ed7eb33 |
+| Previous profile moved aside | 1dc3dead23ea927f7659f09ff36773b18a2971e6c9096e66f08bfbc96437c931 |
+| Program-moving journal | 97fc82ca9a17df26bc9c6ab77bd668c8066d925d1f1502cc76a1522c34d5f509 |
+| Awaiting-start journal | a0c100ca2757d6d068079bd177d3ef481efb145f272bde4b8940c7d5a5a55f89 |
+
+These complete the eight listed forward boundaries before acceptance for this
+Release update pair. Interrupted recovery itself, committed-state handling,
+first installation, the stable shell starter and Local adapter remain separately
+scoped cases; this does not close the complete Phase 5 matrix.
+
+## Recovery itself interrupted (2026-09-09)
+
+The first packaged recovery-interruption case passes with the same artifacts:
+activation dies after the new profile is moved into place; the next actual app
+startup is killed again after preserving that failed target profile, while the
+journal still says rollback-preserving. A third startup completes recovery.
+Both the restored old profile and preserved failed target profile are read in
+full by their respective AppImages and equal the seeded content. The subsequent
+complete UI update/continue/restore and protected-later-work checks also pass.
+Two explicit process exits are SIGKILL, all later UI launches exit normally.
+Report SHA256:
+06c6910d166cb8031fe92708622846094c5955cfafc1993368d80a9745f7c09c.
+Other recovery boundaries remain unqualified by this single case.
