@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   readdirSync,
   statSync,
   writeFileSync
@@ -23,7 +24,8 @@ const { values } = parseArgs({
     source: { type: 'string' },
     version: { type: 'string' },
     output: { type: 'string' },
-    fixture: { type: 'string' }
+    fixture: { type: 'string' },
+    'maintenance-interruption': { type: 'boolean', default: false }
   }
 })
 const selected = historicalReleaseSources.find(({ id }) => id === values.source)
@@ -212,6 +214,40 @@ for (const entry of ['main', 'worker']) {
     }
   })
 }
+let maintenanceInterruption: {
+  originalSha256: string
+  wrapperSha256: string
+} | null = null
+if (values['maintenance-interruption']) {
+  const original = join(checkout, 'out/main/maintenance.js')
+  const originalSha256 = digest(original)
+  renameSync(original, join(checkout, 'out/main/maintenance-original.js'))
+  await build({
+    configFile: false,
+    root: checkout,
+    ssr: { noExternal: true },
+    build: {
+      target: 'es2022',
+      emptyOutDir: false,
+      outDir: join(checkout, 'out/main'),
+      ssr: join(harnessRoot, 'maintenance-interruption.ts'),
+      rollupOptions: {
+        external: ['better-sqlite3'],
+        output: {
+          format: 'es',
+          entryFileNames: 'maintenance.js',
+          inlineDynamicImports: true
+        }
+      }
+    }
+  })
+  if (
+    digest(join(checkout, 'out/main/maintenance-original.js')) !==
+    originalSha256
+  )
+    throw new Error('Original maintenance entry changed')
+  maintenanceInterruption = { originalSha256, wrapperSha256: digest(original) }
+}
 for (const [path, hash] of harnessModules)
   if (digest(path) !== hash)
     throw new Error('Harness dependency changed during build')
@@ -254,6 +290,7 @@ writeFileSync(
       source,
       version,
       builderSha256,
+      maintenanceInterruption,
       harness,
       harnessModules: [...harnessModules]
         .sort(([a], [b]) => a.localeCompare(b))

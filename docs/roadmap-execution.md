@@ -8757,3 +8757,88 @@ Artifact-Runner-Tests bestanden. Aufbewahrter echter Gastbericht separat auf
 workerExitCode===9 geprüft; Runner verlangt nun literal9. Abnahme gilt exakt für
 die geprüfte erste 41→42-Migration im Arbeitsprofil, nicht den gesamten Updateweg.
 Commit/Push als weiterer Candidate; keine Main-Promotion, kein Desktop-Handoff.
+
+### Phase 5 – Utility-SIGKILL im tatsächlichen Release-Update
+
+Voriger Turn Fortschritt: echter isolierter Migrationsabbruch mit vollständigem
+Readback bestanden. Aktuell Candidate0e3526011, neue CI34346407184 pending,
+Vorgänger34345599892 läuft. Arbeitsbaum sauber. Plan: optionales, ausdrücklich
+hashdokumentiertes Wartungs-Wrappermodul ausschließlich im historischen
+Test-AppImage. Originales gebautes maintenance.js unverändert als
+maintenance-original.js behalten; Wrapper dekoriert better-sqlite3.exec, ruft
+originales SQL unverändert auf und hält beim DDL der aktiven Loot-Receipts an,
+wenn UserVersion41, offene Transaktion und expliziter isolierter Arm-Auftrag
+passen. Parent-Qualifier sendet SIGKILL an genau diese Worker-PID, nachdem
+Profilpfad/Arbeitskopie und Grenze nachgewiesen sind. Normale Releasebuilds
+bekommen weder Wrapper noch neuen Schalter.
+
+UI-Qualifier erweitert: Check/Download/Install per Oberfläche, auf Barriere warten,
+Worker killen, verständliche Fehleranzeige und alte Programmversion prüfen;
+Anwendung schließen, vollständiger Readback durch alte Runtime. Arm entfernen,
+erneut öffnen und denselben geprüften Download installieren; bestehender ganzer
+Weiterarbeiten-/Restorefall muss danach bestehen. Backup vor Fehler separat
+validieren und erhalten. Keine erfolgreiche Abnahme durch Cleanup-Kills.
+Gekoppelter Vorbereitungsfehler ist ein Fall; Aktivierungs-/Recoverygrenzen
+bleiben separat offen. Originalmodule-/Wrapperhash im Artefaktbeleg erforderlich.
+
+93439 terminalExit1:Lint markiert absichtlich gelöste exec-Methode. Sie wird
+bereits mit original.call(this,sql) an dieselbe reale Datenbank gebunden;
+Fixplan: genau diese Stelle mit begründeter Lint-Ausnahme kennzeichnen, keine
+Änderung der SQLite-Ausführung. Anschließend Lint/Typprüfung wiederholen.
+
+68228 Lint/Typprüfung terminalExit0.69909 Testartefaktbuild terminalExit0,
+44.7s/2.6GiBSpitze. Vor Gasttest Prüfpräzisierung: erhaltene Sicherung nicht nur
+auf Manifest/Dateihashes prüfen, sondern zusätzlich mit alter AppImage-Runtime
+vollständig lesen und gegen Seed vergleichen. Qualifieränderung nach Buildende;
+Artefaktbytes unverändert. Dadurch wird kein bloß vorhandenes Backup als korrekter
+Sicherungsinhalt gewertet.
+
+Test-AppImage0.0.151:177059542Bytes,SHA256
+4741a6029e7608c3f68bdda3f43b27b8711539fbde03a2875272e57b7a428597.
+Original gebauter Wartungseinstieg bleibt bytegleich mitSHA
+bdc25b66cd4484b43a0ce3131c57129db0d39a367fb8923445d5d573ac9730db;
+WrapperSHA cf2c2236f1f9e35fb0bb7396507021b265b2c751e3db2e29f1baa14fbef27ff1.
+Receipt enthält beide Hashes und explizite Option; normales build:release wird
+nicht verändert. Payload-update-crash-1 dokumentiert uncommittierten Qualifier.
+82060 Gastlauf gestartet, ursprüngliche0.0.148 bleibt Vergleichsversion42/41.
+
+82060 terminal: GastExit0/TestExit1 nach183s. Fehler ist nicht der Utilityabbruch:
+Qualifier erreicht Wiederherstellung nach erfolgreichem Retry/Weiterarbeiten,
+findet aber wegen zweier erwartbar vorhandener Backups keinen einzigartigen
+Wiederherstellen-Button. Barriere belegt PID1109 in ursprünglicher Migration
+innerhalb staged-d11f1dd2-41cd-48db-90f6-8506a8003ebc, gelöschte Kampagne .trash.
+49065 Lint/Typprüfung terminalExit0. Kein voller UI-Pass aus Teilfortschritt.
+
+Fixplan vor Änderung: gewünschte Vor-Update-Sicherung aus committed-Updatejournal
+ermitteln; DOM-Zeile über sichtbares Datum (im Browser lokal formatiert) und
+Version eindeutig identifizieren, normalen Mausclick auf deren Button begrenzen.
+Keine Sicherungen löschen, keine erste beliebige Zeile wählen, keine direkte
+Bridge-Aktion. Bestätigten Utility-Fehlerteil als eigenen Zwischenbericht sichern,
+damit späterer Fehler seine bestandenen Vergleiche nicht verschwinden lässt.
+Dann gleicher unveränderter Artefaktsatz in frischem Gast erneut vollständig.
+
+60782 terminal: update-crash-run-2 GastExit0 UND TestExit0 nach80.9s. BerichtSHA
+ eac69a16dd473c772126e0207604a114de1c3c8d2a93d537115f25dec6f2f1c5
+unter evidence/qualification/ui-update-evidence.json. Barriere19b9196b-a8cc-481c-
+96c0-16302252181d, Worker1109, staged-e399e417-f3c0-45ba-840a-255e4e490546,
+.original-DLL41→42 in offener Transaktion einer wiederherstellbar gelöschten
+Kampagne. Parent sendet SIGKILL nuranverifizierte Worker-PID. App zeigt
+Unterbrechungsfehler, ursprüngliche Programmzuordnung und Profil bleiben gleich.
+Eine vollständige Sicherung aus dem fehlgeschlagenen Versuch erhalten und mit
+alter Runtime gelesen. Nach Entfernen der Arm-Datei vollständiger regulärer
+UI-Update-/Weiterarbeiten-/Restoreablauf bestanden, dieselben AppImagebytes.
+
+Unabhängige Exportprüfung: maintenanceCrash.readback==seeded; alle
+backupReadbacks==seeded; after==restored==unchanged==seeded;
+continued==protectedRead. Alle4 explizit gestarteten UI-Prozesse Exit0; der
+Utilityabbruch ist getrennt dokumentiert, kein pauschaler Prozesskill als Pass.
+Vorheriger Restore-Selektorfehler durch eindeutige sichtbare Backupzeile behoben,
+keine Sicherung gelöscht. Plan-Audit dieses gekoppelten Vorbereitungsabbruchs
+bestanden. Roadmap-Audit Phase5 weiterhin offen: SIGKILL an sämtlichen Aktivierungs-
+und Recoverygrenzen in ausgelieferten Adaptern, weitere Kapazitäts-/Zugriffs-/
+Kompatibilitätsfälle und abschließende unveränderte Artefakt-/CI-Gates bleiben.
+
+17753 terminalExit0:abschließender Lint und beide Typprüfungen bestanden,
+work/roadmap-phase5-update-crash-final2.log. Präzisierung des vorigen Eintrags:
+„original-DLL“ war Schreibfehler; geprüft wurde originales DDL. Candidate-CI
+34346407184 weiterhin in_progress; kein Green/Main-Abschluss behauptet.

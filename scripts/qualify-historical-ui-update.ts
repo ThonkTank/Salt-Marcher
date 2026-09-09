@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import { Transform } from 'node:stream'
 import { assertHistoricalTestIsolation } from './qualification/historical-test-isolation.js'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, readdirSync } from 'node:fs'
 import { readVerifiedBackup } from '../src/core/maintenance/verified-backup.js'
 import { cpSync } from 'node:fs'
 import assert from 'node:assert/strict'
@@ -44,6 +45,7 @@ const { values } = parseArgs({
   options: {
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
+    'maintenance-crash': { type: 'boolean', default: false },
     baseline: { type: 'string' },
     target: { type: 'string' },
     home: { type: 'string' }
@@ -163,6 +165,7 @@ const exits: Array<
   Promise<{ pid: number; code: number | null; signal: NodeJS.Signals | null }>
 > = []
 const expectedKills = new Set<number>()
+let maintenanceCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
 async function launch(): Promise<HistoricalUiDriver> {
   const temporary = join(home, `ui-launch-${exits.length}`)
@@ -237,6 +240,110 @@ try {
     }
     transportMode = 'healthy'
   }
+  if (values['maintenance-crash']) {
+    const id = randomUUID()
+    const arm = join(root, 'qualification-maintenance-crash.json')
+    const boundaryPath = join(root, 'qualification-maintenance-boundary.json')
+    writeFileSync(arm, JSON.stringify({ id }), { flag: 'wx' })
+    ui = await launch()
+    await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    await ui.click('Einstellungen', 'body', true)
+    await ui.click('Jetzt prüfen')
+    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.click('Herunterladen')
+    await ui.expectText('Installieren und neu starten')
+    await ui.click('Installieren und neu starten')
+    await ui.click('Bestätigen', '[role="alertdialog"]')
+    const boundary = await waitFor(
+      () =>
+        existsSync(boundaryPath)
+          ? z
+              .object({
+                id: z.literal(id),
+                pid: z.number().int().positive(),
+                database: z
+                  .string()
+                  .regex(/^staged-[a-f0-9-]{36}\/campaign-data\/campaigns\//),
+                inTransaction: z.literal(true),
+                fromVersion: z.literal(41),
+                point: z.literal('after-original-loot-receipt-ddl')
+              })
+              .strict()
+              .parse(JSON.parse(readFileSync(boundaryPath, 'utf8')))
+          : null,
+      (value) => value !== null,
+      'original maintenance migration barrier'
+    )
+    assert(boundary)
+    assert(
+      isolatedProcesses(home).includes(boundary.pid),
+      'Barrier PID must belong to this application'
+    )
+    process.kill(boundary.pid, 'SIGKILL')
+    await ui.expectText(
+      'Wartung wurde unterbrochen. Der bisherige Datenstand bleibt erhalten.'
+    )
+    assert.equal(currentProgram(root)?.deployment, originalDeployment)
+    assert.equal(new MaintenanceCoordinator(root).read(), null)
+    rmSync(arm)
+    await ui.closeApplication(home)
+    ui.disconnect()
+    ui = undefined
+    const readback = await runHistoricalArtifact(
+      baselineDirectory,
+      home,
+      'read'
+    )
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      seeded.result.response.result
+    )
+    const backups = readdirSync(join(root, 'backups'))
+      .filter((name) => !name.startsWith('.'))
+      .map((name) => readVerifiedBackup(join(root, 'backups', name)))
+    assert(
+      backups.length > 0,
+      'Failed preparation must preserve its validated backup'
+    )
+    const backupReadbacks = []
+    for (const [index, backup] of backups.entries()) {
+      const backupHome = `${home}-interrupted-backup-${index}`
+      assert.equal(backup.manifest.formatVersion, 2)
+      mkdirSync(join(backupHome, 'salt-marcher'), { recursive: true })
+      cpSync(backup.data, join(backupHome, 'salt-marcher/profile'), {
+        recursive: true,
+        errorOnExist: true,
+        force: false
+      })
+      const saved = await runHistoricalArtifact(
+        baselineDirectory,
+        backupHome,
+        'read'
+      )
+      assert(saved.result.response.ok)
+      assert.deepEqual(
+        saved.result.response.result,
+        seeded.result.response.result
+      )
+      backupReadbacks.push(saved)
+    }
+    maintenanceCrash = {
+      boundary,
+      backupReadbacks,
+      readback,
+      backups: backups.map((backup) => ({
+        manifest: backup.manifest,
+        manifestSha256: backup.manifestSha256
+      }))
+    }
+  }
+  if (maintenanceCrash)
+    writeFileSync(
+      join(home, 'maintenance-crash-evidence.json'),
+      JSON.stringify(maintenanceCrash, null, 2),
+      { flag: 'wx' }
+    )
   const healthyRequestStart = requests.length
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
@@ -411,7 +518,23 @@ try {
   }
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
-  await ui.click('Wiederherstellen')
+  assert(updated.backup)
+  const requestedBackup = readVerifiedBackup(
+    join(root, 'backups', updated.backup)
+  )
+  const backupScope = await waitFor(
+    () =>
+      ui!.inspect(`(() => {
+      const rows = [...document.querySelectorAll('.release-settings > ul > li')];
+      const date = new Date(${JSON.stringify(requestedBackup.manifest.createdAt)}).toLocaleString('de-DE');
+      const version = ${JSON.stringify('Version ' + requestedBackup.manifest.version)};
+      const matches = rows.flatMap((row, index) => row.textContent.includes(date) && row.textContent.includes(version) ? [index] : []);
+      return matches.length === 1 ? '.release-settings > ul > li:nth-child(' + (matches[0] + 1) + ')' : null;
+    })()`),
+    (scope) => typeof scope === 'string',
+    'unique visible pre-update backup row'
+  )
+  await ui.click('Wiederherstellen', z.string().parse(backupScope))
   await ui.click('Bestätigen', '[role="alertdialog"]')
   const restoredTransaction = await waitFor(
     () => new MaintenanceCoordinator(root).read(),
@@ -502,6 +625,7 @@ try {
         requests,
         transportFailures,
         acceptedCrash,
+        maintenanceCrash,
         processExits,
         transaction: updated,
         seeded,

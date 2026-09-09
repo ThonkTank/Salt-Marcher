@@ -187,3 +187,25 @@ This proves rollback/retry for this real migration transaction. It does not yet
 prove every migration, physical power failure, or coupled Local/Release update
 activation after Utility death. The harness is explicitly test-only and records
 its own source hashes; these artifacts are not public releases.
+
+## Utility death during the actual UI update (2026-09-09)
+
+Test AppImages 0.0.148 → 0.0.151 pass the real ReleaseController preparation-
+failure/retry path in KVM. The explicitly instrumented historical target retains
+its original built maintenance entry unchanged; the test-only wrapper pauses
+immediately after original loot-receipt DDL in an open version-41 transaction.
+The external qualifier verifies the staged-profile worker PID and sends SIGKILL.
+The app displays the interrupted-maintenance error and preserves the previous
+program/profile. Its pre-update backup remains valid and its complete content is
+read back by the old AppImage equal to the seed.
+
+The subsequent UI check/download/install/restart/continue/restore path passes
+with the same artifact bytes. Later work is preserved in the pre-restore backup;
+source, restored and expected migrated profiles compare in full. Two backups
+are intentionally retained; the UI test selects the requested one by its visible
+date and version. Report SHA256:
+eac69a16dd473c772126e0207604a114de1c3c8d2a93d537115f25dec6f2f1c5.
+Target SHA256:
+4741a6029e7608c3f68bdda3f43b27b8711539fbde03a2875272e57b7a428597.
+This proves the coupled Release preparation-failure path, not all activation/
+recovery boundaries, the Local adapter, or public-release artifact acceptance.
