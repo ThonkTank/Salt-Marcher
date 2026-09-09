@@ -1,3 +1,4 @@
+import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
 import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
@@ -289,6 +290,21 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'campaign-38-to-39-scene-party-receipts',
             new Date().toISOString()
           )
+      }
+    },
+    {
+      id: 'campaign-39-to-40-combat-receipts',
+      role: 'campaign',
+      fromVersion: 39,
+      toVersion: 40,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeCombatCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('campaign-39-to-40-combat-receipts', new Date().toISOString())
       }
     }
   ])

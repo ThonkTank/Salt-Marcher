@@ -19,6 +19,7 @@ export const currentFormatRootRegistrations = Object.freeze([
   'scene-group-receipts',
   'scene-party-receipts',
   'schema-metadata',
+  'combat-receipts',
   'schema-version'
 ] as const)
 

@@ -1,4 +1,9 @@
 import {
+  combatCommandSchema,
+  type CombatCommand
+} from '../../shared/contracts/combat-command.js'
+import { CombatCommandJournal } from './combat-command-journal.js'
+import {
   sceneGroupLifecycleCommandSchema,
   type SceneGroupLifecycleCommand
 } from '../../shared/contracts/scene-group-lifecycle.js'
@@ -769,6 +774,119 @@ export class LivePlayService {
         groupIds
       )
     })
+  }
+
+  executeCombatCommand(value: CombatCommand): CombatCommandResult {
+    const input = combatCommandSchema.parse(value)
+    return this.withStores(({ db, scene, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new CombatCommandJournal(db)
+        const prior = journal.read(input)
+        if (prior) return prior
+        if (scene.focusedSceneId() !== input.sceneId)
+          throw new CapabilityError('stale', false)
+        if (
+          'sceneId' in input.command.input &&
+          input.command.input.sceneId !== input.sceneId
+        )
+          throw new CapabilityError('validation_failed', false)
+        const receipt = this.dispatchCombatCommand(input.command)
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+  combatCommandStatus(value: CombatCommand) {
+    const input = combatCommandSchema.parse(value)
+    return this.campaignDatabase.use((db) => ({
+      receipt: new CombatCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
+  }
+  private dispatchCombatCommand(
+    command: CombatCommand['command']
+  ): CombatCommandResult {
+    switch (command.kind) {
+      case 'prepare':
+        return this.prepareCombat(
+          command.input.sceneId,
+          command.input.expectedSceneRevision,
+          command.input.groupIds
+        )
+      case 'joinGroup':
+        return this.joinCombatGroup(
+          command.input.sceneId,
+          command.input.groupId,
+          command.input.expectedGroupRevision,
+          command.input.expectedCombatRevision
+        )
+      case 'rollInitiative':
+        return this.rollInitiative(command.input.expectedRevision)
+      case 'confirmInitiative':
+        return this.confirmInitiative(
+          command.input.expectedRevision,
+          command.input.values
+        )
+      case 'advanceTurn':
+        return this.advanceTurn(command.input.expectedRevision)
+      case 'retreatTurn':
+        return this.retreatTurn(command.input.expectedRevision)
+      case 'adjustInitiative':
+        return this.adjustInitiative(
+          command.input.expectedRevision,
+          command.input.id,
+          command.input.initiative
+        )
+      case 'changeHp':
+        return this.changeHp(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.amount,
+          command.input.healing
+        )
+      case 'toggleCondition':
+        return this.toggleCombatCondition(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.condition,
+          command.input.active
+        )
+      case 'setConcentration':
+        return this.setCombatConcentration(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.concentrating
+        )
+      case 'setExhaustion':
+        return this.setCombatExhaustion(
+          command.input.expectedRevision,
+          command.input.cardId,
+          command.input.exhaustionLevel
+        )
+      case 'undo':
+        return this.undoCombat(command.input.expectedRevision)
+      case 'end':
+        return this.endCombat(command.input.expectedRevision)
+      case 'moveToPhase':
+        return this.moveCombatToPhase(
+          command.input.expectedRevision,
+          command.input.target
+        )
+      case 'updateResolution':
+        return this.updateResolution(
+          command.input.expectedRevision,
+          command.input.selectedEnemyIds,
+          command.input.mode,
+          command.input.xpFraction
+        )
+      case 'awardXp':
+        return this.awardXp(
+          command.input.expectedRevision,
+          command.input.expectedCampaignRulesRevision
+        )
+      case 'complete':
+        return this.completeCombat(command.input.expectedRevision)
+    }
   }
 
   prepareCombat(

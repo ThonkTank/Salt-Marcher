@@ -5524,3 +5524,88 @@ kanonischer Handoff, Main-Gates und öffentlicher Release bleiben offen.
 Candidate 7aa201635 / CI 34297853752 wurde zuletzt live in_progress ohne
 fehlgeschlagene Jobs gelesen. Diese Runde als neuen Candidate sichern; kein
 Handoff oder Main-Push vor vollständigen Gates des neuen exakten SHAs.
+
+Phase 4 – Teilplan Combat-Auftragsvertrag und Persistenz:
+Voriger Goal-Turn war Fortschritt (f1b56946b). Arbeitsbaum sauber, CI 34298646929
+ist aktuell pending; kein abgeschlossener Handoff. Die Inventur von
+operations/combat.ts und encounter-panels/combat-card bestätigt 17 zusammengehörige
+direkte Schreiboperationen einschließlich Gruppenbeitritt, Initiative, HP/Status,
+Phasenwechsel und XP-Abschluss. Gemeinsam einen Zod-validierten Execute-/Status-
+Vertrag mit Originalkampagne, Originalszene, UUID und vollständiger typisierter
+Absicht ergänzen. Ergebnisbeleg ist CombatCommandResult; Status kombiniert diesen
+mit dem frisch gelesenen LiveSessionSnapshot. Vor neuer Ausführung Originalszene
+prüfen; bereits gespeicherter Beleg darf nach Fokuswechsel read-only wiederkehren.
+
+SQL-Journal bleibt beim Encounter-Aggregat. Alle 17 Operationen durch denselben
+CampaignUnitOfWork samt Belegeintrag führen, einschließlich bisherigem complete.
+Neue Kampagnenmigration 39 -> 40 initialisiert das Journal; Installation bleibt 42,
+Registry steigt auf 20. Bootstrapper, Current-Format-Inventar und Version-Truth
+entsprechend anpassen; veröffentlichte/frozen Altfixtures unverändert lassen.
+Utility prüft Campaign-ID vor Execute und Status. Alte API-Operationen bleiben
+bis zum vollständigen Renderer-Cutover erhalten. UI-Integration ist Folgeteilplan.
+
+Abnahme: alle 17 gültigen Commandvarianten nativ ausführen; Beleg lesen, bei
+absichtlich fehlgeschlagenem Journaleintrag gesamte Fachänderung zurückrollen,
+Replay nach späterer Arbeit und Neustart ohne weitere Änderung. Fehlende Belege
+read-only; falsche Campaign-ID, andere Szene und geänderte Absicht abweisen.
+Migration/Bootstrap und Version-Truth prüfen. Danach Type/Lint/Format, relevante
+bestehende LivePlay/Bridge/Architekturtests und Build/Smoke. Keine Freigabe der
+Phase 4 allein aufgrund dieses Backend-Teilplans.
+
+Backend-Review vor Nativenachweis: Die Utility-Komposition benennt ihren Store
+campaigns, nicht store; den neuen Callback entsprechend korrigieren. Zusätzlich
+Current-Format-Manifest und bestehende Latest-Schema-Assertions auf 40/20 bringen.
+Historische 38->39-Fehlerinjektion bleibt erhalten; ihr erfolgreicher vollständiger
+Vorwärtslauf endet jetzt bei 40. Die folgende Prüfung nutzt reale SQLite-Zustände
+für alle 17 Befehle und stoppt bei jedem nicht belegten Phasenübergang.
+
+Erste Nativeprüfung: prepare und Szenen-/Migrationsschutz bestehen. 16 andere
+Fälle erreichen die eigentliche Aktion noch nicht: das neue Fixture verwendet
+einen nicht vorhandenen initiative-Feldnamen. Auf den echten CombatSnapshot-
+Vertrag umstellen. Zwei weitere Abweichungen: Current-Format-Owner müssen in der
+Bootstrap-Reihenfolge stehen, und Version-Truth nennt noch Registry 19.
+Beides aus den ausführbaren Registern ableiten; keine Abnahmegrenze abschwächen.
+
+43/44 Kernprüfungen bestehen. updateResolution verwendet im neuen Fixture
+Karten-IDs; der Fachvertrag erwartet die einzelnen IDs aus resolution.enemies.
+Das Fixture auf diese Original-Enemy-IDs korrigieren. Die gezielte Abnahme bleibt
+für diesen Fall offen, bis auch dessen Journaleintrag tatsächlich erreicht und
+zurückgerollt wurde; die anderen 16 Aktionen erreichen diesen Nachweis bereits.
+
+Alle 17 Combatvarianten erreichen jetzt den beabsichtigten atomaren Belegnachweis;
+141 Prüfungen bestehen. Die zusätzliche Root-Qualifikation stoppt am noch nicht
+erweiterten coveredCampaignRegistrations-Array ihres separaten JSON-Fixtures.
+Nur diese Owner-Metadaten ergänzen, importierte Kampagnenpayloads unverändert
+lassen. Abnahme zusätzlich stärken: Originalbelege nach echtem Szenenfokuswechsel
+lesen/replayen und veränderte innere Befehlsabsicht ablehnen. XP-Award-Fixture vor
+Ausführung mit ausgewählten Gegnern auf einen positiven Award einstellen, damit
+der Rollback auch eine reale Party-XP-Änderung belegt.
+
+Combat-Backend qualifiziert: 146 Fälle in 15 Dateien bestehen, einschließlich
+aller 17 Befehle mit fehlgeschlagenem Beleginsert, unverändertem Datenrollback,
+späterer XP-Arbeit, echtem Fokuswechsel und erneutem Öffnen der Kampagne. Positive
+XP-Vergabe wird ebenfalls zurückgerollt. Migration 39->40 wird unterbrochen und
+korrekt wiederholt; Golden-Master-Vorwärtsketten und Root-Qualifikation bestehen.
+Weitere 38 Fälle in sechs Dateien prüfen die übrigen Current-Format-Kohorten und
+das Operationsregister. Der zunächst angegebene bridge-operation-contract-Dateiname
+existiert nicht; die tatsächlichen capability-bridge-adapter/operation-authorization-
+Dateien wurden anschließend separat erfolgreich ausgeführt.
+
+70812 ist exit 0 (Tests, Typecheck, vollständiges Lint/Format). 66875 ist exit 0
+(Current-Format-Tests, Build/Smoke/Bundle). Renderergraph unverändert 1643683 Bytes.
+Buildidentität bestätigt Installation 42, Kampagne 40, Registry 20.
+
+Plan-Audit: Backend-Teilplan bestanden. Vollständige Combatabsicht, Originalszene
+und UUID gehören zum unveränderlichen Fingerprint; Utility weist die falsche
+Campaign-ID vor jedem Execute/Status ab. Neuer Write verlangt die Originalszene,
+vorhandene Belege bleiben nach Fokuswechsel lesbar. Alle Befehle und Belege laufen
+in einer gemeinsamen CampaignUnitOfWork; SQL bleibt beim Encounter-Aggregat.
+Bootstrapper, additive Migration, Current-Format-Owner und Version-Truth stimmen.
+
+Roadmap-Audit: Phase 4 weiterhin offen. Renderer nutzt noch die alten direkten
+Combatoperationen; Backendtests sind keine UI-Abnahme. Der nächste Teilplan muss
+Encounter-Panel, CombatCard-Eingaben, Ergebnis-/XP-Abschluss und Gruppenbeitritt
+auf den gemeinsamen Auftrag umstellen und ihre offenen Änderungen bei Wartung
+auflösen. Phasen 5–7, kanonischer Handoff, Main-Gates und Veröffentlichung bleiben
+offen. f1b56946b CI 34298646929 zuletzt in_progress; neue Runde als Candidate
+sichern und dessen exakte Remote-Gates vor Handoff erfüllen.

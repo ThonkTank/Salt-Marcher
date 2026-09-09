@@ -145,7 +145,8 @@ export function createSessionHandlers(
 }
 
 export function createEncounterHandlers(
-  play: LivePlayService
+  play: LivePlayService,
+  activeCampaignId: () => string
 ): OperationHandlers<typeof encounterHandlerOperations> {
   return defineOperationHandlers(
     'encounter_handlers',
@@ -157,6 +158,16 @@ export function createEncounterHandlers(
           input.groupIds,
           input.expectedRevision
         ),
+      'combat.executeCommand': ({ campaignId, ...command }) => {
+        if (campaignId !== activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return play.executeCombatCommand(command)
+      },
+      'combat.commandStatus': ({ campaignId, ...command }) => {
+        if (campaignId !== activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return play.combatCommandStatus(command)
+      },
       'combat.prepare': (input) =>
         play.prepareCombat(
           input.sceneId,

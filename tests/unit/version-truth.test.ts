@@ -18,8 +18,8 @@ describe('version truth gate', () => {
       },
       {
         role: 'campaign',
-        current: 39,
-        path: '27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39',
+        current: 40,
+        path: '27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40',
         owner: 'campaign-schema-migrations.ts'
       }
     ])

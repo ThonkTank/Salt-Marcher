@@ -413,7 +413,9 @@ const sessionPlannerHandlers = createSessionPlannerHandlers({
   sessionPlanner
 })
 const lootHandlers = lootComposition.createHandlers(publishLootChange)
-const encounterHandlers = createEncounterHandlers(play)
+const encounterHandlers = createEncounterHandlers(play, () =>
+  campaigns.activeCampaignId()
+)
 
 const hexHandlers = createHexHandlers({
   hex,

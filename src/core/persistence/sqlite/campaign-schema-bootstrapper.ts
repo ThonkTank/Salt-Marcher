@@ -1,3 +1,4 @@
+import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
 import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
@@ -73,6 +74,7 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
     registration('scene-group-receipts', initializeSceneGroupCommandJournal, [
       'scene'
     ]),
+    registration('combat-receipts', initializeCombatCommandJournal, ['combat']),
     registration('scene-party-receipts', initializeScenePartyCommandJournal, [
       'scene'
     ]),

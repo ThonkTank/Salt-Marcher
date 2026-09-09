@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 39,
+    "campaignDatabaseSchemaVersion": 40,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -189,6 +189,14 @@
       "disposition": "initialize-only",
       "fixturePlan": "Create current schema metadata only through CampaignSchemaBootstrapper.",
       "oraclePlan": "Assert the current metadata row set before accepting the fixture."
+    },
+    {
+      "registration": "combat-receipts",
+      "authority": "campaign.combat-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the durable combat command receipt journal through CampaignSchemaBootstrapper.",
+      "oraclePlan": "Assert the journal table shape and preserve original combat receipts during forward migration."
     },
     {
       "registration": "schema-version",

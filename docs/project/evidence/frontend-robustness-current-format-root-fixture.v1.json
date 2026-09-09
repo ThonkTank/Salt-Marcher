@@ -14,6 +14,7 @@
     "scene-group-receipts",
     "scene-party-receipts",
     "schema-metadata",
+    "combat-receipts",
     "schema-version"
   ],
   "coveredInstallationAuthorities": ["installation.campaign-registry"],
