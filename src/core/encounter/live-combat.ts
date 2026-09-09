@@ -1,4 +1,8 @@
 import {
+  sceneGroupLifecycleCommandSchema,
+  type SceneGroupLifecycleCommand
+} from '../../shared/contracts/scene-group-lifecycle.js'
+import {
   scenePartyCommandSchema,
   type ScenePartyCommand
 } from '../../shared/contracts/scene-party-command.js'
@@ -483,6 +487,43 @@ export class LivePlayService {
     )
   }
 
+  executeSceneGroupLifecycle(
+    raw: SceneGroupLifecycleCommand
+  ): SceneGroupCommandResult {
+    const input = sceneGroupLifecycleCommandSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new CampaignUnitOfWork(db).run(() => {
+        const journal = new SceneGroupCommandJournal(db)
+        const previous = journal.read(input)
+        if (previous) return previous
+        const command = input.command
+        const result =
+          command.kind === 'archive'
+            ? this.setSceneGroupArchived(
+                command.input.sceneId,
+                command.input.groupId,
+                command.input.archived,
+                command.input.expectedGroupRevision
+              )
+            : this.deleteSceneGroup(
+                command.input.sceneId,
+                command.input.groupId,
+                command.input.expectedGroupRevision
+              )
+        journal.record(input, result)
+        return result
+      })
+    )
+  }
+
+  sceneGroupLifecycleStatus(raw: SceneGroupLifecycleCommand) {
+    const input = sceneGroupLifecycleCommandSchema.parse(raw)
+    return this.campaignDatabase.use((db) => ({
+      receipt: new SceneGroupCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
+  }
+
   sceneGroupSaveReceipt(
     raw: SaveSceneGroupInput
   ): SceneGroupCommandResult | null {
@@ -554,8 +595,9 @@ export class LivePlayService {
     archived: boolean,
     expectedGroupRevision: number
   ): SceneGroupCommandResult {
-    return this.withStores(({ party, scene, combat, unitOfWork }) => {
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) => {
       return unitOfWork.run(() => {
+        const combat = combatFor(sceneId)
         scene.setGroupArchived(
           sceneId,
           groupId,
@@ -596,7 +638,8 @@ export class LivePlayService {
     groupId: string,
     expectedGroupRevision: number
   ): SceneGroupCommandResult {
-    return this.withStores(({ party, scene, combat }) => {
+    return this.withStores(({ party, scene, combatFor }) => {
+      const combat = combatFor(sceneId)
       scene.deleteGroup(sceneId, groupId, expectedGroupRevision)
       return this.sceneGroupResultFromStores(party, scene, combat, sceneId, [
         groupId

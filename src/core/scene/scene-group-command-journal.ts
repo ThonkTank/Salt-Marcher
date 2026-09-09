@@ -1,3 +1,4 @@
+import type { SceneGroupLifecycleCommand } from '../../shared/contracts/scene-group-lifecycle.js'
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
@@ -23,7 +24,9 @@ export function initializeSceneGroupCommandJournal(
 export class SceneGroupCommandJournal {
   constructor(private readonly database: Database.Database) {}
 
-  read(input: SaveSceneGroupInput): SceneGroupCommandResult | null {
+  read(
+    input: SaveSceneGroupInput | SceneGroupLifecycleCommand
+  ): SceneGroupCommandResult | null {
     const row = this.database
       .prepare(
         `
@@ -44,7 +47,10 @@ export class SceneGroupCommandJournal {
     )
   }
 
-  record(input: SaveSceneGroupInput, result: SceneGroupCommandResult): void {
+  record(
+    input: SaveSceneGroupInput | SceneGroupLifecycleCommand,
+    result: SceneGroupCommandResult
+  ): void {
     this.database
       .prepare(
         `

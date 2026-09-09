@@ -5272,3 +5272,77 @@ sechs Update-UI-Fälle und Format). Alle übrigen Lintpartitionen bestanden zuvo
 45 relevante Fälle, Typecheck, vollständiges Format und Build/Smoke/Budget sind
 nachgewiesen. git diff --check besteht. Candidate committen/pushen; dessen
 Remoteprüfung und spätere kanonische Übergabe bleiben eigenständige Gates.
+
+Phase 4 – Teilplan Gruppen-Lebenszyklusquittungen:
+Voriger Turn war Fortschritt (012849c62); dessen CI 34295230994 steht pending.
+Aktive archive/restore/delete-Pfade verwenden direkte Gruppenwrites. Den bestehenden
+SceneGroupCommandJournal um einen unterscheidbaren Lifecycle-Auftrag (commandId,
+kind, input) erweitern. Alte Save-Fingerprints und Resultatversion 1 unverändert
+lesen; gleiche Tabelle und Resultatstruktur, daher keine neue Schema-Version.
+Neue Zod-validierte Execute-/Statusoperationen binden beide Wege an die ursprüngliche
+Campaign-ID. Resultat und Group-/Combat-Effekte werden gemeinsam transaktional
+persistiert; Status liefert Originalquittung plus aktuellen vollständigen Snapshot.
+
+Archivierung/Resultatlesung muss das Combat-Aggregat der ausdrücklich genannten
+Szene verwenden, nicht versehentlich das der fokussierten Szene. Qualifikation:
+Archivieren, Wiederherstellen, Löschen; fehlgeschlagene Quittung rollt Effekte
+zurück; Wiederholung nach späterer Arbeit/Neustart ändert nichts; query_only-Status,
+Fingerprintkonflikt, falsche Campaign-ID und bestehende Save-Quittungen. Danach
+Rendereranbindung mit Wartungseigentümer; Backend allein schließt den UI-Pfad nicht.
+
+Native Testkorrektur: Die vier neuen Fälle erreichen prepareCombat mit einer
+leeren Party und werden korrekt durch canStart abgewiesen. Vor den neuen
+Lifecyclefällen eine Beispielparty anlegen, eine Figur aktivieren und den
+Gruppen-Save mit der danach gültigen Scene-Revision aufbauen. Bestehende vier
+Save-Receipt-Fälle bleiben unverändert. Kein Abschwächen der Kampfvalidierung.
+
+Oracle-Korrektur nach Typecheck: Combat-Karten tragen memberIds, keine groupId.
+Die bisherige neue .groupId-Assertion hätte zur Laufzeit das Entfernen nicht
+bewiesen; ihre acht Laufzeiterfolge gelten deshalb noch nicht als vollständige
+Abnahme. Vergleiche stattdessen die echten Gruppenmitglied-IDs mit card.memberIds
+und verlange ausdrücklich Präsenz vor Archivierung sowie Abwesenheit danach.
+Erneuter Typecheck und native Tests sind vor jeder Abschlussaussage erforderlich.
+
+Weitere Oracle-Korrektur: 93 Fälle bestehen, die vier neuen Präsenzprüfungen
+zeigen, dass Combat-Karten eigene Kampfmitglied-IDs verwenden (combat-state-reducer
+und combat-service.unlinkGroup); sie sind nicht die Scene-Member-IDs. Das Fixture
+hat genau eine feindliche Gruppe mit ausschließlich wolf und eine Spielerfigur.
+Daher die eindeutig dieser Gruppe zugehörigen Wolf-Karten vor Archivierung
+verlangen und danach deren Abwesenheit prüfen. Vollständiger Snapshotvergleich
+für Rollback und späteren Zustand bleibt zusätzlich bestehen.
+
+Fixturezustand präzisiert: Die Präsenzprüfung scheitert weiterhin, weil prepareCombat
+nur die Initiative vorbereitet. combat-service.confirmInitiative erzeugt erst die
+Karten; dabei werden vorhandene Scene-Member-IDs übernommen. Die frühere Erklärung
+„eigene IDs“ war für dieses Fixture daher unvollständig. Jetzt nach Vorbereitung
+die vorhandenen Initiativezeilen bestätigen und erst dann Kartenpräsenz prüfen.
+Die Abnahme verlangt einen tatsächlich laufenden Kampf und bleibt bis dahin offen.
+
+Gruppen-Lifecycle-Backend qualifiziert: 123 Fälle in zwölf Dateien bestehen
+(inklusive vier neuer Lifecyclefälle mit tatsächlich bestätigter Initiative,
+alten Save-Quittungen, LivePlay, SceneParty, Architektur und Bridge/Operationen).
+Die echten Wolf-Karten sind vor Archivierung nachgewiesen und danach entfernt;
+bei absichtlich fehlgeschlagener Quittung entspricht der gesamte Snapshot dem
+vorherigen laufenden Kampf. Nicht fokussierte Archivierung bearbeitet den Combat-
+Owner der genannten Szene und lässt den fokussierten Zustand unverändert.
+Typecheck besteht. Build, Smoke und Bundlebudget bestehen (27940, exit 0);
+Renderergraph unverändert bei 1637720 Bytes. Kein Schemawechsel.
+
+Plan-Audit: Neuer Execute-/Statusvertrag validiert die ursprüngliche Campaign-ID,
+Auftrags-ID und vollständige Absicht. Das vorhandene Journal speichert weiterhin
+Resultatversion 1; alte Save-Einträge sind unverändert lesbar. Archivieren,
+Wiederherstellen und Löschen werden gemeinsam mit der Quittung transaktional
+committet. Read-only-Status liefert Originalquittung und aktuellen Snapshot;
+Replay nach späterer Arbeit und Neustart ändert diesen späteren Stand nicht.
+Falsche Campaign-ID und geänderter Fingerprint werden abgewiesen.
+
+Roadmap-Audit: Backend-Teilplan lokal qualifiziert. Die bestehenden Renderer-
+archive/restore/delete-Aufrufe verwenden noch die alten direkten Operationen;
+ihre Umstellung und Wartungseigentümerschaft sind der nächste notwendige Schritt.
+Die Backendtests belegen keine fertige UI-Recovery. Phase 4 sowie Phasen 5–7
+bleiben offen. Kein Handoff, keine Main-Promotion und kein öffentlicher Release.
+
+Finale lokale Prüfungen: 69943 endet mit exit 0 (123 Tests, Typecheck,
+vollständiges Lint), 20298 mit exit 0 (vollständiges Format). git diff --check
+prüfen, den Backendstand als Candidate committen/pushen. Remote-Gates bleiben
+vor kanonischem Handoff und Main-Promotion verpflichtend.

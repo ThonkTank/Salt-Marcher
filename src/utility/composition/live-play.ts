@@ -89,6 +89,16 @@ export function createSessionHandlers(
         input.locationId,
         input.expectedRevision
       ),
+    'scene.executeGroupLifecycle': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeSceneGroupLifecycle(command)
+    },
+    'scene.groupLifecycleStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.sceneGroupLifecycleStatus(command)
+    },
     'scene.saveGroup': (input) => play.saveSceneGroupCommand(input),
     'scene.groupSaveReceipt': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())

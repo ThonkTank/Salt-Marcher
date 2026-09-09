@@ -1,4 +1,8 @@
 import {
+  campaignSceneGroupLifecycleCommandSchema,
+  sceneGroupLifecycleStatusSchema
+} from '../scene-group-lifecycle.js'
+import {
   campaignScenePartyCommandSchema,
   scenePartyCommandReceiptSchema,
   scenePartyCommandStatusSchema
@@ -25,6 +29,16 @@ import {
 import { read, utilityOperationFragment, write } from './registry.js'
 
 export const sceneOperationDefinitions = utilityOperationFragment({
+  'scene.executeGroupLifecycle': write(
+    'scene:execute-group-lifecycle',
+    campaignSceneGroupLifecycleCommandSchema,
+    sceneGroupCommandResultSchema
+  ),
+  'scene.groupLifecycleStatus': read(
+    'scene:group-lifecycle-status',
+    campaignSceneGroupLifecycleCommandSchema,
+    sceneGroupLifecycleStatusSchema
+  ),
   'scene.executePartyCommand': write(
     'scene:execute-party-command',
     campaignScenePartyCommandSchema,
