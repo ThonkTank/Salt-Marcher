@@ -8701,3 +8701,59 @@ weiterhin. pnpm check bleibt Abschlussgate, dessen GUI-Anteile nach Desktopvorfa
 nur in isolierter VM laufen dürfen; die fokussierte Suite ersetzt es nicht.
 Nächster Schritt: tatsächliche Zielruntime-/Migrations-Faultpunkte im
 Qualifikationsartefakt anbinden, originalen Profilreadback vor/nach Crash prüfen.
+
+### Phase 5 – Unterbrechung innerhalb originaler SQLite-Migrationen
+
+Voriger Turn Fortschritt:35 reale Coordinator-Prozessabbrüche grün, Candidate
+7c97eadee gesichert. Zu Beginn CI34345599892 pending, Vorgänger34345111460 läuft.
+Plan vor Änderungen: historischer Harness erhält optionalen Callback unmittelbar
+nach dem originalen SQL einer Migration, noch innerhalb der originalen
+applySchemaMigrations-Transaktion und vor user_version/Commit. Die vorhandene
+Registry-Funktion nimmt bereits explizite Migrationsobjekte entgegen: nur die
+vom Preflight aufgelösten Originalmigrationen dekorieren, keine SQL-Neufassung
+und keine Änderung der normalen App. Callback meldet ID, Rolle, Versionen und
+inTransaction; separater Utility-Abbruchfall muss dort SIGKILL auslösen.
+
+Reihenfolge: typed Harness-Callback und Welt-/Loot-Weiterleitung; dessen Ort und
+Originalaufruf mit gezielter Prüfung absichern; anschließend neues Testartefakt
+mit Utility-Todesbeleg/Runner qualifizieren. Bei fehlendem/außerhalb Transaktion
+liegenden Callback kein bestandener Abbruch. Quelle bleibt unangetastet, gestorbene
+Arbeitskopie wird mit Originalruntime gelesen, danach Zielmigration neu gestartet
+und vollständiger Readback verglichen. Der Callback allein ist kein Abnahmenachweis.
+
+54278 terminalExit0:Harness-Lint, beide TypeScript-Projekte und6 vorhandene
+Artifact-Runnerfälle bestanden. Neue migrate-kill-Operation schreibt vor dem
+Utility-SIGKILL einen validierten Transaktions-/Migrationsbeleg; Main bindet ihn
+an seine gestartete Worker-PID und speichert den beobachteten Utility-Exitcode.
+Runner verlangt zugehörigen Abbruchbericht und fehlgeschlagene normale Antwort.
+Der tatsächliche Exitcode und Datenrollback müssen im Gast noch geprüft werden.
+
+29805 terminalExit0:Test-AppImage0.0.150 aus Originalquelle f633b896... (42/42),
+unveränderter Sourcecheckout, neuer expliziter Harness.177044124Bytes,SHA256
+c5460bb82ff02f04c81b0db0f4aca8d9209c995358350228344828ed6e5c1a8a,
+work/historical-artifacts/migration-kill-target-v1. Gegenseite bleibt unverändertes
+0.0.148(42/41). Payload-migration-kill-1 hashbindet beide Artefakte und aktuellen
+uncommittierten Qualifier. Gastlauf74369 gestartet, separates neues Overlay,
+keine Host-GUI. Ergebnis nicht aus erfolgreichem Build ableiten.
+
+74369 terminal: migration-kill-run-1 GastExit0 UND TestExit0 nach33s. BerichtSHA
+ a9c38ce269a2a41c2e3594565c1fb4e5d833a15c0070cb0fbbb284520797ffd4
+unter evidence/qualification/migration-interruption-evidence.json. Beleg zeigt
+PID1017, Auftragd83d677b-b92b-498a-bc4a-07b276aff1f9, beobachteter UtilityExit9,
+SIGKILL nach campaign-41-to-42-active-loot-receipts bei inTransaction=true.
+Unabhängig aus exportiertem Bericht verglichen: seeded==recovered==sourceAfter,
+resumed.profile==after. Originalmigration erneut erfolgreich, Quelle unverändert.
+
+Audit-Korrekturplan: Runner akzeptierte bisher jeden Nichtnull-Utilityexit;
+Linux-SIGKILL wurde konkret als9 beobachtet. Auf literal9 verschärfen und den
+aufbewahrten Bericht gegen dieselbe Vorgabe validieren; andere Exitursachen
+zählen nicht. Keine neue Artefaktdatei für diese reine Orchestratorverschärfung.
+Plan-Audit Migrationscallback/erster echter Abbruch erfüllt. Roadmap-Audit:
+weitere Migrationsstände, komplette Updateaktivierung nach Fehler, Local-/Release-
+Adaptergrenzen, Kapazitäts-/Zugriffsfehler bleiben eigenständige Abnahmefälle.
+
+89796 terminalExit0: abschließender Harness-Lint, vollständige Typprüfung und6
+Artifact-Runner-Tests bestanden. Aufbewahrter echter Gastbericht separat auf
+workerExitCode===9 geprüft; Runner verlangt nun literal9. Abnahme gilt exakt für
+die geprüfte erste 41→42-Migration im Arbeitsprofil, nicht den gesamten Updateweg.
+Commit/Push als weiterer Candidate; keine Main-Promotion, kein Desktop-Handoff.

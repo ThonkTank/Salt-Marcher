@@ -168,3 +168,22 @@ profiles, and post-commit writes. Format 3 includes the durable rollback-history
 boundary. These are real OS process deaths, but use inert program bytes and
 synthetic file profiles: packaged Local/Release adapters, SQLite migration,
 physical power loss and real AppImage interruption still require their own proof.
+
+## Packaged migration transaction interrupted (2026-09-09)
+
+Immutable test AppImage 0.0.148 (42/41) supplies the complete seeded profile;
+0.0.150 (42/42), SHA256
+c5460bb82ff02f04c81b0db0f4aca8d9209c995358350228344828ed6e5c1a8a,
+executes the original campaign-41-to-42-active-loot-receipts migration. Its test
+harness kills the Utility process after original migration SQL, inside the
+original transaction and before schema-version publication/commit. The KVM run
+records matching worker/request identity, inTransaction=true and Utility exit 9.
+The old AppImage then reads the complete working profile equal to the seed.
+Retry with the target AppImage migrates successfully and its full readback matches
+the expected data; the source remains unchanged. Report SHA256:
+a9c38ce269a2a41c2e3594565c1fb4e5d833a15c0070cb0fbbb284520797ffd4.
+
+This proves rollback/retry for this real migration transaction. It does not yet
+prove every migration, physical power failure, or coupled Local/Release update
+activation after Utility death. The harness is explicitly test-only and records
+its own source hashes; these artifacts are not public releases.

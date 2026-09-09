@@ -16,7 +16,10 @@ import { CampaignStore } from '@historical/legacy-campaign-store'
 import { PartyStore } from '@historical/party-store'
 import { LootService } from '@historical/loot-service'
 import { preflightPersistence } from '@historical/preflight'
-import { migrateHistoricalProfileData } from './migrate-profile.js'
+import {
+  migrateHistoricalProfileData,
+  type HistoricalMigrationObserver
+} from './migrate-profile.js'
 
 const fixtureSchema = z
   .object({
@@ -149,8 +152,15 @@ export function readHistoricalProfile(profile: string) {
   }
 }
 
-export function migrateHistoricalProfile(profile: string) {
-  return migrateHistoricalProfileData(profile, readHistoricalProfile)
+export function migrateHistoricalProfile(
+  profile: string,
+  afterMigration?: HistoricalMigrationObserver
+) {
+  return migrateHistoricalProfileData(
+    profile,
+    readHistoricalProfile,
+    afterMigration
+  )
 }
 
 export function advanceHistoricalProfile(profile: string) {

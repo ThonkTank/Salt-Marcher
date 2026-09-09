@@ -22,7 +22,8 @@ import { releaseVersionSchema } from '../../src/shared/contracts/release.js'
 import { historicalSourceSchema } from './historical-release-sources.js'
 import {
   historicalOperationSchema,
-  historicalResponseSchema
+  historicalResponseSchema,
+  historicalInterruptionSchema
 } from './historical-runtime/contract.js'
 
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/)
@@ -157,7 +158,28 @@ export async function runHistoricalArtifact(
     )
   if (readHistoricalArtifact(directory).receiptSha256 !== receiptSha256)
     throw new Error('Historical artifact receipt changed during execution')
+  const interruption =
+    operation === 'migrate-kill'
+      ? historicalInterruptionSchema
+          .extend({
+            workerExitCode: z.literal(9)
+          })
+          .parse(
+            JSON.parse(
+              readFileSync(
+                join(reports, `${requestId}.interruption.json`),
+                'utf8'
+              )
+            )
+          )
+      : null
+  if (
+    interruption &&
+    (interruption.requestId !== requestId || result.response.ok)
+  )
+    throw new Error('Migration interruption was not proven')
   const evidence = {
+    interruption,
     formatVersion: 1,
     requestId,
     operation,

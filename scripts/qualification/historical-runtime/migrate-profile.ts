@@ -4,9 +4,21 @@ import Database from 'better-sqlite3'
 import { existsSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 
+export type HistoricalMigrationBoundary = Readonly<{
+  id: string
+  role: 'installation' | 'campaign'
+  fromVersion: number
+  toVersion: number
+  inTransaction: boolean
+}>
+export type HistoricalMigrationObserver = (
+  boundary: HistoricalMigrationBoundary
+) => void
+
 export function migrateHistoricalProfileData(
   profile: string,
-  readback: (profile: string) => unknown
+  readback: (profile: string) => unknown,
+  afterMigration?: HistoricalMigrationObserver
 ) {
   if (!existsSync(join(dirname(profile), 'historical-working-copy.json')))
     throw new Error('Historical migration requires a marked working copy')
@@ -20,7 +32,23 @@ export function migrateHistoricalProfileData(
       database.pragma('foreign_keys = ON')
       database.pragma('journal_mode = WAL')
       database.pragma('synchronous = FULL')
-      applySchemaMigrations(database, { path: entry.path, role: entry.role })
+      applySchemaMigrations(
+        database,
+        { path: entry.path, role: entry.role },
+        entry.migrations.map((migration) => ({
+          ...migration,
+          migrate(database, context) {
+            migration.migrate(database, context)
+            afterMigration?.({
+              id: migration.id,
+              role: migration.role,
+              fromVersion: migration.fromVersion,
+              toVersion: migration.toVersion,
+              inTransaction: database.inTransaction
+            })
+          }
+        }))
+      )
       database.pragma('wal_checkpoint(TRUNCATE)')
       if (
         database.pragma('integrity_check', { simple: true }) !== 'ok' ||

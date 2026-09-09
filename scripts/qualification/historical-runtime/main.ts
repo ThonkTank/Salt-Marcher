@@ -1,6 +1,6 @@
 import { historicalUiFeed, historicalUiFetch } from './ui-feed.js'
 import { app, utilityProcess } from 'electron'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
@@ -8,7 +8,8 @@ import { acquireProfileAccess } from '../../../src/main/local-profile/profile-ac
 import {
   historicalOperationSchema,
   historicalRequestSchema,
-  historicalResponseSchema
+  historicalResponseSchema,
+  historicalInterruptionSchema
 } from './contract.js'
 
 const operationIndex = process.argv.indexOf('--historical-qualification')
@@ -51,8 +52,14 @@ if (operationIndex === -1 && !identityOnly) {
       serviceName: 'SaltMarcher historical qualification'
     })
     let exitCode = 1
-    worker.once('spawn', () => worker.postMessage(request))
+    let workerPid: number | undefined
+    let receivedResponse = false
+    worker.once('spawn', () => {
+      workerPid = worker.pid
+      worker.postMessage(request)
+    })
     worker.once('message', (raw: unknown) => {
+      receivedResponse = true
       const response = historicalResponseSchema.parse(raw)
       if (response.requestId !== requestId)
         throw new Error('Historical response identity mismatch')
@@ -69,9 +76,57 @@ if (operationIndex === -1 && !identityOnly) {
       exitCode = response.ok ? 0 : 1
       worker.kill()
     })
-    worker.once('exit', () => {
-      access.release()
-      app.exit(exitCode)
+    worker.once('exit', (workerExitCode) => {
+      try {
+        if (
+          operation === 'migrate-kill' &&
+          !receivedResponse &&
+          workerExitCode !== 0
+        ) {
+          const interruption = historicalInterruptionSchema.parse(
+            JSON.parse(
+              readFileSync(
+                join(
+                  root,
+                  'salt-marcher',
+                  `migration-interruption-${requestId}.json`
+                ),
+                'utf8'
+              )
+            )
+          )
+          if (
+            interruption.requestId !== requestId ||
+            interruption.pid !== workerPid
+          )
+            throw new Error('Migration interruption identity mismatch')
+          writeFileSync(
+            join(directory, `${requestId}.interruption.json`),
+            JSON.stringify({
+              ...interruption,
+              workerExitCode
+            }),
+            { flag: 'wx' }
+          )
+          writeFileSync(
+            join(directory, `${requestId}.json`),
+            JSON.stringify({
+              formatVersion: 1,
+              artifactVersion: app.getVersion(),
+              operation,
+              response: {
+                ok: false,
+                requestId,
+                message: 'Historical migration worker interrupted'
+              }
+            }),
+            { flag: 'wx' }
+          )
+        }
+      } finally {
+        access.release()
+        app.exit(exitCode)
+      }
     })
   })
 }

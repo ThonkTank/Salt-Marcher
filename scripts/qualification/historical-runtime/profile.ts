@@ -15,7 +15,10 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
-import { migrateHistoricalProfileData } from './migrate-profile.js'
+import {
+  migrateHistoricalProfileData,
+  type HistoricalMigrationObserver
+} from './migrate-profile.js'
 import {
   advanceHistoricalCombat,
   finishHistoricalCombat,
@@ -176,8 +179,15 @@ export function advanceHistoricalProfile(
   return readHistoricalProfile(profile)
 }
 
-export function migrateHistoricalProfile(profile: string) {
-  return migrateHistoricalProfileData(profile, readHistoricalProfile)
+export function migrateHistoricalProfile(
+  profile: string,
+  afterMigration?: HistoricalMigrationObserver
+) {
+  return migrateHistoricalProfileData(
+    profile,
+    readHistoricalProfile,
+    afterMigration
+  )
 }
 
 export function finishCombatAndTravelHistoricalProfile(profile: string) {

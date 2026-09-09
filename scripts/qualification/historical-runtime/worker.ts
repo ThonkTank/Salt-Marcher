@@ -1,8 +1,11 @@
+import { join, dirname } from 'node:path'
+import { durableJson } from '../../../src/shared/maintenance/files.js'
 import Database from 'better-sqlite3'
 import { databaseSchemaVersions } from '@historical/schema-owner'
 import {
   historicalRequestSchema,
-  historicalResponseSchema
+  historicalResponseSchema,
+  historicalInterruptionSchema
 } from './contract.js'
 import {
   advanceHistoricalProfile,
@@ -28,7 +31,31 @@ process.parentPort?.on('message', (event) => {
                 ? finishCombatAndTravelHistoricalProfile(request.profile)
                 : request.operation === 'advance'
                   ? advanceHistoricalProfile(request.profile)
-                  : migrateHistoricalProfile(request.profile)
+                  : migrateHistoricalProfile(
+                      request.profile,
+                      request.operation === 'migrate-kill'
+                        ? (boundary) => {
+                            const interruption =
+                              historicalInterruptionSchema.parse({
+                                requestId: request.requestId,
+                                pid: process.pid,
+                                signal: 'SIGKILL',
+                                boundary
+                              })
+                            durableJson(
+                              join(
+                                dirname(request.profile),
+                                `migration-interruption-${request.requestId}.json`
+                              ),
+                              interruption
+                            )
+                            process.kill(process.pid, 'SIGKILL')
+                            throw new Error(
+                              'SIGKILL did not terminate migration worker'
+                            )
+                          }
+                        : undefined
+                    )
     process.parentPort?.postMessage(
       historicalResponseSchema.parse({
         ok: true,
