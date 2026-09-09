@@ -6080,3 +6080,90 @@ grün, Aggregat zuletzt noch in_progress. Nicht handoff-fähig behauptet. Diesen
 geprüften Backendzwischenstand jetzt committen/pushen; exakte Remote-Gates sowie
 Handoff/Main-Promotion bleiben ausstehend. Lokaler Dirty-Build war ausschließlich
 Qualifikation und ist kein Übergabe-/Releaseartefakt.
+
+### Phase 4 – Originalgebundener Reise-Renderer, Teilplan (2026-09-09)
+
+Voriger Zielturn: Fortschritt, Backend f3b485af2 sauber committed/gepusht. Aktueller
+Worktree sauber; AGENTS und bisherigen Reise-Teilplan erneut geprüft. Phase 4
+bleibt offen. Nächster implementierter Abschnitt stellt Originalport und gehaltenen
+Befehlscontroller bereit; anschließend werden generische Travel-Hooks und die
+Planprojektion darauf umgestellt, ohne einen optionalen Legacy-Fallback einzubauen.
+
+Konkreter Plan vor Änderungen:
+1. Ein atomar gelesener Reise-/Plan-/Sessionzustand als readState-Capability, damit
+   Recovery nicht drei zeitlich unterschiedliche Antworten zusammenbauen muss.
+   Port ist an ursprüngliche Kampagne UND Szene gebunden. Aktive sowie geladene
+   Kampagne vor/nach Transport und Workspace-Refresh prüfen; nach abgeschicktem
+   Write geänderte Bindung als outcome_unknown erhalten. Keine globalen API-Zugriffe.
+2. Gehaltener Hex-Reisecontroller behält den Originalauftrag, blockiert weitere
+   Writes und stellt nach Unmount einen Wartungsteilnehmer. Status prüft nur Belege,
+   publiziert frischen Zustand separat und wiederholt keine Aktion. Explizites Save
+   nach sicher belegter Abwesenheit verwendet neue UUID und prüft die Revisionen
+   erneut; Discard klärt laufende/unbekannte Writes vor Freigabe. Fehlende Reads
+   bleiben blockierend. Kein Callback in eine inzwischen geschlossene/fremde Ansicht.
+3. Reviewergänzung zur bereits abgesicherten Startaktion: auch Pause/Resume/Abort/
+   Multiplikator können nach position+start dieselbe Reiserevision wie eine ältere
+   Reise besitzen. Deshalb erhalten alle NEUEN journalisierten Reiseaktionen
+   zusätzlich Szenen-CAS; Legacy-APIs unverändert. Native Regression prüft einen
+   pausierenden Altauftrag nach einer neuen Reise bei gleicher Reiserevision.
+4. Port-/Controllerprüfungen: Kampagnenwechsel vor/während jeder Operation,
+   falsche Szene, Refreshfehler, Originalbeleg plus spätere Arbeit, alle sieben
+   Revisionsvarianten, Unmount während laufendem Write, zentrale Save/Discard-
+   Klärung, Abwesenheit mit Konflikt, neue Änderungen zwischen Status und Retry.
+   Relevante Native-/Bridge-/Architekturregressionen und Type/Lint/Format folgen.
+
+Danach eigener konkreter UI-Cutover: generischer TravelProviderPort transportiert
+Planstände/Auftragsidentitäten; useTravelCommands verwendet gehaltene Aufträge
+anstelle abbrechbarer FIFO-Writes. useTravelController registriert gespeicherte
+Routenentwürfe und sperrt Eingaben während Klärung; SessionTravelIntegration bindet
+Originalkampagne und zeigt Status/zentralen Dialog. UI-/Electronabnahme muss noch
+folgen; dieser Grundlagenabschnitt allein schließt Phase 4 nicht.
+
+Erste Qualifikation: 41877 exit 0, 61 neue/erweiterte Vertrags-, Port-, Controller-
+und native Belegfälle bestanden. Einschließlich später Neupositionierung bei
+identischer Reiserevision, query_only-readState, Originalkampagne vor/während
+Transport, falscher Szene, sieben Recoveryvarianten, Revisionskonflikten,
+zentraler Klärung nach Unmount und serialisiertem explizitem Retry.
+Früher Typecheck 53416 lief vor vollständiger Anpassung des Multiplikatorfixtures
+und meldete dort noch fehlendes expectedSceneRevision. Das Fixture wurde während
+der Implementierung vervollständigt; jetzt erneuter Typecheck und relevante
+Architektur-/Bridge-/Reiseregresse. Save hält auch seine asynchrone erneute
+Revisionsprüfung als einen serialisierten Auftrag; ein zweiter Save teilt dessen
+Promise, andere Writes bleiben gesperrt.
+
+Abschluss dieses Grundlagenabschnitts: 40271 exit 0. Gezieltes Lint sämtlicher
+geänderter TS-/TSX-Dateien, beide Typechecks, 157 Architektur-/Autorisierungs-/
+Bridge-/Vertrags-/Port-/Controller-/Nativefälle sowie Build/Smoke/Bundle bestanden.
+30021 exit 0: vollständige Formatprüfung, Version-Truth und git diff --check.
+Renderergraph unverändert 1656365 Bytes; keine Budget-/Baselineänderung. Schema
+weiter Installation 42/Kampagne 41/Registry 21, keine zusätzliche Migration nötig.
+Keine laufenden lokalen Prüfprozesse. Neue Wrapper-Verträge ergänzen nur die CAS-
+Anforderung neu eingereichter Befehle; bestehende Belegergebnisse und Legacy-APIs
+behalten ihr Datenformat.
+
+Plan-Audit Originalport/Controller: readState liefert Reise, Plan und Session in
+einem synchronen Utility-Aufruf. Originalport prüft geladene/aktive Kampagne und
+Originalszene vor Transport; bei Kampagnenwechsel nach Write bleibt outcome_unknown.
+Workspace-Refresh wird vor frischer Reiseprojektion vollständig abgeschlossen und
+beide Antworten erneut an die Originalkampagne gebunden. Controller trennt
+Originalbeleg von aktuellem Stand, hält Write und Readfehler über Unmount, klärt
+bei Save/Discard erst offene Aufträge und verwendet nur bei bestätigter Abwesenheit
+und frischen Revisionen eine neue UUID. Gleichzeitige Save-Aufrufe werden auch
+während Retry-Preflight zusammengehalten. Native Regression belegt: ein alter
+Pauseauftrag kann eine neue Reise bei gleicher Reiserevision nicht anhalten.
+Tests für Originalbindungen, alle sieben Recoveryvarianten, Konflikte zwischen
+Status/Refresh/Retry und zentrale Klärung nach Unmount bestanden.
+
+Roadmap-Audit: Originalport-/Befehlscontroller-Grundlage dieses Teilplans geprüft.
+Noch kein Produkt-Cutover: useSessionTravelIntegration und useTravelCommands
+instanziieren den neuen Owner noch nicht. Gespeicherte Routen werden noch nicht
+in useTravelViewProjection geladen und als Editor registriert. Deshalb bleibt
+Phase 4 offen; nächste Arbeit ist ausdrücklich der geplante UI-Cutover inklusive
+Maintenance-Registrierung auch im geöffneten Fenster, Eingabesperre, zentralem
+Dialog und Routenentwurf. Danach gezielte UI- und echte Electronabnahme, bevor
+Phasen 5–7 beginnen dürfen. Kein Handoff/Main-/Releaseabschluss.
+
+Candidate f3b485af2 in CI 34305976464 beim Abruf noch in_progress; Vorgänger
+978860ec7 ist inzwischen terminal failure (der hier bereits korrigierte alte
+Architekturpfad). Diesen geprüften Abschnitt als neuen Candidate committen und
+pushen; vollständige exakte Remote-Prüfungen bleiben ausstehend.

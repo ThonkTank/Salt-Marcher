@@ -83,7 +83,10 @@ describe('Hex travel command boundary', () => {
     (kind) => {
       const action = {
         commandId,
-        command: { kind, input: { sceneId, expectedRevision: 3 } }
+        command: {
+          kind,
+          input: { sceneId, expectedRevision: 3, expectedSceneRevision: 9 }
+        }
       }
       expect(hexTravelCommandSchema.parse(action)).toEqual(action)
     }
@@ -111,7 +114,12 @@ describe('Hex travel command boundary', () => {
       },
       {
         kind: 'set-multiplier',
-        input: { sceneId, multiplier: 5, expectedRevision: 3 }
+        input: {
+          sceneId,
+          multiplier: 5,
+          expectedRevision: 3,
+          expectedSceneRevision: 9
+        }
       }
     ])
       expect(hexTravelCommandSchema.parse({ commandId, command })).toEqual({

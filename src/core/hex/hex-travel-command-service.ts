@@ -26,6 +26,15 @@ export class HexTravelCommandService {
     return this.database.use((db) => new HexRoutePlanStore(db).read(sceneId))
   }
 
+  readState(sceneId: string) {
+    return this.database.use((db) =>
+      hexTravelCommandReceiptSchema.parse({
+        context: this.context(sceneId),
+        routePlan: new HexRoutePlanStore(db).read(sceneId)
+      })
+    )
+  }
+
   status(value: HexTravelCommand) {
     const input = hexTravelCommandSchema.parse(value)
     return this.database.use((db) =>
@@ -49,11 +58,11 @@ export class HexTravelCommandService {
         const scenes = new SceneStore(db)
         if (scenes.focusedSceneId() !== sceneId)
           throw new CapabilityError('stale', false)
+        if (scenes.revision() !== command.input.expectedSceneRevision)
+          throw new CapabilityError('stale', true)
         const plans = new HexRoutePlanStore(db)
         switch (command.kind) {
           case 'save-plan': {
-            if (scenes.revision() !== command.input.expectedSceneRevision)
-              throw new CapabilityError('stale', true)
             const plan = command.input.plan
             if (plan) {
               const maps = new HexMapStore(db, new WorldLocationStore(db))
@@ -72,23 +81,31 @@ export class HexTravelCommandService {
             this.travel.position(command.input)
             break
           case 'start': {
-            const { expectedSceneRevision, ...start } = command.input
-            if (scenes.revision() !== expectedSceneRevision)
-              throw new CapabilityError('stale', true)
-            this.travel.start(start)
+            const { sceneId, mapId, waypoints, multiplier, expectedRevision } =
+              command.input
+            this.travel.start({
+              sceneId,
+              mapId,
+              waypoints,
+              multiplier,
+              expectedRevision
+            })
             break
           }
           case 'pause':
-            this.travel.pause(command.input)
-            break
           case 'resume':
-            this.travel.resume(command.input)
-            break
           case 'abort':
-            this.travel.abort(command.input)
+            this.travel[command.kind]({
+              sceneId,
+              expectedRevision: command.input.expectedRevision
+            })
             break
           case 'set-multiplier':
-            this.travel.setMultiplier(command.input)
+            this.travel.setMultiplier({
+              sceneId,
+              multiplier: command.input.multiplier,
+              expectedRevision: command.input.expectedRevision
+            })
             break
         }
         const receipt = hexTravelCommandReceiptSchema.parse({

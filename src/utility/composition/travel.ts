@@ -55,6 +55,10 @@ export function createTravelHandlers(dependencies: {
         requireCampaign(campaignId)
         return dependencies.commands.status(input)
       },
+      'hexTravel.readState': ({ campaignId, sceneId }) => {
+        requireCampaign(campaignId)
+        return dependencies.commands.readState(sceneId)
+      },
       'hexTravel.readPlan': ({ campaignId, sceneId }) => {
         requireCampaign(campaignId)
         return dependencies.commands.readPlan(sceneId)

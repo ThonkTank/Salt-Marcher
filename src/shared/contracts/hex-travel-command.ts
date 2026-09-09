@@ -55,21 +55,35 @@ export const hexTravelCommandSchema = z
         })
         .strict(),
       z
-        .object({ kind: z.literal('pause'), input: mutateHexTravelInputSchema })
+        .object({
+          kind: z.literal('pause'),
+          input: mutateHexTravelInputSchema.extend({
+            expectedSceneRevision: z.number().int().nonnegative()
+          })
+        })
         .strict(),
       z
         .object({
           kind: z.literal('resume'),
-          input: mutateHexTravelInputSchema
+          input: mutateHexTravelInputSchema.extend({
+            expectedSceneRevision: z.number().int().nonnegative()
+          })
         })
         .strict(),
       z
-        .object({ kind: z.literal('abort'), input: mutateHexTravelInputSchema })
+        .object({
+          kind: z.literal('abort'),
+          input: mutateHexTravelInputSchema.extend({
+            expectedSceneRevision: z.number().int().nonnegative()
+          })
+        })
         .strict(),
       z
         .object({
           kind: z.literal('set-multiplier'),
-          input: setHexTravelMultiplierInputSchema
+          input: setHexTravelMultiplierInputSchema.extend({
+            expectedSceneRevision: z.number().int().nonnegative()
+          })
         })
         .strict()
     ])
@@ -78,12 +92,13 @@ export const hexTravelCommandSchema = z
 export const campaignHexTravelCommandSchema = hexTravelCommandSchema.extend({
   campaignId: z.uuid()
 })
-export const hexTravelCommandReceiptSchema = z
+export const hexTravelCommandStateSchema = z
   .object({
     context: hexTravelContextResultSchema,
     routePlan: hexRoutePlanSnapshotSchema
   })
   .strict()
+export const hexTravelCommandReceiptSchema = hexTravelCommandStateSchema
 export const hexTravelCommandStatusSchema = z
   .object({
     receipt: hexTravelCommandReceiptSchema.nullable(),
@@ -98,3 +113,5 @@ export type HexTravelCommand = z.infer<typeof hexTravelCommandSchema>
 export type HexTravelCommandReceipt = z.infer<
   typeof hexTravelCommandReceiptSchema
 >
+
+export type HexTravelCommandState = z.infer<typeof hexTravelCommandStateSchema>

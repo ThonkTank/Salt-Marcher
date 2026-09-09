@@ -164,6 +164,7 @@ it.each([
           input: {
             sceneId: h.sceneId,
             multiplier: 5,
+            expectedSceneRevision: h.play.readSession().scene.revision,
             expectedRevision: revision
           }
         }
@@ -173,7 +174,11 @@ it.each([
         commandId: randomUUID(),
         command: {
           kind,
-          input: { sceneId: h.sceneId, expectedRevision: revision }
+          input: {
+            sceneId: h.sceneId,
+            expectedRevision: revision,
+            expectedSceneRevision: h.play.readSession().scene.revision
+          }
         }
       }
     const before = h.commands.status(command)
@@ -353,4 +358,55 @@ it('rejects a queued start after manual positioning resets the journey revision'
     session: h.play.readSession(),
     travel: h.travel.read(h.sceneId)
   }).toEqual(before)
+})
+
+it('rejects an old pause after a new journey reuses its revision and reads state without writes', () => {
+  const h = fixture()
+  h.travel.start({
+    sceneId: h.sceneId,
+    ...h.plan,
+    expectedRevision: h.travel.read(h.sceneId).revision
+  })
+  const original: HexTravelCommand = {
+    commandId: randomUUID(),
+    command: {
+      kind: 'pause',
+      input: {
+        sceneId: h.sceneId,
+        expectedRevision: h.travel.read(h.sceneId).revision,
+        expectedSceneRevision: h.play.readSession().scene.revision
+      }
+    }
+  }
+  h.travel.position({
+    sceneId: h.sceneId,
+    mapId: h.plan.mapId,
+    coordinate: { q: 0, r: 0 },
+    expectedSceneRevision: h.play.readSession().scene.revision
+  })
+  h.travel.start({
+    sceneId: h.sceneId,
+    ...h.plan,
+    expectedRevision: h.travel.read(h.sceneId).revision
+  })
+  const before = h.commands.readState(h.sceneId)
+  expect(before.context.travel.revision).toBe(0)
+  expect(() => h.commands.execute(original)).toThrow('stale')
+  h.db.pragma('query_only = ON')
+  expect(h.commands.readState(h.sceneId)).toEqual(before)
+  expect(h.commands.status(original).receipt).toBeNull()
+  h.db.pragma('query_only = OFF')
+  const handlers = createTravelHandlers({
+    commands: h.commands,
+    travel: h.travel,
+    play: h.play,
+    activeCampaignId: () => h.campaigns.activeCampaignId(),
+    publishChange: () => {}
+  })
+  expect(() =>
+    handlers['hexTravel.readState']({
+      campaignId: randomUUID(),
+      sceneId: h.sceneId
+    })
+  ).toThrow('stale')
 })

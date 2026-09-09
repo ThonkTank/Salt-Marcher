@@ -2,6 +2,7 @@ import {
   campaignHexTravelCommandSchema,
   hexTravelCommandReceiptSchema,
   hexTravelCommandStatusSchema,
+  hexTravelCommandStateSchema,
   hexRoutePlanSnapshotSchema
 } from '../hex-travel-command.js'
 import { z } from 'zod'
@@ -28,6 +29,11 @@ export const hexTravelOperationDefinitions = utilityOperationFragment({
     'hex-travel:command-status',
     campaignHexTravelCommandSchema,
     hexTravelCommandStatusSchema
+  ),
+  'hexTravel.readState': read(
+    'hex-travel:read-state',
+    sceneId.extend({ campaignId: z.uuid() }),
+    hexTravelCommandStateSchema
   ),
   'hexTravel.readPlan': read(
     'hex-travel:read-plan',
