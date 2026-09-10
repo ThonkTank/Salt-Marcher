@@ -9487,3 +9487,71 @@ füree8c1024e bleibt nach erneuter Prüfung im Job campaign-workspaces aktiv; ke
 vollständige grüne CI behauptet. Neue Driver-/Beobachteränderungen mit Pilotbeleg
 auf Candidate pushen; vollständige CI für den neuen SHA erforderlich. Abnahme-
 Matrix nennt ausschließlich den tatsächlich geprüften Helferpunkt.
+
+### Phase 5 – Weitere eigenständige Helfergrenzen
+
+Voriger Turn Fortschritt:957a63118 enthält Helper-Beobachter, trusted-click-
+Nachweis und bestandenen Pilotlauf. Arbeitsbaum sauber, keine VM aktiv,62GiB frei.
+Plan: dasselbe unveränderte Payload-launcher-recovery-2 zunächst in einem
+Zweierlauf journal:rollback-started und journal:rollback-preserving prüfen,
+jeweils nach initialem program-linked-Abbruch. Pro Fall vollständiger Export
+vor dem nächsten Fall, am Ende erneut Export mit verzögertem Herunterfahren.
+Helferrolle/PID, konsistente alte und fehlgeschlagene Profile, Retry/Continue/
+Restore/Quelle prüfen; keine Generalisierung auf noch ungeprüfte Grenzen.
+Nach terminalem Lauf und validiertem Export Gastdisk entfernen. Keine Source-
+oder Teständerung während des Laufes. CI957a63118 separat beobachten.
+
+62246 noch aktiv: erster vollständiger Export journal:rollback-started validiert,
+SHA27f2691bb299950e224ed64d0c4f07b8dd25ba60751c88fe06f58118ed7d1328.
+Helferrolle/eigenePID, rolled-back, beide Profile==Seed, Update/Restore/Quelle
+==Seed und continued==protected!=Seed geprüft. Zweiter Fall noch ohne Endergebnis;
+Gastdisk bleibt bis terminalem Status und kompletter Exportsicherung erhalten.
+
+Read-only Vorbereitung nächste Fehlerrunde: neuer isolierter Profile-Fault-
+Qualifier soll Originaltarget0.0.157 mit vollständigem synthetischem Profil nutzen.
+Fälle neueres Format, bewusst fehlender Pfad, beschädigte Installation und echte
+Zugriffsverweigerung getrennt starten. Versionseingriffe ausdrücklich Ablehnungs-
+Fixtures, keine historischen Migrationen. Vor/nach dem fehlerhaften Start konkrete
+Profilinhalte vergleichen; verständlichen Recoveryhinweis und Erreichbarkeit der
+Sicherungsansicht durch reale UI prüfen. Beschädigter Stand vor Restore als
+restorable=false erhalten, validiertes Backup auf Arbeitskopie einspielen und
+vollständig lesen. Bestehender qualify-profile-recovery.ts ist eine Vorlage,
+aber sein alter Prozess-/CDP-Harness ersetzt den aktuellen isolierten Driver nicht.
+Erst nach terminalem aktuellen VM-Lauf implementieren. WAL/Platz/Parallelstart
+und fehlender Transportherkunftsnachweis bleiben weitere getrennte Fälle.
+
+62246 terminalExit0/TestExit0: beide Helferfälle bestanden, drei vollständige
+gzip-Exporte CRC-validiert. journal:rollback-started
+SHA27f2691bb299950e224ed64d0c4f07b8dd25ba60751c88fe06f58118ed7d1328;
+journal:rollback-preserving
+SHAc80c11f97718e663bced9b28c1054f2715de8fe4a8dc908fe1ea467894abbc25.
+Helferrolle/eigenePID und Transaktions-ID geprüft; alte/failed Profile==Seed,
+Update/Restore/Quelle==Seed, continued==protected!=Seed. Beide Artefakthashes und
+Observerhash unverändert gegen Payload geprüft. Berichte und Index gespeichert,
+Gastdisk entfernt. Plan-Audit Zweierlauf bestanden. Roadmap-Audit weitere sechs
+Helfergrenzen, gepackter Local-Lauf und Fehlermatrix offen; keine Phasenfreigabe.
+
+Nächster Zweierlauf ohne Codeänderung: journal:rollback-restoring und
+old-data-restored, jeweils initial program-linked und unverändertes Payload2.
+Gleiche Export-, Rollen-, Profil- und Wiederanlaufkriterien; abgeschlossene
+Gastdisk nach vollständiger Prüfung entfernen. Aktuelle CI957a63118 läuft weiter,
+Dokumentationsnachweise bis zum Abschluss dieses Helferblocks gemeinsam sammeln.
+
+CI-Audit: Check34462695103 für957a63118f1f52d18150588a9c049a8d65fc8956
+terminal completed/success, keine fehlgeschlagenen oder laufenden Jobs. Vollständiger
+Candidate-Nachweis grün; kein Main-/Handoff- oder Releaseabschluss daraus ableiten.
+99971 weiter aktiv, erster Export journal:rollback-restoring vollständig validiert,
+SHAbc2c83e422aa81655be77f7c23697ca30804676ba0553b3c02ac34a4e406c2b4.
+Zweiter Fall old-data-restored noch offen.
+
+99971 terminalExit0/TestExit0, drei vollständige gzip-Exporte CRC-geprüft.
+journal:rollback-restoring SHAbc2c83e422aa81655be77f7c23697ca30804676ba0553b3c02ac34a4e406c2b4;
+old-data-restored SHAfd7bf948525d79eb80fb6a4a2d7e59c089e20b12ac6667a4d13533023783bad5.
+Helferrolle, eigenePID/Transaktion, altes/failed Profil, Retry/Continue/Restore/
+Quelle und unveränderte Artefakt-/Observerhashes vollständig geprüft. Gastdisk
+nach Berichten/Index entfernt. Plan-Audit Zweierlauf bestanden. Roadmap-Audit:
+noch journal:rollback-program, program-linked, rollback-history-written und
+journal:rolled-back als eigenständiger Helfer offen, außerdem gepackter Local-
+Lauf/Fehlermatrix. Nachweise dieser beiden Zweierläufe als Dokumentationscommit
+sichern; Codebasis957a63118 hat die vollständige grüne CI34462695103. Neue Docs-
+SHA benötigt ihren eigenen Check, keine Main-Promotion oder Phasenfreigabe.
