@@ -1,3 +1,7 @@
+import {
+  moveHistoricalInstallationToVolume,
+  constrainHistoricalSpace
+} from './qualification/historical-space-fixture.js'
 import { prepareHistoricalWal } from './qualification/historical-wal-fixture.js'
 import { createHash, randomUUID } from 'node:crypto'
 import { Transform } from 'node:stream'
@@ -51,6 +55,8 @@ assertHistoricalTestIsolation()
 
 const { values } = parseArgs({
   options: {
+    'space-volume': { type: 'string' },
+    'space-exhausted': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
@@ -118,6 +124,10 @@ const manifest = (artifact: typeof baseline) =>
     schemaVersions: artifact.receipt.source.schemaVersions,
     artifact: artifact.receipt.artifact
   })
+assert(
+  !values['space-exhausted'] || values['space-volume'],
+  'space-exhausted requires an isolated volume'
+)
 const seeded = await runHistoricalArtifact(
   baselineDirectory,
   sourceHome,
@@ -126,6 +136,8 @@ const seeded = await runHistoricalArtifact(
 assert(seeded.result.response.ok)
 copyHistoricalWorkingProfile(sourceHome, home)
 const root = join(home, 'salt-marcher')
+if (values['space-volume'])
+  moveHistoricalInstallationToVolume(root, values['space-volume'])
 const originalDeployment = stageDeployment(
   root,
   baseline.executable,
@@ -606,6 +618,62 @@ try {
       { flag: 'wx' }
     )
   }
+  let spaceFailure: unknown = null
+  if (values['space-volume']) {
+    const journal = new MaintenanceCoordinator(root).read()
+    const backupNames = () =>
+      existsSync(join(root, 'backups'))
+        ? readdirSync(join(root, 'backups')).sort()
+        : []
+    const backups = backupNames()
+    ui = await launch()
+    await ui.click('Einstellungen', 'body', true)
+    await ui.click('Jetzt prüfen')
+    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.click('Herunterladen')
+    await ui.expectText('Installieren und neu starten')
+    const reservation = constrainHistoricalSpace(
+      values['space-volume'],
+      home,
+      target.receipt.artifact.bytes,
+      values['space-exhausted']
+    )
+    try {
+      await ui.click('Installieren und neu starten')
+      await ui.click('Bestätigen', '[role="alertdialog"]')
+      await ui.expectText(
+        values['space-exhausted']
+          ? 'ENOSPC'
+          : 'Nicht genug freier Speicherplatz für Sicherung und Migration.'
+      )
+      assert.equal(currentProgram(root)?.deployment, originalDeployment)
+      assert.deepEqual(new MaintenanceCoordinator(root).read(), journal)
+      assert.deepEqual(backupNames(), backups)
+      spaceFailure = {
+        exhausted: values['space-exhausted'],
+        before: reservation.before,
+        after: reservation.after,
+        artifactBytes: reservation.artifactBytes,
+        notice: await ui.text(),
+        journal
+      }
+    } finally {
+      reservation.release()
+    }
+    await ui.closeApplication(home)
+    ui = undefined
+    const readback = await runHistoricalArtifact(
+      baselineDirectory,
+      home,
+      'read'
+    )
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      seeded.result.response.result
+    )
+    spaceFailure = { reservation: spaceFailure, readback }
+  }
   const startingJournal = new MaintenanceCoordinator(root).read()
   const commitCrashId = values['commit-crash'] ? randomUUID() : null
   const publicationArm = join(root, 'qualification-publication-crash.json')
@@ -957,6 +1025,7 @@ try {
         requests,
         launcherObserver,
         transportFailures,
+        spaceFailure,
         wal,
         acceptedCrash,
         commitCrash,

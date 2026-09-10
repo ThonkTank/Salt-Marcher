@@ -1,3 +1,4 @@
+import { releaseOperationErrorText } from './operation-error.js'
 import { z } from 'zod'
 import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
 import { withQualifiedSourceProfile } from '../local-profile/source-profile-admission.js'
@@ -104,10 +105,7 @@ export class ReleaseController {
     } catch (error) {
       this.update({
         phase: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Vorgang fehlgeschlagen. Bitte erneut versuchen.'
+        message: releaseOperationErrorText(error)
       })
     } finally {
       this.busy = false

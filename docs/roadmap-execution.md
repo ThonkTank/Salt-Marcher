@@ -9736,3 +9736,71 @@ keine Datenformatmutation, WAL-Bytes/Hash im Bericht. Gastdisk nach vollständig
 Prüfung entfernt. Plan-Audit WAL-Fall bestanden; Roadmap-Audit Phase5 weiterhin
 offen wegen Platzmangel, parallelen gepackten Starts, gepacktem Local und weiteren
 Transportfällen. Neuer Candidate braucht vollständige CI, kein Main/Handoff jetzt.
+
+### Phase 5 – Begrenzter echter Platzmangel
+
+Voriger Turn Fortschritt:0dec1a787 WAL-Nachweis gepusht. CI34469919756 pending,
+34469294183 weiterhin live; keine doppelte Prüfung starten. Arbeitsbaum sauber.
+Konkreter Implementierungsplan: optionales space-volume im UI-Qualifier verweist
+auf eigenes maximal3GiB großes ext4-Gastdateisystem mit anderer Device-ID als
+Gastroot/Home. Nur selbst erzeugten Installationsroot dorthin kopieren und am
+bisherigen Pfad verlinken; Quelle, Extraktionen und Berichte bleiben außerhalb.
+Nach echter UI-Prüfung/Download eine eigene reservierte Datei mit fallocate
+anlegen, sodass AppImagegröße+32MiB frei bleiben. Verbleibenden Platz messen.
+Installation muss im originalen Ziel-Utility vor Sicherung/Migration mit passender
+Platzmeldung scheitern, Programm/Journal/Sicherungsliste unverändert lassen.
+Füllung im finally entfernen; App schließen, vollständigen Original-Readback
+vergleichen, danach gesamten Update-/Weiterarbeits-/Restoreweg erneut ausführen.
+Seed richtet ausschließlich innerhalb Gast eine2GiB Loop-ext4 ein. Weder Host-
+Dateisystem noch Gastroot darf Füllziel werden. Statische Prüfungen, neue immutable
+Payload, einzelner begrenzter VM-Lauf, vollständiger Bericht und Diskbereinigung.
+
+77934 Format/Lint/beide Typechecks bestanden. Vor Gastlauf Setupkorrektur:
+Baseline-Erstaktivierung hat absichtlich backup:null, daher kann backups fehlen.
+Sicherungsliste als [] bei fehlendem Verzeichnis behandeln, nach Fehlversuch
+identisch prüfen. Keine Sicherung künstlich erzeugen. Check34469294183 wurde
+cancelled (auch campaign-workspaces); kein E2E-Erfolgsnachweis. Nachfolger
+34469919756 auf0dec1a787 in_progress; neue lokale Änderungen noch nicht gepusht.
+
+86910 Format/Lint/Typechecks grün.94446 space-run-1 terminalExit0/TestExit0,
+vollständiger gzip-Export CRC-validiert. BerichtSHA586e9ee78d4b0650cd32430883696725a7a5b0dc770d509739c0498c8344d2b2.
+Vor Deployment210595840Bytes frei, AppImage177048160Bytes. Originales Ziel meldet
+fehlenden Platz für Sicherung/Migration; Programm/Journal/Sicherungsliste unverändert,
+Readback==Seed. Nach Freigabe vollständiger UI-Update-/Weiterarbeits-/Restoreweg
+bestanden, Quelle unverändert, spätere Arbeit geschützt. Gastdisk entfernt.
+Plan-Audit Platzvorprüfung bestanden, keine Behauptung über ENOSPC beim Kopieren.
+
+Korrekturrunde verbleibender Platzfall: explizites space-exhausted zusätzlich zu
+space-volume. Auf demselben geprüften Gastvolume nach Download nur1MiB frei lassen,
+Programmdateikopie muss mit echtem ENOSPC scheitern. Gleiche Unverändertheits- und
+Retrybeweise; reservierte Datei auch bei Testfehler entfernen. Keine Produkt-
+Fehlerinjektion oder Hostfüllung. Neue Payload und separater Gast nach statischen
+Prüfungen; Matrix unterscheidet Vorprüfung und tatsächlichen Schreibfehler.
+
+86970 Format/Lint/beide Typechecks bestanden.77778 space-exhausted-run-1 terminal
+Exit0/TestExit0. Vollständiger Export CRC-validiert, BerichtSHA
+a8e19a4ac9cbfe8c8ce8101f98002eefbed77555b2ddaaefb5041d04164ce641.
+Echter ENOSPC bei copyfile von Cache nach neuem Deployment, höchstens1MiB frei.
+Journal/Programm/Sicherungen unverändert; Fehler-Readback==Seed, Retry mit echtem
+Update/Weiterarbeit/Restore vollständig bestanden, Quelle unverändert. Disk
+entfernt. Datensicherheits-Plan-Audit beide Platzfälle bestanden.
+
+Roadmapabweichung bestätigt: UI zeigt rohes ENOSPC samt absoluten Dateipfaden ohne
+verständliche nächste Aktion. Korrekturplan: Main übersetzt ENOSPC/EDQUOT anhand
+Fehlercode in klare deutsche Platzfreigabe-/Erneutversuchen-Meldung. Andere
+fachliche Meldungen bleiben erhalten; unbekannte Fehler erhalten bestehenden
+Fallback. Utility-Platzvorprüfungen um nächste Aktion ergänzen. Reine Unitfälle
+prüfen Systemcodes vs fachliche Meldungen/Fallback, statische Prüfungen. Echte
+gepackte UI-Freigabe dieses Fixes erfordert anschließend neu gebaute unveränderte
+Artefakte; bisherige0.0.156/157 beweisen ausschließlich Altfehlermeldung plus
+Datenerhalt, nicht den UX-Fix. Noch keine Phase5-/Handoff-/Main-Freigabe.
+
+7960 terminalExit0:5/5 Fehlertexttests, Format/Lint und beide Typechecks bestanden
+(29.45s,1.5GiB). Plan-Audit UX-Implementierung und reine Fehlerklassifikation
+bestanden. Gepackter Nachweis neuer Fehlermeldung bleibt offen; neue Artefakte
+müssen den optionalen ENOSPC-Test mit explizit erwarteter verständlicher Meldung
+wiederholen. Alte Artefakte unverändert weiter als ENOSPC-Datensicherheitsbeleg.
+Check34469919756 weiterhin live, zuletzt nur campaign-workspaces und hex-npc-
+restart offen, keine fehlgeschlagenen Jobs. Candidate lokal sichern; Push wird
+nach diesem bereits laufenden Nachweis fortgesetzt, um ihn nicht erneut abzubrechen.
+Keine aktive Test-VM,59GiB frei. Phase5 bleibt aktiv, Phasen6/7 offen.
