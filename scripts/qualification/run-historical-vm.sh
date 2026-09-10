@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 # Usage: bash run-historical-vm.sh TOOL_IMAGE BASE_QCOW2 SEED_IMAGE NEW_OUTPUT_DIR SECONDS
 set -euo pipefail
-[[ $# == 5 || $# == 6 ]] || { echo 'Expected tool image, base disk, seed, new output directory, deadline, optional bootstrap-network' >&2; exit 2; }
+[[ $# == 5 || $# == 6 || $# == 7 ]] || { echo 'Expected tool image, base disk, seed, new output directory, deadline, optional bootstrap-network or evidence-disk PATH' >&2; exit 2; }
 network=none
+evidence_mount=()
+evidence_drive=()
 if [[ $# == 6 ]]; then
   [[ $6 == bootstrap-network ]] || exit 2
   network=user,model=virtio-net-pci
+fi
+if [[ $# == 7 ]]; then
+  [[ $6 == evidence-disk ]] || exit 2
+  evidence_disk=$(realpath -e -- "$7")
+  [[ -f $evidence_disk && $evidence_disk != *:* ]] || exit 2
+  evidence_mount=(-v "$evidence_disk:/evidence.qcow2:ro")
+  evidence_drive=(-drive file=/evidence.qcow2,if=virtio,format=qcow2,readonly=on)
 fi
 tool_image=$1
 base_disk=$(realpath -e -- "$2")
@@ -64,12 +73,14 @@ podman create --rm --name "$container_name" \
   --device /dev/kvm --security-opt label=disable \
   -v "$base_disk:/base.qcow2:ro" -v "$seed_disk:/seed.img:ro" \
   -v "$output_dir:/output:rw" \
+  "${evidence_mount[@]}" \
   "$image_id" timeout --signal=TERM --kill-after=10s "${deadline}s" \
   qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 4096 \
   -display none -serial stdio -monitor none -nic "$network" \
   -fw_cfg name=opt/salt-marcher/host-boot-id,file=/output/host-boot-id \
   -drive file=/output/guest.qcow2,if=virtio,format=qcow2 \
   -drive file=/seed.img,if=virtio,format=raw,readonly=on \
+  "${evidence_drive[@]}" \
   > "$output_dir/vm-container-id"
 set +e
 podman start --attach "$container_name" > "$output_dir/serial.log" 2>&1 &

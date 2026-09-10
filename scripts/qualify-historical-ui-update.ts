@@ -935,6 +935,28 @@ try {
     { flag: 'wx' }
   )
   console.info(`UI update and complete profile readback passed: ${home}`)
+} catch (error) {
+  try {
+    const page = ui
+      ? await ui.inspect(`({
+          text: document.body?.innerText ?? null,
+          html: document.body?.outerHTML ?? null,
+          visibility: document.visibilityState
+        })`)
+      : null
+    writeFileSync(
+      join(home, 'ui-failure-evidence.json'),
+      JSON.stringify(
+        { error: error instanceof Error ? error.stack : String(error), page },
+        null,
+        2
+      ),
+      { flag: 'wx' }
+    )
+  } catch (diagnosticError) {
+    console.error('Could not capture UI failure evidence:', diagnosticError)
+  }
+  throw error
 } finally {
   ui?.disconnect()
   const processes = isolatedProcesses(home)

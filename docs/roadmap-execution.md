@@ -9257,3 +9257,142 @@ Dateigröße und SHA256 stimmen vollständig mit Originalartefakten überein. Al
 Payload-SHA256SUMS grün. Alte Fehlstart-Guestdisk entfernt, Diagnose-Log erhalten.
 Prettier korrigiert beide gemeldeten Dateien; gezielter Formatcheck und Lint grün.
 Änderungen betreffen ausschließlich Formatierung, keine AppImagebytes verändert.
+
+installed-pair-run-3 (Session46337) live: erster kompletter Export während laufender
+VM unabhängig gelesen und geprüft. journal:prepared BerichtSHA
+ded65decad0a40134c5b522070e2e7258239c8c8ee710527bc0b31b6b9866467.
+Hashgeprüfte0.0.156/0.0.157, Startweg installed-launcher, Recovery rolled-back;
+readback/after/restored/unchanged==seeded,continued==protectedRead. Bericht unter
+installed-pair-run-3/validated/journal-prepared.json gesichert. Zweiter Fall
+journal:data-moving noch aktiv; Guestdisk erst nach terminalem Gesamtstatus und
+verifiziertem zweitem Bericht entfernen. Kein Neustart bei bloßem Beobachtungsende.
+
+46337 terminalExit0,installed-pair-run-3 TestExit0 nach370.1s. Alle drei
+Exportarchive vollständig inklusive gzip-Prüfsumme gelesen. Beide Berichte
+unabhängig verglichen: vollständige Profile, Quelle, Retry/Weiterarbeiten/Restore
+und vorgeschaltete Sicherung stimmen. SHA256:
+- journal:prepared ded65decad0a40134c5b522070e2e7258239c8c8ee710527bc0b31b6b9866467
+- journal:data-moving 546b23190f91b0406f6836513747d806dabaf18685235160eef5dffb1925c3fc
+Nach terminalem Status und abgeschlossener Prüfung guest.qcow2 entfernt;
+Berichte, Logs, Herkunft und Original-AppImages bleiben erhalten. Plan-Audit
+Zweierlauf bestanden. Roadmap-Audit weitere Startergrenzen/Local/Fehlermatrix offen.
+
+Nächster Zweierplan: unveränderte0.0.156/157 und Payload-installed-update-1,
+Abbrüche new-data-moved und journal:data-ready über installierten Starter.
+Je frisches Profil und Export nach abgeschlossenem Fall; vollständiger
+Retry-/Weiterarbeiten-/Restore-/Profilvergleich. Neues Seed,Deadline600s.
+Nach validiertem Export wieder Gastdisk entfernen. Keine Quelländerung während Lauf.
+
+Dokumentationsabgleich während unveränderter Testinputs: Abnahmematrix M05/M06
+enthält noch pauschale ältere Testangaben. Plan: ausschließlich diese Evidenzfelder
+mit den bereits exportgeprüften AppImage-Abbrüchen, durable-commit/later-work und
+drei nachgewiesenen Startergrenzen präzisieren. Laufende Fälle nicht als bestanden
+aufführen. Canonical roadmap unverändert; verbleibende Grenzen ausdrücklich offen.
+
+89755 weiterhin aktiv: erster Bericht new-data-moved aus vollständigem gzip-Export
+geprüft, SHA65f197ec6d53bf13731ca47750c8f9e9a784d26d3e4233e53d1d8d69bd8f592a
+Startweg installed-launcher; Artefakthashes bestätigt, vollständiger alter
+Profilvergleich und Retry/Weiterarbeiten/Restore/Quellerhalt grün. Zweiter Fall
+journal:data-ready noch offen; Gastdisk bleibt bis zum terminalen Status erhalten.
+
+89755 terminalExit0,installed-data-run-1 TestExit0 nach535.2s. Alle drei
+Archive vollständig inklusive gzip-Prüfsumme geprüft; beide vollständigen
+Profilvergleiche, Source/Retry/Weiterarbeiten/Restore und Sicherungen grün. SHA256:
+- new-data-moved 65f197ec6d53bf13731ca47750c8f9e9a784d26d3e4233e53d1d8d69bd8f592a
+- journal:data-ready 81a3c245369f9eeffeedd0e1a459ef9f5957e4a7a8784793d981eb5ee09f1518
+Guestdisk nach terminaler Abnahme entfernt; alle Belege erhalten. Plan-Audit
+Datenübergänge bestanden. Noch offen: Starter-Programmwechsel, awaiting-start und
+committed/later-work; eigener Helfer-Abbruch,Local und übrige Fehlermatrix.
+
+Nächster Zweierplan: journal:program-moving und program-linked über installierten
+Starter; unveränderte0.0.156/157, eigenes Profil je Fall, Export nach jedem Fall,
+vollständiger UI-/Daten-/Restorevergleich. Gast-/Hostdeadline900s, da vorherige
+Gruppe535s benötigte; Ressourcen- und40GiB-Speichergrenze unverändert. Gastdisk nach
+validierter Abnahme entfernen. Noch keine Quelle während laufendem Test ändern.
+
+Remote-Gate: Check34455617730 für exakt4cc692ba06be45d75b73d36070d202ca80fe5cc8
+completed/success verifiziert. Dies bestätigt die vollständige CI dieses
+committeten Stands, nicht die zusätzlich noch laufenden Starterfälle oder einen
+Main-Handoff. Lokale Dokumentationsfortschreibung liegt noch uncommittet vor.
+Aktuelle Session87965 installiert unveränderte0.0.156/157 und bleibt aktiv.
+
+87965 live: journal:program-moving komplett exportiert und unabhängig geprüft.
+BerichtSHA 5b672e4b252bdfce19505082aed0283cb7f1cc838733100ec354ac140cd8b597
+Passende Artefakthashes, installierter Starter, Recovery rolled-back; vollständige
+Profilvergleiche/Retry/Weiterarbeiten/Restore/Quellerhalt grün. Zweiter Fall
+program-linked läuft weiter; Guestdisk noch erforderlich.
+
+87965 terminalExit0,installed-program-run-1 TestExit0 nach426.9s; drei vollständige
+gzip-Archive einschließlich Prüfsummen verifiziert. Beide Programmwechselgrenzen
+über installierten Starter bestehen vollständigen Profil-/Update-/Restorevergleich.
+- journal:program-moving 5b672e4b252bdfce19505082aed0283cb7f1cc838733100ec354ac140cd8b597
+- program-linked a9d6b54d20211866b9d79e6feb490098e3acdcc4fc686352d75031184d4590d6
+Gastdisk nach Abnahme entfernt, alle Berichte und Logs bleiben. Plan-Audit
+Programmwechsel bestanden; awaiting-start und committed/later-work über Starter
+sowie weitere Local-/Fehlermatrixnachweise bleiben offen. Keine Phasenfreigabe.
+
+Letzter Zweierplan der Starter-Reihe: journal:awaiting-start und separater Fall
+--commit-crash --accepted-crash. Unveränderte0.0.156/157 und Payload, eigener
+Installationsabschluss/Profil je Fall, unabhängiger Export nach jedem Fall,
+Deadline900s und bisherige Ressourcenreserve. Im zweiten Fall muss derselbe
+committed-Beleg erhalten bleiben und später gespeicherte Arbeit nach erneutem
+SIGKILL sowie vorgeschalteter Restore-Sicherung exakt übereinstimmen. Nach
+terminalem Gesamtstatus/validiertem Export Gastdisk entfernen. Danach Local-
+Prozessnachweis implementieren; Phase5 bleibt bis gesamter Fehlermatrix offen.
+
+Read-only Vorbereitung Local-Folgerunde: vorhandene Coordinator-Hooks des echten
+advanceLocalAppInstallation verwenden, keine zweite Wartungslogik. Separater
+Node-Prozess mit eigener SQLite-Fixture, drei Kampagnen (aktiv/inaktiv/trash),
+Party/XP, Einstellungen und eigenen Dateien; nach beobachtetem Hook SIGKILL.
+Elternprozess vergleicht vollständigen Profilbaum plus Desktopintegration und
+Programmverweis, erneute Recovery in frischem Prozess. Artefakt-/Helferfixture und
+simulierte Runtime-Annahme ausdrücklich als solche benennen; keine Behauptung
+gepackter Local-Ausführung. Erst nach terminalem34202 implementieren und native
+Host-Tests ausschließlich ohne GUI mit begrenzten Ressourcen ausführen.
+
+### Phase 5 – Diagnose fehlender eindeutiger Sicherungszeile
+
+34202 terminal: GastExit0, aber TestExit1. Erster Fall awaiting-start erreicht
+Timeout „unique visible pre-update backup row“; zweiter committed-Fall wurde wegen
+set-e nicht begonnen. Kein vollständiger UI-Abnahmebericht. Guestdisk behalten.
+Korrekturplan zunächst ausschließlich Diagnose: VM-Runner um optionales
+`evidence-disk PATH` erweitern, welches eine beendete eigene Gastdisk nur lesend
+als zusätzliche Platte in einem frischen isolierten Diagnosegast einbindet.
+Originalquelle und Basis bleiben read-only; Ressourcen-/Platz-/Einzellaufgrenzen
+bleiben erhalten. Gast mountet mit ro,noload und exportiert Logs, Backup-Manifeste
+und vorhandene Zwischenberichte. Kein Appstart und keine Datenmigration. Danach
+Ursache des UI-Selektors anhand tatsächlicher Daten klären, erst dann korrigieren.
+
+1694 Diagnosegast terminalExit0, DIAGNOSTIC_EXPORT_EXIT0; Quell-Gastdisk vor/nach
+identischer SHAea5b98f0fd6aaaa7f85e7eb227a841b9578ee543494bdb0feeaacbd03c54f5c1.
+27057 Export gelesen, Diagnosegastdisk entfernt. Zwei verschiedene Backupzeiten
+08:58:16.743Z und08:58:57.309Z, beide0.0.156; committed-Update verweist auf letztere
+Sicherung736fc266-b70b-47e3-9fb9-988096571f43. Core ready laut Startlog; spätere
+Prozessfehler erst beim Test-Cleanup. Kein Beweis für Datendefekt oder Zeitkollision.
+
+Korrekturplan Diagnosequalität: im UI-Qualifier vor finally bei Fehler sichtbaren
+Text und DOM als ui-failure-evidence.json sichern, Originalfehler stets erhalten.
+Keine Auswahlheuristik ohne beobachteten UI-Zustand ändern. Lint/Format/Typprüfung,
+neues Driverpayload mit denselben AppImagebytes, nur awaiting-start-Fall erneut.
+Fehlerexport muss auch ui-failure-evidence.json enthalten, bevor Gast beendet wird.
+
+98378 installed-diagnostic-run-1 terminalExit0/TestExit0: awaiting-start über
+installierten Starter vollständig bestanden. Vollständiger gzip-Export geprüft,
+Bericht SHA07d9c9f85f4756ec142e119089b1f03289dd71701c0e6e84988f786194d9ee46;
+Rollbackprofil, erneutes Update, Restore und Quelle == Seed; spätere Arbeit ==
+vorgeschaltete Sicherung. Artefakthashes unverändert0.0.156/157. Gastdisk nach
+Vergleich entfernt. Ursprünglicher Timeout bleibt ungeklärt/sporadisch, nicht als
+behoben deklarieren. Fehleraufzeichnung bleibt für weitere Läufe aktiv. Nächster
+Einzelfall: installierter Starter, committed-Abbruch und späterer Arbeitsabbruch.
+
+93852 installed-commit-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export
+und JSON validiert, SHA0d00ea54b8b2755f4548a45e47a6386124bb0943a4f5135c78ebaae3e7b5c983.
+Installierter Starter nach committed-SIGKILL: Journal identisch zur angenommenen
+Transaktion. Zweiter SIGKILL nach späteren Änderungen: vollständiger Readback ==
+continued == vorgeschaltete Restore-Sicherung != Seed. Restore/Quelle/after ==
+Seed. Unveränderte Artefakte0.0.156/157. Gastdisk anschließend entfernt.
+Plan-Audit Diagnoseaufzeichnung implementiert, Lint/Typprüfung bestanden; zwei
+gezielte Artefaktläufe bestanden. Früherer Timeout bleibt ungeklärt. Roadmap-Audit:
+keine Phase5-Freigabe, Local/eigener Helfer/weitere Fehlerfälle offen. Änderungen
+an Testinfrastruktur und Abnahmedokumentation jetzt gemeinsam formatieren,
+Candidate committen/pushen und vollständige exakte CI abwarten.
