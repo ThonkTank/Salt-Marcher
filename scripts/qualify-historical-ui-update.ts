@@ -1,3 +1,4 @@
+import { prepareHistoricalWal } from './qualification/historical-wal-fixture.js'
 import { createHash, randomUUID } from 'node:crypto'
 import { Transform } from 'node:stream'
 import { assertHistoricalTestIsolation } from './qualification/historical-test-isolation.js'
@@ -50,6 +51,7 @@ assertHistoricalTestIsolation()
 
 const { values } = parseArgs({
   options: {
+    wal: { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
@@ -619,6 +621,7 @@ try {
       { flag: 'wx' }
     )
   }
+  const wal = values.wal ? await prepareHistoricalWal(root) : null
   const healthyRequestStart = requests.length
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
@@ -954,6 +957,7 @@ try {
         requests,
         launcherObserver,
         transportFailures,
+        wal,
         acceptedCrash,
         commitCrash,
         maintenanceCrash,

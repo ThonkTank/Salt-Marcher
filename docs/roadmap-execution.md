@@ -9691,3 +9691,48 @@ kein erfolgreiches Restore bei fehlenden Rechten. Plan-Audit Profilfehler4/4
 bestanden. Roadmap-Audit Phase5 weiter offen, insbesondere WAL/Platzmangel und
 gepackter Local-Ablauf. Kein Handoff, keine Main-Promotion oder Veröffentlichung.
 19af07da9835d0073713dc31f68fd1bdc0fadd3e77cc276b4c4a4341b8d7a163
+
+### Phase 5 – WAL im echten Updateweg
+
+Voriger Turn Fortschritt:7c1740e64 gepusht,4/4 Profilfehler bestanden; Check34469294183
+jetzt in_progress auf exakt diesem SHA. Arbeitsbaum sauber. Konkreter Plan:
+UI-Updatequalifier um optionalen WAL-Fall ergänzen. Unter exklusiver Profilsperre
+nach beendeter Baseline-App einen eigenen Node-SQLite-Fixtureprozess starten:
+bestehende Installationseinstellungen lesen, abweichenden Theme-Wert checkpointen,
+Originaleinstellungen nur in WAL committen, ohne Close mit SIGKILL beenden.
+Keine Schemaänderung. Nach Prozessende nur Hauptdatei separat lesen und Abweichung
+beweisen; vollständige DB+WAL-Kopie muss Originaleinstellungen lesen. WAL-Größe,
+Hash, Prozesssignal und beide Werte protokollieren. Erst dann originalen
+installierten Starter und gesamten geprüften UI-Update-/Weiterarbeits-/Restoreweg
+mit unveränderten0.0.156/157 laufen lassen. Seed/Quelle bleiben unverändert.
+Dies qualifiziert WAL-Recovery vor Update und Datenerhalt im Wartungsweg;
+keine Aussage über unkooperierende laufende Fremdprofile. Neue Payload/VM erst
+nach Format/Lint/Typprüfung, Hostreserve und vollständigen Export sichern.
+
+14567 Format/Lint/beide Typechecks bestanden. Vertragsprüfung vor Gastlauf zeigt
+preferences_json enthält {schemaVersion:2,preferences:{theme,...}} statt Theme
+auf oberster Ebene. Korrekturplan: Fixtureassertion und checkpointed-Wert exakt
+auf eingebettete preferences beziehen; gesamten Originaltext unverändert in WAL
+zurückschreiben. Scratch-Erstellung ebenfalls im Lock-finally schützen. Noch
+kein Gast gestartet; anschließend statische Prüfung erneut und Payload einfrieren.
+
+98959 erneute Format/Lint/beide Typechecks bestanden (30.30s,1.5GiB).
+Payload-wal-1 und wal-seed-1 neu eingefroren;37002 wal-run-1 aktiv, noch kein
+Ergebnis. Read-only Folgeplanung: Platzprüfung liegt in ProfileMaintenance.prepare
+vor Backup, aber AppImage-Deployment wird vorher kopiert. Für echten Platzmangel
+nur root/salt-marcher als kleines ext4 innerhalb Gast mounten; TMPDIR und Berichte
+außerhalb lassen. Vor Installation nach Download gezielt Restplatz knapp oberhalb
+AppImagegröße lassen, sodass Programmkopie noch möglich, Backupreserve64MiB aber
+nicht verfügbar ist. Ausschließlich Testvolume füllen; Host darf nie Ziel sein.
+Dieses Folgeexperiment noch nicht implementiert oder als Nachweis gewertet.
+
+37002 wal-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export CRC-validiert,
+BerichtSHA2c901c830b6b6c83512ce3cbf686477a800b40b858a9244c24c872d64764c6e4.
+Fixtureprozess tatsächlich SIGKILL; nackte Hauptdatei Theme light, DB+WAL Theme
+dark. Originaler installierter Starter, AppImages0.0.156→0.0.157 (42/41→42/42),
+vollständiger UI-Updateweg bestanden. after==seeded==restored==unchanged;
+continued==protectedRead und verschieden von seeded. Quellprofil unverändert,
+keine Datenformatmutation, WAL-Bytes/Hash im Bericht. Gastdisk nach vollständiger
+Prüfung entfernt. Plan-Audit WAL-Fall bestanden; Roadmap-Audit Phase5 weiterhin
+offen wegen Platzmangel, parallelen gepackten Starts, gepacktem Local und weiteren
+Transportfällen. Neuer Candidate braucht vollständige CI, kein Main/Handoff jetzt.
