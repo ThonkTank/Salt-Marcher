@@ -10334,3 +10334,130 @@ Plan-Audit Adapterherkunft bestanden; Roadmap-Audit tatsächlicheLocal-Migration
 Startannahme, Profilvergleich undRecovery bleiben offen. NativeBibliothek wird
 separat inGast geprüft; lokalesprebuild verlangt maximalGLIBC_2.34 (readelf),
 das allein belegt wederNodeABI-Kompatibilität noch erfolgreichenGastbetrieb.
+
+KonkreterLocal-Laufzeitprüferplan: Originalhistorischer42/41-Runtime erzeugt
+reiches synthetischesSeed. Kopie unter gemeinsamerProfilsperre in neuenLocal-
+Installationsort. BaselineAdapter installiert OriginalLocal42/41; Original
+verifyLocalRuntimeStartup startet unverändertesAppImage mit bestehenden
+installed-runtime-verification/Smoke-Flags und verlangt reales committed.
+Readback überunverändertehistorischeRuntime aufgesperrterKopie vergleichen.
+DannOriginalZielinstaller42/42 migriert, startet realesZiel undliestvollständig
+zurück. NativeNode-SQLite zuerst imGast öffnen; SHA/Manifest/Adapteridentitäten
+prüfen. FehlendeQuellGit-Umgebung wird nur durchvorher realverifizierte eingefrorene
+Identity ersetzt, keineFake-Runtimeannahme. Dieser ersteLauf decktLocal-Schema-
+Update ab; Unterbrechung/Recovery unddirekterProfilimport bleiben weitereFälle.
+
+36316 statischerErstlauf: zweiTS-Narrowingfehler anReadback-Response. ExpliziteOK-
+Assertions anAufrufstellen ergänzt; Native-Diagnose inFehlerberichtspfad verschoben.
+44433 terminalExit0:Format/ESLint/beideTypechecks bestanden. Plan-Audit Prüfer
+implementiert OriginalInstaller+Runtime-Annahme, vollständigenSeed-/Vorher-/Nachher-
+undunverändertenQuellreadback. Noch keinLaufzeitpass.
+38290 local-schema-run-1 gestartetinvorbereiteterOfflineVM:600s,3GiB/256Tasks im
+Gast,OriginalLocalbd8b33c4→8494e663a,OriginalAdapter separatHashgeprüft,Historical-
+Runtime42/41 und42/42 fürsynthetischeVollprofilreadbacks. Nativebetter-sqlite3
+13.0.2/lib+linux-x64prebuild undalleTesteingaben imread-onlyPayload samtSHA-Liste.
+Noch keinHost-GUI-Test/keinHandoff. KeineQuelldateiänderungen währendLauf.
+NachTerminal Collector inoutputs/qualification-evidence undSemantikprüfen; nicht
+alleinVMExit0 alsErfolgwerten. VorherigerGoalturn Fortschritt: beideOriginalAdapter
+herkunftsgeprüftgebaut. CI34479373201 fora5317c1c4 zuletztlive ohneFehler.
+
+38290 terminalVMExit0/TestExit1. Fehlerexport transportgeprüft separatarchiviert
+unteroutputs/qualification-evidence/local-schema-v2-run-1. NativeProbe/Seed
+überstanden; OriginalBaseline-Backup startet --import tsx auscwd/ und scheitert
+anfehlendemtsx. KeineUpdateabnahme. Adapteraudit findet zusätzlich kollabierte
+import.meta.url-Workerpfade. Fixplan: Bundle inlocal-installation/adapter.mjs,
+beideOriginalBackup-Worker separat daneben aufOriginalrelativpfaden bündeln;
+Originalpackage.json fürESM-Grenze erhalten, jedenWorkerhash imAdaptermanifest
+verankern undvorVerwendung prüfen. Prüfprozess cwd aufAdapterroot setzen, echte
+installierteTsx/esbuild-Abhängigkeiten mitHashinventar inGast mitnehmen. Keine
+ProduktSourceänderung, keineStubWorker odersimuliertenBackups. NeueAdapter-
+Ausgaben undPayload,alteFehlerbeweise behalten. WiederstatischePrüfung plusneuer
+vollständigerGastlauf erforderlich. Baseline-/ZielAppImagebytes unverändert.
+
+5825 terminalExit0:Format/ESLint/beideTypechecks undbeideOriginalAdapter-v2-Builds
+bestanden. Backup-Worker mitjeweilsOriginalquellen gebündelt, separateHashprüfung
+plusOriginalpackage.json undrelativeWorkerpfade. Qualifier setztcwd aufverifizierte
+Adapterwurzel. Payload-local-schema-2 enthält realeTsx4.23.1/esbuild0.28.1 und
+linux-x64Binary nebenNativeSQLite; kompletteSHA-Liste, keineStub-Abhängigkeiten.
+53272 local-schema-run-2 gestartet mitOriginalAppImagebytes undneuemSeed,Offline-
+Gast600s. Quellen währendLauf unverändertlassen. Plan-Audit statischeWorkerpfade
+undAbhängigkeiten ergänzt; Roadmap-Laufzeitnachweis weiterhin offen.
+VorherigerGoalturn Fortschritt: Local-Prüfer implementiert/statischgeprüft und
+Erstlauf gestartet; dessenFehler nunlokalisiert undarchiviert.
+
+
+### Phase 5 – Speicherprüfung und Local-Baseline-Diagnose
+
+Voriger Goalturn: Fortschritt durch aktuelle Host-Kapazitätsprüfung und Abgleich
+mit dem protokollierten Speicherfehler. Aktuell 177.72GiB frei, Btrfs-Metadaten
+925MiB/3GiB, keine QEMU-/Podman-Prozesse. Keine Bereinigung oder Host-GUI gestartet.
+Die zuvor ausgesprochene vorläufige Testpause ist keine externe Freigabeschranke;
+Diagnose wird unter bestehenden Ressourcen- und Isolationsgrenzen fortgesetzt.
+
+Check34479373201 für a5317c1c4d00e54d423916cd573c8f46e0ea1486 ist jetzt
+completed/success. Damit vollständige Remoteprüfung einschließlich der
+Trash-Schließbarriere für genau diesen SHA bestanden. Lokale uncommittete
+Adapter-/Qualifieränderungen sind davon ausdrücklich nicht abgedeckt.
+
+Local-schema-run-2 ist terminal: VMExit0, TestExit1. Vorhandenes Archiv
+outputs/qualification-evidence/local-schema-v2-run-2 erneut anhand sämtlicher
+Dateigrößen und SHA-256 geprüft. Es belegt den Fehler, keinen erfolgreichen
+Local-Schemaübergang. Gastdisk bleibt für Diagnose erhalten.
+
+Codevergleich des originalen bd8b33c4-Installers zeigt: dessen Ressourcenleser
+verwendet AppImage -e mit ELECTRON_RUN_AS_NODE und APPIMAGE_EXTRACT_AND_RUN.
+Er verwendet noch nicht den aktuellen direkten --appimage-extract-Leseweg.
+Der früher dokumentierte Gastbefund60521 war Exit9/bad option --no-sandbox,
+verursacht durch AppRun nach fehlgeschlagenem unshare -Ur. Dies erklärt einen
+plausiblen Zusammenhang, ist ohne stderr des aktuellen Fehlers noch kein
+endgültiger Ursachenbeleg. Backup-Workerfehler des ersten Laufs trat diesmal
+nicht erneut als Abbruchstelle auf.
+
+Fokussierter Diagnoseplan vor weiterem Test: In frischem begrenztem Offlinegast
+nur den originalen Ressourcenleseaufruf des unveränderten Baseline-AppImages
+reproduzieren und Exit, Signal, stdout/stderr sowie unshare-Ergebnis als JSON
+exportieren. Keine Änderung von Originalinstaller, AppImage oder Host-Schutz.
+Erst danach entscheiden, ob die Gastumgebung für den historischen Installer
+angepasst werden muss oder ein gesonderter Vergleichsstand erforderlich ist.
+Ein Austausch des alten Installers gegen den aktuellen darf nicht als Prüfung
+des ursprünglichen Local-Ablaufs ausgegeben werden. Plan-Audit: Fehlerarchiv und
+CI-Status verifiziert. Roadmap-Audit: Local-Laufzeitmigration, Unterbrechungen und
+weitere fehlende Phase-5-Nachweise weiterhin offen; Phasen6/7 nicht begonnen.
+
+80278 Diagnosegast terminalExit0/TestExit0. Original-AppImage SHA vor/nach gleich;
+Node-Ressourcenleseaufruf Exit9 mit bad option: --no-sandbox; unshare -Ur true
+Exit1 mit uid_map Operation not permitted. Diagnosearchiv vollständig inklusive
+SHA/Größe geprüft, BerichtSHA d239bdf737e7855c456c79def95423ba1b2d3b6b21673ffc6ce6d0e68280fa
+(Korrektur: maßgeblich ist SHA im archivierten Manifest, nicht diese Abschrift).
+Nur Diagnosegastdisk nach Prüfung entfernt. Kein Migrationserfolg behauptet.
+
+Korrekturplan Gastkompatibilität: unveränderte Local-Payload2 in neuem Gast
+verwenden. Ausschließlich dort kernel.apparmor_restrict_unprivileged_userns=0
+setzen, davor vom QEMU-Hostbootwert abweichende Gastboot-ID erzwingen. Dadurch
+kann historisches AppRun die ursprünglich vorausgesetzte unprivilegierte
+Namensraumfunktion verwenden. Kein Host-sysctl, kein Artefaktpatch und keine
+simulierte Runtimeannahme. Seed dokumentiert diese abweichende Gastkonfiguration;
+Ergebnis gilt nur dafür. Aktuelle Release-Läufe unter unveränderten strengeren
+Gastbedingungen bleiben eigenständige Nachweise. Vollständigen ursprünglichen
+Local-Installer-/Migrations-/Runtime-/Profilvergleich wiederholen.
+
+Diagnosebericht SHA korrekt: d239bdf737e7855c456c79def95423ba1b2d3b6b21673ffc6ce6d6e0e68280fa.
+
+54379 Local-schema-run-3 terminalVMExit0/TestExit0. Vollständiges Archiv außerhalb
+der VM unter outputs/qualification-evidence/local-schema-v2-run-3 aufbewahrt;
+alle Größen/Hashes erneut geprüft. Originalinstaller bd8b33c4 und8494e663a
+starten jeweils ihre unveränderten Local-AppImages und erhalten reale ready-
+Bestätigung mit passendem Buildcommit. Beide Journale committed, zweiter previous
+entspricht exakt erstem next, getrennte Sicherungen vorhanden. Seed, Vorher,
+Nachher und unveränderte Quelle vollständig logisch gleich: Einstellungen,
+Registry, Kampagnen, Präferenzen und eigene Dateien. Alle Readbacks Exit0/OK.
+BerichtSHA: 0a8129aad563a7bc298c58ba20603fd2a10a0f2385f7c966e22f073d2ac20155.
+Gastdisk nach vollständigem Belegvergleich entfernt; frühere Fehlerdisks bleiben.
+
+Plan-Audit Local-Schemaübergang42/41→42/42 mit Originalinstallern und tatsächlichen
+AppImages bestanden, ausdrücklich im Gast mit erlaubten unprivilegierten
+User-Namespaces. Kein canonical handoff, kein Local-Abbruch-/Recoverynachweis und
+kein direkter UI-Profilimport. Roadmap-Audit Phase5 bleibt für diese und zuvor
+festgehaltene fehlende Nachweise offen. Nächste Arbeit: qualifizierten Local-
+Prüfer samt Adapteränderungen reviewen/committen und direkte Profilübernahme
+sowie unterbrochene Local-Aktivierung mit realen Artefakten ergänzen.

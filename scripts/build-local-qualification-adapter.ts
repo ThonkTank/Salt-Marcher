@@ -62,7 +62,8 @@ const esbuild = createRequire(require.resolve('vite/package.json')).resolve(
   'esbuild/bin/esbuild'
 )
 mkdirSync(output)
-const adapter = join(output, 'adapter.mjs')
+mkdirSync(join(output, 'local-installation'))
+const adapter = join(output, 'local-installation/adapter.mjs')
 execFileSync(
   process.execPath,
   [
@@ -83,6 +84,29 @@ execFileSync(
     env: { ...process.env, NODE_PATH: join(process.cwd(), 'node_modules') }
   }
 )
+const workers = ['profile-backup-worker.ts', 'sqlite-online-backup-worker.ts']
+for (const worker of workers) {
+  execFileSync(
+    process.execPath,
+    [
+      esbuild,
+      join(source, 'scripts', worker),
+      '--bundle',
+      '--platform=node',
+      '--format=esm',
+      '--target=node22',
+      '--external:better-sqlite3',
+      `--outfile=${join(output, worker)}`,
+      '--banner:js=import {createRequire as makeRequire} from "node:module"; const require=makeRequire(import.meta.url);'
+    ],
+    {
+      cwd: source,
+      stdio: 'inherit',
+      env: { ...process.env, NODE_PATH: join(process.cwd(), 'node_modules') }
+    }
+  )
+}
+copyFileSync(join(source, 'package.json'), join(output, 'package.json'))
 assert.deepEqual(
   readWorkspaceIdentity(source),
   identity,
@@ -104,6 +128,13 @@ writeFileSync(
       artifactManifestSha256: sha256(manifestPath),
       schemaVersions: expected.schemaVersions,
       adapterSha256: sha256(adapter),
+      adapterPath: 'local-installation/adapter.mjs',
+      packageSha256: sha256(join(output, 'package.json')),
+      workers: workers.map((path) => ({
+        path,
+        sha256: sha256(join(output, path)),
+        sourceSha256: sha256(join(source, 'scripts', path))
+      })),
       iconSha256: sha256(join(output, 'icon.png')),
       inputs: inputs.map((path) => ({
         path,
