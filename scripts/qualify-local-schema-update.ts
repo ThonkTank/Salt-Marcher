@@ -34,14 +34,39 @@ const { values } = parseArgs({
       'fixture-target',
       'home',
       'interrupt-boundary',
-      'interrupt-worker'
+      'interrupt-worker',
+      'rollback-boundary'
     ].map((name) => [name, { type: 'string' as const }])
   )
 })
-const directory = (name: string) => resolve(z.string().parse(values[name]))
+const invocationDirectory = process.cwd()
+const directory = (name: string) =>
+  resolve(invocationDirectory, z.string().parse(values[name]))
 const home = directory('home')
-const worker = values['interrupt-worker'] === 'yes'
-const boundary = values['interrupt-boundary']
+const workerMode = z
+  .enum(['yes', 'recover'])
+  .optional()
+  .parse(values['interrupt-worker'])
+const worker = workerMode !== undefined
+const rollbackBoundary = z
+  .enum([
+    'rollback-started',
+    'rollback-preserving',
+    'failed-data-preserved',
+    'rollback-restoring',
+    'old-data-restored',
+    'rollback-program',
+    'program-linked',
+    'rollback-history-written',
+    'rolled-back'
+  ])
+  .optional()
+  .parse(values['rollback-boundary'])
+const boundary =
+  values['interrupt-boundary'] ??
+  (rollbackBoundary ? 'awaiting-start' : undefined)
+assert(!rollbackBoundary || boundary === 'awaiting-start')
+assert(workerMode !== 'recover' || rollbackBoundary)
 if (boundary)
   z.enum([
     'prepared',
@@ -244,14 +269,16 @@ try {
   const baseline = await load('baseline')
   const target = await load('target')
   if (worker) {
-    process.chdir(target.options.workspaceRoot)
-    target.adapter.advanceLocalAppInstallation(
+    const selected = workerMode === 'recover' ? baseline : target
+    const stopAt = workerMode === 'recover' ? rollbackBoundary : boundary
+    process.chdir(selected.options.workspaceRoot)
+    selected.adapter.advanceLocalAppInstallation(
       {
-        ...target.options,
+        ...selected.options,
         afterMaintenanceBoundaryForTest: (at) => {
-          if (at !== boundary) return
+          if (at !== stopAt) return
           writeFileSync(
-            join(home, 'interruption-marker.json'),
+            join(home, `interruption-${workerMode}-marker.json`),
             JSON.stringify({ boundary: at }),
             { flag: 'wx' }
           )
@@ -259,7 +286,7 @@ try {
           throw new Error('SIGKILL did not terminate the installer')
         }
       },
-      'activated'
+      workerMode === 'recover' ? 'backup-created' : 'activated'
     )
     throw new Error('Requested interruption boundary was not reached')
   }
@@ -301,31 +328,43 @@ try {
       'fixture-target',
       'home'
     ].flatMap((key) => [`--${key}`, directory(key)])
-    const child = spawnSync(
-      process.execPath,
-      [
-        process.argv[1]!,
-        ...args,
-        '--interrupt-boundary',
-        boundary,
-        '--interrupt-worker',
-        'yes'
-      ],
-      { encoding: 'utf8', timeout: 120_000, maxBuffer: 16 * 1024 * 1024 }
-    )
-    writeFileSync(
-      join(home, 'interruption-worker.log'),
-      `${child.stdout}\n${child.stderr}`,
-      { flag: 'wx' }
-    )
-    assert.ifError(child.error)
-    assert.equal(child.status, null)
-    assert.equal(child.signal, 'SIGKILL')
-    assert.deepEqual(
-      JSON.parse(readFileSync(join(home, 'interruption-marker.json'), 'utf8')),
-      { boundary }
-    )
-    const interrupted = new MaintenanceCoordinator(root).read()
+    const runKilled = (mode: 'yes' | 'recover', stopAt: string) => {
+      const child = spawnSync(
+        process.execPath,
+        [
+          process.argv[1]!,
+          ...args,
+          '--interrupt-boundary',
+          boundary,
+          '--interrupt-worker',
+          mode,
+          ...(rollbackBoundary ? ['--rollback-boundary', rollbackBoundary] : [])
+        ],
+        { encoding: 'utf8', timeout: 120_000, maxBuffer: 16 * 1024 * 1024 }
+      )
+      writeFileSync(
+        join(home, `interruption-${mode}-worker.log`),
+        `${child.stdout}\n${child.stderr}`,
+        { flag: 'wx' }
+      )
+      assert.ifError(child.error)
+      assert.equal(child.status, null)
+      assert.equal(child.signal, 'SIGKILL')
+      assert.deepEqual(
+        JSON.parse(
+          readFileSync(join(home, `interruption-${mode}-marker.json`), 'utf8')
+        ),
+        { boundary: stopAt }
+      )
+      return {
+        signal: child.signal,
+        journal: new MaintenanceCoordinator(root).read()
+      }
+    }
+    const activation = runKilled('yes', boundary)
+    const rollback = rollbackBoundary
+      ? runKilled('recover', rollbackBoundary)
+      : null
     const recovered = []
     for (let index = 0; index < 2; index++) {
       process.chdir(baseline.options.workspaceRoot)
@@ -356,8 +395,10 @@ try {
     }
     interruption = {
       boundary,
-      signal: child.signal,
-      interrupted,
+      signal: activation.signal,
+      interrupted: activation.journal,
+      rollbackBoundary,
+      rollback,
       previous,
       recovered
     }
@@ -381,9 +422,11 @@ try {
     JSON.stringify(
       {
         formatVersion: 1,
-        coverage: boundary
-          ? 'original-local-installers-activation-sigkill-recovery-retry-not-handoff'
-          : 'original-local-installers-schema-update-real-runtime-acceptance-not-interruption-or-handoff',
+        coverage: rollbackBoundary
+          ? 'original-local-installers-double-sigkill-recovery-retry-not-handoff'
+          : boundary
+            ? 'original-local-installers-activation-sigkill-recovery-retry-not-handoff'
+            : 'original-local-installers-schema-update-real-runtime-acceptance-not-interruption-or-handoff',
         interruption,
         baseline: baseline.receipt,
         target: target.receipt,

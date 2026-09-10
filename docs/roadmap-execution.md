@@ -10510,3 +10510,66 @@ old-data-moved BerichtSHA 89f6b4f68e97b22a7f6587dab07b70f2e9d6360586ee71f9fccedb
 Plan-Audit diese drei Grenzen bestanden. Zusammen mit Pilot vier von acht
 Vorwärtsgrenzen qualifiziert; data-moving, data-ready, program-moving und
 awaiting-start folgen. Rollback-Unterbrechungen und direkter UI-Import weiter offen.
+
+Nächster unveränderter Local-Batch: data-moving, data-ready, program-moving,
+awaiting-start, vier separate Profile, sequenziell im Gast, Deadline900s.
+Gleicher qualifizierter Prüfer/Payload/Originalartefakte, Export auch bei Fehler.
+Voriger Goalturn Fortschritt: drei weitere SIGKILL-Nachweise vollständig auditiert
+und Testimplementierung974a2cb0c committed. Keine Quellenänderung während Lauf.
+
+17355 terminalVMExit0/TestExit0. Vier Berichte transport-/semantikgeprüft:
+program-moving SHA 88af8d7db3397928981cc6837f6889133f55611f45aeb52f1a12513280ebc0b8
+awaiting-start SHA 6c514cc18e84e04624650bb4e0cd1962c22687668217b41ec5399bd336c32955
+data-moving SHA 93b59e45cadf05fd7eb00871c8fd057a0061481ade4f362ef430efeb71b7f4de
+data-ready SHA e1ceafd1ea6355236941689a517305a9ffd7e90bb409946760a408e75e4b816a
+Je echtes SIGKILL, zweimal idempotentes rolled-back, beide Recoveryreadbacks
+entsprechen vollständig Seed, erneutes Zielruntime-ready/committed und sämtliche
+Vorher-/Nachher-/Quellvergleiche gleich. Archiv außerhalb VM, Disk danach entfernt.
+Plan-Audit alle acht Local-Vorwärtsgrenzen mit Originalinstallern/echten AppImages
+bestanden. Nicht auf Recovery-Abbrüche oder canonical handoff ausweiten.
+Roadmap-Audit Phase5 bleibt offen: insbesondere neun Recoverygrenzen, UI-Import
+und zuvor benannte fehlende Originalnachweise.
+
+
+### Phase 5 – Abbrüche während Local-Recovery
+
+Voriger Goalturn Fortschritt: acht von acht Vorwärtsgrenzen real qualifiziert.
+Plan: optionalen rollback-boundary-Modus ergänzen; zuerst echtes Zielinstaller-
+SIGKILL bei awaiting-start, dann separater Original-Baseline-Installer mit
+SIGKILL an einer von neun Recoverygrenzen. Getrennte Marker/Prozessresultate und
+Journale halten beide Unterbrechungen auseinander. Danach Original-Recovery
+zweimal, vollständiger Profil-/Programm-/Desktopvergleich, erneutes echtes
+Zielupdate und unveränderte Quelle. Keine simulierte Annahme und keine geänderten
+AppImages. CLI-Pfade vor Arbeitsverzeichniswechsel auflösen. Statische Checks,
+Gastpilot old-data-restored; danach übrige acht Recoverygrenzen. Neues Payload,
+alte Belege unverändert behalten. Kein aktiver Gast während Codeänderung.
+
+78385 statische Prüfung terminalExit0: Format, ESLint und beideTypechecks bestanden.
+24922 Recoverypilot terminalVMExit0/TestExit0. Echte SIGKILLs bei awaiting-start
+und old-data-restored, gleicher Transaktionsbezug und rollbackFrom=awaiting-start.
+Anschließend zweimal identisches rolled-back, beide Recoveryreadbacks==Seed,
+Original-Zielruntime ready/committed, alle Profil-/Quellvergleiche gleich.
+Archiv außerhalb VM vollständig transport-/semantikgeprüft. BerichtSHA:
+5e10b1103e7271fe1320dca6c45b1973beac7416ff0b49a9fb699d12cc08d3cb.
+Gastdisk nach vollständiger Prüfung entfernt. Plan-Audit Doppelabbruchpilot
+bestanden; übrige acht Recoverygrenzen offen. Roadmap-Audit keine Phase5-Freigabe,
+UI-Profilimport und zuvor festgehaltene fehlende Nachweise bleiben offen.
+
+Nächster Recoverybatch mit unverändertem Payload-local-recovery-1: rollback-started,
+rollback-preserving, failed-data-preserved, rollback-restoring. Vier separate
+Profile, sequenzieller Offlinegast, Deadline900s, Export bei Fehler. Voriger
+Goalturn Fortschritt: Doppel-SIGKILL-Pilot old-data-restored semantikgeprüft.
+Keine Sourceänderungen während der Qualifikation.
+
+57905 terminalVMExit0/TestExit0. Vier Recoveryfälle vollständig transport-/
+semantikgeprüft: beide SIGKILLs, gleiche Transaktion, zweimal identisches
+rolled-back und vollständiger Recoveryreadback, realer Zielrestart/committed,
+sämtliche Vorher-/Nachher-/Quellvergleiche gleich. BerichtSHA:
+rollback-restoring ffe7ec57df6cacf2b23e2f6893457f70813759344fe74c4bc0b9d22df9ff2c23
+rollback-started 6fd0daff7874744e3249818c35a9b871c4ec94fc659bd0b97e5e0476732aff7f
+rollback-preserving a4b1b7529cff310909ea6d803de2faed0786c06c32a894da7c91dfb5e2ac1175
+failed-data-preserved 96cf395ae0abcb99fd2718180aa7a011189e17036a6e48f8e26a5d98e7e6cc3f
+Archiv außerhalb VM; Gastdisk nach Prüfung entfernt. Plan-Audit fünf von neun
+Recoverygrenzen qualifiziert. Roadmap-Audit übrige vier Recoverygrenzen, direkter
+UI-Import und frühere fehlende Nachweise offen. Abnahmematrix auf tatsächlich
+vorhandene Local-/Release-Nachweise aktualisiert, keine Gesamtfreigabe.
