@@ -55,7 +55,7 @@ export class ProfileMaintenance {
     const available = statfsSync(this.root)
     if (available.bavail * available.bsize < required)
       throw new Error(
-        'Nicht genug freier Speicherplatz für eine vollständige Sicherung.'
+        'Nicht genug freier Speicherplatz für eine vollständige Sicherung. Gib Speicherplatz frei und versuche den Vorgang erneut.'
       )
     const id = randomUUID()
     mkdirSync(join(this.root, 'backups'), { recursive: true })
@@ -185,7 +185,7 @@ export class ProfileMaintenance {
       2 * bytes(this.payloadRoot) + 2 * bytes(source) + 64 * 1024 * 1024
     )
       throw new Error(
-        'Nicht genug freier Speicherplatz für Sicherung und Migration.'
+        'Nicht genug freier Speicherplatz für Sicherung und Migration. Gib Speicherplatz frei und versuche den Vorgang erneut.'
       )
     const backup = await this.backup(source !== this.payloadRoot)
     if (existsSync(source)) {
