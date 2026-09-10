@@ -10042,3 +10042,61 @@ diese statische Erweiterung ersetzt ihn nicht.
 Remote Check34473788814 terminal success für exakt496bc1feb8f6a91073467904678b8e88a5e73e67.
 Jetzt neuer Kandidat mit Pausekorrektur und Feed-Prüfer, vollständige CI erneut;
 keine Main-Promotion und keine neue Host-GUI-Ausführung.
+
+Fortsetzung: vorheriger Goalturn Fortschritt (Pausekorrektur ac3a0b76d, Feed-Prüfer
+983feb554 committed/pushed, statische Validierung). Check34475495340 für exakt
+983feb554869a4719e441bac26b1b472855ab09a ist live. Host56GiB frei.
+Konkreter Vergleichsartefaktplan: neue Baseline aus2ccba43f60 mit ausschließlich
+Pause- und GitHub-Fehleranzeige-Quelldateien aus983feb554; Schema42/41 bleibt
+unverändert. Ziel983feb554 Schema42/42. Neue Katalog-IDs feed-baseline/feed-target,
+neue Testversionen0.0.160/161 und neue Ausgabeverzeichnisse; bestehende Bytes
+unverändert. Beide Originalquellen werden vom vorhandenen Builder in getrennten
+unveränderlichen Checkouts gebaut. Danach isolierter Gastlauf mit --feed-failures
+--feed-actionable --installed-launcher. Vollständige sechs Ablehnungen, keine
+Aktivierung/Artefaktanfrage, Profilvergleich und anschließender normaler Update-,
+Weiterarbeits- und Restoreweg müssen gemeinsam bestehen. Keine neue Aussage über
+Pause-E2E allein aus diesem Feedlauf. Gastdisk erst nach geprüftem Export entfernen.
+
+14061 terminalExit1: Baseline0.0.160 vollständig gebaut; Ziel beim pnpm-install
+mit ENOSPC abgebrochen. df weiterhin55.46GiB frei. btrfs filesystem usage zeigt
+230.30GiB vollständig zugeordnet, nur1MiB unallocated; Metadata2.67/3GiB benutzt.
+Keine feste Inodezahl bei Btrfs; deshalb kein Beweis einer Inode-Erschöpfung.
+35 historische Buildcheckouts enthalten insgesamt1.885M Dateieinträge. Belegplan
+roadmap-phase5-build-cache-cleanup.json validiert34 fertige Artefakte (Größe/SHA),
+zugehörige unveränderte HEADs und saubere versionierte Dateien. Jetzt ausschließlich
+deren generierte node_modules entfernen, Quellcheckouts/Artefakte/Beweise erhalten.
+Keine aktive VM/Build. Anschließend Kapazität und begrenzten Dateierzeugungstest
+prüfen. Builder soll nach erfolgreicher Artefakt-/Receipt-Erzeugung seine
+rekonstruierbaren Abhängigkeiten entfernen, damit diese Ansammlung nicht fortgeht.
+
+80528 terminalExit0:34 hash-/quellgeprüfte generierte node_modules entfernt.
+Btrfs-Metadaten danach1.07/3GiB statt2.67/3GiB; keine Artefakt-/Quelllöschung.
+Builder entfernt künftig nach vollständigem Receipt und unveränderter
+Quellprüfung ausschließlich das eigene node_modules. 100 begrenzte Datei-/
+Verzeichnis-/Rename-Proben im eigenen .tmp erfolgreich, automatisch entfernt.
+Fehlgeschlagener Zielcheckout bleibt zur Diagnose erhalten; neuer Versuch
+verwendet neuen unveränderlichen Checkout. Baseline-Bytes0.0.160 bleiben erhalten:
+4681358dd3aabe1d6dab54f68803a5b4543302c64cc3f8bd55219eeb4d2656bd.
+
+80766 terminalExit0: Builder-/Quellkatalogformat, ESLint und beide Typechecks grün.
+72462 Wiederholungsbuild terminalExit0,48.665s,2.7GiB ohne Swap. Originale
+Zielquelle983feb554 unverändert gebaut; eigenes node_modules nach Receipt entfernt.
+Beide Artefakte per Größe/SHA erneut verifiziert:
+0.0.160(42/41)177048243Bytes4681358dd3aabe1d6dab54f68803a5b4543302c64cc3f8bd55219eeb4d2656bd.
+0.0.161(42/42)177048367Bytes27ba6b7b92352ea49701faa440c644805828931484134814df1d4c5007ef3d00.
+Plan-Audit Builderbereinigung: erfolgreiche Ausführung nach vollständiger
+Artefakterzeugung und Erhalt des Quellcheckouts nachgewiesen. Roadmap-Audit:
+Build ist kein UI-/Update-Nachweis; Phase5 offen.
+
+Externe Zustandsabweichung während72462: gesamtes work/qualification-vm fehlt;
+df jetzt188GiB frei. Die hier ausgeführte Bereinigung80528 betraf ausschließlich
+34 in roadmap-phase5-build-cache-cleanup.json enumerierte node_modules innerhalb
+Salt-Marcher/.tmp. Kein VM-Verzeichnis in diesem Plan. Nutzer asynchron nach
+paralleler Bereinigung gefragt. Containerimage weiterhin vorhanden, VM-Basis,
+Seeds, Payloads und lokale validierte Berichte am bekannten Pfad fehlen.
+Historische Logeinträge bleiben unverändert, aber deren lokale VM-Beweise sind
+aktuell nicht erneut prüfbar. Keine daraus abgeleitete Phasenfreigabe. Neue
+VM-Ausführung bis Klärung dieser konkurrierenden Änderung zurückgestellt.
+Check34475495340 für983feb554 weiterhin live, bislang keine fehlgeschlagenen Jobs.
+Vorheriger Goalturn Fortschritt: Baselinebau, belegte Cachebereinigung und
+Builderkorrektur; aktueller Zielbau jetzt nachgewiesen erfolgreich.

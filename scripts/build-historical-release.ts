@@ -6,6 +6,7 @@ import {
   readFileSync,
   renameSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync
 } from 'node:fs'
@@ -322,6 +323,8 @@ writeFileSync(
   ),
   { flag: 'wx' }
 )
+// The immutable source and receipts retain provenance; dependencies are rebuildable.
+rmSync(join(checkout, 'node_modules'), { recursive: true, force: true })
 console.info(
   `Historical test artifact built at ${output}; runtime qualification remains required`
 )
