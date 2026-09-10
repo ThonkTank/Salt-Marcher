@@ -10116,3 +10116,33 @@ Plan-Audit Wiederauffinden teilweise erfolgreich, keine Kopie neuerer VM-Bericht
 am untersuchten work-Pfad. Roadmap-Audit Phase5 weiter offen; Wiederbeschaffung
 oder Wiederholung fehlender Nachweise vor Abschluss erforderlich. Vorheriger
 Goalturn Fortschritt durch erfolgreichen Zielbau und belegte Builderbereinigung.
+
+Phase5 unabhängiger Prüfplan während offener VM-Bereinigungsklärung: ergänze einen
+separaten Erstinstallationsprüfer für ein tatsächlich leeres isoliertes Ziel.
+AppImage direkt aus Downloadordner mit geprüftem angrenzendem Release-Manifest
+starten, ursprüngliches „Auf diesem Rechner installieren“ und Bestätigung über
+UI bedienen. Kein vorab stageDeployment/setCurrent/installMaintenanceLauncher.
+Danach committed-Journal, originale Artefaktbytes, installierten Starter und
+leere Kampagnenansicht prüfen; normal schließen, über installierten Starter
+neu öffnen und unverändertes Journal prüfen. Keine Profilübernahme hier behaupten:
+deren Dialog-/Quellsperrennachweis bleibt eigener offener Fall. Neue Ausführung
+verlangt vorhandene Gastisolation und neues Home, findet jetzt nicht auf Host statt.
+Validierung zunächst Format/Lint/Typechecks; Laufzeit ausdrücklich noch offen.
+
+CI34475495340 Portable-Job102865137690 terminal failure:1652/1653 Tests bestanden.
+Einziger Fehler session-travel-console „fresh preparation ... (false)“ erwartet
+altes Pauseobjekt ohne neues optionales expectedProgressIndex. Tatsächlicher
+Aufruf genau einmal mit korrekten Revisionen6/8 plusIndex0. Fixplan: Erwartung um
+frischen Index ergänzen und Fixture mit nicht-null Fortschrittsindex von altem
+Stand unterscheiden; Sperr-/Unmountprüfungen unverändert. Keine Produktlockerung.
+Erstinstallationsprüfer73313 ESLintfehler korrigiert (Program.sha256 statt
+manifest, kein Throw im finally);54812 noch TS4111 bei Env-Indexzugriff, fixen.
+Danach gezielte Console-Suite plus Format/Lint/Typechecks gemeinsam ausführen.
+
+35244 terminalExit0:13/13 Console-Tests inklusive frischemIndex2 und Unmountfall,
+Format/ESLint/beide Typechecks bestanden. Neuer Erstinstallationsprüfer statisch
+geprüft; kein Gast-/Host-GUI-Lauf erfolgt. Plan-Audit: kein Vorinstallationshelper
+im Prüfer; UI-Setup aus Download mit angrenzendem Manifest, committed, Launcher,
+Artefakthash, Desktopziel und zweiter regulärer Start werden verlangt.
+Roadmap-Audit: Erstinstallation zur Laufzeit und Profilübernahme weiterhin offen;
+Console-Testkorrektur ersetzt nicht den verbleibenden vollständigen CI-Lauf.
