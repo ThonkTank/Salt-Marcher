@@ -10763,3 +10763,57 @@ mit den50 unveränderten erfolgreichen Local-Fällen kein verbleibender Fehler
 dieser Suite. Plan-Audit Fresh-Arbeitskopie vor Readback initialisiert, Quellen-/
 Backuperhalt und negative Datenfälle belegt. Roadmap-Audit gepackter Erststart
 und kompletter nativer Import weiterhin offen; neues Artefakt erforderlich.
+
+Neuer Teststand0.0.163 aus 7c6d08205e42cd9227bab98e1920dbb64f0c18c9: atomarer Bootstrap plus
+Initialisierung frischer Wartungsarbeitskopien. Originalquellenkatalog ergänzt,
+Builder mit GOMAXPROCS2/4GiB/128Tasks/2CPU. Voriger Goalturn Fortschritt: fehlenden
+Vorbereitungsschritt ergänzt und zielgerichtete plus Local-Prüfungen bestanden.
+Keine Sourceänderung während Build, kein Runtimepass allein aus Build.
+
+7707 Build terminalExit0. Test-AppImage0.0.163 Größe/SHA geprüft: {'name': 'SaltMarcher-0.0.163-x64.AppImage', 'bytes': 177044089, 'sha256': '8bf3690cfc8f4c6efc565feceee5a7f6476ca76ffff5cb1b38637cedf9f751a6'}
+Importlauf6 benutzt exakt diese Bytes mit gleichem UI-Prüfer und Original-
+Localartefakten. Eigenes Payload/Seed/Gast,900s. Quellen bis Terminal unverändert.
+
+45423 terminalVMExit0/TestExit1. Neuer0.0.163-Stand übersteht Erstinstallation.
+Ordnerdialog schließt nun, App lehnt ausgewählten Pfad als nicht „profile“ ab;
+Gastbild6 zeigt genaue fachliche Meldung, keine native Bestätigung vorhanden.
+Kein Importpass. Nächster Diagnoseplan: native Auswahl direkt vor Open als PNG-
+JSON erfassen und exportieren, statt nur Zustand nach Fehlermeldung. Auswahl muss
+vor weiterer Eingabekorrektur tatsächlich sichtbar belegt sein. Produkt unverändert.
+Build0.0.163 SHA8bf3690cfc8f4c6efc565feceee5a7f6476ca76ffff5cb1b38637cedf9f751a6.
+
+Importdiagnose7: gleicher0.0.163-Stand, zusätzliche Aufnahme direkt vor Open,
+Export native-before-open.json. Voriger Goalturn Fortschritt: neues Artefakt
+qualifiziert bis zur nativen Auswahl und konkrete Ablehnung lokalisiert.
+Keine Sourceänderungen im900s-Gastlauf.
+
+33273 terminalVMExit0/TestExit1. Export enthält native-before-open.json; PNG
+visuell geprüft: Breadcrumb endet korrekt auf profile, aber erste Kindzeile
+campaign-data blau ausgewählt. Damit falsche Rückgabe konkret erklärt. Fixplan:
+native GTK-Auswahl per Ctrl+Shift+A aufheben, dann aktuellen Ordner mit tatsächlichem
+Open bestätigen; Bild vor Open weiterhin erfassen. Keine Import-IPC-Simulation
+oder Produktänderung. Vollständiger Import-/Quell-/Backupnachweis bleibt offen.
+
+Run8 terminalVMExit0/TestExit1, vier Dateien nach profile-import-v2-run-8 exportiert.
+Gastbilder zeigen weiterhin ausgewählte campaign-data-Zeile; Ctrl+Shift+A hat
+die Auswahl nicht aufgehoben. Quelle wird korrekt abgewiesen. Fixplan: im nativen
+Dialog zum Elternordner navigieren; damit das zuvor geöffnete profile-Verzeichnis
+selbst auswählen. Aufnahme vor Open und vollständige Inhaltsprüfungen beibehalten.
+Voriger Goalturn Fortschritt: Hostplatz/Metadaten und Absturzbelege geprüft; aktuell
+125GiB frei, keine laufende VM. Kein neuer Build, vorhandenes0.0.163 verwenden.
+
+43508 Run9 terminalVMExit0/TestExit0. Vollständiger nativer Profilimport mit
+Release0.0.163 bestanden. Report8d516ae1c5e1194a969a87c05d2aab70a5776e7aa6b498e099da29e87acbb3a3
+unter outputs/qualification-evidence/profile-import-v2-run-9; alle Exporthashes
+und Größen nachgeprüft. Erstinstallation und Import committed, native Auswahl
+und Bestätigung erfolgt, drei normale Prozesse Exit0. Import-/Neustartreadback
+gleich reichhaltigem Local-Seed; Prüfer bestätigt Quelle bytegleich und Journal
+unverändert, Backup des vorherigen leeren Profils logisch vollständig. Nur eigene
+Gastdisk9 nach Audit entfernt; Artefakte/Reports/Fehlerdiagnosen erhalten.
+Plan-Audit nativer Erfolgsweg bestanden. Roadmap-Audit Phase5 bleibt offen:
+gehaltene Quellsperre im nativen Import und übrige Releasefehlernachweise fehlen.
+
+61514 abschließendes ESLint und beide Typechecks Exit0,28.102s/1.5GiB/keinSwap.
+Python-Diagnosehelfer syntaktisch geprüft und im Gast tatsächlich ausgeführt.
+git diff --check grün. Nativer Importprüfer und Nachweise werden als separater
+Candidate-Commit gesichert; vollständige exakte Remote-CI/Handoff noch ausstehend.

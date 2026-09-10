@@ -31,7 +31,7 @@ runtime evidence.
 | M02 | Real forward migration and skipped version    | Original-source AppImages passed A→B→C, A→C, 34→41 campaign migrations and schema-30 generated loot→42; UI pair 42/41→42/42 passed. Immutable sources and hashes recorded in roadmap-execution.md | 5: immutable historical schema artifacts A→B→C and A→C; compare semantic state                      |
 | M03 | No downgrade/missing path/reset               | persistence-preflight.ts rejects incompatible inputs                                                     | 2/5: source byte comparison for missing edge/newer schema/corruption                                |
 | M04 | One Local/Release transaction                 | Shared coordinator owns both adapters; Phase-2 completion suite passed | 2: both adapters run identical fault table and use one authoritative journal                        |
-| M05 | Durable intent and recovery at every boundary | Real AppImages passed eight pre-acceptance activation boundaries, interrupted rollback including durable history, and an actual migration Utility kill. Installed starter passed all eight pre-acceptance activation boundaries with complete profile/restore readbacks. An earlier awaiting-start run timed out selecting a backup; unchanged artifacts passed the diagnostic rerun, so that intermittent UI failure remains unexplained. Local installer process suite now passes eight activation and nine recovery SIGKILL boundaries with complete SQLite/file, program and desktop comparisons, using inert artifacts and simulated runtime acceptance. Standalone helper passed all nine recovery boundaries through the installed starter with unchanged AppImages and explicit helper-role markers (report hashes in roadmap-execution.md). Original packaged Local 42/41 → 42/42 runtime acceptance and all eight activation SIGKILL boundaries are now qualified (retained reports below). Recovery-interruption matrix and other fault cases remain incomplete; report hashes in roadmap-execution.md                                                 | 2/5: kill before/after intent, moves, startup/commit and recovery itself; restart repeatedly        |
+| M05 | Durable intent and recovery at every boundary | Real AppImages passed eight pre-acceptance activation boundaries, interrupted rollback including durable history, and an actual migration Utility kill. Installed starter passed all eight pre-acceptance activation boundaries with complete profile/restore readbacks. An earlier awaiting-start run timed out selecting a backup; unchanged artifacts passed the diagnostic rerun, so that intermittent UI failure remains unexplained. Local installer process suite now passes eight activation and nine recovery SIGKILL boundaries with complete SQLite/file, program and desktop comparisons, using inert artifacts and simulated runtime acceptance. Standalone helper passed all nine recovery boundaries through the installed starter with unchanged AppImages and explicit helper-role markers (report hashes in roadmap-execution.md). Original packaged Local 42/41 → 42/42 runtime acceptance and all eight activation SIGKILL boundaries are now qualified (retained reports below). All nine Local recovery SIGKILL boundaries are also qualified; other fault cases remain incomplete; report hashes in roadmap-execution.md                                                 | 2/5: kill before/after intent, moves, startup/commit and recovery itself; restart repeatedly        |
 | M06 | Never rollback accepted later work            | Real AppImage SIGKILL immediately after durable committed preserves the same target/journal on restart. A second SIGKILL after saved XP preserves the complete later profile; restore first protects that work in a verified backup (report f8040582fe0e01126580ac984b5ebb7de8077ef7525b1f3b9843048752bd36df). Installed-starter equivalent also passed with unchanged journal and complete later-profile comparison (report 0d00ea54b8b2755f4548a45e47a6386124bb0943a4f5135c78ebaae3e7b5c983)                                                 | 2/5: commit, edit, crash, restart; exact later-state comparison                                     |
 | M07 | Safe source import across channels/aliases    | Canonical shared leases; real second processes through aliases blocked during asynchronous export (source-profile-access.test.ts); direct controller import preserves source bytes | 3: parallel Development/Local/Release processes; canonical aliases; source hashes unchanged         |
 | M08 | Full profile preservation                     | Full original-runtime readbacks compare settings, active/inactive/trash campaigns, own files, world, paused journey and ongoing combat; real UI update preserves these and persists subsequent manual XP | 3/5: exact preferences, inactive/trash campaigns, user files, own content and resumable live state  |
@@ -361,7 +361,11 @@ Four additional recovery boundaries passed both SIGKILLs, repeated recovery and
 real retry: `rollback-started`, `rollback-preserving`, `failed-data-preserved`,
 `rollback-restoring`. Their exports are retained in
 `outputs/qualification-evidence/local-recovery-v2-run-2`; individual hashes are
-in the execution log. Four recovery boundaries remain pending.
+in the execution log. The final four (`rollback-program`, `program-linked`,
+`rollback-history-written`, `rolled-back`) passed the same full audit, with
+exports in `outputs/qualification-evidence/local-recovery-v2-run-3`. All nine
+Local recovery boundaries are therefore qualified for this artifact pair and
+guest configuration; this does not close the other Phase-5 requirements.
 
 These Local tests run in an isolated Linux guest with unprivileged user namespaces
 allowed. The historical installer otherwise fails in the guest because AppRun
@@ -371,3 +375,21 @@ separate. No host protection settings or original AppImages were changed.
 Disposable successful guest disks were removed only after full archive and
 semantic verification. These tests do not constitute the canonical Local handoff,
 direct profile-import UI acceptance, or Phase-5 completion.
+
+## Native whole-profile import qualified (2026-09-10)
+
+Release test artifact `0.0.163` from `7c6d08205e42cd9227bab98e1920dbb64f0c18c9`,
+SHA-256 `8bf3690cfc8f4c6efc565feceee5a7f6476ca76ffff5cb1b38637cedf9f751a6`,
+passed first installation and import of the actual installed Local target profile
+from the original Local pair described above. The real native directory chooser
+and replacement confirmation were used. Whole-profile readback after import and
+restart equals the seeded Local data; source files remain byte-identical and its
+journal unchanged. The pre-import backup equals the previous empty profile
+logically, including SQLite contents. All tracked normal app processes exited 0.
+
+Retained archive: `outputs/qualification-evidence/profile-import-v2-run-9`; report
+SHA-256 `8d516ae1c5e1194a969a87c05d2aab70a5776e7aa6b498e099da29e87acbb3a3`.
+Transport hashes and semantic assertions were checked before deleting the
+disposable guest disk. This proves the successful native import path; rejection
+of a held source lock through this UI remains a separate pending case. It is
+not manual release acceptance, a canonical handoff, or Phase-5 completion.
