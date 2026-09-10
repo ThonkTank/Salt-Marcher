@@ -9153,3 +9153,79 @@ und Ziel5c852f3b7 mit unveränderten echten Schemaständen42/41→42/42.
 Plan-Audit Starter-Pilot bestanden. Roadmap-Audit: weitere Startergrenzen, Abbruch
 im eigenständigen Helfer, Local-Adapter und übrige Fehlermatrix bleiben offen.
 Phase5 nicht abgeschlossen; keine Freigabe/Handoff/Veröffentlichung.
+
+### Phase 5 – Übrige Aktivierungsgrenzen über installierten Starter
+
+Voriger Turn Fortschritt: Starter-Pilot old-data-moved vollständig geprüft und
+9449f8d56 gepusht. Aktuell sauberer Arbeitsbaum und keine laufende Test-VM.
+Plan: unverändertes Payload-installed-update-1 und Artefakte0.0.156/0.0.157 für
+sieben weitere Aktivierungsgrenzen verwenden: journal:prepared,
+journal:data-moving,new-data-moved,journal:data-ready,journal:program-moving,
+program-linked,journal:awaiting-start. Achter Fall --commit-crash --accepted-crash
+über denselben installierten Startpunkt. Pro Fall eigenes frisches Profil, echte
+Baseline-Installationsbestätigung und kompletter UI-/Datenvergleich/Restore.
+Sequenziell, Stop beim ersten Fehler; begrenzter Gast mit RuntimeMaxSec1800 und
+Hostdeadline1800. Vollständige Ergebnisberichte exportieren, zehn Sekunden vor
+Shutdown austragen lassen. Keine Code-/Teständerungen während des Laufs. Der
+Originalhelfer wird dabei als Recovery-Einstieg geprüft, sein eigener interner
+Abbruch und Local-/WAL-/Platz-/Zugriffs-/Importmatrix bleiben weiterhin offen.
+
+Read-only Folgerundenaudit während Startermatrix: scripts/local-app-installation.ts
+bindet den gemeinsamen Koordinator inklusive afterMaintenanceBoundaryForTest und
+renameForInstall tatsächlich an; bestehende tests/unit/local-app-installation.test.ts
+werfen LocalInstallCrashForTest (ab Zeile760/818), belegen aber keinen realen
+Prozessabbruch. verifyLocalRuntimeStartup verlangt die tatsächliche committed-
+Bestätigung des Kindes und versucht bei Fehlern gemeinsamen Rollback (der nach
+committed wirkungslos bleibt). Nächster Local-Nachweis muss den unveränderten
+Installer in separatem Prozess mit SIGKILL am vorhandenen Hook sowie vollständigen
+Profil-/Desktop-/Programmvergleich verwenden; echte Local-Artefaktannahme bleibt
+separater Pflichtnachweis. Kein Schluss von synthetischen AppImagebytes auf Runtime.
+Implementierung erst nach terminalem Status der aktiven Startermatrix.
+
+Fortsetzungsprüfung: Session43001 erneut live bestätigt, unveränderter Container
+5d7a28f5-ba79-4421-b2bd-f524ae5d3d4e. Serielle Erfolgsmeldung für ersten Fall
+journal:prepared bei Gast154.201s; übrige sieben Fälle noch aktiv. Dies ist eine
+Laufmeldung, noch kein vollständiger Export-/Berichtvergleich der Matrix.
+Read-only Local-Audit konkretisiert: bestehende Fixture verwendet künstliche
+artifact-a/b-Bytes und synthetischen Helfer; installAndAccept bestätigt im Test
+per coordinator.commit. Für den echten Prozessabbruchtest müssen diese Grenzen
+im Bericht ausdrücklich bestehen bleiben. Aussage über Prozess-/Daten-/Desktop-
+Recovery ist möglich, eine gepackte Local-Runtime-Abnahme folgt daraus nicht.
+
+### Phase 5 – Wiederaufnahme nach abgebrochenem Tool-Turn
+
+43001 ist nach explizitem Turn-Abbruch nicht mehr vorhanden; podman ps zeigt keinen
+Testcontainer. Kein exit-code und kein Exportabschluss im bisherigen Lauf. Der
+Lauf gilt beendet, nicht bestanden. Erste Erfolgsmeldung journal:prepared bleibt
+indirekte Evidenz ohne vollständigen Bericht. Kein paralleler Neustart.
+Korrekturplan: kleinere Gruppen mit Export nach jedem abgeschlossenen Fall.
+Unverändertes Payload-installed-update-1 zuerst für journal:prepared und
+journal:data-moving erneut verwenden, jeweils eigenes Profil. Snapshotexport vor
+Beginn des nächsten Falls, damit eine spätere Unterbrechung frühere Nachweise nicht
+verliert. Fehler stoppt die Gruppe; finaler TestExit und separate Exportmarker.
+Danach übrige Aktivierungs- und Commitfälle fortsetzen. Keine Quell-/Artefaktänderung.
+
+### Betriebsfehler – Host-Speicherplatz am 10. September 2026
+
+Nutzer meldet volle Rootpartition. Verifiziert:231GiB gesamt,5.4MiB frei;
+209GiB im eigenen work-Verzeichnis,176GiB davon qualification-vm. Keine aktive
+Test-VM oder Buildprozesse. Ursache: unbegrenzt aufbewahrte beschreibbare Testdisks.
+Acht abgeschlossene guest.qcow2-Dateien mit vorhandenem vollständigem UI-Bericht
+und TestExit0 entfernt:installed-update-run-2,history-crash-run-1,commit-crash-run-1,
+publication-remaining-run-1,publication-pair-run-1,recovery-crash-run-1,
+publication-crash-run-2,update-crash-run-2. Berichte, Logs, AppImages, Quellcode,
+Basisimage und Nutzerprofile unverändert. Danach73GiB frei (69% belegt).
+
+Korrekturplan vor neuer Qualifikation: VM-Runner muss vor Ausgabeordner/Container
+mindestens40GiB freien Hostspeicher verlangen (24GiB maximale Gastdisk plus16GiB
+Reserve). Fehlermeldung mit tatsächlich verfügbarem Speicher und nächster Aktion.
+Ablehnung bei4MiB durch kontrollierte df-Antwort testen; kein Container/Output darf
+entstehen. Nach künftigem validiertem Berichtsexport disposable guest.qcow2 sofort
+entfernen; fehlende/ungültige Exporte zuerst klären. Keine automatische Löschung
+von Nutzer-Backups oder Beweisen. Roadmaparbeit pausiert bis Betriebsprüfung grün.
+
+Speicherwächter geprüft: bash-Syntax grün; kontrollierte Werte4MiB,40GiB-minus1Byte
+und unlesbarer Kapazitätswert jeweils Exit2 mit verständlicher Meldung. Kein
+Ausgabeordner und kein Podman-Aufruf. Keine VM gestartet. Host weiterhin73GiB frei.
+Plan-Audit Betriebsentlastung und Vorabgrenze bestanden. Gesamtroadmap weiterhin
+offen; komplette pnpm-check/CI-Freigabe wird dadurch nicht ersetzt.

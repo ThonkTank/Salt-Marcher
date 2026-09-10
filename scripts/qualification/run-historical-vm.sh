@@ -15,6 +15,17 @@ deadline=$5
 [[ $deadline =~ ^[0-9]+$ ]] && ((deadline >= 5 && deadline <= 3600)) || exit 2
 [[ -f $base_disk && -f $seed_disk && ! -e $output_dir ]] || exit 2
 [[ $output_dir != *:* && $base_disk != *:* && $seed_disk != *:* ]] || exit 2
+# The writable guest can grow to 24 GiB. Keep another 16 GiB for the host.
+# Check before creating output or starting any container.
+space_parent=$(dirname -- "$output_dir")
+while [[ ! -d $space_parent ]]; do space_parent=$(dirname -- "$space_parent"); done
+available_bytes=$(df -B1 --output=avail -- "$space_parent" | tail -n 1)
+available_bytes=${available_bytes//[[:space:]]/}
+required_bytes=$((40 * 1024 * 1024 * 1024))
+if [[ ! $available_bytes =~ ^[0-9]+$ ]] || ((available_bytes < required_bytes)); then
+  printf 'Qualification VM requires 40 GiB free host disk space; available bytes: %s. Remove disposable guest disks only after validating their exported reports.\n' "$available_bytes" >&2
+  exit 2
+fi
 # A single VM per desktop account, including cleanup after a failed guest.
 exec 9>"${XDG_RUNTIME_DIR:?}/salt-marcher-qualification-vm.lock"
 flock -n 9 || { echo 'Another qualification VM is running' >&2; exit 2; }
