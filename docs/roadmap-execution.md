@@ -10176,3 +10176,24 @@ work/roadmap-phase5-ci-34475495340-campaign.log. Damit Pause-E2E-Korrektur auf
 983feb554 belegt; vollständiges grünes Kandidatengate bleibt erneut erforderlich.
 Vorheriger Goalturn verifiziertes Warten auf75023/102866526609. Jetzt alle seitdem
 lokal validierten Änderungen als neuen Kandidaten pushen. Keine Main-Promotion.
+
+Phase5 Nachweissicherung-Fixplan: wiederverwendbarer Collector prüft terminalen
+VM-Exitmarker, vollständige Base64-Exportblöcke, gzip-CRC und tar-Einträge vor
+Archivierung außerhalb des VM-Verzeichnisses. Nur reguläre JSON-Berichte mit
+relativen sicheren Pfaden; keine Links, Traversal oder doppelte Pfade pro Export.
+Originalarchiv und Berichte mit SHA/Größe und Exitwerten bewahren. Manifest nennt
+explizit nur Transportintegrität, niemals semantisch bestandene Abnahme. Keine
+Gastdisklöschung im Collector, keine Quelländerung. Neue Zielverzeichnisse ohne
+Überschreiben; Manifest zuletzt schreiben. Tests für gültige Exporte, fehlenden
+Endmarker, beschädigtes gzip, unsicheren Archiveintrag und Ziel im VM-Verzeichnis.
+Anbindung als eigener CLI-Schritt für zukünftige Gastläufe. Kein VM-Start nötig.
+
+Collector10025 erster statischer Lauf scheiterte an unknown Promise-Rejection;
+Fehlernormalisierung ergänzt.34429 terminalExit0:7/7 zielgerichtete Tests,
+Format/ESLint/beide Typechecks bestanden. Plan-Audit: außerhalb VM-Ziel geprüft,
+keine Quelllöschung, vorhandenes Ziel abgewiesen, gzip/Archive/JSON geprüft,
+Originale und Hashes retained, semantische Abnahme ausdrücklich nicht behauptet.
+Roadmap-Audit: verbessert künftige Nachweishaltung, ersetzt verschwundene Berichte
+nicht. CLI und getrennte fachliche Auditpflicht in Abnahmematrix dokumentiert.
+Vorheriger Goalturn Fortschritt: erfolgreicher Pause-E2E nachgewiesen, korrigierter
+Kandidat8494e663a gepusht. Check34477259628 für8494e663a derzeit live. Kein VM-Start.

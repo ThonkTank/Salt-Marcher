@@ -277,3 +277,19 @@ Two explicit process exits are SIGKILL, all later UI launches exit normally.
 Report SHA256:
 06c6910d166cb8031fe92708622846094c5955cfafc1993368d80a9745f7c09c.
 Other recovery boundaries remain unqualified by this single case.
+
+## Retain future VM evidence outside disposable runs
+
+After a VM run terminates, run `scripts/archive-historical-vm-evidence.ts` with
+`--run <completed-run-directory>` and `--output <new-retained-directory>` using
+the repository TypeScript runner. The output parent must already exist, and the
+output must be outside the VM run directory. Keep retained evidence outside
+`work/qualification-vm` as well, so cleaning that tree cannot remove the reports.
+
+The collector verifies complete exports, gzip integrity, safe regular JSON entries
+and unique report paths. It preserves original archives and hashes, writes the
+archive manifest last, refuses existing destinations, and never deletes source
+files. Its manifest explicitly records transport integrity only. Review the
+reported test exits, artifact identities, process exits and scenario-specific
+state invariants before treating any report as acceptance evidence or removing
+a disposable guest disk. A failed run can be archived without becoming a pass.
