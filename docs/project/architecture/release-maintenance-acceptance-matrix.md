@@ -293,3 +293,34 @@ files. Its manifest explicitly records transport integrity only. Review the
 reported test exits, artifact identities, process exits and scenario-specific
 state invariants before treating any report as acceptance evidence or removing
 a disposable guest disk. A failed run can be archived without becoming a pass.
+
+## Empty-profile first installation requalified (2026-09-10)
+
+Original AppImage 0.0.161 (`27ba6b7b92352ea49701faa440c644805828931484134814df1d4c5007ef3d00`)
+passed installation from a download directory through the actual setup and
+confirmation UI, with no staged deployment beforehand. The resulting journal is
+committed; the installed starter, desktop entry and executable identity are
+verified. A second normal start through the installed starter preserves the
+journal and shows the empty campaign view. Both processes exit normally.
+
+Report SHA256: `448b212e701a58b29f5eb9ffc1fbaa457f98080b3f00bcf7ad342f562e918d4a`.
+The report and original export are retained separately under
+`outputs/qualification-evidence/first-install-v2-run-1`; the disposable guest disk
+was removed only after archive and semantic validation. This proves empty-profile
+installation and restart, not existing-profile import or complete Phase 5.
+
+## Actionable invalid-feed rejection requalified (2026-09-10)
+
+The immutable 0.0.160 (42/41) → 0.0.161 (42/42) pair passed six invalid-feed
+cases through the UI: manifest origin, artifact origin, repository, architecture,
+manifest format and version mismatch. Each rejection provides a next action,
+exposes no raw schema diagnostics, requests no AppImage and preserves the full
+profile. The subsequent healthy update through the installed starter, continued
+work and complete restore all passed; the protective backup equals the later
+working state and the original source remains unchanged.
+
+Report SHA256: `dcea76ed74cae9eadbafbbb119fb54d9e39c6fa6948d77a112424f519f9daee9`.
+Retained report and original export: `outputs/qualification-evidence/feed-actionable-v2-run-1`.
+All normal processes exited successfully. The guest disk was removed after
+transport and semantic validation. This reestablishes this specific missing proof;
+it does not restore the other unavailable VM reports or close Phase 5.

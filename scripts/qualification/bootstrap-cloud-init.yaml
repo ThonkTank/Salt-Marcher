@@ -1,0 +1,38 @@
+#cloud-config
+hostname: salt-marcher-qualification
+write_files:
+  - path: /opt/bootstrap-qualification.sh
+    permissions: '0700'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y --no-install-recommends libgtk-3-0t64 libnss3 libasound2t64 libgbm1 libxss1 libxshmfence1 xvfb xauth dbus-x11 xdotool "linux-modules-extra-$(uname -r)"
+      modprobe qemu_fw_cfg
+      chmod a+r /sys/firmware/qemu_fw_cfg/by_name/opt/salt-marcher/host-boot-id/raw
+      python3 - <<'PY'
+      import base64, io, json, pathlib, subprocess, tarfile
+      host = pathlib.Path('/sys/firmware/qemu_fw_cfg/by_name/opt/salt-marcher/host-boot-id/raw').read_text().strip()
+      guest = pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+      assert host != guest
+      assert subprocess.check_output(['systemd-detect-virt'], text=True).strip() == 'kvm'
+      evidence = json.dumps({'formatVersion': 1, 'coverage': 'guest-bootstrap-only-no-application-test', 'hostBootId': host, 'guestBootId': guest, 'kernel': subprocess.check_output(['uname', '-r'], text=True).strip(), 'packages': subprocess.check_output(['dpkg-query', '-W'], text=True)}, indent=2).encode()
+      buffer = io.BytesIO()
+      with tarfile.open(fileobj=buffer, mode='w:gz') as archive:
+          entry = tarfile.TarInfo('bootstrap-evidence.json')
+          entry.size = len(evidence)
+          archive.addfile(entry, io.BytesIO(evidence))
+      print('QUALIFICATION_TEST_EXIT=0')
+      print('QUALIFICATION_EXPORT_BEGIN')
+      print(base64.encodebytes(buffer.getvalue()).decode())
+      print('QUALIFICATION_EXPORT_END', flush=True)
+      PY
+      sleep 10
+runcmd:
+  - [bash, /opt/bootstrap-qualification.sh]
+power_state:
+  delay: now
+  mode: poweroff
+  timeout: 120
+  condition: true

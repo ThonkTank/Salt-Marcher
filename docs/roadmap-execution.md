@@ -10197,3 +10197,89 @@ Roadmap-Audit: verbessert künftige Nachweishaltung, ersetzt verschwundene Beric
 nicht. CLI und getrennte fachliche Auditpflicht in Abnahmematrix dokumentiert.
 Vorheriger Goalturn Fortschritt: erfolgreicher Pause-E2E nachgewiesen, korrigierter
 Kandidat8494e663a gepusht. Check34477259628 für8494e663a derzeit live. Kein VM-Start.
+
+Betriebsentscheidung nach erneuter Prüfung:187GiB frei, kein rm-/QEMU-/Build-
+Prozess (pgrep-f Selbsttreffer ausgeschlossen), Quellcheckouts unverändert. Ursache
+des verschwundenen Verzeichnisses weiterhin offen, aber kein Beleg fortdauernder
+Bereinigung. Frühere VM-Pause war eine eigene Vorsichtsentscheidung, keine
+zusätzliche Nutzerfreigabeanforderung. Autorisierte Roadmap fortsetzen mit neuem
+work/qualification-vm-v2 und separat aufbewahrten Nachweisen außerhalb dieses
+Baums. Zunächst Hersteller-Cloudimage und SHA256SUMS über HTTPS laden, Hash
+prüfen; erst dann Ressourcen-/Kernel-Bootstrap ohne SaltMarcher. Bestehender
+40GiB-Guard,7GiB/128Tasks/2CPU-Container und private Gastumgebung gelten weiter.
+Keine verschwundenen Nachweise als bestanden ausgeben oder Logs überschreiben.
+
+76248 Download terminalExit0,624829952Bytes; Hersteller-SHA256SUMS überHTTPS:
+d0fe84bb5f80853425fa6be28e2c106f30104c3cfe8611933f2e65c9b63f0e30,
+identisch mit ursprünglichem Basisimage. Versioniertes bootstrap-cloud-init.yaml
+enthält nur Gastpaketinstallation und Kernel-/Paketnachweis, keine Appausführung.
+16088 neue Bootstrapausführung live: Container
+salt-marcher-qualification-0be6183e-c82d-4705-94ae-77c9159a1aea,
+work/qualification-vm-v2/bootstrap-run-1. Zeitlimit900s; bestehender Runner mit
+Speicher-/Task-/CPU-Grenzen und opt-in NAT nur für Gastpakete. Boot im eigenen
+Kernel begonnen, Host weiterhin187GiB frei. Erfolg/Export noch nicht belegt;
+keine Quelldateien während der Ausführung ändern. Danach neuen Collector nach
+outputs/qualification-evidence anwenden, semantisch Host/Gast/KVM prüfen und erst
+dann unveränderliche vorbereitete Basis erzeugen. Vorheriger Goalturn Fortschritt
+durch Collector07fb720e7; aktive Roadmap bleibt vollständig offen abPhase5.
+
+16088 Bootstrap terminalExit0, regulärer Powerdown68.66s. Collector archiviert
+Originalgzip+Bericht außerhalbVM unter outputs/qualification-evidence/bootstrap-v2-run-1.
+Transport plus Semantik geprüft:VMExit0/TestExit[0], Hostkennung stimmt mit
+Runner überein, Gast55845ed3-6992-4835-ae10-240231dfc1f3 verschieden, Kernel
+6.8.0-138-generic, erforderliche Pakete vorhanden. ReportSHA
+eae7cf706e7b7bf4cb127febded689a8e64883ddd411b34d9100a7c79fda2688.
+27718 Konvertierung/SeedISO terminalExit0; qemu-img-info bestätigt unabhängige
+24GiB-qcow2 ohne Backingreferenz. Erst danach abgeschlossenes Bootstrapoverlay
+entfernt. Basis bleibt read-only bei Teststarts.
+8033 first-install-run-1 läuft offline mit geprüftem0.0.161 und eingefrorenem
+payload-first-install-1. Keine Appquelle geändert. Prüfer/Node/Artefakt/Receipt mit
+SHA-Inventar aufread-onlySeed. Deadline600s, innerer3GiB/256Tasks-Service/private
+D-Bus/Xvfb. Geplanter Berichtexport first-install-evidence.json bzw Fehlerbericht;
+noch keine Laufzeitfreigabe. Nach terminalem Lauf Collector nach separatem
+outputs/qualification-evidence verwenden, dann Szenarioinvarianten prüfen.
+Vorheriger Goalturn Fortschritt: verifizierte Basisbeschaffung und neuerBootstrap.
+
+8033 Erstinstallation terminalExit0/TestExit0. Collector archiviert vollständigen
+Export nach outputs/qualification-evidence/first-install-v2-run-1. BerichtSHA
+448b212e701a58b29f5eb9ffc1fbaa457f98080b3f00bcf7ad342f562e918d4a.
+Semantische Prüfung:transaction committed, zwei reguläre ProzesseExit0/signalnull,
+installierte SHA entspricht0.0.161/27ba6b7b92352ea49701faa440c644805828931484134814df1d4c5007ef3d00,
+Desktopziel eigenerstart. Originalprüfer bestätigt tatsächlichen Setup-Klick,
+leere Kampagnenansicht, gültigen Starter und unverändertes Journal beim zweiten
+Starterstart. Danach Gastdisk entfernt. Plan-Audit Erstinstallation bestanden;
+Roadmap-Audit Profilübernahme und vollständiges Phase5-Gate weiterhin offen.
+38629 vollständiger Feedlauf mit0.0.160/161 gestartet: neuerread-onlyPayload und
+Seed, sechs Ablehnungen mit next-action-Text, danach normalerUpdate/Weiterarbeit/
+Restore. Offlinegast mit kontrolliertem Loopbackfeed. Deadline900s. Keine Quellen
+während Testlauf ändern. Bericht nachTerminal separat archivieren und alle
+Profil-/Prozess-/Artefaktinvarianten prüfen, dann disposableGastdisk entfernen.
+Vorheriger Goalturn Fortschritt durch neuenBootstrap und sicherenNachweisexport.
+
+Während38629 unverändert läuft, rein lesende Local-Artefaktvorbereitung:
+CI34477259628 stellt10152231791 bereit,35433 Download terminalExit0. Zip enthält
+exaktAppImage,Manifest,CandidateReceipt. AppImageSHA und Manifest-Build geprüft:
+8494e663a/channelLocal/dirtyfalse,Schema42/42, SHA
+9c6d9933bf1c04d82cbaf12fad821605601c9a26f37d3068d7e0bcc8b7c434b9.
+Separat bewahrtes OriginalLocal ausrelease/local:bd8b33c4/Schema42/41,
+SHA59c509f13517430c5e15d95aed0c306e6c295be3f2bcc2a485957e9eff53d0c4,
+Kopie erneut gehasht nachwork/local-artifact-bd8b33c4. Neues Ziel liegt in
+work/local-artifact-8494e663a samt Downloadherkunft. Keine Ausführung aufHost,
+kein kanonischerHandoff, kein vollständigesCI-grün behauptet. Diese echtenLocal-
+Artefakte erlauben künftig den fehlenden Local-Schemawechselnachweis imGast.
+VorherigerGoalturn Fortschritt durch bestätigteErstinstallation undFeedstart.
+
+38629 terminalExit0/TestExit0. NeuerCollector erhält Originalexport und Bericht
+außerhalbVM in outputs/qualification-evidence/feed-actionable-v2-run-1.
+BerichtSHA dcea76ed74cae9eadbafbbb119fb54d9e39c6fa6948d77a112424f519f9daee9.
+SechsFehlerfälle manifest-origin/artifact-origin/repository/architecture/
+manifest-format/version jeweils mit „Bitte später erneut prüfen.“ ohneZod-Rohtext,
+keine AppImage-Anfrage; volleReadbacks stimmen mitSeed. Danach installierter
+Starter mit0.0.160(42/41)→0.0.161(42/42), committed Update undRestore,
+seeded==after==restored==unchanged, continued==protectedRead!=seeded; alle
+ReadbacksExit0/OK und sämtliche normalenUI-ProzesseExit0/signalnull.
+BeideArtefakt-SHAs und jeder archivierteDateihash erneut geprüft. Erst danach
+Gastdisk entfernt. Plan-Audit gepackteFeed-UX bestanden; Roadmap-Audit Phase5
+weiterhin offen (u.a. direkteProfilübernahme, Local-Schemawechsel, Wiederbeschaffung
+fehlenderUnterbrechungsnachweise und vollständigeFreigabegates). VorherigerTurn
+Fortschritt durch gesicherteOriginalLocal-Vergleichsartefakte.
