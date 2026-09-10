@@ -9818,3 +9818,18 @@ verbietet sichtbares ENOSPC. Beide2GiB-Gastfälle mit neuen Originalartefakten
 wiederholen. Baselinebackport separat committen; Quelle und Treiber vor Builds
 festschreiben, keine Änderungen während Build/Test. Danach vollständige CI und
 weiterer Phase5-Audit; kein Main/Handoff/Publicrelease aus diesen Teilnachweisen.
+
+89946 Format/Lint/beide Typechecks grün. Quellenkatalog/Driverd95bf8f3c lokal
+committed. Baseline2ccba43f60b92f99aa7fddbfcbb354bf00c44761 separat gepusht;
+exakt3 Fehlertextdateien gegenüber b64, kein SQL-/Schemawechsel.40999 beide Builds
+terminalExit0 (95.998s,3.7GiB). Baseline0.0.158 SHA
+e23244fd8204b10e4b2c075aea9350ccf9b5449314b53e44bbefd8a231b94df9;
+Ziel0.0.159 SHA004c0daa980cfa59aae4a44534b2e683b50a74c3ebfcf45124f8eb736a7c5da4.
+Payload-space-actionable-1 mit unveränderten Quellen-/Artefakthashes eingefroren.
+38412 erster Vorprüfungs-Gastlauf aktiv, keine Produkt-/Treiberänderungen dabei.
+
+Check34469919756 auf exakt0dec1a787648d015b333daf3974cd972fc3b3a6c jetzt vollständig
+completed/success, inklusive zuvor problematischem campaign-workspaces. Damit ist
+der Testwartefix aus7c1740e64 durch vollständige nachfolgende CI qualifiziert.
+Neue Platzmeldungsänderungen waren darin nicht enthalten; jetzt Candidate inklusive
+c26f04a0a/d95bf8f3c pushen und neue exakte CI abwarten. Keine Main-Promotion.
