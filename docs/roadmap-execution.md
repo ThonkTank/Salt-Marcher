@@ -10146,3 +10146,33 @@ im Prüfer; UI-Setup aus Download mit angrenzendem Manifest, committed, Launcher
 Artefakthash, Desktopziel und zweiter regulärer Start werden verlangt.
 Roadmap-Audit: Erstinstallation zur Laufzeit und Profilübernahme weiterhin offen;
 Console-Testkorrektur ersetzt nicht den verbleibenden vollständigen CI-Lauf.
+
+Fortsetzung: vorheriger Goalturn Fortschritt durch Erstinstallationsprüfer und
+Console-Testkorrektur5a028380f. Noch unveröffentlichte Kandidatencommits werden
+nach terminalem vorherigem CI-Lauf gepusht, um dessen letzte E2E-Beobachtung nicht
+abzubrechen. Watch75023 beobachtet konkret34475495340; letzter Job102866526609
+campaign-workspaces ist nach erneuter API-Abfrage in_progress, kein bloßer Lock.
+
+Profilübernahme-Prüfplanung gegen aktuellen Code: qualifySourceProfile verlangt
+terminales committed/rolled-back Journal, übereinstimmenden current-Symlink,
+AppImage-Hash, validierten Starter und eingebettetes Profilprotokoll. Ein nur
+mit stageDeployment und kopiertem Datenordner vorbereiteter Quellstand genügt
+nicht. Kommender Test muss zuerst reale Quellinstallation durch Setup abschließen,
+dann repräsentatives synthetisches Vollprofil unter exklusiver Sperre vorbereiten,
+Quell-App schließen und native Ordnerauswahl plus verständliche Bestätigung im
+Ziel bedienen. Vollständiger Quellenvergleich vor/nach und Zielreadback über
+originalen Utility erforderlich; Alias/parallel geöffnete Quelle bleibt ein
+separater Ablehnungsfall. Keine direkte IPC-Ausführung als Ersatz für UI-Abnahme.
+VM-Bereinigungsrückfrage unbeantwortet; kein neuer VM-Start dieses Turns.
+
+75023 Watch terminalExit1: Check34475495340 exakt983feb554 terminal failure.
+Alle eigentlichen Jobs außer Portable erfolgreich; Aggregat folgerichtig failed.
+Portable einziger Fehler ist die bereits in5a028380f korrigierte veraltete
+Console-Pause-Erwartung. Campaign-workspaces102866526609 terminal success:
+scene-desktop10/10 inklusive „continues travel with its window closed and
+restores an explicitly paused journey after restart“ bestanden; sieben weitere
+Workspace-Suiten ebenfalls erfolgreich. Original-Joblog gesichert in
+work/roadmap-phase5-ci-34475495340-campaign.log. Damit Pause-E2E-Korrektur auf
+983feb554 belegt; vollständiges grünes Kandidatengate bleibt erneut erforderlich.
+Vorheriger Goalturn verifiziertes Warten auf75023/102866526609. Jetzt alle seitdem
+lokal validierten Änderungen als neuen Kandidaten pushen. Keine Main-Promotion.
