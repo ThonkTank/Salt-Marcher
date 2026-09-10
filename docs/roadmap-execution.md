@@ -9396,3 +9396,45 @@ gezielte Artefaktläufe bestanden. Früherer Timeout bleibt ungeklärt. Roadmap-
 keine Phase5-Freigabe, Local/eigener Helfer/weitere Fehlerfälle offen. Änderungen
 an Testinfrastruktur und Abnahmedokumentation jetzt gemeinsam formatieren,
 Candidate committen/pushen und vollständige exakte CI abwarten.
+
+### Phase 5 – Local-Abbruchnachweise als echte Prozesse
+
+Voriger Goal-Turn: Fortschritt, Candidate2d2f2f2fd mit zwei geprüften Gastläufen.
+Arbeitsbaum sauber, keine VM aktiv. Remote PR672 zeigt exakten Head, aber noch
+keine Check-Runs; kein grüner Nachweis für diesen SHA behauptet.
+Umsetzungsplan: isolierter Node-Worker ruft originalen Local-Installer auf und
+beendet sich am vorhandenen Maintenance-Hook mit SIGKILL. Erstinstallation mit
+inerten Artefakt-/Helperbytes, ausdrücklich simulierte Runtime-Annahme; danach
+reale SQLite-Registry mit drei Kampagnen, Party/XP, Einstellungen und eigenen
+Dateien. Acht Aktivierungsgrenzen, neun Recoverygrenzen und durable commit.
+Recovery über frischen Installerprozess, wiederholter Wiederanlauf, Vergleich
+von Profilinhalt, Programmlink und Desktopintegration. Spätere Arbeit nach
+simulierter Annahme darf nicht zurückgesetzt werden. Kein gepackter Local-/GUI-
+Nachweis und kein historischer Schemawechsel durch diese Suite. Native Tests
+nur begrenzt ohne Desktop, dann Lint/Typecheck und getrennte Plan-/Roadmapaudits.
+
+67620 terminalExit1:18 Fälle fehlgeschlagen.17 Vergleiche zeigen zusätzliche
+SQLite-WAL/SHM-Dateien durch den eigenen logischen Readback nach zuvor erfasstem
+Rohbaum; kein belegter Nutzdatenverlust. Commit-Fall erwartet unzulässig dieselbe
+Transaktions-ID bei ausdrücklich erneutem Installeraufruf nach geänderten Daten;
+der Installer erstellt dafür eine neue Transaktion mit b als previous/next.
+Korrekturplan: vollständigen logischen SQLite-Inhalt und Dateien vergleichen,
+WAL über SQLite lesen statt Begleitdatei-Existenz zur Nutzdateninvariante erklären;
+Binärdateien per SHA vergleichen, um riesige irrelevante Fehlerausgaben zu meiden.
+Commit-Fall verlangt unveränderte spätere Daten und denselben Programmstand bei
+explizitem Wiederaufruf, keine identische Wartungs-ID. Kein Lock-/Recoverycode
+ändern. Gesamte18-Fälle-Suite erneut ausführen, danach statische Prüfungen.
+
+39935 terminalExit0:18/18 Local-Prozessfälle bestanden (224s); anschließend
+ESLint und beide Typechecks bestanden. Dienstmaximum1.5GiB, kein GUI-Start.
+Vollständige Tabelleninhalte inkl. Einstellungen, Registry/Trash und Party/XP
+sowie eigene Dateien/Verzeichnisse identisch nach Recovery und erneutem Update;
+Programmverweis, Desktopdatei und Icon wiederhergestellt. Spätere eigene Datei
+bleibt bei erneuter Installation desselben angenommenen Builds erhalten.
+Plan-Audit: echte Prozessabbrüche am Originalinstaller, wiederholte Recovery und
+Retry sowie committed-Fall geprüft. Artefakte weiterhin inert, Runtime-Annahme
+simuliert; keine gepackte Local-Abnahme. Roadmap-Audit: dieser Prozessnachweis
+ergänzt Phase5, ersetzt weder Local-Runtime, Helfer-Abbrüche, weitere Fehlerfälle
+noch den ungeklärten UI-Timeout. Check34460289741 für2d2f2f2fd läuft noch.
+Neue Tests und Nachweise als eigenen Candidate-SHA pushen; dessen vollständige
+CI ist zusätzlich erforderlich. Keine Main-Promotion oder Phasenfreigabe.
