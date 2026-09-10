@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto'
+import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
+import { readVerifiedBackup } from '../../src/core/maintenance/verified-backup.js'
 import { spawnSync } from 'node:child_process'
 import {
+  mkdirSync,
   mkdtempSync,
   rmSync,
   readFileSync,
@@ -84,3 +88,34 @@ it.each(['partial-schema', 'populated', 'foreign-file', 'newer-empty'])(
       )
   }
 )
+
+it('prepares and verifies an empty bootstrap container without changing its source or backup', async () => {
+  const installationRoot = root()
+  const data = join(installationRoot, 'profile/campaign-data')
+  mkdirSync(data, { recursive: true })
+  const path = join(data, 'installation.sqlite')
+  const empty = new Database(path)
+  empty.close()
+  const original = readFileSync(path)
+  const maintenance = new ProfileMaintenance(
+    installationRoot,
+    '0.2.0',
+    'profile'
+  )
+  const id = randomUUID()
+  const prepared = await maintenance.prepare(id)
+  expect(prepared.backup).not.toBeNull()
+  expect(readFileSync(path)).toEqual(original)
+  const backup = readVerifiedBackup(
+    join(installationRoot, 'backups', prepared.backup!)
+  )
+  expect(backup.manifest.restorable).toBe(true)
+  expect(
+    readFileSync(join(backup.data, 'campaign-data/installation.sqlite'))
+  ).toEqual(original)
+  const staged = join(installationRoot, `staged-${id}`, 'campaign-data')
+  expect(preflightPersistence(staged).kind).toBe('ready')
+  const owner = new InstallationDatabaseOwner(staged)
+  expect(owner.readSettings().revision).toBe(0)
+  owner.close()
+})

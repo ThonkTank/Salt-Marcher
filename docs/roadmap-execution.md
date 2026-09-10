@@ -10701,3 +10701,65 @@ Roadmap-Audit neue AppImage-Qualifikation/Erstinstallationsrennen noch offen;
 keine Übertragung des Unit-Erfolgs auf den fehlgeschlagenen UI-Lauf.
 Nächster Schritt: Produktfix committen, neuen unveränderlichen Release-Teststand
 bauen und Erstinstallation sowie nativen Profilimport erneut qualifizieren.
+
+Neuer unveränderlicher Vergleichsstand bootstrap-target: Originalcommit
+ d64573c4cf65f463d8087dd2dd9c61c2c4e1cbb7, Testversion0.0.162, Schema42/42.
+Nur Quellenkatalog ergänzen; bestehende Artefakte bleiben unverändert. Standard-
+Historicalbuilder mit Originalquellen-/Receipt-/Hashprüfung und anschließendem
+Entfernen eigener rekonstruierbarer Abhängigkeiten. Ressourcenlimit4GiB/128Tasks/
+2CPU, keine Host-App-Ausführung. Voriger Goalturn Fortschritt: atomare Bootstrap-
+Korrektur und21Tests/Typen grün. Build allein ist kein Runtimepass.
+
+78890 Build terminalExit1: esbuild/Go newosproc errno11 beim Passive-Preload-
+Build unter128Tasks. Kein Artefakt erzeugt, keine Produktkompilierungsdiagnose.
+Fix des Buildaufrufs: GOMAXPROCS=2 explizit setzen, TasksMax128/Memory4GiB/CPU2
+beibehalten; neuer Originalcheckout, gleicher Zielcommit und neue Artefaktbytes
+erst bei erfolgreichem vollständigem Build. Fehlgeschlagenen Checkout behalten.
+
+37522 terminalBuildExit0,47.568s/2.7GiB/keinSwap. AppImage0.0.162 Größe undSHA
+mitReceipt geprüft: {'name': 'SaltMarcher-0.0.162-x64.AppImage', 'bytes': 177048456, 'sha256': '1e1f2e3324eec139d03d8d4e36e195c277145a4ea348d20074b423f7e91d9ba3'}
+Neuer Importgast verwendet unveränderten letzten UI-Prüfer und OriginalLocal-
+Artefakte, aber neuen Release-Zielstand0.0.162 mit atomarem Bootstrap. Neuer
+Payload/Seed/900s-Offlinegast; Sourceänderungen während Lauf unterlassen.
+
+5532 terminalVMExit0/TestExit1. Neuer0.0.162-Stand übersteht Erstinstallation samt
+committed/leerem Neustart und erreicht Ordnerauswahl. Ersetzungsdialog weiterhin
+nicht erreicht. Gastbild4: korrekter Profilpfad, Open sichtbar, vorheriger
+Autocomplete-Popup jetzt weg. Klick schloss offenbar den Popupgrab statt Auswahl.
+Fixplan vor Änderung: sichtbare native Fensterliste stabil abwarten; nur bei
+belegtem Autocomplete-Fenster „salt-marcher“ Escape senden, dessen Verschwinden
+abwarten, danach tatsächliches Open klicken. Ordnerdialog nicht blind mit Escape
+abbrechen. Native Bestätigung und sämtliche Datenvergleiche unverändert. Kein
+Importpass; weder Produktpatch noch Zeitlimitverlängerung.
+
+Nächster Importlauf mit gezieltem Schließen der sichtbaren Pfadvervollständigung:
+neues Payload-profile-import-5, unverändertes Release0.0.162/Local-Artefaktpaar,
+900s-Offlinegast. Voriger Goalturn Fortschritt: Bootstrap-Artefakt gebaut und
+Erstinstallation durchlaufen; weiterer nativer Eingabefehler visuell lokalisiert.
+149GiB frei, Quellen während Lauf unverändert.
+
+91717 terminalVMExit0/TestExit1. Gastbild5 zeigt nun „no such table:
+installation_settings“, nicht mehr Incompatible persisted data. Codeaudit:
+migrateProfile behandelt fresh ohne Datenbanken als leere Migrationsliste;
+migratePreparedProfile ruft danach readbackProfile auf, das wegen vorhandener
+leerer Datei bereits Einstellungen liest. Fixplan: fresh-Arbeitskopie im
+Migrationsvorbereitungspfad über InstallationDatabaseOwner vollständig atomar
+initialisieren und dann wie bisher validieren. Quelle/Backup unverändert, keine
+Tabellenerzeugung in Read-only-Readback. Regressionstest vollständiger
+ProfileMaintenance.prepare für leeren Container samt Backup und Quellhash;
+Negativ-/Abbruchtests beibehalten, anschließend neue Artefaktqualifikation.
+
+65157 terminalExit0:22Tests/ESLint/beideTypechecks grün, neue vollständige
+ProfileMaintenance.prepare-Regression erhält Quelle und Backup bytegleich und
+liefert aktuelle lesbare Arbeitsdatenbank. Local-Gesamtsuite78617:50/51 bestanden;
+ein veralteter Fresh-Test erwartet [] statt nun initialisierter leerer Datenbank.
+Fixplan Testvertrag: aktuelle Schema-Version, null Kampagnen und initialisierte
+Installationseinstellungen prüfen, statt fehlender Persistenzdateien. Alle
+Migration-/Backup-/Recoveryfälle der Suite bestanden. Danach gezielter Fresh-
+Retest; keine erneute komplette Suite ohne neue Produktänderung erforderlich.
+
+61168 Fresh-Retest terminalExit0, ESLint und gezielter Test bestanden. Zusammen
+mit den50 unveränderten erfolgreichen Local-Fällen kein verbleibender Fehler
+dieser Suite. Plan-Audit Fresh-Arbeitskopie vor Readback initialisiert, Quellen-/
+Backuperhalt und negative Datenfälle belegt. Roadmap-Audit gepackter Erststart
+und kompletter nativer Import weiterhin offen; neues Artefakt erforderlich.
