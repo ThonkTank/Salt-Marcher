@@ -9609,3 +9609,85 @@ grün. Prozessdeadline20s/Assertions unverändert, ausschließlich fallbezogenes
 Roadmap-Audit vollständige neue CI noch erforderlich. Check34464652882 terminal
 failure wegen dokumentierter Zeitüberschreitung, nicht als grün behandeln.
 Helferblock9/9 vollständig nachgewiesen, Phase5 bleibt insgesamt offen.
+
+### Phase 5 – Gepackte Profilfehler und Recoveryoberfläche
+
+Voriger Turn Fortschritt:7dbeecd8c mit9/9 Helfergrenzen und geprüftem Testbudgetfix.
+Arbeitsbaum sauber, keine VM,61GiB frei. Check34466605053 läuft. Konkreter Plan:
+neuer isolierter Qualifier mit Originaltarget0.0.157. Vollständiges synthetisches
+Profil im Artefakt erzeugen; über tatsächliche Einstellungen/Bestätigung ein
+leeres Profil anlegen, damit der originale Utility-Ablauf eine geprüfte Sicherung
+anlegt. App schließen, eigene Quellkopie unter Sperre zurückkopieren und genau
+einen Fehler setzen: neueres Installationsformat43, fehlender Pfad0 (explizite
+Ablehnungsfixtures, keine historischen Schemabelege), beschädigte Datei oder
+Zugriffsrecht000. Vor/nach fehlerhaftem Appstart das vollständige logische Profil
+per Datei-/Verzeichnisinventar vergleichen; Browserlaufzeit liegt laut Architektur
+außerhalb. Recoveryhinweis und Sicherungsansicht mit trusted Mausaktionen prüfen.
+Für lesbare Fehler vollständiges Restore, vorherige restorable=false-Sicherung
+mit defektem Stand und Originalprofil-Readback vergleichen. Access-denied muss
+Restore ohne Ersetzung verweigern; nach Ende und Rechtekorrektur identischer
+Datenstand. Node-SQLite nur zum Aufbau der Versionsfehlerfixture verwenden.
+Fehlerbericht auch ohne erreichbares DOM schreiben. Zunächst einzelner newer-
+format-Pilot in begrenzter VM, dann übrige Fälle; keine Nutzerprofile berühren.
+
+15641 terminalExit1 vor Typprüfung: ESLint findet unnötige Initialzuweisung des
+Fehler-DOM-Werts und direktes throw im finally. Korrekturplan: DOM-Wert in beiden
+Zweigen zuweisen, Prozessbeendigung in separate Hilfsfunktion verlagern. Erneutes
+Kopieren nach leerem Profil ebenfalls mit exklusiver Quellsperre und vollständigem
+Vorher/Nachher-Kopievergleich absichern; bisherige Quellen waren nur garantiert
+beendete Testfixtures. Danach Format/Lint/Typecheck erneut, noch kein Gast gestartet.
+
+20179 terminalExit0/TestExit1: Pilot stoppt vor Setzen des Versionsfehlers, weil
+nach bewusstem Leerprofil der Text für vorhandene Kampagnen erwartet wurde.
+Vollständiger Fehlerexport SHA254e235f4d080333b8ec01da3dfafa9128f3e3e67fae74614a57dcee7a49432c
+zeigt korrekt „Noch keine Kampagne vorhanden“, leere Liste und0 Kampagnen.
+Kein Nachweis des newer-format-Falls. Korrekturplan ausschließlich Setup-Erwartung:
+leeren Hinweis und tatsächlich0 Listenzeilen prüfen; späterer Restore behält
+Erwartung für bestehende Kampagnen. Fehlerdisk nach gesichertem DOM/Log entfernen,
+Format/Lint/Typprüfung, neues Driverpayload und gleicher einzelne Pilot erneut.
+
+78917 profile-newer-run-2 terminalExit0/TestExit0, vollständiger gzip-Export
+CRC-validiert. BerichtSHA5a62dfb590b764686a7e760b82b92d2311854de01ff3c4c9ec3e1b0f9cfac6a7.
+Neueres Format43 gegenüber App42 abgewiesen, Profilinventar vor/nach unverändert,
+Recoveryhinweis/UI bestätigt. Restore derselben Programmdeployment-ID committed,
+restored==seeded==unchanged, vorgeschaltete restorable=false-Sicherung enthält
+exaktes Datei-/Verzeichnisinventar des abgewiesenen Stands. Eigene Prozesse
+normal beendet; Gastdisk entfernt. Plan-Audit Pilot bestanden, übrige Fälle offen.
+Nächster Zweierlauf unverändertes Payload-profile-fault-2: missing-path und corrupt,
+separate Profile, Export nach jedem Fall und am Ende; gleiche vollständige
+Daten-/Sicherungs-/Quellvergleiche. Danach access-denied als eigener Lauf.
+
+### Phase 5 – Fortsetzung nach Hostprüfung und CI-Diagnose
+
+Voriger Turn liefert neue Betriebsevidenz: Root60GiB frei, keine Test-VM;
+Journal bestätigt ENOSPC bei Desktop-/Codex-Coredumps. Direkte Crashursache bleibt
+unbewiesen. Keine Host-GUI-Tests. Phase5 aktiv, Phasen6/7 unverändert offen.
+24551 profile-fault-pair-run-1 terminalExit0/TestExit0; drei vollständige gzip-
+Exporte geprüft. missing-path SHA03087ab8c9476524338a2de435e45a6c67e946add5c4c976ec9f5f9741efd17c,
+corrupt SHA4c01b2ecd1e9a071a28027fea48ffc2b9b8523712a6fe980ac6f4684b469c331.
+Inventare, vorgeschaltete defekte Sicherung, Restore und unveränderte Quelle
+vollständig verglichen; Gastdisk entfernt. Access-denied bleibt offen.
+
+Check34466605053 auf7dbeecd8c terminal failure: campaignCombat Zeile463 findet
+Fraktionen nicht. Gesichertes Screenshot zeigt expliziten Schutzdialog wegen
+laufender Szenenaktionen. setSceneLocation wartet bisher nur auf Auswahl; die
+letzte Verwendung wartet nicht einmal auf den bestätigten Ort. DesktopOverview
+zeigt commands.busy als disabled am Ortsbutton. Korrekturplan: gemeinsamer
+Testhelper wartet nach Auswahl auf erwarteten Ort UND wieder aktivierten Button.
+Keine Änderung am Schutzdialog, keine automatische Bestätigung, kein Schlafen.
+Format/Lint/Typprüfung, danach vollständige Candidate-CI. Separat unverändertes
+Profilfehlerpayload2 für access-denied in frischer begrenzter VM prüfen.
+
+85456 Format/Lint/beide Typechecks bestanden (36.49s,1.4GiB). Plan-Audit
+Szenentest: Abschlussbedingung bezieht sich auf bestätigten Ortswert plus aktiven
+Button; Screenshotursache adressiert, tatsächlicher E2E-Nachweis noch CI-offen.
+61850 profile-access-run-1 terminalExit0/TestExit0. Ein vollständiger gzip-Export
+CRC-geprüft; Zugriffshinweis, verweigerte Wiederherstellung ohne Journalwechsel,
+Dateirechte000 bis expliziter Testkorrektur und identisches vollständiges Profil
+geprüft. Readback nach Rechtekorrektur==Seed==unveränderte Quelle, originale
+Artefakthashes und normale Prozessexits bestätigt. Bericht siehe validated im
+Laufverzeichnis; Gastdisk nach Prüfung entfernt. Dies ist ein Ablehnungsnachweis,
+kein erfolgreiches Restore bei fehlenden Rechten. Plan-Audit Profilfehler4/4
+bestanden. Roadmap-Audit Phase5 weiter offen, insbesondere WAL/Platzmangel und
+gepackter Local-Ablauf. Kein Handoff, keine Main-Promotion oder Veröffentlichung.
+19af07da9835d0073713dc31f68fd1bdc0fadd3e77cc276b4c4a4341b8d7a163

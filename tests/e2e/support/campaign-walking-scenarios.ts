@@ -1066,9 +1066,10 @@ async function waitForSceneLocation(
   expected: string
 ): Promise<void> {
   await client.waitUntil(
-    async () =>
-      (await (await client.$('.desktop-scene-facts > button')).getText()) ===
-      expected,
+    async () => {
+      const button = await client.$('.desktop-scene-facts > button')
+      return (await button.getText()) === expected && (await button.isEnabled())
+    },
     {
       timeout: 5_000,
       timeoutMsg: `Scene location did not become ${expected}.`
@@ -1085,6 +1086,7 @@ async function setSceneLocation(
   await (
     await row.$('select[aria-label="Scene-Ort"]')
   ).selectByVisibleText(location)
+  await waitForSceneLocation(client, location)
 }
 
 async function pressDividerKey(
