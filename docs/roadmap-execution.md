@@ -9912,3 +9912,63 @@ restlicher Feedablehnungen, Erstinstallation/Übernahme und gepacktem Local-Kana
 Check34471542570 auf383f6f4a3 weiterhin live mit3 offenen Jobs, keiner fehlgeschlagen.
 Neue Driver-/Belegänderungen lokal committen, Push erst nach diesem laufenden
 Nachweis fortsetzen. Keine Behauptung über kanalübergreifende gepackte Local-Starts.
+
+### Phase 5 – Abweisung ungültiger Releaseinformationen
+
+Voriger Turn Fortschritt:6e413860e vier gepackte Parallelstarts qualifiziert.
+CI34471542570 weiter live, Arbeitsbaum sauber. Konkreter Plan: feed-failures im
+UI-Qualifier mit6 getrennten kontrollierten Antworten: fremder Manifest-Assetpfad,
+fremder AppImage-Assetpfad, Repositoryabweichung, arch=arm64,formatVersion=2,
+Manifestversion ungleich GitHub-Tag. Produktionsvalidator und Original0.0.158/159
+unverändert. Pro Fall neue UI-Instanz, sichtbare konkrete Ablehnung, keine
+AppImageanforderung und keine Cachedatei/Aktivierung; Programm/Journal unverändert.
+Vollständigen Readback mit Seed vergleichen; nach allen Fällen normaler vollständiger
+Update-/Weiterarbeits-/Restore-/Quellvergleich. Statusmeldungen im Bericht erfassen,
+um die vermutete rohe Zod-Darstellung sachlich zu prüfen. Statische Checks, neue
+Payload/Seed, einzelne begrenzte VM. Bekannte UI-Unzulänglichkeiten nicht als
+Roadmap-Abnahme darstellen; Datensicherheit und Bedienbarkeit getrennt auditieren.
+
+51270 Format bestanden, ESLint Exit1 vor Typprüfung: inspect liefert unknown und
+hat keinen generischen Typparameter. Korrekturplan: gemeinsame lokale readNotice-
+Funktion validiert CDP-Ergebnis mit z.string().parse, statt einen Rückgabetyp
+anzunehmen. Erneute statische Prüfungen; kein Gast gestartet.
+
+49412 statische Prüfungen bestanden.13965 feed-run-1 terminalExit0/TestExit0 nach
+240.78s; vollständiger gzip-Export CRC-geprüft. BerichtSHA
+70bbe97e91ced28e48f0e58e310fd4a2f7745933fabe92085cedef418541ad5d.
+Alle6 Ablehnungen ohne AppImageanforderung/Cache/Aktivierung, jeweils vollständiger
+Readback==Seed. Danach after==restored==unchanged==Seed, continued==protectedRead
+und verschieden von Seed. Originale0.0.158/159 und normale Prozessexits bestätigt.
+Gastdisk entfernt. Sicherheits-Plan-Audit Feed6/6 bestanden; UX-Audit gescheitert:
+Repository/Architektur/Format zeigen rohe Zod-JSON-Fehler, übrige Ablehnungen ohne
+nächste Aktion. Korrekturplan: checkRelease kapselt Schema-/JSON-Fehler in klare
+Updateinformationen-Meldung samt späterer Prüfung; Herkunfts-/Versions-/fehlende
+Manifestmeldungen ergänzen nächste Aktion. Strenge Prüfung unverändert, Fehlerursache
+intern erhalten. Unitfälle echte JSON-/Schemafehler und keine weiteren Fetches,
+Format/Lint/Typecheck; spätere neue gepackte Abnahme erforderlich.
+
+Separater CI-Befund:34471542570 auf383f6f4a3 terminalfailure, nur sceneDesktop im
+campaign-workspaces plus Aggregate. Log und ZIP10150267523 lokal gesichert.
+Erster Fehler scene-desktop.e2e.ts:487 nach Pause: erwartet pausiert, erhalten
+travelling plus Aktualisierungshinweis. Screenshot danach completed und Konflikt/
+outcome_unknown;3 Folgefehler bei offenem Reisedialog. CI-Fixture-DBs gesichert:
+01a08b17-ba81... enthält nur Position- und Start-Receipt (Reiserevision0,
+Szenenrevision15/16), keine Pause-Receipt. Kein Nachweis eines erfolgreich
+committeten Pausebefehls. Hypothesen getrennt prüfen: automatische Fortschritte
+ändern Revision zwischen UI-Intent und Utility-Ausführung; Command-Port behandelt
+überholte Session-Refreshes als stale. Keine pauschale Timeout-/Testlockerung.
+Nach Feed-Textfix ist dieser reproduzierbare Reiseablauf nächster Korrekturblock.
+
+94776 ESLint Exit1 vor Tests: zwei expect.any-Matcher tragen im Objekt any.
+Korrekturplan: Matcherausgaben als unknown typisieren, Prüfungsinhalt unverändert.
+Danach8 Transporttests einschließlich vorhandener Offline-/Downloadfälle sowie
+Format/Lint/beide Typechecks erneut. Keine Änderung an Validierungsbedingungen.
+
+94846 terminalExit0:8/8 Transporttests, Format/Lint und beide Typechecks grün
+(29.70s,1.5GiB). Plan-Audit Feed-Fehlertextimplementierung bestanden; gepackter
+Nachweis neuer Texte offen. Sicherheitsnachweise sechs Fälle bleiben auf
+unveränderten0.0.158/159 gültig. Roadmap-Audit weiterhin unvollständig, insbesondere
+CI-Reisepausefehler, neue gepackte Feed-Texte, Erstinstallation/Übernahme und Local.
+Aktuellen Candidate pushen; kein Main/Handoff. Folgende Fehlerrunde muss zunächst
+Reisepause reproduzieren und Ursache zwischen automatischem Fortschritt,
+Intentrevision und Command-Receipt/Refresh isolieren; nicht nur Testwartezeit erhöhen.

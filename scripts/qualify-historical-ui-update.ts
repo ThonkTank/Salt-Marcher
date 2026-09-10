@@ -62,6 +62,7 @@ const { values } = parseArgs({
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
+    'feed-failures': { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
@@ -157,11 +158,30 @@ if (values['installed-launcher']) {
   validateMaintenanceLauncher(root)
 }
 const requests: string[] = []
-let transportMode: 'healthy' | 'offline' | 'corrupt' | 'truncated' = values[
-  'transport-failures'
-]
+const feedFailures = [
+  {
+    mode: 'manifest-origin',
+    expected: 'Update-Datei stammt nicht aus dem freigegebenen Repository.'
+  },
+  {
+    mode: 'artifact-origin',
+    expected: 'Update-Datei stammt nicht aus dem freigegebenen Repository.'
+  },
+  { mode: 'repository', expected: 'repository' },
+  { mode: 'architecture', expected: 'arch' },
+  { mode: 'manifest-format', expected: 'formatVersion' },
+  { mode: 'version', expected: 'Release-Version stimmt nicht überein.' }
+] as const
+let transportMode:
+  | 'healthy'
+  | 'offline'
+  | 'corrupt'
+  | 'truncated'
+  | (typeof feedFailures)[number]['mode'] = values['transport-failures']
   ? 'offline'
   : 'healthy'
+const feedRejections: unknown[] = []
+
 const transportFailures: Array<{ mode: string; readback: unknown }> = []
 const server = createServer((request, response) => {
   requests.push(request.url ?? '')
@@ -181,7 +201,7 @@ const server = createServer((request, response) => {
         assets: ['release-manifest.json', target.receipt.artifact.name].map(
           (name) => ({
             name,
-            browser_download_url: `https://github.com/${releaseRepository}/releases/download/v${target.receipt.version}/${name}`
+            browser_download_url: `https://github.com/${(transportMode === 'manifest-origin' && name === 'release-manifest.json') || (transportMode === 'artifact-origin' && name === target.receipt.artifact.name) ? 'untrusted/other-project' : releaseRepository}/releases/download/v${target.receipt.version}/${name}`
           })
         )
       })
@@ -189,9 +209,22 @@ const server = createServer((request, response) => {
   } else if (
     request.url ===
     `/${releaseRepository}/releases/download/v${target.receipt.version}/release-manifest.json`
-  )
-    response.end(JSON.stringify(manifest(target)))
-  else if (
+  ) {
+    const metadata = manifest(target)
+    response.end(
+      JSON.stringify({
+        ...metadata,
+        ...(transportMode === 'repository'
+          ? { repository: 'untrusted/other-project' }
+          : {}),
+        ...(transportMode === 'architecture' ? { arch: 'arm64' } : {}),
+        ...(transportMode === 'manifest-format' ? { formatVersion: 2 } : {}),
+        ...(transportMode === 'version'
+          ? { version: baseline.receipt.version }
+          : {})
+      })
+    )
+  } else if (
     request.url ===
     `/${releaseRepository}/releases/download/v${target.receipt.version}/${target.receipt.artifact.name}`
   ) {
@@ -374,6 +407,59 @@ try {
         seeded.result.response.result
       )
       transportFailures.push({ mode, readback })
+    }
+    transportMode = 'healthy'
+  }
+  if (values['feed-failures']) {
+    for (const { mode, expected } of feedFailures) {
+      transportMode = mode
+      const requestStart = requests.length
+      ui = await launch()
+      await ui.click('Einstellungen', 'body', true)
+      await ui.click('Jetzt prüfen')
+      const readNotice = async () =>
+        z
+          .string()
+          .parse(
+            await ui!.inspect(
+              "document.querySelector('.release-settings [role=status]')?.textContent ?? ''"
+            )
+          )
+      const notice = await waitFor(
+        readNotice,
+        (text) => text.includes(expected),
+        `Feed rejection ${mode}`
+      )
+      assert(!(await ui.text()).includes('Installieren und neu starten'))
+      assert.equal(
+        await ui.inspect(
+          "[...document.querySelectorAll('.release-settings button')].filter(b=>b.textContent==='Herunterladen').length"
+        ),
+        0
+      )
+      const requested = requests.slice(requestStart)
+      assert(!requested.some((path) => path.endsWith('.AppImage')))
+      assert(!existsSync(join(root, 'cache', target.receipt.artifact.name)))
+      assert(
+        !existsSync(
+          join(root, 'cache', `${target.receipt.artifact.name}.partial`)
+        )
+      )
+      assert.equal(currentProgram(root)?.deployment, originalDeployment)
+      assert.deepEqual(new MaintenanceCoordinator(root).read(), initialJournal)
+      await ui.closeApplication(home)
+      ui = undefined
+      const readback = await runHistoricalArtifact(
+        baselineDirectory,
+        home,
+        'read'
+      )
+      assert(readback.result.response.ok)
+      assert.deepEqual(
+        readback.result.response.result,
+        seeded.result.response.result
+      )
+      feedRejections.push({ mode, notice, requested, readback })
     }
     transportMode = 'healthy'
   }
@@ -1067,6 +1153,7 @@ try {
         requests,
         launcherObserver,
         transportFailures,
+        feedRejections,
         parallelStarts,
         spaceFailure,
         wal,
