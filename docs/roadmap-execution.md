@@ -10461,3 +10461,52 @@ kein direkter UI-Profilimport. Roadmap-Audit Phase5 bleibt für diese und zuvor
 festgehaltene fehlende Nachweise offen. Nächste Arbeit: qualifizierten Local-
 Prüfer samt Adapteränderungen reviewen/committen und direkte Profilübernahme
 sowie unterbrochene Local-Aktivierung mit realen Artefakten ergänzen.
+
+
+### Phase 5 – Local-Aktivierungsabbrüche mit echten AppImages
+
+Voriger Goalturn Fortschritt: realer Local-Schemawechsel einschließlich beider
+Runtimeannahmen und vollständiger Profilreadbacks bestanden. Prüfer/Adapter in
+ee4e8b030 committed; gezieltes Format und ESLint erneut bestanden.
+Plan vor Änderung: bestehenden realen Local-Qualifier um expliziten optionalen
+Aktivierungs-Abbruchpunkt ergänzen. Separater Node-Unterprozess lädt denselben
+hashgeprüften Original-Zielinstaller, beendet sich genau an bestehender
+Maintenance-Testnaht mit SIGKILL; keine simulierte Ausnahme oder Runtimeannahme.
+Elternprozess verlangt erreichten Marker und echtes SIGKILL. Original-Baseline-
+Installer stellt zurück, zweimalige Recovery bleibt idempotent, Programmverweis,
+Desktopintegration und vollständiger ursprünglicher Profilreadback bleiben gleich.
+Danach derselbe Zielinstaller erneut, reale Zielruntime ready und alle bisherigen
+Profilvergleiche. Acht Vorwärtsgrenzen explizit zulassen; Rollback-Unterbrechungen
+sind ein nachfolgender separater Nachweis. Statische Prüfung, danach Gastpilot
+new-data-moved, dann übrige Grenzen mit frischen Profilen und Belegen.
+
+79599 statische Prüfung terminalExit0: Format, ESLint, beide Typechecks bestanden.
+42730 Local-Abbruchpilot terminalVMExit0/TestExit0. Echte SIGKILL-Unterbrechung
+new-data-moved erreicht; Originalinstaller zweimalige Recovery rolled-back mit
+identischem Journal. Beide vollständigen Recoveryreadbacks entsprechen Seed;
+anschließendes echtes Ziel-AppImage ready und committed. Seed/Vorher/Nachher/
+Quelle gleich, alle Readbacks Exit0/OK; Programmidentitäten und Journalverkettung
+geprüft. Belegarchiv außerhalb VM, alle Dateigrößen/SHA geprüft. BerichtSHA:
+5aa034d1949cf69d723c428031bcb0904d1e5bc5dd05b51c4b19f061363a19ee.
+Gastdisk nach Semantikprüfung entfernt. Plan-Audit Pilot bestanden; sieben übrige
+Aktivierungsgrenzen und Rollback-Unterbrechungen noch nicht dadurch abgedeckt.
+Roadmap-Audit Phase5 weiterhin offen. Gastkonfiguration wie Local-schema-run-3,
+Originalartefakte unverändert, keine Host-GUI oder Host-Schutzänderung.
+
+Nächster Local-Gastbatch: prepared, old-data-moved, program-linked, je neues
+vollständiges synthetisches Profil. Unverändertes Payload-local-interruption-1,
+Originalartefakte und Prüfer. Ein Gast, Fälle sequenziell, Abbruch bei Fehler mit
+anschließendem Export aller vorhandenen Berichte. VMDeadline600s, proFall600s
+Gast-Cgroup-Limit; keine Quellenänderung während Lauf. Aktuell173GiB frei.
+Voriger Goalturn Fortschritt: SIGKILL-Pilot samt vollständiger Semantik bestanden.
+
+84098 Batch terminalVMExit0/TestExit0; drei vollständige Local-Abbruchnachweise
+transport- und semantikgeprüft. Je echtes SIGKILL, zweimal idempotentes rolled-back,
+vollständiger Recoveryreadback==Seed, erneutes Zielruntime-ready/committed,
+alle Vorher-/Nachher-/Quellvergleiche gleich. Archiv außerhalb VM, Gastdisk entfernt.
+program-linked BerichtSHA 5045626c9e206b5c5c09ae1639b8366b67a4799cbb6f9d81d36e17648c5cdcb0
+prepared BerichtSHA 6b4e8f6f1df4468e3af20feb477431846fab267d0fabc5285c63d53e4994b79b
+old-data-moved BerichtSHA 89f6b4f68e97b22a7f6587dab07b70f2e9d6360586ee71f9fccedb2615717b05
+Plan-Audit diese drei Grenzen bestanden. Zusammen mit Pilot vier von acht
+Vorwärtsgrenzen qualifiziert; data-moving, data-ready, program-moving und
+awaiting-start folgen. Rollback-Unterbrechungen und direkter UI-Import weiter offen.

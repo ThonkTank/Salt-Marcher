@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readlinkSync,
   writeFileSync
 } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -31,14 +32,31 @@ const { values } = parseArgs({
       'target-adapter',
       'fixture-baseline',
       'fixture-target',
-      'home'
+      'home',
+      'interrupt-boundary',
+      'interrupt-worker'
     ].map((name) => [name, { type: 'string' as const }])
   )
 })
 const directory = (name: string) => resolve(z.string().parse(values[name]))
 const home = directory('home')
-assert(!existsSync(home), 'Local qualification requires a new home')
-mkdirSync(home)
+const worker = values['interrupt-worker'] === 'yes'
+const boundary = values['interrupt-boundary']
+if (boundary)
+  z.enum([
+    'prepared',
+    'data-moving',
+    'old-data-moved',
+    'new-data-moved',
+    'data-ready',
+    'program-moving',
+    'program-linked',
+    'awaiting-start'
+  ]).parse(boundary)
+if (!worker) {
+  assert(!existsSync(home), 'Local qualification requires a new home')
+  mkdirSync(home)
+} else assert(boundary && existsSync(home))
 const source = `${home}-source`
 const root = join(home, 'salt-marcher-local')
 const profile = join(root, 'profile')
@@ -225,6 +243,26 @@ try {
   native.close()
   const baseline = await load('baseline')
   const target = await load('target')
+  if (worker) {
+    process.chdir(target.options.workspaceRoot)
+    target.adapter.advanceLocalAppInstallation(
+      {
+        ...target.options,
+        afterMaintenanceBoundaryForTest: (at) => {
+          if (at !== boundary) return
+          writeFileSync(
+            join(home, 'interruption-marker.json'),
+            JSON.stringify({ boundary: at }),
+            { flag: 'wx' }
+          )
+          process.kill(process.pid, 'SIGKILL')
+          throw new Error('SIGKILL did not terminate the installer')
+        }
+      },
+      'activated'
+    )
+    throw new Error('Requested interruption boundary was not reached')
+  }
   const seed = await runHistoricalArtifact(
     directory('fixture-baseline'),
     source,
@@ -241,6 +279,89 @@ try {
   const before = await readLocal(directory('fixture-baseline'), 'before-read')
   assert(before.result.response.ok)
   assert.deepEqual(before.result.response.result, seed.result.response.result)
+  let interruption: unknown = null
+  if (boundary) {
+    const current = join(root, 'current')
+    const desktop = join(home, 'applications/org.saltmarcher.local.desktop')
+    const icon = join(
+      home,
+      'icons/hicolor/256x256/apps/org.saltmarcher.local.png'
+    )
+    const previous = {
+      program: readlinkSync(current),
+      desktop: sha256(desktop),
+      icon: sha256(icon)
+    }
+    const args = [
+      'baseline',
+      'target',
+      'baseline-adapter',
+      'target-adapter',
+      'fixture-baseline',
+      'fixture-target',
+      'home'
+    ].flatMap((key) => [`--${key}`, directory(key)])
+    const child = spawnSync(
+      process.execPath,
+      [
+        process.argv[1]!,
+        ...args,
+        '--interrupt-boundary',
+        boundary,
+        '--interrupt-worker',
+        'yes'
+      ],
+      { encoding: 'utf8', timeout: 120_000, maxBuffer: 16 * 1024 * 1024 }
+    )
+    writeFileSync(
+      join(home, 'interruption-worker.log'),
+      `${child.stdout}\n${child.stderr}`,
+      { flag: 'wx' }
+    )
+    assert.ifError(child.error)
+    assert.equal(child.status, null)
+    assert.equal(child.signal, 'SIGKILL')
+    assert.deepEqual(
+      JSON.parse(readFileSync(join(home, 'interruption-marker.json'), 'utf8')),
+      { boundary }
+    )
+    const interrupted = new MaintenanceCoordinator(root).read()
+    const recovered = []
+    for (let index = 0; index < 2; index++) {
+      process.chdir(baseline.options.workspaceRoot)
+      baseline.adapter.advanceLocalAppInstallation(
+        baseline.options,
+        'backup-created'
+      )
+      const journal = new MaintenanceCoordinator(root).read()
+      assert.equal(journal?.phase, 'rolled-back')
+      assert.deepEqual(
+        {
+          program: readlinkSync(current),
+          desktop: sha256(desktop),
+          icon: sha256(icon)
+        },
+        previous
+      )
+      const readback = await readLocal(
+        directory('fixture-baseline'),
+        `recovery-read-${index}`
+      )
+      assert(readback.result.response.ok)
+      assert.deepEqual(
+        readback.result.response.result,
+        seed.result.response.result
+      )
+      recovered.push({ journal, readback })
+    }
+    interruption = {
+      boundary,
+      signal: child.signal,
+      interrupted,
+      previous,
+      recovered
+    }
+  }
   const second = installAndStart(target, 'target')
   const after = await readLocal(directory('fixture-target'), 'after-read')
   assert(after.result.response.ok)
@@ -260,8 +381,10 @@ try {
     JSON.stringify(
       {
         formatVersion: 1,
-        coverage:
-          'original-local-installers-schema-update-real-runtime-acceptance-not-interruption-or-handoff',
+        coverage: boundary
+          ? 'original-local-installers-activation-sigkill-recovery-retry-not-handoff'
+          : 'original-local-installers-schema-update-real-runtime-acceptance-not-interruption-or-handoff',
+        interruption,
         baseline: baseline.receipt,
         target: target.receipt,
         first,
