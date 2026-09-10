@@ -10283,3 +10283,29 @@ Gastdisk entfernt. Plan-Audit gepackteFeed-UX bestanden; Roadmap-Audit Phase5
 weiterhin offen (u.a. direkteProfilübernahme, Local-Schemawechsel, Wiederbeschaffung
 fehlenderUnterbrechungsnachweise und vollständigeFreigabegates). VorherigerTurn
 Fortschritt durch gesicherteOriginalLocal-Vergleichsartefakte.
+
+CI34477259628 exakt8494e663a terminal failure:Portable nun grün, aber
+campaign-workspaces102872110081 fehlgeschlagen, Aggregat folgerichtig rot.
+Gesichertes Originaljoblog work/roadmap-phase5-ci-34477259628-campaign.log:
+campaign creation/switching scheitert in support/campaign-walking-scenarios.ts:251,
+Klick auf„Campaign B Archiv bearbeiten“ wird von offener modal-backdrop abgefangen.
+Noch keine Ursachenbehauptung. NächsterFixplan erst nach zugehörigemScreenshot,
+vorherigerDialogsequenz und Produktzustand; keine blinde Klick-/Timeoutlockerung.
+Erfolgreicher neuerAppImage-Feedlauf davon getrennt; kein vollerCandidatepass.
+
+CI-Fehlerklassifizierung34477259628: OriginalScreenshot ausArtifact10152637596
+zeigtPapierkorb mit erfolgreicherWiederherstellung; Logposition251 ist zweiter
+Editklick nachRestore/Close, nichtRenameabschluss. Produktcode setztModalCloseButton
+disabled während busy/Reconciliation; Test klickt direkt nachWiederherstellen ohne
+Abschlussbarriere. Fixplan: beide Papierkorb-Schließungen in diesemSzenario über
+scopedModalClose ausführen, auf klickbarenKnopf warten, nachKlick aufverschwundenen
+Dialog warten. Kein JS-Klick, keinTimeoutanstieg, keineÄnderung derBusy-Sicherheit.
+Format/Lint/Typechecks; tatsächlicheE2E-Bestätigung im nächstenvollenCI-Lauf.
+
+35538 terminalExit0:Format,ESLint,beideTypechecks unddiff-check grün.
+Plan-Audit: ausschließlich zweiPapierkorb-Schließungen warten aufbedienbaren
+scopedKnopf undverschwundenenDialog; nativeKlicks undvorhandeneTimeouts bleiben.
+Roadmap-Audit: plausibleBusy-Race damit gezielt adressiert, tatsächlicheBehebung
+noch durch vollständigenCI-/E2E-Lauf zu bestätigen. Screenshot allein beweist
+nicht den exakten Busy-Wert imMomentdesvorherigenCloseklicks. KeineProduktfreigabe.
+Jetzt neuerKandidat mitCollector/Bootstrapnachweisen undTestbarriere pushen.

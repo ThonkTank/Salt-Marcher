@@ -247,7 +247,13 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (await client.$('button=In den Papierkorb')).click()
   await (await client.$('button=Papierkorb (1)')).click()
   await (await client.$('button=Wiederherstellen')).click()
-  await (await client.$('button[aria-label="Schließen"]')).click()
+  {
+    const popup = await client.$('.campaign-management-popup')
+    const close = await popup.$('button[aria-label="Schließen"]')
+    await close.waitForClickable()
+    await close.click()
+    await popup.waitForExist({ reverse: true })
+  }
   await (
     await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
   ).click()
@@ -257,7 +263,13 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (await client.$('#campaign-confirm-name')).setValue('Campaign B Archiv')
   await (await client.$('button=Endgültig löschen')).click()
   await expect(await client.$('strong=Campaign B Archiv')).not.toBeExisting()
-  await (await client.$('button[aria-label="Schließen"]')).click()
+  {
+    const popup = await client.$('.campaign-management-popup')
+    const close = await popup.$('button[aria-label="Schließen"]')
+    await close.waitForClickable()
+    await close.click()
+    await popup.waitForExist({ reverse: true })
+  }
   await (await client.$('button[aria-label="test öffnen"]')).click()
   await client.$('[data-screen="workspace"]').waitForExist({ timeout: 15_000 })
   await runCampaignMinimumSizeScenario(client)
