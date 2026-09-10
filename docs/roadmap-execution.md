@@ -9555,3 +9555,57 @@ journal:rolled-back als eigenständiger Helfer offen, außerdem gepackter Local-
 Lauf/Fehlermatrix. Nachweise dieser beiden Zweierläufe als Dokumentationscommit
 sichern; Codebasis957a63118 hat die vollständige grüne CI34462695103. Neue Docs-
 SHA benötigt ihren eigenen Check, keine Main-Promotion oder Phasenfreigabe.
+
+### Phase 5 – Helfer-Programmrollback
+
+Voriger Turn Fortschritt: vier neue Helfergrenzen mit validierten Vollberichten,
+0cbb9912a gepusht. Arbeitsbaum sauber, keine VM aktiv,62GiB frei. Check34464652882
+läuft. Nächster Zweierlauf unverändertes Payload-launcher-recovery-2:
+journal:rollback-program und program-linked während Recovery, jeweils vorheriger
+Aktivierungsabbruch program-linked. Rollen-/PID-/Transaktionsprüfung, vollständige
+alte/failed Profile und Retry/Continue/Restore/Quelle; drei Exporte, terminale
+Prüfung und Gastdiskbereinigung. Keine Codeänderung während Lauf. Danach bleiben
+rollback-history-written und journal:rolled-back für den eigenständigen Helfer.
+
+86850 terminalExit0/TestExit0. Drei vollständige gzip-Exporte CRC-validiert;
+journal:rollback-program SHA01f2384a53708a255d6e977870c657a93812da9693bf84716da6e53e3ff3d572;
+program-linked SHA9a7dd5839e8720c703e79725d5c2ab0166cd094c079ab2f75deeb6cd77f77355.
+Originalartefakte/Observerhash, Helferrolle/eigenePID/Transaktion, alte und failed
+Profile, Retry/Continue/Restore/Quelle vollständig verglichen. Gastdisk entfernt.
+Plan-Audit beide Programmrollbackgrenzen bestanden. Roadmap-Audit letzter
+Helfer-Zweierlauf rollback-history-written und journal:rolled-back noch offen.
+
+Plan letzter Helfer-Zweierlauf: unverändertes Payload2, initial program-linked,
+Recoveryabbruch nach dauerhafter Historie bzw. finalem rolled-back-Journal.
+Gleiche drei Exporte und vollständige Vergleiche, danach Gastdisk entfernen.
+Weitere Phase5-Fehlermatrix/Local-Runtime dadurch nicht als erledigt behandeln.
+
+CI34464652882/Portable102830270336 fehlgeschlagen:17/18 Local-Prozessfälle
+bestanden (19–25s), ausschließlich letzter committed/later-work-Fall scheitert
+mit30.466s am pauschalen30s-Testlimit.1640 weitere Tests bestanden; keine Daten-
+Assertion fehlgeschlagen. Vollständiger Joblog gesichert. Korrekturplan nach
+terminalem73618: nur neue Local-Mehrprozessfälle auf60s Gesamtbudget setzen,
+20s-Hardlimit jedes einzelnen Kindes und sämtliche Assertions unverändert.
+Fehlerfall gezielt unter1CPU-Quota prüfen, Lint/Format, dann vollständige CI für
+neuen Candidate. Keine globale Timeout-Erhöhung, kein Weglassen des Testfalls.
+Erster finaler Helferexport rollback-history-written bereits vollständig geprüft,
+SHA50d0fc3a9b986f9bcb99655548dfae8f21ae184d9b52676ab761a71c213cd020;
+zweiter journal:rolled-back noch aktiv, keine Gesamtfreigabe.
+
+73618 terminalExit0/TestExit0; letzte zwei Helfergrenzen vollständig geprüft.
+rollback-history-written SHA50d0fc3a9b986f9bcb99655548dfae8f21ae184d9b52676ab761a71c213cd020;
+journal:rolled-back SHAfea17a8d7d506fe2313314110b1aa02d09b149557eb32ddd80a1ed4eca504aa5.
+Drei gzip-Exporte CRC-validiert, Helferrolle/PID/Transaktion und alle vollständigen
+Profile/Restore/Quelle/Observer-/Artefakthashes verglichen; Gastdisk entfernt.
+Plan-Audit Helferblock9/9 bestanden. Roadmap-Audit Phase5 weiter offen wegen
+gepacktem Local-Lauf und übriger Fehlermatrix; keine öffentliche Releasefreigabe.
+Jetzt nur geplante Local-Testbudgets60s gesetzt; Prozessdeadline20s unverändert.
+
+27745 terminalExit0: gezielter zuvor gescheiterter Fall unterCPUQuota100% besteht
+in32.208s (oberhalb altem30s-Limit);17 andere Fälle in diesem gezielten Lauf nicht
+ausgeführt, nicht als erneut geprüft zählen. ESLint/Format und beide Typechecks
+grün. Prozessdeadline20s/Assertions unverändert, ausschließlich fallbezogenes
+60s-Budget für die neue Mehrprozesssuite. Plan-Audit Timeoutkorrektur bestanden;
+Roadmap-Audit vollständige neue CI noch erforderlich. Check34464652882 terminal
+failure wegen dokumentierter Zeitüberschreitung, nicht als grün behandeln.
+Helferblock9/9 vollständig nachgewiesen, Phase5 bleibt insgesamt offen.

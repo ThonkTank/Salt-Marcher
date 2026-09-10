@@ -16,6 +16,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { localInstallationPaths } from '../../scripts/local-installation/contract.js'
 import { maintenanceJournalSchema } from '../../src/shared/contracts/maintenance.js'
 
+// Each case starts five or six isolated installers. Hosted CI exceeded 30s
+// while all child operations still met their unchanged 20s hard deadline.
+const caseTimeout = 60_000
 const roots: string[] = []
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -152,7 +155,8 @@ describe.runIf(process.platform === 'linux')(
         run(f.root, 'recover')
         expectRecovered(f)
         retry(f)
-      }
+      },
+      caseTimeout
     )
     it.each([
       'rollback-started',
@@ -164,34 +168,42 @@ describe.runIf(process.platform === 'linux')(
       'program-linked',
       'rollback-history-written',
       'rolled-back'
-    ])('resumes installer recovery after SIGKILL at %s', (boundary) => {
-      const f = fixture()
-      run(f.root, 'update', 'awaiting-start')
-      run(f.root, 'recover', boundary)
-      run(f.root, 'recover')
-      expectRecovered(f)
-      run(f.root, 'recover')
-      expectRecovered(f)
-      retry(f)
-    })
-    it('preserves accepted later profile changes after durable commit SIGKILL', () => {
-      const f = fixture()
-      run(f.root, 'update')
-      run(f.root, 'commit', 'committed')
-      const committed = journal(f.root)
-      mkdirSync(join(f.paths.profile, 'later'), { recursive: true })
-      writeFileSync(
-        join(f.paths.profile, 'later', 'session.txt'),
-        'Work saved after acceptance'
-      )
-      const later = tree(f.paths.profile, true)
-      // Re-enter the original installer for the accepted build; it must not rollback.
-      run(f.root, 'update')
-      run(f.root, 'update')
-      expect(journal(f.root).next).toEqual(committed.next)
-      expect(journal(f.root).previous).toEqual(committed.next)
-      expect(tree(f.paths.profile, true)).toEqual(later)
-      expect(tree(f.paths.profile, true)).not.toEqual(f.logical)
-    })
+    ])(
+      'resumes installer recovery after SIGKILL at %s',
+      (boundary) => {
+        const f = fixture()
+        run(f.root, 'update', 'awaiting-start')
+        run(f.root, 'recover', boundary)
+        run(f.root, 'recover')
+        expectRecovered(f)
+        run(f.root, 'recover')
+        expectRecovered(f)
+        retry(f)
+      },
+      caseTimeout
+    )
+    it(
+      'preserves accepted later profile changes after durable commit SIGKILL',
+      () => {
+        const f = fixture()
+        run(f.root, 'update')
+        run(f.root, 'commit', 'committed')
+        const committed = journal(f.root)
+        mkdirSync(join(f.paths.profile, 'later'), { recursive: true })
+        writeFileSync(
+          join(f.paths.profile, 'later', 'session.txt'),
+          'Work saved after acceptance'
+        )
+        const later = tree(f.paths.profile, true)
+        // Re-enter the original installer for the accepted build; it must not rollback.
+        run(f.root, 'update')
+        run(f.root, 'update')
+        expect(journal(f.root).next).toEqual(committed.next)
+        expect(journal(f.root).previous).toEqual(committed.next)
+        expect(tree(f.paths.profile, true)).toEqual(later)
+        expect(tree(f.paths.profile, true)).not.toEqual(f.logical)
+      },
+      caseTimeout
+    )
   }
 )
