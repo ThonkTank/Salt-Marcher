@@ -9804,3 +9804,17 @@ Check34469919756 weiterhin live, zuletzt nur campaign-workspaces und hex-npc-
 restart offen, keine fehlgeschlagenen Jobs. Candidate lokal sichern; Push wird
 nach diesem bereits laufenden Nachweis fortgesetzt, um ihn nicht erneut abzubrechen.
 Keine aktive Test-VM,59GiB frei. Phase5 bleibt aktiv, Phasen6/7 offen.
+
+### Phase 5 – Gepackte Abnahme der Platzmeldungen
+
+Voriger Turn Fortschritt:c26f04a0a lokal committed, zwei Platzfehler mit echten
+Artefakten bestätigt und UX-Abweichung behoben. CI34469919756 weiterhin live,
+keine VM. Konkreter Plan: neue Baseline aus unverändertem b64a408a5 plus exakt den
+3 Produktdateien des Platzmeldungsfixes; Schema/SQL bleiben42/41. Ziel unveränderter
+c26f04a0a (42/42). Neue Testversionen0.0.158/159, neue IDs space-baseline/space-target,
+bisherige Quellen und Artefakte unangetastet. Optionaler space-actionable-Schalter
+im Qualifier verlangt ausdrücklich deutsche Meldung samt nächster Aktion und
+verbietet sichtbares ENOSPC. Beide2GiB-Gastfälle mit neuen Originalartefakten
+wiederholen. Baselinebackport separat committen; Quelle und Treiber vor Builds
+festschreiben, keine Änderungen während Build/Test. Danach vollständige CI und
+weiterer Phase5-Audit; kein Main/Handoff/Publicrelease aus diesen Teilnachweisen.

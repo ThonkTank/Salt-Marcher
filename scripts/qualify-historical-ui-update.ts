@@ -57,6 +57,7 @@ const { values } = parseArgs({
   options: {
     'space-volume': { type: 'string' },
     'space-exhausted': { type: 'boolean', default: false },
+    'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
@@ -643,13 +644,22 @@ try {
       await ui.click('Bestätigen', '[role="alertdialog"]')
       await ui.expectText(
         values['space-exhausted']
-          ? 'ENOSPC'
+          ? values['space-actionable']
+            ? 'Nicht genug freier Speicherplatz.'
+            : 'ENOSPC'
           : 'Nicht genug freier Speicherplatz für Sicherung und Migration.'
       )
+      if (values['space-actionable']) {
+        await ui.expectText(
+          'Gib Speicherplatz frei und versuche den Vorgang erneut.'
+        )
+        assert(!(await ui.text()).includes('ENOSPC'))
+      }
       assert.equal(currentProgram(root)?.deployment, originalDeployment)
       assert.deepEqual(new MaintenanceCoordinator(root).read(), journal)
       assert.deepEqual(backupNames(), backups)
       spaceFailure = {
+        actionable: values['space-actionable'],
         exhausted: values['space-exhausted'],
         before: reservation.before,
         after: reservation.after,
