@@ -9972,3 +9972,55 @@ CI-Reisepausefehler, neue gepackte Feed-Texte, Erstinstallation/Übernahme und L
 Aktuellen Candidate pushen; kein Main/Handoff. Folgende Fehlerrunde muss zunächst
 Reisepause reproduzieren und Ursache zwischen automatischem Fortschritt,
 Intentrevision und Command-Receipt/Refresh isolieren; nicht nur Testwartezeit erhöhen.
+
+### Phase 5 – Pause gegen ausschließlich automatischen Reisefortschritt
+
+Voriger Turn Fortschritt:496bc1feb gepushte Feedfehlerqualifikation/UX-Korrektur;
+Check34473788814 live, Arbeitsbaum sauber. CI383f6f4a3 hat keinen Pause-Receipt.
+Codeprüfung: jeder erfolgreich automatisch zurückgelegte Hex erhöht genau einmal
+Reiserevision, current_index und globale Szenenrevision. Pause prüft alte Reise-
+und Szenenrevision strikt. Geplanter enger Fix: optionaler erwarteter Fortschritts-
+index nur im Pausekommando. Innerhalb derselben Command-Transaktion darf ausschließlich
+bei weiterhin reisender Szene und identischem positiven Delta aller drei Zähler
+auf die aktuelle Revision pausiert werden. Kein Rebase bei anderem Szenenwechsel,
+Gruppen-/Routen-/Kontrolländerung, beendeter Reise oder fehlendem Index. Bestehende
+Kommandos bleiben strikt, keine neue Datenbankversion. Originalkommando bleibt
+unverändert im idempotenten Receipt-Journal.
+Zuerst optionalen Vertrag plus deterministischen Clock-Regressionsfall hinzufügen,
+vor Verhaltensfix stale reproduzieren. Danach eng begrenzten Core-Guard und
+Fortschrittsindex aus dem originalen UI-Descriptor bis zum Hexprovider übertragen;
+bei Entwurfsklärung Index frisch aus vorbereitetem Descriptor übernehmen.
+Tests für automatische Schritte, echte Kontroll-/Szenenkonflikte, alte Reise,
+Receipt-Replay und Providerweitergabe; bestehende Reise-/Owner-Tests beibehalten.
+Keine pauschale Retry-Schleife oder Lockerung der normalen Revisionsprüfung.
+Anschließend statische Checks und isolierte E2E-/gepackte Abnahme; CI-Ursache bleibt
+bis entsprechender Laufzeitbestätigung teilweise unbewiesen, kein Phasenabschluss.
+
+29859 Regression vor Core-Fix terminalExit1: optionales Pausefeld akzeptiert, genau
+ein automatischer Hexschritt ausgeführt; Pause scheitert in
+hex-travel-command-service.ts:62 mit stale an der Szenenrevision. Damit ist diese
+Race-Bedingung deterministisch nachgewiesen; ein überholter Refresh ist dafür
+nicht erforderlich. Jetzt den geplanten Drei-Zähler-Guard und UI-Weitergabe
+implementieren, positive Mehrschritt-/Replay- und negative Kontroll-/Roster-/
+Neustart-/Abschluss-/Legacyfälle prüfen. Keine Änderung der allgemeinen Revisionen.
+
+69490 terminalExit0:77/77 bestehende und neue Tests in6 Dateien bestanden,
+inklusive18 SQLite-Receiptfälle. Ein/zwei automatische Schritte pausieren und
+Receipt-Replay schreibt nicht erneut; Kontroll-/Roster-/Reiseersatz-/Abschluss-
+und Legacykonflikte bleiben abgewiesen. Ergänzende geplante Absicherung vor
+Freigabe: reine Szenenänderung trotz unveränderter Reise sowie Providerweitergabe
+des ursprünglichen Index und frischer Index nach Entwurfsklärung. Danach dieselbe
+Testsuite plus Format/Lint/beide Typechecks; gepackte/CI-Bestätigung noch offen.
+
+22850 terminalExit0: abschließende 80/80 Tests in sechs Dateien, ESLint und beide
+Typechecks bestanden; 38.829s, maximal1.7GiB, kein Swap. git diff --check grün.
+Plan-Audit Pausekorrektur: optionaler ursprünglicher Fortschrittsindex durch alle
+Providerpfade, frischer Index nach Entwurfsklärung, enger Drei-Zähler-Guard in der
+Command-Transaktion und unveränderte Receipt-Identität implementiert. Positive
+Ein-/Mehrschritt- und Replayfälle sowie sechs Konfliktarten nachgewiesen.
+Roadmap-Audit: diese Korrektur beseitigt eine reproduzierte Laufzeitblockade der
+Phase5; weder vollständige E2E-Bestätigung noch Artefaktabnahme damit ersetzt.
+Check34473788814 für496bc1feb weiterhin live (campaign-workspaces), kein Fehler
+bis zur letzten Abfrage. Kein Main/Handoff/Release. Host56GiB frei, keine VM.
+Vorheriger Goalturn: Fortschritt durch erneute Prüfung von Speicher und
+Vorboot-Protokoll; Speicherursache bestätigt, Absturzmitwirkung weiter unbewiesen.
