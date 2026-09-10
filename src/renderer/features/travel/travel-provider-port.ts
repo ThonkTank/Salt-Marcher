@@ -16,6 +16,7 @@ export type TravelRoutePlanSnapshot<P> = Readonly<{
 
 export type TravelProviderDescriptor<P> = Readonly<{
   revision: number
+  progressIndex?: number
   routePlan: TravelRoutePlanSnapshot<P>
   status: string
   mapOptions: readonly Readonly<{ id: string; label: string }>[]
@@ -51,6 +52,7 @@ export type TravelProviderCommand<P> = Readonly<{
       }>
     | Readonly<{
         kind: 'pause' | 'resume' | 'abort'
+        expectedProgressIndex?: number
         sceneId: string
         expectedRevision: number
       }>

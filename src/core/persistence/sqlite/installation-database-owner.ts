@@ -59,7 +59,9 @@ export class InstallationDatabaseOwner {
       configureSqlite(this.database)
       if (installationExists)
         assertSchemaVersion(this.database, dataRoot, 'installation')
-      this.initializeInstallationSchema(installationExists)
+      this.database.transaction(() =>
+        this.initializeInstallationSchema(installationExists)
+      )()
     } catch (error) {
       this.database.close()
       throw error

@@ -216,3 +216,29 @@ it('checks position against a fresh map and refuses a foreign scene', async () =
     prepareTravelCommand({ port: f.port, command })
   ).rejects.toMatchObject({ code: 'stale' })
 })
+
+it('refreshes the pause progress index together with both revisions after draft resolution', async () => {
+  const f = fixture()
+  vi.mocked(f.port.read).mockResolvedValue({
+    ...f.result,
+    providerState: { ...f.descriptor, progressIndex: 4 }
+  })
+  const prepared = await prepareTravelCommand({
+    port: f.port,
+    command: {
+      kind: 'pause',
+      sceneId: 'scene',
+      expectedRevision: 2,
+      expectedSceneRevision: 1,
+      expectedProgressIndex: 0
+    }
+  })
+  expect(prepared.command).toEqual({
+    kind: 'pause',
+    sceneId: 'scene',
+    expectedRevision: 11,
+    expectedSceneRevision: 8,
+    expectedProgressIndex: 4
+  })
+  expect(f.port.execute).not.toHaveBeenCalled()
+})

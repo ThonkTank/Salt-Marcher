@@ -258,3 +258,31 @@ describe('Hex travel provider port', () => {
     port.dispose()
   })
 })
+
+it('preserves the observed pause progress index even when a later read has advanced', async () => {
+  const test = fixture()
+  test.state.context.travel = { ...test.state.context.travel, currentIndex: 3 }
+  const port = createHexTravelProviderPort(test.capabilities, test.executor)
+  const loaded = await port.read({ sceneId })
+  expect(port.describe(loaded.providerState).progressIndex).toBe(3)
+  await port.execute({
+    kind: 'pause',
+    sceneId,
+    expectedRevision: 4,
+    expectedSceneRevision: 3,
+    expectedProgressIndex: 2
+  })
+  expect(test.executor.execute).toHaveBeenCalledWith(
+    expect.objectContaining({
+      command: {
+        kind: 'pause',
+        input: {
+          sceneId,
+          expectedRevision: 4,
+          expectedSceneRevision: 3,
+          expectedProgressIndex: 2
+        }
+      }
+    })
+  )
+})

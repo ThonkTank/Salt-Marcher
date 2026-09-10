@@ -247,7 +247,13 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (await client.$('button=In den Papierkorb')).click()
   await (await client.$('button=Papierkorb (1)')).click()
   await (await client.$('button=Wiederherstellen')).click()
-  await (await client.$('button[aria-label="Schließen"]')).click()
+  {
+    const popup = await client.$('.campaign-management-popup')
+    const close = await popup.$('button[aria-label="Schließen"]')
+    await close.waitForClickable()
+    await close.click()
+    await popup.waitForExist({ reverse: true })
+  }
   await (
     await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
   ).click()
@@ -257,7 +263,13 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (await client.$('#campaign-confirm-name')).setValue('Campaign B Archiv')
   await (await client.$('button=Endgültig löschen')).click()
   await expect(await client.$('strong=Campaign B Archiv')).not.toBeExisting()
-  await (await client.$('button[aria-label="Schließen"]')).click()
+  {
+    const popup = await client.$('.campaign-management-popup')
+    const close = await popup.$('button[aria-label="Schließen"]')
+    await close.waitForClickable()
+    await close.click()
+    await popup.waitForExist({ reverse: true })
+  }
   await (await client.$('button[aria-label="test öffnen"]')).click()
   await client.$('[data-screen="workspace"]').waitForExist({ timeout: 15_000 })
   await runCampaignMinimumSizeScenario(client)
@@ -1066,9 +1078,10 @@ async function waitForSceneLocation(
   expected: string
 ): Promise<void> {
   await client.waitUntil(
-    async () =>
-      (await (await client.$('.desktop-scene-facts > button')).getText()) ===
-      expected,
+    async () => {
+      const button = await client.$('.desktop-scene-facts > button')
+      return (await button.getText()) === expected && (await button.isEnabled())
+    },
     {
       timeout: 5_000,
       timeoutMsg: `Scene location did not become ${expected}.`
@@ -1085,6 +1098,7 @@ async function setSceneLocation(
   await (
     await row.$('select[aria-label="Scene-Ort"]')
   ).selectByVisibleText(location)
+  await waitForSceneLocation(client, location)
 }
 
 async function pressDividerKey(

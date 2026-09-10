@@ -9,9 +9,9 @@ canonical check.
 | Role | Current schema | Complete forward path | Migration owner |
 | --- | ---: | --- | --- |
 | installation | 42 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42` | `installation-schema-migrations.ts` |
-| campaign | 41 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41` | `campaign-schema-migrations.ts` |
+| campaign | 42 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40 -> 41 -> 42` | `campaign-schema-migrations.ts` |
 
-Migration registry contract: **21**.
+Migration registry contract: **22**.
 
 ## Generation
 
@@ -23,7 +23,7 @@ Migration registry contract: **21**.
 | Session-generation catalog | `catalog-2026-08-16` | `resources/sessiongeneration/registry.json` |
 | Catalog content hash | `59f4a9ab7b7164b9151d5339f41136701efa45a58666ee1cab7cff101b224a03` | current catalog manifest |
 
-Persisted reward runs remain readable for: `reward-v2`, `reward-v3`. Commands
+Persisted reward runs remain readable for: `reward-v1`, `reward-v2`, `reward-v3`. Commands
 and newly generated runs require the current Reward engine version. Unknown
 versions fail contract validation; saved concrete runs,
 not an old engine implementation, remain replay authority.

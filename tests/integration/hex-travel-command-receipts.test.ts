@@ -39,7 +39,8 @@ function fixture() {
   seedExampleParty(db)
   const access = campaigns.activeCampaignPersistence()
   const play = new LivePlayService(access)
-  const travel = new HexTravelService(access, () => 1000)
+  let now = 1000
+  const travel = new HexTravelService(access, () => now)
   const commands = new HexTravelCommandService(access, travel, play)
   const maps = new HexMapService(access)
   const map = maps.create('Plan', maps.catalog().revision)
@@ -63,7 +64,9 @@ function fixture() {
     biomeId: 'grassland',
     path: [
       { q: 0, r: 0 },
-      { q: 1, r: 0 }
+      { q: 1, r: 0 },
+      { q: 2, r: 0 },
+      { q: 3, r: 0 }
     ],
     radius: 0,
     expectedContentRevision: 0,
@@ -100,7 +103,20 @@ function fixture() {
       }
     }
   })
-  return { root, campaigns, db, play, travel, commands, sceneId, plan, save }
+  return {
+    root,
+    campaigns,
+    db,
+    play,
+    travel,
+    commands,
+    sceneId,
+    plan,
+    save,
+    setNow: (value: number) => {
+      now = value
+    }
+  }
 }
 
 it.each([
@@ -313,7 +329,7 @@ it('migrates 40 to 41 atomically while preserving the complete session and journ
   ).toEqual([])
   h.db.exec('DROP TRIGGER fail_migration')
   applySchemaMigrations(h.db, { role: 'campaign', path: h.root })
-  expect(h.db.pragma('user_version', { simple: true })).toBe(41)
+  expect(h.db.pragma('user_version', { simple: true })).toBe(42)
   expect({
     session: h.play.readSession(),
     travel: h.travel.read(h.sceneId)
@@ -409,4 +425,100 @@ it('rejects an old pause after a new journey reuses its revision and reads state
       sceneId: h.sceneId
     })
   ).toThrow('stale')
+})
+
+function advancingPause() {
+  const h = fixture()
+  h.travel.start({
+    sceneId: h.sceneId,
+    ...h.plan,
+    waypoints: [{ q: 3, r: 0 }],
+    expectedRevision: h.travel.read(h.sceneId).revision
+  })
+  const before = h.commands.readState(h.sceneId)
+  const input: HexTravelCommand = {
+    commandId: randomUUID(),
+    command: {
+      kind: 'pause',
+      input: {
+        sceneId: h.sceneId,
+        expectedRevision: before.context.travel.revision,
+        expectedSceneRevision: before.context.session.scene.revision,
+        expectedProgressIndex: before.context.travel.currentIndex
+      }
+    }
+  }
+  const advance = (steps: number) => {
+    h.setNow(1000 + (before.context.travel.segmentEndsAt! - 1000) * steps)
+    h.travel.tick()
+  }
+  return { ...h, input, before, advance }
+}
+it.each([1, 2])(
+  'pauses after %i automatic steps without replaying the pause',
+  (steps) => {
+    const h = advancingPause()
+    h.advance(steps)
+    expect(h.travel.read(h.sceneId).currentIndex).toBe(steps)
+    const receipt = h.commands.execute(h.input)
+    expect(receipt.context.travel.status).toBe('paused')
+    expect(receipt.context.travel.currentIndex).toBe(steps)
+    h.advance(100)
+    expect(h.commands.execute(h.input)).toEqual(receipt)
+    expect(h.travel.read(h.sceneId).status).toBe('paused')
+  }
+)
+it.each([
+  'control',
+  'scene',
+  'roster',
+  'replacement',
+  'completed',
+  'legacy'
+] as const)('does not rebase pause across %s changes', (kind) => {
+  const h = advancingPause()
+  h.advance(1)
+  if (kind === 'control')
+    h.travel.setMultiplier({
+      sceneId: h.sceneId,
+      multiplier: 2,
+      expectedRevision: h.travel.read(h.sceneId).revision
+    })
+  if (kind === 'scene')
+    h.play.setSceneLocation(
+      h.sceneId,
+      null,
+      h.play.readSession().scene.revision
+    )
+  if (kind === 'roster') {
+    const session = h.play.readSession()
+    h.play.setSceneRoster({
+      sceneId: h.sceneId,
+      memberIds: [],
+      expectedRevision: session.scene.revision,
+      expectedPartyRevision: session.party.revision
+    })
+  }
+  if (kind === 'replacement') {
+    h.travel.position({
+      sceneId: h.sceneId,
+      mapId: h.plan.mapId,
+      coordinate: { q: 0, r: 0 },
+      expectedSceneRevision: h.play.readSession().scene.revision
+    })
+    h.travel.start({
+      sceneId: h.sceneId,
+      ...h.plan,
+      waypoints: [{ q: 3, r: 0 }],
+      expectedRevision: h.travel.read(h.sceneId).revision
+    })
+    h.advance(2)
+  }
+  if (kind === 'completed') h.advance(100)
+  if (kind === 'legacy' && h.input.command.kind === 'pause')
+    delete h.input.command.input.expectedProgressIndex
+  const before = h.commands.readState(h.sceneId)
+  expect(() => h.commands.execute(h.input)).toThrow('stale')
+  expect(h.commands.status(h.input).receipt).toBeNull()
+  expect(h.commands.readState(h.sceneId)).toEqual(before)
 })

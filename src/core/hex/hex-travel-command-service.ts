@@ -58,7 +58,14 @@ export class HexTravelCommandService {
         const scenes = new SceneStore(db)
         if (scenes.focusedSceneId() !== sceneId)
           throw new CapabilityError('stale', false)
-        if (scenes.revision() !== command.input.expectedSceneRevision)
+        const progressedPause = this.progressedPauseRevision(
+          command,
+          scenes.revision()
+        )
+        if (
+          scenes.revision() !== command.input.expectedSceneRevision &&
+          progressedPause === null
+        )
           throw new CapabilityError('stale', true)
         const plans = new HexRoutePlanStore(db)
         switch (command.kind) {
@@ -93,6 +100,12 @@ export class HexTravelCommandService {
             break
           }
           case 'pause':
+            this.travel.pause({
+              sceneId,
+              expectedRevision:
+                progressedPause ?? command.input.expectedRevision
+            })
+            break
           case 'resume':
           case 'abort':
             this.travel[command.kind]({
@@ -116,6 +129,28 @@ export class HexTravelCommandService {
         return receipt
       })
     )
+  }
+
+  /** A completed hex advances all three counters once; any other change stays a conflict. */
+  private progressedPauseRevision(
+    command: HexTravelCommand['command'],
+    sceneRevision: number
+  ): number | null {
+    if (
+      command.kind !== 'pause' ||
+      command.input.expectedProgressIndex === undefined
+    )
+      return null
+    const current = this.travel.read(command.input.sceneId)
+    const steps = current.currentIndex - command.input.expectedProgressIndex
+    if (
+      current.status !== 'travelling' ||
+      steps <= 0 ||
+      current.revision - command.input.expectedRevision !== steps ||
+      sceneRevision - command.input.expectedSceneRevision !== steps
+    )
+      return null
+    return current.revision
   }
 
   private context(sceneId: string) {
