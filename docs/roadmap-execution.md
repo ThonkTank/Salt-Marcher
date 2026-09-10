@@ -10573,3 +10573,131 @@ Archiv außerhalb VM; Gastdisk nach Prüfung entfernt. Plan-Audit fünf von neun
 Recoverygrenzen qualifiziert. Roadmap-Audit übrige vier Recoverygrenzen, direkter
 UI-Import und frühere fehlende Nachweise offen. Abnahmematrix auf tatsächlich
 vorhandene Local-/Release-Nachweise aktualisiert, keine Gesamtfreigabe.
+
+Letzter Local-Recoverybatch: rollback-program, program-linked,
+rollback-history-written, rolled-back. Gleiches unverändertes Payload-local-
+recovery-1, vier separate Profile, Offlinegast900s. Export und vollständige
+Semantikprüfung vor Entfernen der Gastdisk. Voriger Goalturn Fortschritt: vier
+weitere Doppelabbruchnachweise und aktualisierte Abnahmematrix committed7b2fd2357.
+Keine Sourceänderungen während Lauf.
+
+
+Vorbereitung nächster Phase5-Prüfung (nur Dokumentation während laufendem Gast):
+Direkter UI-Import soll den echten abgeschlossenen Local-Zielstand des vorhandenen
+Qualifiers als Quelle verwenden, nicht ein synthetisch behauptetes Journal.
+Release-AppImage aus Downloadordner in demselben isolierten XDG-Bereich über
+Erstinstallations-UI installieren, damit das benachbarte Local-Profil als Kandidat
+erscheint. Release zunächst leer; danach sichtbaren Local-Profilknopf, App-
+Bestätigung, native Ordnerauswahl und native Ersetzungsbestätigung bedienen.
+Gast-xdotool darf ausschließlich reale Gastfenster/Tastatureingaben bedienen;
+kein ersetztes dialog.showOpenDialog und keine versteckte IPC-Übernahme.
+Vorher vollständige Quellinventare und logischen Seed festhalten, Quelle geschlossen.
+Nach Import: Journal committed/backup gesetzt, vollständiger Zielreadback==Seed,
+Quellbytes/Inventar unverändert (Lockdateien getrennt dokumentieren), vorgeschaltete
+Sicherung enthält den vorher leeren Zielstand. Regulär schließen, installierten
+Startpunkt erneut starten und fortsetzbaren Zustand lesen. Exklusive Quellsperre
+zusätzlich als eigener Ablehnungsfall; native Dialogbedienung zuerst im Gast
+belegen. Fixturepfade und Programmidentitäten vor/nach prüfen. Das ist ein Plan,
+noch kein UI-Importnachweis und keine Phase5-Abnahme.
+
+13997 terminalVMExit0/TestExit0. Letzte vier Local-Recoveryfälle vollständig
+transport-/semantikgeprüft, je beide echte SIGKILLs, Transaktionsbezug, zweimal
+identisches rolled-back, vollständige Recovery-/Vorher-/Nachher-/Quellvergleiche
+und Zielruntime-ready/committed. BerichtSHA:
+rollback-program 9951d6ff6da3657742507d5f59e6e04e707d502a8b9fa133c9ce9404ed38ff68
+rollback-history-written 43b8cc6b553b4bfbec8c571bda77e50cec5e28ced127ee732c71ad51d9a7d334
+program-linked 13102e369f3452e8ad621133cd0fff32a9a715efa2f714df0d6c22a6ca407281
+rolled-back fe0afb6b3e32553a7a62889a343b0fee3bcb2a1ab8a6ba7ffd5f50ec46bd198f
+Alle neun Local-Recoverygrenzen damit qualifiziert; Archiv außerhalb VM, Disk
+nach Prüfung entfernt. Plan-Audit Local-Vorwärts-/Recovery-Abbruchmatrix bestanden.
+Roadmap-Audit Phase5 nicht abgeschlossen: direkter UI-Profilimport und zuvor
+festgehaltene fehlende Release-Nachweise bleiben offen; kein canonical handoff.
+
+71400 Importprüfer statisch bestanden: Format, ESLint, beideTypechecks. Neues
+Payload-profile-import-1 enthält unveränderten Local-Prüfer und AppImages plus
+neuen UI-Prüfer. Local-Setup zuerst, dann reale Release-Erstinstallation und
+Native-Dialog-Import. Quelle vollständig byteinventarisiert; Zielreadbacks sollen
+Seed entsprechen, vorgeschaltete Sicherung logisch dem leeren Vorprofil. Noch
+kein Runtimepass. Gast900s, gleiche Ressourcen-/Isolationsgrenzen; keine Source-
+änderung während Pilot.
+
+41119 terminalVMExit0/TestExit1. Local-Setup Exit0; UI-Importprüfer wartet vergeblich
+auf native Bestätigung „Vollständiges Profil übernehmen“. Ordnerauswahlfenster
+wurde zuvor gefunden; daraus ist nicht bewiesen, dass die Auswahl abgeschlossen
+wurde. Fehlerarchiv unter outputs/qualification-evidence/profile-import-v2-run-1;
+Gastdisk zur Diagnose behalten. Kein Importpass. Fixplan vor Änderung: bei Fehler
+sichtbare native Fenstertitel/IDs und bislang ausgeführte Eingaben protokollieren,
+bevor Cleanup sie schließt. Prüfer soll reale Dialogzustände sichtbar machen;
+keine Produktänderung oder simulierte Dialogantwort. Erst Ursache bestimmen,
+dann präzise native Auswahl korrigieren.
+
+Diagnoseplan ergänzt vor Änderung: natives X11-Gastbild im Fehlerfall über
+libX11 lesen, als PNG im JSON-Fehlerbericht erhalten. Helper verweigert Hostbetrieb
+ohne vom Gast abweichende QEMU-Hostboot-ID. Keine neuen Abhängigkeiten, kein
+Hostdesktopzugriff. Fenstertitel plus Bild unterscheiden offene Ordnerauswahl
+von anders benannter Bestätigung. Neuer unveränderlicher Diagnoselauf.
+
+78294 terminalVMExit0/TestExit1. Diagnosearchiv transportgeprüft. NativeFensterliste
+zeigt weiterhin Ordnerdialog; Gast-PNG visuell geprüft: korrekter Profilpfad im
+Adressfeld, Open unten rechts sichtbar, Autovervollständigung offen. Alt+o hat
+Dialog nicht bestätigt. Kein Import-/Datenverlustbeleg. Fixplan: echten Mausklick
+auf die visuell bestätigte Open-Schaltfläche im kontrollierten Gastlayout statt
+nicht wirksamen Kurzbefehl. Fenstergeometrie lesen, relative Position innerhalb
+Fenstergrenzen prüfen; nativen Bestätigungsdialog weiterhin tatsächlich abwarten.
+Keine IPC-/Produktänderung; neues Prüfpayload und kompletter Wiederholungslauf.
+
+Wiederholung nach visuell belegter GTK-Auswahlkorrektur: neues Payload-profile-
+import-3, unveränderte Original-AppImages und Local-Setup. Native Open-Schaltfläche
+per echtem Gastklick. Vollständiger Import-/Backup-/Quell-/Restartvergleich bleibt
+Abnahme. Voriger Goalturn Fortschritt: native Ursache mit Gastbild belegt und
+Prüfer korrigiert, Format/ESLint10056 bestanden. Keine Sourceänderung im Lauf.
+
+46019 terminalVMExit0/TestExit1, bereits Erstinstallation abgebrochen. Gastbild
+zeigt Recoveryansicht/Incompatible persisted data, nativeActions leer. Keine
+Aussage zur Open-Korrektur möglich. Diagnoseplan: abgeschlossene Gastdisk als
+read-only Zusatzlaufwerk einbinden, ext4 ro/noload; Logs/Journal lesen und SQLite
+ausschließlich auf Kopien im neuen Gast untersuchen. Keine Reparatur/Mutation
+der Fehlerdisk oder Host-GUI. Neuer Fehler zuerst lokalisieren.
+
+21136 read-only Diagnosegast terminalVMExit0/TestExit0, Export vollständig
+transportgeprüft. installation.sqlite quick/integrity ok, user_version0, bereits
+Tabellen campaigns/settings/campaign_commands/scene_desktop vorhanden. Startlog:
+Generation1 starting→terminating/closed, Generation2 incompatible-data Exit78.
+Originale InstallationDatabaseOwner initialisiert Tabellen einzeln und setzt
+user_version erst am Ende, ohne gemeinsame Transaktion. Das hinterlässt bei
+beendetem Start eine gespeicherte Teilinitialisierung. DiagnoseberichtSHA:
+047971e6c60b1913b717bda732512f21d643fb267b9352a8fe3e33bf9bab0131.
+Diagnosegastdisk entfernt, ursprüngliche Fehlerdisk bleibt unangetastet.
+
+Produkt-Fixplan vor Änderungen: neue Installationsdatenbank vollständig atomar
+initialisieren (alle DDL/Defaultdaten/Metadaten plus Schema-Version in einer
+SQLite-Transaktion). Nach Abbruch darf allein eine nachweislich leere SQLite-Datei
+mit Version0 und keinerlei Schemaobjekten als noch nicht initialisiert gelten;
+vorhandene Tabellen/Daten, fremde Dateien und unbekannte Versionen weiter
+unverändert ablehnen. Preflightprüfung dafür auf ihrer bereits vorhandenen
+Arbeitskopie ausführen, keine neue Quelle verändern. Eigentümer bleibt für SQL
+zuständig. Regressionsnachweis mit echtem Prozessabbruch während Schemaaufbau,
+anschließender sicherer Neuinitialisierung; Negativfälle teilweise/befüllt/
+neueres Schema behalten. Initialisierungsstop kann durch Wartungsbeginn während
+starting auftreten; Transaktionsschutz muss unabhängig vom UI-Timing gelten.
+Danach statische/gezielte Prüfungen, neue unveränderliche AppImages und vollständige
+Erstinstallations-/Importqualifikation. Keine Fixture-Wartezeit als Produktfix.
+Phase5 bleibt offen; Open-Dialog-Korrektur in diesem Lauf nicht erreicht.
+
+3203 statischer Erstlauf stoppt vor Tests: ESLint beanstandet absichtlich
+ausgehängte Prototypmethode im SIGKILL-Fixture. Fix: Originalimplementierung über
+Property-Descriptor mit explizitem Methodentyp erfassen, weiter mit tatsächlichem
+this aufrufen. Produkttransaktion und Abnahmekriterien unverändert.
+
+73973 terminalExit0:21Tests bestanden (16vorhandene Preflightfälle plus echter
+Bootstrap-SIGKILL und vier Schutzfälle), ESLint/beideTypechecks grün. Prozess
+stirbt nach tatsächlicher Registry-DDL; Preflight liest unveränderte Quelldateien,
+erkennt zurückgerollten leeren Container, Originalowner initialisiert vollständig.
+Gespeicherte Einstellungen über erneutes Öffnen erhalten. Teilweise/befüllte
+Version0-Datenbanken, zusätzliche Datei und neueres leeres Schema unverändert
+abgewiesen. Peak1.5GiB, keinSwap, keineHost-GUI. SQL bleibt beim Eigentümer.
+Plan-Audit atomare Initialisierung und eng begrenzte Wiederaufnahme bestanden.
+Roadmap-Audit neue AppImage-Qualifikation/Erstinstallationsrennen noch offen;
+keine Übertragung des Unit-Erfolgs auf den fehlgeschlagenen UI-Lauf.
+Nächster Schritt: Produktfix committen, neuen unveränderlichen Release-Teststand
+bauen und Erstinstallation sowie nativen Profilimport erneut qualifizieren.
