@@ -10309,3 +10309,28 @@ Roadmap-Audit: plausibleBusy-Race damit gezielt adressiert, tatsächlicheBehebun
 noch durch vollständigenCI-/E2E-Lauf zu bestätigen. Screenshot allein beweist
 nicht den exakten Busy-Wert imMomentdesvorherigenCloseklicks. KeineProduktfreigabe.
 Jetzt neuerKandidat mitCollector/Bootstrapnachweisen undTestbarriere pushen.
+
+Local-Qualifikationsplan gegenIstcode: migratePreparedCompleteProfile läuft im
+jeweiligenInstaller, deshalb Baseline undZiel mit OriginalInstallerquellen aus
+bd8b33c4 bzw8494e663a prüfen, keine Zielmigration beimBaseline-Setup verwenden.
+BeideAppImages bereits hashgeprüft. Vor Bundles festeSourcecheckouts erstellen,
+readWorkspaceIdentity gegenManifest prüfen, Originalmodule (Installer/Runtime-
+Annahme) exportieren und Quellen vor/nachBundling unverändert bestätigen.
+Gast erhält diesen separat ausgewiesenenTestadapter und eingefrorene verifizierte
+WorkspaceIdentity statt eines fiktiven Source-Fingerprints. Echte Migration,
+Launcherextraktion und Runtime-Annahme bleiben original; dies ist kein Ersatz für
+kanonischenHandoff samtGit-/CI-Gate. NativeNode-SQLite fürGast gesondert prüfen.
+Erst danach vollständigenLocal-Daten-/Runtime-/Rollbacktest aufsynthetischemProfil
+aufbauen. Aktuell keinVM-/Buildprozess; letzterGoalturn Fortschritt durch gezielte
+Kampagnen-Testbarriere undKandidatenpush. Check34479373201 füra5317c1c4 live.
+
+65999 terminalExit0: Format/ESLint/beideTypechecks bestanden; beideOriginal-
+Local-Adapter erfolgreich gebaut. VollständigeWorkspaceIdentity entsprichtjeweils
+AppImage-Manifest vor/nachBundling; Schema42/41 und42/42 bleiben getrennt.
+Ausgaben work/local-adapter-baseline-v1 undlocal-adapter-target-v1 enthalten
+AdapterSHA,IconSHA,ManifestSHA,Originalcommit/Fingerprints undexpliziteKennzeichnung
+„not-runtime-qualification-or-handoff“. Kein GUI-Start. Peak1.5GiB/keinSwap.
+Plan-Audit Adapterherkunft bestanden; Roadmap-Audit tatsächlicheLocal-Migration,
+Startannahme, Profilvergleich undRecovery bleiben offen. NativeBibliothek wird
+separat inGast geprüft; lokalesprebuild verlangt maximalGLIBC_2.34 (readelf),
+das allein belegt wederNodeABI-Kompatibilität noch erfolgreichenGastbetrieb.
