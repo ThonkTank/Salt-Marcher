@@ -9833,3 +9833,25 @@ completed/success, inklusive zuvor problematischem campaign-workspaces. Damit is
 der Testwartefix aus7c1740e64 durch vollständige nachfolgende CI qualifiziert.
 Neue Platzmeldungsänderungen waren darin nicht enthalten; jetzt Candidate inklusive
 c26f04a0a/d95bf8f3c pushen und neue exakte CI abwarten. Keine Main-Promotion.
+
+38412 space-actionable-run-1 terminalExit0/TestExit0; vollständiger gzip-Export
+CRC-geprüft. SHAce0b5be3bcb7c585afb0c8c51625ff2fd6287cf8b1d193213b880a38bf789f70.
+99790 space-actionable-exhausted-run-1 terminalExit0/TestExit0; vollständiger
+Export SHA12c4904aaa9d5e76aa908bb65add8d7288159fd91677df0c5949964bb48f8222.
+Echter ENOSPC-Fall hatte1044480Bytes frei, Vorprüfungsfall210595840Bytes vor
+AppImagekopie. Beide ursprünglichen0.0.158/159 zeigen jetzt nächste Aktion
+„Gib Speicherplatz frei und versuche den Vorgang erneut.“ ohne ENOSPC-Text.
+Vollständige Fehler-Readbacks==Seed==after==restored==unchanged; continued==
+protectedRead und verschieden vom Seed. Starter-/Artefakthashes und sämtliche
+normalen Prozessexits bestätigt; beide Gastdisks nach Exportprüfung entfernt.
+Plan-Audit Fehlertextkorrektur einschließlich gepackter Abnahme bestanden.
+Roadmap-Audit Phase5 weiter offen (Parallelstart, übrige Transportablehnungen,
+Erstinstallation/Übernahme und gepacktes Local); Phasen6/7 offen.
+
+383f6f4a3784840f5c107173f73bac5d3ba52cbd gepusht; Check34471542570 jetzt
+in_progress. Neue Dokumentation lokal committen, diesen Lauf nicht durch einen
+reinen Beleg-Push abbrechen. Vollständige CI des Produktfixes bleibt erforderlich;
+kein Handoff oder Main-Promotion. Nächster Arbeitsblock: gepackte parallele Starts
+und restliche Feedablehnungen. Read-only Vorbereitung zeigt strenge assetUrl-
+Herkunftsprüfung und Manifest-Zod-Validierung; deren bisher ungeprüfte UI-Fehler
+und nächste Aktionen müssen ausdrücklich mit erfasst werden.
