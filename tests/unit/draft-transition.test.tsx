@@ -150,6 +150,33 @@ function Harness({
     </ModalLayerProvider>
   )
 }
+function SettlingHarness(props: {
+  pending: Promise<void>
+  navigated: () => void
+}) {
+  const dirty = useRef(true)
+  useMaintenanceDraft({
+    label: 'Auslaufender Befehl',
+    concerns: [draftConcern.scene('scene-a')],
+    isDirty: () => dirty.current,
+    settleBackgroundWrites: async () => {
+      await props.pending
+      dirty.current = false
+    }
+  })
+  const transition = useDraftTransition('scene-a', undefined, {
+    kind: 'concerns',
+    concerns: [draftConcern.scene('scene-a')]
+  })
+  return (
+    <ModalLayerProvider>
+      <button onClick={() => transition.request(props.navigated)}>
+        Szene öffnen
+      </button>
+      {transition.dialog}
+    </ModalLayerProvider>
+  )
+}
 async function openTransition() {
   fireEvent.change(screen.getByLabelText('Charaktername'), {
     target: { value: 'Arlik Entwurf' }
@@ -297,4 +324,17 @@ it('rechecks an editor created while an autosave is finishing', async () => {
   await screen.findByRole('alertdialog')
   expect(screen.getByLabelText('Charaktername')).toHaveValue('Neuer Entwurf')
   expect(screen.queryByText('Sitzung geöffnet')).toBeNull()
+})
+it('continues without a dialog after an owning hook settles its requested write', async () => {
+  const pending = deferred()
+  const navigated = vi.fn()
+  render(<SettlingHarness pending={pending.promise} navigated={navigated} />)
+  fireEvent.click(screen.getByText('Szene öffnen'))
+  expect(navigated).not.toHaveBeenCalled()
+  await act(async () => {
+    pending.resolve()
+    await pending.promise
+  })
+  await waitFor(() => expect(navigated).toHaveBeenCalledOnce())
+  expect(screen.queryByRole('alertdialog')).toBeNull()
 })

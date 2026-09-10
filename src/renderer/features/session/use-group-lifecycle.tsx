@@ -54,6 +54,9 @@ export function useGroupLifecycleOwner(
       label: 'Gruppenaktionen',
       concerns: sceneId ? [draftConcern.scene(sceneId)] : [],
       isDirty: controller.held,
+      settleBackgroundWrites: async () => {
+        await controller.settle()
+      },
       save: controller.save,
       discard: controller.discard
     },

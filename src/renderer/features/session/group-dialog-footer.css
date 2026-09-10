@@ -71,11 +71,7 @@
 .session-group-manager input,
 .session-group-manager select,
 .session-group-manager textarea {
-  transition:
-    color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease),
-    opacity var(--dur) var(--ease);
+  transition: opacity var(--dur) var(--ease);
 }
 
 @media (max-width: 1300px) {

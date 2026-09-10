@@ -63,6 +63,9 @@ export function useHexTravelCommandOwner(
         draftConcern.scene(sceneId)
       ],
       isDirty: controller.held,
+      settleBackgroundWrites: async () => {
+        await controller.settle()
+      },
       save: controller.save,
       discard: controller.discard
     },

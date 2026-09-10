@@ -45,7 +45,9 @@ export function rendererAcknowledgesOuterWindowGeometry(
     renderer.innerWidth > 0 &&
     renderer.innerHeight > 0 &&
     renderer.innerWidth <= renderer.outerWidth &&
-    renderer.innerHeight <= renderer.outerHeight
+    renderer.innerHeight <= renderer.outerHeight &&
+    renderer.outerWidth - renderer.innerWidth <= 128 &&
+    renderer.outerHeight - renderer.innerHeight <= 128
   return (
     outerMatches && contentIsPlausible && workspaceAcknowledgesResize(renderer)
   )

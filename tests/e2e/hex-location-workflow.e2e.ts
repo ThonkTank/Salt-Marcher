@@ -252,8 +252,11 @@ async function verifyCatalogPlacementJourneys(client: WdioBrowser) {
   await placementDialog.waitForExist({ reverse: true })
   await waitForNamedLocationPlacement(client, 'Leuchtturmklippe', true)
 
-  const filters = await client.$('.catalog-filters')
-  await (await filters.$('button=Erstellen')).click()
+  await (await client.$('button[aria-label="Ort Details schließen"]')).click()
+  await clickWhenInteractable(client, async () => {
+    const filters = await client.$('.catalog-filters')
+    return filters.$('button=Erstellen')
+  })
   const editor = await client.$('[role="dialog"][aria-label="Ort erstellen"]')
   await editor.waitForExist()
   await (
@@ -340,8 +343,8 @@ async function waitForNamedLocationPlacement(
 
 async function verifySmallViewportKeyboardJourney(client: WdioBrowser) {
   const original = await client.execute(() => ({
-    width: window.innerWidth,
-    height: window.innerHeight
+    width: window.outerWidth,
+    height: window.outerHeight
   }))
   await setWindowToMinimumResponsiveSize(client)
   try {

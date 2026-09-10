@@ -21,7 +21,12 @@ export async function openSceneWindow(
   await frame.waitForDisplayed({ timeout: 10000 })
   if (maximize) {
     const button = frame.$('button[aria-label="Maximieren"]')
-    if (await button.isExisting()) await button.click()
+    if (await button.isExisting()) {
+      await button.click()
+      await frame
+        .$('button[aria-label="Wiederherstellen"]')
+        .waitForExist({ timeout: 5_000 })
+    }
   }
   return frame
 }

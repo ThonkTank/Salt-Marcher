@@ -66,6 +66,8 @@ export function useMaintenanceDraft(
           ]
         },
         isDirty: () => current.current.owner.isDirty(),
+        settleBackgroundWrites: () =>
+          current.current.owner.settleBackgroundWrites?.() ?? Promise.resolve(),
         save: () => current.current.owner.save?.() ?? Promise.resolve(false),
         discard: () =>
           current.current.owner.discard?.() ?? Promise.resolve(false)

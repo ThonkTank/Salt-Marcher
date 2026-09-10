@@ -31,7 +31,7 @@ describe('isolated workspace routes', () => {
 
   it('keeps workspace geometry stable while shell errors are visible', async () => {
     const client = browser as unknown as WdioBrowser
-    const geometry = await client.execute(async () => {
+    const geometry = await client.execute(() => {
       const shell = document.querySelector<HTMLElement>('.app-shell')
       const workspace = document.querySelector<HTMLElement>('.scene-desktop')
       if (!shell || !workspace) return null
@@ -57,9 +57,6 @@ describe('isolated workspace routes', () => {
       alert.append(message, close)
       stack.append(alert)
       shell.append(stack)
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => resolve())
-      )
       const after = snapshot()
       const stackStyle = getComputedStyle(stack)
       const stackBounds = stack.getBoundingClientRect()

@@ -119,6 +119,9 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   const syncCamera = useCallback(() => {
     const current = state.current
     if (!current || current.destroyed) return
+    current.element.dataset['cameraX'] = String(current.world.position.x)
+    current.element.dataset['cameraY'] = String(current.world.position.y)
+    current.element.dataset['cameraScale'] = String(current.world.scale.x)
     latest.current.onCameraChange?.(current.mapId, {
       x: current.world.position.x,
       y: current.world.position.y,

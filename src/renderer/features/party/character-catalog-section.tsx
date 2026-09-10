@@ -94,6 +94,9 @@ export default function CharacterCatalogSection(props: {
       Boolean(
         editingRef.current || confirmRef.current || controller.unresolved()
       ),
+    settleBackgroundWrites: async () => {
+      await controller.settle()
+    },
     save: async () => {
       if (!(await drain())) return false
       if (editingRef.current && !(await submitRef.current?.())) return false

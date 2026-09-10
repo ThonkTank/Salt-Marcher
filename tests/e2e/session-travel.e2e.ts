@@ -122,48 +122,63 @@ describe('Session map and travel console', () => {
     expect(
       Math.abs(geometry.mapHeight - geometry.contentHeight)
     ).toBeLessThanOrEqual(1)
+    await client.$('button=Route planen').waitForEnabled()
 
-    const dragToken = (fromQ: number, toQ: number) =>
-      client.execute(
+    const dragToken = async (fromQ: number, toQ: number) => {
+      const points = await client.execute(
         (startQ, destinationQ) => {
           const canvas = document.querySelector<HTMLCanvasElement>(
             '.hex-travel-map canvas'
           )
           if (!canvas) throw new Error('Travel canvas is missing.')
-          const world = document.querySelector<SVGGElement>(
-            '.hex-travel-map .hex-location-overlay > g'
+          const map = canvas.closest<HTMLElement>(
+            '[role="region"][data-camera-x][data-camera-y][data-camera-scale]'
           )
-          const matrix = world?.getScreenCTM()
-          if (!matrix) throw new Error('Rendered map camera is unavailable.')
-          const pointer = (type: string, q: number) => {
-            const point = new DOMPoint(
-              27 * Math.sqrt(3) * q,
-              0
-            ).matrixTransform(matrix)
-            canvas.dispatchEvent(
-              new PointerEvent(type, {
-                bubbles: true,
-                button: 0,
-                buttons: type === 'pointerup' ? 0 : 1,
-                pointerId: 41,
-                clientX: point.x,
-                clientY: point.y
-              })
-            )
+          const camera = map?.dataset
+          if (!camera) throw new Error('Rendered map camera is unavailable.')
+          const cameraX = Number(camera['cameraX'])
+          const cameraY = Number(camera['cameraY'])
+          const cameraScale = Number(camera['cameraScale'])
+          const bounds = canvas.getBoundingClientRect()
+          const point = (q: number) => {
+            return {
+              x: Math.round(
+                cameraX + 27 * Math.sqrt(3) * q * cameraScale - bounds.width / 2
+              ),
+              y: Math.round(cameraY - bounds.height / 2)
+            }
           }
-          pointer('pointerdown', startQ)
-          pointer('pointermove', destinationQ)
-          pointer('pointerup', destinationQ)
+          return {
+            start: point(startQ),
+            middle: point((startQ + destinationQ) / 2),
+            destination: point(destinationQ)
+          }
         },
         fromQ,
         toQ
       )
+      const canvas = await client.$('.hex-travel-map canvas')
+      await client.pause(100)
+      await client
+        .action('pointer', { parameters: { pointerType: 'mouse' } })
+        .move({ origin: canvas, ...points.start })
+        .down({ button: 0 })
+        .pause(50)
+        .move({ origin: canvas, duration: 100, ...points.middle })
+        .move({ origin: canvas, duration: 100, ...points.destination })
+        .up({ button: 0 })
+        .perform()
+      await client.execute(() => undefined)
+    }
     await dragToken(0, 1)
     await client.waitUntil(
       async () =>
         (await client.$('.travel-current-location strong').getText()) ===
         'Hex q=1, r=0',
-      { timeout: 5_000, timeoutMsg: 'Direct token drag did not persist.' }
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Direct token drag did not persist.'
+      }
     )
     await client.$('button=Route planen').waitForEnabled()
     await dragToken(1, 0)
@@ -237,7 +252,13 @@ describe('Session map and travel console', () => {
     await resumeCampaignFromScreen(client)
     await client.$('.shell-quick-actions').$('button=Reise').click()
     await openSceneWindow(client, 'map', true)
-    await client.$('button=Route planen').click()
+    const restoredRoutePlanning = await client.$('button=Route planen')
+    await restoredRoutePlanning.waitForEnabled()
+    await restoredRoutePlanning.click()
+    await client.$('.travel-route-facts*=4 Std.').waitForExist({
+      timeout: 5_000,
+      timeoutMsg: 'Saved route facts were not restored after renderer restart.'
+    })
     await client.waitUntil(
       () => client.$('button[aria-label="Reise starten"]').isEnabled(),
       {

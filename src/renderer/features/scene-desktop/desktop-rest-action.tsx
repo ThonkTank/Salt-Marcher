@@ -62,6 +62,9 @@ export function DesktopRestAction(props: {
       ...(props.windowId ? [draftConcern.window(props.windowId)] : [])
     ],
     isDirty: () => controller.unresolved() || selectedRef.current !== null,
+    settleBackgroundWrites: async () => {
+      await controller.settle()
+    },
     save: async () => {
       if (!(await controller.settle())) return false
       if (!selectedRef.current) return true

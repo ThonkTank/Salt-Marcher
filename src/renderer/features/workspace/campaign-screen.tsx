@@ -80,6 +80,9 @@ export function CampaignScreen(props: CampaignScreenProps) {
       : [],
     isDirty: () =>
       Boolean(popupRef.current || pending.current || attempt.current),
+    settleBackgroundWrites: async () => {
+      await drain()
+    },
     save: async () => {
       if (!(await drain())) return false
       if (popupRef.current?.kind === 'new' || popupRef.current?.kind === 'edit')

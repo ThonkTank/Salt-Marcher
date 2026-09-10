@@ -88,6 +88,22 @@ describe('E2E window geometry acknowledgement', () => {
         {
           outerWidth: 1280,
           outerHeight: 800,
+          innerWidth: 1024,
+          innerHeight: 768,
+          workspace: {
+            ready: true,
+            measuredWidth: 958,
+            renderedWidth: 958
+          }
+        }
+      )
+    ).toBe(false)
+    expect(
+      rendererAcknowledgesOuterWindowGeometry(
+        { width: 1280, height: 800 },
+        {
+          outerWidth: 1280,
+          outerHeight: 800,
           innerWidth: 1281,
           innerHeight: 761,
           workspace: null

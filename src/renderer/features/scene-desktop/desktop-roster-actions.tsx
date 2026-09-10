@@ -95,6 +95,9 @@ export function DesktopRosterActions(props: {
       )
     },
     isDirty: () => controller.unresolved() || draftRef.current !== null,
+    settleBackgroundWrites: async () => {
+      await controller.settle()
+    },
     save: async () => {
       if (!(await controller.settle())) return false
       return !draftRef.current || apply(true)

@@ -2,6 +2,7 @@ import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import { openSceneWindow } from './support/scene-desktop-navigation.js'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
+import { clickWhenInteractable } from './support/e2e-interactions.js'
 import {
   expectAccessibleInBothThemes,
   setElectronWindowSize,
@@ -585,12 +586,19 @@ describe('per-scene desktop', () => {
     await expect(
       client.$('[data-window-id="map"] .hex-canvas-shell .sr-only')
     ).toHaveText(selectedHex)
-    await client.$('[data-window-id="map"] button[aria-label="Stopp"]').click()
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await client.$('[data-window-id="map"] button[aria-label="Stopp"]')
+    )
+    await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
+      expect.stringContaining('Reise abgebrochen.')
+    )
   })
   it('manages the campaign library and keeps scene quickinfos beside existing windows', async () => {
     const client = browser as unknown as WdioBrowser
-    await client.$('select[aria-label="Szene"]').selectByVisibleText('Hafen')
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await selectScene(client, 'Hafen')
+    await openSceneWindow(client, 'characters')
     const info = () => client.$('[data-window-id="characters"]')
     await info().waitForDisplayed({ timeout: 15_000 })
     await expect(info()).toHaveText(expect.stringContaining('Zuga'))
@@ -657,8 +665,8 @@ describe('per-scene desktop', () => {
     await expect(
       info().$('select[aria-label="Sprache hervorheben"]')
     ).toHaveValue('Abyssal')
-    await client.$('select[aria-label="Szene"]').selectByVisibleText('Wald')
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
+    await selectScene(client, 'Wald')
+    await openSceneWindow(client, 'characters')
     await expect(info()).toHaveText(expect.stringContaining('Vivian'))
     await expect(info()).not.toHaveText(expect.stringContaining('Edrik'))
     await waitSaved(client)
@@ -684,7 +692,7 @@ describe('per-scene desktop', () => {
       .setValue('Reserve 5')
     await popup().$('input[type="checkbox"]').click()
     await popup().$('button=Übernehmen').click()
-    await popup().waitForExist({ reverse: true })
+    await popup().waitForExist({ reverse: true, timeout: 15_000 })
     await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
     await expect(info()).not.toHaveText(expect.stringContaining('Vivian'))
     const row = () => info().$('tbody')

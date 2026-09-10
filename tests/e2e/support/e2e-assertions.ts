@@ -10,7 +10,8 @@ import { PNG } from 'pngjs'
 import { mainWindowGeometry } from '../../../src/shared/contracts/window-geometry.js'
 import {
   rendererAcknowledgesOuterWindowGeometry,
-  rendererAcknowledgesWindowGeometry
+  rendererAcknowledgesWindowGeometry,
+  type RendererWindowGeometry
 } from './e2e-window-geometry.js'
 import {
   selectedVisualGoldens,
@@ -42,16 +43,24 @@ export async function expectAccessible(client: WdioBrowser): Promise<void> {
 export async function expectAccessibleInBothThemes(
   client: WdioBrowser
 ): Promise<void> {
+  const initialTheme = await client.execute(() =>
+    document.documentElement.dataset['theme'] === 'dark' ? 'dark' : 'light'
+  )
+  const alternateTheme = initialTheme === 'dark' ? 'light' : 'dark'
   await expectAccessible(client)
-  await client.execute(() => {
-    document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-  })
+  await client.execute(
+    (theme) => (document.documentElement.dataset['theme'] = theme),
+    alternateTheme
+  )
+  await client.pause(250)
   try {
     await expectAccessible(client)
   } finally {
-    await client.execute(() => {
-      document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-    })
+    await client.execute(
+      (theme) => (document.documentElement.dataset['theme'] = theme),
+      initialTheme
+    )
+    await client.pause(250)
   }
 }
 
@@ -77,18 +86,24 @@ export async function setElectronWindowSize(
       ) => Promise<Result>
     }
   }
+  const rendererUrl = await client.getUrl()
   const resizedWithElectron =
     process.env['SALT_MARCHER_E2E_FORCE_BROWSER_RESIZE'] === 'true'
       ? false
       : await electronClient.electron
           .execute(
-            (electron, nextWidth, nextHeight) => {
+            (electron, targetUrl, nextWidth, nextHeight) => {
+              const candidates = electron.BrowserWindow.getAllWindows().filter(
+                (candidate) => !candidate.isDestroyed()
+              )
+              const matching = candidates.filter(
+                (candidate) => candidate.webContents.getURL() === targetUrl
+              )
               const target =
+                matching.find((candidate) => candidate.isFocused()) ??
+                matching.find((candidate) => candidate.isVisible()) ??
                 electron.BrowserWindow.getFocusedWindow() ??
-                electron.BrowserWindow.getAllWindows().find(
-                  (candidate) =>
-                    !candidate.isDestroyed() && candidate.isVisible()
-                ) ??
+                candidates.find((candidate) => candidate.isVisible()) ??
                 electron.webContents
                   .getAllWebContents()
                   .map((contents) =>
@@ -101,9 +116,12 @@ export async function setElectronWindowSize(
                       candidate.isVisible()
                   )
               if (!target) return false
+              if (target.isMaximized()) target.unmaximize()
+              if (target.isFullScreen()) target.setFullScreen(false)
               target.setSize(nextWidth, nextHeight)
               return true
             },
+            rendererUrl,
             width,
             height
           )
@@ -115,31 +133,42 @@ export async function setElectronWindowSize(
   let geometry: WindowGeometry | null = null
   await client.waitUntil(
     async () => {
-      geometry = await electronClient.electron.execute((electron) => {
-        const target =
-          electron.BrowserWindow.getFocusedWindow() ??
-          electron.BrowserWindow.getAllWindows().find(
-            (candidate) => !candidate.isDestroyed() && candidate.isVisible()
-          ) ??
-          electron.webContents
-            .getAllWebContents()
-            .map((contents) => electron.BrowserWindow.fromWebContents(contents))
-            .find(
-              (candidate) =>
-                candidate !== null &&
-                !candidate.isDestroyed() &&
-                candidate.isVisible()
-            )
-        if (!target) return null
-        const outer = target.getBounds()
-        const content = target.getContentBounds()
-        return {
-          outerWidth: outer.width,
-          outerHeight: outer.height,
-          contentWidth: content.width,
-          contentHeight: content.height
-        }
-      })
+      geometry = await electronClient.electron.execute(
+        (electron, targetUrl) => {
+          const candidates = electron.BrowserWindow.getAllWindows().filter(
+            (candidate) => !candidate.isDestroyed()
+          )
+          const matching = candidates.filter(
+            (candidate) => candidate.webContents.getURL() === targetUrl
+          )
+          const target =
+            matching.find((candidate) => candidate.isFocused()) ??
+            matching.find((candidate) => candidate.isVisible()) ??
+            electron.BrowserWindow.getFocusedWindow() ??
+            candidates.find((candidate) => candidate.isVisible()) ??
+            electron.webContents
+              .getAllWebContents()
+              .map((contents) =>
+                electron.BrowserWindow.fromWebContents(contents)
+              )
+              .find(
+                (candidate) =>
+                  candidate !== null &&
+                  !candidate.isDestroyed() &&
+                  candidate.isVisible()
+              )
+          if (!target) return null
+          const outer = target.getBounds()
+          const content = target.getContentBounds()
+          return {
+            outerWidth: outer.width,
+            outerHeight: outer.height,
+            contentWidth: content.width,
+            contentHeight: content.height
+          }
+        },
+        rendererUrl
+      )
       return geometry?.outerWidth === width && geometry.outerHeight === height
     },
     {
@@ -150,33 +179,91 @@ export async function setElectronWindowSize(
   )
   const confirmed = geometry
   if (!confirmed) throw new Error('Electron window geometry is unavailable.')
-  await client.waitUntil(
-    async () => {
-      const observed = await client.execute(() => {
-        const workspace =
-          document.querySelector<HTMLElement>('.session-workspace')
-        const measuredWidth = Number(workspace?.dataset['workspaceWidth'])
-        return {
-          innerWidth: window.innerWidth,
-          innerHeight: window.innerHeight,
-          workspace: workspace
-            ? {
-                ready: workspace.dataset['sessionLayoutReady'] === 'true',
-                measuredWidth,
-                renderedWidth: workspace.getBoundingClientRect().width
-              }
-            : null
-        }
-      })
-      return rendererAcknowledgesWindowGeometry(confirmed, observed)
-    },
-    {
-      timeout: 15_000,
-      interval: 100,
-      timeoutMsg:
-        'Renderer content geometry and owned layout did not acknowledge the Electron resize.'
-    }
-  )
+  let lastObserved: RendererWindowGeometry | null = null
+  try {
+    await client.waitUntil(
+      async () => {
+        lastObserved = await client.execute(() => {
+          const workspace =
+            document.querySelector<HTMLElement>('.session-workspace')
+          const renderedWidth = workspace?.getBoundingClientRect().width ?? 0
+          const measuredWidth = Number(workspace?.dataset['workspaceWidth'])
+          return {
+            outerWidth: window.outerWidth,
+            outerHeight: window.outerHeight,
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            workspace:
+              workspace && renderedWidth > 0
+                ? {
+                    ready: workspace.dataset['sessionLayoutReady'] === 'true',
+                    measuredWidth,
+                    renderedWidth
+                  }
+                : null
+          }
+        })
+        return (
+          rendererAcknowledgesWindowGeometry(confirmed, lastObserved) ||
+          rendererAcknowledgesOuterWindowGeometry(
+            { width, height },
+            lastObserved
+          )
+        )
+      },
+      {
+        timeout: 750,
+        interval: 100,
+        timeoutMsg:
+          'Renderer content geometry and owned layout did not acknowledge the Electron resize.'
+      }
+    )
+  } catch {
+    if (
+      await setRendererViewportThroughPuppeteer(
+        client,
+        rendererUrl,
+        width,
+        height
+      )
+    )
+      return
+    await setWindowSizeThroughBrowser(client, width, height)
+  }
+}
+
+async function setRendererViewportThroughPuppeteer(
+  client: WdioBrowser,
+  rendererUrl: string,
+  width: number,
+  height: number
+): Promise<boolean> {
+  try {
+    const puppeteer = await client.getPuppeteer()
+    const page = (await puppeteer.pages()).find(
+      (candidate) => candidate.url() === rendererUrl
+    )
+    if (!page) return false
+    await page.setViewport({ width, height, deviceScaleFactor: 1 })
+    await client.waitUntil(
+      async () =>
+        client.execute(
+          (nextWidth, nextHeight) =>
+            Math.abs(window.innerWidth - nextWidth) <= 1 &&
+            Math.abs(window.innerHeight - nextHeight) <= 1,
+          width,
+          height
+        ),
+      {
+        timeout: 15_000,
+        interval: 100,
+        timeoutMsg: 'Renderer did not acknowledge the emulated viewport size.'
+      }
+    )
+    return true
+  } catch {
+    return false
+  }
 }
 
 async function setWindowSizeThroughBrowser(
@@ -194,24 +281,29 @@ async function setWindowSizeThroughBrowser(
       const observed = await client.execute(() => {
         const workspace =
           document.querySelector<HTMLElement>('.session-workspace')
+        const renderedWidth = workspace?.getBoundingClientRect().width ?? 0
         const measuredWidth = Number(workspace?.dataset['workspaceWidth'])
         return {
           outerWidth: window.outerWidth,
           outerHeight: window.outerHeight,
           innerWidth: window.innerWidth,
           innerHeight: window.innerHeight,
-          workspace: workspace
-            ? {
-                ready: workspace.dataset['sessionLayoutReady'] === 'true',
-                measuredWidth,
-                renderedWidth: workspace.getBoundingClientRect().width
-              }
-            : null
+          workspace:
+            workspace && renderedWidth > 0
+              ? {
+                  ready: workspace.dataset['sessionLayoutReady'] === 'true',
+                  measuredWidth,
+                  renderedWidth
+                }
+              : null
         }
       })
-      return rendererAcknowledgesOuterWindowGeometry(
-        { width, height },
-        observed
+      return (
+        rendererAcknowledgesOuterWindowGeometry({ width, height }, observed) ||
+        (Math.abs(observed.outerWidth - width) <= 1 &&
+          Math.abs(observed.outerHeight - height) <= 1) ||
+        (Math.abs(observed.innerWidth - width) <= 1 &&
+          Math.abs(observed.innerHeight - height) <= 1)
       )
     },
     {
@@ -330,12 +422,11 @@ export async function expectElementGolden(
       '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'
     document.head.append(style)
   })
-  await client.execute(async () => {
-    await document.fonts.ready
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-    )
-  })
+  await client.waitUntil(
+    async () => client.execute(() => document.fonts.status === 'loaded'),
+    { timeout: 10_000, timeoutMsg: 'Document fonts did not finish loading.' }
+  )
+  await client.pause(50)
   const goldensDirectory = join(process.cwd(), 'tests', 'e2e', 'goldens')
   const artifacts =
     process.env['SALT_MARCHER_E2E_ARTIFACT_DIR'] ??

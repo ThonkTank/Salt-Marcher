@@ -95,14 +95,12 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await (
     await campaignRulesCard.$('input[type="radio"]:checked')
   ).waitForExist({ timeout: 10_000 })
-  await client.execute(async () => {
+  await client.execute(() => {
     const body = document.querySelector<HTMLElement>('.settings-dialog-body')
     if (!body) throw new Error('Settings dialog body is missing.')
     body.scrollTop = 0
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-    })
   })
+  await client.pause(50)
   expect(
     await client.execute(() => {
       const dialog = document.querySelector('section.encounter-settings-dialog')
@@ -239,15 +237,23 @@ export async function runCampaignCreationScenario(): Promise<void> {
 
   await openCampaignScreen(client)
   await (await client.$('button[aria-label="Campaign B bearbeiten"]')).click()
+  const campaignEditDialog = await client.$('.campaign-management-popup')
   await (await client.$('#campaign-name')).setValue('Campaign B Archiv')
   await (await client.$('button=Speichern')).click()
+  await campaignEditDialog.waitForExist({ reverse: true, timeout: 10_000 })
   await (
     await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
   ).click()
   await (await client.$('button=In den Papierkorb')).click()
   await (await client.$('button=Papierkorb (1)')).click()
-  await (await client.$('button=Wiederherstellen')).click()
-  await (await client.$('button[aria-label="Schließen"]')).click()
+  const campaignTrashDialog = await client.$('.campaign-management-popup')
+  await (await campaignTrashDialog.$('button=Wiederherstellen')).click()
+  const closeCampaignTrash = await campaignTrashDialog.$(
+    'button[aria-label="Schließen"]'
+  )
+  await closeCampaignTrash.waitForEnabled({ timeout: 10_000 })
+  await closeCampaignTrash.click()
+  await campaignTrashDialog.waitForExist({ reverse: true, timeout: 5_000 })
   await (
     await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
   ).click()
@@ -1131,7 +1137,7 @@ async function expectScenarioGolden(
     expect(overflow?.outsideWorkspace).toBeLessThanOrEqual(1)
   }
   await setElectronWindowSize(client, 1280, 800)
-  await client.execute(async () => {
+  await client.execute(() => {
     if (document.activeElement instanceof HTMLElement)
       document.activeElement.blur()
     const panel = document.querySelector<HTMLElement>(
@@ -1153,10 +1159,24 @@ async function expectScenarioGolden(
     }
     resetScroll()
     panel?.scrollIntoView({ block: 'start', inline: 'nearest' })
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
+  await client.pause(50)
+  await client.execute(() => {
+    const panel = document.querySelector<HTMLElement>(
+      '.desktop-window[data-window-id="combat"]'
     )
-    resetScroll()
+    if (panel) {
+      panel.scrollTop = 0
+      panel.scrollLeft = 0
+    }
+    for (
+      let ancestor = panel?.parentElement ?? null;
+      ancestor;
+      ancestor = ancestor.parentElement
+    ) {
+      ancestor.scrollTop = 0
+      ancestor.scrollLeft = 0
+    }
   })
   await expectElementGolden(
     client,

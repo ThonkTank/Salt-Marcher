@@ -56,6 +56,9 @@ export function DesktopXpAction(props: {
         ...(props.windowId ? [draftConcern.window(props.windowId)] : [])
       ],
       isDirty: dirty,
+      settleBackgroundWrites: async () => {
+        await controller.settle()
+      },
       save: async () => {
         if (!(await controller.settle())) return false
         if (!dirty()) return true

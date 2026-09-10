@@ -5,9 +5,10 @@ Canonical roadmap:
 
 ## Status
 
-Implementation complete; delivery pending. The baseline is application SHA
-`9ac241b2c96934cd21a1079b35cf0fe60889622c` on
-`codex/action-scoped-draft-coordination`.
+Final complete verification and exact-SHA delivery pending. Application SHA
+`054f643685e2c710cf17690a16d8d027c444dd9f` completed its canonical handoff and
+was promoted to `main`; a subsequently exposed background-write transition race
+is being corrected and requires a new exact-SHA delivery.
 
 ## Phase 1 — Binding conflict matrix
 
@@ -227,7 +228,7 @@ global selection.
 
 ## Phase 6 — Documentation and delivery
 
-Status: planned.
+Status: in progress.
 
 Plan:
 
@@ -264,6 +265,161 @@ case. The unrelated local workspace geometry case remains classified as a
 browser-driver timeout because its synchronous browser script timed out before
 an assertion while the same case passed in the candidate run.
 
+Corrective round 4 plan: the first `main` attestation queried GitHub immediately
+after promotion and did not yet find the completed exact-SHA candidate run.
+Rerun only that evidence job after GitHub indexed the unchanged candidate; do
+not rebuild or change the delivered application.
+
+Corrective round 5 plan: the documentation-closure check reproduced the local
+workspace geometry timeout. Its browser script mixed the synchronous WebDriver
+execution API with an awaited `requestAnimationFrame`; measure immediately
+after DOM insertion instead, because `getBoundingClientRect()` performs the
+required layout flush. Keep every geometry and isolation assertion unchanged.
+The corrected Workspace suite passes all three cases locally in 1 minute 20
+seconds without a browser-driver timeout.
+
+Corrective round 6 plan: the resumed full check found the same renderer-script
+timeout pattern in the Campaign creation suite's remaining double-frame waits.
+Move all three remaining frame-settling waits out of synchronous WebDriver
+scripts: keep DOM changes synchronous, poll font readiness explicitly, then
+pause briefly through WebDriver before capture. Preserve the scroll, font and
+golden assertions.
+
+Corrective round 7 plan: after the frame waits were removed, Campaign creation
+reached its complete management flow and exposed two clicks that advanced before
+their campaign dialog had finished closing. Wait for the rename dialog to
+disappear, and after Restore wait for the Trash close action to become enabled
+and for its dialog to disappear. Keep every campaign lifecycle assertion.
+
+Corrective round 8 plan: the targeted rerun exposed a real transition race. A
+scene change made immediately after a requested Travel write could observe its
+draft as dirty, then show an empty resolution dialog after the write settled.
+Forward `settleBackgroundWrites` through the shared owner hook and provide it on
+command-owning Party, Character, XP, Combat, Group, Scene, Travel and Campaign
+drafts. Scene transitions can then wait for already-requested writes without
+replaying them or coupling unrelated drafts. Add direct unit coverage and make
+the Travel acceptance wait for the Abort receipt before its next action.
+
+Corrective round 9 plan: the restarted complete check exposed an intermittent
+mixed-theme accessibility sample in Campaign Combat. The shared two-theme
+helper used the persistent preference action for a reversible visual probe,
+creating unrelated queued installation writes. Switch the probe locally through
+`data-theme`, wait beyond the existing control transition before measuring, and
+restore it without persistence. Direct inspection also showed that the Group
+dialog snapped its background while a blanket control transition retained the
+prior theme's foreground or control surface. Remove the theme-dependent text,
+border and background animations from that blanket rule while preserving its
+state-dependent opacity transition; retain the 4.5:1 oracle.
+
+Corrective round 10 plan: the corrected Combat accessibility path reached its
+three-width golden checks and exposed that Electron could confirm a resize on a
+different visible window while the WebDriver-owned renderer retained its prior
+width. Prefer a focused or visible Electron window with the renderer URL and
+retain the existing browser-owned fallback when the renderer does not
+acknowledge the native resize.
+
+Corrective round 11 plan: the complete run reached the Hex location workflow
+after its minimum-size check and found that the test restored inner dimensions
+as outer dimensions, then tried to use a catalog action while the fixed
+location inspector still covered it. Preserve and restore the actual outer
+geometry, close the inspector before starting the next catalog action, and use
+the shared interactable-click helper. The isolated Hex workflow passes without
+weakening its placement, partial-save or accessibility assertions.
+
+Corrective round 12 plan: under Linux/Xvfb, Electron and the DOM can acknowledge
+the new outer bounds while ChromeDriver retains the previous CSS viewport. That
+allowed frame geometry to pass without entering responsive breakpoints. After
+the native resize acknowledgement expires, set the renderer-owned Puppeteer
+viewport directly and verify its dimensions before continuing. Hidden Session
+workspaces no longer participate in active-layout acknowledgement. Dialog,
+Campaign Combat and Hex workflows all pass with the corrected helper; the
+dialog oracle now observes its genuinely stacked minimum-width layout.
+
+Corrective round 13 plan: the complete functional run and its unchanged resume
+both reproduced the Travel suite's direct-token-drag failure before any changed
+draft transition. Synthetic untrusted pointer events no longer establish a
+reliable browser gesture once the renderer viewport is explicitly controlled.
+Keep the direct pointer contract, but drive down, an intermediate move, the
+destination move and up through the renderer-owned Puppeteer page so coordinates
+share the viewport used for the map geometry. Retain both persisted-location
+assertions and the complete travel-control journey.
+
+Corrective round 14 plan: repeated direct runs showed that the SVG location
+overlay is not a reliable source for Pixi token coordinates and that a
+renderer-owned Puppeteer mouse can block ChromeDriver diagnostics. Publish the
+authoritative Pixi camera beside the existing render counters, derive the token
+points from that camera, and use an element-relative WebDriver pointer action.
+After renderer restart, wait for the restored route facts before asserting that
+the Start action is ready. Two clean focused Travel runs pass the complete
+drag, persistence, restart and control journey without diagnostic hooks.
+
+Corrective round 15 plan: the complete Scene Desktop run found that the
+Characters window can already remain open after a scene switch. Calling its
+toolbar toggle again then closes the window before the roster assertion. Use
+the existing idempotent window-opening helper so the acceptance observes the
+new scene regardless of the prior window state. Keep the Vivian/Edrik content
+oracles and restart persistence unchanged.
+
+Corrective round 16 plan: a resumed functional run reused the already loaded
+Scene Desktop specification and reproduced two timing-sensitive waits from the
+prior source. Make scene selection wait for the desktop's matching scene ID
+before opening Characters, and allow the long-rest receipt up to the existing
+15-second interaction allowance before requiring its popup to close. Preserve
+all roster, rest, scene and persistence assertions. The changed specification
+requires a fresh check; evidence from the already loaded resumed process is not
+credited to it.
+
+Corrective round 17 plan: the freshly loaded Scene Desktop suite reached a
+paused journey while its command owner was still settling, so a direct Stop
+click was ignored and the subsequent abort assertion observed the unchanged
+paused state. Use the shared interactable-click helper for Stop so it waits for
+the command to become enabled and reacquires a replaced element. Keep the
+required `Reise abgebrochen.` receipt assertion unchanged.
+
+Corrective round 18 plan: two campaign performance samples exceeded their
+unchanged one-second p95 gate while a separate Codex task ran a historical QEMU
+qualification VM at high CPU and I/O load. Pause that task, stop its VM, remove
+only its regenerable qualification work and repeat the unchanged performance
+oracle on an idle host. Do not alter the production path or its threshold.
+
+Corrective round 19 plan: the final lint requires the asynchronous Stop locator
+to await its WebDriver element explicitly. Apply that syntax-only correction
+and repeat the full check; runtime behavior and acceptance assertions are
+unchanged.
+
+Corrective round 20 plan: the complete visual run exposed a stale renderer
+viewport during the Campaign Combat golden sequence. The resize helper accepted
+the requested native outer size while the renderer still displayed the prior
+1,024-pixel viewport. Require a plausible native-frame inset before accepting
+that fallback, and wait for the Combat window's restored-size control after
+requesting maximization. Keep the golden dimensions and pixels unchanged.
+
+Corrective round 21 plan: the fresh functional run showed that waiting the full
+15-second interaction allowance before each safe renderer-viewport fallback
+adds about one minute to Campaign Combat and exceeds its unchanged scenario
+limit. Give a native renderer resize 750 ms to settle, then use the existing
+verified Puppeteer fallback. Keep the resize acknowledgement, scenario limit
+and golden oracles unchanged.
+
+Validation: the latest local portable validation passes 87 architecture, 1,542
+unit and 389 integration tests, plus reference, catalog, schema and
+render-artifact checks. Linux-specific validation passes 63 tests. Reachable
+renderer growth is 441 bytes and Common Workspace growth is 89 bytes, with all
+absolute budgets green. The authoritative Pixi camera brings reachable
+renderer growth to 601 bytes, including 160 bytes in the Pixi leaf; Common
+Workspace growth remains 89 bytes. Focused Dialog, Campaign Combat and Hex workflows pass
+after the final viewport correction; two focused Travel runs pass after the
+authoritative-camera correction. After the competing VM stopped, the unchanged
+focused campaign qualification passes with p95 163.858 ms and maximum 176.02
+ms. Candidate run 34351088621 and handoff
+artifact SHA-256
+`69ad8433cd11d975be5f71a7eb38a9063d2a14b2784b17e21003f41748589b73`
+remain evidence for the previously promoted application SHA; the corrective
+candidate requires its own final complete check and exact-SHA handoff.
+
+Audit: pending the final complete check and exact-SHA delivery of corrective
+rounds 8 through 21.
+
 ## Separate resource-exhaustion investigation
 
 Status: complete with an explicit attribution boundary.
@@ -275,3 +431,16 @@ stronger explanation than the D-Bus service's much higher descriptor limit, but
 historical per-process usage was not recorded, so the consumer that exhausted
 the pool cannot be named. The full evidence and no-change decision are recorded
 in `desktop-resource-exhaustion-investigation.md`.
+
+During corrective verification, Btrfs also exhausted allocatable metadata while
+131 GiB of old generated qualification VM images occupied a previous Codex work
+directory. Removing only those regenerable images and aborted local E2E state
+restored 188 GiB of free space and reduced metadata use to about 30 percent;
+campaign data, backups, published outputs and the active installation were
+retained.
+
+A parallel update task later recreated 74 GiB of historical qualification VM
+work while the final performance gate was running, producing sustained I/O
+pressure and p95 outliers above one second. The task was paused, its VM stopped,
+and only that regenerable work directory removed. Root returned to 183 GiB free;
+the qualified outputs and project data remained intact.
