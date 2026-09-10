@@ -10024,3 +10024,21 @@ Check34473788814 für496bc1feb weiterhin live (campaign-workspaces), kein Fehler
 bis zur letzten Abfrage. Kein Main/Handoff/Release. Host56GiB frei, keine VM.
 Vorheriger Goalturn: Fortschritt durch erneute Prüfung von Speicher und
 Vorboot-Protokoll; Speicherursache bestätigt, Absturzmitwirkung weiter unbewiesen.
+
+Fixplan gepackte Feed-Fehleranzeige: bisherigen sechs negativen Feedfälle erhalten;
+optional --feed-actionable verlangt zusätzlich den verständlichen Hinweis mit
+nächster Aktion und schließt sichtbare rohe Zod-Diagnosen aus. Flag darf nur
+zusammen mit --feed-failures verwendet werden. Alte Artefaktprüfungen bleiben
+reproduzierbar. Nach statischen Checks neue unveränderte Vergleichsartefakte
+bauen und denselben vollständigen Update-/Weiterarbeits-/Restoreweg prüfen.
+
+Feed-Prüfer: erster statischer Lauf15528 scheiterte an falsch platzierter
+Notice-Prüfung und unnötigen Regex-Escapes. Vor Laufzeitverwendung innerhalb des
+Feedblocks korrigiert. Wiederholung45927 terminalExit0: Format, ESLint und beide
+Typechecks grün; diff-check grün. Plan-Audit: sechs Ablehnungsfälle bleiben
+unverändert sicherheitsgeprüft, neues Flag verlangt nächste Aktion und keine
+rohen Schemafelder. Roadmap-Audit: gepackter Nachweis neuer Fehlertexte offen;
+diese statische Erweiterung ersetzt ihn nicht.
+Remote Check34473788814 terminal success für exakt496bc1feb8f6a91073467904678b8e88a5e73e67.
+Jetzt neuer Kandidat mit Pausekorrektur und Feed-Prüfer, vollständige CI erneut;
+keine Main-Promotion und keine neue Host-GUI-Ausführung.

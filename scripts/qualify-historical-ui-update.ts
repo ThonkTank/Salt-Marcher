@@ -63,6 +63,7 @@ const { values } = parseArgs({
     wal: { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
     'feed-failures': { type: 'boolean', default: false },
+    'feed-actionable': { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
@@ -76,6 +77,8 @@ const { values } = parseArgs({
     home: { type: 'string' }
   }
 })
+if (values['feed-actionable'] && !values['feed-failures'])
+  throw new Error('Actionable feed checks require --feed-failures')
 if (values['recovery-crash'] && !values['activation-crash'])
   throw new Error(
     'Recovery interruption requires a preceding activation interruption'
@@ -427,9 +430,19 @@ try {
           )
       const notice = await waitFor(
         readNotice,
-        (text) => text.includes(expected),
+        (text) =>
+          text.includes(
+            values['feed-actionable'] &&
+              ['repository', 'architecture', 'manifest-format'].includes(mode)
+              ? 'Die Updateinformationen sind ungültig oder passen nicht zu dieser Linux-App.'
+              : expected
+          ),
         `Feed rejection ${mode}`
       )
+      if (values['feed-actionable']) {
+        assert(notice.includes('Bitte später erneut prüfen.'))
+        assert(!/invalid_value|formatVersion|"path"|"code"/.test(notice))
+      }
       assert(!(await ui.text()).includes('Installieren und neu starten'))
       assert.equal(
         await ui.inspect(
