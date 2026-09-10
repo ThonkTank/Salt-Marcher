@@ -1,3 +1,5 @@
+import { rejectHistoricalParallelStart } from './qualification/historical-parallel-start.js'
+import { acquireProfileAccess } from '../src/main/local-profile/profile-access.js'
 import {
   moveHistoricalInstallationToVolume,
   constrainHistoricalSpace
@@ -59,6 +61,7 @@ const { values } = parseArgs({
     'space-exhausted': { type: 'boolean', default: false },
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
+    'parallel-starts': { type: 'boolean', default: false },
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
@@ -312,6 +315,24 @@ try {
     await ui.closeApplication(home)
     ui.disconnect()
     ui = undefined
+  }
+  const parallelStarts: unknown[] = []
+  if (values['parallel-starts']) {
+    assert(
+      values['installed-launcher'],
+      'Parallel starter qualification requires installed-launcher'
+    )
+    const lock = acquireProfileAccess(join(root, 'profile'), 'installer', root)
+    const journal = new MaintenanceCoordinator(root).read()
+    try {
+      parallelStarts.push(
+        await rejectHistoricalParallelStart(home, 'starter', 'maintenance')
+      )
+      assert.deepEqual(new MaintenanceCoordinator(root).read(), journal)
+      assert.equal(currentProgram(root)?.deployment, originalDeployment)
+    } finally {
+      lock.release()
+    }
   }
   const initialJournal = new MaintenanceCoordinator(root).read()
   if (values['transport-failures']) {
@@ -702,6 +723,17 @@ try {
   const wal = values.wal ? await prepareHistoricalWal(root) : null
   const healthyRequestStart = requests.length
   ui = await launch()
+  if (values['parallel-starts']) {
+    await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    for (const mode of ['starter', 'alias', 'appimage'] as const) {
+      parallelStarts.push(
+        await rejectHistoricalParallelStart(home, mode, 'active')
+      )
+      assert.deepEqual(new MaintenanceCoordinator(root).read(), startingJournal)
+      assert.equal(currentProgram(root)?.deployment, originalDeployment)
+      await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
+    }
+  }
   await ui.click('Einstellungen', 'body', true)
   await ui.expectText(`Installierte Version: ${baseline.receipt.version}`)
   assert(
@@ -1035,6 +1067,7 @@ try {
         requests,
         launcherObserver,
         transportFailures,
+        parallelStarts,
         spaceFailure,
         wal,
         acceptedCrash,

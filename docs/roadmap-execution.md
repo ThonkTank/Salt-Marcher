@@ -9855,3 +9855,60 @@ kein Handoff oder Main-Promotion. Nächster Arbeitsblock: gepackte parallele Sta
 und restliche Feedablehnungen. Read-only Vorbereitung zeigt strenge assetUrl-
 Herkunftsprüfung und Manifest-Zod-Validierung; deren bisher ungeprüfte UI-Fehler
 und nächste Aktionen müssen ausdrücklich mit erfasst werden.
+
+### Phase 5 – Gepackter Parallelstart und kanonische Aliase
+
+Voriger Turn Fortschritt:485a5f3fe gepackte Platzmeldung nachgewiesen; Check34471542570
+auf383f6f4a3 weiterhin live, Arbeitsbaum sauber, keine VM. Konkreter Plan:
+optional parallel-starts im bestehenden UI-Qualifier. Nach Baseline-Setup unter
+exklusiver Installer-Profilsperre den originalen installierten Starter starten:
+Ablehnung vor Recovery/Datenzugriff. Danach bei tatsächlich geöffneter Baseline-UI
+zweiten Starter direkt und über Symlinkalias sowie das AppImage direkt starten.
+Jeder eigene Prozess muss innerhalb20s mit Exit1 und ProfileLocked-Meldung enden;
+Timeout/SIGKILL ist Testfehler. Vorher/Nachher identische kanonische Profil- und
+Legacy-Lockbytes sowie Journal/Programm prüfen. Alias nur im eigenen Testhome.
+Erste UI muss weiter ansprechbar sein; anschließend unveränderter vollständiger
+Update-/Weiterarbeits-/Restore-/Quellvergleich. 0.0.158/159 unverändert verwenden.
+Keine realen Nutzerprofile, keine Host-GUI. Statische Prüfungen, neue Payload,
+begrenzte VM und vollständiger Export vor Disklöschung. Cross-channel-Local
+bleibt ein separater Nachweis; dieser Block behauptet ihn nicht.
+
+58670 Format/Lint bestanden, Typprüfung Exit2: inferierter Environment-Typ erlaubt
+kein Entfernen von ELECTRON_RUN_AS_NODE. Korrekturplan: explizit NodeJS.ProcessEnv
+verwenden. Deadline beendet nur das eigene ChildProcess über child.kill; übrige
+Testprozesse bleiben beim bestehenden PID-Identitäts-/Home-basierten Cleanup.
+Keine rohe Prozessgruppen-ID für Timeout verwenden. Danach statische Checks erneut;
+noch keine Test-VM gestartet, kein Lauf als bestanden gewertet.
+
+1567 statische Prüfungen vollständig grün (29.82s,1.5GiB). Letzter Harness-Audit:
+Child-Kill allein garantiert kein close-Ereignis, wenn ein fehlerhaft gestarteter
+Nachkomme die Pipe hält. Korrekturplan: Deadline muss zusätzlich das Warte-Promise
+explizit ablehnen, damit vorhandenes äußeres Cleanup erreicht wird. Keine Änderung
+an geforderter normaler Exit1-Ablehnung; Timeout zählt niemals als Erfolg.
+
+68049 Format/Lint/beide Typechecks grün. Payload-parallel-1 mit Original0.0.158/159
+und neuem Driver eingefroren;49728 parallel-run-1 aktiv. Keine Quelländerung dabei.
+Read-only Vorbereitung nächster Feedfälle: Manifestvertrag erzwingt Repository,
+Format1,linux/x64,Commit/Schemata/Größe/Hash; assetUrl erlaubt ausschließlich exakte
+GitHub-Assetpfade. Qualifier leitet HTTPS GitHub/API zu eigenem Loopbackserver um,
+führt unveränderte Originalprüfungen aus. Zu ergänzen sind getrennte Ablehnungen
+für fremden Assetpfad, falsches Repository/Manifestformat/Architektur und
+Versionsabweichung, jeweils ohne AppImageanforderung/Download/Aktivierung sowie
+anschließend erfolgreicher Retry. Zod-/JSON-Fehler gelangen bisher als technischer
+Text zum Renderer; eine konkrete Bedienbarkeitsabweichung muss anhand tatsächlichem
+Fehlerreport vor Produktkorrektur belegt werden. Noch kein solcher Test gestartet.
+
+49728 parallel-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export CRC-geprüft,
+BerichtSHAae7a5e77ba724a155e711abd34863ea80ada1cfebc7209c3994258dd574adb5c.
+Vier geforderte Fälle mit normalem Exit1 ohne Signal bestätigt: Installer-Sperre
++Starter sowie geöffnete App+Starter,Alias,AppImage. Profil-/Legacy-Lockbytes
+unverändert; gespeicherte Besitzer installer bzw.application unabhängig geprüft.
+Journal/Programm unverändert, erste UI weiter ansprechbar. Vollständiger originaler
+0.0.158→0.0.159 UI-Updateweg grün: after==seeded==restored==unchanged;
+continued==protectedRead != seeded. Normale Hauptprozesse Exit0, Originalhashes
+bestätigt. Gastdisk nach vollständiger Prüfung entfernt.
+Plan-Audit Parallelstartblock4/4 bestanden. Roadmap-Audit Phase5 noch offen wegen
+restlicher Feedablehnungen, Erstinstallation/Übernahme und gepacktem Local-Kanal.
+Check34471542570 auf383f6f4a3 weiterhin live mit3 offenen Jobs, keiner fehlgeschlagen.
+Neue Driver-/Belegänderungen lokal committen, Push erst nach diesem laufenden
+Nachweis fortsetzen. Keine Behauptung über kanalübergreifende gepackte Local-Starts.
