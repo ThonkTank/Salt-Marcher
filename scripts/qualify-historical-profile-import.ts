@@ -219,7 +219,7 @@ function keys(window: string, args: string[]) {
   const result = spawnSync('xdotool', args, { encoding: 'utf8', timeout: 5000 })
   assert.equal(result.status, 0, result.stderr)
 }
-async function chooseSource() {
+async function chooseSource(snapshotName = 'native-before-open.json') {
   const title = 'Profilordner einer installierten SaltMarcher-App auswählen'
   const window = await nativeWindow(title)
   keys(window, ['key', '--clearmodifiers', 'ctrl+l'])
@@ -261,7 +261,7 @@ async function chooseSource() {
   const height = Number(/^HEIGHT=(\d+)$/m.exec(geometry.stdout)?.[1])
   assert(width >= 600 && height >= 400 && width <= 1920 && height <= 1080)
   writeFileSync(
-    join(home, 'native-before-open.json'),
+    join(home, snapshotName),
     spawnSync(
       'python3',
       [
@@ -341,6 +341,53 @@ try {
   await ui.closeApplication(home)
   ui = undefined
   const empty = snapshot(root, true)
+  const backupsBefore = readdirSync(join(root, 'backups')).sort()
+  const sourceLease = acquireProfileAccess(
+    sourceProfile,
+    'application',
+    sourceRoot
+  )
+  let lockedSource: unknown
+  try {
+    ui = await launch(join(root, 'start'))
+    await ui.expectText('Noch keine Kampagne vorhanden.')
+    await ui.click('Einstellungen', 'body', true)
+    await ui.click(
+      'Profil von SaltMarcher Local übernehmen',
+      '.release-settings'
+    )
+    await ui.click('Bestätigen', '[role="alertdialog"]')
+    await chooseSource('native-locked-before-open.json')
+    await ui.expectText('Das Profil wird gerade verwendet.')
+    const message = await ui.text()
+    assert(message.includes('Schließe die andere SaltMarcher-Instanz'))
+    assert(message.includes('versuche es erneut'))
+    assert(!message.includes('profile is locked'))
+    await ui.closeApplication(home)
+    ui = undefined
+    const sourceAfter = inventory(sourceProfile, false)
+    const targetAfter = snapshot(root, true)
+    const rejectedTransaction = coordinator.read()
+    const backupsAfter = readdirSync(join(root, 'backups')).sort()
+    assert.deepEqual(sourceAfter, sourceBefore)
+    assert.deepEqual(targetAfter, empty)
+    assert.deepEqual(rejectedTransaction, transaction)
+    assert.deepEqual(backupsAfter, backupsBefore)
+    assert.deepEqual(
+      new MaintenanceCoordinator(sourceRoot).read(),
+      sourceProof.second.transaction
+    )
+    lockedSource = {
+      message,
+      sourceAfter,
+      targetAfter,
+      transaction: rejectedTransaction,
+      backupsBefore,
+      backupsAfter
+    }
+  } finally {
+    sourceLease.release()
+  }
   ui = await launch(join(root, 'start'))
   await ui.expectText('Noch keine Kampagne vorhanden.')
   await ui.click('Einstellungen', 'body', true)
@@ -388,6 +435,7 @@ try {
         installed,
         desktop,
         sourceBefore,
+        lockedSource,
         empty,
         imported,
         after,

@@ -1,7 +1,20 @@
+import { ProfileLockedError } from '../../src/main/local-profile/local-profile-lock.js'
 import { describe, expect, it } from 'vitest'
 import { releaseOperationErrorText } from '../../src/main/release/operation-error.js'
 
 describe('release operation errors', () => {
+  it.each(['application', 'installer', 'unknown'] as const)(
+    'explains a profile held by %s with a next action',
+    (owner) => {
+      const message = releaseOperationErrorText(
+        new ProfileLockedError('/private/profile.lock', owner)
+      )
+      expect(message).toContain('Das Profil wird gerade verwendet.')
+      expect(message).toContain('Schließe die andere SaltMarcher-Instanz')
+      expect(message).toContain('versuche es erneut')
+      expect(message).not.toContain('/private')
+    }
+  )
   it.each(['ENOSPC', 'EDQUOT'])(
     'explains %s without exposing filesystem paths',
     (code) => {

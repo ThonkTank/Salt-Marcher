@@ -10817,3 +10817,17 @@ gehaltene Quellsperre im nativen Import und übrige Releasefehlernachweise fehle
 Python-Diagnosehelfer syntaktisch geprüft und im Gast tatsächlich ausgeführt.
 git diff --check grün. Nativer Importprüfer und Nachweise werden als separater
 Candidate-Commit gesichert; vollständige exakte Remote-CI/Handoff noch ausstehend.
+
+Fixrunde Quellsperre: Codeaudit zeigt ProfileLockedError wird durch releaseOperationErrorText
+unübersetzt ausgegeben. Plan: echte Sperrklasse auf verständliche Schließen-/
+Wiederholen-Aktion abbilden (application/installer/unknown), keine Textheuristik.
+Nativer Importprüfer hält gemeinsame application-Profilsperre der Quelle,
+bestätigt echte Dialoge, erwartet Ablehnung, vergleicht beide Profile, Journale
+und Backupbestand. Nach Freigabe vollständigen bisherigen Erfolgsweg wiederholen.
+Neue Produktbytes benötigen eigenes historisches Artefakt und Gastnachweis.
+Voriger Goalturn Fortschritt: nativer Erfolgsweg qualifiziert/committed61035df22.
+
+21257 Sperrfehlerprüfungen:8Tests, ESLint und beide Typechecks bestanden.
+Native Prüferergänzung vergleicht unveränderte Profile/Journale/Backupbestand
+nach gehaltenem application-Lease und wiederholt nach Freigabe den Erfolgsweg.
+Plan-Audit Fehlermeldung statisch bestanden; gepackter Nachweis noch offen.
