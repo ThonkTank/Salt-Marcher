@@ -43,11 +43,7 @@ if (
     }
     fs.renameSync = (source, target) => {
       original.rename(source, target)
-      if (
-        typeof source !== 'string' ||
-        typeof target !== 'string'
-      )
-        return
+      if (typeof source !== 'string' || typeof target !== 'string') return
       const history = join(root, 'maintenance-history')
       if (dirname(target) === history) {
         const journal = maintenanceJournalSchema.parse(

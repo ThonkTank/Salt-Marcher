@@ -67,7 +67,9 @@ if (values['recovery-crash'] && !values['activation-crash'])
     'Recovery interruption requires a preceding activation interruption'
   )
 if (values['installed-launcher'] && values['recovery-crash'])
-  throw new Error('The Main crash observer cannot interrupt the standalone launcher')
+  throw new Error(
+    'The Main crash observer cannot interrupt the standalone launcher'
+  )
 const baselineDirectory = resolve(z.string().parse(values.baseline))
 const targetDirectory = resolve(z.string().parse(values.target))
 const home = resolve(z.string().parse(values.home))
@@ -209,8 +211,16 @@ function spawnApplication(installationId?: string): void {
   delete env['ELECTRON_RUN_AS_NODE']
   if (values['installed-launcher']) validateMaintenanceLauncher(root)
   const child = spawn(
-    join(root, values['installed-launcher'] && !installationId ? 'start' : 'current/SaltMarcher.AppImage'),
-    ['--no-sandbox', ...(installationId ? ['--release-complete', installationId] : [])],
+    join(
+      root,
+      values['installed-launcher'] && !installationId
+        ? 'start'
+        : 'current/SaltMarcher.AppImage'
+    ),
+    [
+      '--no-sandbox',
+      ...(installationId ? ['--release-complete', installationId] : [])
+    ],
     { env, stdio: ['ignore', log, log] }
   )
   if (child.pid) trackIsolatedProcess(home, child.pid)
@@ -231,7 +241,9 @@ async function launch(): Promise<HistoricalUiDriver> {
 try {
   if (values['installed-launcher']) {
     const id = randomUUID()
-    cpSync(join(root, 'profile'), join(root, `staged-${id}`), { recursive: true })
+    cpSync(join(root, 'profile'), join(root, `staged-${id}`), {
+      recursive: true
+    })
     const coordinator = new MaintenanceCoordinator(root)
     coordinator.begin({
       id,
@@ -557,7 +569,10 @@ try {
   const startingJournal = new MaintenanceCoordinator(root).read()
   const commitCrashId = values['commit-crash'] ? randomUUID() : null
   const publicationArm = join(root, 'qualification-publication-crash.json')
-  const publicationBarrier = join(root, 'qualification-publication-boundary.json')
+  const publicationBarrier = join(
+    root,
+    'qualification-publication-boundary.json'
+  )
   if (commitCrashId) {
     rmSync(publicationBarrier, { force: true })
     writeFileSync(
@@ -635,7 +650,10 @@ try {
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     const recovered = new MaintenanceCoordinator(root).read()
     assert.deepEqual(recovered, boundary.journal)
-    assert.equal(currentProgram(root)?.deployment, boundary.journal.next.deployment)
+    assert.equal(
+      currentProgram(root)?.deployment,
+      boundary.journal.next.deployment
+    )
     commitCrash = { boundary, killedPids, recovered }
   }
   const updated = await waitFor(
@@ -889,7 +907,9 @@ try {
         formatVersion: 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
-        startPath: values['installed-launcher'] ? 'installed-launcher' : 'appimage',
+        startPath: values['installed-launcher']
+          ? 'installed-launcher'
+          : 'appimage',
         baseline: baseline.receipt,
         target: target.receipt,
         requests,

@@ -9229,3 +9229,31 @@ und unlesbarer Kapazitätswert jeweils Exit2 mit verständlicher Meldung. Kein
 Ausgabeordner und kein Podman-Aufruf. Keine VM gestartet. Host weiterhin73GiB frei.
 Plan-Audit Betriebsentlastung und Vorabgrenze bestanden. Gesamtroadmap weiterhin
 offen; komplette pnpm-check/CI-Freigabe wird dadurch nicht ersetzt.
+
+Wiederaufnahme nach Platzentlastung: sauberer Candidatebe4d624b6,73GiB frei,
+keine laufende VM. installed-pair-run-1 enthält nur host-boot-id und ist kein
+qualifizierter Lauf. Bestehendes unverändertes installed-pair-seed-1 in frischem
+installed-pair-run-2 gestartet (Session9015,Deadline600s). Neuer Speicherwächter
+hat den Start zugelassen. Nach vollständigem Exportvergleich guest.qcow2 entfernen.
+
+CI-Audit während Lauf9015: Check34354498665 für9449f8d56 fehlgeschlagen.
+Portable-Job102475876503 scheitert ausschließlich am vorangestellten
+prettier --check .: publication-interruption.ts und qualify-historical-ui-update.ts
+nicht formatiert. Aggregat folgerichtig fehlgeschlagen; keine Gesamtfreigabe.
+Korrekturplan nach terminalem Gastlauf: beide Dateien mit Repository-Prettier
+formatieren, Formatprüfung und Lint prüfen, neuen Candidate committen/pushen und
+exakte vollständige CI abwarten. Bestehende AppImagebytes bleiben unverändert.
+
+9015 terminalExit0 des Gastes, aber kein TestExit: cloud-init scheitert schon beim
+Kopieren aus installed-pair-seed-1.img mit Input/output error (AppImagebaseline,
+Ziel-AppImage und Manifest). Das vor/bei vollem Host erzeugte ISO ist unbrauchbar;
+kein Appstart und keine Abnahme. Korrektur: Payload-SHA256SUMS verifizieren, neues
+ISO mit neuer Kennung erzeugen und beide enthaltenen AppImages vor Gaststart per
+isoinfo auslesen und gegen Originalhash vergleichen. Alten Fehlstart-Datenträger
+nach gesichertem Diagnoseprotokoll entfernen; keinerlei Nutzerdaten darin.
+
+16242: beide AppImages direkt aus neuem installed-pair-seed-2.img gelesen;
+Dateigröße und SHA256 stimmen vollständig mit Originalartefakten überein. Alle
+Payload-SHA256SUMS grün. Alte Fehlstart-Guestdisk entfernt, Diagnose-Log erhalten.
+Prettier korrigiert beide gemeldeten Dateien; gezielter Formatcheck und Lint grün.
+Änderungen betreffen ausschließlich Formatierung, keine AppImagebytes verändert.
