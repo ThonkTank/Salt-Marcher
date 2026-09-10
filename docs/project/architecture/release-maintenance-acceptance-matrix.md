@@ -393,3 +393,15 @@ Transport hashes and semantic assertions were checked before deleting the
 disposable guest disk. This proves the successful native import path; rejection
 of a held source lock through this UI remains a separate pending case. It is
 not manual release acceptance, a canonical handoff, or Phase-5 completion.
+
+Native source-lock rejection and retry now also passed using test release
+`0.0.164` from `a6465210fe392c0bc4a30989e709d9c7d6cdf1bf`, artifact SHA-256
+`e758d500a12465a2bc0366eca7dcabe5a416f32e5db47c3bfdcd338151496a4d`. A genuine shared application lease was
+held across the real directory chooser and confirmation. The UI supplied a
+close/wait/retry action; source and target contents, journal and backup inventory
+remained unchanged. Releasing the lease allowed the complete successful import
+and restart comparison. Four normal application processes exited 0.
+Retained report: `outputs/qualification-evidence/profile-import-v2-run-11`,
+SHA-256 `6875da497b3bda16c9e218b902067be19a81d96a0f1524ef8f4cfd39b2fb72bc`. Export integrity and
+semantic assertions were rechecked before removing its disposable guest disk.
+This closes the held-source-lease case above, not the remaining Phase-5 matrix.

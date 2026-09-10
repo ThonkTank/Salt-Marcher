@@ -10831,3 +10831,22 @@ Voriger Goalturn Fortschritt: nativer Erfolgsweg qualifiziert/committed61035df22
 Native Prüferergänzung vergleicht unveränderte Profile/Journale/Backupbestand
 nach gehaltenem application-Lease und wiederholt nach Freigabe den Erfolgsweg.
 Plan-Audit Fehlermeldung statisch bestanden; gepackter Nachweis noch offen.
+
+77278 Build0.0.164 Exit0,2.7GiB/keinSwap; Originalquellea6465210fe392c0bc4a30989e709d9c7d6cdf1bf.
+Artefakt177044011Bytes SHAe758d500a12465a2bc0366eca7dcabe5a416f32e5db47c3bfdcd338151496a4d.
+Neuer Offlinegast Run10 mit gehaltenem Quelllease, Ablehnung und Retry.
+Keine Sourceänderungen während Lauf; kein Abnahmenachweis allein aus Build.
+
+28476 Run10 terminalVMExit0/TestExit1: neues AppImage im Payload nicht ausführbar
+wegen copyfile statt metadataerhaltender Kopie. Kein Produktlauf/kein Importpass.
+Fehlerexport außerhalb VM gesichert. Neues Payload11 erhält Originalmodus;
+unveränderte Bytes/Prüfer/Originalquellen erneut im Offlinegast geprüft.
+
+49875 Run11 terminalVMExit0/TestExit0. Exporthashes/Größen und semantische
+Invarianten nachgeprüft: Quellsperre über echten nativen Import verständlich
+abgewiesen; Quelle/Ziel/Journal/Backupbestand unverändert. Nach Leasefreigabe
+vollständiger Import und zweiter Start mit Seed-gleichem Inhalt; vier Prozesse
+Exit0, vier native Dialogaktionen. ReportSHA6875da497b3bda16c9e218b902067be19a81d96a0f1524ef8f4cfd39b2fb72bc
+unter outputs/qualification-evidence/profile-import-v2-run-11. Nur Gastdisk11
+nach erfolgreichem Audit entfernt. Plan-Audit Sperrablehnung und Wiederholung
+bestanden. Roadmap-Audit Phase5 weiterhin offen; andere Releasefaults fehlen.
