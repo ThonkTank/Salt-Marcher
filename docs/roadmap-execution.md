@@ -10100,3 +10100,19 @@ VM-Ausführung bis Klärung dieser konkurrierenden Änderung zurückgestellt.
 Check34475495340 für983feb554 weiterhin live, bislang keine fehlgeschlagenen Jobs.
 Vorheriger Goalturn Fortschritt: Baselinebau, belegte Cachebereinigung und
 Builderkorrektur; aktueller Zielbau jetzt nachgewiesen erfolgreich.
+
+Beweisverfügbarkeit nach externer Verzeichnisänderung: rein lesende Inventur
+roadmap-phase5-surviving-evidence-inventory.json findet18 JSON-Evidenzdateien,
+darunter15 historische Berichte außerhalb qualification-vm. Zwei erhaltene
+vollständige UI-Berichte erneut semantisch geprüft: seeded==after==restored==
+unchanged, continued==protectedRead!=seeded, alle Readback-Exitcodes0/ResponseOK,
+beide Wartungsjournale committed. Berichthashes:
+restore-v7 492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90;
+transport-failures-v1 dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a.
+Dies ersetzt keine neueren Starter-/Unterbrechungs-/WAL-/Kapazitäts-/Feednachweise.
+Fixplan Dokumentation: Abnahmematrix erhält datierten Verfügbarkeitshinweis vor
+den historischen Klassifizierungen; ursprüngliche Befunde nicht überschreiben.
+Plan-Audit Wiederauffinden teilweise erfolgreich, keine Kopie neuerer VM-Berichte
+am untersuchten work-Pfad. Roadmap-Audit Phase5 weiter offen; Wiederbeschaffung
+oder Wiederholung fehlender Nachweise vor Abschluss erforderlich. Vorheriger
+Goalturn Fortschritt durch erfolgreichen Zielbau und belegte Builderbereinigung.

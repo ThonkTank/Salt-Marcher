@@ -5,6 +5,25 @@ Scope: [canonical roadmap](release-maintenance-roadmap.md) and
 version/tag checked free on 2026-09-08, recheck before publication.
 Status below is evidence classification, not a declaration of passing execution.
 
+## Evidence availability — 2026-09-10
+
+The local `work/qualification-vm` directory disappeared during an independently
+running artifact build. Its VM reports, seeds and base image are currently
+unavailable; the cause is awaiting clarification. Historical successful-run
+entries below remain records of earlier observations, **not currently revalidated
+proof for phase completion** where their only report was in that directory.
+
+Fifteen historical reports survive elsewhere in `work`. The complete state,
+restore and protected-later-work invariants were rechecked in the retained
+`historical-ui-update-restore-v7` report (SHA256
+`492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90`)
+and `historical-ui-transport-failures-v1` report (SHA256
+`dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a`).
+These older runs do not replace the missing newer installed-starter, interruption,
+WAL, capacity, parallel-start and invalid-feed evidence. Recover or rerun those
+proofs before closing Phase 5. New AppImages 0.0.160/161 are built and hash-verified,
+but have not passed their planned runtime qualification.
+
 | ID  | Required behavior                             | Existing evidence / gap                                                                                  | Owning phase and required proof                                                                     |
 | --- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | M01 | Preserve baseline 39/34                       | release-baseline.test.ts; fixture already at current schema                                              | 1/5: run baseline, extend exact settings/content assertions                                         |
