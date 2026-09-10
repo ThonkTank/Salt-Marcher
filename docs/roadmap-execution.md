@@ -9438,3 +9438,52 @@ ergänzt Phase5, ersetzt weder Local-Runtime, Helfer-Abbrüche, weitere Fehlerf�
 noch den ungeklärten UI-Timeout. Check34460289741 für2d2f2f2fd läuft noch.
 Neue Tests und Nachweise als eigenen Candidate-SHA pushen; dessen vollständige
 CI ist zusätzlich erforderlich. Keine Main-Promotion oder Phasenfreigabe.
+
+### Phase 5 – Eigenständiger Starthelfer während Recovery
+
+Voriger Turn Fortschritt:ee8c1024e enthält18 bestandene echte Local-Prozessfälle.
+Nächster Plan: unveränderte0.0.156/157-AppImages verwenden. Den vorhandenen
+fsync-Beobachter separat als CJS-Testpreload bündeln; nur beim expliziten
+Recovery-Start des installierten Starters über NODE_OPTIONS laden und auf
+ELECTRON_RUN_AS_NODE=1 beschränken. Originalhelper und AppImagebytes nicht ändern.
+Marker ergänzt Prozessrolle, Driver muss launcher-Rolle und eigene PID prüfen.
+Ein Fall program-linked→failed-data-preserved zunächst als Pilot; alte und
+fehlgeschlagene Zielprofile vollständig lesen, normalen Update/Restoreweg prüfen.
+Observer-Datei mit SHA im Bericht identifizieren. Format/Lint/Typprüfung vor VM,
+frisches Payload,40GiB-Grenze und anschließende Exportprüfung/Datenträgerbereinigung.
+Keine behauptete vollständige Helfer-Matrix aus einem einzelnen Pilotfall.
+
+48584 terminalExit0 des Gastes, TestExit1: erneuter Timeout Sicherungszeile.
+Fehlerexport vollständig geprüft:ui-failure SHA b8ff670c735bb99e08c840b5bf99b0c2a26bf045786c76717ed71a54f94da6eb.
+DOM zeigt Kampagnenübersicht und Einstellungen-Trigger, keinen geöffneten Dialog.
+Teilbericht activation-crash SHA229103cc3c316af67b9a19c4468ad3d5d134dda93c655392c7a4d360cd75e83a
+belegt helper-Rolle launcher/PID1323, Abbruch failed-data-preserved nach
+rollback-preserving und erfolgreiche alte/fehlgeschlagene Readbacks. Kein
+vollständiger UI-Erfolg. Gastdisk bleibt für Diagnose erhalten.
+Korrekturplan Driver-Actionability: Klick erst bei sichtbarem fokussiertem Dokument,
+unverändertem Mittelpunkt über zwei Beobachtungen und tatsächlichem Treffer auf
+den Button (keine Überdeckung/inert). DOM-Listener beobachtet genau einen echten
+vertrauenswürdigen Maus-Klick; keine programmatic clicks oder blinden Wiederholungen.
+Fehlende Zustellung sofort ausdrücklich melden. Bestehende Sicherungsauswahl und
+Produktcode unverändert. Format/Lint/Typecheck, frisches Driverpayload und gleicher
+Helfer-Pilot erneut; bei weiter fehlendem Dialog trotz Klick separate Produktdiagnose.
+
+57880 launcher-recovery-run-2 terminalExit0/TestExit0: vollständiger gzip-Export
+und BerichtSHA4a65302d946a38bd887d271fd65a4d084acc1dcf1e490c4b78092c385daf9cfb
+validiert. Markerrolle launcher, eigene getötetePID, failed-data-preserved in
+derselben Update-Transaktion. Altes und fehlgeschlagenes Zielprofil == Seed;
+Update/Restore/Quelle == Seed, continued == vorgeschaltete Sicherung != Seed.
+Observer-SHA mit Payload verglichen, AppImages0.0.156/157 unverändert. Erfolgsdisk
+und vorherige Pilotdisk nach gesichertem vollständigem DOM/Teilbericht entfernt.
+Plan-Audit: ein eigenständiger Helfer-Recoverypunkt plus kompletter UI-Ablauf
+bestanden. Klicks jetzt actionability-geprüft und trusted beobachtet, keine
+programmatischen Ersatzklicks. Ursprüngliche Ursache fehlender Dialogöffnung
+nicht abschließend bewiesen; nicht als Produktfehlerbehebung deklarieren.
+Roadmap-Audit: weitere Helfergrenzen, gepackter Local-Lauf und übrige Fehlermatrix
+bleiben offen. Vorherige statischeChecks51710/44217 vollständig grün.
+
+Abschluss dieser Korrekturrunde: Formatcheck und diff-check grün. Check34461096738
+füree8c1024e bleibt nach erneuter Prüfung im Job campaign-workspaces aktiv; keine
+vollständige grüne CI behauptet. Neue Driver-/Beobachteränderungen mit Pilotbeleg
+auf Candidate pushen; vollständige CI für den neuen SHA erforderlich. Abnahme-
+Matrix nennt ausschließlich den tatsächlich geprüften Helferpunkt.

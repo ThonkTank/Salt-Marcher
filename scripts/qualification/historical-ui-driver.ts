@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { HistoricalProcessTracker } from './historical-process-tracker.js'
 import { assertProfileAccessOwner } from '../../src/main/local-profile/profile-access.js'
 import assert from 'node:assert/strict'
@@ -184,6 +185,9 @@ export class HistoricalUiDriver {
     return result.result.value
   }
   async click(label: string, scope = 'body', prefix = false): Promise<void> {
+    const clickKey =
+      '__saltQualificationClick_' + randomUUID().replaceAll('-', '')
+    let previousBox = ''
     const box = await waitFor(
       async () => {
         return z
@@ -191,12 +195,17 @@ export class HistoricalUiDriver {
           .nullable()
           .parse(
             await this.inspect(
-              `(() => { const nodes = [...(document.querySelector(${JSON.stringify(scope)})?.querySelectorAll('button') ?? [])]; const matches = nodes.filter(b => !b.disabled && (${prefix ? 'b.textContent.trim().startsWith' : 'b.textContent.trim() ==='}${prefix ? '(' : ' '}${JSON.stringify(label)}${prefix ? ')' : ''}) && b.getBoundingClientRect().width); if(matches.length !== 1) return null; const r = matches[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`
+              `(() => { if(document.visibilityState !== 'visible' || !document.hasFocus()) return null; const nodes = [...(document.querySelector(${JSON.stringify(scope)})?.querySelectorAll('button') ?? [])]; const matches = nodes.filter(b => !b.disabled && (${prefix ? 'b.textContent.trim().startsWith' : 'b.textContent.trim() ==='}${prefix ? '(' : ' '}${JSON.stringify(label)}${prefix ? ')' : ''}) && b.getBoundingClientRect().width); if(matches.length !== 1) return null; const button = matches[0]; const r = button.getBoundingClientRect(); const x=r.x+r.width/2, y=r.y+r.height/2; const hit=document.elementFromPoint(x,y); if(!hit || !button.contains(hit) || button.closest('[inert]')) return null; globalThis[${JSON.stringify(clickKey)}] = false; button.addEventListener('click', event => { globalThis[${JSON.stringify(clickKey)}] = event.isTrusted; }, {once:true}); return {x,y}; })()`
             )
           )
       },
-      (value) => value !== null,
-      `unique enabled button ${scope}: ${label}`
+      (value) => {
+        const key = JSON.stringify(value)
+        const stable = value !== null && key === previousBox
+        previousBox = key
+        return stable
+      },
+      `stable unobstructed enabled button ${scope}: ${label}`
     )
     assert(box)
     await this.command('Input.dispatchMouseEvent', {
@@ -211,6 +220,14 @@ export class HistoricalUiDriver {
       button: 'left',
       clickCount: 1
     })
+    const clicked = await this.inspect(
+      `(() => { const value = globalThis[${JSON.stringify(clickKey)}]; delete globalThis[${JSON.stringify(clickKey)}]; return value; })()`
+    )
+    assert.equal(
+      clicked,
+      true,
+      `Trusted mouse click was not received by ${scope}: ${label}`
+    )
   }
   async fill(selector: string, value: string): Promise<void> {
     const box = await waitFor(

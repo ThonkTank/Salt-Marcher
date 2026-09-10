@@ -8,6 +8,8 @@ import { maintenanceJournalSchema } from '../../../src/shared/contracts/maintena
 const home = process.env['XDG_DATA_HOME']
 if (
   process.env['SALT_MARCHER_HISTORICAL_UI'] === 'true' &&
+  (process.env['SALT_MARCHER_HISTORICAL_LAUNCHER_ONLY'] !== 'true' ||
+    process.env['ELECTRON_RUN_AS_NODE'] === '1') &&
   home &&
   isAbsolute(home)
 ) {
@@ -109,6 +111,8 @@ if (
           id: arm.id,
           point: event.point,
           pid: process.pid,
+          processRole:
+            process.env['ELECTRON_RUN_AS_NODE'] === '1' ? 'launcher' : 'main',
           journal
         }),
         { flag: 'wx' }

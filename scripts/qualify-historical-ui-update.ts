@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { Transform } from 'node:stream'
 import { assertHistoricalTestIsolation } from './qualification/historical-test-isolation.js'
 import { existsSync, readFileSync, rmSync, readdirSync } from 'node:fs'
@@ -53,6 +53,7 @@ const { values } = parseArgs({
     'transport-failures': { type: 'boolean', default: false },
     'accepted-crash': { type: 'boolean', default: false },
     'commit-crash': { type: 'boolean', default: false },
+    'launcher-recovery-observer': { type: 'string' },
     'installed-launcher': { type: 'boolean', default: false },
     'maintenance-crash': { type: 'boolean', default: false },
     'activation-crash': { type: 'string' },
@@ -66,10 +67,29 @@ if (values['recovery-crash'] && !values['activation-crash'])
   throw new Error(
     'Recovery interruption requires a preceding activation interruption'
   )
-if (values['installed-launcher'] && values['recovery-crash'])
+if (
+  values['installed-launcher'] &&
+  values['recovery-crash'] &&
+  !values['launcher-recovery-observer']
+)
   throw new Error(
     'The Main crash observer cannot interrupt the standalone launcher'
   )
+if (
+  values['launcher-recovery-observer'] &&
+  (!values['installed-launcher'] || !values['recovery-crash'])
+)
+  throw new Error(
+    'Launcher observer requires installed-launcher recovery interruption'
+  )
+const launcherObserver = values['launcher-recovery-observer']
+  ? {
+      path: resolve(values['launcher-recovery-observer']),
+      sha256: createHash('sha256')
+        .update(readFileSync(resolve(values['launcher-recovery-observer'])))
+        .digest('hex')
+    }
+  : null
 const baselineDirectory = resolve(z.string().parse(values.baseline))
 const targetDirectory = resolve(z.string().parse(values.target))
 const home = resolve(z.string().parse(values.home))
@@ -196,7 +216,10 @@ let maintenanceCrash: unknown = null
 let activationCrash: unknown = null
 let commitCrash: unknown = null
 let acceptedCrash: { killedPids: number[]; readback: unknown } | null = null
-function spawnApplication(installationId?: string): void {
+function spawnApplication(
+  installationId?: string,
+  observeRecovery = false
+): void {
   const temporary = join(home, `ui-launch-${exits.length}`)
   mkdirSync(temporary)
   const log = openSync(join(home, `ui-launch-${exits.length}.log`), 'wx')
@@ -209,6 +232,16 @@ function spawnApplication(installationId?: string): void {
     SALT_MARCHER_HISTORICAL_UI_FEED: `http://127.0.0.1:${address && typeof address !== 'string' ? address.port : 0}`
   }
   delete env['ELECTRON_RUN_AS_NODE']
+  if (observeRecovery && launcherObserver) {
+    assert.equal(
+      createHash('sha256')
+        .update(readFileSync(launcherObserver.path))
+        .digest('hex'),
+      launcherObserver.sha256
+    )
+    env['NODE_OPTIONS'] = '--require ' + JSON.stringify(launcherObserver.path)
+    env['SALT_MARCHER_HISTORICAL_LAUNCHER_ONLY'] = 'true'
+  }
   if (values['installed-launcher']) validateMaintenanceLauncher(root)
   const child = spawn(
     join(
@@ -328,6 +361,7 @@ try {
           ? z
               .object({
                 id: z.literal(id),
+                processRole: z.enum(['launcher', 'main']).optional(),
                 pid: z.number().int().positive(),
                 database: z
                   .string()
@@ -437,6 +471,7 @@ try {
               .object({
                 id: z.literal(id),
                 point: z.literal(values['activation-crash']!),
+                processRole: z.enum(['launcher', 'main']).optional(),
                 pid: z.number().int().positive(),
                 journal: maintenanceJournalSchema
               })
@@ -474,7 +509,7 @@ try {
         { flag: 'wx' }
       )
       // Recovery can stop before a renderer exists: do not start a CDP connection.
-      spawnApplication()
+      spawnApplication(undefined, true)
       const recoveryBoundary = await waitFor(
         () =>
           existsSync(barrier)
@@ -482,6 +517,7 @@ try {
                 .object({
                   id: z.literal(recoveryId),
                   point: z.literal(values['recovery-crash']!),
+                  processRole: z.enum(['launcher', 'main']).optional(),
                   pid: z.number().int().positive(),
                   journal: maintenanceJournalSchema
                 })
@@ -492,6 +528,8 @@ try {
         'durable recovery boundary'
       )
       assert(recoveryBoundary)
+      if (launcherObserver)
+        assert.equal(recoveryBoundary.processRole, 'launcher')
       assert.equal(recoveryBoundary.journal.id, boundary.journal.id)
       const recoveryPids = isolatedProcesses(home)
       assert(recoveryPids.includes(recoveryBoundary.pid))
@@ -617,6 +655,7 @@ try {
               .object({
                 id: z.literal(commitCrashId),
                 point: z.literal('journal:committed'),
+                processRole: z.enum(['launcher', 'main']).optional(),
                 pid: z.number().int().positive(),
                 journal: maintenanceJournalSchema
               })
@@ -913,6 +952,7 @@ try {
         baseline: baseline.receipt,
         target: target.receipt,
         requests,
+        launcherObserver,
         transportFailures,
         acceptedCrash,
         commitCrash,
