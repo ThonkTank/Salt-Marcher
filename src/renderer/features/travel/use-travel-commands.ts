@@ -176,6 +176,9 @@ export function useTravelCommands<P, S, M, E>(options: {
     await requestCommand(
       {
         kind,
+        ...(kind === 'pause' && descriptor.progressIndex !== undefined
+          ? { expectedProgressIndex: descriptor.progressIndex }
+          : {}),
         sceneId: current.scope!.sceneId,
         expectedRevision: descriptor.revision,
         expectedSceneRevision: sceneRevision()

@@ -39,13 +39,25 @@ function assetUrl(raw: string, version: string, name: string): string {
   const expected = `https://github.com/${releaseRepository}/releases/download/v${version}/${name}`
   if (raw !== expected)
     throw new Error(
-      'Update-Datei stammt nicht aus dem freigegebenen Repository.'
+      'Update-Datei stammt nicht aus dem freigegebenen Repository. Bitte später erneut prüfen.'
     )
   return expected
 }
 export async function checkRelease(
   current: string
 ): Promise<AvailableRelease | null> {
+  try {
+    return await findRelease(current)
+  } catch (cause) {
+    if (cause instanceof z.ZodError || cause instanceof SyntaxError)
+      throw new Error(
+        'Die Updateinformationen sind ungültig oder passen nicht zu dieser Linux-App. Bitte später erneut prüfen.',
+        { cause }
+      )
+    throw cause
+  }
+}
+async function findRelease(current: string): Promise<AvailableRelease | null> {
   const response = await fetch(
     `https://api.github.com/repos/${releaseRepository}/releases/latest`,
     {
@@ -73,16 +85,24 @@ export async function checkRelease(
     { signal: AbortSignal.timeout(20_000) }
   )
   if (!metadata.ok)
-    throw new Error('Release-Manifest konnte nicht geladen werden.')
+    throw new Error(
+      'Release-Manifest konnte nicht geladen werden. Bitte später erneut prüfen.'
+    )
   const text = await metadata.text()
-  if (text.length > 32_768) throw new Error('Release-Manifest ist zu groß.')
+  if (text.length > 32_768)
+    throw new Error('Release-Manifest ist zu groß. Bitte später erneut prüfen.')
   const manifest = releaseManifestSchema.parse(JSON.parse(text))
   if (manifest.version !== version)
-    throw new Error('Release-Version stimmt nicht überein.')
+    throw new Error(
+      'Release-Version stimmt nicht überein. Bitte später erneut prüfen.'
+    )
   const binary = release.assets.find(
     (entry) => entry.name === manifest.artifact.name
   )
-  if (!binary) throw new Error('AppImage fehlt.')
+  if (!binary)
+    throw new Error(
+      'Die Programmdatei fehlt im Release. Bitte später erneut prüfen.'
+    )
   return {
     manifest,
     url: assetUrl(binary.browser_download_url, version, binary.name),

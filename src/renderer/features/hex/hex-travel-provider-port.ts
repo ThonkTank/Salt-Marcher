@@ -201,6 +201,10 @@ export function createHexTravelProviderPort(
                 kind: command.kind,
                 input: {
                   sceneId: command.sceneId,
+                  ...(command.kind === 'pause' &&
+                  command.expectedProgressIndex !== undefined
+                    ? { expectedProgressIndex: command.expectedProgressIndex }
+                    : {}),
                   expectedRevision: command.expectedRevision,
                   expectedSceneRevision: command.expectedSceneRevision
                 }
@@ -236,6 +240,7 @@ export function createHexTravelProviderPort(
     describe(state) {
       return {
         revision: state.travel.revision,
+        progressIndex: state.travel.currentIndex,
         routePlan: state.routePlan,
         status: state.travel.status,
         mapOptions: state.catalog.maps.map((map) => ({

@@ -62,7 +62,13 @@ export async function prepareTravelCommand<P, S, M, E>(options: {
     }
     case 'pause':
       if (descriptor.status === 'travelling')
-        prepared = { kind: 'pause', ...journey }
+        prepared = {
+          kind: 'pause',
+          ...journey,
+          ...(descriptor.progressIndex === undefined
+            ? {}
+            : { expectedProgressIndex: descriptor.progressIndex })
+        }
       break
     case 'resume':
       if (['paused', 'blocked'].includes(descriptor.status))
