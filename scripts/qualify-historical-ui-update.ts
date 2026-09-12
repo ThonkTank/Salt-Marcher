@@ -1,3 +1,8 @@
+import { createNewerFormatBackup } from './qualification/historical-newer-backup.js'
+import {
+  inventory,
+  directoryInventory
+} from '../src/shared/maintenance/files.js'
 import { withPartyQuickFieldDefault } from './qualification/historical-settings-expectation.js'
 import { rejectHistoricalParallelStart } from './qualification/historical-parallel-start.js'
 import { acquireProfileAccess } from '../src/main/local-profile/profile-access.js'
@@ -62,6 +67,7 @@ const { values } = parseArgs({
     'space-exhausted': { type: 'boolean', default: false },
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
+    'newer-backup': { type: 'boolean', default: false },
     'target-party-quick-fields-default': { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
     'feed-failures': { type: 'boolean', default: false },
@@ -271,6 +277,7 @@ const exits: Array<
   Promise<{ pid: number; code: number | null; signal: NodeJS.Signals | null }>
 > = []
 const expectedKills = new Set<number>()
+let newerBackup: unknown = null
 let maintenanceCrash: unknown = null
 let activationCrash: unknown = null
 let commitCrash: unknown = null
@@ -1055,24 +1062,96 @@ try {
     )
     acceptedCrash = { killedPids, readback }
   }
+  if (values['newer-backup']) {
+    assert(updated.backup)
+    const fixture = createNewerFormatBackup(
+      join(root, 'backups', updated.backup),
+      target.receipt.source.schemaVersions.installation
+    )
+    const backupNames = () =>
+      readdirSync(join(root, 'backups'))
+        .filter((id) => z.uuid().safeParse(id).success)
+        .sort()
+    const before = backupNames().map((id) => ({
+      id,
+      files: inventory(join(root, 'backups', id)),
+      directories: directoryInventory(join(root, 'backups', id))
+    }))
+    const program = currentProgram(root)
+    const journal = new MaintenanceCoordinator(root).read()
+    ui = await launch()
+    await ui.click('Einstellungen', 'body', true)
+    const scope = await visibleBackupScope(ui, fixture.manifest)
+    await ui.click('Wiederherstellen', scope)
+    await ui.click('Bestätigen', '[role="alertdialog"]')
+    await ui.expectText('Aktualisiere SaltMarcher')
+    const notice = await ui.text()
+    assert(notice.includes('neueres Datenformat'))
+    assert(!notice.includes('Incompatible persisted data'))
+    assert(!notice.includes(fixture.directory))
+    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    assert.deepEqual(currentProgram(root), program)
+    assert.deepEqual(new MaintenanceCoordinator(root).read(), journal)
+    await ui.closeApplication(home)
+    ui = undefined
+    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      continued.result.response.result
+    )
+    for (const saved of before) {
+      assert.deepEqual(inventory(join(root, 'backups', saved.id)), saved.files)
+      assert.deepEqual(
+        directoryInventory(join(root, 'backups', saved.id)),
+        saved.directories
+      )
+    }
+    const added = backupNames().filter(
+      (id) => !before.some((saved) => saved.id === id)
+    )
+    assert.equal(added.length, 1)
+    const protection = readVerifiedBackup(join(root, 'backups', added[0]!))
+    assert.equal(protection.manifest.formatVersion, 2)
+    const protectedHome = `${home}-newer-backup-protected`
+    mkdirSync(join(protectedHome, 'salt-marcher'), { recursive: true })
+    cpSync(protection.data, join(protectedHome, 'salt-marcher/profile'), {
+      recursive: true,
+      errorOnExist: true,
+      force: false
+    })
+    const protectedReadback = await runHistoricalArtifact(
+      targetDirectory,
+      protectedHome,
+      'read'
+    )
+    assert(protectedReadback.result.response.ok)
+    assert.deepEqual(
+      protectedReadback.result.response.result,
+      continued.result.response.result
+    )
+    assert.equal(
+      readVerifiedBackup(join(root, 'backups', added[0]!)).manifestSha256,
+      protection.manifestSha256
+    )
+    newerBackup = {
+      fixture,
+      before,
+      program,
+      journal,
+      notice,
+      readback,
+      protection,
+      protectedReadback
+    }
+  }
   ui = await launch()
   await ui.click('Einstellungen', 'body', true)
   assert(updated.backup)
   const requestedBackup = readVerifiedBackup(
     join(root, 'backups', updated.backup)
   )
-  const backupScope = await waitFor(
-    () =>
-      ui!.inspect(`(() => {
-      const rows = [...document.querySelectorAll('.release-settings > ul > li')];
-      const date = new Date(${JSON.stringify(requestedBackup.manifest.createdAt)}).toLocaleString('de-DE');
-      const version = ${JSON.stringify('Version ' + requestedBackup.manifest.version)};
-      const matches = rows.flatMap((row, index) => row.textContent.includes(date) && row.textContent.includes(version) ? [index] : []);
-      return matches.length === 1 ? '.release-settings > ul > li:nth-child(' + (matches[0] + 1) + ')' : null;
-    })()`),
-    (scope) => typeof scope === 'string',
-    'unique visible pre-update backup row'
-  )
+  const backupScope = await visibleBackupScope(ui, requestedBackup.manifest)
   await ui.click('Wiederherstellen', z.string().parse(backupScope))
   await ui.click('Bestätigen', '[role="alertdialog"]')
   const restoredTransaction = await waitFor(
@@ -1167,6 +1246,7 @@ try {
         target: target.receipt,
         requests,
         launcherObserver,
+        newerBackup,
         transportFailures,
         feedRejections,
         parallelStarts,
@@ -1233,4 +1313,23 @@ try {
   await new Promise<void>((resolve, reject) =>
     server.close((error) => (error ? reject(error) : resolve()))
   )
+}
+
+async function visibleBackupScope(
+  driver: HistoricalUiDriver,
+  manifest: { createdAt: string; version: string }
+): Promise<string> {
+  const scope = await waitFor(
+    () =>
+      driver.inspect(`(() => {
+      const rows = [...document.querySelectorAll('.release-settings > ul > li')];
+      const date = new Date(${JSON.stringify(manifest.createdAt)}).toLocaleString('de-DE');
+      const version = ${JSON.stringify('Version ' + manifest.version)};
+      const matches = rows.flatMap((row, index) => row.textContent.includes(date) && row.textContent.includes(version) ? [index] : []);
+      return matches.length === 1 ? '.release-settings > ul > li:nth-child(' + (matches[0] + 1) + ')' : null;
+    })()`),
+    (scope) => typeof scope === 'string',
+    'unique visible pre-update backup row'
+  )
+  return z.string().parse(scope)
 }
