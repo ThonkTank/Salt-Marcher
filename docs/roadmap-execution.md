@@ -13526,3 +13526,13 @@ keine Hostprofil-Mounts, bestehende Ressourcenlimits, Ein-VM-Sperre und Deadline
 Neue private Kopie starten, HTTP-Erreichbarkeit vom Host, tatsächliche lokale
 Bindung und sichtbare Browseroberfläche prüfen. Erst dann menschliche Schritte
 anfordern. Keine Produktänderung und keine Umdeutung der bisherigen Abnahme.
+
+Korrekturplan 7.7b: Bei der abschließenden Quellenprüfung des privaten Beobachters
+wurde eine weitere Lebenszykluslücke erkannt: die drei Anzeige-Kindprozesse
+würden den Node-Prozess nach dem bewussten Schließen der App offen halten.
+Den zweiten Gast deshalb vor einer menschlichen Übergabe beendet und erhalten.
+Die Anzeigeprozesse im Beobachter entkoppeln; die bestehende systemd-Servicegruppe
+beendet sie nach Abschluss des Hauptprozesses. Dadurch wird der Beleg regulär
+exportiert, statt erst am festen Gesamtzeitlimit zu enden. Den dritten Gast erst
+mit dieser Korrektur starten; Versions-/Profildaten und Abnahmekriterien bleiben
+unverändert. Keine menschliche Prüfung wurde als durchgeführt gewertet.
