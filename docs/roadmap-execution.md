@@ -13200,3 +13200,94 @@ Teilplanaudit: Rechteänderung auf die zwei Main-only-Jobs begrenzt; Gast-Payloa
 AppImage, Entwurf und menschliche Freigabe unverändert. Roadmapaudit: tatsächlicher
 Workflowtoken-Nachweis steht noch aus; Phase6 wird nicht allein aufgrund dieser
 lokalen Anmeldung geschlossen.
+
+
+## Phase 6 – Abschlussaudit, 12. September 2026
+
+Korrekturrunde 6A.12 ist ausgeliefert: Commit
+8e57f0b4263e78cb8fb2f2e7b39922df771ff051, Candidate-Check 34719771984 mit
+allen 16 Pflichtjobs erfolgreich, kanonische Promotion und Main-Check
+34720638366 erfolgreich. Der Controller ist mit Exit 0 beendet
+(159.3 MiB, kein Swap); der Arbeitscheckout war vollständig sauber.
+
+Der tatsächliche unveröffentlichende Probelauf 34720670217 besteht mit dem
+GitHub-Workflowtoken: Resolver erfolgreich, vorhandene Version ausdrücklich
+als reserviert abgewiesen, gesamter Publish-Job skipped. Unabhängig erneut
+über die GitHub-API geprüft: Main-SHA und Status, originale Job-/Schrittresultate,
+Entwurf 387697175 sowie seine neun Asset-IDs, Größen und Hashes und Release Notes
+gegen die vor der Korrektur archivierten Originaldaten identisch.
+Beleg: work/phase6-final-rehearsal-audit.json. Keine Veröffentlichung oder
+menschliche Freigabe wurde ausgelöst.
+
+Plan-Audit Phase 6 bestanden:
+- 6A: Versionierte Aufträge binden Ziel und explizite Vergleichsartefakte;
+  historische Fixtures und öffentliche Quellen bleiben unterscheidbar.
+  Release-Run 34716827038 hat das Ziel einmal gebaut und genau diese Bytes
+  im frischen begrenzten KVM-Gast geprüft und als Entwurf abgelegt.
+  Der unabhängige Audit revalidiert beide originalen GitHub-Archive,
+  62 JSON-Berichte, 23 Laufzeitprotokolle, drei vollständige Updatefälle,
+  Erstinstallation, Weiterarbeit, beide Wiederherstellungen und Recovery.
+  AppImage: 176900262 Bytes, SHA256
+  ef49ab927bcc4244790ab098dad078356d32f68e735e271bd115485bceecdf4a,
+  Zielcommit 27eb532036b121bc8101e3a4da3dd707fbede83f.
+  Freigabe-Environment und tatsächlicher Reviewer sind eingerichtet und
+  rückgelesen; Publish verlangt den echten menschlichen Review dieses Laufs.
+  Datenvertrag, Betriebsanleitung und Release-Abnahmestand sind aktualisiert.
+- 6B: Unveränderliche Risikopolicy, Original-Diff und App-Fingerprint steuern
+  die Auswahl. Verbraucher prüfen den ursprünglichen Auswahlnachweis erneut.
+  Der tatsächliche Dokumentationslauf 34715298386 besteht mit fünf Pflichtjobs
+  samt Local-Artefakt; derselbe reduzierte Nachweis wird für einen öffentlichen
+  Release ausdrücklich abgewiesen. Unbekannte und Workflowänderungen laufen
+  vollständig; Check 34719771984 bestätigt diesen Pfad erneut.
+  AGENTS.md und Workflowregeln stimmen überein. Kanonischer App-Handoff samt
+  Wiederholung ist auf 36ad49687 im Gast belegt; spätere Änderungen haben den
+  App-Fingerprint 9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01
+  nicht verändert und erfordern keinen erneuten App-Handoff.
+
+Roadmap-Audit Phase 6 bestanden: Der reale Releaseentwurf enthält überprüfbare
+Herkunft und vollständige automatisierte Nachweise. Auswahl und voller Fallback
+sind tatsächlich ausgeführt; öffentliche Releases behalten volle Abnahme.
+Es gibt keine offene Diskrepanz innerhalb dieses Phasenumfangs. Phasen 1–6 sind
+abgeschlossen. Phase 7 – vorhandene Nutzerdaten, Livetest und menschlich
+freigegebene Veröffentlichung – bleibt ausdrücklich offen.
+
+## Phase 7 – Plan vor Umsetzung
+
+Unverändertes Ziel bleibt der oben qualifizierte Entwurf 0.3.0. Kein Neubau,
+Assetersatz oder erfundener positiver Abnahmebericht. Der Host führt weiterhin
+keine Test-AppImages aus; sämtliche App-Bedienung bleibt im begrenzten KVM-Gast.
+
+1. Die Local-App läuft aktuell und hält ihre Profilsperre. Als verfügbare echte
+   Datenquelle wurde ihre vollständige Sicherung vom 12. September, 11:26 UTC,
+   ID 9aef7688-a16f-4c76-b195-ef2725024c2e gefunden. Zuerst deren Manifest und
+   sämtliche Dateien über den gemeinsamen Backupprüfer validieren. Nur eine
+   separat kopierte, vor/nach dem Kopieren verglichene Sicherung verwenden;
+   keine Bind-Mounts des Originals und kein Zugriff auf die laufenden Datenbanken.
+   Dieser historische Snapshot ist ausdrücklich nicht der aktuelle Livezustand.
+2. Auf der Kopie Formate und fachliche Inhalte ermitteln. Keine Downgrades und
+   keine Annahme, ein synthetisches Fixture ersetze vorhandene Nutzerdaten.
+   Geeignete bereits gebaute Ausgangsversion anhand dieser tatsächlichen
+   Formate auswählen; den verfügbaren internen Release-Baseline-Stand nur bei
+   nachgewiesener Datenkompatibilität verwenden und als intern kennzeichnen.
+3. In einem frischen begrenzten Gast die Baseline installieren, die geprüfte
+   Sicherung über den unterstützten Weg übernehmen und die echte Kampagne
+   öffnen. Eine nachvollziehbare Änderung speichern, über einen kontrollierten
+   Feed das unveränderte endgültige AppImage prüfen/herunterladen/installieren,
+   neu starten und weiterarbeiten. Die ursprüngliche Sicherung und anschließend
+   die vorgeschaltete Schutzsicherung tatsächlich wiederherstellen. Inhalte,
+   Einstellungen und fortsetzbare Arbeit unabhängig mit den Erwartungen
+   vergleichen; UI-Beobachtungen und Originalprotokolle archivieren.
+4. Die fünf tatsächlichen Livetest-Ergebnisse mit Datum, Commit und exakt den
+   AppImage-/Auftrags-/Qualifikationshashes dokumentieren. Vor der Veröffentlichung
+   den realen Entwurf, Originalnachweise und Veröffentlichungsbedingungen erneut
+   prüfen; fehlende Nachweise nicht durch bloße grüne Tests ersetzen.
+5. Erst mit vollständigem prüfbarem Ergebnis den Veröffentlichungsworkflow
+   starten und die echte menschliche Environment-Freigabe einholen. Der Agent
+   genehmigt nicht selbst. Danach dieselben Bytes veröffentlichen und ihren
+   anonym erreichbaren Download samt Manifest und Hash prüfen.
+
+Abschlusskriterium: vorhandene Daten im dokumentierten vollständigen Livetest,
+Originalquelle unverändert, tatsächliche menschliche Freigabe und öffentlicher
+Download identisch mit den qualifizierten Bytes. Anschließend getrennte
+Plan-/Roadmap-Audits und abschließender phasenübergreifender Anforderungsabgleich.
+Das Ziel bleibt bis zu diesen Nachweisen aktiv.
