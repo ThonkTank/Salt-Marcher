@@ -422,3 +422,38 @@ SHA-256 `795095efc4d154a4edc16ceecd52f3af0e9926d0fe567bd40833e82cbace16c4`; inte
 disposable disk removal. This reestablishes these previously missing cases,
 including the accepted-later-work case; it does not prove an interruption at the
 commit boundary itself or all activation/recovery boundaries.
+
+## Profile faults requalified on integrated main
+
+Test release `0.0.165`, source `2b5b4d55a59c45b815a9b84676f91a4c47ed07e8`,
+artifact SHA-256 `3d43a4d467fd755a9168a7c37246638efec3eca29ff6b1774d4a148977c1725a`, passed newer-format, missing-path,
+corrupt and access-denied cases in the isolated v3 guest. Recovery remained
+accessible without a working installation database. Explicit restore preserved
+the complete invalid profile in a non-restorable protective backup, then
+restored the complete seed. Actual denied permissions prevented replacement and
+produced an actionable permissions message; restoring permissions retained the
+original readable profile. Source contents remained unchanged in every case.
+
+Retained archive: `outputs/qualification-evidence/profile-faults-v3-run-1`.
+Transport and complete semantic comparisons were audited before guest deletion.
+
+- `access-denied`: `06ef2ed426f754911a10d5432ab2b33bbb2af636fb72a04242a7e8617516c112`
+- `corrupt`: `210cb5d06e9323976d84ef086adcf7bc9c96e0920232cfb8c2926f312b2d141a`
+- `missing-path`: `2364e56293e5ab2848b4ba7bdea06fd93c0695c1e1e1ba0456d876f9642f9c77`
+- `newer-format`: `0f83f63e979e9e49dd24e416103af600b054cb4c8711adee721d3b582690356b`
+
+## Capacity rejection and retry requalified
+
+The installed-starter path `0.0.160` → `0.0.165` passed both a maintenance
+space preflight rejection (210,599,936 bytes free) and actual copy failure on a
+separate 2 GiB ext4 guest volume with 1,044,480 bytes free. Each case preserved
+the previous program/journal/profile, displayed a free-space/retry action and
+then passed the complete update, saved-continuation and restore/protect-later-work
+path after releasing reserved space. Target comparisons explicitly include only
+the independently verified additive party-field default; source comparisons
+remain unchanged. Both reports were audited before disposable guest removal.
+
+Retained archive: `outputs/qualification-evidence/capacity-v3-run-2`.
+
+- `qualification-capacity-preflight`: `f791dc4a90dca07fb76ceedac7349599f936e22dfe1d9b6700d61bcafa4ea409`
+- `qualification-capacity-exhausted`: `a99be5fbac012ac74e2567d7f18b2d527427f5c8ae59d089322995fe26ac9cdb`

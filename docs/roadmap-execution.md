@@ -10945,3 +10945,74 @@ geplante Konfliktauflösung und Log weichen ab. Main-Draftkoordination und
 Candidate-Pausefortschritt sind beide erhalten. Neuer linearer Candidate auf
 c9133d69d benötigt eigene vollständige CI; bisherige Artefakte bleiben getrennte
 Phase5-Belege und sind keine Freigabe dieses integrierten Produktstands.
+
+Voriger Goalturn Fortschritt: unabhängige Gastbasisv3 aufgebaut, aktuelles Main
+integriert,44Tests/Typen/Lint grün, linearer Candidate2b5b4d55a und PR676.
+Check34683265891 für exakten SHA läuft. Phase5-Plan: neues Testartefakt0.0.165
+aus dieser Originalquelle (42/42), unveränderte historische Migrationen. Danach
+vier Profilfehler inklusive Access-denied mit korrigierter Utilitymeldung
+seriell im begrenzten Gast; Ablehnung, Quellerhalt und bestätigten Recoveryweg
+prüfen. Daten-/Programmfreigabe erst nach vollständigem Nachweis, keine HostGUI.
+
+64970 Build0.0.165 Exit0; Artefakt177052473Bytes SHA3d43a4d467fd755a9168a7c37246638efec3eca29ff6b1774d4a148977c1725a.
+Gastv3/profile-faults-run-1 startet alle vier Fehlerfälle mit exakt diesen Bytes.
+Quellen bleiben während Lauf unverändert; Export außerhalb VM erforderlich.
+
+23627 vier Fälle terminalVMExit0/TestExit0, Original0.0.165. Exportdateien
+Größe/SHA nachgeprüft; je zwei normale Appprozesse Exit0. Alle Quellreadbacks
+gleich Seed. Neueres Schema/fehlenderPfad/Korruption: bestätigter Restore
+committed, Defektprofil in nicht-restorable Schutzbackup einschließlich Dateien
+und Verzeichnissen erhalten. Access-denied: tatsächliches chmod0, verständliche
+Rechte-/Wiederholen-Meldung ohne EACCES/Pfad, Profil/Journal unverändert, nach
+Rechtefreigabe vollständiger Seedreadback. Eigene Gastdisk nach Audit entfernt.
+Externe Berichte outputs/qualification-evidence/profile-faults-v3-run-1:
+access-denied: 06ef2ed426f754911a10d5432ab2b33bbb2af636fb72a04242a7e8617516c112
+corrupt: 210cb5d06e9323976d84ef086adcf7bc9c96e0920232cfb8c2926f312b2d141a
+missing-path: 2364e56293e5ab2848b4ba7bdea06fd93c0695c1e1e1ba0456d876f9642f9c77
+newer-format: 0f83f63e979e9e49dd24e416103af600b054cb4c8711adee721d3b582690356b
+Plan-Audit vier Profilfehler bestanden. Roadmap-Audit Phase5 offen: übrige
+Release-Unterbrechungsgrenzen und Kapazitätsnachweise sowie neue Gesamt-CI fehlen.
+
+Voriger Goalturn Fortschritt: vier Profilfehler auf0.0.165 mit vollständigen
+externen Nachweisen bestanden. Nächster Plan Kapazität: vorhandener UI-Prüfer
+0.0.160→0.0.165, zwei unabhängige2GiB-ext4-Gastvolumes. Vorprüfung bei Platz für
+Artefakt aber nicht Wartung; echter ENOSPC bei höchstens1MiB Rest. Jeweils
+Programm/Journal/Backupbestand unverändert, Gesamtprofil lesbar, verständliche
+nächste Aktion und erfolgreicher vollständiger Update-/Restore-Retry nach
+Freigabe. Ausschließlich isolierter Gast, kein Hostfülltest, Quellen eingefroren.
+
+87980 Kapazitätslauf terminalVMExit0/TestExit1 nach Update-Retry: Zielreadback
+enthält partyQuickFields=[armorClass,passivePerception], alteQuelle nicht.
+Herstellercode Main-Commit0f2bdd2fa/settings.ts definiert genau diesen additiven
+Default; kein verlorener Nutzwert. Fixplan Prüfvertrag: explizite CLI-Option
+für diesen bekannten Zieldefault, unabhängig fest vorgegebene Erwartung auf
+Kopie des Seeds; bestehende Nutzerwerte unverändert. Nur Ziel-/Restorevergleich
+anpassen, Quell-/Ablehnungsvergleiche strikt lassen. Erwartungsoption im Bericht
+festhalten, Regressionstests für Quellerhalt und vorhandene eigene/leer Werte.
+Kein Produktpatch/Neubau; beide bestehenden Artefakte erneut verwenden.
+
+73168 Erwartungshelfer:4Tests, ESLint und beide Typechecks Exit0,32.494s,
+1.5GiB/keinSwap. Additiver Default unabhängig vom beobachteten Ist festgelegt;
+vorhandene benutzerdefinierte und leere Werte bleiben unverändert, Quelle
+nicht mutiert. Nur Ziel-/Restorevergleich adaptiert. Kapazitätslauf mit Option
+--target-party-quick-fields-default noch zu wiederholen; kein Kapazitätspass.
+Check34683265891 für2b5b4d55a59c45b815a9b84676f91a4c47ed07e8 inzwischen
+completed/success. Diese CI gilt nicht für den später ergänzten Prüfhelfer.
+
+Voriger Goalturn Fortschritt: additiven Main-Einstellungsdefault lokalisiert und
+unabhängige explizite Zielerwartung mit4Tests/Typen/Lint abgesichert. Neuer
+Kapazitätslaufv3/run2 mit gleicher0.0.160/165-Artefaktpaarung und korrigiertem
+Prüfer gestartet; Quelle während Lauf unverändert,176GiB frei vor Vorbereitung.
+
+83451 Kapazitätslaufv3/run2 terminalVMExit0/TestExit0. Beide Fälle komplett
+bestanden; Exportgrößen/Hashes und Inhaltsvergleiche erneut geprüft. Vorprüfung
+bei210599936Bytes frei; echtes ENOSPC mit1044480Bytes Rest. Verständliche nächste
+Aktion, vorheriger vollständiger Seedreadback unverändert, danach Update42/41→42/42
+und fortsetzbare Arbeit XP975→1000, Restore mit vollständigem Schutzbackup.
+Einzige additive Zieländerung unabhängig geprüft: dokumentierte Partydefaults.
+Alle normalen Prozesse Exit0, Quelle gleich Seed. Eigene Gastdisk nach Audit
+entfernt; externe Berichte outputs/qualification-evidence/capacity-v3-run-2:
+qualification-capacity-preflight: f791dc4a90dca07fb76ceedac7349599f936e22dfe1d9b6700d61bcafa4ea409
+qualification-capacity-exhausted: a99be5fbac012ac74e2567d7f18b2d527427f5c8ae59d089322995fe26ac9cdb
+Plan-Audit Kapazität bestanden. Roadmap-Audit Phase5 weiterhin offen: echte
+Release-Migrations-/Aktivierungs-/Recovery-Unterbrechungen requalifizieren.

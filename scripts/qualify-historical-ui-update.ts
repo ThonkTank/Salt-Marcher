@@ -1,3 +1,4 @@
+import { withPartyQuickFieldDefault } from './qualification/historical-settings-expectation.js'
 import { rejectHistoricalParallelStart } from './qualification/historical-parallel-start.js'
 import { acquireProfileAccess } from '../src/main/local-profile/profile-access.js'
 import {
@@ -61,6 +62,7 @@ const { values } = parseArgs({
     'space-exhausted': { type: 'boolean', default: false },
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
+    'target-party-quick-fields-default': { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
     'feed-failures': { type: 'boolean', default: false },
     'feed-actionable': { type: 'boolean', default: false },
@@ -142,6 +144,9 @@ const seeded = await runHistoricalArtifact(
   'seed'
 )
 assert(seeded.result.response.ok)
+const expectedTargetSeed = values['target-party-quick-fields-default']
+  ? withPartyQuickFieldDefault(seeded.result.response.result)
+  : seeded.result.response.result
 copyHistoricalWorkingProfile(sourceHome, home)
 const root = join(home, 'salt-marcher')
 if (values['space-volume'])
@@ -926,7 +931,7 @@ try {
   ui = undefined
   const after = await runHistoricalArtifact(targetDirectory, home, 'read')
   assert(after.result.response.ok)
-  assert.deepEqual(after.result.response.result, seeded.result.response.result)
+  assert.deepEqual(after.result.response.result, expectedTargetSeed)
   ui = await launch()
   const continuedAtStart = Date.now()
   await ui.click('Fortsetzen')
@@ -1096,10 +1101,7 @@ try {
   ui = undefined
   const restored = await runHistoricalArtifact(targetDirectory, home, 'read')
   assert(restored.result.response.ok)
-  assert.deepEqual(
-    restored.result.response.result,
-    seeded.result.response.result
-  )
+  assert.deepEqual(restored.result.response.result, expectedTargetSeed)
   const backupDirectory = join(root, 'backups', restoredTransaction.backup)
   const protectedBackup = readVerifiedBackup(backupDirectory)
   assert.equal(protectedBackup.manifest.formatVersion, 2)
@@ -1158,6 +1160,9 @@ try {
         formatVersion: 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
+        targetPartyQuickFieldsDefault:
+          values['target-party-quick-fields-default'],
+        expectedTargetSeed,
         startPath: values['installed-launcher']
           ? 'installed-launcher'
           : 'appimage',
