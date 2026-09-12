@@ -12101,3 +12101,48 @@ Teilaudit Roadmap: Phase6 bleibt offen, insbesondere tatsächliche unveränderte
 AppImage-Qualifikation, Release-/Publish-Workflow und CI-Auswahl. App-relevante
 Änderungen benötigen vor Main die vollständige Candidate-CI und kanonischen
 Handoff; bisher wurde kein neuer Main-Stand oder Release aktiviert.
+
+6A.3 Runner-Anbindung: gemeinsamen Artefaktadapter mit expliziter Art
+historical-fixture/release einführen. Historische Belege bleiben historische
+Belege; ein Releaseziel besitzt sein echtes Manifest, keine erfundene historische
+Receipt. Alle gelesenen ausführbaren Dateien vor/nach Lauf hashen. Der reale
+Release-Diagnosebericht muss Version, sauberen eingebetteten Build-SHA und Schema
+mit dem Zielmanifest verbinden; identity bestätigt zusätzlich Utility-Versionen.
+Der bestehende vollständige UI-Prüfer nutzt den Adapter für Leseläufe und führt
+Original- und Schutzbackup-Wiederherstellung samt History weiterhin aus.
+UI-Testumgebung erhält die explizite Laufmarkierung und beide generationsabhängigen
+Feedflags. Unterbrechungen, die einen nur im historischen Wrapper vorhandenen
+Hook brauchen, dürfen bei einem unveränderten Releaseziel nicht als unterstützt
+oder bestanden ausgegeben werden. Die ursprünglichen Phase5-Belege bleiben erhalten.
+
+Adapterrunde:29 Tests und Lint bestanden. TypeScript fand einen veralteten,
+auf den nun ausdrücklich historischen Baseline-Typ eingeengten Parameter des
+Manifesthelfers. Korrektur: beide gültigen Artefaktarten über UpdateArtifact
+annehmen und deren bereits validiertes Manifest direkt verwenden. Danach
+betroffene Prüfungen/Typen erneut, bevor der Runner im Gast ausgeführt wird.
+
+Zweite Adapterrunde:29 Tests bestanden; nach Vereinfachung des Manifesthelfers
+ist dessen Schemaimport unbenutzt. Korrektur auf Importbereinigung begrenzt;
+Lint und beide Typprüfungen erneut. Die zuvor bestandenen Verhaltenstests bleiben
+unverändert. Für reale Laufzeitprüfung wird anschließend ein eigener sauberer
+Checkout von c11d7fcb5 als unverändertes Release-AppImage gebaut. Seine tatsächliche
+Version bleibt0.2.0; das ist ein interner Qualifikationsstand, keine Freigabe oder
+Veröffentlichung und kein Ersatz für die spätere finale0.3.0-Abnahme.
+
+Adapter statisch abgeschlossen:29 Verhaltenstests bestanden, anschließend
+ESLint und beide Typprüfungen erfolgreich (`work/phase6-update-artifact-adapter-static-final.log`).
+Historische v1-Berichte behalten ihre bisherigen Baseline-/Target-Receipts;
+Releaseziele erzeugen ausdrücklich v2-Berichte mit separater Provenienz und
+verifizierter tatsächlicher Utility-Identity. Kein historischer Sourcebeleg wird
+in einen Release-Buildreceipt umetikettiert.
+
+Separater sauberer Build von c11d7fcb5 erstellt, Package/Manifest/Byteprüfung
+bestanden (`work/phase6-release-target-c11-build.log`,44s,2.1GiB,0Swap).
+Releasekanal0.2.0,43/43, AppImage176755374Bytes,
+SHA256`e9864378ec628235776eeae36efd39f3a5232846a12c0af7ad920f3e89ccead3`.
+App-Buildfingerprint`f348c734b4d12543d636dd7b041e670c526217af08f7742782b116b123a7b869`;
+Buildreceipt ist clean und nennt Node22.23.2/pnpm10.15.1/Electron43.2.0.
+Noch keine Laufzeitaussage: nun wird genau dieses Artefakt mit dem .170-Original
+über den vollständigen UI-Pfad im begrenzten KVM-Gast geprüft. Historische
+Only-Hooks sind bei Releasezielen explizit abgewiesen; deren Zielanbindung ist
+nicht durch den neuen lesenden Diagnoseeinstieg automatisch erledigt.

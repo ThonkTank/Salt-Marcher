@@ -1,4 +1,10 @@
 import {
+  readUpdateArtifact,
+  type UpdateArtifact
+} from './qualification/update-artifact.js'
+import { runUpdateArtifact } from './qualification/update-artifact-runner.js'
+import { prepareReleaseTestHome } from './qualification/release-test-home.js'
+import {
   readPartyHistoryEvidence,
   assertPartyHistoryMigration,
   assertPartyHistoryXp
@@ -39,11 +45,7 @@ import { createServer } from 'node:http'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { z } from 'zod'
-import {
-  readHistoricalArtifact,
-  runHistoricalArtifact,
-  copyHistoricalWorkingProfile
-} from './qualification/historical-artifact-runner.js'
+import { copyHistoricalWorkingProfile } from './qualification/historical-artifact-runner.js'
 import {
   HistoricalUiDriver,
   trackIsolatedProcess,
@@ -63,10 +65,7 @@ import {
   installMaintenanceLauncher,
   validateMaintenanceLauncher
 } from '../src/shared/maintenance/launcher.js'
-import {
-  releaseManifestSchema,
-  releaseRepository
-} from '../src/shared/contracts/release.js'
+import { releaseRepository } from '../src/shared/contracts/release.js'
 
 assertHistoricalTestIsolation()
 
@@ -134,8 +133,19 @@ const baselineDirectory = resolve(z.string().parse(values.baseline))
 const targetDirectory = resolve(z.string().parse(values.target))
 const home = resolve(z.string().parse(values.home))
 const sourceHome = `${home}-source`
-const baseline = readHistoricalArtifact(baselineDirectory)
-const target = readHistoricalArtifact(targetDirectory)
+const baseline = readUpdateArtifact(baselineDirectory)
+const target = readUpdateArtifact(targetDirectory)
+if (baseline.kind !== 'historical-fixture')
+  throw new Error(
+    'UI fixture seeding requires an explicitly historical baseline.'
+  )
+if (
+  target.kind === 'release' &&
+  (values['maintenance-crash'] || values['commit-crash'])
+)
+  throw new Error(
+    'These interruption hooks exist only in historical fixtures; no release target evidence may claim them.'
+  )
 const historyScenario = values['party-history-scenario']
   ? partyHistoryScenario(values['party-history-scenario'])
   : undefined
@@ -150,40 +160,26 @@ assert(
   'Migration interruption requires a schema transition'
 )
 assert.deepEqual(
-  baseline.receipt.source.schemaVersions,
+  baseline.manifest.schemaVersions,
   historyScenario?.baseline ?? {
     installation: 42,
     campaign: values['same-schema'] ? 42 : 41
   }
 )
 assert.deepEqual(
-  target.receipt.source.schemaVersions,
+  target.manifest.schemaVersions,
   historyScenario?.target ?? {
     installation: 42,
     campaign: 42
   }
 )
-assert.notEqual(baseline.receipt.version, target.receipt.version)
-const manifest = (artifact: typeof baseline) =>
-  releaseManifestSchema.parse({
-    formatVersion: 1,
-    repository: releaseRepository,
-    version: artifact.receipt.version,
-    commit: artifact.receipt.source.commit,
-    platform: 'linux',
-    arch: 'x64',
-    schemaVersions: artifact.receipt.source.schemaVersions,
-    artifact: artifact.receipt.artifact
-  })
+assert.notEqual(baseline.manifest.version, target.manifest.version)
+const manifest = (artifact: UpdateArtifact) => artifact.manifest
 assert(
   !values['space-exhausted'] || values['space-volume'],
   'space-exhausted requires an isolated volume'
 )
-const seeded = await runHistoricalArtifact(
-  baselineDirectory,
-  sourceHome,
-  'seed'
-)
+const seeded = await runUpdateArtifact(baselineDirectory, sourceHome, 'seed')
 assert(seeded.result.response.ok)
 const sourceHistory = historyScenario
   ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
@@ -194,6 +190,13 @@ const expectedTargetSeed = historyScenario
     ? withPartyQuickFieldDefault(seeded.result.response.result)
     : seeded.result.response.result
 copyHistoricalWorkingProfile(sourceHome, home)
+const releaseTestHome =
+  target.kind === 'release' ? prepareReleaseTestHome(home) : null
+const targetIdentity =
+  target.kind === 'release'
+    ? await runUpdateArtifact(targetDirectory, home, 'identity')
+    : null
+if (targetIdentity) assert(targetIdentity.result.response.ok)
 const root = join(home, 'salt-marcher')
 if (values['space-volume'])
   moveHistoricalInstallationToVolume(root, values['space-volume'])
@@ -206,8 +209,8 @@ if (!values['installed-launcher']) setCurrent(root, originalDeployment)
 if (values['installed-launcher']) {
   installMaintenanceLauncher(
     root,
-    { path: baseline.executable, sha256: baseline.receipt.artifact.sha256 },
-    readAppImageLauncher(baseline.executable, baseline.receipt.artifact.sha256)
+    { path: baseline.executable, sha256: baseline.manifest.artifact.sha256 },
+    readAppImageLauncher(baseline.executable, baseline.manifest.artifact.sha256)
   )
   validateMaintenanceLauncher(root)
 }
@@ -248,21 +251,21 @@ const server = createServer((request, response) => {
     response.setHeader('Content-Type', 'application/json')
     response.end(
       JSON.stringify({
-        tag_name: `v${target.receipt.version}`,
+        tag_name: `v${target.manifest.version}`,
         draft: false,
         prerelease: false,
-        body: `UI-Test mit Kampagnenschema ${baseline.receipt.source.schemaVersions.campaign}→${target.receipt.source.schemaVersions.campaign}`,
-        assets: ['release-manifest.json', target.receipt.artifact.name].map(
+        body: `UI-Test mit Kampagnenschema ${baseline.manifest.schemaVersions.campaign}→${target.manifest.schemaVersions.campaign}`,
+        assets: ['release-manifest.json', target.manifest.artifact.name].map(
           (name) => ({
             name,
-            browser_download_url: `https://github.com/${(transportMode === 'manifest-origin' && name === 'release-manifest.json') || (transportMode === 'artifact-origin' && name === target.receipt.artifact.name) ? 'untrusted/other-project' : releaseRepository}/releases/download/v${target.receipt.version}/${name}`
+            browser_download_url: `https://github.com/${(transportMode === 'manifest-origin' && name === 'release-manifest.json') || (transportMode === 'artifact-origin' && name === target.manifest.artifact.name) ? 'untrusted/other-project' : releaseRepository}/releases/download/v${target.manifest.version}/${name}`
           })
         )
       })
     )
   } else if (
     request.url ===
-    `/${releaseRepository}/releases/download/v${target.receipt.version}/release-manifest.json`
+    `/${releaseRepository}/releases/download/v${target.manifest.version}/release-manifest.json`
   ) {
     const metadata = manifest(target)
     response.end(
@@ -274,18 +277,18 @@ const server = createServer((request, response) => {
         ...(transportMode === 'architecture' ? { arch: 'arm64' } : {}),
         ...(transportMode === 'manifest-format' ? { formatVersion: 2 } : {}),
         ...(transportMode === 'version'
-          ? { version: baseline.receipt.version }
+          ? { version: baseline.manifest.version }
           : {})
       })
     )
   } else if (
     request.url ===
-    `/${releaseRepository}/releases/download/v${target.receipt.version}/${target.receipt.artifact.name}`
+    `/${releaseRepository}/releases/download/v${target.manifest.version}/${target.manifest.artifact.name}`
   ) {
     if (transportMode === 'truncated')
       createReadStream(target.executable, {
         start: 0,
-        end: target.receipt.artifact.bytes - 2
+        end: target.manifest.artifact.bytes - 2
       }).pipe(response)
     else if (transportMode === 'corrupt') {
       let first = true
@@ -334,6 +337,13 @@ function spawnApplication(
     XDG_DATA_HOME: home,
     TMPDIR: temporary,
     APPIMAGE_EXTRACT_AND_RUN: '1',
+    ...(releaseTestHome
+      ? {
+          ...releaseTestHome.environment,
+          SALT_MARCHER_RELEASE_UI_QUALIFICATION: 'true',
+          SALT_MARCHER_RELEASE_TEST_FEED: `http://127.0.0.1:${address && typeof address !== 'string' ? address.port : 0}`
+        }
+      : {}),
     SALT_MARCHER_HISTORICAL_UI: 'true',
     SALT_MARCHER_HISTORICAL_UI_FEED: `http://127.0.0.1:${address && typeof address !== 'string' ? address.port : 0}`
   }
@@ -434,7 +444,7 @@ try {
           'Updates konnten nicht geprüft werden. Bitte später erneut versuchen.'
         )
       else {
-        await ui.expectText(`Version ${target.receipt.version}`)
+        await ui.expectText(`Version ${target.manifest.version}`)
         await ui.click('Herunterladen')
         await ui.expectText(
           'Die heruntergeladene Datei ist unvollständig oder beschädigt.'
@@ -443,19 +453,15 @@ try {
       assert(!(await ui.text()).includes('Installieren und neu starten'))
       assert.equal(currentProgram(root)?.deployment, originalDeployment)
       assert.deepEqual(new MaintenanceCoordinator(root).read(), initialJournal)
-      assert(!existsSync(join(root, 'cache', target.receipt.artifact.name)))
+      assert(!existsSync(join(root, 'cache', target.manifest.artifact.name)))
       assert(
         !existsSync(
-          join(root, 'cache', `${target.receipt.artifact.name}.partial`)
+          join(root, 'cache', `${target.manifest.artifact.name}.partial`)
         )
       )
       await ui.closeApplication(home)
       ui = undefined
-      const readback = await runHistoricalArtifact(
-        baselineDirectory,
-        home,
-        'read'
-      )
+      const readback = await runUpdateArtifact(baselineDirectory, home, 'read')
       assert(readback.result.response.ok)
       assert.deepEqual(
         readback.result.response.result,
@@ -504,21 +510,17 @@ try {
       )
       const requested = requests.slice(requestStart)
       assert(!requested.some((path) => path.endsWith('.AppImage')))
-      assert(!existsSync(join(root, 'cache', target.receipt.artifact.name)))
+      assert(!existsSync(join(root, 'cache', target.manifest.artifact.name)))
       assert(
         !existsSync(
-          join(root, 'cache', `${target.receipt.artifact.name}.partial`)
+          join(root, 'cache', `${target.manifest.artifact.name}.partial`)
         )
       )
       assert.equal(currentProgram(root)?.deployment, originalDeployment)
       assert.deepEqual(new MaintenanceCoordinator(root).read(), initialJournal)
       await ui.closeApplication(home)
       ui = undefined
-      const readback = await runHistoricalArtifact(
-        baselineDirectory,
-        home,
-        'read'
-      )
+      const readback = await runUpdateArtifact(baselineDirectory, home, 'read')
       assert(readback.result.response.ok)
       assert.deepEqual(
         readback.result.response.result,
@@ -541,7 +543,7 @@ try {
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     await ui.click('Einstellungen', 'body', true)
     await ui.click('Jetzt prüfen')
-    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.expectText(`Version ${target.manifest.version}`)
     await ui.click('Herunterladen')
     await ui.expectText('Installieren und neu starten')
     await ui.click('Installieren und neu starten')
@@ -582,11 +584,7 @@ try {
     await ui.closeApplication(home)
     ui.disconnect()
     ui = undefined
-    const readback = await runHistoricalArtifact(
-      baselineDirectory,
-      home,
-      'read'
-    )
+    const readback = await runUpdateArtifact(baselineDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -609,7 +607,7 @@ try {
         errorOnExist: true,
         force: false
       })
-      const saved = await runHistoricalArtifact(
+      const saved = await runUpdateArtifact(
         baselineDirectory,
         backupHome,
         'read'
@@ -650,7 +648,7 @@ try {
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     await ui.click('Einstellungen', 'body', true)
     await ui.click('Jetzt prüfen')
-    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.expectText(`Version ${target.manifest.version}`)
     await ui.click('Herunterladen')
     await ui.expectText('Installieren und neu starten')
     await ui.click('Installieren und neu starten')
@@ -743,18 +741,14 @@ try {
     ui = await launch()
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     await ui.click('Einstellungen', 'body', true)
-    await ui.expectText(`Installierte Version: ${baseline.receipt.version}`)
+    await ui.expectText(`Installierte Version: ${baseline.manifest.version}`)
     const recovered = new MaintenanceCoordinator(root).read()
     assert.equal(recovered?.phase, 'rolled-back')
     assert.equal(currentProgram(root)?.deployment, originalDeployment)
     await ui.closeApplication(home)
     ui.disconnect()
     ui = undefined
-    const readback = await runHistoricalArtifact(
-      baselineDirectory,
-      home,
-      'read'
-    )
+    const readback = await runUpdateArtifact(baselineDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -769,7 +763,7 @@ try {
         join(failedHome, 'salt-marcher/profile'),
         { recursive: true, errorOnExist: true, force: false }
       )
-      const failed = await runHistoricalArtifact(
+      const failed = await runUpdateArtifact(
         targetDirectory,
         failedHome,
         'read'
@@ -803,13 +797,13 @@ try {
     ui = await launch()
     await ui.click('Einstellungen', 'body', true)
     await ui.click('Jetzt prüfen')
-    await ui.expectText(`Version ${target.receipt.version}`)
+    await ui.expectText(`Version ${target.manifest.version}`)
     await ui.click('Herunterladen')
     await ui.expectText('Installieren und neu starten')
     const reservation = constrainHistoricalSpace(
       values['space-volume'],
       home,
-      target.receipt.artifact.bytes,
+      target.manifest.artifact.bytes,
       values['space-exhausted']
     )
     try {
@@ -845,11 +839,7 @@ try {
     }
     await ui.closeApplication(home)
     ui = undefined
-    const readback = await runHistoricalArtifact(
-      baselineDirectory,
-      home,
-      'read'
-    )
+    const readback = await runUpdateArtifact(baselineDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -887,7 +877,7 @@ try {
     }
   }
   await ui.click('Einstellungen', 'body', true)
-  await ui.expectText(`Installierte Version: ${baseline.receipt.version}`)
+  await ui.expectText(`Installierte Version: ${baseline.manifest.version}`)
   assert(
     !requests
       .slice(healthyRequestStart)
@@ -895,7 +885,7 @@ try {
     'Startup must not download'
   )
   await ui.click('Jetzt prüfen')
-  await ui.expectText(`Version ${target.receipt.version}`)
+  await ui.expectText(`Version ${target.manifest.version}`)
   assert(
     !requests
       .slice(healthyRequestStart)
@@ -970,14 +960,14 @@ try {
   assert(updated)
   if (updated.phase === 'rolled-back')
     throw new Error(`Update ${updated.id} rolled back: ${await ui.text()}`)
-  assert.equal(updated.next.version, target.receipt.version)
+  assert.equal(updated.next.version, target.manifest.version)
   ui.disconnect()
   ui = await HistoricalUiDriver.connect(home)
   await ui.click('Einstellungen', 'body', true)
-  await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+  await ui.expectText(`Installierte Version: ${target.manifest.version}`)
   await ui.closeApplication(home)
   ui = undefined
-  const after = await runHistoricalArtifact(targetDirectory, home, 'read')
+  const after = await runUpdateArtifact(targetDirectory, home, 'read')
   assert(after.result.response.ok)
   assert.deepEqual(after.result.response.result, expectedTargetSeed)
   const afterHistory = historyScenario
@@ -1010,7 +1000,7 @@ try {
   } else await ui.expectText('XP 1000 /')
   await ui.closeApplication(home)
   ui = undefined
-  const continued = await runHistoricalArtifact(targetDirectory, home, 'read')
+  const continued = await runUpdateArtifact(targetDirectory, home, 'read')
   assert(continued.result.response.ok)
   const member = z
     .object({
@@ -1103,7 +1093,7 @@ try {
   if (values['accepted-crash']) {
     ui = await launch()
     await ui.click('Einstellungen', 'body', true)
-    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    await ui.expectText(`Installierte Version: ${target.manifest.version}`)
     assert.equal(new MaintenanceCoordinator(root).read()?.phase, 'committed')
     const killedPids = isolatedProcesses(home)
     assert(killedPids.length > 0)
@@ -1123,12 +1113,12 @@ try {
     ui.disconnect()
     ui = await launch()
     await ui.click('Einstellungen', 'body', true)
-    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    await ui.expectText(`Installierte Version: ${target.manifest.version}`)
     assert.equal(new MaintenanceCoordinator(root).read()?.id, updated.id)
     assert.equal(new MaintenanceCoordinator(root).read()?.phase, 'committed')
     await ui.closeApplication(home)
     ui = undefined
-    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    const readback = await runUpdateArtifact(targetDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -1140,7 +1130,7 @@ try {
     assert(updated.backup)
     const fixture = createNewerFormatBackup(
       join(root, 'backups', updated.backup),
-      target.receipt.source.schemaVersions.installation
+      target.manifest.schemaVersions.installation
     )
     const backupNames = () =>
       readdirSync(join(root, 'backups'))
@@ -1163,12 +1153,12 @@ try {
     assert(notice.includes('neueres Datenformat'))
     assert(!notice.includes('Incompatible persisted data'))
     assert(!notice.includes(fixture.directory))
-    await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+    await ui.expectText(`Installierte Version: ${target.manifest.version}`)
     assert.deepEqual(currentProgram(root), program)
     assert.deepEqual(new MaintenanceCoordinator(root).read(), journal)
     await ui.closeApplication(home)
     ui = undefined
-    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    const readback = await runUpdateArtifact(targetDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -1194,7 +1184,7 @@ try {
       errorOnExist: true,
       force: false
     })
-    const protectedReadback = await runHistoricalArtifact(
+    const protectedReadback = await runUpdateArtifact(
       targetDirectory,
       protectedHome,
       'read'
@@ -1237,7 +1227,7 @@ try {
     'restore commits after restart'
   )
   assert(restoredTransaction?.backup)
-  assert.equal(restoredTransaction.next.sha256, target.receipt.artifact.sha256)
+  assert.equal(restoredTransaction.next.sha256, target.manifest.artifact.sha256)
   assert.equal(
     restoredTransaction.previous?.deployment,
     updated.next.deployment
@@ -1246,10 +1236,10 @@ try {
   ui.disconnect()
   ui = await HistoricalUiDriver.connect(home)
   await ui.click('Einstellungen', 'body', true)
-  await ui.expectText(`Installierte Version: ${target.receipt.version}`)
+  await ui.expectText(`Installierte Version: ${target.manifest.version}`)
   await ui.closeApplication(home)
   ui = undefined
-  const restored = await runHistoricalArtifact(targetDirectory, home, 'read')
+  const restored = await runUpdateArtifact(targetDirectory, home, 'read')
   assert(restored.result.response.ok)
   assert.deepEqual(restored.result.response.result, expectedTargetSeed)
   const restoredHistory = historyScenario
@@ -1271,7 +1261,7 @@ try {
     errorOnExist: true,
     force: false
   })
-  const protectedRead = await runHistoricalArtifact(
+  const protectedRead = await runUpdateArtifact(
     targetDirectory,
     savedHome,
     'read'
@@ -1307,7 +1297,7 @@ try {
     ui = await HistoricalUiDriver.connect(home)
     await ui.closeApplication(home)
     ui = undefined
-    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    const readback = await runUpdateArtifact(targetDirectory, home, 'read')
     assert(readback.result.response.ok)
     assert.deepEqual(
       readback.result.response.result,
@@ -1326,7 +1316,7 @@ try {
       errorOnExist: true,
       force: false
     })
-    const safetyReadback = await runHistoricalArtifact(
+    const safetyReadback = await runUpdateArtifact(
       targetDirectory,
       safetyHome,
       'read'
@@ -1345,7 +1335,7 @@ try {
       safetyReadback
     }
   }
-  const unchanged = await runHistoricalArtifact(
+  const unchanged = await runUpdateArtifact(
     baselineDirectory,
     sourceHome,
     'read'
@@ -1374,14 +1364,14 @@ try {
         (exit) => expectedKills.has(exit.pid) && exit.signal === 'SIGKILL'
       )
     )
-  readHistoricalArtifact(baselineDirectory)
-  readHistoricalArtifact(targetDirectory)
+  readUpdateArtifact(baselineDirectory)
+  readUpdateArtifact(targetDirectory)
   if (values['installed-launcher']) validateMaintenanceLauncher(root)
   writeFileSync(
     join(home, 'ui-update-evidence.json'),
     JSON.stringify(
       {
-        formatVersion: 1,
+        formatVersion: target.kind === 'release' ? 2 : 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
         schemaScenario: historyScenario
@@ -1404,8 +1394,17 @@ try {
         startPath: values['installed-launcher']
           ? 'installed-launcher'
           : 'appimage',
-        baseline: baseline.receipt,
-        target: target.receipt,
+        baseline:
+          baseline.provenance.kind === 'historical-fixture'
+            ? baseline.provenance.receipt
+            : baseline.manifest,
+        baselineProvenance: baseline.provenance,
+        target:
+          target.provenance.kind === 'historical-fixture'
+            ? target.provenance.receipt
+            : target.manifest,
+        targetProvenance: target.provenance,
+        targetIdentity,
         requests,
         launcherObserver,
         newerBackup,
