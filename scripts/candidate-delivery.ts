@@ -1,3 +1,7 @@
+import {
+  assertCandidateHistory,
+  readCandidateHistory
+} from './candidate-history.js'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -31,6 +35,7 @@ export type CandidateState = Readonly<{
   remoteMain: string
   clean: boolean
   mainIsAncestor: boolean
+  mergeCommits: readonly string[]
   candidate: CandidateQualification | null
 }>
 
@@ -44,8 +49,7 @@ export function assertCandidateState(state: CandidateState): void {
     )
   if (state.head !== state.upstreamHead)
     throw new Error('Candidate checkout differs from its pushed remote SHA.')
-  if (!state.mainIsAncestor)
-    throw new Error('Candidate is not based on the current remote main SHA.')
+  assertCandidateHistory(state)
   if (!state.candidate)
     throw new Error('No complete required-job set proves this candidate SHA.')
   if (state.candidate.workflow.headSha !== state.head)
@@ -340,12 +344,8 @@ export function readCandidateState(): CandidateState {
     ])
   )
   command('git', ['fetch', '--no-tags', 'origin', 'main'])
-  const mainIsAncestor = commandStatus('git', [
-    'merge-base',
-    '--is-ancestor',
-    remoteMain,
-    head
-  ])
+  const history = readCandidateHistory(remoteMain, head)
+  assertCandidateHistory(history)
   const candidate = readCandidateQualification(head)
   return {
     branch,
@@ -354,7 +354,7 @@ export function readCandidateState(): CandidateState {
     upstreamHead,
     remoteMain,
     clean,
-    mainIsAncestor,
+    ...history,
     candidate
   }
 }
@@ -443,16 +443,4 @@ function command(executable: string, arguments_: readonly string[]): string {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe']
   })
-}
-
-function commandStatus(
-  executable: string,
-  arguments_: readonly string[]
-): boolean {
-  try {
-    command(executable, arguments_)
-    return true
-  } catch {
-    return false
-  }
 }

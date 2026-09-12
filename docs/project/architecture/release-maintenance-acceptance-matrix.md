@@ -626,3 +626,18 @@ The original Main reader requires guest user namespaces; its exact failure
 and successful resource hash are separately recorded. The guest restriction
 was restored before the same-schema case. Host settings were unchanged.
 Canonical handoff and Main promotion remain outstanding.
+
+## Phase 5 qualified and promoted
+
+Commit `4aa710b407ff6f4980b8da4fe7bf913fbee45370` passed complete candidate
+Check `34697104219`, genuine canonical handoff in the bounded KVM guest, and
+repeat invocation with unchanged reuse of all eight program/data/runtime phases.
+Only the final inventory proof incorporates the additional invocation record.
+Archive `outputs/qualification-evidence/canonical-handoff-v3-run-4` passed an
+independent full hash/provenance/content audit. AppImage SHA-256:
+`66b005ff004ce9d649f1b22c15d287000ce581ded2f956a639e02422b085763f`.
+Receipt SHA-256:
+`73d47abe703dfcb2f3c2428f9fda460bc52ff2d0ea60771c5158366803484b34`.
+The same linear SHA was promoted through the canonical command; Main Check
+`34698071688` and its promotion attestation passed. Phase 5 is complete.
+User-desktop installation, manual live acceptance and public release remain open.

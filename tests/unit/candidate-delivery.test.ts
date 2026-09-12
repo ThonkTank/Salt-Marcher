@@ -37,6 +37,7 @@ const valid: CandidateState = {
   remoteMain: 'a'.repeat(40),
   clean: true,
   mainIsAncestor: true,
+  mergeCommits: [],
   candidate: {
     workflow: {
       runId: 1,
@@ -185,6 +186,7 @@ describe('candidate delivery policy', () => {
       { upstreamHead: 'c'.repeat(40) },
       { clean: false },
       { mainIsAncestor: false },
+      { mergeCommits: ['c'.repeat(40)] },
       { candidate: null }
     ])
       expect(() => assertCandidateState({ ...valid, ...patch })).toThrow()

@@ -11799,3 +11799,161 @@ Linearer Candidate vorbereitet: vollständiger Git-Tree vor ergänztem Log exakt
 identisch mit187002ca8 (749046624228a2b74ec8efec8677f1796eeb8d64). Ausschließlich der zusätzliche
 Ausführungslog unterscheidet den Dateistand. Produkt-, Test- und Harnessquellen
 unverändert; neue Commitidentität erhält dennoch vollständige CI und Handoff.
+
+## Phase 5 abgeschlossen – 12. September 2026
+
+Linearer Candidate/Main 4aa710b407ff6f4980b8da4fe7bf913fbee45370:
+Check34697104219 vollständig grün; echter kanonischer Handoff und Wiederholung
+im begrenzten KVM-Gast bestanden. Archiv `canonical-handoff-v3-run-4` mit zwölf
+Dateien unabhängig auf Hashes, vollständige neunphasige Receiptkette, zwei
+unveränderte Originalaufrufe, Boot-Isolation, Runtime-/Schema-/Artefaktnachweise
+und identische Wiederverwendung der ersten acht Phasen geprüft. Letzte Phase
+aktualisiert ausschließlich das um den zweiten Aufruf erweiterte Inventar.
+Artefakt: 66b005ff004ce9d649f1b22c15d287000ce581ded2f956a639e02422b085763f.
+Receipt: 73d47abe703dfcb2f3c2428f9fda460bc52ff2d0ea60771c5158366803484b34.
+Privater RAM-Seed entfernt. Originalreceipts bytegleich in den gleichnamigen,
+sauberen separaten Hostcheckout übernommen; kein Host-AppImage ausgeführt.
+
+Kanonische Promotion `pnpm delivery:promote` Exit0 ohne Regelumgehung;
+Main wurde e4fc7fd4e→4aa710b40 vorwärtsgeschoben. Main-Check34698071688 inklusive
+`Main · promotion/evidence attestation` grün, exakter SHA bestätigt. PR678
+automatisch als merged erkannt. PR676 ist durch den linearen Candidate ersetzt;
+seine Branch-/Commit-/Artefaktnachweise bleiben erhalten.
+
+Plan-Audit Phase5 bestanden: echte unterschiedliche AppImages und Schemawege,
+Weiterarbeit, vollständige Profil- und Party-History-Vergleiche, Fehlerfälle,
+Aktivierungs-/Recovery-/Migrationsabbrüche, tatsächlicher Schutzbackup-Restore,
+kanonischer Handoff einschließlich Wiederholung und grünes Main. Die beiden
+zuletzt entdeckten Handoff-Fehler sind durch Regressionstests und echte Läufe
+behoben. Die Historie entspricht der vorhandenen Main-Regel.
+Roadmap-Audit Phase5 bestanden: sämtliche beschriebenen automatisierten
+Abnahmekriterien sind mit ihrer tatsächlichen historischen/aktuellen Scope
+belegt. Originale negative Kontrollen bleiben negativ; keine nachträgliche
+Umbenennung alter Artefakte in aktuelle oder öffentliche Releases.
+
+Status: Phasen1–5 abgeschlossen. Phase6 beginnt; Phase7 offen. Automatisierte
+Qualifikation und kanonische Übergabe im Gast sind belegt. Installation auf dem
+Benutzerdesktop, manueller Livetest mit vorhandenen Nutzerdaten und öffentlicher
+Release bleiben ausdrücklich eigene, noch offene Zustände. Kanonische Roadmap
+unverändert. Aktiver Arbeitscheckout ab jetzt `outputs/Salt-Marcher-linear`;
+älterer Checkout und fremde Benutzeränderungen bleiben erhalten.
+
+## Phase 6 – Plan gegen den überprüften Main-Stand
+
+Ausgangspunkt: Main4aa710b40, neue Arbeitsbranch
+`candidate/release-pipeline-and-ci`, Phasen1–5 abgeschlossen. Kanonische Roadmap
+unverändert. Am12.9.2026 live geprüft: GitHub hat weiterhin null Environments.
+Die vorhandenen Releases v0.2.0–v0.2.10 enthalten nur Dokumente, keine AppImages
+oder Release-Manifeste; sie sind keine geeigneten Vergleichsartefakte. Der
+aktuelle Baseline-Befehl baut für0.2.0 denselben Code als0.1.99 erneut und nimmt
+sonst implizit latest. Publish verwendet freien Text und Hash ohne vollständige
+Bindung an Abnahmeauftrag, Quellcommit und qualifizierte Vergleichsstände.
+
+Ziel: überprüfbarer, unveränderlicher Releaseauftrag mit expliziten tatsächlichen
+Vergleichsartefakten; genau ein Zielbuild und dieselben Bytes für Qualifikation,
+Entwurf, Livetest und Veröffentlichung. Tatsächlich konfigurierte manuelle
+GitHub-Freigabe. Getrennt davon geprüfte risikobasierte CI-Auswahl mit vollständigem
+Fallback. Ein grüner Build allein bleibt keine Abnahme.
+
+### Arbeitspaket 6A – Releasevertrag, Qualifikation und Freigabe
+
+1. Versionierte Zod-Verträge für Abnahmeauftrag, vollständige Artefaktidentitäten,
+   Qualifikationsnachweis und manuelle Live-Abnahme einführen. Zielversion und
+   SHA, Plattform/Architektur, Schema-Versionen, Manifest-/AppImage-Hash und Größe
+   sowie ausdrücklich benannte Vergleichsartefakte einschließlich Herkunft
+   binden. Keine implizite latest-Auswahl oder Sonderbehandlung einer Erstversion.
+   Nicht veröffentlichte Vergleichsfixtures ausdrücklich als solche kennzeichnen.
+2. Baseline-Resolver und Releaseprüfung auf diese Verträge umstellen. Nur zuvor
+   identifizierte/gehashte Artefakte verwenden; vorhandene Dokument-Releases
+   ablehnen. Historische AppImages aus Phase5 bieten echte Vergleichsschemas;
+   bei CI-Bereitstellung erhalten sie eigene unveränderliche Buildreceipts.
+   Keine behauptete historische Migration durch Umbenennen desselben Zielbuilds.
+3. Den bisherigen begrenzten release-qualification-Modus und den vollständigen
+   Phase5-Prüfer zusammenführen: die ausgelieferte Ziel-App wird nach dem Bau
+   unverändert verwendet, Datenarbeit bleibt im Utility-Prozess bei bestehenden
+   Eigentümern, UI-Prüfung nutzt den eingeschränkten Bridge-/Testzugang in einem
+   nachweislich isolierten Profil. Keine Host-AppImage-Ausführung. Ganze Profile,
+   aktive/inaktive/gelöschte Kampagnen, eigene Dateien, Einstellungen, Spielstand
+   und History vergleichen; Installation, bewusstes Update, Weiterarbeit,
+   vorgeschaltete Sicherung und tatsächlicher Restore sowie Recovery belegen.
+   Bestehende historische Negativkontrollen bleiben separat dokumentiert.
+4. Release-Workflow nimmt einen überprüfbaren Auftrag für seinen unveränderlichen
+   Main-SHA an. Ziel einmal bauen; verifizierte Bytes und Nachweise zwischen Jobs
+   übertragen. Entwurf enthält Manifest, Auftrag, Qualifikation und Release Notes.
+   Wiederholung darf Assets/Versionen nicht überschreiben; fehlerhafte Nachweise
+   verhindern Draft/Publish. Publish bindet sich an den geprüften Artefaktcommit,
+   nicht an inzwischen fortgeschrittenes Main, und baut nichts neu.
+5. GitHub-Environment `release` mit echtem erforderlichem Reviewer einrichten und
+   per API zurücklesen/prüfen. Ein Workflowverweis allein genügt nicht. Der
+   angemeldete Repositoryeigentümer ist ThonkTank (129946818); menschliche
+   Freigabe wird nicht durch den Agenten ersetzt. Konfiguration und Prüfung als
+   überprüfbare Routine aufnehmen. Vor Paketwechsel Verfügbarkeit0.3.0 erneut
+   ausdrücklich prüfen; Datenvertrag, Betriebsanleitung und Release Notes auf
+   den tatsächlichen Zustand bringen. Noch keine Veröffentlichung in Phase6.
+
+### Arbeitspaket 6B – Entwicklungsablauf und CI-Auswahl
+
+1. Vor kostenintensiver Qualifikation aktuelle Main-Ancestry und lineare Historie
+   prüfen; die gerade beobachtete GH013-Verletzung früh und verständlich melden.
+2. Explizite Risiko-/Pfadzuordnung und daraus abgeleiteten Prüfauftrag versionieren.
+   Bekannte Dokument-/Test-/UI-/Persistenz-/Wartungs-/Build-/CI-Änderungen zu ihren
+   notwendigen Prüfungen zuordnen; unbekannte/mehrdeutige Änderungen vollständig
+   prüfen. Rename-/Delete-/Mehrfachrisiken und Änderungen der Auswahllogik selbst
+   konservativ behandeln. Veröffentlichungen behalten volle relevante Abnahme.
+3. Workflow, required-job-Vertrag, Candidate-/Main-Evidenceprüfung und AGENTS.md
+   gemeinsam anpassen. Übersprungene Jobs dürfen nur bei belegtem passenden
+   Prüfauftrag akzeptiert werden; kein pauschales Akzeptieren von skipped.
+   Prüfungen bleiben auf unveränderlichen Checkouts. Erst nach negativen und
+   positiven Auswahltests aktivieren; bis dahin gilt das vollständige Jobset.
+
+Validierung: Vertrags-/Manipulations-/Herkunftstests, explizite Baseline-Auswahl,
+fehlende/falsche Assets und unvollständige Berichte, Publish ohne Überschreiben
+oder Neubau, reale Rückleseprüfung der Freigaberegel, aussagekräftige CI-Auswahl-
+und Merge-Historie-Regressionen. End-to-End-Qualifikation mit zwei tatsächlichen
+AppImages einschließlich vollständiger Datenvergleiche im begrenzten separaten
+KVM-Gast; alle Nachweise außerhalb temporärer Disks archivieren und unabhängig
+prüfen. Abschließend separate Plan-/Roadmap-Audits, erforderliche Candidate-CI,
+ggf. kanonischer Handoff nach App-Fingerprint und exakt grünes Main. Phase6 erst
+schließen, wenn beide Arbeitspakete belegt sind. Phase7-Livetest mit Kopie echter
+Nutzerdaten und manuelle Veröffentlichungsfreigabe bleiben anschließend offen.
+
+Umsetzungsbeginn Phase6 mit dem unabhängig prüfbaren Arbeitspaket6B.1:
+Gemeinsame lesende Git-Historienprüfung (aufgelöste SHA-Werte, Main-Ancestry,
+neue Merge-Commits ausschließlich im Candidatebereich). Candidate-State und
+Handoff/Promotion rufen sie vor der teuren Remote-Qualifikationssuche auf.
+Ein echter temporärer Git-Graph prüft abgewiesenen neuen Merge, erlaubte alte
+Main-Merges und abgezweigten veralteten Candidate. Vollständige CI-Auswahl bleibt
+bis6B.3 unverändert; diese frühe Prüfung wird später auch dort angebunden.
+
+6B.1 lokal validiert: neun Tests bestanden, einschließlich eines echten
+Git-Graphs mit neuem Merge, bereits in Main enthaltenem Merge und veraltetem
+Candidate. Beide TypeScript-Projekte und ESLint bestanden unter2GiB-Grenze
+mit ausgeschaltetem Swap. Nachweise: `work/phase6-candidate-history-tests.log`
+und `work/phase6-candidate-history-types.log`. Die Historienprüfung läuft im
+Candidatepfad vor der Remote-Qualifikationssuche; auch übergebene Candidate-
+Zustände werden geprüft. CI-Workflow/Prüfauswahl noch unverändert; Einbindung
+in deren frühen Prüfauftrag bleibt6B.3. Phase6-Änderungen noch nicht committed,
+remote geprüft oder promotet; lediglich Phase5 liegt vollständig grün auf Main.
+
+Phase6-Grundlagen lokal geprüft: Releaseauftrag mit expliziten Artefaktquellen,
+getrennt gekennzeichneten Qualifikationsfixtures und Pflichtszenarien; Ziel-SHA,
+Version/Schema, Datei-/Manifestidentität sowie echte Zwischenstände gebunden.
+Qualifikationsvertrag v2 verlangt vollständige Profil- und Weiterarbeitsvergleiche,
+beide Schutzbackup-Restore-Schritte, alle angeforderten Fälle und Recovery unter
+Erhalt späterer Arbeit. Alte schwache v1-Berichte werden nicht akzeptiert.
+19 Vertragsprüfungen, ESLint und beide TypeScript-Projekte bestanden;
+`work/phase6-release-qualification-checks.log`. Diese Dokumentverifikation ist
+noch nicht mit dem tatsächlichen Release-AppImage-Prüfer/Workflow verbunden;
+sie ersetzt weder Laufzeitnachweise noch Live-CI-Provenienz-/Dateiprüfung.
+
+Freigabekonfiguration: lesende Vorschau, explizites Anwenden und strikte Rücklese-
+prüfung für Environment `release`, Reviewer ThonkTank129946818 und ausschließlich
+Branchmain implementiert. Sechs Tests samt Lint/Typen bestanden, einschließlich
+ignorierter Reviewer-Konfiguration, HTTP403 statt404, Zusatzbranches und
+idempotenter Wiederholung. `work/phase6-release-environment-checks.log`.
+Das Repository ist public; Administration-Schreibrecht ist live vorhanden.
+Dokumentierte API-Grundlage: https://docs.github.com/en/rest/deployments/environments
+und https://docs.github.com/en/rest/actions/workflow-runs#get-the-review-history-for-a-workflow-run.
+Kein Freigabe-/pending_deployments-Aufruf wird durch diese Konfiguration ausgelöst.
+Die späteren Publish-Prüfungen müssen die tatsächliche Review-Historie zusätzlich
+an den Workflow und das Environment binden. Gesamtphase6 bleibt in Arbeit.
