@@ -1,0 +1,726 @@
+{
+  "coverage": "historical-loot-generated-partial-v2",
+  "fixture": {
+    "campaignId": "01a08535-60fc-7000-8b6b-c73513284fa8",
+    "characterId": "01a08535-6260-7000-ad61-aaad9b07417c",
+    "treasureId": "01a08535-6279-7000-ab83-685c649d41a5",
+    "itemId": "01a08535-627a-7000-9a84-f971818c4b7e",
+    "generated": {
+      "runId": "01a08535-62d2-7000-a3ca-a74b42634681",
+      "sourceTreasureId": "treasure:1",
+      "treasureId": "01a08535-62df-7000-aa97-4db7326e441d",
+      "itemId": "01a08535-62df-7003-807f-ad0e3ce94e2a"
+    }
+  },
+  "settings": {
+    "revision": 1,
+    "preferences": {
+      "theme": "dark",
+      "sessionLayout": {
+        "controlPaneWidth": 300,
+        "scenarioPaneWidth": 264,
+        "centerTab": "details"
+      }
+    }
+  },
+  "registry": {
+    "activeCampaignId": "01a08535-60fc-7000-8b6b-c73513284fa8",
+    "campaigns": [
+      {
+        "id": "01a08535-60fc-7000-8b6b-c73513284fa8",
+        "name": "Historische Beute",
+        "createdAt": "2026-09-09T08:07:43.101Z"
+      }
+    ],
+    "trashedCampaigns": []
+  },
+  "party": {
+    "revision": 2,
+    "members": [
+      {
+        "id": "01a08535-611e-7000-9501-0777feb446a1",
+        "name": "Alrik",
+        "playerName": null,
+        "species": null,
+        "characterClass": null,
+        "languages": [],
+        "level": 3,
+        "passivePerception": null,
+        "passiveInvestigation": null,
+        "passiveInsight": null,
+        "armorClass": null,
+        "movementSpeedFeet": null,
+        "travelPosition": null,
+        "attachedToPartyToken": false,
+        "active": false,
+        "xp": 900,
+        "currentLevelFloor": 900,
+        "nextLevelXp": 2700,
+        "xpSinceShortRest": 0,
+        "xpSinceLongRest": 0
+      },
+      {
+        "id": "01a08535-611e-7001-ab5a-e5829f0a49bc",
+        "name": "Brynn",
+        "playerName": null,
+        "species": null,
+        "characterClass": null,
+        "languages": [],
+        "level": 3,
+        "passivePerception": null,
+        "passiveInvestigation": null,
+        "passiveInsight": null,
+        "armorClass": null,
+        "movementSpeedFeet": null,
+        "travelPosition": null,
+        "attachedToPartyToken": false,
+        "active": false,
+        "xp": 900,
+        "currentLevelFloor": 900,
+        "nextLevelXp": 2700,
+        "xpSinceShortRest": 0,
+        "xpSinceLongRest": 0
+      },
+      {
+        "id": "01a08535-611e-7002-abce-9ed7a1b5422a",
+        "name": "Cora",
+        "playerName": null,
+        "species": null,
+        "characterClass": null,
+        "languages": [],
+        "level": 3,
+        "passivePerception": null,
+        "passiveInvestigation": null,
+        "passiveInsight": null,
+        "armorClass": null,
+        "movementSpeedFeet": null,
+        "travelPosition": null,
+        "attachedToPartyToken": false,
+        "active": false,
+        "xp": 900,
+        "currentLevelFloor": 900,
+        "nextLevelXp": 2700,
+        "xpSinceShortRest": 0,
+        "xpSinceLongRest": 0
+      },
+      {
+        "id": "01a08535-611e-7003-8b6f-acd9b2be4f53",
+        "name": "Dain",
+        "playerName": null,
+        "species": null,
+        "characterClass": null,
+        "languages": [],
+        "level": 3,
+        "passivePerception": null,
+        "passiveInvestigation": null,
+        "passiveInsight": null,
+        "armorClass": null,
+        "movementSpeedFeet": null,
+        "travelPosition": null,
+        "attachedToPartyToken": false,
+        "active": false,
+        "xp": 900,
+        "currentLevelFloor": 900,
+        "nextLevelXp": 2700,
+        "xpSinceShortRest": 0,
+        "xpSinceLongRest": 0
+      },
+      {
+        "id": "01a08535-6260-7000-ad61-aaad9b07417c",
+        "name": "Mara",
+        "playerName": "Abnahme",
+        "species": "Mensch",
+        "characterClass": "Waldl\u00e4ufer",
+        "languages": [
+          "Gemeinsprache"
+        ],
+        "level": 3,
+        "passivePerception": 14,
+        "passiveInvestigation": 12,
+        "passiveInsight": 13,
+        "armorClass": 16,
+        "movementSpeedFeet": 30,
+        "travelPosition": null,
+        "attachedToPartyToken": false,
+        "active": true,
+        "xp": 900,
+        "currentLevelFloor": 900,
+        "nextLevelXp": 2700,
+        "xpSinceShortRest": 0,
+        "xpSinceLongRest": 0
+      }
+    ],
+    "adventuringDay": {
+      "available": true,
+      "partySize": 1,
+      "dailyBudget": 1200,
+      "shortRestXp": 0,
+      "longRestXp": 0
+    }
+  },
+  "treasure": {
+    "id": "01a08535-6279-7000-ab83-685c649d41a5",
+    "revision": 1,
+    "label": "Karten der Salzfurt",
+    "anchor": {
+      "kind": "unplaced"
+    },
+    "source": {
+      "kind": "manual"
+    },
+    "items": [
+      {
+        "id": "01a08535-627a-7000-9a84-f971818c4b7e",
+        "provenance": {
+          "kind": "manual"
+        },
+        "name": "Handkarte",
+        "quantity": 3,
+        "allocatedQuantity": 1,
+        "unitValueCp": 250,
+        "stackable": true,
+        "magic": false,
+        "rarity": null,
+        "curseName": null,
+        "containerId": null,
+        "position": 0
+      }
+    ],
+    "containers": [],
+    "totalValueCp": 750,
+    "allocatedValueCp": 250,
+    "distributionState": "partial",
+    "createdAt": "2026-09-09T08:07:43.481Z",
+    "updatedAt": "2026-09-09T08:07:43.487Z"
+  },
+  "ledger": {
+    "characterId": "01a08535-6260-7000-ad61-aaad9b07417c",
+    "revision": 2,
+    "entries": [
+      {
+        "id": "01a08535-62ee-7001-b954-558514db4493",
+        "characterId": "01a08535-6260-7000-ad61-aaad9b07417c",
+        "treasureId": "01a08535-62df-7000-aa97-4db7326e441d",
+        "treasureItemId": "01a08535-62df-7003-807f-ad0e3ce94e2a",
+        "source": "award",
+        "itemName": "Ladder (10 foot)",
+        "quantity": 1,
+        "unitValueCp": 10,
+        "status": "received",
+        "provenance": {
+          "kind": "treasure_distribution",
+          "treasureLabel": "Generierte Beute der Salzfurt",
+          "recipientName": "Mara"
+        },
+        "rewardProvenance": {
+          "runId": "01a08535-62d2-7000-a3ca-a74b42634681",
+          "generatedTreasureId": "treasure:1",
+          "rewardChannel": "encounter"
+        },
+        "correctsEntryId": null,
+        "supersededByEntryId": null,
+        "correctionReason": null,
+        "receivedAt": "2026-09-09T08:07:43.597Z"
+      },
+      {
+        "id": "01a08535-6280-7000-80d9-6a8c43c4431e",
+        "characterId": "01a08535-6260-7000-ad61-aaad9b07417c",
+        "treasureId": "01a08535-6279-7000-ab83-685c649d41a5",
+        "treasureItemId": "01a08535-627a-7000-9a84-f971818c4b7e",
+        "source": "award",
+        "itemName": "Handkarte",
+        "quantity": 1,
+        "unitValueCp": 250,
+        "status": "received",
+        "provenance": {
+          "kind": "treasure_distribution",
+          "treasureLabel": "Karten der Salzfurt",
+          "recipientName": "Mara"
+        },
+        "rewardProvenance": null,
+        "correctsEntryId": null,
+        "supersededByEntryId": null,
+        "correctionReason": null,
+        "receivedAt": "2026-09-09T08:07:43.487Z"
+      }
+    ]
+  },
+  "generated": {
+    "run": {
+      "runKind": "session",
+      "id": "01a08535-62d2-7000-a3ca-a74b42634681",
+      "originFingerprint": "09481fd2a77a02533dbc4e8004c686dad534ce184e3b834997a7ef76d26f2c66",
+      "generatedAt": "2026-08-09T10:00:00.000Z",
+      "engineVersion": "encounter-v5",
+      "rewardEngineVersion": "reward-v1",
+      "catalogVersion": "catalog-2026-07-16",
+      "catalogContentHash": "c67ec3eb357ff74af27e00c2be8654d0baed40fab288b03239dd0948c132afca",
+      "generatorPreset": {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "revision": 0,
+        "configHash": "31700d18df7c3a0ae73a8223c3d0762ad282dd260e4939c740c617104eea4d13"
+      },
+      "input": {
+        "party": [
+          {
+            "level": 3,
+            "count": 2
+          }
+        ],
+        "adventureDayFraction": "0.6",
+        "encounterCount": 2,
+        "seed": 1000
+      },
+      "session": {
+        "partyCount": 2,
+        "dayXpBudget": 2400,
+        "sessionXpTarget": 1440,
+        "averageLevel": 2,
+        "encounterCount": 2,
+        "goldBudgetCp": 22560,
+        "normalTreasureCount": 1,
+        "overstockTreasureCount": 1,
+        "magicTargets": {
+          "Common": 0,
+          "Uncommon": 0,
+          "Rare": 0,
+          "Very Rare": 0,
+          "Legendary": 0
+        }
+      },
+      "rewardBasis": null,
+      "encounters": [
+        {
+          "encounterNumber": 1,
+          "targetXp": 348,
+          "adjustedXp": 340,
+          "xpDelta": -8,
+          "difficulty": "EASY",
+          "patternId": "preset:standard-minion",
+          "blocks": [
+            {
+              "role": "Standard",
+              "challengeRating": "1/2",
+              "challengeRatingCode": 0,
+              "quantity": 1,
+              "statblockSlots": 1,
+              "unitXp": 100
+            },
+            {
+              "role": "Minion",
+              "challengeRating": "0",
+              "challengeRatingCode": -3,
+              "quantity": 7,
+              "statblockSlots": 1,
+              "unitXp": 10
+            }
+          ],
+          "monsterCount": 8,
+          "statblockCount": 2,
+          "effectiveMonsterCount": 3.2135943621178655,
+          "xpMultiplier": 2,
+          "bossinessRank": 2,
+          "constraintDiagnostics": []
+        },
+        {
+          "encounterNumber": 2,
+          "targetXp": 1092,
+          "adjustedXp": 1100,
+          "xpDelta": 8,
+          "difficulty": "DEADLY",
+          "patternId": "preset:boss-support",
+          "blocks": [
+            {
+              "role": "Boss",
+              "challengeRating": "2",
+              "challengeRatingCode": 2,
+              "quantity": 1,
+              "statblockSlots": 1,
+              "unitXp": 450
+            },
+            {
+              "role": "Support",
+              "challengeRating": "1/4",
+              "challengeRatingCode": -1,
+              "quantity": 2,
+              "statblockSlots": 1,
+              "unitXp": 50
+            }
+          ],
+          "monsterCount": 3,
+          "statblockCount": 2,
+          "effectiveMonsterCount": 1.6666666666666665,
+          "xpMultiplier": 2,
+          "bossinessRank": 1,
+          "constraintDiagnostics": []
+        }
+      ],
+      "treasures": [
+        {
+          "id": "treasure:1",
+          "stockClass": "normal",
+          "rewardChannel": "encounter",
+          "anchorEncounterNumber": 2,
+          "themeId": "theme:travel",
+          "theme": "Travel",
+          "targetValueCp": "22560",
+          "actualValueCp": 22560,
+          "items": [
+            {
+              "id": "treasure:1:item:1",
+              "treasureId": "treasure:1",
+              "catalogItemId": "item:object:ladder-10-foot",
+              "role": "flavor",
+              "name": "Ladder (10 foot)",
+              "modifier": null,
+              "quantity": 50,
+              "unitValueCp": 10,
+              "totalValueCp": 500,
+              "stackable": true,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:1:0:container",
+              "capacity": 400,
+              "position": 0
+            },
+            {
+              "id": "treasure:1:item:2",
+              "treasureId": "treasure:1",
+              "catalogItemId": "item:livestock:plainscow",
+              "role": "useful",
+              "name": "Plainscow",
+              "modifier": null,
+              "quantity": 1,
+              "unitValueCp": 20000,
+              "totalValueCp": 20000,
+              "stackable": false,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:1:1:container",
+              "capacity": 9999,
+              "position": 1
+            },
+            {
+              "id": "treasure:1:item:3",
+              "treasureId": "treasure:1",
+              "catalogItemId": null,
+              "role": "compact_value",
+              "name": "copper_pieces",
+              "modifier": null,
+              "quantity": 2060,
+              "unitValueCp": 1,
+              "totalValueCp": 2060,
+              "stackable": true,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:1:0:container",
+              "capacity": 41.2,
+              "position": 2
+            }
+          ],
+          "containers": [
+            {
+              "id": "treasure:1:0:container",
+              "catalogContainerId": "container:cart",
+              "name": "Cart",
+              "capacity": 1000,
+              "position": 0
+            },
+            {
+              "id": "treasure:1:1:container",
+              "catalogContainerId": "container:pile",
+              "name": "50\u00d7 Pile",
+              "capacity": 10000,
+              "position": 1
+            }
+          ]
+        },
+        {
+          "id": "treasure:2",
+          "stockClass": "overstock",
+          "rewardChannel": "environment",
+          "anchorEncounterNumber": null,
+          "themeId": "theme:arcana",
+          "theme": "Arcana",
+          "targetValueCp": "4512",
+          "actualValueCp": 4512,
+          "items": [
+            {
+              "id": "treasure:2:item:1",
+              "treasureId": "treasure:2",
+              "catalogItemId": "item:material:turquoise",
+              "role": "compact_value",
+              "name": "Turquoise",
+              "modifier": null,
+              "quantity": 2,
+              "unitValueCp": 1000,
+              "totalValueCp": 2000,
+              "stackable": true,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:2:0:container",
+              "capacity": 0.5,
+              "position": 0
+            },
+            {
+              "id": "treasure:2:item:2",
+              "treasureId": "treasure:2",
+              "catalogItemId": "item:material:block-of-incense",
+              "role": "flavor",
+              "name": "Block of Incense",
+              "modifier": null,
+              "quantity": 50,
+              "unitValueCp": 50,
+              "totalValueCp": 2500,
+              "stackable": true,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:2:0:container",
+              "capacity": 12.5,
+              "position": 1
+            },
+            {
+              "id": "treasure:2:item:3",
+              "treasureId": "treasure:2",
+              "catalogItemId": null,
+              "role": "compact_value",
+              "name": "copper_pieces",
+              "modifier": null,
+              "quantity": 12,
+              "unitValueCp": 1,
+              "totalValueCp": 12,
+              "stackable": true,
+              "magic": false,
+              "rarity": null,
+              "curseName": null,
+              "curseEffect": null,
+              "containerId": "treasure:2:0:container",
+              "capacity": 0.24,
+              "position": 2
+            }
+          ],
+          "containers": [
+            {
+              "id": "treasure:2:0:container",
+              "catalogContainerId": "container:chest",
+              "name": "Chest",
+              "capacity": 100,
+              "position": 0
+            }
+          ]
+        }
+      ],
+      "rewardSummary": {
+        "normalValueCp": 22560,
+        "overstockValueCp": 4512,
+        "magicCount": 0
+      },
+      "warnings": [],
+      "audits": [
+        {
+          "code": "encounter_target_sum",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "actual": 1440,
+            "expected": 1440
+          }
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "encounterCount": 2,
+            "zeroCandidateCount": 0
+          }
+        },
+        {
+          "code": "encounter_selector_fit",
+          "passed": true,
+          "hard": false,
+          "parameters": {
+            "encounterCount": 2,
+            "fitCount": 2
+          }
+        },
+        {
+          "code": "deterministic_seed_path",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "algorithm": "sha256_named_streams"
+          }
+        },
+        {
+          "code": "treasure_count",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "actual": 2,
+            "expected": 2
+          }
+        },
+        {
+          "code": "unique_encounter_anchors",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "anchorCount": 1,
+            "uniqueAnchorCount": 1
+          }
+        },
+        {
+          "code": "treasure_assignment_complete",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "emptyTreasureCount": 0,
+            "treasureCount": 2
+          }
+        },
+        {
+          "code": "normal_loot_budget_tolerance",
+          "passed": true,
+          "hard": false,
+          "parameters": {
+            "actualCp": 22560,
+            "targetCp": 22560,
+            "tolerancePercent": 15
+          }
+        },
+        {
+          "code": "magic_item_count",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "actual": 0,
+            "expected": 0
+          }
+        },
+        {
+          "code": "packing_validity",
+          "passed": true,
+          "hard": true,
+          "parameters": {
+            "invalidAssignmentCount": 0
+          }
+        }
+      ]
+    },
+    "treasure": {
+      "id": "01a08535-62df-7000-aa97-4db7326e441d",
+      "revision": 1,
+      "label": "Generierte Beute der Salzfurt",
+      "anchor": {
+        "kind": "unplaced"
+      },
+      "source": {
+        "kind": "generated",
+        "runId": "01a08535-62d2-7000-a3ca-a74b42634681",
+        "generatedTreasureId": "treasure:1"
+      },
+      "items": [
+        {
+          "id": "01a08535-62df-7003-807f-ad0e3ce94e2a",
+          "provenance": {
+            "kind": "generator",
+            "sourceLineId": "treasure:1:item:1",
+            "catalogEntry": {
+              "kind": "item",
+              "id": "item:object:ladder-10-foot"
+            }
+          },
+          "name": "Ladder (10 foot)",
+          "quantity": 50,
+          "allocatedQuantity": 1,
+          "unitValueCp": 10,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "containerId": "01a08535-62df-7001-8e25-2ccd8bde486b",
+          "position": 0
+        },
+        {
+          "id": "01a08535-62df-7004-aae9-a5929cbf4727",
+          "provenance": {
+            "kind": "generator",
+            "sourceLineId": "treasure:1:item:2",
+            "catalogEntry": {
+              "kind": "item",
+              "id": "item:livestock:plainscow"
+            }
+          },
+          "name": "Plainscow",
+          "quantity": 1,
+          "allocatedQuantity": 0,
+          "unitValueCp": 20000,
+          "stackable": false,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "containerId": "01a08535-62df-7002-bd56-64847d7f4bd1",
+          "position": 1
+        },
+        {
+          "id": "01a08535-62df-7005-a10a-aaf806974de9",
+          "provenance": {
+            "kind": "generator",
+            "sourceLineId": "treasure:1:item:3",
+            "catalogEntry": null
+          },
+          "name": "copper_pieces",
+          "quantity": 2060,
+          "allocatedQuantity": 0,
+          "unitValueCp": 1,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curseName": null,
+          "containerId": "01a08535-62df-7001-8e25-2ccd8bde486b",
+          "position": 2
+        }
+      ],
+      "containers": [
+        {
+          "id": "01a08535-62df-7001-8e25-2ccd8bde486b",
+          "provenance": {
+            "kind": "generator",
+            "sourceContainerId": "treasure:1:0:container",
+            "catalogContainerId": "container:cart"
+          },
+          "name": "Cart",
+          "capacity": 1000,
+          "position": 0
+        },
+        {
+          "id": "01a08535-62df-7002-bd56-64847d7f4bd1",
+          "provenance": {
+            "kind": "generator",
+            "sourceContainerId": "treasure:1:1:container",
+            "catalogContainerId": "container:pile"
+          },
+          "name": "50\u00d7 Pile",
+          "capacity": 10000,
+          "position": 1
+        }
+      ],
+      "totalValueCp": 22560,
+      "allocatedValueCp": 10,
+      "distributionState": "partial",
+      "createdAt": "2026-09-09T08:07:43.583Z",
+      "updatedAt": "2026-09-09T08:07:43.597Z"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { initializeLootOperationJournalSchema } from '../../loot/loot-operation-journal.js'
 import { initializePartyHistorySchema } from '../../party/party-history-store.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
@@ -345,6 +346,28 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-41-to-42-party-sections-and-history',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-42-to-43-converge-party-history-and-loot-receipts',
+      role: 'campaign',
+      fromVersion: 42,
+      toVersion: 43,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        // Both pre-release schema-42 histories must converge without resetting
+        // existing Party progress, history entries or active Loot receipts.
+        migratePartySections41To42(database)
+        initializePartyHistorySchema(database)
+        initializeLootOperationJournalSchema(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-42-to-43-converge-party-history-and-loot-receipts',
             new Date().toISOString()
           )
       }

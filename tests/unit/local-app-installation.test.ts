@@ -1,3 +1,4 @@
+import { installationPhaseEvidence } from '../../scripts/installation-phase-evidence.js'
 import { defaultSessionLayoutPreference } from '../../src/shared/contracts/session-layout.js'
 import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
@@ -68,6 +69,124 @@ function installAndAccept(options: InstallLocalAppOptions) {
 }
 
 describe('local AppImage installation', () => {
+  it('keeps every installation phase proof stable after later steps and runtime acceptance', () => {
+    const fixture = createFixture(build('a'))
+    const targets = [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const
+    const proofs = targets.map((target) =>
+      installationPhaseEvidence(
+        advanceLocalAppInstallation(fixture.options, target),
+        target
+      )
+    )
+    expect(proofs[0]!.deploymentManifestSha256).toBeNull()
+    expect(proofs[0]!.installedSha256).toBeNull()
+    expect(proofs[1]!.deploymentManifestSha256).not.toBeNull()
+    expect(proofs[1]!.installedSha256).toBeNull()
+    expect(proofs[2]!.installedSha256).not.toBeNull()
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const coordinator = new MaintenanceCoordinator(paths.root)
+    coordinator.commit(coordinator.read()!.id)
+    for (const [index, target] of targets.entries()) {
+      const installed = inspectLocalAppInstallation(fixture.options, target)
+      expect(installed).not.toBeNull()
+      expect(installationPhaseEvidence(installed!, target)).toEqual(
+        proofs[index]
+      )
+      expect(
+        installationPhaseEvidence(
+          { ...installed!, sourceDataHash: 'f'.repeat(64) },
+          target
+        )
+      ).not.toEqual(proofs[index])
+      expect(
+        installationPhaseEvidence(
+          { ...installed!, backupManifestSha256: 'f'.repeat(64) },
+          target
+        )
+      ).not.toEqual(proofs[index])
+      if (target !== 'backup-created')
+        expect(
+          installationPhaseEvidence(
+            { ...installed!, deploymentManifestSha256: 'f'.repeat(64) },
+            target
+          )
+        ).not.toEqual(proofs[index])
+      if (target === 'activated')
+        expect(
+          installationPhaseEvidence(
+            { ...installed!, installedSha256: 'f'.repeat(64) },
+            target
+          )
+        ).not.toEqual(proofs[index])
+    }
+  })
+
+  it('retains installation evidence after accepted first-start initialization and later work', () => {
+    const fixture = createFixture(build('a'))
+    const first = activateLocalApp(fixture.options)
+    const coordinator = new MaintenanceCoordinator(first.paths.root)
+    createDatabase(first.paths.campaignData, schemaVersion)
+    writeFileSync(
+      join(first.paths.profile, 'settings.json'),
+      '{"theme":"dark"}'
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+    coordinator.commit(coordinator.read()!.id)
+    for (const target of [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const)
+      expect(
+        inspectLocalAppInstallation(fixture.options, target)?.sourceDataHash
+      ).toBe(first.sourceDataHash)
+    writeFileSync(join(first.paths.profile, 'later-work.txt'), 'keep this work')
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    expect(
+      readFileSync(join(first.paths.profile, 'later-work.txt'), 'utf8')
+    ).toBe('keep this work')
+    const state = coordinator.read()!
+    writeFileSync(
+      coordinator.journalPath,
+      JSON.stringify({
+        ...state,
+        next: { ...state.next, version: 'f'.repeat(40) }
+      })
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+  })
+
+  it('rejects damaged retained backups even after accepted profile changes', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const first = installAndAccept(fixture.options)
+    writeFileSync(join(paths.profile, 'later-work.txt'), 'keep this work')
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    writeFileSync(
+      join(backupPayload(first.backupPath!), 'installation.sqlite'),
+      'damaged'
+    )
+    for (const target of [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const)
+      expect(inspectLocalAppInstallation(fixture.options, target)).toBeNull()
+    expect(readFileSync(join(paths.profile, 'later-work.txt'), 'utf8')).toBe(
+      'keep this work'
+    )
+  })
+
   it('does not reuse activation evidence contradicted by the common journal', () => {
     const fixture = createFixture(build('a'))
     const first = installAndAccept(fixture.options)
@@ -492,7 +611,27 @@ describe('local AppImage installation', () => {
     )
     expect(result.paths.icon).toContain('/hicolor/256x256/apps/')
     expect(existsSync(result.paths.profile)).toBe(true)
-    expect(readdirSync(result.paths.campaignData)).toEqual([])
+    const initialized = new Database(
+      join(result.paths.campaignData, 'installation.sqlite'),
+      { readonly: true, fileMustExist: true }
+    )
+    try {
+      expect(initialized.pragma('user_version', { simple: true })).toBe(
+        schemaVersion
+      )
+      expect(
+        initialized.prepare('SELECT COUNT(*) AS count FROM campaigns').get()
+      ).toEqual({ count: 0 })
+      expect(
+        initialized
+          .prepare(
+            'SELECT revision FROM installation_settings WHERE singleton = 1'
+          )
+          .get()
+      ).toEqual({ revision: 0 })
+    } finally {
+      initialized.close()
+    }
     expect(new MaintenanceCoordinator(result.paths.root).read()?.phase).toBe(
       'awaiting-start'
     )

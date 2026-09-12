@@ -529,7 +529,11 @@ describe('Session travel console', () => {
       }
       const fresh = {
         context: {
-          travel: travel({ status: 'travelling', revision: 6 }),
+          travel: travel({
+            status: 'travelling',
+            revision: 6,
+            currentIndex: 2
+          }),
           session: freshSession
         },
         routePlan: f.savedPlan()
@@ -565,6 +569,7 @@ describe('Session travel console', () => {
             expect(f.commands.pause).toHaveBeenCalledExactlyOnceWith({
               sceneId,
               expectedRevision: 6,
+              expectedProgressIndex: fresh.context.travel.currentIndex,
               expectedSceneRevision: 8
             })
           )

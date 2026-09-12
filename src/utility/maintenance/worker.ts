@@ -1,3 +1,4 @@
+import { maintenanceErrorMessage } from './error-message.js'
 import { exportCompleteProfile } from '../../core/maintenance/export-profile.js'
 import { ProfileMaintenance } from '../../core/maintenance/profile-maintenance.js'
 import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
@@ -38,8 +39,7 @@ async function handle(raw: unknown): Promise<void> {
   } catch (error) {
     process.parentPort?.postMessage({
       ok: false,
-      message:
-        error instanceof Error ? error.message : 'Wartung fehlgeschlagen.'
+      message: maintenanceErrorMessage(error)
     })
   }
 }

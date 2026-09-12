@@ -36,6 +36,7 @@ import {
   completeBackupPayload,
   campaignDataHash,
   validateBackupCheckpoint,
+  validateBackupContents,
   writeActivatedProfileCheckpoint
 } from './local-installation/campaign-backup.js'
 import { readPersistencePreflight } from './local-installation/campaign-migration.js'
@@ -381,18 +382,36 @@ export function inspectLocalAppInstallation(
       journal.artifactSha256 !== manifest.artifactSha256
     )
       return null
-    validateBackupCheckpoint(paths, journal)
+    const maintenance = new MaintenanceCoordinator(paths.root).read()
+    const matchingMaintenance =
+      maintenance !== null &&
+      maintenance.next.sha256 === manifest.artifactSha256 &&
+      maintenance.next.deployment ===
+        manifest.receipt.build.workspaceFingerprint &&
+      maintenance.next.version === manifest.receipt.build.commit &&
+      maintenance.backup ===
+        (journal.backupPath ? basename(journal.backupPath) : null) &&
+      ['install', 'update'].includes(maintenance.operation)
+    // Acceptance permits normal profile writes. Retained installation evidence
+    // must remain verifiable without comparing it with pre-start profile bytes.
+    // The mutating installer still takes a new backup before replacing new work.
+    const accepted =
+      journal.phase === 'completed' &&
+      matchingMaintenance &&
+      maintenance?.phase === 'committed'
+    if (accepted) {
+      validateBackupContents(paths, journal)
+      validateDeploymentCheckpoint(paths, manifest, options, journal)
+      validateCompletedInstallation(paths, manifest, options.iconSourcePath)
+    } else validateBackupCheckpoint(paths, journal)
     if (target !== 'backup-created')
       validateDeploymentCheckpoint(paths, manifest, options, journal)
     if (target === 'activated') {
       if (journal.phase !== 'completed') return null
-      const maintenance = new MaintenanceCoordinator(paths.root).read()
       if (
         maintenance &&
-        (!['awaiting-start', 'committed'].includes(maintenance.phase) ||
-          maintenance.next.sha256 !== manifest.artifactSha256 ||
-          maintenance.next.deployment !==
-            manifest.receipt.build.workspaceFingerprint)
+        (!matchingMaintenance ||
+          !['awaiting-start', 'committed'].includes(maintenance.phase))
       )
         return null
       validateCompletedInstallation(paths, manifest, options.iconSourcePath)

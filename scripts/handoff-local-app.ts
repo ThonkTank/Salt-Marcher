@@ -1,3 +1,4 @@
+import { installationPhaseEvidence } from './installation-phase-evidence.js'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import {
@@ -328,16 +329,7 @@ function collectInstallationEvidence(
   return evidence({
     buildOutputHash: packaged.receipt.outputHash,
     artifactSha256: packaged.artifactSha256,
-    sourceDataHash: installed.sourceDataHash,
-    ...(installed.backupManifestSha256 === undefined
-      ? {}
-      : { backupManifestSha256: installed.backupManifestSha256 }),
-    ...(installed.deploymentManifestSha256 === undefined
-      ? {}
-      : { deploymentManifestSha256: installed.deploymentManifestSha256 }),
-    ...(installed.installedSha256 === undefined
-      ? {}
-      : { installedSha256: installed.installedSha256 })
+    ...installationPhaseEvidence(installed, target)
   })
 }
 
@@ -396,11 +388,11 @@ function evidence(
   input: {
     readonly buildOutputHash?: string
     readonly artifactSha256?: string
-    readonly sourceDataHash?: string
-    readonly backupManifestSha256?: string
-    readonly deploymentManifestSha256?: string
+    readonly sourceDataHash?: string | null
+    readonly backupManifestSha256?: string | null
+    readonly deploymentManifestSha256?: string | null
     readonly runtimeEvidenceSha256?: string
-    readonly installedSha256?: string
+    readonly installedSha256?: string | null
     readonly storageRetention?: HandoffPhaseEvidence['storageRetention']
   } = {}
 ): HandoffPhaseEvidence {

@@ -52,9 +52,25 @@ export function preflightPersistence(
     })
 
   const databasePaths = sqliteFiles(dataRoot)
-  const databases = databasePaths.map((path) =>
+  const inspected = databasePaths.map((path) =>
     inspectDatabase(dataRoot, path, migrations)
   )
+  // An interrupted atomic bootstrap may leave only an empty SQLite container.
+  // Any schema object, campaign file or other persistence entry prevents this.
+  if (
+    inspected.length === 1 &&
+    inspected[0]!.database.role === 'installation' &&
+    inspected[0]!.empty &&
+    readdirSync(dataRoot).every((name) =>
+      [
+        'installation.sqlite',
+        'installation.sqlite-wal',
+        'installation.sqlite-shm'
+      ].includes(name)
+    )
+  )
+    return Object.freeze({ kind: 'fresh', databases: Object.freeze([]) })
+  const databases = inspected.map((entry) => entry.database)
   if (databases.every((entry) => entry.schemaVersion === entry.expectedVersion))
     return Object.freeze({ kind: 'ready', databases: Object.freeze(databases) })
   const outdated = databases.filter(
@@ -77,7 +93,7 @@ function inspectDatabase(
   dataRoot: string,
   path: string,
   migrations: readonly SchemaMigration[]
-): PreflightDatabase {
+): Readonly<{ database: PreflightDatabase; empty: boolean }> {
   const role = databaseRole(dataRoot, path)
   const expectedVersion = databaseSchemaVersions[role]
   let database: Database.Database | undefined
@@ -105,18 +121,24 @@ function inspectDatabase(
     const schemaVersion = database.pragma('user_version', {
       simple: true
     }) as number
+    const empty =
+      schemaVersion === 0 &&
+      !database.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get()
     return Object.freeze({
-      path,
-      role,
-      schemaVersion,
-      expectedVersion,
-      migrations:
-        resolveSchemaMigrationPath(
-          role,
-          schemaVersion,
-          expectedVersion,
-          migrations
-        ) ?? Object.freeze([])
+      empty,
+      database: Object.freeze({
+        path,
+        role,
+        schemaVersion,
+        expectedVersion,
+        migrations:
+          resolveSchemaMigrationPath(
+            role,
+            schemaVersion,
+            expectedVersion,
+            migrations
+          ) ?? Object.freeze([])
+      })
     })
   } catch (error) {
     if (error instanceof CorruptDataError) throw error
