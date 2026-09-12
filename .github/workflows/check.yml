@@ -13,7 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  candidate-preflight:
+    if: github.event_name == 'pull_request'
+    name: Candidate · history and risk preflight
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.SALT_MARCHER_CHECKED_SHA }}
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm exec tsx scripts/write-ci-preflight.ts
+        env:
+          SALT_MARCHER_SELECTION_PATH: ${{ runner.temp }}/ci-risk-selection.json
+      - name: Archive proposed immutable risk selection
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-risk-selection-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-risk-selection.json
+          if-no-files-found: error
+          retention-days: 14
+
   portable:
+    needs: candidate-preflight
     if: github.event_name == 'pull_request'
     name: Portable · static and app
     timeout-minutes: 30
@@ -29,6 +56,7 @@ jobs:
       - run: xvfb-run -a pnpm check:portable:fast
 
   native:
+    needs: candidate-preflight
     if: github.event_name == 'pull_request'
     name: Native · ${{ matrix.os }}
     timeout-minutes: 30
@@ -61,6 +89,7 @@ jobs:
       - run: pnpm check:native
 
   linux-build:
+    needs: candidate-preflight
     if: github.event_name == 'pull_request'
     name: Linux build · reusable app
     timeout-minutes: 30
@@ -137,6 +166,7 @@ jobs:
           compression-level: 0
 
   linux-qualification:
+    needs: candidate-preflight
     if: github.event_name == 'pull_request'
     name: Linux qualification · packaged harness
     timeout-minutes: 20
@@ -257,6 +287,7 @@ jobs:
     if: always() && github.event_name == 'pull_request'
     name: Candidate · exact-SHA aggregate
     needs:
+      - candidate-preflight
       - portable
       - native
       - linux-build

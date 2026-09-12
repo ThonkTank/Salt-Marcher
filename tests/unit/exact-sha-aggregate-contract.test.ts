@@ -14,6 +14,19 @@ function successfulNeeds(): Record<string, { result: string }> {
 }
 
 describe('exact SHA aggregate contract', () => {
+  it.each(['failure', 'cancelled', 'skipped'])(
+    'rejects %s preflight even if other jobs pass',
+    (result) => {
+      expect(() =>
+        verifyExactShaAggregate({
+          checkedOutSha: sha,
+          checkedSha: sha,
+          pullRequestHeadSha: sha,
+          needs: { ...successfulNeeds(), 'candidate-preflight': { result } }
+        })
+      ).toThrow(`candidate-preflight=${result}`)
+    }
+  )
   it('accepts only the exact checked PR head with every dependency successful', () => {
     expect(() =>
       verifyExactShaAggregate({

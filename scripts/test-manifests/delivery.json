@@ -3,6 +3,8 @@
   "name": "delivery",
   "typecheck": true,
   "tests": [
+    "tests/unit/ci-risk-selection.test.ts",
+    "tests/unit/candidate-history.test.ts",
     "tests/unit/delivery-contract.test.ts",
     "tests/unit/exact-sha-aggregate-contract.test.ts",
     "tests/unit/repository-policy.test.ts",

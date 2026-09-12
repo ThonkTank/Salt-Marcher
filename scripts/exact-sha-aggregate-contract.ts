@@ -5,6 +5,7 @@ import { shaSchema } from './delivery-contract.js'
 export const exactShaAggregateJobName = 'Candidate · exact-SHA aggregate'
 
 export const exactShaAggregateNeeds = [
+  'candidate-preflight',
   'portable',
   'native',
   'linux-build',

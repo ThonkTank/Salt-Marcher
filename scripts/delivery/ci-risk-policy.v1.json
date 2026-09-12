@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "documentation": {
+    "exact": ["docs/roadmap-execution.md"],
+    "markdownRoots": ["docs/releases/"]
+  },
+  "portableTests": {
+    "root": "tests/unit/",
+    "suffix": ".test.ts",
+    "excluded": [
+      "tests/unit/refactor-requirements-alignment.test.ts",
+      "tests/unit/developer-feedback.test.ts",
+      "tests/unit/e2e-suite-registry.test.ts",
+      "tests/unit/local-app-installation.test.ts",
+      "tests/unit/local-profile-lock.test.ts"
+    ]
+  },
+  "renderer": {
+    "root": "src/renderer/",
+    "extensions": [".ts", ".tsx", ".css", ".scss"]
+  }
+}

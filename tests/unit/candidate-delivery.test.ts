@@ -44,7 +44,7 @@ const valid: CandidateState = {
       url: 'https://github.example/check/1',
       attempt: 2,
       headSha: 'b'.repeat(40),
-      requiredJobManifestVersion: 4,
+      requiredJobManifestVersion: readRequiredJobManifest().schemaVersion,
       jobs: readRequiredJobManifest().jobs.map((job) => ({
         ...job,
         conclusion: 'success' as const

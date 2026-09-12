@@ -12781,3 +12781,54 @@ Release-Baseline-UI-Weg nachgewiesen, Archivierungsabweichung korrigiert und an
 Originaldaten erneut geprüft. Roadmapaudit: Phase6 weiterhin offen für echten
 zusammenhängenden GitHub-/Docker-Releaseworkflow und CI-Risikoauswahl; Phase7
 mit kopierten Nutzerdaten, menschlicher Freigabe und Veröffentlichung noch offen.
+
+Plan6B.2 — unveränderliche Risikoauswahl mit vorgelagertem CI-Gate:
+Nach aufgehobener Pause sind150GiB auf der Systempartition frei. Zuerst wird
+an unveränderlichen Gitobjekten ein versionierter Auswahlbeleg berechnet:
+Main-Basis, Candidate-SHA, Regelbytes, vollständiger Rohdiff und beide
+Appfingerprints. Nur explizite Dokumentations-, portable Unit-Test- und
+Renderer-Risiken dürfen eine engere Auswahl ergeben; unbekannte Pfade,
+Löschungen, Dateitypwechsel, Regeln/Workflowänderungen, fehlende vertrauenswürdige
+Basisregeln und unvereinbare Fingerprints erzwingen vollständig.
+Das frühe CI-Gate prüft lineare Abstammung vom tatsächlich gelesenen Main,
+bevor die bisherigen Prüfgruppen starten. Es archiviert den Auswahlbeleg.
+In diesem Teilplan bleibt die Auswahl beobachtend: Kein bisheriger Job darf
+bereits aufgrund dieses Belegs entfallen. Manifest, Aggregate und AGENTS.md
+werden für das verbindliche zusätzliche Gate gemeinsam aktualisiert.
+Tests verwenden echte kleine Git-Repositories und prüfen Manipulation,
+fehlende Basisregeln, unbekannte Änderungen und unveränderte Gitobjekte trotz
+lokaler Änderungen. Ressourcenbegrenzte Tests/Lint/Typprüfung und actionlint;
+danach gesonderter Teilplan-/Roadmapaudit. Die tatsächliche Freischaltung
+reduzierter Prüfungen folgt erst mit unabhängig verifiziertem Beleg in
+Aggregate, Candidate-Freigabe und Handoff sowie voller Release-Prüfung.
+
+Erste6B.2-Prüfung:76Verhaltenstests in7Dateien bestanden (neue
+Gitobjekt-Auswahl, lineare Historie, Aggregate, Candidate- und Handoffverträge).
+ESLint stoppt anschließend an no-control-regex; Typprüfung wurde dadurch noch
+nicht ausgeführt. Korrekturplan: Pfad-Steuerzeichen ohne regulären Ausdruck
+anhand von Zeichencodes prüfen und mit realem Gitpfad testen. Zusätzlich
+nicht lesbare/neuere Basisregelversion als vollständige Auswahl behandeln.
+Der vorherige Candidate1cf52527c ist inzwischen vollständig CI-grün
+(Check34710292723); dies qualifiziert nicht die neuen uncommitteten Änderungen.
+
+Zweiter6B.2-Lauf:78Tests bestanden, ein neuer Pfadtest scheitert sicher vor
+der Auswahl. Die bestehende Appfingerprint-Implementierung lehnt Gitpfade mit
+Zeilenumbruch bereits ab. Korrekturplan: Diese vorhandene Ablehnung ausdrücklich
+testen, die neue Steuerzeichen-Zuordnung mit einem Tabulatorpfad prüfen; keine
+Änderung der Appfingerprint-Implementierung oder ihrer Kompatibilität dafür.
+
+6B.2-Verifikation lokal bestanden:80Tests in7Dateien, ESLint, beide
+TypeScriptprojekte, actionlint1.7.12 und git diff --check. Laufzeit64s,
+Spitze1.4GiB,0Swap (`work/phase6-risk-preflight-checks-3.log`).
+Teilplanaudit: Beleg aus unveränderlichen Basis-/Zielobjekten mit Regelhash,
+Rohdiffhash und Appfingerprints; Nachberechnung verwirft Feldmanipulationen.
+Echtes Git prüft Bootstrap, geänderte/ungültige Regeln, unbekannte Pfade,
+Renderer/Test-Kombination, strukturelle Änderungen und lokale Verschmutzung.
+CI-Gate,16Pflichtjobs in Manifestv5, direkte Aggregate-Abhängigkeit sowie
+AGENTS.md gemeinsam aktualisiert. Fehlendes/abgebrochenes/übersprungenes Gate
+kann keine erfolgreiche Aggregate-Abnahme erzeugen. Keine Prüfreduktion aktiv.
+Roadmapaudit: sicherer Einführungsschritt erfüllt; Phase6 bleibt offen für die
+wirksame gezielte Auswahl samt unabhängigen Verbrauchern und den vollständigen
+realen Releaseworkflow. Phase7 unverändert offen. Nächster Nachweis ist der
+saubere Candidate-Preflight an diesem Repository und anschließend Remote-CI;
+dieser lokale Erfolg ist noch keine Main-Promotion oder Releasefreigabe.

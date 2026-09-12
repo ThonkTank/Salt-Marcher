@@ -11,6 +11,24 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
 
 describe('CI platform partitions', () => {
   workflowGate(
+    'gates expensive partitions on immutable preflight without skipping checks',
+    () => {
+      for (const name of [
+        'portable',
+        'native',
+        'linux-build',
+        'linux-qualification'
+      ])
+        expect(workflow).toContain(`  ${name}:\n    needs: candidate-preflight`)
+      expect(workflow).toContain('name: Candidate · history and risk preflight')
+      expect(workflow).toContain('pnpm exec tsx scripts/write-ci-preflight.ts')
+      expect(workflow).toContain(
+        'name: ci-risk-selection-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}'
+      )
+      expect(workflow).not.toContain('needs.candidate-preflight.outputs')
+    }
+  )
+  workflowGate(
     'runs portable checks once and keeps native SQLite/runtime checks per OS',
     () => {
       expect(workflow.match(/pnpm check:portable:fast/g)).toHaveLength(1)
@@ -113,7 +131,7 @@ describe('CI platform partitions', () => {
       )
       expect(
         workflow.match(/ref: ['"]?\$\{\{ env\.SALT_MARCHER_CHECKED_SHA \}\}/g)
-      ).toHaveLength(10)
+      ).toHaveLength(11)
       expect(workflow.match(/actions\/download-artifact@v4/g)).toHaveLength(4)
       expect(
         workflow.match(/assert-built-workspace\.ts --channel development/g)
@@ -133,6 +151,7 @@ describe('CI platform partitions', () => {
       )
       expect(aggregate).toContain('name: Candidate · exact-SHA aggregate')
       for (const dependency of [
+        'candidate-preflight',
         'portable',
         'native',
         'linux-build',
