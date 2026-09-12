@@ -9,16 +9,27 @@ export function cleanupRuntimeFixtures() {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true })
 }
-export function runtimeFixture(kind: 'release' | 'historical-fixture') {
+export type RuntimeFixtureOptions = {
+  version?: string
+  commit?: string
+  installation?: number
+  campaign?: number
+}
+export function runtimeFixture(
+  kind: 'release' | 'historical-fixture',
+  options: RuntimeFixtureOptions = {}
+) {
   const directory = mkdtempSync(join(tmpdir(), 'runtime-evidence-'))
   roots.push(directory)
   const manifest = artifact(
-    kind === 'release' ? '0.3.0' : '0.2.0',
-    kind === 'release' ? 'a' : 'b',
-    43,
-    43
+    options.version ?? (kind === 'release' ? '0.3.0' : '0.2.0'),
+    options.commit ?? (kind === 'release' ? 'a' : 'b'),
+    options.installation ?? 43,
+    options.campaign ?? 43
   ).manifest
-  const bytes = Buffer.from('inert test bytes')
+  const bytes = Buffer.from(
+    `inert test bytes ${manifest.version} ${manifest.commit}`
+  )
   manifest.artifact.bytes = bytes.length
   manifest.artifact.sha256 = digestReleaseDocument(bytes)
   writeFileSync(join(directory, manifest.artifact.name), bytes)

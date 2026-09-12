@@ -12405,3 +12405,97 @@ Der neue Bericht exportiert den echten finalen Quellhistory-Readback. Nach
 Archivierung wird er vollständig ohne Ergänzungen vom gemeinsamen UI-Prüfer
 validiert. Keine erneute Paketierung des Ziel-AppImages und keine Ausführung
 auf dem Host. Aggregate-/Workflowintegration und Phase6B/7 bleiben offen.
+
+Plan6A.4 Aggregatbericht: Die Zusammenführung erhält unveränderte Request- und
+Manifestbytes, eine separat bestätigte Workflowidentität, ausdrücklich geprüfte
+Vergleichsartefakte einschließlich Zwischenständen und die Originalbytes jedes
+UI-Berichts. Sie verlangt genau die im Auftrag genannten Fälle, prüft jeden mit
+dem gemeinsamen UI-Prüfer und erzeugt daraus ausschließlich neu berechnete
+Profil-/Runtime-Nachweise. Ein benannter Migrationsfall muss vollständige frühe
+Recovery und späteren Arbeitserhalt belegen. Erstinstallation ist ein separater
+Originalbericht. Dateinamen werden deterministisch aus validierten IDs erzeugt;
+Reportdateien werden gehasht und unverändert übernommen, kein Bericht ersetzt
+Kontrolldokumente. Der gemeinsame versionierte Qualifikationsvertrag prüft die
+abschließende Bindung erneut. Fehlende/zusätzliche Fälle, andere Zwischenstände,
+vertauschte Belege und abweichende Workflow-/Manifestbytes müssen scheitern.
+Beschaffungs-/Live-CI-Prüfung bleiben explizite Aufruferverantwortung; im Gast
+werden keine selbstbehaupteten GitHub-Daten als authentifiziert behandelt.
+Implementierung nach Ende des noch laufenden Migrationsgasts.
+
+Offene Zielzustandsprüfung für die anschließende Ablaufanbindung: Der Transport
+kann bereits explizite veröffentlichte Vergleichsreleases beschaffen, während
+der aktuelle UI-Fixtureaufbau weiterhin ein historisches Seed-AppImage verlangt.
+Diese Grenze darf nicht als allgemeiner künftiger Releasepfad ausgegeben werden.
+Vor Abschluss6A muss entweder ein versionierter, vollständiger Profilfixture-
+Eingang für unveränderte veröffentlichte Baselines über deren unterstützten
+Wartungs-/Übernahmepfad qualifiziert sein oder der Abnahmeauftrag die historische
+Fixturequelle zusätzlich explizit tragen. Kein heimliches Repackaging eines
+veröffentlichten AppImages und keine neue SQL-Seedinglogik in Main/Renderer.
+Der bisherige Releasezielreader bleibt read/identity; er wird nicht allein zur
+Erfüllung eines Testhooks in eine mutierende Hintertür verwandelt.
+
+Neuer realer Migrationslauf4 bestanden: VMexit0/Testexit0,27 Dateien unter
+`qualification-evidence/release-target-v3-run-4` archiviert. Unveränderter Bericht
+besteht vollständig `verifyUpdateUiEvidence`, einschließlich exportierter
+Quellhistory und verpflichtender Recovery (`work/audit-phase6-complete-ui-evidence.ts`,
+`work/phase6-ui-evidence-complete-audit.json`). Unabhängiger Python-Audit prüft
+zusätzlich Archiv-/Serial-/Artefakthashes und alle Inhalte/History/Crashzustände:
+`work/audit-phase6-release-complete-migration.py` bestanden.
+ReportSHA256`2481e31629530b02fb85ca773ffbd266c8dad3a9c6246ac0d197babeb1fd6eef`.
+Artefakte .16742/42 und c11d7fcb5 43/43 unverändert. Keine Remote-CI-Provenienz-
+oder Veröffentlichungsbehauptung durch diesen lokalen Audit. Nur die erfolgreich
+archivierte/auditierte Gastplatte wird entfernt; Originale und Belege bleiben.
+
+Aggregatbericht implementiert und geprüft:41 gezielte Tests, ESLint und beide
+Typprüfungen erfolgreich (`work/phase6-assemble-qualification-checks.log`,60s,
+1.4GiB,0Swap). Zusammenführung verlangt genau die angeforderten Fälle samt
+Zwischenartefakten, eine echte Migrations-Recovery, den separaten Erstinstall-
+bericht und die exakten Zielmanifestbytes. Alle Inhalte/Runtime-/Journalbelege
+werden erneut geprüft; erst daraus werden v2-Digests erzeugt. Originalberichte
+bleiben bytegleich, auch der dedizierte Recoverybeleg enthält unverändert den
+vollständigen ursprünglichen Fall. Der bestehende Dokumentvertrag prüft das
+Ergebnis abschließend erneut. Kein Schreiben oder Publizieren durch diesen
+reinen Zusammenführungsschritt.
+
+Teilaudit6A.4 Zusammenführung erfüllt den festgehaltenen Plan. Es existiert noch
+kein vollständiger echter Release-Abnahmeauftrag mit drei neuen vollständigen
+UI-Berichten und authentifizierter GitHub-Fixtureherkunft. Die synthetischen
+Vertragstests werden nicht als solcher Abnahmeauftrag ausgegeben. Offen sind
+CLI-/Gastablauf und Workflowanbindung, veröffentlichte Baseline-Profilfixtures,
+finale0.3.0-Artefakte und die weiteren Roadmapphasen. Lokaler Zwischenstand wird
+mit der anschließenden Ablaufanbindung gemeinsam auf Candidate gesichert.
+
+Plan6A.5 ausführbarer Gastablauf: Der alte vereinfachte
+`qualify-release-update.ts` wird durch eine früh isolationsgesperrte Orchestrierung
+ersetzt. Sie liest den expliziten Request, das unveränderte Zielartefakt und die
+zuvor beschafften, deterministisch adressierten Vergleichsverzeichnisse. Im Gast
+werden Manifest/Bytes/Fixture-Receipts erneut geprüft; Live-GitHub-Herkunft wird
+nicht erfunden. Hashgebundene, aus demselben sauberen Commit gebündelte UI-Runner
+führen Erstinstallation und alle Fälle nacheinander aus. Ein expliziter
+Migrationsfall enthält frühe Aktivierungsunterbrechung und späteren Absturz.
+Nach jedem erfolgreichen Fall werden Originalberichte übernommen und geprüft;
+nur dessen eigener synthetischer Arbeitsbereich darf anschließend entfernt
+werden, damit mehrere AppImage-Extraktionen die begrenzte Gastplatte nicht füllen.
+Fehlerbelege/fehlgeschlagene Arbeitsbereiche bleiben erhalten. Kein Zugriff auf
+Host-Electron, keine produktiven Profile, kein stiller Wechsel der Baseline.
+Der finale v2-Gesamtbericht entsteht erst nach allen erfolgreichen Prüfungen.
+Veröffentlichte Baselines ohne qualifizierten Profilfixture-Eingang bleiben
+explizit abgewiesen und als offene Zielzustandslücke dokumentiert.
+
+Gastablauf erste Prüfung:19 Tests bestanden. ESLint beanstandet zwei untypisierte
+Promise-Ablehnungen im Prozessgruppen-Fehlerpfad. Korrektur: unbekannte Fehler
+werden vor Weitergabe in Error-Objekte normalisiert; Verhalten/Timeout und
+Prozessgruppengrenzen bleiben gleich. Danach Tests, Lint und Typprüfung erneut.
+
+Gastablauf statisch abgeschlossen:19 Tests, ESLint und beide Typprüfungen
+bestanden (`work/phase6-qualification-runner-corrected-checks.log`,59s,1.4GiB,
+0Swap). Der alte vereinfachte Seed/Update-Dateivergleich ist ersetzt durch
+explizite Beschaffungseingänge, vollständige UI-Fälle und v2-Zusammenführung.
+Testprogramme sind über Commit und tatsächliche Bytes gebunden. Prozessgruppen-
+Fehler verhindern erfolgreiche Freigabe und Aufräumen des fehlgeschlagenen Falls.
+Erfolgreiche synthetische Fallverzeichnisse werden erst nach Inhaltsprüfung
+entfernt; Originalberichte und äußere Diagnoselogs bleiben bestehen.
+Jetzt sauberer Kandidatencommit für den realen Bündelbau. Dieser Bau startet
+kein Electron/AppImage; der anschließende reine Node-Negativtest muss bereits
+an der fehlenden separaten Gastkernel-Identität scheitern. Ein vollständiger
+gebündelter Gastlauf ist damit noch nicht behauptet.
