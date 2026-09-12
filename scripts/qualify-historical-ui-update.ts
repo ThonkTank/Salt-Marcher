@@ -1,4 +1,9 @@
 import {
+  readPartyHistoryEvidence,
+  assertPartyHistoryMigration,
+  assertPartyHistoryXp
+} from './qualification/historical-party-history-evidence.js'
+import {
   partyHistoryScenario,
   withPartyHistoryDefaults
 } from './qualification/historical-party-history-scenario.js'
@@ -175,6 +180,9 @@ const seeded = await runHistoricalArtifact(
   'seed'
 )
 assert(seeded.result.response.ok)
+const sourceHistory = historyScenario
+  ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
+  : null
 const expectedTargetSeed = historyScenario
   ? withPartyHistoryDefaults(seeded.result.response.result)
   : values['target-party-quick-fields-default']
@@ -967,6 +975,11 @@ try {
   const after = await runHistoricalArtifact(targetDirectory, home, 'read')
   assert(after.result.response.ok)
   assert.deepEqual(after.result.response.result, expectedTargetSeed)
+  const afterHistory = historyScenario
+    ? readPartyHistoryEvidence(join(root, 'profile'))
+    : null
+  if (sourceHistory && afterHistory)
+    assertPartyHistoryMigration(sourceHistory, afterHistory)
   ui = await launch()
   const continuedAtStart = Date.now()
   await ui.click('Fortsetzen')
@@ -1072,6 +1085,16 @@ try {
     character.xp += 25
   }
   assert.deepEqual(continued.result.response.result, expected)
+  const continuedHistory = historyScenario
+    ? readPartyHistoryEvidence(join(root, 'profile'))
+    : null
+  if (afterHistory && continuedHistory)
+    assertPartyHistoryXp(
+      afterHistory,
+      continuedHistory,
+      after.result.response.result,
+      continued.result.response.result
+    )
   if (values['accepted-crash']) {
     ui = await launch()
     await ui.click('Einstellungen', 'body', true)
@@ -1224,9 +1247,18 @@ try {
   const restored = await runHistoricalArtifact(targetDirectory, home, 'read')
   assert(restored.result.response.ok)
   assert.deepEqual(restored.result.response.result, expectedTargetSeed)
+  const restoredHistory = historyScenario
+    ? readPartyHistoryEvidence(join(root, 'profile'))
+    : null
+  if (sourceHistory && restoredHistory)
+    assertPartyHistoryMigration(sourceHistory, restoredHistory)
   const backupDirectory = join(root, 'backups', restoredTransaction.backup)
   const protectedBackup = readVerifiedBackup(backupDirectory)
   assert.equal(protectedBackup.manifest.formatVersion, 2)
+  const protectedHistory = historyScenario
+    ? readPartyHistoryEvidence(protectedBackup.data)
+    : null
+  assert.deepEqual(protectedHistory, continuedHistory)
   const savedHome = `${home}-protected-work`
   mkdirSync(join(savedHome, 'salt-marcher'), { recursive: true })
   cpSync(protectedBackup.data, join(savedHome, 'salt-marcher/profile'), {
@@ -1254,6 +1286,11 @@ try {
     'read'
   )
   assert(unchanged.result.response.ok)
+  if (sourceHistory)
+    assert.deepEqual(
+      readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile')),
+      sourceHistory
+    )
   assert.deepEqual(
     unchanged.result.response.result,
     seeded.result.response.result
@@ -1290,6 +1327,15 @@ try {
         targetPartyQuickFieldsDefault:
           values['target-party-quick-fields-default'],
         expectedTargetSeed,
+        partyHistoryEvidence: historyScenario
+          ? {
+              source: sourceHistory,
+              after: afterHistory,
+              continued: continuedHistory,
+              restored: restoredHistory,
+              protected: protectedHistory
+            }
+          : null,
         startPath: values['installed-launcher']
           ? 'installed-launcher'
           : 'appimage',

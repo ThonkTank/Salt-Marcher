@@ -11487,3 +11487,50 @@ TypeScript-Projekte bestanden. Alte Marker-Arme bleiben exakt{id}; nur das
 neue43-Zielszenario armiert fromVersion42. Ältere unveränderte Strict-Wrapper
 werden dadurch weiterhin unterstützt. Plan-Audit Szenariokontrakt bestanden;
 Roadmap-Audit neue43-Artefakte und ergänzende Party-History-Vergleiche offen.
+
+22101 Build terminalExit1 nach23s, Peak1.4GiB/keinSwap: electron-builder
+findet das direkte pnpm-Programm nicht (spawn pnpm ENOENT). App-/Harnessbuild
+zuvor erfolgreich; kein ausführbares qualifiziertes Artefakt. Laufumgebung
+korrigieren: vorhandene Node22-Corepack-shims in PATH ergänzen, unveränderter
+Source/Harness, neues Ausgabeverzeichnis v2, gleiche unveröffentlichteTestversion
+0.0.168. Fehlgeschlagene Ausgabe/Log bleiben getrennt, keine Überschreibung.
+
+23950 terminalExit0: neues Test-AppImage0.0.168 nach47.773s, Peak2.5GiB/keinSwap.
+Originalsource4a87219b2/43-43, vollständiger Receipt und Bytes unabhängig geprüft.
+SHA256 45c8a0a094e55ac9ca3d1687a6bfa0ce7082ad80ee33557f1bee7edac96f2a53; 177083899Bytes.
+Quelle unverändert, generierte erfolgreiche Checkout-Abhängigkeiten entfernt.
+Noch kein Runtimepass; Party-History-/Receipt-Nachweise und neueVM-Läufe offen.
+
+Voriger Goalturn Fortschritt: explizite43-Szenarien getestet und0.0.168 gebaut.
+Check34692010864 am1d122106e jetzt weiterhin live/in_progress.
+History-Nachweisplan konkret: isolierte schreibgeschlossene Profile mit
+Node-SQLite readonly lesen; ausschließlich neue Party-History-/Receipt- und
+Installation-Indextabellen als unabhängige Testdaten erfassen. Migration erhält
+vorhandene Zeilen exakt; fehlende Tabellen werden leer, nur erstmalige
+Installationidentität wird als neuer UUID geprüft. XP-Weiterarbeit verlangt
+exakt eine passende History/Receipt/Index-Kette samt vollständigem Vorher-/
+Nachher-Charakter und Original-Partyresultat, keine unerklärten Nebenänderungen.
+Vor Restore vollständigen Snapshot erfassen; Schutzbackup muss exakt diesen
+Snapshot enthalten. Restore muss die Ausgangshistorie erhalten, einschließlich
+inaktiver/gelöschter Kampagnen. Quelle bleibt auch für diese Tabellen unverändert.
+
+9402:13Tests grün, ESLint meldet eine unnötige Non-null-Assertion; korrigieren.
+Lesender Audit ergänzt explizite Verknüpfung des History-Scope mit Installation-
+UUID/Kampagnenepoch. Node-SQLite-Zeilen werden für serialisierbare Beweise in
+gewöhnliche Objekte kopiert (Werte unverändert); realer SQLite-Test prüft
+Clone-/Byteinvarianz. Keine Produktänderung, erneute gezielte Prüfung folgt.
+
+67646 terminalExit0:13Tests, ESLint und beide Typprüfungen bestanden.
+Vor-VM-Audit findet wichtige Layoutabweichung: gelöschte Kampagnen liegen
+unter campaigns/.trash/<id>. Leser wird rekursiv auf tatsächliche campaign.sqlite
+Dateien erweitert, Pfadidentität bleibt im Beweis, Symlinks werden abgewiesen.
+Real-SQLite-Test ergänzt separate Trashkampagne. Keine stillschweigende
+Auslassung wiederherstellbarer Daten. Erneute gezielte Prüfung vor VM.
+
+43598 terminalExit0:13Tests einschließlich echter SQLite-/Trash-Dateien,
+ESLint und beide TypeScript-Projekte bestanden. Plan-Audit Historyleser/
+Migration-/XP-/Backup-/Restorevergleiche implementiert und gezielt geprüft.
+Roadmap-Audit echter gepackter Beweis noch offen. NächsterGast prüft Original
+0.0.160(42/41)→0.0.168(43/43), explizit from-41, kompletter nativer UI-Weg
+mit Party-Verlauf und unveränderter Quelle. Eigenes neues Payload/Seed,
+4GiB/2CPU/24GiB Gast,900s Fall-/1200s Hostdeadline, keine Host-Appstarts.
