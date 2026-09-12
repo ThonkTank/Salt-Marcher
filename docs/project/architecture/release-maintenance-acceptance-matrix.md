@@ -515,3 +515,26 @@ hash- and content-checked before disposable guest deletion.
 - `program-linked`: `9840a3f12604e9f02774349c141d0c72fba76db2618731a94c6bfe4f0cdeaecc`
 
 All eight forward boundaries are requalified; nine launcher recovery boundaries remain.
+
+## Newer complete-profile backup rejected through the UI
+
+The 0.0.160/167 full update and continued-play scenario rejects an intact
+Manifest2 backup copy whose installation format is43. The UI explains the
+incompatibility and asks the user to update SaltMarcher or choose a compatible
+backup. Complete later-profile readback remains unchanged, and the protective
+backup retains that same later work. The subsequent valid restore passes too.
+This is a negative format fixture, not a claimed historical migration.
+All processes exited zero; report and contents were audited before guest deletion.
+Report `outputs/qualification-evidence/newer-backup-v3-run-1`: `2f59136292b5164bc1c5500f897d6818c104cd60c0cbeea9c9042bd424f41934`.
+
+## Launcher recovery requalified, first batch
+
+Both initial rollback boundaries passed two real process kills, an explicit
+launcher-role marker, complete old/retained-new profile readbacks, retry,
+continued play and restore/protective-backup comparison. Archive
+`outputs/qualification-evidence/recovery-v3-run-1` was hash- and content-audited.
+
+- `journal:rollback-started`: `d5b3f48e5e6a0746c46a7dc91fe9342dbf57137d44451f3b95ec3b3a9a7c87c6`
+- `journal:rollback-preserving`: `31d716c18aa21a36b035b284c91f97e28aa148b827be2fd0152e40da5a4f0ddd`
+
+Seven launcher recovery boundaries remain.

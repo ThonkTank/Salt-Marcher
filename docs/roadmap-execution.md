@@ -11213,3 +11213,75 @@ reale Ausführung weiterhin offen. Neue Originalquelle e96dbcbfe als
 maintenance-domain-errors-target aufgenommen. Nächstes Testartefakt0.0.167
 mit unveränderten Produktionsmigrationen; Maintenance-Unterbrechungswrapper
 ermöglicht folgende Recoverymatrix ohne weiteren Produktbuild.
+
+26445 Build0.0.167 Exit0,49.769s/2.6GiB/keinSwap. Quellee96dbcbfe,
+177067839Bytes SHA d6a8d83340615224208e46db40e49c45ffd43a6e715fe5d28a265a650ee2d55c.
+Prüferquelle d5bfdcde2, neues gehashtes Payload-domain-errors-1 inklusive
+Launcherobserver. Zukunftssicherungsfall nutzt0.0.160→167 vollständigen
+UI-Update-/Weiterarbeit-/Ablehnungs-/Restoreweg. Nur begrenzter Gast.
+
+Voriger Goalturn Fortschritt: neuer Zukunftssicherungsprüfer d5bfdcde2
+gepusht,0.0.167 erfolgreich gebaut, Session81625 newer-backup-run-1 gestartet;
+aktuelle Session live bestätigt, Quellen unverändert. Nächster konkreter
+Recoverybatch nach abgeschlossenem Zukunftssicherungstest: drei getrennte
+Profile mit --activation-crash journal:awaiting-start und jeweils
+--recovery-crash journal:rollback-started / journal:rollback-preserving /
+failed-data-preserved. --installed-launcher und expliziter gehashter
+--launcher-recovery-observer /opt/qualification/launcher-observer.mjs;
+Marker muss processRole launcher, gleiche Journal-ID und tatsächlich gekillte
+PID belegen. Nach zweitem Kill: ursprüngliches Programm/gesamter Seed,
+retained failed candidate mit Zielruntime/explicitTargetSeed, vollständiger
+Retry/Weiterarbeit/Restore samt Schutzbackup. Zwei weitere Batches decken
+übrige sechs Grenzen ab. Wiederverwenden unverändertes Payload-domain-errors-1
+mit0.0.160/167 und ObserverSHA 440ef2e1240eac54c1ed9a0c5a6be5ce2b7320e1ada7515335faaf34dbe69fe3.
+
+81625 terminalVMExit0/TestExit0, Zukunftssicherung nach207.97s bestanden.
+Archiv newer-backup-v3-run-1 außerhalb VM: alle Hashes/Größen, komplette
+Seed-/Ziel-/Weiterarbeits-/Ablehnungs-/Schutzbackup-/Restorevergleiche auditiert.
+Intakte Manifest2-Kopie mitInstallation43 über tatsächliche UI abgelehnt,
+verständliche neuere-Formatmeldung mit Updateaktion, bisheriger Journalauftrag
+und Programm erhalten, spätereXP1000 in aktuellem Profil und vorgeschaltetem
+Schutzbackup vollständig gleich. Anschließender regulärer Restore schützt
+dieselbe spätere Arbeit erneut und stellt Seed+explizite Defaults her. Alle
+Normalprozesse Exit0; Quelldaten unverändert. Quell-/Bestandsbackupinvarianz
+wird vom gehashten Prüfer vor Reportausgabe vollständig assertiert.
+Erfolgreiche Gastdisk nach Audit entfernt. BerichtSHA 2f59136292b5164bc1c5500f897d6818c104cd60c0cbeea9c9042bd424f41934
+Plan-Audit M10 bestanden; Roadmap-Audit neun Launcher-Recoverygrenzen offen.
+
+Recovery-Batchgröße vor Start auf zwei Profile reduziert: zusätzliche
+gekillerte Starterextraktionen und retained failed candidate beanspruchen
+mehr Platz als die Vorwärtsfälle (deren Dreiergast zuletzt rund20GiB).
+24GiB-Gastgrenze bleibt; keine Abnahmescopeänderung, neun Punkte in fünf
+statt drei Batches. Erster Batch rollback-started/rollback-preserving,
+identisches Payload-domain-errors-1, neue separate Profile.
+
+Lesender Phase5-Abschlussabgleich während Recovery: erhaltene historical-
+current-to-next-sequential-v4 trägt ausdrücklich partial-profile-not-update-
+activation. Vorhandene gleiche-Schema-Local-Nachweise ersetzen nicht automatisch
+den vollständigen Releasefeedweg ohne Schemaänderung. Fokussierter Restplan
+nach laufender VM: UI-Prüfer um ausdrücklichen --same-schema-Modus erweitern,
+der Baseline42/42 und Ziel42/42 prüft (Default42/41→42/42 bleibt streng);
+keine freie Herabsetzung von Schemaerwartungen. Unveränderte echte AppImages
+0.0.166→167, vollständiger UI-Check/Download/Install/Restart/Weiterarbeit/Restore,
+Quell-/Ziel-/Schutzbackupvergleich. Beide Originalquellen und Artefakthashes
+liegen vor, kein neuer Build nötig. Scope soll ausdrücklich im Bericht stehen.
+Neun Recoverygrenzen bleiben bestehen; erster Fall meldet0, Batch noch aktiv.
+
+3655 Recoverybatch1 terminalVMExit0/TestExit0,269s/696s. Archiv
+recovery-v3-run-1 vollständig gehasht und semantisch auditiert: beide
+Marker-PIDs wirklich gekillt, zweiter Marker explizit launcher, gleicher
+Journalauftrag, rolled-back mit vorherigem Programm; Gesamtseed und retained
+Zieldaten mit originalen Runtimes gelesen. Retry/XP-Weiterarbeit/Restore und
+Schutzbackup unverändert vollständig. Gastdisk erst nach Audit entfernt.
+journal:rollback-started: d5b3f48e5e6a0746c46a7dc91fe9342dbf57137d44451f3b95ec3b3a9a7c87c6
+journal:rollback-preserving: 31d716c18aa21a36b035b284c91f97e28aa148b827be2fd0152e40da5a4f0ddd
+Plan-Audit erster Recoverybatch bestanden, Roadmap-Audit sieben Grenzen
+und expliziter gleicher-Schema-UI-Lauf offen. Jetzt zuvor geplanten strikt
+42/42→42/42-Szenariowähler ergänzen, Standard41→42 unverändert; echten
+Migrationskill im gleichen-Schema-Modus ausdrücklich abweisen.
+
+36499 Exit0: Format/Lint/beide TypeScript-Projekte für expliziten
+--same-schema-Modus bestanden,29.951s/1.5GiB/keinSwap. Kein SQL oder
+Produktcode geändert; Bericht unterscheidet strikt42/42→42/42 und42/41→42/42.
+Plan-Audit Prüferergänzung bestanden, tatsächlicher Lauf folgt.
+Check34687708334 completed/success fürd5bfdcde2f1088d86a75270fe8a7754bd8ddfc70.

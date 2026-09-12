@@ -68,6 +68,7 @@ const { values } = parseArgs({
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'newer-backup': { type: 'boolean', default: false },
+    'same-schema': { type: 'boolean', default: false },
     'target-party-quick-fields-default': { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
     'feed-failures': { type: 'boolean', default: false },
@@ -85,6 +86,10 @@ const { values } = parseArgs({
     home: { type: 'string' }
   }
 })
+if (values['same-schema'] && values['maintenance-crash'])
+  throw new Error(
+    'A migration interruption requires an actual schema transition'
+  )
 if (values['feed-actionable'] && !values['feed-failures'])
   throw new Error('Actionable feed checks require --feed-failures')
 if (values['recovery-crash'] && !values['activation-crash'])
@@ -122,7 +127,7 @@ const baseline = readHistoricalArtifact(baselineDirectory)
 const target = readHistoricalArtifact(targetDirectory)
 assert.deepEqual(baseline.receipt.source.schemaVersions, {
   installation: 42,
-  campaign: 41
+  campaign: values['same-schema'] ? 42 : 41
 })
 assert.deepEqual(target.receipt.source.schemaVersions, {
   installation: 42,
@@ -1236,6 +1241,9 @@ try {
         formatVersion: 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
+        schemaScenario: values['same-schema']
+          ? '42/42-to-42/42'
+          : '42/41-to-42/42',
         targetPartyQuickFieldsDefault:
           values['target-party-quick-fields-default'],
         expectedTargetSeed,
