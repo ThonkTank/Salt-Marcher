@@ -45,36 +45,48 @@ export async function decodeVmEvidence(serial: string) {
     assert.equal(archive.toString('base64'), encoded, 'Invalid base64 evidence')
     const raw = gunzipSync(archive, { maxOutputLength: limit })
     const reports = new Map<string, Buffer>()
+    const logs = new Map<string, Buffer>()
     await new Promise<void>((resolve, reject) => {
       const parser = new Parser({
         strict: true,
         onReadEntry(entry) {
+          const isReport = /^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*\.json$/.test(
+            entry.path
+          )
+          const isLog =
+            /^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*\/release-qualification\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.log$/.test(
+              entry.path
+            )
           if (
             entry.type !== 'File' ||
-            !/^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*\.json$/.test(entry.path) ||
+            (!isReport && !isLog) ||
             entry.path
               .split('/')
               .some((part) => part === '.' || part === '..') ||
-            reports.has(entry.path)
+            reports.has(entry.path) ||
+            logs.has(entry.path)
           ) {
             reject(new Error('Unsafe or duplicate evidence entry'))
             entry.resume()
             return
           }
           const parts: Buffer[] = []
-          reports.set(entry.path, Buffer.alloc(0))
+          const destination = isReport ? reports : logs
+          destination.set(entry.path, Buffer.alloc(0))
           entry.on('data', (chunk: Buffer) => parts.push(chunk))
           entry.on('end', () => {
             try {
               const bytes = Buffer.concat(parts)
-              const value: unknown = JSON.parse(bytes.toString('utf8'))
-              assert(
-                value !== null &&
-                  typeof value === 'object' &&
-                  !Array.isArray(value),
-                'Report must be a JSON object'
-              )
-              reports.set(entry.path, bytes)
+              if (isReport) {
+                const value: unknown = JSON.parse(bytes.toString('utf8'))
+                assert(
+                  value !== null &&
+                    typeof value === 'object' &&
+                    !Array.isArray(value),
+                  'Report must be a JSON object'
+                )
+              } else new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+              destination.set(entry.path, bytes)
             } catch (error) {
               reject(error instanceof Error ? error : new Error(String(error)))
             }
@@ -87,7 +99,7 @@ export async function decodeVmEvidence(serial: string) {
       parser.end(raw)
     })
     assert(reports.size > 0, 'Empty evidence export')
-    exports.push({ archive, reports })
+    exports.push({ archive, reports, logs })
   }
   return exports
 }
@@ -123,6 +135,8 @@ export async function archiveVmEvidence(
     write(`export-${index}/original.tar.gz`, item.archive)
     for (const [path, bytes] of item.reports)
       write(`export-${index}/reports/${path}`, bytes)
+    for (const [path, bytes] of item.logs)
+      write(`export-${index}/logs/${path}`, bytes)
   }
   const manifest = {
     formatVersion: 1,

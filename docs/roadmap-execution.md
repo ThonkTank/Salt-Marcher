@@ -12146,3 +12146,44 @@ Noch keine Laufzeitaussage: nun wird genau dieses Artefakt mit dem .170-Original
 über den vollständigen UI-Pfad im begrenzten KVM-Gast geprüft. Historische
 Only-Hooks sind bei Releasezielen explizit abgewiesen; deren Zielanbindung ist
 nicht durch den neuen lesenden Diagnoseeinstieg automatisch erledigt.
+
+Erster realer unveränderter Releaseziel-Lauf beendet: VMexit0/Testexit0.
+`work/qualification-vm-v3/release-target-run-1`, .170→0.2.0 mit neuem Zielreader,
+UI-Weiterarbeit, neuerem Backup-Negativfall und tatsächlich wiederhergestellter
+Schutzsicherung. Die anschließende Standardarchivierung scheitert jedoch, weil
+sie ausschließlich JSON-Berichte erlaubt und der neue Export zusätzliche
+UUID-Diagnoseprotokolle (.log) enthält. Noch keine unabhängig archivierte Abnahme.
+Korrekturplan: JSON-Berichte weiterhin strikt als JSON-Objekte validieren;
+ausschließlich `release-qualification/<UUID>.log` getrennt als Diagnoseprotokolle
+zulassen und außerhalb des Reports-Verzeichnisses unverändert archivieren.
+Pfad-/Link-/Duplikat-/Größengrenzen bleiben verbindlich. Originalexport wird nicht
+umgeschrieben; danach denselben beendeten Lauf erneut archivieren und unabhängig
+auf Profil-/History-/Artefaktidentitäten prüfen. Kein neuer AppImage-Bau erforderlich.
+
+Archivkorrektur geprüft:11 Tests, Lint und beide Typprüfungen bestanden
+(`work/phase6-runtime-log-archive-checks.log`,57s,1.4GiB,0Swap). JSON-Objektprüfung
+bleibt unverändert; ausschließlich erkannte UUID-Runtimeprotokolle werden als
+separate Logs aufbewahrt. Pfadverwechslungen, Link/Traversal/Duplikate und reine
+Logexporte ohne Bericht bleiben Fehler. Ursprünglicher Export wurde unverändert
+archiviert: `qualification-evidence/release-target-v3-run-1`,29 Dateien.
+
+Unabhängiger Audit `work/audit-phase6-release-same.py` bestanden;
+`work/phase6-release-same-audit.json`. Geprüft: Archiv-/Serial-/AppImagehashes,
+tatsächliche saubere Releaseidentity c11d7fcb5, Utility43/43 mit Electron43.2.0,
+alle drei Kampagnenzustände, Settings, eigene Binärdatei und leere Verzeichnisse,
+kompletter v3-Profilvergleich vor/nach Update, ausschließlich erwartete
+Weiterarbeit975→1000XP samt letzter Öffnungszeit. Party-History exakt gegen
+Vorher-/Nachhercharakter und verknüpfte Receipts/Installation-Index geprüft.
+Originalrestore, Schutzbackupreadback, tatsächlicher Schutzbackuprestore und
+zweite Schutzsicherung samt kompletter History geprüft. Neueres Backup wird
+abgewiesen und die inzwischen geleistete Arbeit geschützt. Alle App-Exits0.
+ReportSHA256`40595cc90a005b3db575151c3b3f0869d52111f1a5fc63f07770c861e7fb2e14`.
+Zielbytes weiterhin unverändert
+`e9864378ec628235776eeae36efd39f3a5232846a12c0af7ad920f3e89ccead3`.
+Nach diesem externen Archiv/Audit darf ausschließlich die erfolgreiche
+`release-target-run-1/guest.qcow2` entfernt werden; Basis, Payload und Belege bleiben.
+
+Teilaudit6A.3: unverändertes Releaseziel besteht erstmals vollständigen
+same-schema-UI-Pfad. Echte Schemawechsel/Skip/Recovery mit diesen Zielbytes,
+Erstinstallation und automatisierte Release-Workflowanbindung bleiben offen.
+Keine Abnahme der geplanten0.3.0 und kein Abschluss der Gesamtphase6.

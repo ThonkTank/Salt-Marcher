@@ -23,9 +23,9 @@ afterEach(() => {
 function archive(
   path = 'home/ui-update-evidence.json',
   duplicate = false,
-  link = false
+  link = false,
+  data = Buffer.from('{"formatVersion":1,"coverage":"fixture"}')
 ) {
-  const data = Buffer.from('{"formatVersion":1,"coverage":"fixture"}')
   const header = new Header({
     path,
     size: link ? 0 : data.length,
@@ -89,4 +89,34 @@ it('rejects duplicate report paths and symlinks', async () => {
   await expect(
     decodeVmEvidence(serial(archive('report.json', false, true)))
   ).rejects.toThrow('Unsafe')
+})
+
+it('separates bounded UUID runtime logs from JSON reports', async () => {
+  const report = archive()
+  const log = archive(
+    'home/release-qualification/11111111-1111-4111-8111-111111111111.log',
+    false,
+    false,
+    Buffer.from('Diagnostic output\n')
+  )
+  // A log-only export must not become successful report evidence.
+  await expect(decodeVmEvidence(serial(log))).rejects.toThrow('Empty evidence')
+  const { gunzipSync } = await import('node:zlib')
+  const combined = gzipSync(
+    Buffer.concat([gunzipSync(report).subarray(0, -1024), gunzipSync(log)])
+  )
+  const decoded = await decodeVmEvidence(serial(combined))
+  expect(decoded[0]!.reports.size).toBe(1)
+  expect([...decoded[0]!.logs.values()][0]!.toString()).toBe(
+    'Diagnostic output\n'
+  )
+})
+it.each([
+  'home/other.log',
+  'home/release-qualification/not-a-uuid.log',
+  'home/release-qualification/../11111111-1111-4111-8111-111111111111.log'
+])('rejects unrecognized or escaping diagnostic path %s', async (path) => {
+  await expect(decodeVmEvidence(serial(archive(path)))).rejects.toThrow(
+    'Unsafe'
+  )
 })
