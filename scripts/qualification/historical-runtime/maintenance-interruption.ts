@@ -12,7 +12,10 @@ if (enabled && home && isAbsolute(home)) {
   const armPath = join(root, 'qualification-maintenance-crash.json')
   if (existsSync(armPath)) {
     const arm = z
-      .object({ id: z.uuid() })
+      .object({
+        id: z.uuid(),
+        fromVersion: z.union([z.literal(41), z.literal(42)]).default(41)
+      })
       .strict()
       .parse(JSON.parse(readFileSync(armPath, 'utf8')))
     // eslint-disable-next-line @typescript-eslint/unbound-method -- Original is explicitly rebound to the same database with call below.
@@ -22,7 +25,7 @@ if (enabled && home && isAbsolute(home)) {
       if (
         sql.includes('CREATE TABLE IF NOT EXISTS loot_operation_receipt') &&
         this.inTransaction &&
-        this.pragma('user_version', { simple: true }) === 41
+        this.pragma('user_version', { simple: true }) === arm.fromVersion
       ) {
         const path = relative(root, this.name).split(sep).join('/')
         if (!/^staged-[a-f0-9-]{36}\/campaign-data\/campaigns\//.test(path))
@@ -34,7 +37,7 @@ if (enabled && home && isAbsolute(home)) {
           pid: process.pid,
           database: path,
           inTransaction: true,
-          fromVersion: 41,
+          fromVersion: arm.fromVersion,
           point: 'after-original-loot-receipt-ddl'
         })
         // Parent must kill this exact PID. A timeout is a test failure, never success.

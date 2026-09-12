@@ -11465,3 +11465,25 @@ Roadmap-Audit: Ziel43/43/Registry24 jetzt quellseitig und gezielt geprüft.
 Gepackte Beweise42/42 bleiben ihrem Originalstand zugeordnet. Neue Zielversion
 noch nicht als runtimequalifiziert, lokal übergeben oder aufMain ausgegeben.
 Vorbereitete b58-Handoffpayload wird nicht gestartet; neues exact-SHA-CI folgt.
+
+Voriger Goalturn Fortschritt: Merge4a87219b2 enthält43/43-Konvergenz und121
+gezielte grüne Tests. Check34691811962 jetzt live/in_progress am exaktenSHA.
+
+Nächster Qualifikationsplan: alte42/42-Szenarien unverändert ausführbar lassen.
+Explizite43/43-Zielszenarien für42/41, Kandidat42/42, Main43/42 und43/43
+benennen und gegen Artefaktreceipts strikt prüfen. Neue Party-Burden-Felder
+als literale additive Defaults erwarten; bestehende Werte nie überschreiben.
+Neue Ziel-UI verwendet Party-Fenster/XP-Balken und native Klicks, mit
+beobachtetem XP-Abschluss vor vollständigem Readback. Migrationsbeobachter
+bekommt ausdrücklich armierten erwarteten Ausgangsschritt41 bzw42; gleiche
+originale DDL und offene Transaktion, keine SQL-Ersetzung. HistorischeQuellen
+bleiben unverändert. Eigenes zusätzliches Augenmerk: neue Party-History/
+Receipts müssen bei Weiterarbeit und Restore mitgesichert werden; vorhandene
+repräsentative Readbacks allein beweisen diese neu hinzugefügten Tabellen
+nicht. Dies bleibt vor neuem vollständigem Artefaktpass gesondert zu ergänzen.
+
+34527 terminalExit0: zehn Szenario-/Defaulttests, gezieltes ESLint und beide
+TypeScript-Projekte bestanden. Alte Marker-Arme bleiben exakt{id}; nur das
+neue43-Zielszenario armiert fromVersion42. Ältere unveränderte Strict-Wrapper
+werden dadurch weiterhin unterstützt. Plan-Audit Szenariokontrakt bestanden;
+Roadmap-Audit neue43-Artefakte und ergänzende Party-History-Vergleiche offen.

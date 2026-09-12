@@ -1,3 +1,7 @@
+import {
+  partyHistoryScenario,
+  withPartyHistoryDefaults
+} from './qualification/historical-party-history-scenario.js'
 import { createNewerFormatBackup } from './qualification/historical-newer-backup.js'
 import {
   inventory,
@@ -68,6 +72,7 @@ const { values } = parseArgs({
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'newer-backup': { type: 'boolean', default: false },
+    'party-history-scenario': { type: 'string' },
     'same-schema': { type: 'boolean', default: false },
     'target-party-quick-fields-default': { type: 'boolean', default: false },
     'parallel-starts': { type: 'boolean', default: false },
@@ -125,14 +130,29 @@ const home = resolve(z.string().parse(values.home))
 const sourceHome = `${home}-source`
 const baseline = readHistoricalArtifact(baselineDirectory)
 const target = readHistoricalArtifact(targetDirectory)
-assert.deepEqual(baseline.receipt.source.schemaVersions, {
-  installation: 42,
-  campaign: values['same-schema'] ? 42 : 41
-})
-assert.deepEqual(target.receipt.source.schemaVersions, {
-  installation: 42,
-  campaign: 42
-})
+const historyScenario = values['party-history-scenario']
+  ? partyHistoryScenario(values['party-history-scenario'])
+  : undefined
+assert(!historyScenario || !values['same-schema'], 'Choose one schema scenario')
+assert(
+  !values['maintenance-crash'] ||
+    values['party-history-scenario'] !== 'same-schema',
+  'Migration interruption requires a schema transition'
+)
+assert.deepEqual(
+  baseline.receipt.source.schemaVersions,
+  historyScenario?.baseline ?? {
+    installation: 42,
+    campaign: values['same-schema'] ? 42 : 41
+  }
+)
+assert.deepEqual(
+  target.receipt.source.schemaVersions,
+  historyScenario?.target ?? {
+    installation: 42,
+    campaign: 42
+  }
+)
 assert.notEqual(baseline.receipt.version, target.receipt.version)
 const manifest = (artifact: typeof baseline) =>
   releaseManifestSchema.parse({
@@ -155,9 +175,11 @@ const seeded = await runHistoricalArtifact(
   'seed'
 )
 assert(seeded.result.response.ok)
-const expectedTargetSeed = values['target-party-quick-fields-default']
-  ? withPartyQuickFieldDefault(seeded.result.response.result)
-  : seeded.result.response.result
+const expectedTargetSeed = historyScenario
+  ? withPartyHistoryDefaults(seeded.result.response.result)
+  : values['target-party-quick-fields-default']
+    ? withPartyQuickFieldDefault(seeded.result.response.result)
+    : seeded.result.response.result
 copyHistoricalWorkingProfile(sourceHome, home)
 const root = join(home, 'salt-marcher')
 if (values['space-volume'])
@@ -216,7 +238,7 @@ const server = createServer((request, response) => {
         tag_name: `v${target.receipt.version}`,
         draft: false,
         prerelease: false,
-        body: 'Geprüfter UI-Test mit Schemawechsel 41→42',
+        body: `UI-Test mit Kampagnenschema ${baseline.receipt.source.schemaVersions.campaign}→${target.receipt.source.schemaVersions.campaign}`,
         assets: ['release-manifest.json', target.receipt.artifact.name].map(
           (name) => ({
             name,
@@ -497,7 +519,11 @@ try {
     const id = randomUUID()
     const arm = join(root, 'qualification-maintenance-crash.json')
     const boundaryPath = join(root, 'qualification-maintenance-boundary.json')
-    writeFileSync(arm, JSON.stringify({ id }), { flag: 'wx' })
+    writeFileSync(
+      arm,
+      JSON.stringify(historyScenario ? { id, fromVersion: 42 } : { id }),
+      { flag: 'wx' }
+    )
     ui = await launch()
     await ui.expectText('Wähle deine Kampagne oder beginne eine neue.')
     await ui.click('Einstellungen', 'body', true)
@@ -519,7 +545,7 @@ try {
                   .string()
                   .regex(/^staged-[a-f0-9-]{36}\/campaign-data\/campaigns\//),
                 inTransaction: z.literal(true),
-                fromVersion: z.literal(41),
+                fromVersion: z.literal(historyScenario ? 42 : 41),
                 point: z.literal('after-original-loot-receipt-ddl')
               })
               .strict()
@@ -944,11 +970,26 @@ try {
   ui = await launch()
   const continuedAtStart = Date.now()
   await ui.click('Fortsetzen')
-  await ui.click('Charaktere', '.desktop-toolbar')
-  await ui.click('XP', '[data-window-id="characters"] tbody')
+  await ui.click(historyScenario ? 'Party' : 'Charaktere', '.desktop-toolbar')
+  await ui.click(
+    'XP',
+    historyScenario
+      ? '[data-window-id="party"] .desktop-party-entry'
+      : '[data-window-id="characters"] tbody'
+  )
   await ui.fill('.desktop-xp-popup input', '25')
   await ui.click('+', '.desktop-xp-popup')
-  await ui.expectText('XP 1000 /')
+  if (historyScenario) {
+    await waitFor(
+      () =>
+        ui!.inspect(
+          `document.querySelector('[data-window-id="party"] .party-xp-meter')?.getAttribute("aria-label")`
+        ),
+      (value) =>
+        typeof value === 'string' && value.startsWith('Mara 1: 1.000 XP'),
+      'Party XP change persisted in rendered meter'
+    )
+  } else await ui.expectText('XP 1000 /')
   await ui.closeApplication(home)
   ui = undefined
   const continued = await runHistoricalArtifact(targetDirectory, home, 'read')
@@ -1241,9 +1282,11 @@ try {
         formatVersion: 1,
         coverage:
           'ui-check-download-install-restart-continue-restore-protected-work',
-        schemaScenario: values['same-schema']
-          ? '42/42-to-42/42'
-          : '42/41-to-42/42',
+        schemaScenario: historyScenario
+          ? `party-history-${values['party-history-scenario']}`
+          : values['same-schema']
+            ? '42/42-to-42/42'
+            : '42/41-to-42/42',
         targetPartyQuickFieldsDefault:
           values['target-party-quick-fields-default'],
         expectedTargetSeed,
