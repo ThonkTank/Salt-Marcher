@@ -240,7 +240,11 @@ try {
   let restoreTransaction: unknown = null
   let readback: unknown = null
   if (fault === 'access-denied') {
-    await ui.expectText('EACCES')
+    await ui.expectText(
+      'Prüfe die Zugriffsrechte und versuche den Vorgang erneut.'
+    )
+    assert(!(await ui.text()).includes('EACCES'))
+    assert(!(await ui.text()).includes(databasePath))
     assert.deepEqual(coordinator.read(), setup)
     assert.equal(currentProgram(root)?.deployment, deployment)
     await close()

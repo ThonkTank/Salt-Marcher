@@ -27,6 +27,15 @@ describe('release operation errors', () => {
       )
     }
   )
+  it.each(['EACCES', 'EPERM'])('explains %s with a recovery action', (code) => {
+    const message = releaseOperationErrorText(
+      Object.assign(new Error('open /private/profile'), { code })
+    )
+    expect(message).toContain('Prüfe die Zugriffsrechte')
+    expect(message).toContain('versuche den Vorgang erneut')
+    expect(message).not.toContain('/private')
+    expect(message).not.toContain(code)
+  })
   it('preserves actionable domain failures', () => {
     const message = 'Bitte das Update zuerst herunterladen.'
     expect(releaseOperationErrorText(new Error(message))).toBe(message)

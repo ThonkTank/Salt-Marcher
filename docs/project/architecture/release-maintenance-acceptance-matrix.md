@@ -405,3 +405,20 @@ Retained report: `outputs/qualification-evidence/profile-import-v2-run-11`,
 SHA-256 `6875da497b3bda16c9e218b902067be19a81d96a0f1524ef8f4cfd39b2fb72bc`. Export integrity and
 semantic assertions were rechecked before removing its disposable guest disk.
 This closes the held-source-lease case above, not the remaining Phase-5 matrix.
+
+## Retained WAL, parallel-start and accepted-work crash evidence
+
+The installed-starter update from `0.0.160` (42/41) to `0.0.164` (42/42)
+passed with a committed value present only in the 4,152-byte WAL. Four competing
+starts were rejected: starter under maintenance lease, and starter, path alias
+and direct AppImage while the app was active. Existing lock contents and journal
+were preserved. A real SIGKILL after saving XP 975→1000 preserved the complete
+later profile and committed journal on restart. Restore returned the seed state
+and first backed up the entire later profile, verified by independent readback.
+The original source profile still matched the seed.
+
+Archive `outputs/qualification-evidence/wal-parallel-accepted-v2-run-1`, report
+SHA-256 `795095efc4d154a4edc16ceecd52f3af0e9926d0fe567bd40833e82cbace16c4`; integrity and full semantic comparisons rechecked before
+disposable disk removal. This reestablishes these previously missing cases,
+including the accepted-later-work case; it does not prove an interruption at the
+commit boundary itself or all activation/recovery boundaries.

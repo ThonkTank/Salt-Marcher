@@ -10850,3 +10850,62 @@ Exit0, vier native Dialogaktionen. ReportSHA6875da497b3bda16c9e218b902067be19a81
 unter outputs/qualification-evidence/profile-import-v2-run-11. Nur Gastdisk11
 nach erfolgreichem Audit entfernt. Plan-Audit Sperrablehnung und Wiederholung
 bestanden. Roadmap-Audit Phase5 weiterhin offen; andere Releasefaults fehlen.
+
+Voriger Goalturn Fortschritt: Sperrablehnung und Retry qualifiziert, Candidate
+3cd8fcb260f39ff85bc5343ff840895bd890caad gepusht; exakte Check34496966290 läuft.
+Nächster Phase5-Nachweis: vorhandener UI-Prüfer mit --wal --parallel-starts
+--accepted-crash --installed-launcher auf unveränderten0.0.160/0.0.164-Artefakten.
+WAL-only-Wert, abgewiesene drei Startwege, späteres gespeichertes Spiel nach
+SIGKILL, Wiederherstellung samt Sicherung späterer Arbeit vollständig vergleichen.
+Neue Payload/Seed, kein Sourcepatch/Build, Gastdisk erst nach Exportaudit löschen.
+
+83001 terminalVMExit0/TestExit0. Vollständiger Nachweis mit0.0.160→0.0.164
+(42/41→42/42) über installierten Starter: WAL4152Bytes mit nur dort enthaltenem
+dark-Wert gegenüber checkpointed light; vier abgewiesene Parallelstarts
+(maintenance starter, active starter/alias/AppImage); SIGKILL nach gespeichertem
+XP975→1000, unverändertes committed-Journal und fortsetzbarer Gesamtinhalt.
+Restore auf Seed, vorgeschalteter Backupreadback gleich vollständiger späterer
+Arbeit; Quellreadback gleich Seed. Exporthashes und alle Inhaltsvergleiche erneut
+geprüft. ReportSHA795095efc4d154a4edc16ceecd52f3af0e9926d0fe567bd40833e82cbace16c4 unter
+outputs/qualification-evidence/wal-parallel-accepted-v2-run-1. Nur Gastdisk nach
+Audit entfernt. Plan-Audit bestanden. Roadmap-Audit übrige Unterbrechungs-,
+Kapazitäts- und beschädigte/inkompatible Profilfälle weiterhin offen.
+
+Voriger Goalturn Fortschritt: WAL/Parallelstart/spätererCrash inklusive Restore
+mit vollständigem Bericht requalifiziert. Nächster Plan: unveränderter
+qualify-historical-profile-fault mit0.0.164 für newer-format, missing-path, corrupt
+seriell im isolierten Gast. Prüfen Ablehnung vor Datenzugriff, unveränderten Stand,
+Recovery ohne startfähige Datenbank und ausdrücklich bestätigten Restore mit
+bytegleicher Schutzkopie des defekten Profils. Access-denied separat: bestehender
+Prüfer erwartet rohes EACCES; nächste Fixrunde muss verständliche nächste Aktion
+fordern. Keine Sourceänderung während Gast, keine automatische Recoveryfreigabe.
+
+Explizite Pause durch Nachricht aus Task01a08515-df97-7832-bd88-9e4407ac3d2a:
+laufende historische VM sofort stoppen wegen I/O-Einfluss auf Leistungsabnahme;
+bis erneuter Meldung nicht fortfahren. Eigener profile-faults-run-1-Container
+gestoppt und terminal verifiziert. Diagnose/Serial/Status nach
+outputs/qualification-evidence/profile-faults-v2-run-1-interrupted gesichert;
+ausschließlich regenerierbare guest.qcow2 entfernt. Keine Gesamtqualifikation
+aus Teilergebnissen. Quellstand, Profile, Backups, fertige Ausgaben erhalten.
+
+12. September: Nutzer hebt Pause ausdrücklich auf. Bisheriger separater Candidate
+3cd8fcb260f39ff85bc5343ff840895bd890caad weiterhin vorhanden; Check34496966290
+completed/success. Neuer Kontextcheckout enthält fremde laufende Dokumentation,
+daher isolierten bisherigen Checkout weiterverwenden.185GiB frei; regenerierbare
+VM-Basis fehlt, fertige externe Nachweise erhalten. Keine erneute Qualifikation
+behauptet. Fixplan Zugriffsrechte: gemeinsame typisierte Dateisystemfehlertexte
+für Main und Utility; EACCES/EPERM verständlich mit Rechte-/Wiederholen-Aktion,
+ENOSPC/EDQUOT unverändert verständlich. Utility übersetzt vor Nachrichtentransport,
+weil Main dort nur message erhält. Domänenmeldungen unverändert lassen. Tests
+für beide Grenzen; nativen Access-denied-Prüfer auf nächste Aktion statt rohem
+EACCES umstellen. Gepackten Nachweis nach Aufbau begrenzter Gastumgebung ergänzen.
+
+68749 Lint stoppt vor Tests: neuer Test greift auf message des unknown-Felds zu.
+Korrektur nur Testtypisierung: erwarteten Domaintext lokal als string halten.
+Keine Änderung der Fehlersemantik; danach dieselben Prüfungen erneut ausführen.
+
+47486 Retest Exit0:15Tests in zwei Dateien, ESLint und beide Typechecks bestanden,
+35.710s/1.5GiB/keinSwap. Echter Worker-Einstieg mit kontrollierter Fehlerrückgabe
+prüft Übersetzung vor IPC und unveränderte Weitergabe durch Main. Plan-Audit
+Fehlertexte und Grenze bestanden; Roadmap-Audit echte Access-denied-Gastprüfung
+und übrige Phase5-Nachweise weiterhin ausstehend. Kein neues Handoff/Release.
