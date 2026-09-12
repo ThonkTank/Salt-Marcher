@@ -26,6 +26,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # Reading unpublished drafts requires push access; this job makes no writes.
+    permissions:
+      contents: write
+      actions: read
     outputs:
       commit: ${{ steps.draft.outputs.commit }}
       run_id: ${{ steps.draft.outputs.run_id }}
@@ -44,6 +48,9 @@ jobs:
       - id: draft
         name: Resolve the draft to its successful immutable qualification
         run: pnpm exec tsx scripts/resolve-draft-release.ts "$RUNNER_TEMP/draft-controls"
+      - name: Verify the existing draft reserves its version
+        if: inputs.verify_only
+        run: pnpm exec tsx -e 'import assert from "node:assert/strict"; import { assertReleaseVersionAvailable } from "./scripts/release/release-version.ts"; assert.throws(() => assertReleaseVersionAvailable(process.env.RELEASE_VERSION!), /Release version is already reserved/); console.info("Existing draft correctly prevents another build of its version.")'
   publish:
     needs: resolve
     if: ${{ !inputs.verify_only }}

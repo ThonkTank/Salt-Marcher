@@ -98,9 +98,16 @@ sentence and AppImage hash alone are insufficient.
 
 Before live acceptance, **Publish accepted release** can be dispatched with
 `verify_only: true`, the draft version, and `{}` for the required but unused
-acceptance input. This verifies the actual draft resolver with workflow read
-permissions. The entire publish job, including approval and asset writes, is
+acceptance input. This verifies the actual draft resolver with workflow draft
+access and checks that the existing version cannot be rebuilt. The entire
+publish job, including approval and asset writes, is
 skipped. This check does not constitute live acceptance.
+
+GitHub only lists drafts for credentials with push access. The Main-only
+release admission/build and draft resolver jobs therefore use job-scoped
+`contents: write`; their draft checks make only read requests. The offline guest
+receives no token. This scope does not replace the separate human approval and
+publish-job guard. See [GitHub draft visibility](https://docs.github.com/en/rest/releases/releases#list-releases).
 
 After live acceptance, dispatch **Publish accepted release** on main with
 `verify_only: false`, the version and that acceptance JSON. The resolver authenticates the draft's completed qualification workflow.

@@ -13156,3 +13156,47 @@ bleiben unverändert streng. verify_only umgeht keinen Publish-Check, sondern
 überspringt den gesamten Publish-Job. Roadmapaudit: Originalentwurf/volle
 Laufzeitbelege vorhanden; abschließende Candidate-/Main-Abnahme sowie tatsächlicher
 Workflow-Read-only-Probelauf noch offen. Phase6 noch nicht geschlossen.
+
+6A.11 ausgeliefert:db09402b85a00c70b8a4a1be6e8cc44757f66348,
+Candidate34718066723 mit allen16Pflichtjobs grün, kanonische Promotion,
+Main34719143258 grün. Der erste Controller-Aufruf der Workflow-CLI schlug vor
+einem beobachtbaren Workflowstart fehl; die vollständige Workflowliste war leer.
+Der explizite Aufruf mit --raw-field verify_only=true startete den einzigen
+Probelauf34719263945. Keine doppelte Ausführung; ursprünglicher Controller ist
+terminal. Belege: work/phase6-read-only-dispatch-db09402b8.json und
+work/promote-and-rehearse-draft-db09402b8.log.
+
+Korrekturplan6A.12 — Entwurfszugriff des Workflowtokens:
+Der echte unveröffentlichende Probelauf34719263945 endet im Resolver mit
+„No release draft exists for this version“. Publish wurde korrekt skipped.
+Die persönliche gh-Anmeldung sieht weiterhin Entwurf387697175; das contents:read-
+Workflowtoken bekommt ihn nicht gelistet. GitHub dokumentiert ausdrücklich,
+dass nur Zugänge mit Pushrechten Entwurfs-Releases in der Liste erhalten:
+https://docs.github.com/en/rest/releases/releases#list-releases .
+Die vorherige Annahme, reine Contents-Leserechte genügten auch für unsichtbare
+Entwürfe, ist damit durch reale Tokenverwendung widerlegt. Das betrifft außerdem
+die Versionsreservierungsprüfung vor einem neuen Releasebuild.
+Korrektur: jobbezogen contents:write/actions:read für den vorhandenen Release-
+Aufnahme-/Buildjob und den Publish-Resolver, beide ausschließlich auf Main.
+Globale Vorgabe bleibt read; der Gast erhält weiterhin keinerlei Token.
+Diese API-Berechtigung löst keine Veröffentlichung aus: verify_only führt nur
+Lesebefehle aus, der gesamte Publish-Job mit Environment/Uploads bleibt skipped.
+Zusätzlich prüft dieser Modus mit demselben tatsächlichen Token, dass die bereits
+vorhandene Version durch die gemeinsame Admission-Funktion abgewiesen wird.
+Die menschliche Freigabe und der veröffentlichende Job bleiben unverändert.
+Abnahme: Workflowsyntax, gezielte Versionstests, unveränderte Appfingerprints,
+Candidate/Main grün, neuer verify_only-Lauf mit erfolgreichem Resolver und
+Reservierungsnachweis, Publish skipped, Entwurf/Assets vorher/nachher identisch.
+Phase6 bleibt bis zu dieser tatsächlichen Abnahme offen; Phase7 nicht gestartet.
+
+6A.12 lokale Verifikation bestanden:41Versions-/Environment-/Freigabetests,
+Actionlint beider Workflows, Workflowformatierung und diff-Prüfung. Appfingerprint
+unverändert9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01.
+4.9s,148MiB/0Swap; work/phase6-draft-permissions-checks.log. Der tatsächlich
+in YAML hinterlegte zusätzliche Reservierungsbefehl wurde unverändert mit der
+lokalen Anmeldung ausgeführt und erkennt den existierenden Entwurf korrekt:
+work/phase6-draft-reservation-command.log (1.2s,137MiB/0Swap).
+Teilplanaudit: Rechteänderung auf die zwei Main-only-Jobs begrenzt; Gast-Payload,
+AppImage, Entwurf und menschliche Freigabe unverändert. Roadmapaudit: tatsächlicher
+Workflowtoken-Nachweis steht noch aus; Phase6 wird nicht allein aufgrund dieser
+lokalen Anmeldung geschlossen.

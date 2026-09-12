@@ -22,6 +22,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 110
+    # GitHub lists unpublished drafts only for tokens with push access.
+    permissions:
+      contents: write
+      actions: read
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_REQUEST: ${{ inputs.request }}
