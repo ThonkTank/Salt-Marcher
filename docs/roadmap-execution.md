@@ -13350,3 +13350,16 @@ des Unterordners zu übernehmen. Die Aufnahme vor dem Klick bleibt verpflichtend
 der Produktdialog und die echte Manifestprüfung werden weiter vollständig benutzt.
 Erneut neuer Gast und unveränderte qualifizierte AppImages. Keine Änderung an
 Nutzerdaten oder Produktcode und keine behauptete Abnahme vor dem Ergebnis.
+
+Korrekturrunde 7.2: Originalaufnahme des dritten Laufs zeigt jetzt die korrekte,
+unvervollständigte Adresse backup/., aber weiterhin den Inhalt des Homeordners.
+Das direkte Klicken auf Öffnen hat die Ortsadresse nicht aktiviert. Die App hat
+wieder sicher einen Ordner ohne Manifest abgewiesen. Testexit 1; tatsächliche
+Gastdaten/Originalbilder unter work/phase7-live-evidence-3 archiviert.
+
+Korrekturplan 7.3: Nach der unvervollständigten Adresse backup/. die Ortsnavigation
+mit Return aktivieren, erst anschließend den nativen Ordnerdialog aufnehmen und
+Öffnen betätigen. Die automatische Ergänzung zum data-Unterordner bleibt durch
+die explizite Punktadresse ausgeschlossen. Wieder neuer begrenzter Gast mit
+unveränderten Programmbytes. Kein Umgehen des Sicherungsimports; Phase 7 bleibt
+offen, bis der vollständige echte Ablauf und die Inhaltsprüfung bestehen.
