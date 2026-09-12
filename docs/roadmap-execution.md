@@ -11421,3 +11421,26 @@ Vor Start Dokumentationsstand committen, pushen und vollständiges exaktes
 Candidate-CI abwarten. Gast benötigt GitHub-Zugriff; Authentisierung nur lokal
 und ohne Ausgabe von Zugangsdaten. Keine Veröffentlichung oder Promotion
 innerhalb des Testgasts. Nachweis prüfen, dann Promotion-Gate separat behandeln.
+
+### Phase 5 – Integrationskorrektur nach erneutem Main-Fortschritt
+
+Liveabgleich widerlegt den vorherigen Main-Stand: origin/main ist inzwischen
+e4fc7fd4e071d63987287d8b46723be60703846d (neue Party-Verwaltung), grün.
+PR676 ist deshalb konfliktbehaftet und besitzt für b58f52488 keinen Check.
+Check unterstützt keinen workflow_dispatch; Versuch mit422 abgewiesen.
+Keine kanonische VM gestartet; vorbereitete Payload bleibt unbenutzt.
+
+Fixplan vor Merge: Main vollständig erhalten. Main vergibt Installation43
+und Kampagne42 (Party-Abschnitte/History); unser unveröffentlichter Kandidat
+verwendet Kampagne42 bereits für aktive Loot-Receipts. Ziel wird43/43 mit
+Registry24. Die veröffentlichte Main-Kette41→42 bleibt erhalten; neuer
+Kampagnenschritt42→43 ergänzt idempotent beide benötigten Eigentümerschemas
+(Party-Abschnitte/History und Loot-Receipts), damit sowohl Main42 als auch
+bereits qualifizierte Kandidaten42 vorwärts aktualisierbar bleiben. Vorhandene
+Migrationshistorien und Nutzwerte bleiben erhalten. Keine Umnummerierung
+bestehender Daten oder Umdeutung alter Nachweise. Tests müssen beide42-
+Varianten und übersprungene41→43 samt Nutzwerten/Receipts prüfen. Danach
+Versionstruth/Fixtures, gezielte Integration/Typprüfung und vollständiger
+neuerCandidate-Check. Anschließend echte neue Zielartefakte mit explizitem
+Schema-/Readbackvertrag qualifizieren; unveränderte alte Artefakte bleiben
+historische Nachweise. Handoff erst auf sauberem vollständigem neuemStand.
