@@ -538,3 +538,57 @@ continued play and restore/protective-backup comparison. Archive
 - `journal:rollback-preserving`: `31d716c18aa21a36b035b284c91f97e28aa148b827be2fd0152e40da5a4f0ddd`
 
 Seven launcher recovery boundaries remain.
+
+## Complete same-schema Release update
+
+The distinct original 0.0.166/167 AppImages, both installation42/campaign42,
+pass the full UI check/download/install/restart/continued-play/restore flow.
+The complete seed equals target, restored and unchanged-source readbacks;
+the protective backup retains all later work. This explicitly qualifies an
+update with no schema change. All processes exited zero. Archive hashes and
+semantic comparisons were checked before disposable guest deletion.
+Report `outputs/qualification-evidence/same-schema-v3-run-1`: `7fe7c008b353ddc3897202e917d6dfec50d49a16fd86e46ec23eef386dd84a38`.
+
+## Launcher recovery requalified, second batch
+
+Two more double-kill boundaries passed complete old/retained-new readbacks,
+retry, continued work and protected restore. Archive
+`outputs/qualification-evidence/recovery-v3-run-2` was independently audited.
+
+- `failed-data-preserved`: `003c23ccac081812acabeccf69e7e3abefb209e33e5cf37ba4a68e87272a8187`
+- `journal:rollback-restoring`: `ca6ccba15014ff64d267ddfc4662ed894c45d65119bf88aa8092a3ab1903437d`
+
+Four of nine launcher recovery boundaries are requalified; five remain.
+
+## Launcher recovery requalified, third batch
+
+The restored-data and rollback-program boundaries passed both real kills,
+old/retained-new profile comparisons, retry, continued play and protected
+restore. Archive `outputs/qualification-evidence/recovery-v3-run-3` was
+independently hash- and content-audited before guest removal.
+
+- `old-data-restored`: `7a5849c18a18dc3f0e654c0be97283070c928cc76f3fbf435e15464c2e097c78`
+- `journal:rollback-program`: `e7158aaabce9a3f6a290448f41e59aec85a5491d1940d3d6189c3ee632774305`
+
+Six of nine launcher recovery boundaries are requalified; three remain.
+
+## Launcher recovery requalified, fourth batch
+
+The program switch and durable rollback-history write pass both real kills
+and all complete old/retained-new, continued-work and protected-restore
+comparisons. Archive `outputs/qualification-evidence/recovery-v3-run-4` was
+independently audited before guest removal.
+
+- `program-linked`: `f615a7d647110d9fd41c15a4fe5cd84399498e955b40925ebb3867466b82120c`
+- `rollback-history-written`: `21a85dfeb66215d5151b8a2fea283659f3b23a7bdf454b8effcae715cd7d4abf`
+
+Eight of nine launcher recovery boundaries are requalified; rolled-back remains.
+
+## Launcher recovery requalified, final boundary
+
+`journal:rolled-back` passes both real kills and the complete old/retained-new,
+continued-work and protected-restore comparisons. Independently audited archive:
+`outputs/qualification-evidence/recovery-v3-run-5`; report SHA-256:
+`3300562baa8629b4d1bf6eb806bb1fe5b2026770e18ffc6d7751e39e1daf56e1`.
+All nine launcher recovery boundaries and eight forward activation boundaries
+are requalified. Canonical handoff and Main promotion remain outstanding.

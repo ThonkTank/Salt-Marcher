@@ -11285,3 +11285,139 @@ Migrationskill im gleichen-Schema-Modus ausdrücklich abweisen.
 Produktcode geändert; Bericht unterscheidet strikt42/42→42/42 und42/41→42/42.
 Plan-Audit Prüferergänzung bestanden, tatsächlicher Lauf folgt.
 Check34687708334 completed/success fürd5bfdcde2f1088d86a75270fe8a7754bd8ddfc70.
+
+97272 same-schema-run-1 terminalVMExit0/TestExit0 nach112s. Archiv
+same-schema-v3-run-1 vollständig gehasht und inhaltlich auditiert. Echte
+0.0.166→167 verschiedene Quellen/Bytes, beide42/42. Gesamter UI-Check/
+Download/Install/Restart/XP-Weiterarbeit/Restore: Seed exakt gleich Ziel,
+Restore und unveränderter Quelle (bestehende Partydefaults gleich); spätere
+Arbeit ausschließlich erwarteteXP-/Revision-/Öffnungszeitänderungen, geschützt
+in vollständigem Backup. Programmidentität bei Restore gleich, alle Prozesse0.
+Gastdisk nach Audit entfernt. BerichtSHA 7fe7c008b353ddc3897202e917d6dfec50d49a16fd86e46ec23eef386dd84a38
+Plan-Audit gleicher-Schema-Updateweg bestanden. Roadmap-Audit sieben
+Recoverygrenzen offen. Check34688658174 für0b9264f6cb42787bd7fd319c0f3168a27c974186 läuft.
+Nächster Recoverybatch mit unverändertem Payload-domain-errors-1:
+failed-data-preserved und journal:rollback-restoring, jeweils voriger
+Aktivierungskill awaiting-start, kompletter Doppelkill-/Datenvergleich.
+
+Vorige Wartephasen: Session60634 wiederholt live bestätigt, kein Neustart.
+Jetzt terminalVMExit0/TestExit0 nach314s/742s. recovery-v3-run-2 außerhalb
+VM gehasht und mit audit-release-recovery-v3.py vollständig geprüft: echte
+Main-/Launcher-Kill-PIDs, gleicher Journalauftrag/rolled-back, kompletter
+Baseline- und retained-target-Readback, Retry/Weiterarbeit/Restore/Schutzbackup
+und Quellinvarianz. Eigene erfolgreiche Gastdisk erst danach entfernt.
+failed-data-preserved: 003c23ccac081812acabeccf69e7e3abefb209e33e5cf37ba4a68e87272a8187
+journal:rollback-restoring: ca6ccba15014ff64d267ddfc4662ed894c45d65119bf88aa8092a3ab1903437d
+Plan-Audit Batch2 bestanden; vier von neun Recoverygrenzen vollständig
+qualifiziert. Roadmap-Audit fünf Grenzen offen. Nächster unveränderter
+Batch mit old-data-restored und journal:rollback-program; gleiches
+Payload-domain-errors-1, separate Profile, gleiche Doppelkill-/Readback-/
+Retry-/Restoreinvarianten.
+
+Voriger Goalturn Fortschritt: zweiter Recoverybatch vollständig auditiert,
+Drittbatch in Session8779/recovery-run-3 gestartet und nun live bestätigt.
+Check34688658174 completed/success am exakten Kandidaten
+0b9264f6cb42787bd7fd319c0f3168a27c974186. Aktueller Code unverändert;
+nur weitere Nachweise werden separat angehängt.171GiB frei zum Prüfzeitpunkt.
+
+8779 Recoverybatch3 terminalVMExit0/TestExit0 nach436s/931s. Export
+recovery-v3-run-3 unabhängig gehasht und vollständig mit unverändertem
+Audit geprüft: Main-/Launcher-Marker und echte Kill-PIDs, Journalidentität,
+alter Gesamtseed und retained target, kompletter Retry/Weiterarbeit/Restore
+mit Schutzbackup und unveränderter Quelle. Eigene Gastdisk erst nach Audit
+entfernt. Beide Berichte:
+old-data-restored: 7a5849c18a18dc3f0e654c0be97283070c928cc76f3fbf435e15464c2e097c78
+journal:rollback-program: e7158aaabce9a3f6a290448f41e59aec85a5491d1940d3d6189c3ee632774305
+Plan-Audit Batch3 bestanden; Roadmap-Audit drei Recoverygrenzen offen.
+Batch4 prüft program-linked und rollback-history-written mit gleichem
+Payload-domain-errors-1, vorherigem awaiting-start-Kill, separaten Profilen
+und unveränderten vollständigen Abnahmeinvarianten. Danach journal:rolled-back.
+
+Lesender Zwischenstands-Audit während Recoverybatch4: A37/34→B38/34→C39/34
+und direkterA→C gegen erhaltene Größen/Hashes und Inhalte erneut geprüft.
+B→C-Quellreadback entspricht exakt der A→B-continuation nach Weiterarbeit;
+direkteA→C-Quelle exakt gleicher A-Stand. Drei Kampagnen einschließlich Trash,
+Settings/Registry/Preferences/eigene Dateien/Welt/Kampf/Reise im repräsentativen
+Readback; source==reopened==sourceAfter, tatsächliche Weiterarbeit und Reise
+jeweils verändert und exakt persistiert. Direkter37→39-Migrationsbericht
+nennt beide originalen37→38/38→39-Schritte. Original-AppImage-Identitäten
+separat belegt; weiterhin historische Migrations-/Fixture-Coverage, ausdrücklich
+kein Programmaktivierungs- oder Nutzer-Livetest. Geprüfte Berichte:
+historical-a-to-b-sequential-v4: 4f88658b5c502809f1d6f4413fa02388275e1c5726e9e78e70ca500730e5e939
+historical-b-to-c-sequential-v4: 6b19bcae0cadf6c2b012cf85c5d09ce5588939886df839cc5bb9647831a162d6
+historical-a-to-c-sequential-v4-isolated: d39143a097a7cb4acc7bd9405eaa7ba41c09ef071422c827a03a791985f1e030
+
+Abschlussvorbereitung während unveränderter VM:23 ausgewählte erfolgreiche
+externe Archive erneut auf VMExit0/TestExit0 und sämtliche Dateigrößen/SHA256
+geprüft. Enthalten Feed/Erstinstallation, originales Local-Schema sowie acht
+Local-Aktivierungs-/neun Local-Recoverygrenzen, beide native Importfälle,
+WAL/Parallelstart/spätererCrash, vier Profilfehler, beide Kapazitätsfälle,
+Migrations-/Committed-/spätererKill, acht Releaseaktivierungsgrenzen,
+Zukunftssicherungsabweisung, gleicher-Schema-UI-Weg und sechs bisher
+abgeschlossene Launcher-Recoverygrenzen. Alle zuvor semantisch auditierten
+Bytes unverändert vorhanden. Dies ist Integritäts-Revalidierung der
+zugeordneten Nachweise, keine Erweiterung ihrer früher dokumentierten Scope.
+Laufender Recoverybatch4 noch nicht als abgeschlossen erfasst.
+
+44549 Recoverybatch4 terminalVMExit0/TestExit0 nach405s/860s. Archiv
+recovery-v3-run-4 außerhalb VM vollständig gehasht und mit unverändertem
+Semantikaudit geprüft: echte Main-/Launcher-Kills, gleicher Journalauftrag,
+kompletter alter Seed und retained target lesbar, Retry/Weiterarbeit/Restore
+und vollständiges Schutzbackup späterer Arbeit. Eigene Gastdisk nach Audit
+entfernt. Berichte:
+program-linked: f615a7d647110d9fd41c15a4fe5cd84399498e955b40925ebb3867466b82120c
+rollback-history-written: 21a85dfeb66215d5151b8a2fea283659f3b23a7bdf454b8effcae715cd7d4abf
+Plan-Audit Batch4 bestanden; acht von neun Recoverygrenzen qualifiziert.
+Roadmap-Audit letzter Punkt journal:rolled-back offen. Letzter Einzelgast
+mit gleichem Payload-domain-errors-1/0.0.160→167/Launcherobserver; vorheriger
+awaiting-start-Kill und sämtliche Daten-/Retry-/Restoreinvarianten bleiben.
+
+54736 letzter Recoverygast terminalVMExit0/TestExit0 nach370s. Archiv
+recovery-v3-run-5 unabhängig auf Hashes und vollständige Semantik geprüft:
+beide tatsächlichen Kills, gleiche Journalidentität, alter Gesamtseed und
+retained target lesbar, Retry/Weiterarbeit/Restore, Schutz späterer Arbeit
+und unveränderte Quelle. Erfolgreiche eigene Gastdisk erst danach entfernt.
+journal:rolled-back: 3300562baa8629b4d1bf6eb806bb1fe5b2026770e18ffc6d7751e39e1daf56e1
+Plan-Audit letzter Batch bestanden: alle acht Release-Aktivierungsgrenzen
+und neun Launcher-Recoverygrenzen erneut mit echten Artefakten qualifiziert.
+Roadmap-Audit: automatisierter Daten-/Updateweg bestanden; Phase5 bleibt
+bis Abschlussaudit und kanonischem Candidate/Handoff/Main-Gate offen.
+Historisches Loot31 bleibt negativer Kontrollstand für reward-v1; die
+unterstützte vollständige Migration ist gegen den korrigierten aktuellen
+Zielstand belegt, nicht rückwirkend gegen unverändertes historisches Loot31.
+
+### Phase 5 – abschließender Abgleich und isolierter kanonischer Handoff
+
+Plan-Audit gegen Phase5-Plan: historische Originalquellen und Artefakte,
+sequenzielle/übersprungene Migrationen, fortsetzbare repräsentative Spielstände,
+aktuelle vollständige Profile, native Übernahme, echte UI-Updates mit/ohne
+Schemawechsel, Fehler- und Wiederherstellungsmatrix sind separat belegt.
+Die ursprüngliche vollständige Loot30→31-Annahme wurde widerlegt; der
+unveränderte historische31-Stand bleibt negativer Kontrollfall. Die bereits
+protokollierte Korrekturrunde erhält originale reward-v1-Daten vollständig
+beim Update auf den reparierten42/42-Stand. Historische Teilreadbacks werden
+nicht als vollständige Profil- oder Programmaktivierungsbeweise ausgegeben.
+Offene Planabweichung: kanonischer Handoff und grünes Main fehlen weiterhin.
+
+Roadmap-Audit gegen kanonische Phase5: echte unterschiedlich gebaute
+AppImages mit42/41→42/42 und42/42→42/42, historische Zwischenstände,
+Migrationsabbruch, alle Aktivierungs-/Recoverygrenzen, WAL, reale Gast-ENOSPC,
+Zugriffsfehler, Parallelstarts/Aliase, beschädigte Downloads, fehlender Pfad,
+neueres Format und vollständiger Schutz späterer Arbeit bestanden. Leere,
+bestehende und beschädigte Profile bleiben getrennt. Automatisierter UI-Weg
+vollständig belegt. Phase bleibt wegen offenem Auslieferungsgate aktiv.
+
+Handoff-Ausführungsplan: echten unveränderten pnpm handoff:app im begrenzten
+KVM-Gast auf sauberem exakten Kandidatencheckout ausführen. Live-GitHub-
+Prüfung und originaler CI-Artefaktdownload bleiben aktiv; keine gefälschten
+API-Antworten, Fingerprints, Receipts oder ersetzenden Testadapter. Gast ist
+explizit der Handoff-Host dieses Nachweises, nicht Aarons Desktopinstallation.
+Separates Gastprofil, private D-Bus-/Xvfb-Sitzung, begrenzte CPU/RAM/Disk und
+Deadline. Abnahme verlangt vollständigen kanonischen Receipt einschließlich
+Runtimeprüfung und gesicherte Originalnachweise außerhalb der Gastdisk.
+Keine Host-AppImage-Ausführung. Eine tatsächliche Desktopübergabe bzw.
+Nutzer-Liveabnahme wird dadurch nicht behauptet und bleibt separat sichtbar.
+Vor Start Dokumentationsstand committen, pushen und vollständiges exaktes
+Candidate-CI abwarten. Gast benötigt GitHub-Zugriff; Authentisierung nur lokal
+und ohne Ausgabe von Zugangsdaten. Keine Veröffentlichung oder Promotion
+innerhalb des Testgasts. Nachweis prüfen, dann Promotion-Gate separat behandeln.
