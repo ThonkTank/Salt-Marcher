@@ -5,6 +5,7 @@ import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { clickWhenInteractable } from './support/e2e-interactions.js'
 import {
   expectAccessibleInBothThemes,
+  replaceFieldValue,
   setElectronWindowSize,
   setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
@@ -245,7 +246,11 @@ describe('per-scene desktop', () => {
     const other = sceneIds.find((id) => id !== original)!
     await client.$('.desktop-toolbar').$('button*=Nachschlagen').click()
     const search = client.$('[data-window-id="search"]')
-    await search.$('input[type="search"]').setValue('Longsword')
+    await replaceFieldValue(
+      client,
+      search.$('input[type="search"]'),
+      'Longsword'
+    )
     await search.$('[data-reference-kind="item"] button:first-child').click()
     const reader = client.$('[data-window-id="reader"]')
     await client
@@ -260,7 +265,11 @@ describe('per-scene desktop', () => {
     await client.$(separateSelector).$('summary').click()
     await client.$(separateSelector).$('button=Linke Hälfte').click()
     await client.$('.desktop-taskbar').$('button*=Nachschlagen').click()
-    await search.$('input[type="search"]').setValue('Salzmarschhafen')
+    await replaceFieldValue(
+      client,
+      search.$('input[type="search"]'),
+      'Salzmarschhafen'
+    )
     await search
       .$('[data-reference-kind="location"] button:first-child')
       .click()
@@ -333,7 +342,11 @@ describe('per-scene desktop', () => {
     await expect(client.$$(separateSelector)).toBeElementsArrayOfSize(1)
     await client.$('.desktop-taskbar').$('button*=Nachschlagen').click()
     const restoredSearch = client.$('[data-window-id="search"]')
-    await restoredSearch.$('input[type="search"]').setValue('Longsword')
+    await replaceFieldValue(
+      client,
+      restoredSearch.$('input[type="search"]'),
+      'Longsword'
+    )
     const barOrder = await client
       .$$('.desktop-taskbar button')
       .map((button) => button.getText())
