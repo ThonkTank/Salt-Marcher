@@ -12339,3 +12339,69 @@ Teilaudit6A.4: Inhaltsprüfer erfüllt den festgehaltenen ersten Umsetzungsschri
 Offen bleiben Runtime-/Manifest-/Prozessbelegprüfung, Zusammenführung des realen
 Abnahmeauftrags, Workflowanbindung und neue endgültige Laufzeitberichte.
 Phase6 und Gesamroadmap sind nicht abgeschlossen.
+
+Plan6A.4 Laufzeitidentität: Ein gemeinsamer reiner Prüfer bindet jeden erfolgreichen
+Seed-/Read-/Identity-Beleg an ein zuvor aus tatsächlichen Dateien geprüftes
+UpdateArtifact. Verbindlich sind AppImagehash, Herkunftsreceipt-/Manifesthash,
+Sourcecommit, Operationsname, Request-ID, tatsächliche erfolgreiche Antwort und
+Null-Exit sowie Hash des eingebetteten kompakten Original-Ergebnisdokuments.
+Releasebelege müssen außerdem die saubere eingebettete Release-Buildidentity und
+bei Identity-Abfragen die Utility-Formate sowie passende Electron-Version
+nachweisen. Historische Fixtures behalten ihren eigenen Berichtvertrag; kein
+Fallback zwischen Belegarten. Tests manipulieren diese Bindungen gezielt.
+Dieser Prüfer authentifiziert keine selbstbehauptete CI-Herkunft; seine
+Artefakteingabe muss aus der bestehenden geprüften Beschaffung stammen.
+Danach Gegenprüfung der unveränderten vier realen VM-Berichte einschließlich
+aller enthaltenen erfolgreichen Readbacks, ohne alte Berichte umzuschreiben.
+
+Laufzeitbelegprüfer geprüft:18 gezielte Tests, ESLint und beide Typprüfungen
+bestanden (`work/phase6-runtime-evidence-checks.log`,58s,1.4GiB,0Swap).
+Unveränderte reale Archivberichte gegen tatsächliche Original-AppImages erneut
+geprüft:11 Laufzeitbelege same-schema,11 Migration/Recovery,9 Skip,1 Erstinstallation.
+Alle32 bestehen einschließlich Original-Ergebnisdocumenthash und tatsächlicher
+Releaseidentity (`work/audit-phase6-runtime-evidence.ts`,
+`work/phase6-runtime-evidence-audit.json`,1.7s,698MiB,0Swap). Keine Archivänderung.
+
+Teilaudit6A.4 Laufzeitidentität erfüllt. Nächster Schritt verbindet diesen Prüfer
+mit `verifyProfileProof` und den Wartungsjournalen/Prozessabschlüssen der UI-Fälle.
+Dabei muss der neue finale Quellhistory-Readback vorhanden sein. Erstinstallation
+prüft vollständiges Zielmanifest/Provenienz, tatsächliche installierte Dateigröße
+und Hash, committed Installjournal, Desktop-Startpunkt und erfolgreiche
+Prozessabschlüsse. Recovery prüft gezielten frühen SIGKILL, bisherigen
+Programm-/Datenstand und Erhalt später bestätigter Arbeit. Die Verarbeitung
+bindet alle Belege an den expliziten Abnahmeauftrag; keine implizite Latest-
+Baseline. Workflow-/CI-Provenienz und die finale Releasefreigabe bleiben getrennte
+noch offene Grenzen. Der lokale Zwischenstand wird mit dieser Integration
+zusammen auf dem Kandidatenbranch gesichert; kein unnötiger neuer CI-Abbruch
+nur für den reinen Hilfsprüfer.
+
+Verknüpfungsprüfer initial:37 Verhaltenstests bestanden; statische Prüfung läuft.
+Review ergänzt vor Abschluss explizite positive Recoveryfälle und Manipulationen
+an deren Prozess-/Programmbindungen. Update-Prozesslisten müssen eindeutige PIDs
+enthalten; erwartete SIGKILL-Einträge dürfen keinen normalen Exitcode behaupten.
+Der frühe Zieljournalstand muss Version und Hash des Zielartefakts tragen.
+Die Vergleichsart wird auch hier gegen tatsächliche Quell-/Zielformate geprüft;
+kein same-schema-Nachweis für einen Schemawechsel oder umgekehrt.
+
+UI-Verknüpfungsprüfer final:44 gezielte Tests, ESLint und beide Typprüfungen
+bestanden (`work/phase6-ui-evidence-final-checks.log`,60s,1.4GiB,0Swap).
+Geprüft werden vollständige Runtime-/Manifest-/Inhaltsbindungen, tatsächlicher
+Updatefeed-Zugriff, committed Journale, gleichbleibendes Programm bei Restores,
+Schutzbackup-IDs und getrennte Wiederherstellungen. Recovery bindet frühe
+Unterbrechung und Rücksetzung an denselben Journalstand sowie zwei eindeutig
+zugeordnete SIGKILL-Prozesse; spätere Arbeit bleibt erhalten. Erwartete
+Vergleichsart wird gegen tatsächliche Formate geprüft.
+
+Reale Semantikregression bestanden (`work/replay-phase6-ui-evidence.ts`,
+`work/phase6-ui-evidence-replay.json`): Alle drei alten UI-Berichte werden zunächst
+wegen des fehlenden finalen Quellhistory-Snapshots abgewiesen. Die expliziten
+Inhalts-Replays bestehen einschließlich Recovery; unveränderter echter
+Erstinstallationsbericht besteht direkt. CI-Felder im Replay sind ausdrücklich
+inert und keine Herkunftsbehauptung; keine Archive oder Freigaben verändert.
+
+Nächster realer Nachweis: neuer Migrations-/Recovery-Gast mit aktuellen sauberen
+Harnessquellen, Original .16742/42 und denselben unveränderten c11d7fcb5-Zielbytes.
+Der neue Bericht exportiert den echten finalen Quellhistory-Readback. Nach
+Archivierung wird er vollständig ohne Ergänzungen vom gemeinsamen UI-Prüfer
+validiert. Keine erneute Paketierung des Ziel-AppImages und keine Ausführung
+auf dem Host. Aggregate-/Workflowintegration und Phase6B/7 bleiben offen.
