@@ -12553,3 +12553,81 @@ und erneut geprüften gecachten Basis-/Nodebytes. Neues Ausgabeverzeichnis
 Die Containerfile-Neuerstellung und Docker-Ausführung sind dabei ausdrücklich
 noch keine geprüften Laufzeitfälle; der vorhandene Podman-Pfad wird mit neuer
 Orchestrierung geprüft. Quellen bleiben bis Ende des Gastlaufs unverändert.
+
+Plan6A.6 Auftragstransport und Ergebnisrücknahme: Ein Host-Einstieg prüft das
+vorbereitete Gastimage gegen seinen gespeicherten Hash, die aktuellen Runner
+gegen Requestcommit sowie Ziel/Comparison-Dateien gegen den expliziten Auftrag.
+Er erstellt ein neues ausschließlich lesbares Seed-Abbild mit unveränderten
+Artefakten, Runnern, Node und Kontrolldokumenten. Der Testgast erhält keinen
+GitHub-Token und kein Netzwerk; eine eigene begrenzte Benutzer-Serviceeinheit
+führt den gesamten UI-Abnahmeablauf aus. Original-JSON-Berichte werden als
+geprüfter Serialexport zurückgenommen. Auf dem Host werden VM-/Testabschluss,
+Bootstrap-/Runner-/Artefaktidentitäten und der vollständige v2-Abnahmebericht
+vor Übernahme erneut geprüft. Ausgabe entsteht erst nach erfolgreicher
+Rücknahme; das getestete AppImage wird aus dem Original kopiert und nochmals
+hashgeprüft. Fehlgeschlagene Gastdaten/Belege bleiben erhalten, produktive
+Profile werden nicht eingebunden. Live-GitHub-Provenienz bleibt eine eigene
+verbindliche Prüfung vor Erstellung des Releaseentwurfs.
+
+Neue Vorbereitung im echten KVM-Gast erfolgreich: VM-/Bootstrapabschluss0,
+eigenständige Gastplatte ohne Backingfile und mit bestandenem qemu-img check.
+Gesamtlauf103s,2.4GiB,0Swap (`work/phase6-vm-preparation-live.log`).
+Unabhängiger Audit `work/phase6-prepared-environment-audit.json` prüft erneut
+alle Archivdateien/Serialhashes, verschiedene Host-/Gastboot-IDs und die gesamten
+Bytes der vorbereiteten Platte. Erfolgreiche Bootstrap-Overlayplatte erst nach
+Archivierung und unabhängiger Basisplatten-Erzeugung entfernt. Dies ist ein
+Umgebungsnachweis, kein neuer AppImage-Abnahmelauf.
+
+Fortsetzung nach Nutzerpause: Root151GiB frei,24GiB RAM verfügbar, keine
+laufende VM/Validierung. Der letzte Rücknahme-Prüflauf wurde nach4s an seiner
+2GiB-cgroup-Grenze mit oom-kill beendet; er zählt nicht als bestanden.
+Korrekturplan: zunächst die Rücknahmefälle einzeln mit begrenztem Nodeheap und
+unveränderter 2GiB-Gesamtgrenze isolieren, statt die Hostgrenze anzuheben.
+Danach relevante Tests, Lint und Typprüfungen erneut ausführen. Ursache und
+Ergebnis werden getrennt vom weiterhin offenen Phase6-Abschluss dokumentiert.
+
+Isolierter Lauf: Erfolgsfall sowie fehlende/zusätzliche Dateien bestanden;
+beim manipulierten Summary wieder oom-kill nach4s trotz768MiB Nodeheap.
+Der Rücknahmecode vergleicht komplette Berichtspuffer mit assert.deepEqual;
+dessen Fehlerdarstellung kann große Byte-Diffs aufbauen. Korrektur: weiterhin
+exakte Bytegleichheit prüfen, aber mit Buffer.equals und begrenzter Meldung
+statt materialisiertem Byte-Diff. Negative Fälle müssen kontrolliert ablehnen.
+
+Korrektur bestätigt:18Tests inkl. manipuliertem Summary bestanden, ESLint
+bestanden. Die anschließend mit demselben diagnostischen768MiB-Heap gestartete
+Typprüfung erreicht ihr Heaplimit (925MiB Gesamtspitze, kein cgroup-OOM).
+Die Typprüfung wird separat mit ihrem bisherigen1536MiB-Heap innerhalb der
+unveränderten2GiB-cgroup wiederholt. Die reduzierte Diagnosegrenze war für
+den vollständigen TypeScript-Projektgraphen zu niedrig.
+
+Rücknahme-Teilprüfung abgeschlossen:18Tests und ESLint bestanden; beide
+Typprüfungen separat erfolgreich in47s bei1.4GiB/0Swap. Der Bytevergleich
+verhindert den reproduzierten OOM bei negativen Berichten ohne Abschwächung
+der Inhaltsprüfung. Teilplanaudit: Ergebnisrücknahme vorhanden und geprüft;
+Auftragstransport/Host-Einstieg fehlen noch. Roadmapaudit: Phase6 bleibt offen.
+
+Hosttransport:29Tests, ESLint und beide Typprüfungen bestanden (61s,1.4GiB,
+0Swap). Neuer Belegleser zusätzlich am unveränderten echten vorbereiteten
+Image erfolgreich (3.0GB gehasht,135MiB Speicher). Teilreview findet eine
+Beleglücke: erfolgreicher Gast-Qualifier entfernt Fallverzeichnisse samt
+Einzelprozesslogs, bevor der Gesamtauftrag exportiert wird. Korrekturplan:
+Begrenzte Original-JSON-/Logpaare vor jedem erfolgreichen Aufräumen in einen
+eigenen Belegordner übernehmen, unveränderte Bytes prüfen und mit exportieren.
+Fehlende/uneindeutige Paare verhindern die Bereinigung und erfolgreiche Abnahme.
+
+Originale Runtime-JSON-/Logpaare werden vor erfolgreicher Fallbereinigung
+begrenzt übernommen und unverändert exportiert.17Tests (einschließlich
+Serialarchiv-Parser), ESLint und beide Typprüfungen bestanden (59s,1.4GiB,
+0Swap). Hosttransport-Review ergänzt erneute Prüfung des tatsächlich ins
+Seed kopierten Nodearchivs gegen den festen Originalhash. Gesamtgast und
+Docker-Ausführung bleiben ausdrücklich noch ungeprüft. Letzter gepushter
+Stand87b30833f vollständig Check-grün (Run34706868676); neue Änderungen
+benötigen ihren eigenen Candidate-Run und sind noch nicht auf Main.
+
+Letzte Transportergänzung: ESLint und beide Typprüfungen erfolgreich
+(57s,1.4GiB,0Swap); Gast-Shellsyntax geprüft. Teilplanaudit6A.6: Host-Einstieg,
+begrenztes Seed, netzloser Gastaufruf, Ergebnisneuberechnung und gesicherte
+Originalprotokolle implementiert; Gesamtlauf noch ausstehend. Roadmapaudit:
+keine Veröffentlichung/Mainpromotion; Release-/Publish-Workfloweinbindung,
+öffentliche Vergleichsprofil-Fixtures, CI-Risikoauswahl und finale Abnahme
+offen. Candidate-Sicherung erfolgt vor der weiteren Workflowintegration.

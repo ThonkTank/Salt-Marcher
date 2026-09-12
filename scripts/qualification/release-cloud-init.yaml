@@ -1,0 +1,62 @@
+#cloud-config
+hostname: salt-marcher-qualification
+write_files:
+  - path: /opt/run-release-qualification.sh
+    permissions: '0700'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      mkdir -p /mnt/qualification /opt/qualification
+      mount -o ro /dev/vdb /mnt/qualification
+      cp -a /mnt/qualification/payload/. /opt/qualification/
+      cd /opt/qualification
+      sha256sum -c SHA256SUMS
+      tar -xf node.tar.xz
+      export PATH=/opt/qualification/node-v22.23.2-linux-x64/bin:/usr/bin:/bin
+      chown -R ubuntu:ubuntu /opt/qualification
+      modprobe qemu_fw_cfg
+      chmod a+r /sys/firmware/qemu_fw_cfg/by_name/opt/salt-marcher/host-boot-id/raw
+      recovery_case=$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync("job.json","utf8")).recoveryComparisonId)')
+      set +e
+      systemd-run --wait --pipe --collect --unit=salt-marcher-qualification-release -p User=ubuntu -p MemoryMax=3G -p MemorySwapMax=0 -p TasksMax=256 -p RuntimeMaxSec=3000 -p KillMode=control-group --setenv=HOME=/home/ubuntu --setenv=XDG_SESSION_TYPE=x11 --setenv=PATH="$PATH" dbus-run-session -- xvfb-run -a -s '-screen 0 1920x1080x24' node /opt/qualification/runners/qualify-release-update.mjs --request /opt/qualification/release-request.json --target /opt/qualification/target --comparisons /opt/qualification/comparisons --workflow /opt/qualification/workflow.json --recovery-case "$recovery_case" --work /home/ubuntu/qualification-work --output /home/ubuntu/release-output
+      result=$?
+      set -e
+      echo QUALIFICATION_TEST_EXIT=$result
+      python3 - <<'EXPORT'
+      import base64, io, json, pathlib, tarfile, time
+      root = pathlib.Path('/home/ubuntu')
+      paths = list((root / 'release-output').glob('*.json'))
+      work = root / 'qualification-work'
+      paths += list(work.glob('*.json'))
+      paths += list(work.glob('runtime-logs/*/*/release-qualification/*.json'))
+      paths += list(work.glob('runtime-logs/*/*/release-qualification/*.log'))
+      paths += list(work.glob('case-*/home/ui-failure-evidence.json'))
+      paths += list(work.glob('first-installation/home/first-install-failure.json'))
+      total = 0
+      buffer = io.BytesIO()
+      with tarfile.open(fileobj=buffer, mode='w:gz') as archive:
+          for path in sorted(set(paths)):
+              assert path.is_file() and not path.is_symlink()
+              total += path.stat().st_size
+              assert total <= 48 * 1024 * 1024, 'Qualification report export exceeds bounds'
+              archive.add(path, arcname=path.relative_to(root).as_posix())
+          for path in sorted(work.glob('*.log')):
+              with path.open('rb') as log:
+                  log.seek(max(0, path.stat().st_size - 65536))
+                  data = json.dumps({'name': path.name, 'tail': log.read(65536).decode('utf8', errors='replace')}).encode()
+              entry = tarfile.TarInfo('diagnostics/' + path.stem + '.json')
+              entry.size = len(data)
+              archive.addfile(entry, io.BytesIO(data))
+      print('QUALIFICATION_EXPORT_BEGIN')
+      print(base64.encodebytes(buffer.getvalue()).decode())
+      print('QUALIFICATION_EXPORT_END', flush=True)
+      time.sleep(10)
+      EXPORT
+      exit "$result"
+runcmd:
+  - [bash, /opt/run-release-qualification.sh]
+power_state:
+  delay: now
+  mode: poweroff
+  timeout: 120
+  condition: true

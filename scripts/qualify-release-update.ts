@@ -23,6 +23,7 @@ import {
   qualificationCasePlan
 } from './release/qualification-case-plan.js'
 import { verifyQualificationRunners } from './release/qualification-runners.js'
+import { retainRuntimeLogs } from './release/retain-runtime-logs.js'
 import { runQualificationChild } from './release/run-qualification-child.js'
 import {
   verifyFirstInstallUiEvidence,
@@ -112,6 +113,7 @@ try {
   writeFileSync(join(work, 'first-installation.json'), firstInstallation, {
     flag: 'wx'
   })
+  retainRuntimeLogs(firstRoot, join(work, 'runtime-logs/first-installation'))
   rmSync(firstRoot, { recursive: true })
   for (const item of prepared) {
     const caseRoot = join(work, `case-${item.comparison.id}`)
@@ -156,6 +158,10 @@ try {
       report
     })
     // Only this successful, fully read-back synthetic case; failed cases remain intact.
+    retainRuntimeLogs(
+      caseRoot,
+      join(work, `runtime-logs/case-${item.comparison.id}`)
+    )
     rmSync(caseRoot, { recursive: true })
   }
   verifyQualificationRunners(runners, workflow.commit)
