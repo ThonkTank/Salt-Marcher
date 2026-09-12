@@ -1,15 +1,18 @@
+import { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
 /** Resolve an uncertain original command before any subsequent Party write. */
 export class PartyCommandGate {
-  private tail: Promise<unknown> = Promise.resolve()
+  private readonly commands = new AsyncCommandCoordinator()
   private unresolved: (() => Promise<unknown>) | null = null
 
-  run<T>(
+  async run<T>(
     write: () => Promise<T>,
     readOriginal: () => Promise<unknown>
   ): Promise<T> {
-    const next = this.tail
-      .catch(() => undefined)
-      .then(async () => {
+    const outcome = await this.commands.run({
+      scope: 'party-actions',
+      mode: 'queue',
+      execute: async () => {
         if (this.unresolved) {
           await this.unresolved()
           this.unresolved = null
@@ -18,9 +21,11 @@ export class PartyCommandGate {
         const result = await write()
         this.unresolved = null
         return result
-      })
-    this.tail = next
-    return next
+      }
+    })
+    if (outcome.status === 'success') return outcome.value
+    if (outcome.status === 'failure') throw outcome.cause
+    throw new CapabilityError('outcome_unknown', true)
   }
 }
 const hosts = new WeakMap<object, Map<string, PartyCommandGate>>()
