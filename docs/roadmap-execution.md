@@ -11559,3 +11559,143 @@ Schutzbackup-Wiederherstellung bestanden. Plan-Audit Umsetzung vollständig;
 Runtimebeweis folgt im nächsten42/42→43/43-Gast. Kein gesonderter Spiegeltest
 für Klicksequenz; echte Original-AppImages prüfen sichtbare Bedienung und
 vollständige Readbacks/History/zweites Schutzbackup. Frühere Artefakte bleiben.
+
+Zweiter43-Gast konkret vorbereitet: Payload-party-history-2 ausbba359c5a,
+0.0.167→168/from-candidate-42, zusätzlicher echter Utilitykill in42→43,
+Kill nach dauerhaftemCommit und nach akzeptierter XP-Weiterarbeit. Anschließend
+ursprünglicher Restore plus tatsächlicher Restore des geschützten XP-/History-
+Standes samt zweiter Vorschaltsicherung. Marker/Kill-PIDs und vollständige
+Readbacks bleiben Pflicht. Ein Profil,900sFall/1500sHostdeadline, keine
+Quelländerungen während Gast. Erfolgreiche ersteGastdisk bereits archiviert.
+
+56820 Gast jetzt weiterhin live; vorigerGoalturn Fortschritt durch auditierten
+Erstgast und gestarteten Zweitgast. Unabhängig wird OriginalMainbaseline
+e4fc7fd4e/43-42 als0.0.169 in eigenem unveränderlichemBuildcheckout vorbereitet;
+danach43/43-Ziel0.0.170 fürMainbaseline-/Same-schema-Vergleich. Keine Änderungen
+an App-/Test-/Harnessquellen oder laufendemPayload. SeparaterBuild maximal4GiB,
+1CPU,keinSwap,600s; nur einVM-Gast. Hostreserve vorher geprüft. DerBuild bleibt
+reine Artefakterzeugung und zählt nicht alsRuntime-/Handoffnachweis.
+
+56820 terminalVMExit0/TestExit0 nach298s. Externes Archivparty-history-v3-run-2
+vollständig Hash-/Inhaltsaudit bestanden.42/42→43/43: echterUtilitykill innerhalb
+42→43, dauerhafterCommitkill, spätererNutzungskill; unveränderterSeed/Retry,
+XP975→1000 und vollständige verknüpfteHistory erhalten. ErsterRestore schützt
+spätereArbeit; zweiter echterUI-Restore bringt diesen XP-/History-Stand vollständig
+zurück und schützt wiederum den ursprünglichen Stand. Beide Vorschaltbackups
+mit Originalruntime gelesen, History/Receipt/Index exakt verglichen. Normale
+ProzesseExit0, SIGKILL-Ausgänge nur explizit erfasstePIDs. Quelleunverändert.
+ReportSHA256: 0c7560a0979f1481bdb1f2d4f71b1968f3559a5ae4ee736441b7fa30012e38f9
+EigeneerfolgreicheGastdisk erstnachAudit entfernt. Plan-Audit Zweitgast bestanden.
+Roadmap-Audit Main43/42 und43/43same-schema sowieHandoff/Main bleibenoffen.
+
+19727 Mainbaselinebuild terminalExit0 nach76.704s, Peak2.4GiB/keinSwap.
+Originale4fc7fd4e/43-42,0.0.169, Receipt/Bytes unabhängig geprüft:
+a8541096848774702ef86807b91d6db949258e5d4f438a730e3590a5168296f2; 177063553Bytes.
+ErfolgreichegenerierteAbhängigkeiten entfernt. NächsterseparaterBuild0.0.170
+mitOriginalziel4a87219b2/43-43, neueAusgabe, unveränderteQuellen. Dieser
+zusätzlicheBuild ermöglicht aufsteigendeVersion169→170;168→170 prüft gleichen
+Datenstand43/43. Kein behaupteter öffentlicherRelease dieserTestversionen.
+
+6998 terminalExit0 nach49.518s, Peak2.5GiB/keinSwap. Originalziel4a87219b2
+als0.0.170/43-43, Receipt/Bytes geprüft: 1b569ed2129204f124628003d89f845afdb68116c89e6d9d74e7fbafffa8b98c; 177083939Bytes.
+Letzter43-Vergleichsbatch:169→170/from-main-42 und168→170/same-schema,
+separateProfile, je kompletterUI-Weg mit Zukunftssicherungsabweisung44
+und tatsächlicherSchutzbackup-/History-Restore. Identischer bereits getesteter
+Prüfer ausbba359c5a, keineQuelländerung.900sjeFall/2400sHost, ein24GiB-Gast.
+
+57392 terminalVMExit0/TestExit1 nach48s; Fehlerarchivparty-history-final-v3-run-1
+vollständig Hash-geprüft, fehlgeschlageneGastdisk bleibt. Mainbaseline meldet
+vorBackup „Starthelfer konnte nicht aus Ziel-AppImage gelesen werden“, rolled-back.
+Same-schema-Fall wegenStop-bei-erstemFehler noch nicht ausgeführt. OriginalMain-
+Leser nutzt ELECTRON_RUN_AS_NODE/-e; Zielcode hat bereits direktenExtraktionsfix.
+FrühererOriginalLocal-Diagnosebefund war AppRun bad option --no-sandbox bei
+blockiertem unshare. Noch kein entsprechender stderr-Beleg für diesen neuenLauf.
+
+FokussierterGastplan: identischeOriginal-AppImages/Payload, vorUI den alten
+Node-Startweg mit stdout/stderr/Exit und unshare-Ergebnis aufzeichnen. Nur nach
+bestätigtem identischem Plattformfehler Gast-User-Namespaces ermöglichen und
+Originallesepfad erneut mit tatsächlichemResourcehash prüfen. Hostboot-ID
+muss verschieden sein. Anschließend Mainbaseline-UI-Weg unter dieser expliziten
+Gastkonfiguration; vor Same-schema-Fall ursprünglichenGuestwert zurücksetzen.
+Keine Änderung von AppImage, SQL, altemUpdater oderHost-Schutz. Ergebnis bleibt
+für dieseGuestbedingungen ausgewiesen; aktuelleUpdatervarianten weiterhin
+unter strengemOriginalgast testen. Kein stillesÜberspringen desFehlers.
+
+87700 terminalVMExit0/TestExit0 nach816s. BeideVergleiche samt separatenDiagnosen
+außerhalbGast archiviert und vollständig Hash-/Semantikaudit bestanden.
+Main43/42(169)→43/43(170): ff5f1d4bd0236f2bbc4b665a4135a385ef693d75ef9c06118b9a1e720e8e8030
+Same43/43(168)→43/43(170): 0df8b51e618ecad952a6b90e4288d441a5c4d0754cd422834ab006162abfab30
+Seed==after==restored==unchanged; Weiterarbeit ausschließlich XP975→1000,
+Partyrevisionen/aktiverÖffnungszeit, exakt eine vollständigeHistorykette.
+NeuereInstallation44-Sicherung verständlich abgewiesen, gesamter aktuellerStand
+und Schutzbackup unverändert; anschließender ursprünglicherRestore und echter
+Schutzbackup-Restore inklusiveHistory/Receipt/Index und zweiterVorschaltsicherung.
+Alle normalenProzesseExit0. HistorischerMain-Leser: vorherExit9/bad option
+--no-sandbox undunshareExit1; nach ausschließlichGast-Userns-FreigabeExit0,
+Resourcehash b0c175f9c4e9c8244e800373ca678f488c8721e1009fe4a9b71eada4f34d77ce.
+VorSame-schema wiederGuestwert1, imseriellenLogbestätigt. KeinHost-sysctl.
+Eigene erfolgreicheGastdisk erstnachAudit entfernt; gescheiterterVorlauf bleibt.
+
+Plan-Audit aktuelle43-Integration bestanden: vier expliziteSchema-Szenarien,
+Migrations-/Commit-/Nutzungskills und tatsächlicheHistory-Restorebeweise.
+Roadmap-Audit automatisiertePhase5-Nachweise vollständig, kanonischerHandoff/
+Mainweiterhin offen. Vergleich e96dbcbfe→4a87219b2 zeigt keinerlei Änderungen
+in shared/maintenance, main/release, utility/maintenance, core/maintenance und
+local-installation. Vorherige acht/neun Unterbrechungsgrenzen behalten deshalb
+für diesen unveränderten Koordinator ihre belegteScope; neue43-Migration wurde
+zusätzlich tatsächlich unterbrochen. HistorischeA/B/C-/Loot-Nachweise werden
+nicht rückwirkend auf andereArtefakte umetikettiert;43-Fortsetzung separatbelegt.
+
+KanonischerHandoff-Ausführungsstand: bba359c5af6c20e4fa213770b3718f4327870d57
+vollständigerCheck34692708260 success; PR676OPEN/CLEAN. Separater sauberer
+Hostcheckout work/canonical-handoff-bba359c5a, identischer absoluterPfad imGast;
+quellgetreuesBundle und unveränderteDependencies gehasht vorbereitet. Dadurch
+lassen sichOriginalreceipts unverändert in diesen separatenCheckout übernehmen,
+ohne alteHandoffhistorie desArbeitscheckouts zuüberschreiben. Gast führt echten
+pnpm handoff:app mitLiveGitHub-/CI-Artefaktprüfung aus. KeinProxy/keingefälschtes
+Gate, keinePromotionimGast. Zugangsdaten ausschließlich in privatemRAM-Seed und
+Prozessumgebung; keinToken imQuellbundle/Log/Export, RAM-Seed nachLauf entfernen.
+KeinDesktop-Handoff behauptet. Nach unabhängigerReceiptprüfung getrenntePromotion
+undgrünesMain erforderlich. AuthentisierteVM benutztNetzwerk nur für Original-
+Werkzeuge, Repositoryprüfung undexaktesCI-Artefakt. EinGast,7GiBHostcontainer/
+4GiBGast/2CPU/24GiBDisk,3GiB/1500sHandoffprozess,2400sHostdeadline.
+
+### Phase 5: Korrekturrunde – Handoff nach erfolgreichem Erststart
+
+Der echte Handoff für bba359c5a ist fehlgeschlagen; der Gastlauf wird nicht als
+abgeschlossen gewertet. Archiv `canonical-handoff-v3-run-1` enthält erfolgreiche
+Runtime-Prüfung (Utility bereit, Installation43, leeres Profil fachlich gültig,
+identische installierte und heruntergeladene Bytes), danach scheitert die
+Checkpoint-Abfrage. `inspectLocalAppInstallation` prüft auch nach dauerhaftem
+`committed` den unveränderten Profilhash von vor dem Erststart. Der Erststart
+legt jedoch legitime Profil-/Installationsdaten an. Dies ist kein Beleg für
+Datenkorruption. Der fehlgeschlagene Gast bleibt für Diagnose erhalten.
+
+Fixplan: Nur die lesende Prüfung bereits abgeschlossener Installation darf bei
+passendem, dauerhaft committed Wartungsjournal die aufbewahrten Backup-Beweise
+unabhängig vom inzwischen benutzten Profil prüfen. Programmidentität, aktiver
+Startpunkt, Deployment, Desktop-Integration und Backup-Integrität bleiben
+verbindlich. Vor Nutzungsfreigabe bleiben sämtliche Profilhash-Prüfungen aktiv;
+der schreibende Installer behält seine erneute Sicherung späterer Änderungen.
+Tests bilden Erstinitialisierung, weitere Nutzung, abweichende Journalidentität,
+manipulierte Sicherung und Änderungen vor Commit ab. Danach gezielte native
+Tests, statische Prüfungen, neuer Candidate und vollständige CI; abschließend
+echter Handoff mit unverändertem CI-Artefakt im begrenzten KVM-Gast. Kein
+Host-AppImage-Start. Root vor Wiederaufnahme: 160 GiB frei. Plan- und
+Roadmap-Audit sowie Main-Promotion bleiben bis zu den Nachweisen offen.
+
+Korrekturrunde validiert: 53/53 Installer-Tests bestanden, einschließlich der
+neuen Erststart-/Nutzungs- und beschädigten-Backup-Regressionen sowie vorhandener
+Recovery-/erneuter-Sicherungsfälle. Lauf 155.50s, 1.3 GiB Peak, kein Swap,
+`work/handoff-accepted-checkpoint-tests.log`. ESLint und Formatprüfung bestanden;
+beide TypeScript-Projekte bestanden in 51.4s mit 1.4 GiB Peak/kein Swap.
+Der erste TypeScript-Aufruf benannte versehentlich die nicht vorhandene
+`tsconfig.node.json`; der korrekte Paketbefehl `pnpm typecheck` bestand komplett.
+
+Plan-Audit bestanden: ausschließlich lesende Checkpoint-Prüfung unterscheidet
+passenden committed Zustand; Quellhash bleibt der ursprüngliche Nachweis,
+Backup- und Programmprüfungen bleiben erhalten, der schreibende Installer wurde
+nicht gelockert. Vor Commit wird die Erstinitialisierung ausdrücklich abgewiesen;
+nach Commit akzeptiert, abweichende Programmversion und beschädigte Sicherung
+weiterhin abgewiesen. Roadmap-Audit Korrektur lokal bestanden, echter erneuter
+Handoff und Main-Gates weiterhin offen. Main e4fc7fd4e unverändert geprüft.

@@ -602,3 +602,27 @@ all three campaign locations, including trash. Source content is unchanged.
 Archive: `outputs/qualification-evidence/party-history-v3-run-1`.
 Report SHA-256: `404d74a93949ce9f49b964afeb6d7b281462cb2846283f45cc08ba258846c42d`.
 Other schema-43 baseline scenarios and canonical handoff/Main remain open.
+
+## Candidate schema-42 convergence, interruptions and actual history restore
+
+`0.0.167` (42/42) to `0.0.168` (43/43) passes the migration/committed/later-use
+process kills, continued work and both restores. The second visible restore
+recovers the actual XP history/receipt/index chain from the protective backup,
+and itself preserves the previous complete state. All exported comparisons
+were independently audited. Archive: `outputs/qualification-evidence/party-history-v3-run-2`.
+Report SHA-256: `0c7560a0979f1481bdb1f2d4f71b1968f3559a5ae4ee736441b7fa30012e38f9`.
+
+## Main schema-42 and same-schema-43 comparisons complete
+
+Both full UI paths, rejection of a validly inventoried newer-format backup,
+and actual restoration of protected XP/history pass. All exported values,
+receipts, history chains and source invariance were independently audited.
+Archive: `outputs/qualification-evidence/party-history-final-v3-run-2`.
+
+- Main 43/42 → 43/43: `ff5f1d4bd0236f2bbc4b665a4135a385ef693d75ef9c06118b9a1e720e8e8030`.
+- Same 43/43 → 43/43: `0df8b51e618ecad952a6b90e4288d441a5c4d0754cd422834ab006162abfab30`.
+
+The original Main reader requires guest user namespaces; its exact failure
+and successful resource hash are separately recorded. The guest restriction
+was restored before the same-schema case. Host settings were unchanged.
+Canonical handoff and Main promotion remain outstanding.

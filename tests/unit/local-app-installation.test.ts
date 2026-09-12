@@ -68,6 +68,67 @@ function installAndAccept(options: InstallLocalAppOptions) {
 }
 
 describe('local AppImage installation', () => {
+  it('retains installation evidence after accepted first-start initialization and later work', () => {
+    const fixture = createFixture(build('a'))
+    const first = activateLocalApp(fixture.options)
+    const coordinator = new MaintenanceCoordinator(first.paths.root)
+    createDatabase(first.paths.campaignData, schemaVersion)
+    writeFileSync(
+      join(first.paths.profile, 'settings.json'),
+      '{"theme":"dark"}'
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+    coordinator.commit(coordinator.read()!.id)
+    for (const target of [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const)
+      expect(
+        inspectLocalAppInstallation(fixture.options, target)?.sourceDataHash
+      ).toBe(first.sourceDataHash)
+    writeFileSync(join(first.paths.profile, 'later-work.txt'), 'keep this work')
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    expect(
+      readFileSync(join(first.paths.profile, 'later-work.txt'), 'utf8')
+    ).toBe('keep this work')
+    const state = coordinator.read()!
+    writeFileSync(
+      coordinator.journalPath,
+      JSON.stringify({
+        ...state,
+        next: { ...state.next, version: 'f'.repeat(40) }
+      })
+    )
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+  })
+
+  it('rejects damaged retained backups even after accepted profile changes', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const first = installAndAccept(fixture.options)
+    writeFileSync(join(paths.profile, 'later-work.txt'), 'keep this work')
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    writeFileSync(
+      join(backupPayload(first.backupPath!), 'installation.sqlite'),
+      'damaged'
+    )
+    for (const target of [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const)
+      expect(inspectLocalAppInstallation(fixture.options, target)).toBeNull()
+    expect(readFileSync(join(paths.profile, 'later-work.txt'), 'utf8')).toBe(
+      'keep this work'
+    )
+  })
+
   it('does not reuse activation evidence contradicted by the common journal', () => {
     const fixture = createFixture(build('a'))
     const first = installAndAccept(fixture.options)
