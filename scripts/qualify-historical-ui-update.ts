@@ -77,6 +77,7 @@ const { values } = parseArgs({
     'space-actionable': { type: 'boolean', default: false },
     wal: { type: 'boolean', default: false },
     'newer-backup': { type: 'boolean', default: false },
+    'restore-protected-history': { type: 'boolean', default: false },
     'party-history-scenario': { type: 'string' },
     'same-schema': { type: 'boolean', default: false },
     'target-party-quick-fields-default': { type: 'boolean', default: false },
@@ -139,6 +140,10 @@ const historyScenario = values['party-history-scenario']
   ? partyHistoryScenario(values['party-history-scenario'])
   : undefined
 assert(!historyScenario || !values['same-schema'], 'Choose one schema scenario')
+assert(
+  !values['restore-protected-history'] || historyScenario,
+  'Protected history restore requires a Party history scenario'
+)
 assert(
   !values['maintenance-crash'] ||
     values['party-history-scenario'] !== 'same-schema',
@@ -1280,6 +1285,66 @@ try {
     readVerifiedBackup(backupDirectory).manifestSha256,
     protectedBackup.manifestSha256
   )
+  let restoredProtection: unknown = null
+  if (values['restore-protected-history']) {
+    assert(continuedHistory && restoredHistory)
+    ui = await launch()
+    await ui.click('Einstellungen', 'body', true)
+    const scope = await visibleBackupScope(ui, protectedBackup.manifest)
+    await ui.click('Wiederherstellen', z.string().parse(scope))
+    await ui.click('Bestätigen', '[role="alertdialog"]')
+    const journal = await waitFor(
+      () => new MaintenanceCoordinator(root).read(),
+      (state) =>
+        state?.id !== restoredTransaction.id &&
+        state?.operation === 'restore' &&
+        state.phase === 'committed',
+      'restore protective backup with Party history'
+    )
+    assert(journal?.backup)
+    assert.equal(journal.next.deployment, updated.next.deployment)
+    ui.disconnect()
+    ui = await HistoricalUiDriver.connect(home)
+    await ui.closeApplication(home)
+    ui = undefined
+    const readback = await runHistoricalArtifact(targetDirectory, home, 'read')
+    assert(readback.result.response.ok)
+    assert.deepEqual(
+      readback.result.response.result,
+      continued.result.response.result
+    )
+    const history = readPartyHistoryEvidence(join(root, 'profile'))
+    assert.deepEqual(history, continuedHistory)
+    const safety = readVerifiedBackup(join(root, 'backups', journal.backup))
+    assert.equal(safety.manifest.formatVersion, 2)
+    const safetyHistory = readPartyHistoryEvidence(safety.data)
+    assert.deepEqual(safetyHistory, restoredHistory)
+    const safetyHome = `${home}-second-restore-protection`
+    mkdirSync(join(safetyHome, 'salt-marcher'), { recursive: true })
+    cpSync(safety.data, join(safetyHome, 'salt-marcher/profile'), {
+      recursive: true,
+      errorOnExist: true,
+      force: false
+    })
+    const safetyReadback = await runHistoricalArtifact(
+      targetDirectory,
+      safetyHome,
+      'read'
+    )
+    assert(safetyReadback.result.response.ok)
+    assert.deepEqual(
+      safetyReadback.result.response.result,
+      restored.result.response.result
+    )
+    restoredProtection = {
+      journal,
+      readback,
+      history,
+      safety,
+      safetyHistory,
+      safetyReadback
+    }
+  }
   const unchanged = await runHistoricalArtifact(
     baselineDirectory,
     sourceHome,
@@ -1362,6 +1427,7 @@ try {
         restored,
         protectedBackup,
         protectedRead,
+        restoredProtection,
         unchanged
       },
       null,

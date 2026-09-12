@@ -11534,3 +11534,28 @@ Roadmap-Audit echter gepackter Beweis noch offen. NächsterGast prüft Original
 0.0.160(42/41)→0.0.168(43/43), explizit from-41, kompletter nativer UI-Weg
 mit Party-Verlauf und unveränderter Quelle. Eigenes neues Payload/Seed,
 4GiB/2CPU/24GiB Gast,900s Fall-/1200s Hostdeadline, keine Host-Appstarts.
+
+83740 terminalVMExit0/TestExit0 nach107s. Externes Archivparty-history-v3-run-1
+vollständig hash- und inhaltsgeprüft, alle vier normalen ProzesseExit0.
+0.0.160(42/41)→0.0.168(43/43) voller UI-Weg bestanden: explizite Defaults,
+XP975→1000, exakt eine verknüpfte Party-History/Receipt/Installationindex-Kette,
+Restore des Ursprungsprofils, vollständiges Schutzbackup späterer Arbeit
+inklusive dieser Kette. Drei aktive/inaktive/Trashkampagnen; Quelle unverändert.
+Unabhängiger Berichtaudit erneut auf exportierten Daten bestanden.
+ReportSHA256: 404d74a93949ce9f49b964afeb6d7b281462cb2846283f45cc08ba258846c42d
+Erfolgreiche eigene Gastdisk erst nach Audit entfernt. Plan-Audit erster43-
+Gast bestanden; Roadmap-Audit übrige43-Szenarien/Handoff/Main bleiben offen.
+
+Nächste Ergänzung vor weiterenVMs: Schutzbackup mit realer XP-History zusätzlich
+über die sichtbare Oberfläche wiederherstellen. Erwartung kompletter zuvor
+fortgesetzter Readback UND exakte History/Receipt/Index-Zeilen; vorgeschaltetes
+Backup schützt den gerade wiederhergestellten Ursprungsstand ebenfalls.
+Damit nicht nur Speicherung, sondern tatsächliche Rückkehr der neuen History
+belegt. Explizite Testoption nur für Party-History-Szenarien; keine Produkt-
+oder Artefaktänderung. NächsterGast Kandidat42/42(0.0.167)→43/43(0.0.168).
+
+29899 terminalExit0: ESLint und beideTypechecks für zusätzliche tatsächliche
+Schutzbackup-Wiederherstellung bestanden. Plan-Audit Umsetzung vollständig;
+Runtimebeweis folgt im nächsten42/42→43/43-Gast. Kein gesonderter Spiegeltest
+für Klicksequenz; echte Original-AppImages prüfen sichtbare Bedienung und
+vollständige Readbacks/History/zweites Schutzbackup. Frühere Artefakte bleiben.

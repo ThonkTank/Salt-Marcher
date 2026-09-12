@@ -592,3 +592,13 @@ continued-work and protected-restore comparisons. Independently audited archive:
 `3300562baa8629b4d1bf6eb806bb1fe5b2026770e18ffc6d7751e39e1daf56e1`.
 All nine launcher recovery boundaries and eight forward activation boundaries
 are requalified. Canonical handoff and Main promotion remain outstanding.
+
+## Party history convergence: first schema-43 artifact pass
+
+Original `0.0.160` (42/41) to `0.0.168` (43/43) passed the complete UI
+update, continued XP change and protected restore. The independent snapshot
+also proves the new Party history, receipt and installation-index chain in
+all three campaign locations, including trash. Source content is unchanged.
+Archive: `outputs/qualification-evidence/party-history-v3-run-1`.
+Report SHA-256: `404d74a93949ce9f49b964afeb6d7b281462cb2846283f45cc08ba258846c42d`.
+Other schema-43 baseline scenarios and canonical handoff/Main remain open.
