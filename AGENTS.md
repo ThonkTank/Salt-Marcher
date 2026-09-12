@@ -38,7 +38,10 @@
   idempotently; `pnpm handoff:app -- --resume` remains an explicit recovery
   intent but may not replace the provenance of the invocation that created the
   SHA state.
-- Pure documentation or test-only changes finish with `pnpm check`.
+- Pure documentation or test-only changes finish with the independently verified
+  selected `Check` workflow for their exact SHA. Use appropriate focused local
+  checks while editing. The full `pnpm check` includes Electron and E2E work;
+  respect the host's isolation policy when running it.
 - Candidate promotion compares its app-build fingerprint with the current
   `origin/main` app-build fingerprint. An unchanged app-build fingerprint does
   not require a local application handoff; an app-relevant change cannot be

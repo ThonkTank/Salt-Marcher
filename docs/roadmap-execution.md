@@ -12906,3 +12906,53 @@ noch offen für den neuen vollständigen Candidate-CI-Lauf, kanonische Übergabe
 Main-Promotion, reale reduzierte CI nach Regelbootstrap auf Main und den echten
 Release-/Docker-Gesamtlauf. Phase7 bleibt offen. Diese offenen Abnahmen werden
 nicht durch die hier erfolgreichen102Tests ersetzt.
+
+6B.3 reale Übergabe und Main-Bootstrap abgeschlossen:
+Candidate36ad496876ccba723d78cb4cfaafe8f62f640d82, Check34712601610 mit allen
+16Pflichtjobs grün. Originales Local-AppImage
+SHA2566c08bac6e200752e57dba0b8cac643fb44c39a804f537ea72b21059ed7f30b1a.
+Zwei echte pnpm handoff:app-Aufrufe im getrennten KVM-Gast bestanden; die ersten
+acht Phasen bytegleich wiederverwendet, nur das erweiterte Inventar erneut
+geprüft. Archiv canonical-handoff-v3-run-5 mit12Dateien unabhängig verifiziert,
+ReceiptSHA25666ff212a395f4b9e10dfa7fcf57d00f37d6e4026f0f9b73aa98b1cec50d5ae21,
+Schema-/Runtimechecks, isolierte Bootidentität, vollständige9Phasen-Hashkette,
+Originalaufrufe und Auswahlbelegv1/Manifestv6 geprüft.
+Originalreceipts bytegleich in den gleichnamigen sauberen Hostcheckout kopiert;
+kein Host-AppImage gestartet. Kanonische Promotion pnpm delivery:promote Exit0,
+Main4aa710b40→36ad49687 unverändert vorwärtsgeschoben. Main-Check34713768985
+vollständig grün, PR679 automatisch merged. Private RAM-Authentifizierungsdaten
+entfernt; nur die nach erfolgreichem Audit entbehrliche Gast-Overlayplatte
+(3.29GB belegt) entfernt, alle Originalarchive/Artefakte/Inputs erhalten.
+Belege: work/audit-canonical-36ad49687.{mjs,log},
+work/promote-canonical-36ad49687.log und
+work/canonical-handoff-36ad49687-cleanup.json.
+
+6A realer Workflow-Bootstrap: Build explicit release comparison fixtures auf
+dem grünen Main36ad49687 gestartet, Run34713871009. Authentische IDs und Bytes
+werden erst aus dem abgeschlossenen Lauf übernommen; keine Platzhalterbelege.
+
+Korrekturplan6B.4 — Anleitung konsistent abschließen:
+Das Audit findet im alten AGENTS-Abschnitt noch die pauschale Vorgabe pnpm check
+für reine Dokumentations-/Teständerungen. Dieser lokale Befehl enthält weiterhin
+alle Electron-/E2E-Phasen und widerspricht dem neuen expliziten Auswahlprozess.
+Die Vorgabe wird im Rahmen der kanonischen Roadmap-Anforderung „Workflowregeln
+und AGENTS.md gemeinsam aktualisieren“ auf den unabhängig verifizierten
+exakten CI-Nachweis plus passende lokale Checks aktualisiert; Host-Isolation
+bleibt ausdrücklich verbindlich. Release Notes beschreiben ausschließlich das
+Produkt; ausstehende Freigabe bleibt in diesem Ausführungslog und Betriebsanleitung.
+Da AGENTS.md kein selektiv freigegebener Pfad ist, muss dieser Candidate die
+volle CI auslösen. Danach dient eine separate reine Ausführungslogänderung als
+realer Nachweis reduzierter CI. Appfingerprints müssen jeweils unverändert sein;
+kein erneuter App-Handoff wird für reine Nicht-App-Änderungen erfunden.
+Abnahme: dokumentierter Auswahlbeleg, vollständiger aktueller Candidate-/Main-
+Nachweis für diese Anleitungskorrektur; anschließend tatsächlich reduzierte
+Jobs im separaten Dokumentationsfall. Phase6 bleibt bis zum Release-Gesamtlauf
+und diesen letzten Nachweisen offen; Phase7 und Veröffentlichung weiterhin offen.
+
+6B.4 lokal verifiziert:36Auswahl-/Workflowtests und AGENTS-Formatprüfung
+bestanden; Appfingerprint vor/nach Änderung identisch mit Main:
+9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01.
+7.3s,171MiB/0Swap (`work/phase6-guidance-checks.log`). Nur Anleitung, Notes
+und Ausführungslog geändert. Vollständige CI für die nicht selektiv erlaubte
+AGENTS-Änderung steht noch aus. Der Vergleichsworkflow hat den ersten echten
+historischen Build bereits erfolgreich erstellt; der Gesamtlauf läuft weiter.
