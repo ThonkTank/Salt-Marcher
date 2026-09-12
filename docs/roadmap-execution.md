@@ -13450,3 +13450,54 @@ Korrekturplan 7.6 vor weiteren Harnessänderungen:
   durchführen, danach unabhängigen SQL-/Datei-/UI-Audit wiederholen. Private
   Nutzerdaten und Bilder bleiben lokal. Dies bleibt eine automatisierte
   Vorbereitung auf die anschließend notwendige menschliche Live-Abnahme.
+
+Korrekturrunde 7.6 erfolgreich: siebter vollständiger Gastlauf von sauberem
+Harness-Commit dad846acceb54fab558c0345bc357c65da5dac18, Testexit 0 und VMexit 0.
+Die Session ist vor und nach dem Update mit passender Kampagnenidentität,
+Revision und sichtbarer scene-desktop-Arbeitsfläche nachgewiesen; beide Bilder
+unabhängig angesehen. Tatsächlich installierte 0.3.0-Datei: 176900262 Bytes und
+SHA256 ef49ab927bcc4244790ab098dad078356d32f68e735e271bd115485bceecdf4a.
+Der neue Originalexport besteht ohne Rekonstruktion gegen den im Gast ausgegebenen
+SHA256 729fe2d8808141b5ae82b75a1f8d8739b91108676ce85e317482325dbe8f4d11
+und 2526639 Bytes. Keine Soft-Lockup-Meldung in diesem Gastlauf.
+
+Unabhängiger vollständiger Audit: Originalzeilen der beiden Datenbanken erhalten,
+Migrationen 42/41 nach 43/43 korrekt eingegrenzt; Update, ursprünglicher Restore,
+Schutzrestore sowie alle drei vorgeschalteten Sicherungsstände logisch exakt.
+Zehn vollständige Dateiinventare verglichen: identische 64 Dateipfade und 27
+Verzeichnisse; alle 62 Nicht-SQLite-Dateien bytegleich mit der Quelle, ohne
+pauschal ausgeblendete Pfade. SQLite-Dateibytes werden durch Online-Backup und
+Migration verändert, ihre vollständigen Tabellen-/Zeileninhalte sind gesondert
+geprüft. Die Original-Hostsicherung wurde unabhängig erneut vollständig gehasht
+und ist unverändert. Native Importauswahl und beide Restores erfolgten durch die
+produktiven Dialoge. Belege: work/phase7-live-evidence-7 und
+work/phase7-run7-independent-audit.json; Originalbericht-SHA256
+e67349f0670532390d79a91d9aa4431d27c39de1812e5bca1dde6dba2163edb9.
+
+Teilplanaudit 7.6 bestanden: Die festgestellten Lücken bei geladener Oberfläche,
+Dateiinventaren, Schutzständen und installierten Bytes sind geschlossen. Der
+Screenshotausschnitt direkt nach Update zeigt die Versionsanzeige während die
+Sicherungsübersicht noch lädt; die bedienbare Sicherungsliste ist durch die
+anschließend tatsächlich ausgeführten Restoreauswahlen belegt. Dieser Ausschnitt
+wird nicht als Nachweis einer leeren Sicherungsliste oder ihres Ladeabschlusses
+verwendet. Automatisierter Nutzerdatentest bestanden; menschliche Live-Abnahme,
+GitHub-Freigabe und öffentlicher Download bleiben offen.
+
+Teilplan 7.7 – konkrete Umgebung für die menschliche Live-Abnahme:
+Eine bedienbare, begrenzte VM vorbereiten, damit der menschliche Prüfer dieselben
+unveränderten Programme und ausschließlich eine Sicherungskopie verwenden kann.
+Keine Test-AppImages auf dem Host starten und die laufende Local-App unberührt
+lassen. Eine zusätzliche reine Gastvorbereitung darf Ubuntu-Pakete für einen
+Fenstermanager und eine VNC-Browseransicht beziehen; dieser Netzwerkschritt enthält
+keine Nutzerdaten. Den bisherigen geprüften Basisdatenträger nicht verändern.
+
+Der eigentliche Prüfgast bleibt auf eine lokale Browserverbindung beschränkt,
+mit nur an 127.0.0.1 gebundener Portweiterleitung, privaten Kopien, kontrolliertem
+Updatefeed, einer VM gleichzeitig, unveränderten Speicher-/Prozessgrenzen und
+festem Laufzeitlimit. Ausgangsversion und Import dürfen vorbereitet werden;
+Speichern, Update, Weiterarbeit und Wiederherstellung muss der menschliche Prüfer
+bewusst durchführen und bestätigen. Automatisierte Beobachtung darf nur reale
+Journal-/Programmzustände dokumentieren, keine menschliche Abnahme erfinden.
+Anleitung, exakt gebundene Artefaktdaten und konkrete Oberfläche vor der Bitte
+um diesen notwendigen menschlichen Schritt bereitstellen. Erst danach die
+separate tatsächliche GitHub-Environment-Freigabe und Veröffentlichung anstoßen.
