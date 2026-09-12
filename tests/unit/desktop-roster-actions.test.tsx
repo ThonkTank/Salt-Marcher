@@ -44,19 +44,20 @@ vi.mock(
 vi.mock('../../src/renderer/capabilities/use-capability-api.js', () => {
   const api = {
     party: {
-      previewXp: async ({
+      previewXp: ({
         amount,
         expectedRevision
       }: {
         amount: number
         expectedRevision: number
-      }) => ({
-        revision: expectedRevision,
-        amount,
-        add: 2000 + amount,
-        subtract: Math.max(0, 2000 - amount),
-        set: amount
-      })
+      }) =>
+        Promise.resolve({
+          revision: expectedRevision,
+          amount,
+          add: 2000 + amount,
+          subtract: Math.max(0, 2000 - amount),
+          set: amount
+        })
     }
   }
   return { useCapabilityApi: () => api }

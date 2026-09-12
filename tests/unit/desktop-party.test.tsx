@@ -91,51 +91,55 @@ function fixture() {
   } as unknown as LiveSessionSnapshot
   const settings = { revision: 0, preferences: defaultInstallationPreferences }
   const history = { undo: null, redo: null, pending: false }
-  const move = vi.fn().mockResolvedValue({ snapshot })
+  const move = vi
+    .fn<scenePort.ScenePartyCommandPort['execute']>()
+    .mockResolvedValue({ snapshot } as never)
   const xp = vi
-    .fn()
-    .mockResolvedValue({ characterId: 'mira', party: snapshot.party })
+    .fn<characterPort.CharacterCommandPort['execute']>()
+    .mockResolvedValue({ characterId: 'mira', party: snapshot.party } as never)
   const action = vi.fn().mockResolvedValue({ snapshot, settings, history })
   vi.spyOn(scenePort, 'useScenePartyCommandPort').mockReturnValue({
     current: () => snapshot,
-    refresh: async () => snapshot,
+    refresh: () => Promise.resolve(snapshot),
     execute: move,
-    status: async () => ({ receipt: null, snapshot })
+    status: () => Promise.resolve({ receipt: null, snapshot })
   })
   vi.spyOn(characterPort, 'useCharacterCommandPort').mockReturnValue({
-    refresh: async () => snapshot,
+    refresh: () => Promise.resolve(snapshot),
     execute: xp,
-    status: async () => ({ receipt: null, party: snapshot.party })
+    status: () => Promise.resolve({ receipt: null, party: snapshot.party })
   })
   vi.spyOn(actionPort, 'usePartyActionPort').mockReturnValue({
-    refresh: async () => snapshot,
+    refresh: () => Promise.resolve(snapshot),
     execute: action,
-    status: async () => ({
-      committed: false,
-      result: { snapshot, settings, history }
-    })
+    status: () =>
+      Promise.resolve({
+        committed: false,
+        result: { snapshot, settings, history }
+      })
   })
   vi.spyOn(
     CampaignWorkspaceProjection.prototype,
     'refreshActiveSession'
   ).mockResolvedValue({ status: 'inactive' } as never)
   const api = {
-    settings: { read: async () => settings },
+    settings: { read: () => Promise.resolve(settings) },
     party: {
-      history: async () => history,
-      previewXp: async ({
+      history: () => Promise.resolve(history),
+      previewXp: ({
         amount,
         expectedRevision
       }: {
         amount: number
         expectedRevision: number
-      }) => ({
-        revision: expectedRevision,
-        amount,
-        add: 3200 + amount,
-        subtract: Math.max(0, 3200 - amount),
-        set: amount
-      })
+      }) =>
+        Promise.resolve({
+          revision: expectedRevision,
+          amount,
+          add: 3200 + amount,
+          subtract: Math.max(0, 3200 - amount),
+          set: amount
+        })
     },
     session: { onChanged: () => () => {} }
   } as unknown as SaltMarcherApi
@@ -213,18 +217,11 @@ it('retains roster selection across character, player and ID filters for a large
   fireEvent.change(search, { target: { value: 'Doppel' } })
   expect(screen.getAllByRole('checkbox')).toHaveLength(2)
   fireEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
-  await waitFor(() =>
-    expect(h.move).toHaveBeenCalledWith(
-      expect.objectContaining({
-        command: expect.objectContaining({
-          kind: 'set-roster',
-          input: expect.objectContaining({
-            memberIds: ['mira', 'borin', 'extra-24']
-          })
-        })
-      })
-    )
-  )
+  await waitFor(() => expect(h.move).toHaveBeenCalledOnce())
+  expect(h.move.mock.calls[0]?.[0].command).toMatchObject({
+    kind: 'set-roster',
+    input: { memberIds: ['mira', 'borin', 'extra-24'] }
+  })
 })
 it('shows an XP input only on bar activation and shares preview with all three actions', async () => {
   const h = fixture()

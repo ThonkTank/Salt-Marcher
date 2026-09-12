@@ -7,34 +7,34 @@ it('blocks later mutations until the exact uncertain original has a definite res
   const gate = new PartyCommandGate()
   const events: string[] = []
   let available = false
-  const original = async () => {
+  const original = () => {
     events.push('status-original')
-    if (!available) throw new Error('offline')
-    return { committed: true }
+    if (!available) return Promise.reject(new Error('offline'))
+    return Promise.resolve({ committed: true })
   }
   await expect(
-    gate.run(async () => {
+    gate.run(() => {
       events.push('write-original')
-      throw new Error('lost response')
+      return Promise.reject(new Error('lost response'))
     }, original)
   ).rejects.toThrow('lost response')
   await expect(
     gate.run(
-      async () => {
+      () => {
         events.push('write-next')
-        return true
+        return Promise.resolve(true)
       },
-      async () => null
+      () => Promise.resolve(null)
     )
   ).rejects.toThrow('offline')
   expect(events).toEqual(['write-original', 'status-original'])
   available = true
   await gate.run(
-    async () => {
+    () => {
       events.push('write-next')
-      return true
+      return Promise.resolve(true)
     },
-    async () => null
+    () => Promise.resolve(null)
   )
   expect(events).toEqual([
     'write-original',
