@@ -92,6 +92,7 @@ const { values } = parseArgs({
     'activation-crash': { type: 'string' },
     'recovery-crash': { type: 'string' },
     baseline: { type: 'string' },
+    'profile-fixture': { type: 'string' },
     target: { type: 'string' },
     home: { type: 'string' }
   }
@@ -135,10 +136,32 @@ const home = resolve(z.string().parse(values.home))
 const sourceHome = `${home}-source`
 const baseline = readUpdateArtifact(baselineDirectory)
 const target = readUpdateArtifact(targetDirectory)
-if (baseline.kind !== 'historical-fixture')
-  throw new Error(
-    'UI fixture seeding requires an explicitly historical baseline.'
+const profileFixtureDirectory = values['profile-fixture']
+  ? resolve(values['profile-fixture'])
+  : undefined
+if (baseline.kind === 'release') {
+  assert(
+    profileFixtureDirectory,
+    'Release baseline requires an explicit historical profile fixture'
   )
+  assert.equal(target.kind, 'release')
+  assert(
+    !values['activation-crash'] && !values['recovery-crash'],
+    'Early interruption hooks require a historical baseline'
+  )
+} else
+  assert(
+    !profileFixtureDirectory,
+    'Historical baseline already owns its fixture'
+  )
+const seedDirectory = profileFixtureDirectory ?? baselineDirectory
+const profileFixture = readUpdateArtifact(seedDirectory)
+assert.equal(profileFixture.kind, 'historical-fixture')
+assert.deepEqual(
+  profileFixture.manifest.schemaVersions,
+  baseline.manifest.schemaVersions,
+  'Fixture must match baseline data formats'
+)
 if (
   target.kind === 'release' &&
   (values['maintenance-crash'] || values['commit-crash'])
@@ -179,11 +202,29 @@ assert(
   !values['space-exhausted'] || values['space-volume'],
   'space-exhausted requires an isolated volume'
 )
-const seeded = await runUpdateArtifact(baselineDirectory, sourceHome, 'seed')
+const fixtureSeeded = await runUpdateArtifact(seedDirectory, sourceHome, 'seed')
+assert(fixtureSeeded.result.response.ok)
+const fixtureHistory = historyScenario
+  ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
+  : null
+const baselineIdentity =
+  baseline.kind === 'release'
+    ? await runUpdateArtifact(baselineDirectory, sourceHome, 'identity')
+    : undefined
+const seeded =
+  baseline.kind === 'release'
+    ? await runUpdateArtifact(baselineDirectory, sourceHome, 'read')
+    : fixtureSeeded
 assert(seeded.result.response.ok)
+assert.deepEqual(
+  seeded.result.response.result,
+  fixtureSeeded.result.response.result,
+  'Release baseline must read the complete unchanged fixture'
+)
 const sourceHistory = historyScenario
   ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
   : null
+assert.deepEqual(sourceHistory, fixtureHistory)
 const expectedTargetSeed = historyScenario
   ? withPartyHistoryDefaults(seeded.result.response.result)
   : values['target-party-quick-fields-default']
@@ -1349,6 +1390,24 @@ try {
     unchanged.result.response.result,
     seeded.result.response.result
   )
+  const fixtureUnchanged = profileFixtureDirectory
+    ? await runUpdateArtifact(seedDirectory, sourceHome, 'read')
+    : undefined
+  if (fixtureUnchanged) {
+    assert(fixtureUnchanged.result.response.ok)
+    assert.deepEqual(
+      fixtureUnchanged.result.response.result,
+      fixtureSeeded.result.response.result
+    )
+  }
+  const fixtureUnchangedHistory =
+    profileFixtureDirectory && historyScenario
+      ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
+      : null
+  if (profileFixtureDirectory) {
+    assert.deepEqual(fixtureUnchangedHistory, fixtureHistory)
+    assert.deepEqual(readUpdateArtifact(seedDirectory), profileFixture)
+  }
   const processExits = await Promise.all(exits)
   assert(
     processExits.every(
@@ -1399,6 +1458,18 @@ try {
             ? baseline.provenance.receipt
             : baseline.manifest,
         baselineProvenance: baseline.provenance,
+        ...(profileFixtureDirectory
+          ? {
+              profilePreparation: {
+                fixtureProvenance: profileFixture.provenance,
+                seeded: fixtureSeeded,
+                unchanged: fixtureUnchanged,
+                history: fixtureHistory,
+                unchangedHistory: fixtureUnchangedHistory,
+                baselineIdentity
+              }
+            }
+          : {}),
         target:
           target.provenance.kind === 'historical-fixture'
             ? target.provenance.receipt

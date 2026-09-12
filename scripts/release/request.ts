@@ -55,7 +55,8 @@ export const releaseComparisonSchema = z
     id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/),
     scenario: z.enum(['same-schema', 'schema-migration', 'skipped-releases']),
     baseline: comparisonArtifactSchema,
-    intermediate: z.array(comparisonArtifactSchema)
+    intermediate: z.array(comparisonArtifactSchema),
+    profileFixture: comparisonArtifactSchema.optional()
   })
   .strict()
 
@@ -92,6 +93,32 @@ export const releaseRequestSchema = z
         issue(`Missing required comparison: ${scenario}.`)
     for (const comparison of request.comparisons) {
       const baseline = comparison.baseline.manifest
+      const fixture = comparison.profileFixture
+      if (comparison.baseline.source.kind === 'published-release') {
+        if (!fixture || fixture.source.kind !== 'qualification-fixture')
+          issue(
+            'Published baseline requires an explicit historical profile fixture.'
+          )
+        else if (
+          !schemasEqual(
+            fixture.manifest.schemaVersions,
+            baseline.schemaVersions
+          )
+        )
+          issue(
+            'Profile fixture must use the baseline data formats without implicit migration.'
+          )
+      } else if (fixture)
+        issue('Historical baseline already owns its profile fixture.')
+      if (
+        fixture &&
+        fixture.manifest.artifact.sha256 === baseline.artifact.sha256
+      )
+        issue(
+          'Profile fixture must be distinct from the shipped baseline bytes.'
+        )
+      if (fixture && fixture.manifest.commit === request.target.commit)
+        issue('Profile fixture must not be repackaged from the target.')
       if (baseline.commit === request.target.commit)
         issue(
           'A comparison must come from a different source commit, not a repackaged target.'
@@ -162,7 +189,11 @@ export function assertRequestedTarget(
     )
   if (
     request.comparisons.some((comparison) =>
-      [comparison.baseline, ...comparison.intermediate].some(
+      [
+        comparison.baseline,
+        ...comparison.intermediate,
+        ...(comparison.profileFixture ? [comparison.profileFixture] : [])
+      ].some(
         (artifact) =>
           artifact.manifest.artifact.sha256 === manifest.artifact.sha256
       )

@@ -69,7 +69,11 @@ const request = releaseRequestSchema.parse(
   JSON.parse(requestBytes.toString('utf8'))
 )
 for (const comparison of request.comparisons)
-  for (const artifact of [comparison.baseline, ...comparison.intermediate])
+  for (const artifact of [
+    comparison.baseline,
+    ...comparison.intermediate,
+    ...(comparison.profileFixture ? [comparison.profileFixture] : [])
+  ])
     resolveComparisonSource(artifact)
 const environment = verifyReleaseEnvironment()
 if (phase === 'publish') {

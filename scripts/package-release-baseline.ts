@@ -53,7 +53,10 @@ const comparisons = request.comparisons.map((comparison) => ({
   id: comparison.id,
   scenario: comparison.scenario,
   baseline: acquire(comparison.baseline),
-  intermediate: comparison.intermediate.map(acquire)
+  intermediate: comparison.intermediate.map(acquire),
+  ...(comparison.profileFixture
+    ? { profileFixture: acquire(comparison.profileFixture) }
+    : {})
 }))
 const index =
   JSON.stringify(

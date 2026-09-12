@@ -322,7 +322,7 @@ editors use one shell-owned fixed-header/scrolling-body/fixed-footer frame.
 `installation.sqlite` holds registry, settings, and reusable definitions.
 Each campaign owns `campaigns/<id>/campaign.sqlite`. A utility process alone
 opens these stores. Development builds use an isolated development data directory and may recreate
-it under the explicit reset policy. Release 0.2.0 establishes the persistent
+it under the explicit reset policy. The planned public Electron release 0.3.0 establishes the persistent
 real-use baseline; all subsequent public releases retain forward migration paths. Packaged/local-profile data is always
 preserved unless a registered and tested forward migration is promoted from a
 verified backup.

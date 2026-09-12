@@ -207,3 +207,66 @@ export function recoveryUiFixture(options: RuntimeFixtureOptions = {}) {
     }
   }
 }
+
+/** Inert unit data: source provenance is tested separately against live GitHub. */
+export function publishedUiFixture() {
+  const value = uiFixture({ version: '0.0.170', commit: 'b' })
+  const baseline = runtimeFixture('release', { version: '0.2.0', commit: 'c' })
+  const read = (original: typeof value.report.seeded) => {
+    const result = {
+      ...baseline.envelope.result,
+      operation: 'read',
+      response: original.result.response
+    }
+    return {
+      ...baseline.envelope,
+      requestId: original.requestId,
+      operation: 'read',
+      result,
+      resultSha256: digestReleaseDocument(Buffer.from(JSON.stringify(result)))
+    }
+  }
+  return {
+    ...value,
+    baseline: baseline.target,
+    profileFixture: value.baseline,
+    comparison: {
+      ...value.comparison,
+      baseline: {
+        manifest: baseline.target.manifest,
+        manifestSha256:
+          baseline.target.provenance.kind === 'release'
+            ? baseline.target.provenance.manifestSha256
+            : '',
+        source: {
+          kind: 'published-release' as const,
+          tag: `v${baseline.target.manifest.version}`
+        }
+      },
+      profileFixture: value.comparison.baseline
+    },
+    report: {
+      ...value.report,
+      baseline: baseline.target.manifest,
+      baselineProvenance: baseline.target.provenance,
+      seeded: read(value.report.seeded),
+      unchanged: read(value.report.unchanged),
+      transaction: {
+        ...value.report.transaction,
+        previous: {
+          ...value.report.transaction.previous,
+          version: baseline.target.manifest.version,
+          sha256: baseline.target.manifest.artifact.sha256
+        }
+      },
+      profilePreparation: {
+        fixtureProvenance: value.baseline.provenance,
+        seeded: value.report.seeded,
+        unchanged: value.report.unchanged,
+        history: value.report.partyHistoryEvidence.source,
+        unchangedHistory: value.report.partyHistoryEvidence.unchanged,
+        baselineIdentity: baseline.envelope
+      }
+    }
+  }
+}

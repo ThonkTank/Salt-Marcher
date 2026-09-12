@@ -82,7 +82,25 @@ const prepared = plan.map((item) => {
     verifyComparisonFiles(directory, stand)
     return readUpdateArtifact(directory)
   })
-  return { ...item, baselineDirectory, baseline, intermediate }
+  const profileFixtureDirectory = item.comparison.profileFixture
+    ? comparisonDirectory(comparisonRoot, item.comparison.profileFixture)
+    : undefined
+  if (profileFixtureDirectory && item.comparison.profileFixture)
+    verifyComparisonFiles(
+      profileFixtureDirectory,
+      item.comparison.profileFixture
+    )
+  const profileFixture = profileFixtureDirectory
+    ? readUpdateArtifact(profileFixtureDirectory)
+    : undefined
+  return {
+    ...item,
+    baselineDirectory,
+    baseline,
+    intermediate,
+    profileFixtureDirectory,
+    profileFixture
+  }
 })
 const work = resolve(required('work')),
   output = resolve(required('output'))
@@ -131,6 +149,8 @@ try {
       item.scenario,
       '--restore-protected-history'
     ]
+    if (item.profileFixtureDirectory)
+      args.push('--profile-fixture', item.profileFixtureDirectory)
     if (item.recovery)
       args.push('--activation-crash', 'new-data-moved', '--accepted-crash')
     await runQualificationChild(
@@ -144,10 +164,16 @@ try {
       item.baseline,
       target,
       item.comparison,
-      item.recovery
+      item.recovery,
+      item.profileFixture
     )
     assert.deepEqual(readUpdateArtifact(item.baselineDirectory), item.baseline)
     assert.deepEqual(readUpdateArtifact(targetDirectory), target)
+    if (item.profileFixtureDirectory)
+      assert.deepEqual(
+        readUpdateArtifact(item.profileFixtureDirectory),
+        item.profileFixture
+      )
     writeFileSync(join(work, `comparison-${item.comparison.id}.json`), report, {
       flag: 'wx'
     })
@@ -155,6 +181,7 @@ try {
       id: item.comparison.id,
       baseline: item.baseline,
       intermediate: item.intermediate,
+      ...(item.profileFixture ? { profileFixture: item.profileFixture } : {}),
       report
     })
     // Only this successful, fully read-back synthetic case; failed cases remain intact.

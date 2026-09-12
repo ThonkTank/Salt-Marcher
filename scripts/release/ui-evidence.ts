@@ -56,6 +56,17 @@ const updateReport = z
     startPath: z.literal('installed-launcher'),
     baseline: z.unknown(),
     baselineProvenance: z.unknown(),
+    profilePreparation: z
+      .object({
+        fixtureProvenance: z.unknown(),
+        seeded: z.unknown(),
+        unchanged: z.unknown(),
+        history: z.unknown(),
+        unchangedHistory: z.unknown(),
+        baselineIdentity: z.unknown()
+      })
+      .strict()
+      .optional(),
     target: releaseManifestSchema,
     targetProvenance: z.unknown(),
     targetIdentity: z.unknown(),
@@ -140,15 +151,46 @@ export function verifyUpdateUiEvidence(
   baseline: UpdateArtifact,
   target: UpdateArtifact,
   comparison: ReleaseRequest['comparisons'][number],
-  requireRecovery = false
+  requireRecovery = false,
+  profileFixture?: UpdateArtifact
 ) {
   const v = updateReport.parse(raw)
   targetBinding(v, target)
-  assert.equal(
-    baseline.kind,
-    'historical-fixture',
-    'Current seeded UI qualification needs an explicit historical fixture'
-  )
+  if (baseline.kind === 'release') {
+    assert(
+      comparison.profileFixture && profileFixture && v.profilePreparation,
+      'Missing explicit profile fixture evidence'
+    )
+    assert.equal(comparison.baseline.source.kind, 'published-release')
+    assert.equal(profileFixture.kind, 'historical-fixture')
+    assert.equal(comparison.profileFixture.source.kind, 'qualification-fixture')
+    assert.deepEqual(
+      profileFixture.manifest,
+      comparison.profileFixture.manifest
+    )
+    assert.deepEqual(
+      profileFixture.manifest.schemaVersions,
+      baseline.manifest.schemaVersions
+    )
+    assert.deepEqual(
+      v.profilePreparation.fixtureProvenance,
+      profileFixture.provenance
+    )
+    verifyRuntimeEvidence(
+      v.profilePreparation.baselineIdentity,
+      baseline,
+      'identity'
+    )
+    assert(
+      !requireRecovery,
+      'Early recovery hooks require a historical baseline'
+    )
+  } else {
+    assert(
+      !profileFixture && !comparison.profileFixture && !v.profilePreparation,
+      'Unexpected separate profile fixture'
+    )
+  }
   assert.deepEqual(
     baseline.manifest,
     comparison.baseline.manifest,
@@ -225,7 +267,34 @@ export function verifyUpdateUiEvidence(
   }
   const read = (report: unknown) =>
     verifyRuntimeEvidence(report, target, 'read')
-  const source = verifyRuntimeEvidence(v.seeded, baseline, 'seed')
+  const source = verifyRuntimeEvidence(
+    v.seeded,
+    baseline,
+    baseline.kind === 'release' ? 'read' : 'seed'
+  )
+  if (profileFixture && v.profilePreparation) {
+    const preparation = v.profilePreparation
+    assert.deepEqual(
+      verifyRuntimeEvidence(preparation.seeded, profileFixture, 'seed'),
+      source,
+      'Baseline changed fixture content'
+    )
+    assert.deepEqual(
+      verifyRuntimeEvidence(preparation.unchanged, profileFixture, 'read'),
+      source,
+      'Fixture source changed'
+    )
+    assert.deepEqual(
+      preparation.history,
+      v.partyHistoryEvidence.source,
+      'Baseline changed fixture history'
+    )
+    assert.deepEqual(
+      preparation.unchangedHistory,
+      preparation.history,
+      'Fixture source history changed'
+    )
+  }
   const continued = read(v.continued)
   const h = v.partyHistoryEvidence
   const profile = verifyProfileProof({

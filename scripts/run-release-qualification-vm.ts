@@ -113,7 +113,8 @@ const comparisons = new Map<
 for (const item of plan)
   for (const artifact of [
     item.comparison.baseline,
-    ...item.comparison.intermediate
+    ...item.comparison.intermediate,
+    ...(item.comparison.profileFixture ? [item.comparison.profileFixture] : [])
   ]) {
     const directory = comparisonDirectory(path('comparisons'), artifact)
     verifyComparisonFiles(directory, artifact)
@@ -127,6 +128,16 @@ const expected = {
   recoveryComparisonId,
   cases: plan.map((item) => ({
     id: item.comparison.id,
+    ...(item.comparison.profileFixture
+      ? {
+          profileFixture: readUpdateArtifact(
+            comparisonDirectory(
+              path('comparisons'),
+              item.comparison.profileFixture
+            )
+          )
+        }
+      : {}),
     baseline: readUpdateArtifact(
       comparisonDirectory(path('comparisons'), item.comparison.baseline)
     ),

@@ -12681,3 +12681,61 @@ GitHub-/Docker-Gesamtabnahme fehlt weiterhin. Roadmapaudit: Phase6 offen;
 explizite Profilfixtures für öffentliche Vergleichs-AppImages sowie
 CI-Risikoauswahl und endgültige Abnahme ausstehend. Kein Entwurf oder
 öffentliches Release erstellt, kein Main verändert.
+
+Fortsetzung: vorheriger Zielturn war Fortschritt (c505899e9 und2fdaef4bb,
+Transport/Workflowimplementierung plus lokale Nachweise). Arbeitsbaum sauber,
+keine lokale Validierung/VM aktiv,151GiB Root frei. Candidate2fdaef4bb hat
+Run34708795825; vorherigerc505899e9-Run wurde durch den neuen Push abgebrochen.
+Phase6 bleibt die erste nicht abgeschlossene Roadmapphase.
+
+Plan6A.8 Öffentliche Vergleichsprogramme mit expliziten Datenfixtures:
+Der Vergleichsauftrag erhält für einen veröffentlichten Baseline-Release ein
+verbindliches separat benanntes historisches Profilfixture mit identischen
+Datenformaten. Historische Baselines verwenden weiterhin ihr eigenes Fixture.
+Transport und GitHub-Herkunftsprüfung beziehen dieses zusätzliche Artefakt ein.
+Im Gast erzeugt ausschließlich das Fixture die synthetischen Daten; das
+unveränderte Baseline-AppImage muss sie mit eigener sauberer Laufzeitidentität
+vollständig lesen. Ausgangsprofil und Verlauf müssen exakt übereinstimmen,
+und das Fixture liest die Quelle nach Ende erneut unverändert zurück.
+Renderer/Main erhalten keine mutierende Seed-Schnittstelle. Gemeinsame
+Abnahme prüft beide Artefaktidentitäten und alle zusätzlichen Readbacks.
+Historische frühe Abbruchhooks werden nicht einem öffentlichen Baseline-Build
+zugeschrieben; der explizite Recoveryfall verwendet ein instrumentiertes
+Migrationsfixture. Gegenstand dieser Runde: durchgängiger Vertrag, Transport,
+Runner und semantische Negativtests; tatsächlicher zusätzlicher AppImage-Lauf
+folgt auf einem sauberen Build und wird separat als Laufzeitnachweis gewertet.
+
+Erste Profilfixture-Prüfung:48/49Tests bestanden (307MiB/0Swap). Ein bestehender
+Negativtest erwartet die bisherige Formulierung „qualified profile fixture“;
+Abweisung funktioniert, aber die Meldung wurde unbeabsichtigt umbenannt.
+Korrektur bewahrt den bisherigen Begriff in der neuen präziseren Meldung;
+danach dieselben Verhaltensprüfungen sowie Lint und Typprüfung vollständig.
+
+49Verhaltenstests bestanden. ESLint beanstandet zwei Teststellen: unbenutzte
+Destrukturierungsvariable und überflüssiges Non-null-Zeichen nach einer
+unmittelbaren Zuweisung. Korrektur beschränkt sich auf diese Testdarstellung;
+anschließend relevante Tests/Lint und die noch ausstehende Typprüfung.
+
+Profilfixture-Abschluss lokal:49Tests bestanden; nach rein formaler
+Testkorrektur16neue Tests, ESLint aller betroffenen Dateien und beide
+Typprüfungen bestanden (62s,1.4GiB/0Swap). Teilplan erfüllt für Vertrag,
+Transport und semantische Prüfung; Live-AppImage-Abnahme bleibt ausstehend.
+Roadmapphase6 bleibt offen.
+
+Plan6A.9 Version und reproduzierbarer Release-Baseline-Lauf: GitHub liefert
+für Release und Tagv0.3.0 am2026-09-12T17:46:11Z jeweils404
+(`work/phase6-version-0.3.0-availability.json`). Der Roadmapvorschlag0.3.0
+wird jetzt in package.json übernommen; eingefrorene0.2.0-Fixtures und
+historische Belege bleiben unverändert. Betriebsanleitung auf den tatsächlich
+verdrahteten Workflow und den netzlosen Gastpfad aktualisieren, vorbereitete
+0.3.0-Notes mit Schema43/43 ergänzen und veraltete Architektur-Versionsangabe
+berichtigen. Danach sauberer Candidatecommit und isolierter Zielbuild für
+den realen Release-Baseline-Updatefall. Dieser interne Lauf veröffentlicht
+keine Assets und ersetzt weder die echte Workflowabnahme noch den Livetest.
+
+Version-/Fixture-Verifikation bestanden: check:version-truth,34Abnahme- und
+Referenztests sowie Formatprüfung (276MiB/0Swap). Die tatsächlichen
+Datenformate bleiben43/43. Betriebsanleitung ersetzt die veralteten
+Host-Xvfb-/0.1.99-Anweisungen durch die implementierten Schritte und kennzeichnet
+offene Live-Abnahmen. Nun sauberer Candidate-Stand für den separaten Build;
+keine öffentliche Version oder Freigabe wurde erstellt.

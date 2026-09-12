@@ -19,11 +19,17 @@ export function qualificationCasePlan(
     'Recovery must select a migration case'
   )
   return request.comparisons.map((comparison) => {
-    assert.equal(
-      comparison.baseline.source.kind,
-      'qualification-fixture',
-      'Published baseline requires a qualified profile fixture input; it cannot be silently repackaged'
-    )
+    if (comparison.baseline.source.kind === 'published-release') {
+      assert(
+        comparison.profileFixture,
+        'Published baseline requires an explicit qualified profile fixture input'
+      )
+      assert.notEqual(
+        comparison.id,
+        recoveryId,
+        'Recovery hooks require an instrumented migration fixture'
+      )
+    }
     const names = [
       'same-schema',
       'from-candidate-42',

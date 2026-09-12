@@ -21,6 +21,7 @@ export type QualificationCase = {
   id: string
   baseline: UpdateArtifact
   intermediate: UpdateArtifact[]
+  profileFixture?: UpdateArtifact
   report: Uint8Array
 }
 
@@ -132,13 +133,18 @@ export function assembleQualification(input: {
     value.intermediate.forEach((artifact, index) =>
       matchingArtifact(artifact, comparison.intermediate[index]!)
     )
+    if (comparison.profileFixture) {
+      assert(value.profileFixture, 'Missing requested profile fixture')
+      matchingArtifact(value.profileFixture, comparison.profileFixture)
+    } else assert(!value.profileFixture, 'Unexpected profile fixture')
     const isRecovery = comparison.id === input.recoveryComparisonId
     const verified = verifyUpdateUiEvidence(
       document(value.report, 64 * 1024 * 1024),
       value.baseline,
       input.target,
       comparison,
-      isRecovery
+      isRecovery,
+      value.profileFixture
     )
     if (isRecovery) {
       assert(verified.recovery)
