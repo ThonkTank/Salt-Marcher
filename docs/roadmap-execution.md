@@ -13333,3 +13333,20 @@ keine Änderung der AppImages, keine synthetische Quelle und kein Übergehen der
 produktiven Sicherungsprüfung. Quell- und Ergebnis-Snapshots dienen erst nach
 separatem Inhaltsaudit als Daten-Erhaltungsnachweis. Der fehlgeschlagene Lauf
 bleibt erhalten; Phase 7 ist offen.
+
+Korrekturrunde 7.1 geprüft: zweiter frischer Gast mit unveränderten AppImages,
+Testexit 1 am selben Bestätigungsdialog, Quelle weiterhin unangetastet. Die neue
+native Bildschirmaufnahme liefert jetzt den konkreten Befund: GTK vervollständigt
+die eingegebene Adresse automatisch zu /opt/qualification/backup/data/; der
+angehängte Teil data/ ist im Eingabefeld markiert. Der Test hat dadurch eine
+Unterstruktur statt des vollständigen Sicherungsordners gewählt. Die vorherige
+Annahme, allein die Elternnavigation verursache den Fehler, war unvollständig.
+Originaltransport, Fehler und native Aufnahme: work/phase7-live-evidence-2.
+
+Korrekturplan 7.2: Die native Adresse ausdrücklich als backup/. eingeben und
+ohne vorheriges Return direkt über die sichtbare Öffnen-Schaltfläche bestätigen.
+Damit bleibt der adressierte Ordner eindeutig, ohne die automatische Ergänzung
+des Unterordners zu übernehmen. Die Aufnahme vor dem Klick bleibt verpflichtend;
+der Produktdialog und die echte Manifestprüfung werden weiter vollständig benutzt.
+Erneut neuer Gast und unveränderte qualifizierte AppImages. Keine Änderung an
+Nutzerdaten oder Produktcode und keine behauptete Abnahme vor dem Ergebnis.
