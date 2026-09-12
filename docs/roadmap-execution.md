@@ -12956,3 +12956,49 @@ bestanden; Appfingerprint vor/nach Änderung identisch mit Main:
 und Ausführungslog geändert. Vollständige CI für die nicht selektiv erlaubte
 AGENTS-Änderung steht noch aus. Der Vergleichsworkflow hat den ersten echten
 historischen Build bereits erfolgreich erstellt; der Gesamtlauf läuft weiter.
+
+6B.4 abgeschlossen: Candidate8a510de459e956dc13c734958b1f58b299a386bc,
+Check34714068033 mit allen16Pflichtjobs grün. Der tatsächliche Auswahlbeleg
+verwendet die unveränderte Main-Regel SHA256
+38c52582abe781337f1c60b373f0acd428024b736569ff992112ef5765097933 und erzwingt
+vollständig wegen unmapped-change:AGENTS.md, trotz identischer Appfingerprints.
+Damit ist der unbekannte-Pfad-Fallback erstmals mit vorhandener vertrauenswürdiger
+Main-Regel real nachgewiesen, nicht nur der vorherige Bootstrap-Fallback.
+Kanonische Promotion ohne erneuten App-Handoff (keine App-Eingabe geändert)
+Exit0; Main36ad49687→8a510de45. Main-Check34715089073 grün, PR680 merged.
+Originale Belege: work/promote-guidance-8a510de45.log und
+work/phase6-release-dispatch-8a510de45.json.
+
+6A originale Vergleichsartefakte qualifiziert:
+Build explicit release comparison fixtures, Run34713871009/Attempt1 auf
+Main36ad49687 mit allen3Builds erfolgreich. Die tatsächlichen Downloads,
+Manifestbytes, historischen Receipts, Workflowreceipts und frische GitHub-
+Herkunftsabfragen wurden unabhängig geprüft; kein AppImage auf dem Host gestartet.
+-0.0.160: Quelle25bd83a8971a09bca06964f34ebac7651f0132e9, Schema42/41,
+Artefakt10304226788, SHA256c4684ca7cce85ce36d64f266611b0b1e12b70f862f48b09f8f6acbdb343b64d7.
+-0.0.167: Quellee96dbcbfee614225486a48fcbd1bde49e1f1f615, Schema42/42,
+Artefakt10304386604, SHA256f1fb7ead58dc14994055919c87db5a2079694414e7e42ae9f9a56b8e3378c604.
+-0.0.170: Quelle4a87219b2dc13334773fa46a3940efe6385c7f81, Schema43/43,
+Artefakt10304401578, SHA256022d2fa56022446bf6f43629f9bccb100e577f6de9999df32823d9764006ea74.
+Der konkrete Releaseauftrag für0.3.0/8a510de45 hat SHA256
+f5bea7f6aaa9c340e1e502ab63cab610b63cb174994bb2712f28bbb7455ab56d;
+Recoveryfall migrate-42-to-43, außerdem same-format-43 und skip-41-to-43
+mit ausdrücklich gebundenem Zwischenstand0.0.167. Beleg:
+work/phase6-release-comparisons-ci-34713871009/verification.json.
+Run34715117763 wurde erst nach grünem Candidate und Main mit genau diesem
+Auftrag gestartet. Aufnahmeprüfung passiert, Release-AppImagebuild läuft;
+Gesamtqualifikation, Entwurf und Veröffentlichung noch nicht behauptet.
+
+Teilplan6B.5 — tatsächliche reduzierte CI:
+Dieser Candidate ändert ausschließlich docs/roadmap-execution.md auf Grundlage
+des grünen Main8a510de45. Der apprelevante Dateistand bleibt unverändert.
+Erwartet werden portable, linux-build und linux-package sowie das frühe Gate
+und Aggregate. Native, qualification und sämtliche separaten UI-Gruppen dürfen
+nur gemäß originalem, unabhängig nachberechnetem Auswahlbeleg übersprungen werden.
+Nachweis umfasst echte GitHub-Jobzustände, Originalbeleg, unveränderte
+Appfingerprints, passende Local-Artefaktherkunft und kanonische Main-Promotion.
+Parallel bleibt der Releaseauftrag auf seinem eigenen unveränderlichen Commit
+8a510de45; keine erneute Erstellung oder Umdeutung dieses Release-AppImages.
+Abschluss dieses Teilplans erst nach beobachtetem vollständigem Verhalten;
+Phase6 weiterhin offen bis zu diesem Nachweis und dem erfolgreichen echten
+Release-/Docker-/KVM-Gesamtlauf. Phase7 weiterhin offen.
