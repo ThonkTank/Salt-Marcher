@@ -11699,3 +11699,50 @@ nicht gelockert. Vor Commit wird die Erstinitialisierung ausdrücklich abgewiese
 nach Commit akzeptiert, abweichende Programmversion und beschädigte Sicherung
 weiterhin abgewiesen. Roadmap-Audit Korrektur lokal bestanden, echter erneuter
 Handoff und Main-Gates weiterhin offen. Main e4fc7fd4e unverändert geprüft.
+
+### Phase 5: Korrekturrunde – phasenstabile Handoff-Nachweise
+
+ed19d5bac8c0eea67bac081bce850cd49a388cf3 bestand den vollständigen Check
+34694812335 und den ersten echten kanonischen Handoff im separaten KVM-Gast.
+Auch die zweite Ausführung beendet sich erfolgreich; sie wiederholt jedoch
+ab `backup-created` unnötig Installation und Backup. Der unabhängige Audit
+weist dies ausdrücklich zurück (`not reused: backup-created`). Archiv
+`canonical-handoff-v3-run-2`: 12 Dateien, VM0/Test0, alle Datei-/Receipt-/
+Runtime-/Commit-Prüfungen bestanden bis zum Wiederverwendungsassert. Der Gast
+bleibt deshalb erhalten; keine Main-Promotion. Privater RAM-Seed entfernt.
+
+Ursache: `collectInstallationEvidence` übernimmt Deployment- und installierten
+Artefakthash auch für frühere Phasen, sobald diese später vorhanden sind.
+Dadurch unterscheidet sich der gesammelte Backup-Nachweis nach Aktivierung
+von seinem ursprünglichen Nachweis, obwohl Quelle und Sicherung identisch
+belegt sind. Das ist ein Fehler der Phasenprojektion, kein Datenfehler.
+
+Fixplan: Die gemeinsamen Installationsnachweise auf die jeweils erreichte
+Phase projizieren: Source/Backup ab Backup, Deployment erst ab Staging,
+installierte Bytes erst ab Aktivierung. Keine Abschwächung von Inspector,
+Backupvalidierung oder Deploymentprüfung. Ein realer Installer-Test sammelt
+alle drei Zwischenstände, initialisiert und akzeptiert das Profil und prüft
+danach die identischen vollständigen Phasennachweise. Separat sicherstellen,
+dass relevante Backup-/Deployment-/Artefaktänderungen sichtbar bleiben.
+Gezielte Tests, Typen/Lint; neuer sauberer Candidate mit vollständiger CI,
+erneuter echter Handoff und identische Wiederholung im begrenzten Gast.
+Erst danach Main-Gate. Die bisherige Akzeptanzprüfung bleibt als negativer
+Nachweis unverändert erhalten.
+
+Phasenprojektion lokal validiert: 74/74 Tests (54 Installer, 20 Handoff-
+Zustandsmaschine), 156.04s, 1.3 GiB Peak/kein Swap. Der neue Test verwendet
+reale aufeinanderfolgende Installerzustände und bestätigt vollständige
+Nachweisgleichheit nach Profilinitialisierung und Commit; relevante geänderte
+Hashes bleiben erkennbar. `work/handoff-phase-proof-tests.log`.
+ESLint, beide TypeScript-Projekte und Formatprüfung bestanden. Erste Typprüfung
+beanstandete die engere Hilfsfunktionssignatur gegenüber den bereits im
+Nachweisvertrag vorgesehenen null-Feldern; ausschließlich Typangaben angepasst,
+keine Laufzeit-/Prüfregeländerung. `work/handoff-phase-proof-static-2.log`.
+
+Plan-Audit Phasenprojektion bestanden; Roadmap-Audit lokal bestanden, erneute
+CI, zwei echte Handoff-Ausführungen mit Wiederverwendungsnachweis und Main
+weiter offen. Erstes erfolgreiches ed19-Handoff-Attempt bleibt eigenständig
+archiviert: 298725d2-1582-413c-a0c7-62e28739f64d, SHA-256
+5a468beb30c35ea3f5673581fb27ae6a89fc49bd6db005b7b93703d6b829c159.
+Sein Erfolg wird nicht mit dem fehlgeschlagenen Wiederverwendungsaudit
+verwechselt. Kein Core-, SQL-, UI-, Wartungskoordinator- oder Launcherwechsel.

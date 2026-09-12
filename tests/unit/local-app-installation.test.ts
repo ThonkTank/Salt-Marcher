@@ -1,3 +1,4 @@
+import { installationPhaseEvidence } from '../../scripts/installation-phase-evidence.js'
 import { defaultSessionLayoutPreference } from '../../src/shared/contracts/session-layout.js'
 import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
@@ -68,6 +69,63 @@ function installAndAccept(options: InstallLocalAppOptions) {
 }
 
 describe('local AppImage installation', () => {
+  it('keeps every installation phase proof stable after later steps and runtime acceptance', () => {
+    const fixture = createFixture(build('a'))
+    const targets = [
+      'backup-created',
+      'deployment-staged',
+      'activated'
+    ] as const
+    const proofs = targets.map((target) =>
+      installationPhaseEvidence(
+        advanceLocalAppInstallation(fixture.options, target),
+        target
+      )
+    )
+    expect(proofs[0]!.deploymentManifestSha256).toBeNull()
+    expect(proofs[0]!.installedSha256).toBeNull()
+    expect(proofs[1]!.deploymentManifestSha256).not.toBeNull()
+    expect(proofs[1]!.installedSha256).toBeNull()
+    expect(proofs[2]!.installedSha256).not.toBeNull()
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const coordinator = new MaintenanceCoordinator(paths.root)
+    coordinator.commit(coordinator.read()!.id)
+    for (const [index, target] of targets.entries()) {
+      const installed = inspectLocalAppInstallation(fixture.options, target)
+      expect(installed).not.toBeNull()
+      expect(installationPhaseEvidence(installed!, target)).toEqual(
+        proofs[index]
+      )
+      expect(
+        installationPhaseEvidence(
+          { ...installed!, sourceDataHash: 'f'.repeat(64) },
+          target
+        )
+      ).not.toEqual(proofs[index])
+      expect(
+        installationPhaseEvidence(
+          { ...installed!, backupManifestSha256: 'f'.repeat(64) },
+          target
+        )
+      ).not.toEqual(proofs[index])
+      if (target !== 'backup-created')
+        expect(
+          installationPhaseEvidence(
+            { ...installed!, deploymentManifestSha256: 'f'.repeat(64) },
+            target
+          )
+        ).not.toEqual(proofs[index])
+      if (target === 'activated')
+        expect(
+          installationPhaseEvidence(
+            { ...installed!, installedSha256: 'f'.repeat(64) },
+            target
+          )
+        ).not.toEqual(proofs[index])
+    }
+  })
+
   it('retains installation evidence after accepted first-start initialization and later work', () => {
     const fixture = createFixture(build('a'))
     const first = activateLocalApp(fixture.options)
