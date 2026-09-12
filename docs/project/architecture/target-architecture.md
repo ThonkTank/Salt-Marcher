@@ -397,6 +397,15 @@ from an atomic state whose commit, workspace inputs, toolchain, check contract,
 and predecessor evidence still match; reusable build output is independently
 hash-validated before any built or packaged test is skipped.
 
+Before that completion gate, `pnpm iterate <area>` provides the deliberately
+narrow owner-feedback loop for `characters`, `encounter`, `combat`, and `loot`.
+It executes a manifest-owned typecheck and focused unit/integration set, then
+starts the actual HMR application against disposable `development-data`. The
+window title identifies the selected area, current commit prefix, and dirty
+state. It neither packages nor installs, cannot open Local `campaign-data`, and
+does not produce release evidence. Its result is therefore useful for rapid
+behavior iteration but cannot satisfy check, handoff, or promotion.
+
 Every build starts with an empty output directory and writes receipt format 2.
 It binds commit/dirty state, the full workspace fingerprint, a separate
 fingerprint of actual application build inputs, an explicit CLI-selected

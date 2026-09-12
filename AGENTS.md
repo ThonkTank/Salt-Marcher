@@ -45,6 +45,13 @@
   promoted without its completed exact-SHA handoff state.
 - `pnpm dev` is only the targeted HMR development loop; it is not a manual
   acceptance or handoff path.
+- `pnpm iterate <characters|encounter|combat|loot>` is the supported fast owner
+  feedback loop before completion. It runs only the area's focused typecheck
+  and tests, then starts the real HMR application with visibly identified,
+  disposable `development-data`. `--check-only` performs the focused
+  verification without launching Electron. It never installs or opens Local
+  `campaign-data`, and a positive iteration result never replaces the canonical
+  check, exact candidate handoff, or promotion rules.
 - Every implementation is committed to a clean candidate branch and pushed
   there first. The exact candidate SHA must pass all required remote `Check`
   jobs before an app-relevant SHA may reach a completed canonical handoff.

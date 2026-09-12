@@ -36,4 +36,37 @@ describe('main build identity', () => {
       'SaltMarcher'
     )
   })
+
+  it('identifies a source-driven owner iteration without trusting arbitrary titles', () => {
+    expect(windowTitleForBuild(undefined, 'encounter@0123456789ab+dirty')).toBe(
+      'SaltMarcher Iteration · encounter@0123456789ab+dirty'
+    )
+    expect(windowTitleForBuild(undefined, 'not a safe title')).toBe(
+      'SaltMarcher'
+    )
+    expect(
+      windowTitleForBuild(
+        {
+          channel: 'release',
+          commit: 'a'.repeat(40),
+          dirty: false,
+          workspaceFingerprint: '0'.repeat(64),
+          appBuildInputFingerprint: '1'.repeat(64),
+          builtAt: '2026-08-23T12:00:00.000Z',
+          schemaVersions: { installation: 37, campaign: 36 },
+          migrationRegistryVersion: 1,
+          toolchain: {
+            node: 'v24.10.0',
+            pnpm: '10.15.1',
+            electron: '43.2.0',
+            electronVite: '5.0.0',
+            electronBuilder: '26.15.3',
+            platform: 'linux',
+            arch: 'x64'
+          }
+        },
+        'encounter@0123456789ab'
+      )
+    ).toBe('SaltMarcher')
+  })
 })
