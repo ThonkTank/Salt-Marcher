@@ -3,26 +3,46 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Draft release version'
-        required: true
-        type: string
-      appimage_sha256:
-        description: 'SHA-256 of the exact AppImage tested live'
+        description: 'Qualified draft version'
         required: true
         type: string
       acceptance:
-        description: 'Live test evidence: update, saved change, continued campaign and backup restore'
+        description: 'Versioned live acceptance JSON with exact hashes, time, five completed checks and notes'
         required: true
         type: string
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: salt-marcher-release
   cancel-in-progress: false
 jobs:
-  publish:
+  resolve:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      commit: ${{ steps.draft.outputs.commit }}
+      run_id: ${{ steps.draft.outputs.run_id }}
+      artifact_name: ${{ steps.draft.outputs.artifact_name }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.sha }}' }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - id: draft
+        name: Resolve the draft to its successful immutable qualification
+        run: pnpm exec tsx scripts/resolve-draft-release.ts "$RUNNER_TEMP/draft-controls"
+  publish:
+    needs: resolve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     environment: release
     permissions:
       contents: write
@@ -30,23 +50,32 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_VERSION: ${{ inputs.version }}
-      ACCEPTED_SHA256: ${{ inputs.appimage_sha256 }}
-      ACCEPTANCE_TEXT: ${{ inputs.acceptance }}
+      LIVE_ACCEPTANCE: ${{ inputs.acceptance }}
     steps:
       - uses: actions/checkout@v4
+        with: { ref: '${{ needs.resolve.outputs.commit }}' }
       - uses: pnpm/action-setup@v4
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22.23.2, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - name: Download and verify accepted bytes
+      - name: Download original qualified CI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.resolve.outputs.artifact_name }}
+          run-id: ${{ needs.resolve.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: release/original-qualified
+      - name: Download the draft and retain the submitted live acceptance
         run: |
+          set -euo pipefail
           test "$(gh release view "v$RELEASE_VERSION" --json isDraft --jq .isDraft)" = true
-          gh release download "v$RELEASE_VERSION" --dir release/release
-          pnpm exec tsx scripts/verify-release-assets.ts
-          node --input-type=module -e 'import fs from "node:fs"; const q = JSON.parse(fs.readFileSync("release/release/update-qualification.json")); if (q.appimageSha256 !== process.env.ACCEPTED_SHA256 || q.targetVersion !== process.env.RELEASE_VERSION || q.baselineVersion === q.targetVersion) throw new Error("Missing packaged update qualification");' 
-          node --input-type=module -e 'import fs from "node:fs"; const m = JSON.parse(fs.readFileSync("release/release/release-manifest.json")); if (m.artifact.sha256 !== process.env.ACCEPTED_SHA256 || (process.env.ACCEPTANCE_TEXT ?? "").trim().length < 40) throw new Error("Missing exact-artifact live acceptance"); fs.writeFileSync("release-acceptance.json", JSON.stringify({manifest: m, evidence: process.env.ACCEPTANCE_TEXT, reviewer: process.env.GITHUB_ACTOR, run: process.env.GITHUB_RUN_ID}));'
-      - name: Record acceptance and publish without rebuilding
+          gh release download "v$RELEASE_VERSION" --dir release/draft
+          node -e 'require("node:fs").writeFileSync("release/live-input.json", process.env.LIVE_ACCEPTANCE, {flag:"wx"})'
+      - name: Verify original bytes, exact source, live evidence and actual human approval
+        run: pnpm exec tsx scripts/verify-qualified-release.ts --directory release/draft --phase publish --reference release/original-qualified --acceptance release/live-input.json --receipt release/live-acceptance.json
+      - name: Attach the verified acceptance and publish without rebuilding
         run: |
-          gh release upload "v$RELEASE_VERSION" release-acceptance.json
+          set -euo pipefail
+          gh release upload "v$RELEASE_VERSION" release/live-acceptance.json
           gh release edit "v$RELEASE_VERSION" --draft=false --latest

@@ -12631,3 +12631,53 @@ Originalprotokolle implementiert; Gesamtlauf noch ausstehend. Roadmapaudit:
 keine Veröffentlichung/Mainpromotion; Release-/Publish-Workfloweinbindung,
 öffentliche Vergleichsprofil-Fixtures, CI-Risikoauswahl und finale Abnahme
 offen. Candidate-Sicherung erfolgt vor der weiteren Workflowintegration.
+
+Candidatec505899e91166ccbffe4ac8a7b7fa20fdd6c2c7c gepusht; unveränderte
+Runner daraus gebündelt (397MiB/0Swap). Alle drei Bundle-Einstiege weisen den
+Hoststart an der Isolationsgrenze ab; kein Electron gestartet. PR679 auf den
+tatsächlichen offenen Gesamtumfang aktualisiert.
+
+Plan6A.7 Workflowintegration: Zuerst Releasequalifikation an die live gelesene
+GitHub-Run-/Attempt-/Main-/Repository-Identität, den erfolgreichen benannten
+Qualifikationsjob und genau ein nicht abgelaufenes Artefakt mit Digest binden.
+Entwurf darf während desselben noch laufenden Releaseworkflows entstehen,
+Veröffentlichung erst nach dessen Gesamtabschluss. Anschließend expliziten
+JSON-Auftrag, einmaligen Build, netzlosen Gasttransport und erneute
+Entwurfs-/Freigabeprüfung in Release-/Publish-Workflows einbauen. Vor Build
+Version/Tag/Releasekollisionen und vollständige Main-Prüfung abweisen; nach
+Livetest echte menschliche Environmentfreigabe aus der API nachweisen.
+Keine Agentenfreigabe, kein Neubau beim Publizieren.
+
+Herkunftsprüfer:13Tests, ESLint und beide Typprüfungen bestanden
+(58s,1.4GiB/0Swap). Der zusätzlich angegebene Testfilter live-acceptance.test.ts
+traf keine Datei; daraus wird kein Abnahmenachweis abgeleitet. Der tatsächlich
+vorhandene live-release-acceptance.test.ts wird bei der nächsten passenden
+Verifikation ausdrücklich mitgeführt.
+
+Release-CLI:31Herkunfts-/Freigabe-/Environmenttests sowie ESLint und beide
+Typprüfungen bestanden (59s,1.4GiB/0Swap). Zusätzlich direkter Vergleich
+mit frisch heruntergeladenem ursprünglichem CI-Bundle:5Tests, ESLint und
+beide Typprüfungen bestanden (59s,1.4GiB/0Swap). Damit genügt kein nachträglich
+veränderter Entwurf bei unverändert referenzierter Workflow-ID. Nun werden
+die alten Workflowaufrufe durch diese vorbereiteten Eintrittsprüfungen ersetzt.
+
+Workflows ersetzt: expliziter Auftrag, einmaliger Build, Offline-KVM-Abnahme,
+Originalbelege als CI-Artefakt; Entwurf nach erneuter Herkunftsprüfung;
+Publikation verwendet den qualifizierten Sourcecommit, frisch geladenes
+Original-CI-Bundle und die tatsächliche menschliche Environmentfreigabe.
+ESLint und beide Typprüfungen bestanden. Zusätzlich actionlint1.7.12 aus dem
+Originalrelease installiert (ArchivSHA8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+gegen veröffentlichte Prüfsumme geprüft); beide Workflowdateien ohne Befund.
+Review ergänzt die erneute Tag-/Release-Kollisionsprüfung direkt vor Entwurf
+sowie explizite Bindung der Publikationsversion an den geprüften Auftrag.
+Echte Workflowausführung/Dockerpfad sind weiterhin ausstehende Abnahmen;
+die neue Konfiguration allein ist kein erfolgreicher Releaseweg.
+
+Abschluss dieser Workfloweinbindung: letzte Lint-/Typprüfung erfolgreich
+(57s,1.4GiB/0Swap), actionlint ohne Befund. Teilplanaudit6A.7: Admission,
+einmaliger Build, isolierter Transport, Herkunftsbindung, unveränderte
+Entwurfsbytes und menschliche Publikationsfreigabe sind verdrahtet. Echte
+GitHub-/Docker-Gesamtabnahme fehlt weiterhin. Roadmapaudit: Phase6 offen;
+explizite Profilfixtures für öffentliche Vergleichs-AppImages sowie
+CI-Risikoauswahl und endgültige Abnahme ausstehend. Kein Entwurf oder
+öffentliches Release erstellt, kein Main verändert.

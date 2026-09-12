@@ -2,8 +2,12 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Stable version, for example 0.2.0; must match main package.json'
+      request:
+        description: 'Immutable release request JSON: exact main commit, version, schemas and explicit comparison artifacts'
+        required: true
+        type: string
+      recovery_case:
+        description: 'Schema-migration comparison ID used for activation and accepted-use crash recovery'
         required: true
         type: string
 permissions:
@@ -14,13 +18,15 @@ concurrency:
   cancel-in-progress: false
 jobs:
   candidate:
+    name: Build and qualify immutable release
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_VERSION: ${{ inputs.version }}
-      RELEASE_SHA: ${{ github.sha }}
+      RELEASE_REQUEST: ${{ inputs.request }}
+      RECOVERY_CASE: ${{ inputs.recovery_case }}
+      NODE_OPTIONS: --max-old-space-size=1536
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ github.sha }}', fetch-depth: 0 }
@@ -29,47 +35,78 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22.23.2, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - name: Verify immutable main and version
+      - name: Admit exact green main, request, version and human approval policy
+        run: pnpm exec tsx scripts/prepare-release-request.ts "$RUNNER_TEMP/release-controls"
+      - name: Prepare space on this disposable GitHub-hosted runner
         run: |
-          test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
-          test "$(node -p 'require("./package.json").version')" = "$RELEASE_VERSION"
-          pnpm exec tsx scripts/verify-post-promotion.ts
-          if gh release view "v$RELEASE_VERSION"; then
-            echo 'Release already exists; assets must never be overwritten.'
-            exit 1
-          fi
-      - run: pnpm exec vitest run tests/unit/release-contract.test.ts tests/integration/release-maintenance.test.ts --maxWorkers=2
-      - run: pnpm package:release
-      - run: pnpm exec tsx scripts/write-release-manifest.ts
-      - run: pnpm exec tsx scripts/verify-release-assets.ts
-      - run: pnpm exec tsx scripts/package-release-baseline.ts
-      - run: xvfb-run -a pnpm exec tsx scripts/qualify-release-update.ts
-      - run: xvfb-run -a pnpm exec tsx scripts/packaged-smoke.ts --channel release
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test -c /dev/kvm
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo chmod a+rw /dev/kvm
+      - name: Bundle the immutable guest runners
+        run: pnpm exec tsx scripts/bundle-release-qualification.ts
+      - name: Build the Release AppImage once
+        run: |
+          set -euo pipefail
+          pnpm package:release
+          pnpm exec tsx scripts/write-release-manifest.ts
+          pnpm exec tsx scripts/verify-release-assets.ts
+      - name: Acquire only explicitly requested comparison artifacts
+        run: pnpm exec tsx scripts/package-release-baseline.ts --request "$RUNNER_TEMP/release-controls/release-request.json" --target-manifest release/release/release-manifest.json --output "$RUNNER_TEMP/release-comparisons"
+      - name: Prepare the pinned separate-kernel environment
+        run: pnpm exec tsx scripts/prepare-release-vm.ts --output "$RUNNER_TEMP/release-environment" --cache "$RUNNER_TEMP/release-environment-cache" --engine docker
+      - name: Qualify unchanged bytes in the offline guest and verify all returned evidence
+        run: pnpm exec tsx scripts/run-release-qualification-vm.ts --request "$RUNNER_TEMP/release-controls/release-request.json" --workflow "$RUNNER_TEMP/release-controls/workflow.json" --target release/release --comparisons "$RUNNER_TEMP/release-comparisons" --runners release/qualification-runners --environment "$RUNNER_TEMP/release-environment" --node "$RUNNER_TEMP/release-environment-cache/node-v22.23.2-linux-x64.tar.xz" --work "$RUNNER_TEMP/release-vm" --output "$RUNNER_TEMP/qualified-release" --recovery-case "$RECOVERY_CASE" --engine docker
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ github.sha }}
-          path: |
-            release/release/*.AppImage
-            release/release/release-manifest.json
-            release/release/update-qualification.json
+          path: ${{ runner.temp }}/qualified-release/*
           compression-level: 0
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
+      - name: Archive environment and runtime evidence, including failed runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-transport-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/release-controls/*.json
+            ${{ runner.temp }}/release-environment/prepared-environment.json
+            ${{ runner.temp }}/release-environment/bootstrap-evidence/**
+            ${{ runner.temp }}/release-vm/vm-evidence/**
+            ${{ runner.temp }}/release-vm/*.json
+            ${{ runner.temp }}/release-vm/vm-run/serial.log
+            ${{ runner.temp }}/release-vm/vm-run/exit-code
+          if-no-files-found: warn
+          retention-days: 90
   draft:
     needs: candidate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: write
+      actions: read
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_VERSION: ${{ inputs.version }}
-      RELEASE_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ github.sha }}' }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ github.sha }}
-          path: release/release
-      - name: Create immutable draft for live acceptance
-        run: gh release create "v$RELEASE_VERSION" release/release/* --target "$RELEASE_SHA" --title "SaltMarcher $RELEASE_VERSION" --notes-file "docs/releases/$RELEASE_VERSION.md" --draft
+          path: release/qualified
+      - name: Reverify live workflow origin, exact bundle and comparison sources
+        run: pnpm exec tsx scripts/verify-qualified-release.ts --directory release/qualified --phase draft
+      - name: Create the draft from the same qualified bytes
+        run: |
+          set -euo pipefail
+          version=$(node -p 'require("./release/qualified/release-manifest.json").version')
+          gh release create "v$version" release/qualified/* --target "$GITHUB_SHA" --title "SaltMarcher $version" --notes-file "docs/releases/$version.md" --draft
