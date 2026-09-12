@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Usage: bash run-historical-vm.sh TOOL_IMAGE BASE_QCOW2 SEED_IMAGE NEW_OUTPUT_DIR SECONDS
 set -euo pipefail
+engine=${SALT_MARCHER_VM_ENGINE:-podman}
+[[ $engine == podman || $engine == docker ]] || { echo "Unsupported VM container engine" >&2; exit 2; }
 [[ $# == 5 || $# == 6 || $# == 7 ]] || { echo 'Expected tool image, base disk, seed, new output directory, deadline, optional bootstrap-network or evidence-disk PATH' >&2; exit 2; }
 network=none
 evidence_mount=()
@@ -43,32 +45,32 @@ cat /proc/sys/kernel/random/boot_id > "$output_dir/host-boot-id"
 container_name="salt-marcher-qualification-$(cat /proc/sys/kernel/random/uuid)"
 printf '%s\n' "$container_name" > "$output_dir/container-name"
 active_name="${container_name}-prepare"
-podman_pid=''
+container_pid=''
 cleanup() {
   result=$?
   trap - EXIT INT TERM
   printf '%s\n' "$result" > "$output_dir/exit-code"
-  if podman container exists "$active_name"; then
-    podman rm --force --time 5 "$active_name" >/dev/null
+  if "$engine" container inspect "$active_name" >/dev/null 2>&1; then
+    "$engine" rm --force --time 5 "$active_name" >/dev/null
   fi
-  if [[ -n $podman_pid ]]; then wait "$podman_pid" || true; fi
+  if [[ -n $container_pid ]]; then wait "$container_pid" || true; fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 # Resolve the image once: a mutable tag cannot change between preparation and boot.
-image_id=$(podman image inspect --format '{{.Id}}' "$tool_image")
+image_id=$("$engine" image inspect --format '{{.Id}}' "$tool_image")
 printf '%s\n' "$image_id" > "$output_dir/tool-image-id"
-podman create --rm --name "$active_name" --memory=1g --memory-swap=1g --pids-limit=64 --cpus=1 \
+"$engine" create --rm --name "$active_name" --memory=1g --memory-swap=1g --pids-limit=64 --cpus=1 \
   --security-opt label=disable \
   -v "$base_disk:/base.qcow2:ro" -v "$output_dir:/output:rw" \
   "$image_id" qemu-img create -f qcow2 -F qcow2 -b /base.qcow2 /output/guest.qcow2 24G > "$output_dir/prepare-container-id"
-podman start --attach "$active_name" &
-podman_pid=$!
-wait "$podman_pid"
-podman_pid=''
+"$engine" start --attach "$active_name" &
+container_pid=$!
+wait "$container_pid"
+container_pid=''
 active_name=$container_name
-podman create --rm --name "$container_name" \
+"$engine" create --rm --name "$container_name" \
   --memory=7g --memory-swap=7g --pids-limit=128 --cpus=2 \
   --device /dev/kvm --security-opt label=disable \
   -v "$base_disk:/base.qcow2:ro" -v "$seed_disk:/seed.img:ro" \
@@ -83,11 +85,11 @@ podman create --rm --name "$container_name" \
   "${evidence_drive[@]}" \
   > "$output_dir/vm-container-id"
 set +e
-podman start --attach "$container_name" > "$output_dir/serial.log" 2>&1 &
-podman_pid=$!
-wait "$podman_pid"
+"$engine" start --attach "$container_name" > "$output_dir/serial.log" 2>&1 &
+container_pid=$!
+wait "$container_pid"
 result=$?
-podman_pid=''
+container_pid=''
 set -e
 printf '%s\n' "$result" > "$output_dir/exit-code"
 exit "$result"

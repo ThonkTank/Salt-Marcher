@@ -12510,3 +12510,46 @@ __dirname verwenden, der in den zuvor bestandenen KVM-Harnessbündeln enthalten
 ist. Neuer sauberer Commit, separates neues Bündelverzeichnis; fehlgeschlagenes
 Bündel bleibt unverändert. Lint und tatsächlicher gebündelter Node-Starttest
 müssen anschließend bis zur erwarteten Host-Kernelsperre gelangen.
+
+ESM-Bootstrap korrigiert inb1945b8ef: Lint und neuer sauberer Bündelbau erfolgreich
+(`work/phase6-qualification-runner-bundle-fixed.log`). Tatsächliche Starts aller
+drei gebündelten Node-Einstiege erreichen nun ihre Isolationsprüfung und werden
+auf dem Host korrekt vor Profil-/AppImage-Ausführung abgewiesen; keine Syntax-
+oder Modulauflösungsfehler mehr (`work/phase6-all-runner-host-rejections.json`).
+Fehlgeschlagenes altes Bündel unverändert aufbewahrt. Korrigierter Kandidat
+gepusht; kein Main-Handoff und keine Freigabe. Vollständiger kombinierter Gastlauf
+mit zum Runnercommit passendem Releaseziel und echten Vergleichs-Workflowbelegen
+bleibt erforderlich; neue Einzelbausteine sind noch keine Phase6-Gesamtabnahme.
+
+Plan6A.6 reproduzierbare VM-Vorbereitung für CI: Den vorhandenen begrenzten
+KVM-Runner für explizit gewähltes Docker oder Podman verfügbar machen; Standard
+bleibt Podman. Speicher-/Prozess-/Zeitgrenzen, Hostboot-ID, eigene Gastkernel und
+Einzel-VM-Sperre bleiben identisch. Toolcontainer bekommt eine versionierte
+Containerfile mit dem bereits vorhandenen Node-Parentdigest. Ubuntu-Basis wird
+auf datierten offiziellen Download20260911 gepinnt, SHA256
+`612b2c0cc1bc413a6cb8c38fd611794caf0f2b436c50013d8b3794db12ad7354`
+und625256960Bytes entsprechen dem bisher geprüften Basisimage. Offizielle
+SHA256SUMS des datierten Verzeichnisses am12.09. erneut geprüft. Node22.23.2
+Archiv ist ebenfalls fest:31058332Bytes,
+`d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307`.
+Vorbereitung lädt nur diese begrenzten/verifizierten öffentlichen Dateien,
+bootstrapped Pakete ausschließlich im Gast und archiviert den Bootstrapbeleg.
+Erst nach erfolgreichem Bootstrap samt unterschiedlicher Boot-IDs darf die
+Gastplatte in ein eigenständiges geprüftes Basisimage ohne Backingfile überführt
+werden. Neues Ausgabeverzeichnis; keine Überschreibung vorhandener Gastdaten.
+CI-Einbindung folgt auf der geprüften Vorbereitung, ohne Host-Electron/Xvfb.
+
+VM-Vorbereitung:6 Verhaltenstests und Lint bestanden; Typprüfung scheitert am
+Unterschied zwischen DOM- und Node-Typen für ReadableStream.fromWeb. Korrektur
+verwendet den standardisierten getReader()-Pfad als begrenzten asynchronen
+Iterator mit Cancel/Release im finally. Kein unsicherer Typecast; dieselben
+Download-/Fehlerfälle sowie Lint/Typprüfung werden erneut geprüft.
+
+VM-Vorbereitung korrigiert geprüft:6 Tests, ESLint, beide Typprüfungen sowie
+Bash-Syntaxprüfung bestanden (`work/phase6-vm-preparation-corrected-checks.log`,
+58s,1.4GiB,0Swap). Nun echter Bootstrap mit vorhandener Toolimage-ID3d6445cd…
+und erneut geprüften gecachten Basis-/Nodebytes. Neues Ausgabeverzeichnis
+`work/phase6-prepared-environment-1`; kein AppImage-Test in diesem Bootstrap.
+Die Containerfile-Neuerstellung und Docker-Ausführung sind dabei ausdrücklich
+noch keine geprüften Laufzeitfälle; der vorhandene Podman-Pfad wird mit neuer
+Orchestrierung geprüft. Quellen bleiben bis Ende des Gastlaufs unverändert.
