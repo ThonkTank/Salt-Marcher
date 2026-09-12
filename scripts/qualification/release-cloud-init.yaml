@@ -12,7 +12,7 @@ write_files:
       cd /opt/qualification
       sha256sum -c SHA256SUMS
       tar -xf node.tar.xz
-      export PATH=/opt/qualification/node-v22.23.2-linux-x64/bin:/usr/bin:/bin
+      export PATH=/opt/qualification/node-v22.23.2-linux-x64/bin:/usr/bin:/bin:/usr/sbin:/sbin
       chown -R ubuntu:ubuntu /opt/qualification
       modprobe qemu_fw_cfg
       chmod a+r /sys/firmware/qemu_fw_cfg/by_name/opt/salt-marcher/host-boot-id/raw

@@ -13002,3 +13002,32 @@ Parallel bleibt der Releaseauftrag auf seinem eigenen unveränderlichen Commit
 Abschluss dieses Teilplans erst nach beobachtetem vollständigem Verhalten;
 Phase6 weiterhin offen bis zu diesem Nachweis und dem erfolgreichen echten
 Release-/Docker-/KVM-Gesamtlauf. Phase7 weiterhin offen.
+
+Korrekturplan6A.8 — Systemwerkzeuge im frischen Releasegast erreichbar halten:
+Der erste reale Release-Gesamtlauf34715117763 auf8a510de45 ist fehlgeschlagen.
+Aufnahme, einmaliger Build, authentische Vergleichsdownloads und frische Docker-/
+KVM-Vorbereitung bestanden. Das originale Gastprotokoll zeigt vor jedem Appstart:
+/opt/run-release-qualification.sh: line11: modprobe: command not found.
+Der feste PATH nach Node-Entpacken enthält nur Node, /usr/bin und /bin;
+Ubuntu installiert modprobe unter /usr/sbin. Deshalb fehlt auch der Export,
+und die nachgelagerte Prüfung verweigert korrekt ein qualifiziertes Artefakt.
+Kein Entwurf und keine Veröffentlichung. Originaldiagnostik erhalten unter
+work/release-34715117763-diagnostics, GitHub-Artefakt10304677702 (49458Bytes).
+Korrektur: beide üblichen Systemadministrator-Verzeichnisse in den expliziten
+Gast-PATH aufnehmen, ohne den aufrufenden Host-PATH zu übernehmen. Die gepinnte
+Node-Version bleibt zuerst. Keine Änderung an App, Daten oder Prüfkriterien.
+Prüfung: Shellsyntax und tatsächliche Werkzeugauflösung mit genau dem exportierten
+PATH (keine Modulladung und kein Host-Appstart), vorhandene Transport-/Runner-
+Tests, vollständige Candidate-CI für den nicht selektiv erlaubten Skriptpfad.
+Danach Promotion und erneuter echter Release-Gesamtlauf mit neuem unveränderlichem
+Zielcommit. Der bisherige fehlgeschlagene Lauf bleibt als solcher dokumentiert.
+Der unabhängige Dokumentationscandidate414f76ce7 bleibt unverändert und muss
+seine reduzierte CI einschließlich Main-Promotion separat abschließen.
+
+6A.8 lokale Prüfung bestanden: Shellsyntax des tatsächlichen YAML-Skriptinhalts,
+Auflösung von modprobe/systemd-run/python3/mount/sha256sum mit dem korrigierten
+festen PATH und26 vorhandene Transport-/Runner-/Umgebungstests. 1.8s,
+172MiB/0Swap; work/phase6-release-guest-path-checks.log. Keine Systemmodule
+auf dem Host geladen. Teilplanaudit: minimale PATH-Korrektur behebt den belegten
+Startfehler; keine Abschwächung der Export- oder Laufzeitprüfung. Roadmapaudit:
+CI, erneuter echter Gastlauf und Releaseentwurf weiter erforderlich; Phase6 offen.
