@@ -18,7 +18,7 @@ const sha = 'a'.repeat(40)
 describe('delivery contract', () => {
   it('loads an ordered, unique required-job manifest', () => {
     const manifest = readRequiredJobManifest()
-    expect(manifest.schemaVersion).toBe(5)
+    expect(manifest.schemaVersion).toBe(6)
     expect(manifest.jobs).toHaveLength(16)
     expect(new Set(manifest.jobs.map(({ name }) => name)).size).toBe(16)
     expect(() =>
@@ -36,7 +36,7 @@ describe('delivery contract', () => {
       runId: 123,
       attempt: 2,
       headSha: sha,
-      requiredJobManifestVersion: 5
+      requiredJobManifestVersion: 6
     })
     expect(evidence.jobs.map(({ name }) => name)).toEqual(
       manifest.jobs.map(({ name }) => name)

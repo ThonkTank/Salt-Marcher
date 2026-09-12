@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { z } from 'zod'
+import { ciRiskSelectionSchema } from './ci-risk-selection.js'
 import {
   assertCurrentLocalPersistenceVersion,
   localPersistenceFormatVersions
@@ -85,6 +86,7 @@ export const workflowEvidenceSchema = z
     attempt: z.number().int().positive(),
     headSha: shaSchema,
     requiredJobManifestVersion: z.number().int().positive(),
+    selection: ciRiskSelectionSchema.optional(),
     jobs: z
       .array(
         z
@@ -160,7 +162,8 @@ export function sameWorkflowQualification(
     existing.headSha === current.headSha &&
     existing.requiredJobManifestVersion ===
       current.requiredJobManifestVersion &&
-    JSON.stringify(existing.jobs) === JSON.stringify(current.jobs)
+    JSON.stringify(existing.jobs) === JSON.stringify(current.jobs) &&
+    JSON.stringify(existing.selection) === JSON.stringify(current.selection)
   )
 }
 
@@ -509,7 +512,7 @@ export function readRequiredJobManifest(
   return requiredJobManifestSchema.parse(
     JSON.parse(
       readFileSync(
-        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v5.json'),
+        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v6.json'),
         'utf8'
       )
     )

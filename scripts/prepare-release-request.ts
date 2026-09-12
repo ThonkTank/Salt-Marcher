@@ -43,7 +43,7 @@ assert.equal(
   'Request version differs from package'
 )
 assert(
-  readSuccessfulWorkflowEvidence(request.target.commit),
+  readSuccessfulWorkflowEvidence(request.target.commit, { requireFull: true }),
   'Missing complete exact-SHA Check evidence'
 )
 assert(

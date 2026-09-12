@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 import { shaSchema } from './delivery-contract.js'
+import { verifyCiRiskSelection } from './ci-risk-selection.js'
+import { assertSelectionMainBase } from './ci-selection-artifact.js'
 
 export const exactShaAggregateJobName = 'Candidate · exact-SHA aggregate'
 
@@ -30,6 +32,13 @@ export type ExactShaAggregateInput = Readonly<{
   checkedSha: string
   pullRequestHeadSha: string
   needs: unknown
+  selection?: unknown
+  selectionContext?: Readonly<{
+    workspaceRoot: string
+    baseSha: string
+    mainSha: string
+    forceFull: boolean
+  }>
 }>
 
 export function verifyExactShaAggregate(input: ExactShaAggregateInput): void {
@@ -53,8 +62,34 @@ export function verifyExactShaAggregate(input: ExactShaAggregateInput): void {
       `Aggregate dependency set differs: expected ${expectedNames.join(', ')}, received ${actualNames.join(', ')}.`
     )
 
-  const unsuccessful = exactShaAggregateNeeds.filter(
-    (name) => needs[name]?.result !== 'success'
+  if (
+    (input.selection === undefined) !==
+    (input.selectionContext === undefined)
+  )
+    throw new Error(
+      'Aggregate requires both selection and immutable verification context.'
+    )
+  const selection = input.selectionContext
+    ? verifyCiRiskSelection(input.selection, {
+        ...input.selectionContext,
+        headSha: checkedSha
+      })
+    : null
+  if (selection && input.selectionContext)
+    assertSelectionMainBase(
+      selection,
+      input.selectionContext.mainSha,
+      input.selectionContext.workspaceRoot
+    )
+  const required = new Set<string>(
+    selection
+      ? ['candidate-preflight', ...selection.requiredGroups]
+      : exactShaAggregateNeeds
+  )
+  const unsuccessful = exactShaAggregateNeeds.filter((name) =>
+    required.has(name)
+      ? needs[name]?.result !== 'success'
+      : !['success', 'skipped'].includes(needs[name]?.result ?? 'missing')
   )
   if (unsuccessful.length > 0)
     throw new Error(

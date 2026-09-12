@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
+import { appendFileSync, writeFileSync } from 'node:fs'
 import { isAbsolute } from 'node:path'
 import { z } from 'zod'
-import { readCiRiskSelection } from './ci-risk-selection.js'
+import { ciRiskGroups, readCiRiskSelection } from './ci-risk-selection.js'
 
 const sha = z.string().regex(/^[a-f0-9]{40}$/)
 const headSha = sha.parse(process.env['SALT_MARCHER_CHECKED_SHA'])
@@ -29,15 +29,32 @@ git('fetch', '--no-tags', 'origin', baseSha)
 const selection = readCiRiskSelection({
   workspaceRoot: process.cwd(),
   baseSha,
-  headSha
+  headSha,
+  forceFull: process.env['GITHUB_EVENT_NAME'] === 'workflow_dispatch'
 })
 writeFileSync(output, `${JSON.stringify(selection, null, 2)}\n`, { flag: 'wx' })
+const githubOutput = process.env['GITHUB_OUTPUT']
+if (githubOutput) {
+  const attempt = z.coerce
+    .number()
+    .int()
+    .positive()
+    .parse(process.env['GITHUB_RUN_ATTEMPT'])
+  const lines = ciRiskGroups.map(
+    (group) =>
+      `${group.replaceAll('-', '_')}=${selection.requiredGroups.includes(group)}`
+  )
+  lines.push(
+    `selection_artifact=ci-risk-selection-${headSha}-attempt-${attempt}`
+  )
+  appendFileSync(githubOutput, `${lines.join('\n')}\n`)
+}
 console.info(
   JSON.stringify({
     component: 'candidate-preflight',
     baseSha,
     headSha,
-    proposedGroups: selection.requiredGroups,
-    enforcement: 'full-required-job-set'
+    requiredGroups: selection.requiredGroups,
+    enforcement: 'independently-verified-selection'
   })
 )

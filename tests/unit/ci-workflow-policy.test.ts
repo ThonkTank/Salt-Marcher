@@ -11,7 +11,7 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
 
 describe('CI platform partitions', () => {
   workflowGate(
-    'gates expensive partitions on immutable preflight without skipping checks',
+    'binds every selectable partition to immutable preflight outputs',
     () => {
       for (const name of [
         'portable',
@@ -25,7 +25,20 @@ describe('CI platform partitions', () => {
       expect(workflow).toContain(
         'name: ci-risk-selection-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}'
       )
-      expect(workflow).not.toContain('needs.candidate-preflight.outputs')
+      for (const group of [
+        'portable',
+        'native',
+        'linux_build',
+        'linux_package',
+        'linux_qualification',
+        'e2e',
+        'visual',
+        'passive_e2e'
+      ])
+        expect(workflow).toContain(
+          `needs.candidate-preflight.outputs.${group} == 'true'`
+        )
+      expect(workflow).toContain('workflow_dispatch:')
     }
   )
   workflowGate(
@@ -68,7 +81,7 @@ describe('CI platform partitions', () => {
       expect(linuxJob).toContain('pnpm check:linux')
       const packageJob = workflow.slice(
         workflow.indexOf('  linux-package:'),
-        workflow.indexOf('  e2e:')
+        workflow.indexOf('\n  e2e:')
       )
       expect(packageJob).toContain('pnpm package:development:built')
       expect(packageJob).toContain('pnpm test:packaged-smoke:built')
@@ -132,7 +145,7 @@ describe('CI platform partitions', () => {
       expect(
         workflow.match(/ref: ['"]?\$\{\{ env\.SALT_MARCHER_CHECKED_SHA \}\}/g)
       ).toHaveLength(11)
-      expect(workflow.match(/actions\/download-artifact@v4/g)).toHaveLength(4)
+      expect(workflow.match(/actions\/download-artifact@v4/g)).toHaveLength(5)
       expect(
         workflow.match(/assert-built-workspace\.ts --channel development/g)
       ).toHaveLength(5)
@@ -146,9 +159,7 @@ describe('CI platform partitions', () => {
         workflow.indexOf('  exact-sha-aggregate:'),
         workflow.indexOf('  post-promotion:')
       )
-      expect(aggregate).toContain(
-        "if: always() && github.event_name == 'pull_request'"
-      )
+      expect(aggregate).toContain("if: always() && github.event_name != 'push'")
       expect(aggregate).toContain('name: Candidate · exact-SHA aggregate')
       for (const dependency of [
         'candidate-preflight',
@@ -162,10 +173,10 @@ describe('CI platform partitions', () => {
         'passive-e2e'
       ])
         expect(aggregate).toContain(`- ${dependency}`)
-      expect(aggregate).toContain("ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}'")
+      expect(aggregate).toContain('ref: ${{ env.SALT_MARCHER_CHECKED_SHA }}')
       expect(aggregate).toContain('pnpm delivery:verify-exact-sha-aggregate')
       expect(aggregate).toContain(
-        'SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}'
+        'SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}'
       )
       expect(aggregate).toContain(
         'SALT_MARCHER_NEEDS_JSON: ${{ toJSON(needs) }}'

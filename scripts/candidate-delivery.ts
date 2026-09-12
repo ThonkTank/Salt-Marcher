@@ -24,6 +24,11 @@ import {
   type WorkflowEvidence
 } from './delivery-contract.js'
 import { verifyLiveRepositoryPolicy } from './repository-policy.js'
+import {
+  assertSelectionMainBase,
+  readWorkflowSelection
+} from './ci-selection-artifact.js'
+import { verifySelectedWorkflowJobs } from './ci-selected-jobs.js'
 
 const shaPattern = /^[a-f0-9]{40}$/
 
@@ -87,7 +92,8 @@ export function successfulCandidateEvidence(
 }
 
 export function readSuccessfulWorkflowEvidence(
-  head: string
+  head: string,
+  options: Readonly<{ requireFull?: boolean }> = {}
 ): WorkflowEvidence | null {
   const manifest = readRequiredJobManifest()
   const runSummaries = z
@@ -126,23 +132,53 @@ export function readSuccessfulWorkflowEvidence(
       run.conclusion === 'success'
   )
   for (const run of completed) {
-    const evidence = successfulCandidateEvidence(
-      [
-        githubWorkflowRunSchema.parse(
-          JSON.parse(
-            command('gh', [
-              'run',
-              'view',
-              String(run.databaseId),
-              '--json',
-              'databaseId,headSha,status,conclusion,url,attempt,jobs'
-            ])
-          )
-        )
-      ],
-      head
+    const detail = githubWorkflowRunSchema.parse(
+      JSON.parse(
+        command('gh', [
+          'run',
+          'view',
+          String(run.databaseId),
+          '--json',
+          'databaseId,headSha,status,conclusion,url,attempt,jobs,event'
+        ])
+      )
     )
-    if (evidence) return evidence
+    const event = z
+      .enum(['pull_request', 'workflow_dispatch'])
+      .safeParse(detail['event'])
+    if (!event.success) continue
+    if (
+      !detail.jobs.some(
+        (job) =>
+          job.name === 'Candidate · history and risk preflight' &&
+          job.conclusion === 'success'
+      )
+    )
+      continue
+    const selection = readWorkflowSelection({
+      repository: readRepositoryIdentity(),
+      runId: detail.databaseId,
+      runAttempt: detail.attempt,
+      headSha: head
+    })
+    const mainSha = parseRemoteHead(
+      command('git', ['ls-remote', '--exit-code', 'origin', 'refs/heads/main'])
+    )
+    command('git', ['fetch', '--no-tags', 'origin', mainSha])
+    assertSelectionMainBase(selection, mainSha, process.cwd())
+    if (options.requireFull && selection.mode !== 'full') continue
+    return verifySelectedWorkflowJobs({
+      manifest,
+      run: detail,
+      selection,
+      workspaceRoot: process.cwd(),
+      baseSha: selection.baseSha,
+      headSha: head,
+      forceFull: event.data === 'workflow_dispatch',
+      ...(options.requireFull === undefined
+        ? {}
+        : { requireFull: options.requireFull })
+    })
   }
   return null
 }

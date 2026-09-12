@@ -153,7 +153,12 @@ export function readCiRiskSelection(input: {
   const baseAppFingerprint = computeAppBuildInputFingerprintAtRef(root, baseSha)
   const headAppFingerprint = computeAppBuildInputFingerprintAtRef(root, headSha)
   const reasons: string[] = []
-  const selected = new Set<(typeof ciRiskGroups)[number]>(['portable'])
+  // The canonical delivery contract always consumes an exact-SHA Local artifact.
+  const selected = new Set<(typeof ciRiskGroups)[number]>([
+    'portable',
+    'linux-build',
+    'linux-package'
+  ])
   let full = false
   const requireFull = (reason: string) => {
     full = true

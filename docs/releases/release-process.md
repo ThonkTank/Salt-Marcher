@@ -9,10 +9,17 @@ procedure as proof of release acceptance.
 
 ## Immutable inputs
 
-Finish the exact candidate SHA's complete required Check jobs and canonical
-Local handoff, then promote that same SHA to main and wait for main Check to
-succeed. `package.json`, release notes, and the requested target version must
-match. Check both GitHub release and tag availability; existing versions and
+Finish the exact candidate SHA's independently verified selected Check jobs and
+canonical Local handoff, then promote that same SHA to main and wait for main
+attestation to succeed. Public release admission additionally requires the full
+Check job set for that exact SHA. If development CI selected a subset, dispatch
+**Check** manually on main: a manual dispatch always requests every partition.
+Verify that its recorded head SHA equals the release target and wait for the
+complete run to succeed. A reduced green run cannot admit a public release.
+If main advances, resolve and qualify the intended current target again rather
+than attributing the previous run to a different commit.
+
+`package.json`, release notes, and the requested target version must match. Check both GitHub release and tag availability; existing versions and
 assets must not be overwritten. Corrections use a new version.
 
 The Release workflow accepts a versioned `request` JSON document and a

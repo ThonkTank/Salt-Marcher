@@ -15,6 +15,17 @@ import {
   readCiRiskSelection,
   verifyCiRiskSelection
 } from '../../scripts/ci-risk-selection.js'
+import { verifySelectedWorkflowJobs } from '../../scripts/ci-selected-jobs.js'
+import {
+  readRequiredJobManifest,
+  sameWorkflowQualification,
+  workflowEvidenceSchema
+} from '../../scripts/delivery-contract.js'
+import {
+  exactShaAggregateNeeds,
+  verifyExactShaAggregate
+} from '../../scripts/exact-sha-aggregate-contract.js'
+import { assertSelectionMainBase } from '../../scripts/ci-selection-artifact.js'
 
 const policy = readFileSync(ciRiskPolicyPath)
 const roots: string[] = []
@@ -67,6 +78,179 @@ function repository(withPolicy = true) {
 }
 
 describe('immutable CI risk selection', () => {
+  it('requires all three delivery partitions and permits only verified unrelated skips', () => {
+    const repo = repository()
+    repo.write('docs/releases/0.3.0.md')
+    const headSha = repo.commit()
+    const selection = repo.select(headSha)
+    const needs = Object.fromEntries(
+      exactShaAggregateNeeds.map((name) => [
+        name,
+        {
+          result: [
+            'candidate-preflight',
+            'portable',
+            'linux-build',
+            'linux-package'
+          ].includes(name)
+            ? 'success'
+            : 'skipped'
+        }
+      ])
+    )
+    const input = {
+      checkedOutSha: headSha,
+      checkedSha: headSha,
+      pullRequestHeadSha: headSha,
+      needs,
+      selection,
+      selectionContext: {
+        workspaceRoot: repo.root,
+        baseSha: repo.baseSha,
+        mainSha: repo.baseSha,
+        forceFull: false
+      }
+    }
+    expect(() => verifyExactShaAggregate(input)).not.toThrow()
+    for (const name of [
+      'candidate-preflight',
+      'portable',
+      'linux-build',
+      'linux-package'
+    ]) {
+      expect(() =>
+        verifyExactShaAggregate({
+          ...input,
+          needs: { ...needs, [name]: { result: 'skipped' } }
+        })
+      ).toThrow(/not successful/)
+    }
+    for (const result of ['failure', 'cancelled']) {
+      expect(() =>
+        verifyExactShaAggregate({
+          ...input,
+          needs: { ...needs, native: { result } }
+        })
+      ).toThrow(/not successful/)
+    }
+    expect(() =>
+      verifyExactShaAggregate({
+        ...input,
+        selection: { ...selection, requiredGroups: ['portable'] }
+      })
+    ).toThrow(/immutable Git evidence/)
+    expect(() =>
+      verifyExactShaAggregate({
+        ...input,
+        selectionContext: { ...input.selectionContext, forceFull: true }
+      })
+    ).toThrow(/immutable Git evidence/)
+  })
+
+  it('binds workflow evidence to selection and refuses reduced public release qualification', () => {
+    const repo = repository()
+    repo.write('docs/releases/0.3.0.md')
+    const headSha = repo.commit()
+    const manifest = readRequiredJobManifest()
+    const selectedNames = [
+      'Candidate · history and risk preflight',
+      'Portable · static and app',
+      'Linux build · reusable app',
+      'Linux package · profile and AppImage',
+      'Candidate · exact-SHA aggregate'
+    ]
+    const selection = repo.select(headSha)
+    const run = {
+      databaseId: 1,
+      headSha,
+      status: 'completed',
+      conclusion: 'success',
+      url: 'https://github.example/check/1',
+      attempt: 1,
+      jobs: manifest.jobs.map(({ name }) => ({
+        name,
+        status: 'completed',
+        conclusion: selectedNames.includes(name) ? 'success' : 'skipped'
+      }))
+    }
+    const input = {
+      manifest,
+      run,
+      selection,
+      workspaceRoot: repo.root,
+      baseSha: repo.baseSha,
+      headSha,
+      forceFull: false
+    }
+    const evidence = verifySelectedWorkflowJobs(input)
+    expect(evidence.jobs.map((job) => job.name)).toEqual(selectedNames)
+    expect(evidence.selection).toEqual(selection)
+    expect(() => workflowEvidenceSchema.parse(evidence)).not.toThrow()
+    expect(() =>
+      verifySelectedWorkflowJobs({ ...input, requireFull: true })
+    ).toThrow(/Public release requires full/)
+    expect(() =>
+      verifySelectedWorkflowJobs({
+        ...input,
+        run: {
+          ...run,
+          jobs: run.jobs.filter(
+            (job) => job.name !== 'Linux package · profile and AppImage'
+          )
+        }
+      })
+    ).toThrow(/missing/)
+    expect(() =>
+      verifySelectedWorkflowJobs({
+        ...input,
+        manifest: {
+          ...manifest,
+          jobs: [
+            ...manifest.jobs,
+            { name: 'Unknown new gate', platformRole: 'unknown' }
+          ]
+        }
+      })
+    ).toThrow(/explicit CI risk mapping/)
+    expect(
+      sameWorkflowQualification(evidence, {
+        ...evidence,
+        selection: { ...selection, diffSha256: '0'.repeat(64) }
+      })
+    ).toBe(false)
+    const legacy = { ...evidence }
+    delete legacy.selection
+    expect(() => workflowEvidenceSchema.parse(legacy)).not.toThrow()
+    expect(sameWorkflowQualification(evidence, legacy)).toBe(false)
+
+    const full = verifySelectedWorkflowJobs({
+      ...input,
+      run: {
+        ...run,
+        jobs: run.jobs.map((job) => ({ ...job, conclusion: 'success' }))
+      },
+      selection: repo.select(headSha, true),
+      forceFull: true,
+      requireFull: true
+    })
+    expect(full.jobs).toHaveLength(manifest.jobs.length)
+  })
+
+  it('rejects a candidate-only base even when it is an ancestor of the candidate head', () => {
+    const repo = repository()
+    repo.write('src/main/change.ts')
+    const intermediate = repo.commit()
+    repo.write('docs/releases/new.md')
+    const headSha = repo.commit()
+    const selection = readCiRiskSelection({
+      workspaceRoot: repo.root,
+      baseSha: intermediate,
+      headSha
+    })
+    expect(() =>
+      assertSelectionMainBase(selection, repo.baseSha, repo.root)
+    ).toThrow(/authenticated Main history/)
+  })
   it.each(['not json', '{"schemaVersion":2}'])(
     'uses full checks for unsupported base policy %s',
     (bytes) => {
@@ -103,8 +287,12 @@ describe('immutable CI risk selection', () => {
     repo.write('tests/unit/new-contract.test.ts')
     const selected = repo.select(repo.commit())
     expect(selected.mode).toBe('selected')
-    expect(selected.requiredGroups).toEqual(['portable'])
-    expect(selected.requiresLocalArtifact).toBe(false)
+    expect(selected.requiredGroups).toEqual([
+      'portable',
+      'linux-build',
+      'linux-package'
+    ])
+    expect(selected.requiresLocalArtifact).toBe(true)
     expect(selected.baseAppFingerprint).toBe(selected.headAppFingerprint)
   })
 

@@ -1,6 +1,7 @@
 name: Check
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches: [main]
 permissions:
@@ -14,8 +15,18 @@ concurrency:
 
 jobs:
   candidate-preflight:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push'
     name: Candidate · history and risk preflight
+    outputs:
+      portable: ${{ steps.selection.outputs.portable }}
+      native: ${{ steps.selection.outputs.native }}
+      linux_build: ${{ steps.selection.outputs.linux_build }}
+      linux_package: ${{ steps.selection.outputs.linux_package }}
+      linux_qualification: ${{ steps.selection.outputs.linux_qualification }}
+      e2e: ${{ steps.selection.outputs.e2e }}
+      visual: ${{ steps.selection.outputs.visual }}
+      passive_e2e: ${{ steps.selection.outputs.passive_e2e }}
+      selection_artifact: ${{ steps.selection.outputs.selection_artifact }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -28,10 +39,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22.23.2, cache: pnpm }
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm exec tsx scripts/write-ci-preflight.ts
+      - id: selection
+        run: pnpm exec tsx scripts/write-ci-preflight.ts
         env:
           SALT_MARCHER_SELECTION_PATH: ${{ runner.temp }}/ci-risk-selection.json
-      - name: Archive proposed immutable risk selection
+      - name: Archive immutable risk selection
         uses: actions/upload-artifact@v4
         with:
           name: ci-risk-selection-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}
@@ -41,7 +53,7 @@ jobs:
 
   portable:
     needs: candidate-preflight
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.portable == 'true'
     name: Portable · static and app
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -57,7 +69,7 @@ jobs:
 
   native:
     needs: candidate-preflight
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.native == 'true'
     name: Native · ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -90,7 +102,7 @@ jobs:
 
   linux-build:
     needs: candidate-preflight
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.linux_build == 'true'
     name: Linux build · reusable app
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -129,9 +141,9 @@ jobs:
           retention-days: 2
 
   linux-package:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.linux_package == 'true'
     name: Linux package · profile and AppImage
-    needs: linux-build
+    needs: [candidate-preflight, linux-build]
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
@@ -167,7 +179,7 @@ jobs:
 
   linux-qualification:
     needs: candidate-preflight
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.linux_qualification == 'true'
     name: Linux qualification · packaged harness
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -189,9 +201,9 @@ jobs:
       - run: xvfb-run -a pnpm test:packaged-qualification-smoke
 
   e2e:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.e2e == 'true'
     name: Linux E2E · ${{ matrix.shard }}
-    needs: linux-build
+    needs: [candidate-preflight, linux-build]
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
@@ -226,9 +238,9 @@ jobs:
           retention-days: 14
 
   visual:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.visual == 'true'
     name: Linux Visual · ${{ matrix.shard }}
-    needs: linux-build
+    needs: [candidate-preflight, linux-build]
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
@@ -263,9 +275,9 @@ jobs:
           retention-days: 14
 
   passive-e2e:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && needs.candidate-preflight.outputs.passive_e2e == 'true'
     name: Linux E2E · passive window
-    needs: linux-build
+    needs: [candidate-preflight, linux-build]
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -284,7 +296,7 @@ jobs:
       - run: xvfb-run -a pnpm test:passive-e2e:built
 
   exact-sha-aggregate:
-    if: always() && github.event_name == 'pull_request'
+    if: always() && github.event_name != 'push'
     name: Candidate · exact-SHA aggregate
     needs:
       - candidate-preflight
@@ -300,15 +312,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}' }
+        with:
+          fetch-depth: 0
+          ref: ${{ env.SALT_MARCHER_CHECKED_SHA }}
       - uses: pnpm/action-setup@v4
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22.23.2, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        if: needs.candidate-preflight.result == 'success'
+        with:
+          name: ${{ needs.candidate-preflight.outputs.selection_artifact }}
+          path: ${{ runner.temp }}/ci-risk-selection
       - run: pnpm delivery:verify-exact-sha-aggregate
         env:
-          SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SALT_MARCHER_SELECTION_DIRECTORY: ${{ runner.temp }}/ci-risk-selection
           SALT_MARCHER_NEEDS_JSON: ${{ toJSON(needs) }}
 
   post-promotion:

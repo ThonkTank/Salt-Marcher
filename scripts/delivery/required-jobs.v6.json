@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 6,
+  "workflowName": "Check",
+  "jobs": [
+    {
+      "name": "Candidate · history and risk preflight",
+      "platformRole": "candidate-history-and-risk-preflight"
+    },
+    {
+      "name": "Portable · static and app",
+      "platformRole": "portable-static-and-contracts"
+    },
+    {
+      "name": "Native · windows-2022",
+      "platformRole": "windows-native-sqlite-runtime"
+    },
+    {
+      "name": "Native · macos-latest",
+      "platformRole": "macos-native-sqlite-runtime"
+    },
+    {
+      "name": "Linux build · reusable app",
+      "platformRole": "linux-app-build-authority"
+    },
+    {
+      "name": "Linux package · profile and AppImage",
+      "platformRole": "linux-local-artifact-authority"
+    },
+    {
+      "name": "Linux qualification · packaged harness",
+      "platformRole": "linux-packaged-qualification-harness"
+    },
+    {
+      "name": "Linux E2E · campaign-workspaces",
+      "platformRole": "linux-e2e-campaign-workspaces"
+    },
+    {
+      "name": "Linux E2E · hex-npc-restart",
+      "platformRole": "linux-e2e-hex-npc-restart"
+    },
+    {
+      "name": "Linux E2E · dialogs-generation-loot",
+      "platformRole": "linux-e2e-dialogs-generation-loot"
+    },
+    {
+      "name": "Linux E2E · group-loot-travel",
+      "platformRole": "linux-e2e-group-loot-travel"
+    },
+    {
+      "name": "Linux Visual · goldens-campaign",
+      "platformRole": "linux-visual-goldens-campaign"
+    },
+    {
+      "name": "Linux Visual · goldens-dialog-travel-loot",
+      "platformRole": "linux-visual-goldens-dialog-travel-loot"
+    },
+    {
+      "name": "Linux Visual · goldens-world-create",
+      "platformRole": "linux-visual-goldens-world-create"
+    },
+    {
+      "name": "Linux E2E · passive window",
+      "platformRole": "linux-e2e-passive-window"
+    },
+    {
+      "name": "Candidate · exact-SHA aggregate",
+      "platformRole": "candidate-exact-sha-aggregate"
+    }
+  ]
+}

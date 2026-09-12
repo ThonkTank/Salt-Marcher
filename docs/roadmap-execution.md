@@ -12832,3 +12832,77 @@ wirksame gezielte Auswahl samt unabhängigen Verbrauchern und den vollständigen
 realen Releaseworkflow. Phase7 unverändert offen. Nächster Nachweis ist der
 saubere Candidate-Preflight an diesem Repository und anschließend Remote-CI;
 dieser lokale Erfolg ist noch keine Main-Promotion oder Releasefreigabe.
+
+Plan6B.3 — wirksame Auswahl und gemeinsame Verbraucher:
+Vorheriger Goalturn war Fortschritt: a17613708 implementiert/verifiziert das
+frühe Gate; Live-Preflight am sauberen Repository bestand in7s/146MiB,
+Mainbasis4aa710b40, vollständige Auswahl. Originalbeleg und Log liegen in
+work/phase6-risk-preflight-a17613708.{json,log}. Check34711706762 läuft real.
+Jetzt werden ausgewählte Gruppen tatsächlich an GitHub-Jobbedingungen gebunden.
+Der bestehende zwingende Local-Artefaktvertrag bleibt erhalten: portable,
+Linux-Build und Linux-Package sind immer erforderlich. Dokumentations-/portable
+Teständerungen können Native, Qualification und UI sparen; Rendereränderungen
+können Native sparen; unbekannte/strukturelle Änderungen bleiben vollständig.
+Diese bewusste Untergrenze erhält eindeutige Artefakt-/Handoffbelege und ist
+keine Behauptung maximal möglicher Buildoptimierung.
+Aggregate lädt den originalen Auswahlbeleg und berechnet ihn aus Git neu.
+Candidate-/Handoff-Leser laden ausschließlich den eindeutigen Beleg des
+qualifizierten GitHub-Laufs, prüfen Basis auf der Main-Historie und berechnen
+alle Felder erneut. Workflowbelege enthalten die Auswahl; alte Handoffbelege
+bleiben lesbar, dürfen neue Qualifikation jedoch nicht ersetzen. Manifestv6,
+Workflow und AGENTS.md ändern sich zusammen. Unausgewählte Gruppen dürfen nur
+übersprungen oder erfolgreich sein; ausgewählte und frühes Gate müssen Erfolg
+haben. Öffentlicher Release verlangt vollständige Auswahl und alle Pflichtjobs;
+ein expliziter Check-Dispatch liefert diese Abnahme auch für zuvor reduzierten
+Candidate. Tests decken manipulierte Belege, fehlende Jobs, falsche Basis,
+Skips, historische Beleglesbarkeit und Release-Ablehnung reduzierter Auswahl ab.
+Danach begrenzte Tests/Lint/Typprüfung/actionlint, echter Candidate-CI-Lauf und
+getrennter Teilplan-/Roadmapaudit. Keine lokale GUI-Ausführung.
+
+6B.3 erster lokaler Lauf:92Tests bestanden; ein bestehendes YAML-Literalgate
+schneidet wegen des neuen Outputs e2e: irrtümlich vor dem eigentlichen Job ab.
+Korrekturplan: Jobgrenze ausdrücklich am Zeilenanfang mit zwei Leerzeichen
+verankern, unverändert denselben Packagingumfang prüfen. Die Verhaltensprüfungen
+für Auswahl, vollständige Release-Abnahme, Manipulation und Handoffbelege sind
+bereits grün; Lint/Typprüfung liefen nach dem Testfehler noch nicht.
+
+6B.3 zweiter Lauf:93Tests und ESLint bestanden; TypeScript deckt einen Fehler
+in der it.each-Tabelle der Artefakt-Negativfälle auf. Die Arrayzeilen wurden als
+mehrere Argumente verteilt und belegten so nicht die beabsichtigten einzelnen
+Metadatenfehler. Korrekturplan: benannte Objektzeilen, danach alle Fälle erneut.
+Transportaudit: gh run download entpackt vor der lokalen Größenprüfung. Für den
+Hostleser wird deshalb das höchstens2MiB große Original-ZIP begrenzt in den
+Speicher geladen, gegen GitHubs Digest geprüft und ausschließlich sein einzelner
+JSON-Eintrag mit höchstens1MiB Dekompression gelesen. Keine Archivextraktion auf
+dem Host. Tatsächliches GitHub-Artefakt10303775337 (606Bytes,
+SHA2565baa0badddf7f9bc2ca9e9a35165eb976e6bf0cbd335db0b3c838822448fa61d)
+besitzt genau diesen einfachen ZIP-Vertrag: ein Deflate-Eintrag,784Bytes JSON.
+Zusätzliche Tests prüfen Archivhash, Eintragsname, Grenzen und Dekompression;
+anschließend Replay dieses unveränderten Originalarchivs.
+
+6B.3-Verifikation bestanden:102Tests in9Dateien, ESLint aller betroffenen
+TypeScriptdateien, beide Typprüfungen und actionlint1.7.12.64s,1.4GiB/0Swap
+(`work/phase6-selected-ci-checks-3.log`). Die korrigierten Metadatenfälle
+prüfen jetzt tatsächlich die jeweils benannten Fehler. Das eingecheckte kleine
+ZIP-Fixture sind die originalen606GitHub-Bytes; Hash, Stream-Descriptor,
+Einzeldateiname, CRC, Größenangaben und unabhängige Dekompressionsgrenze geprüft.
+Zusätzlicher Live-Audit erfolgreich: der neue Hostleser lädt Artefakt10303775337
+aus Run34711706762 über dessen authentifizierte Metadaten erneut, prüft Digest
+und ZIP ausschließlich im Speicher und berechnet den Beleg aus4aa710b40 und
+a17613708 erneut.7.6s,149MiB/0Swap; Originalbericht
+`work/phase6-selected-ci-live-audit.json`. Dieser Audit belegt Transport und
+Git-Replay, nicht den zu diesem Zeitpunkt noch laufenden gesamten Check.
+
+Teilplanaudit6B.3: tatsächliche Workflowbedingungen und unabhängige Aggregate-/
+Candidateprüfung verdrahtet; Handoff übernimmt dieselbe verifizierte
+Candidatequalifikation und vergleicht die Auswahl bei Wiederverwendung.
+Alte Workflowbelege bleiben lesbar, können einen neuen Auswahlbeleg jedoch
+nicht als gleichwertig ersetzen. Vollständige Release-Abnahme ist ein eigener
+verbindlicher Leserparameter; manuelle Check-Dispatches sind immer vollständig.
+Local-Artefakt bleibt für jeden Candidate verpflichtend. Operationsdokument und
+AGENTS.md beschreiben diesen konkreten Zustand. Kein Host-Appstart erfolgt.
+Roadmapaudit: Implementierung und lokale/Transportnachweise vorhanden; Phase6
+noch offen für den neuen vollständigen Candidate-CI-Lauf, kanonische Übergabe,
+Main-Promotion, reale reduzierte CI nach Regelbootstrap auf Main und den echten
+Release-/Docker-Gesamtlauf. Phase7 bleibt offen. Diese offenen Abnahmen werden
+nicht durch die hier erfolgreichen102Tests ersetzt.

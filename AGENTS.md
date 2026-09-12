@@ -53,16 +53,21 @@
   handoff. A green implementation is not complete until the promoted SHA is
   green on `main`.
 
-## CI risk selection rollout
+## CI risk selection
 
-- The candidate preflight verifies linear history against the resolved remote
-  Main commit before expensive CI partitions start. Its versioned selection
-  receipt derives from immutable Git objects and the policy stored on that Main
-  commit, including both app-build fingerprints and the complete raw diff.
-- Risk selection is currently observational. Every job in
-  `scripts/delivery/required-jobs.v5.json` remains mandatory, including preflight.
-  A proposed reduced selection does not authorize skipping a job, omitting a
-  Local artifact, or accepting incomplete handoff or release evidence.
-- Enable selective execution only together with independent receipt validation
-  in the aggregate and candidate/handoff readers. Unknown or structural changes,
-  changed or missing policy, and public release qualification require full checks.
+- Candidate preflight resolves the current remote Main commit and verifies linear
+  history before expensive partitions start. Selection uses immutable Git objects,
+  unchanged policy from that Main commit, raw diff and app-build fingerprints.
+- Portable checks, Linux build and the exact-SHA Local artifact remain mandatory.
+  Explicit documentation/portable-test changes may omit unrelated native,
+  qualification and UI partitions; renderer changes retain every Linux/UI check.
+  Unknown or structural changes and changed/missing policy require full checks.
+- `scripts/delivery/required-jobs.v6.json` defines the complete job universe.
+  Aggregate, candidate qualification and handoff independently recompute the
+  original run-scoped selection receipt before accepting any skipped partition.
+  Selection is part of the immutable workflow evidence. Missing selected jobs,
+  failed jobs, foreign bases and altered receipts cannot qualify a candidate.
+- Public release admission requires full exact-SHA Check evidence. Dispatch the
+  Check workflow explicitly for that SHA when development CI selected a subset;
+  a manual Check dispatch always runs the complete set. This does not replace
+  artifact qualification, canonical handoff, Main attestation or human approval.
