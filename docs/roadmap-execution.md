@@ -13377,3 +13377,20 @@ Quellordner selbst und bestätigt den nativen Produktdialog. Nur Quellpfad und
 Sicherungsdialogtitel anpassen; native Fensterliste und Originalaufnahme archivieren.
 Dies ersetzt keine Produktfunktion und keine Datenprüfung. Neuer unveränderlicher
 Payload/Gast; bisherige fehlgeschlagene Quellen und Bilder bleiben erhalten.
+
+Korrekturrunde 7.4: Fünfter Lauf terminal, Testexit 1 vor Import. Die zusätzliche
+native Fensterliste zeigt kein salt-marcher-Vervollständigungsfenster; der
+übernommene frühere Treiber navigiert in dieser GTK-Konstellation ebenfalls nicht
+zum getippten Ort. Originalbild zeigt nach Alt+Up /home mit ausgewähltem ubuntu.
+Belege: work/phase7-live-evidence-5. Kein Produkt- oder Datenfehler daraus abgeleitet.
+
+Korrekturplan 7.5: Den nativen, regulären Auswahlweg über die sichtbare Ordnerliste
+verwenden. Die unveränderte vollständige Sicherung zusätzlich ausschließlich im
+Gast als /home/ubuntu/aa-user-backup bereitstellen und mit readVerifiedBackup gegen
+das übertragene Original prüfen. Im standardmäßig geöffneten Home-Verzeichnis
+liegt sie sichtbar neben dem Testarbeitsordner; diesen Quellordner auswählen und
+die normale App-Bestätigung durchlaufen. Aufnahme der tatsächlich markierten Zeile
+bleibt verpflichtend. Damit ändert sich nur die Eingabegeste des Testtreibers,
+nicht der unterstützte Sicherungsimport, der Inhalt oder der gesamte weitere
+Update-/Wiederherstellungsumfang. Beide Gastkopien und die Hostquelle bleiben
+unverändert. Neuer Gast, unveränderte AppImages, Phase 7 weiter offen.
