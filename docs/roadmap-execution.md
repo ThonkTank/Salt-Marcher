@@ -11957,3 +11957,46 @@ und https://docs.github.com/en/rest/actions/workflow-runs#get-the-review-history
 Kein Freigabe-/pending_deployments-Aufruf wird durch diese Konfiguration ausgelöst.
 Die späteren Publish-Prüfungen müssen die tatsächliche Review-Historie zusätzlich
 an den Workflow und das Environment binden. Gesamtphase6 bleibt in Arbeit.
+
+Fortsetzung nach aufgehobener Pause: Root-Dateisystem mit156GiB frei überprüft;
+keine Host-AppImage-/Electron-Ausführung. Phase6-Fundamentcommit
+`ab70c15aeef7743f7f17421a7b7bd4962f7386da` liegt auf Candidate;
+Check34699910425 läuft noch. Main bleibt Phase5-SHA4aa710b40.
+
+Die echte Environment-Konfiguration wurde inzwischen angewendet und unabhängig
+zurückgelesen: `release` ID21795539575, erforderlicher User-Reviewer
+ThonkTank129946818, ausschließlich Main als Deploymentbranch. Keine menschliche
+Freigabe erteilt und nichts veröffentlicht. Externer Rücklesenachweis
+`work/phase6-release-environment-live.json`, SHA256
+`2cc503516b108abda2ffa8e2bdf2d0b19e6777ec530085f1209d23460de6edf3`.
+
+Nächster Teil6A.2/4: Dateiprüfung für die vollständige Qualifikationsablage ergänzen.
+Kontrolldokumente begrenzt lesen, ausschließlich reguläre Dateien akzeptieren,
+Ziel-AppImage sowie jeden referenzierten Nachweis gegen Größe und SHA256 prüfen.
+Erwartete Workflowidentität explizit vom aufrufenden vertrauenswürdigen Kontext
+übergeben; eine lokale Dateiprüfung allein behauptet keine erfolgreiche reale CI.
+Manipulierte, fehlende, verlinkte oder einem anderen Lauf zugehörige Dateien
+müssen scheitern. Anschließend Resolver und Workflow an dieselbe Prüfung anbinden.
+
+6A-Fortschritt geprüft: Live-Abnahmevertrag bindet getestete Version, Commit,
+AppImage, Auftrag und Qualifikation an tatsächliche GitHub-Review-Historie des
+Publishlaufs. Fremde Reviewer, Bots, andere Environments, fehlende Freigabe,
+ablehnende Review-Historie und im Eingabetext erfundene Reviewer scheitern.
+Die Routine führt selbst keinen Approval-Aufruf aus. Zwölf neue Tests;
+mit bestehenden Auftrags-/Qualifikationsprüfungen31 bestanden, Lint und beide
+Typprüfungen erfolgreich (`work/phase6-live-acceptance-checks.log`).
+
+Vollständige Ablageprüfung ergänzt: Kontrolldokumente begrenzt aus regulären,
+nicht verlinkten Dateien lesen; AppImage und sämtliche referenzierten
+Nachweise vom selben geöffneten Dateideskriptor gegen Größe/Hash prüfen.
+Explizit übergebene unabhängige Workflowidentität muss exakt passen.
+Neun Dateiregressionen einschließlich fehlender Dateien, gleicher Dateigröße
+bei anderem Inhalt, manipuliertem Fallnachweis und falschem Workflowversuch.
+Zusammen40 Tests, ESLint und beide Typprüfungen erfolgreich;
+`work/phase6-release-bundle-checks.log`,57s,1.4GiB Spitze,0Swap.
+
+Teilaudit gegen Plan6A.1/2/4: Dokument-, Freigabe- und Dateiprüfungen vorhanden;
+Resolver, echte Zielartefaktqualifikation und Workflowanbindung weiterhin offen.
+Teilaudit gegen Roadmapphase6: Noch kein vollständiger Releaseentwurfnachweis,
+keine fertige CI-Risikoauswahl, kein Phase6-Abschluss. Diese Bausteine sind keine
+Behauptung einer tatsächlichen Live-Abnahme oder Veröffentlichung.
