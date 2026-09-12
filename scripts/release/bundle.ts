@@ -24,7 +24,11 @@ export function verifyReleaseBundle(
     qualification.recovery.evidence,
     ...qualification.comparisons.map((comparison) => comparison.evidence)
   ]) {
-    const actual = inspectFile(join(directory, file.name), file.bytes, false)
+    const actual = inspectReleaseFile(
+      join(directory, file.name),
+      file.bytes,
+      false
+    )
     if (actual.bytes !== file.bytes || actual.sha256 !== file.sha256)
       throw new Error(
         `Release file differs from its qualification: ${file.name}`
@@ -34,11 +38,16 @@ export function verifyReleaseBundle(
 }
 
 function readControl(directory: string, name: string): Buffer {
-  return inspectFile(join(directory, name), 4 * 1024 * 1024, true).content
+  return inspectReleaseFile(join(directory, name), 4 * 1024 * 1024, true)
+    .content
 }
 
 /** Read/hash the same descriptor, bounded even if a file grows during verification. */
-function inspectFile(path: string, limit: number, retain: boolean) {
+export function inspectReleaseFile(
+  path: string,
+  limit: number,
+  retain: boolean
+) {
   const descriptor = openSync(
     path,
     constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK

@@ -1,0 +1,51 @@
+name: Build explicit release comparison fixtures
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: salt-marcher-release-fixtures
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - source: feed-baseline
+            version: 0.0.160
+          - source: maintenance-domain-errors-target
+            version: 0.0.167
+          - source: party-history-convergence-target
+            version: 0.0.170
+    env:
+      FIXTURE_SOURCE: ${{ matrix.source }}
+      FIXTURE_VERSION: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.sha }}', fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Build the explicitly identified historical source
+        run: pnpm exec tsx scripts/build-historical-release.ts --source "$FIXTURE_SOURCE" --version "$FIXTURE_VERSION" --output release/comparison-fixture
+      - name: Bind original build receipt and bytes to this workflow attempt
+        run: pnpm exec tsx scripts/write-release-fixture.ts release/comparison-fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: comparison-${{ matrix.version }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            release/comparison-fixture/*.AppImage
+            release/comparison-fixture/historical-artifact.json
+            release/comparison-fixture/release-manifest.json
+            release/comparison-fixture/comparison-fixture.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 90

@@ -1,60 +1,77 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
-import { releaseManifestSchema } from '../src/shared/contracts/release.js'
-import { durableJson, sha256 } from '../src/shared/maintenance/files.js'
-const target = releaseManifestSchema.parse(
-  JSON.parse(readFileSync('release/release/release-manifest.json', 'utf8'))
-)
-// A pre-baseline package is only a qualification fixture, never a public release.
-if (target.version !== '0.2.0') {
-  execFileSync(
-    'gh',
-    [
-      'release',
-      'download',
-      '--repo',
-      'ThonkTank/Salt-Marcher',
-      '--pattern',
-      '*.AppImage',
-      '--pattern',
-      'release-manifest.json',
-      '--dir',
-      'release/baseline'
-    ],
-    { stdio: 'inherit' }
-  )
-  process.exit(0)
-}
-const version = '0.1.99'
-execFileSync(
-  'corepack',
-  [
-    'pnpm',
-    'exec',
-    'electron-builder',
-    '--config',
-    'electron-builder.release.yml',
-    '--config.extraMetadata.version=' + version,
-    '--config.directories.output=release/baseline',
-    '--linux',
-    'AppImage',
-    '--x64',
-    '--publish',
-    'never'
-  ],
-  { stdio: 'inherit' }
-)
-const directory = 'release/baseline'
-const name = readdirSync(directory).find((entry) =>
-  entry.endsWith('.AppImage')
-)!
-durableJson(join(directory, 'release-manifest.json'), {
-  ...target,
-  version,
-  artifact: {
-    name,
-    bytes: statSync(join(directory, name)).size,
-    sha256: sha256(join(directory, name))
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { parseArgs } from 'node:util'
+import { acquireComparison } from './release/acquire-comparison.js'
+import { inspectReleaseFile } from './release/bundle.js'
+import { digestReleaseDocument } from './release/qualification.js'
+import {
+  assertRequestedTarget,
+  releaseRequestSchema,
+  type ComparisonArtifact
+} from './release/request.js'
+
+const { values } = parseArgs({
+  options: {
+    request: { type: 'string' },
+    output: { type: 'string' },
+    'target-manifest': { type: 'string' }
   }
 })
+if (!values.request || !values.output || !values['target-manifest'])
+  throw new Error(
+    'Provide --request <immutable request.json> --target-manifest <manifest.json> --output <comparison directory>. No implicit baseline is supported.'
+  )
+const requestBytes = inspectReleaseFile(
+  resolve(values.request),
+  4 * 1024 * 1024,
+  true
+).content
+const request = releaseRequestSchema.parse(
+  JSON.parse(requestBytes.toString('utf8'))
+)
+assertRequestedTarget(
+  request,
+  JSON.parse(
+    inspectReleaseFile(
+      resolve(values['target-manifest']),
+      4 * 1024 * 1024,
+      true
+    ).content.toString('utf8')
+  )
+)
+const root = resolve(values.output)
+mkdirSync(root, { recursive: true })
+const acquired = new Map<string, ReturnType<typeof acquireComparison>>()
+const acquire = (artifact: ComparisonArtifact) => {
+  const key = digestReleaseDocument(Buffer.from(JSON.stringify(artifact)))
+  const found =
+    acquired.get(key) ?? acquireComparison(artifact, join(root, key))
+  acquired.set(key, found)
+  return { ...found, artifact }
+}
+const comparisons = request.comparisons.map((comparison) => ({
+  id: comparison.id,
+  scenario: comparison.scenario,
+  baseline: acquire(comparison.baseline),
+  intermediate: comparison.intermediate.map(acquire)
+}))
+const index =
+  JSON.stringify(
+    {
+      formatVersion: 1,
+      requestSha256: digestReleaseDocument(requestBytes),
+      comparisons
+    },
+    null,
+    2
+  ) + '\n'
+const indexPath = join(root, 'comparisons.json')
+if (existsSync(indexPath)) {
+  if (readFileSync(indexPath, 'utf8') !== index)
+    throw new Error(
+      'Existing comparison index belongs to another request or source.'
+    )
+} else writeFileSync(indexPath, index, { flag: 'wx' })
+console.info(
+  `Verified ${acquired.size} explicitly requested comparison artifacts: ${indexPath}`
+)

@@ -12000,3 +12000,53 @@ Resolver, echte Zielartefaktqualifikation und Workflowanbindung weiterhin offen.
 Teilaudit gegen Roadmapphase6: Noch kein vollständiger Releaseentwurfnachweis,
 keine fertige CI-Risikoauswahl, kein Phase6-Abschluss. Diese Bausteine sind keine
 Behauptung einer tatsächlichen Live-Abnahme oder Veröffentlichung.
+
+6A.2 konkretisiert: Vergleichsresolver liest für Veröffentlichungen genau den
+angeforderten Tag, verlangt öffentliche stabile Assets und löst den Tag bis zum
+Manifestcommit auf. Für historische Testartefakte verlangt er einen erfolgreichen
+Main-Workflow `release-fixtures.yml`, exakt Run/Attempt/Commit sowie eine eindeutige,
+nicht abgelaufene Artefakt-ID. Download über expliziten Tag beziehungsweise
+Run+Artefaktname in ein neues Stagingverzeichnis; Herkunft vor/nach Transport
+prüfen und Dateigröße/Manifest-/AppImage-Hash vor Aktivierung vergleichen.
+Fixtures erhalten einen eigenen Workflowreceipt, der den historischen Buildreceipt
+bindet. Keine implizite latest-Auswahl und kein Neubau desselben Zielcodes als
+falsche Vorgängerversion. Negative Quellen-/Transporttests vor Workflowanbindung.
+
+Resolver-Prüfrunde:33 Tests bestanden, Lint bestanden; TypeScript fand eine zu
+breit inferierte Repositoryzeichenkette im neuen Testfixture. Korrekturrunde:
+Testartefakt mit dem tatsächlichen Zod-Vertrag parsen statt breiten Hilfsrückgabewert
+als bereits validiert zu deklarieren. Anschließend Typenprüfung wiederholen.
+Keine Laufzeitfreigabe aus dieser noch fehlerhaften Gesamtrunde ableiten.
+
+Erweiterte Resolverrunde:37 Tests bestanden einschließlich echter CLI-Prozesse
+mit inerten Testdateien; Lint meldet eine untypisierte JSON-Zuweisung im CLI-Test.
+Korrekturrunde: JSON-Eingabe explizit als unknown an Zod übergeben, danach dieselben
+betroffenen Prüfungen und beide TypeScript-Projekte erneut ausführen.
+
+6A.2 korrigiert validiert:37 Tests, ESLint und beide TypeScript-Projekte bestanden
+(`work/phase6-comparison-resolver-corrected-checks.log`,60s,1.4GiB,0Swap).
+Quellprüfung deckt expliziten Tag/annotierten Tag, falschen Commit, dokumentenleere
+App-Releases, Draft/Prerelease, fehlende/doppelte Assets, erfolgreiche konkrete
+Main-Fixtureläufe, Run/Attempt/Artefakt-ID, Fork/Workflowverwechslung, Ablauf und
+Transportwechsel ab. CLI-Tests erzeugen nur inerte Testdateien; diese sind keine
+AppImage-Laufzeitnachweise. Der historische Workflow baut drei tatsächliche
+Quellstände (.16042/41, .16742/42, .17043/43) mit eigenem, an den Buildreceipt
+gebundenem Workflowreceipt. Dieser neue Workflow wurde noch nicht live ausgeführt.
+
+Zusätzliche reale Negativprüfung über GitHub: öffentlicher Tagv0.2.10 wurde vor
+jedem Download wegen fehlendem release-manifest.json abgewiesen.
+`work/phase6-document-only-release-negative.json`. API-Grundlagen:
+https://docs.github.com/en/rest/actions/artifacts und
+https://docs.github.com/en/rest/actions/workflow-runs sowie
+https://docs.github.com/en/rest/releases/releases.
+
+Teilaudit Plan6A.2: Explizite Herkunftsauflösung/Transport/Dateiverifikation und
+Fixturebereitstellung implementiert und lokal geprüft. package-release-baseline.ts
+verlangt nun zwingend Auftrag, Zielmanifest und Ausgabeverzeichnis. Der bisherige
+Release-Workflow muss mit dem vollständigen Zielqualifizierer auf diese Eingaben
+umgestellt werden; sein alter parameterloser Aufruf scheitert bewusst vor jedem
+Build/Download eines Vergleichsartefakts. Dieser Candidate-Zwischenstand ist
+noch kein fertig nutzbarer Release-Workflow und wird so nicht als Phase6-Abschluss
+promotet. Main bleibt unverändert auf dem geprüften Phase5-Stand.
+Teilaudit Roadmapphase6: tatsächliche CI-Fixturebereitstellung, Qualifikation der
+unveränderten Zielbytes, Draft-/Publishanbindung und risikobasierte CI bleiben offen.
