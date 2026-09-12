@@ -5,6 +5,14 @@ Scope: [canonical roadmap](release-maintenance-roadmap.md) and
 version/tag checked free on 2026-09-08, recheck before publication.
 Status below is evidence classification, not a declaration of passing execution.
 
+## Current status — 2026-09-12
+
+Phases 1–5 are complete; see [the retained Phase 5 conclusion](#phase-5-qualified-and-promoted).
+The dated entries below preserve earlier failures, gaps and their later resolution;
+they are not a list of currently open work. Phase 6 remains open for the final
+Release qualification and draft. Phase 7 live acceptance and publication have not
+started. The authoritative phase record is [roadmap-execution.md](../../roadmap-execution.md).
+
 ## Evidence availability — 2026-09-10
 
 The local `work/qualification-vm` directory disappeared during an independently
@@ -641,3 +649,26 @@ Receipt SHA-256:
 The same linear SHA was promoted through the canonical command; Main Check
 `34698071688` and its promotion attestation passed. Phase 5 is complete.
 User-desktop installation, manual live acceptance and public release remain open.
+
+## Phase 6 delivery and remaining release acceptance
+
+The implementation at `36ad496876ccba723d78cb4cfaafe8f62f640d82` passed full
+candidate Check `34712601610`, two genuine canonical handoffs in the bounded
+KVM guest, independent receipt/byte verification, and Main Check `34713768985`.
+Archive: `outputs/qualification-evidence/canonical-handoff-v3-run-5`.
+The unchanged app-input documentation correction `8a510de45` passed full candidate
+and Main checks; an unknown path correctly forced all required groups.
+Documentation-only `414f76ce7` passed selected Check `34715298386` and Main
+`34716192503`. Its original selection and Local artifact `10304648186` were
+independently authenticated; full-release admission correctly rejects this
+reduced-only evidence.
+
+Authentic fixture workflow `34713871009` produced the three explicit comparison
+AppImages. Release `34715117763` passed admission, build, comparison acquisition
+and fresh Docker/KVM preparation, then failed before application execution because
+the guest PATH could not resolve modprobe. Its original diagnostics are retained;
+no qualified draft was created. The PATH correction and its new actual Release
+qualification remain separate evidence, recorded in the execution log.
+
+The configured GitHub release environment requires human review. No manual live
+acceptance or public release is claimed by these automated and delivery checks.

@@ -1,11 +1,11 @@
-# Development Persistence Contract
+# Persistence and Profile Maintenance Contract
 
 ## Boundary
 
 The planned first public Electron real-use release is 0.3.0. The existing
 0.2.0-named fixture is an internal baseline, not proof of a published Electron
-release. Installation schema 39 and Campaign schema 34 are versioned independently
-from the application. Release acceptance remains pending under the
+release. The current data formats are Installation 43 and Campaign 43; their
+versions are independent from the application version. Release acceptance remains pending under the
 [maintenance roadmap](../architecture/release-maintenance-roadmap.md).
 Every later public release must retain a tested, complete forward migration path
 from every earlier public release. Packaged data is never implicitly reset.
@@ -19,7 +19,7 @@ The renderer receives validated, immutable results through the preload bridge;
 it never receives a database path, connection, or SQL capability. Electron
 main owns process lifecycle and permissions, but does not execute domain SQL.
 
-## Current Development Format
+## Campaign lifecycle
 
 Development, Local and Release startup preserve existing data. Creating an empty
 profile requires an explicit user action. Unsupported schemas,
@@ -57,9 +57,12 @@ previous schema; the installation and Campaign database formats are unchanged.
 
 ## Release Boundary
 
-The Release profile is isolated at `$XDG_DATA_HOME/salt-marcher/profile/campaign-data`
-(with the standard Linux data-home fallback). All campaign stores, recoverable trash,
-installation settings and user files participate in one maintenance operation.
+The complete Release profile is isolated at `$XDG_DATA_HOME/salt-marcher/profile`,
+with campaign data in its `campaign-data` subdirectory. If XDG_DATA_HOME is unset,
+the root is `~/.local/share/salt-marcher`. All campaign stores, recoverable trash,
+installation settings, profile preferences, user files and empty directories
+participate in one maintenance operation. Browser cache/storage lives outside
+the portable profile. Development and Local retain separate roots.
 
 The utility process snapshots locked sources without changing their bytes, uses
 SQLite Online Backup on that snapshot, migrates a separate working tree, validates
@@ -84,16 +87,33 @@ frozen internal baseline. Older role-version combinations need a complete path
 and representative semantic fixtures before being advertised as supported.
 Unknown old versions remain unqualified, not silently reset or deleted.
 
-Linux Development, Local and Release now use one canonical external profile lock;
-Local and Release also retain the older runtime.lock for compatibility. Direct
-cross-version profile import remains unqualified until complete-content and
-producer-cooperation checks pass. The import UI currently selects a manifest-bearing
-SaltMarcher backup, never an arbitrary raw database folder. Format-1 campaign-data
-backups are hash-checked before and after Utility preparation, then migrated on a
-working copy. This is not yet a full Electron-profile compatibility claim.
-Legacy sources without a qualified complete backup/export remain unsupported.
-The diagnostic JSON from scripts/export-development-data.ts explicitly declares
-supportedMigrationContract:false and is not such an export. Java import is excluded.
+Linux Development, Local and Release use one canonical external profile lock;
+Local and Release also retain the older runtime.lock for compatibility. A shared
+lock alone does not qualify an arbitrary old producer for direct import.
+
+Direct folder import admits only the `profile` directory of an installed source
+whose completed maintenance journal, current deployment link, unchanged AppImage,
+validated launcher and embedded `canonical-profile-v1` complete-profile protocol
+agree. The protocol also requires browser storage outside the portable profile.
+Source launch and runtime leases remain held during admission, complete export
+and final provenance verification. Aliased source/target paths are canonicalized;
+overlapping profiles and running sources are rejected. Admission never repairs
+the source. The actual installed Local import, native chooser, source-lock
+rejection and retry have retained full-content evidence in the
+[acceptance matrix](../architecture/release-maintenance-acceptance-matrix.md#native-whole-profile-import-qualified-2026-09-10).
+
+The UI also accepts manifest-bearing backups. Format 2 inventories the complete
+profile, including files and empty directories. Historical format 1 covers only
+campaign data and is labelled “Ältere Kampagnendatensicherung”; it cannot recover
+profile preferences or files it never contained. Both formats replace the complete
+profile; additional current files survive in the mandatory protective backup,
+not in the restored profile. Import does not merge profiles.
+Inventory and hashes are checked, and migration uses a separate working copy.
+Sources without the qualified installed protocol require a consistent, validated
+backup from their source application. Arbitrary raw Development or legacy profile
+folders are not supported by direct import. The diagnostic JSON from
+scripts/export-development-data.ts declares supportedMigrationContract:false and
+is not such a backup. Java import is excluded.
 
 Backups produced by the current profile transaction have inventory/hash validation;
 public acceptance additionally requires the complete-content and concurrency cases
@@ -102,11 +122,14 @@ A newer schema or incomplete migration path must be rejected before replacement.
 Restoration preserves the current profile first and migrates only a working copy.
 No implicit database downgrade, profile reset or backup pruning is permitted.
 
-## Maintenance ownership transition
+## Maintenance ownership
 
 Local and Release use the shared maintenance coordinator and journal. Main/headless
 runtime owns locking, process lifecycle and executable activation; Utility owns
 snapshots, migrations and semantic readback. Aggregate owners retain SQL. Handoff
 receipts remain provenance evidence only. Existing journals are admitted through
 validated legacy adapters before new maintenance starts. Complete-profile transport
-and user-facing recovery remain Phase 3 work; see the execution log for evidence.
+and recovery without a working campaign database have automated acceptance evidence.
+The [execution log](../../roadmap-execution.md) records their exact artifacts and
+separates that evidence from the still-pending final live acceptance and publication.
+For user actions, see [Linux operation](../../releases/linux-operation.md).

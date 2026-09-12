@@ -13031,3 +13031,49 @@ festen PATH und26 vorhandene Transport-/Runner-/Umgebungstests. 1.8s,
 auf dem Host geladen. Teilplanaudit: minimale PATH-Korrektur behebt den belegten
 Startfehler; keine Abschwächung der Export- oder Laufzeitprüfung. Roadmapaudit:
 CI, erneuter echter Gastlauf und Releaseentwurf weiter erforderlich; Phase6 offen.
+
+6B.5 abgeschlossen: Dokumentationscandidate414f76ce74aa5a4f2fb3c2dc02fcc9616d19f67a
+hat Check34715298386 mit exakt5 erforderlichen Jobs bestanden: Preflight,
+Portable, Linuxbuild, Linuxpackage und Aggregate. Die anderen Gruppen wurden
+regelgemäß übersprungen. Der unveränderte Main-Regelhash und beide identischen
+Appfingerprints wurden aus dem Originalauswahlbeleg nachberechnet. Authentisches
+Local-Artefakt10304648186 gehört genau diesem SHA/Lauf/Attempt. Der unabhängige
+öffentliche Full-Check-Leser liefert für diesen reduzierten Stand ausdrücklich
+null. Keine öffentliche Releasequalifikation daraus abgeleitet.
+Kanonische Promotion Exit0, Main8a510de45→414f76ce7; Main34716192503 grün.
+Belege: work/verified-doc-selected-414f76ce7.json,
+work/promote-doc-selected-414f76ce7.log und work/doc-selected-414f76ce7-main.json.
+Teilplanaudit6B.5 bestanden: reale Auswahl, Verbraucher, Artefaktherkunft,
+Release-Abgrenzung und Main-Abnahme nachgewiesen. Phase6 insgesamt bleibt offen.
+
+Korrekturplan6A.10 — verbindliche Dokumentation auf Iststand bringen:
+Der eigenständige Roadmapaudit findet in persistence-lifecycle.md weiterhin
+39/34 als scheinbar aktuellen Stand, einen ausschließlich Sicherungsordner
+zulassenden Import und Phase3 als offene Umsetzung. Tatsächlicher Code,
+Phase5-Matrix und qualifizierte Native-Chooser-/Sperrprüfungen widerlegen diese
+Aussagen. Der Datenvertrag wird auf43/43, gemeinsame Wartung, vollständiges
+Profilbackupv2, ausdrücklich begrenztes historisches Backupv1 und prüfbare
+Quellprotokoll-/Journal-/Sperradmission aktualisiert. Historische39/34 bleiben
+als eingefrorener interner Vergleich erhalten, keine pauschale Altversionszusage.
+Eine kurze Betriebsanleitung beschreibt exakt die vorhandenen UI-Aktionen und
+verlinkt Datenvertrag sowie Release-Abnahme. Historische Abnahmematrix erhält
+einen sichtbaren aktuellen Einstieg und einen Phase6-Nachtrag, ohne frühere
+Fehlerbelege umzuschreiben. Keine Appänderung, keine Erweiterung unterstützter
+Quellen, keine Behauptung von Livetest oder Veröffentlichung.
+Abnahme: Aussagen gegen aktuelle Verträge/Controller/UI und erhaltene Belege
+prüfen, Links auflösen, unveränderte Appfingerprints, Candidate-/Main-CI.
+Der zuvor als Korrekturplan6A.8 bezeichnete PATH-Fix ist über seinen Titel und
+Commit27eb53203 eindeutig; die ältere gleich nummerierte Vergleichsfixture-
+Planung bleibt unverändert historisch erhalten.
+
+6A.10 lokale Dokumentationsabnahme bestanden: Datenvertrag gegen aktuelle
+Backup-/Quellprotokollverträge und Controller geprüft, Bedienbegriffe gegen
+ReleaseSettings und Übersetzungen. Historisches Backupv1 ersetzt ausdrücklich
+das ganze Profil; zusätzliche aktuelle Dateien bleiben in der Schutzsicherung,
+nicht im wiederhergestellten Profil. Diese wichtige Grenze ist in beiden
+Anleitungen sichtbar. Alle lokalen Linkziele existieren, diff-Prüfung ohne Fehler,
+Appfingerprint unverändert9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01
+gegenüber Main414f76ce7. 3.4s,133MiB/0Swap; work/phase6-operating-docs-checks.log.
+Teilplanaudit6A.10: aktuelle Daten-/Quellgrenzen und Bedienung korrekt dokumentiert;
+Roadmapaudit: dokumentarische Diskrepanz behoben, Candidate-/Main-Nachweis und
+finaler Releaseentwurf weiter offen. Phase7 nicht begonnen.

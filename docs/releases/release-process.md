@@ -7,6 +7,10 @@ metadata; publication remains pending the
 from completed runtime and human acceptance. Never treat a green build or this
 procedure as proof of release acceptance.
 
+User installation, updates and restoration are described in
+[Linux operation](linux-operation.md); compatibility and source admission are
+defined in the [data contract](../project/contract/persistence-lifecycle.md).
+
 ## Immutable inputs
 
 Finish the exact candidate SHA's independently verified selected Check jobs and
