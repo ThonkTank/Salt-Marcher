@@ -13291,3 +13291,45 @@ Originalquelle unverändert, tatsächliche menschliche Freigabe und öffentliche
 Download identisch mit den qualifizierten Bytes. Anschließend getrennte
 Plan-/Roadmap-Audits und abschließender phasenübergreifender Anforderungsabgleich.
 Das Ziel bleibt bis zu diesen Nachweisen aktiv.
+
+Phase 7 Vorbereitung: Der Abschlussstand bc3e325707d331fa242e5e09b3b12b3d5b94b110
+ist mit ausgewähltem Check 34720799284, unabhängiger Auswahl-/Artefaktprüfung,
+kanonischer Promotion und Main-Check 34721489297 grün ausgeliefert.
+Der lokale Controller ist erfolgreich beendet (167.3 MiB, kein Swap).
+
+Die vorhandene vollständige Sicherung wurde mit readVerifiedBackup vor/nach
+Kopie geprüft: 64 Dateien, 14906002 Bytes, Manifest-SHA256
+64786207bc316f43a828d7332b5f1d87937015e0b61d0041c16b78f2112aff0a.
+Quelle und Kopie identisch; die laufenden Datenbanken wurden nicht geöffnet.
+Separate schreibgeschützte Prüfung der Kopie: SQLite-Integrität und Fremdschlüssel
+beider Datenbanken bestanden, Formate Installation 42 / Kampagne 41. Eine echte
+Kampagne ist vorhanden, aber keine gefüllte Party oder Gruppe; ein bestehender
+fortsetzbarer Charakterspielstand wird daraus nicht behauptet.
+Private Belege: work/phase7-user-data-source/{copy-evidence,sqlite-readonly-inventory}.json.
+
+Der private UI-Prüfer verwendet den bereits vorhandenen internen Release 0.2.0
+c11d7fcb5 als Ausgangsprogramm und die unveränderten qualifizierten 0.3.0-Bytes.
+Er soll Installation, echten Sicherungsimport, gespeicherte Kampagnenänderung,
+Update, Weiterarbeit und beide Wiederherstellungen samt Originalbildern und
+schreibgeschützten Datenbank-Snapshots belegen. Dieser automatisierte Lauf mit
+Nutzerdaten ersetzt keine menschliche Live-Abnahme. Nutzerdaten und Bilder bleiben
+außerhalb des Repositorys und werden nicht an GitHub übertragen.
+
+Erster Lauf: work/phase7-live-vm-1, Payload von sauberem bc3e32570 und separat
+gehashten privaten Harnessquellen; sämtliche Payloadhashes im Gast bestätigt.
+Ausgangs-AppImage tatsächlich installiert und Journal committed. Danach wählt
+der Testtreiber beim nativen Sicherungsdialog den falschen Ordner. Die App weist
+ihn korrekt mit „kein lesbares SaltMarcher-Sicherungsmanifest“ ab; der erwartete
+Bestätigungsdialog erscheint deshalb nicht. Testexit 1, VM regulär beendet;
+1.8 GiB Gast-Speicherspitze. Originalexport und Fehlernachweise sind sicher
+archiviert unter work/phase7-live-evidence-1. Kein Import-/Update-Erfolg behauptet.
+
+Korrekturplan 7.1 vor Änderung des privaten Testtreibers: Die pauschale Navigation
+in den Elternordner entfernen und den tatsächlich angezeigten nativen Dialog vor
+der Auswahl als Gastbild sichern. Explizit den vollständigen Sicherungsordner
+wählen, App-Bestätigung erwarten und anschließend den vollständigen geplanten
+UI-Ablauf fortsetzen. Neue unveränderliche Payload und frischer begrenzter Gast;
+keine Änderung der AppImages, keine synthetische Quelle und kein Übergehen der
+produktiven Sicherungsprüfung. Quell- und Ergebnis-Snapshots dienen erst nach
+separatem Inhaltsaudit als Daten-Erhaltungsnachweis. Der fehlgeschlagene Lauf
+bleibt erhalten; Phase 7 ist offen.
