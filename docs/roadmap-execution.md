@@ -13363,3 +13363,17 @@ mit Return aktivieren, erst anschließend den nativen Ordnerdialog aufnehmen und
 die explizite Punktadresse ausgeschlossen. Wieder neuer begrenzter Gast mit
 unveränderten Programmbytes. Kein Umgehen des Sicherungsimports; Phase 7 bleibt
 offen, bis der vollständige echte Ablauf und die Inhaltsprüfung bestehen.
+
+Korrekturrunde 7.3: Auch der vierte Gastlauf wird vor dem Import sicher abgewiesen.
+Die native Aufnahme zeigt weiterhin die Ortszeile über der Home-Liste. Testexit 1,
+Originalexport unter work/phase7-live-evidence-4. Die reine Return-Ergänzung war
+kein ausreichender Fix; es gibt weiterhin keinen bestandenen Nutzerdatenimport.
+
+Korrekturplan 7.4: Den vereinfachten privaten Ordnerdialogtreiber durch den
+bereits real geprüften Ablauf aus scripts/qualify-historical-profile-import.ts
+ersetzen. Dieser wartet auf stabile native Fenster, erkennt und schließt das
+zusätzliche salt-marcher-Vervollständigungsfenster ausdrücklich, wählt danach den
+Quellordner selbst und bestätigt den nativen Produktdialog. Nur Quellpfad und
+Sicherungsdialogtitel anpassen; native Fensterliste und Originalaufnahme archivieren.
+Dies ersetzt keine Produktfunktion und keine Datenprüfung. Neuer unveränderlicher
+Payload/Gast; bisherige fehlgeschlagene Quellen und Bilder bleiben erhalten.
