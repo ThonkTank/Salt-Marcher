@@ -12739,3 +12739,45 @@ Datenformate bleiben43/43. Betriebsanleitung ersetzt die veralteten
 Host-Xvfb-/0.1.99-Anweisungen durch die implementierten Schritte und kennzeichnet
 offene Live-Abnahmen. Nun sauberer Candidate-Stand für den separaten Build;
 keine öffentliche Version oder Freigabe wurde erstellt.
+
+Sauberer separater Build51a5d7889 erfolgreich (47s,2.1GiB,0Swap).
+Unverändertes Release0.3.0,176755425Bytes,
+SHA2563db00530491f1aa3b073fe6dccac201d021f946c5f0d99832418a2022eee356b,
+Schema43/43, Appfingerprint9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01.
+Runner stammen aus demselben sauberen Commit. Nächster KVM-Lauf:
+Originales Releasec11d7fcb5/0.2.0 → dieses Release0.3.0, explizites
+.17043/43-Profilfixture, vollständiger UI-Weg, späterer Prozessabbruch und
+Wiederherstellung der Schutzsicherung. Dies ist ein interner Laufzeitnachweis;
+0.2.0 wird nicht als tatsächlich veröffentlichter GitHub-Vergleich ausgegeben.
+
+Echter Release-Baseline-Lauf erfolgreich: VM0/Test0,301s Gesamtzeit,
+UI-Abnahme einschließlich gespeichertem Spielstand nach SIGKILL und beiden
+Wiederherstellungen. Archiv `qualification-evidence/release-baseline-v3-run-1`
+mit35Dateien; noch keine abschließende unabhängige Inhaltsabnahme.
+Archivreview deckt einen Fehler im neuen Gesamt-Runner auf: Eine Inspektion
+schreibt drei Dateien (Original .json, .runtime.json-Hülle, .log), während
+retainRuntimeLogs nur ein JSON-/Logpaar erwartet. Der direkte UI-Lauf und sein
+Originalarchiv sind vollständig; der Gesamt-Runner würde beim Aufräumen
+ablehnen. Korrekturplan: Ablehnung mit archivierten Originaldateien reproduzieren,
+dann vollständige Dreiergruppen begrenzt erhalten und fehlende/zusätzliche
+Hüllen testen. Anschließend Originalbeleg-Replay und unabhängiger Inhaltsaudit.
+
+Dreiergruppen-Korrektur:8Tests, ESLint und beide Typprüfungen bestanden
+(57s,1.4GiB/0Swap). Replay derselben33archivierten Originaldateien danach
+bytegleich erfolgreich. Unabhängiger Audit
+`work/audit-phase6-release-baseline-51a.ts` /
+`work/phase6-release-baseline-51a-audit.json` bestanden: alle35Archivdateien und
+Serial-/Payloadhashes,11tatsächliche Release-Inspektionen einschließlich ihrer
+Original-JSON-/Runtime-/Logdateien, beide sauberen AppImageidentitäten,
+vollständige Profile und Verläufe, genau ein erwarteter SIGKILL nach
+freigegebener Nutzung, beide Wiederherstellungen und unveränderte Fixturequelle.
+OriginalberichtSHA0dd0433947d4155f1f6dcc0aefe94e8b657d79e0c844760b281e2c12116378c4.
+Kein öffentlicher GitHub-Ursprungsnachweis wurde dafür erfunden; der Audit ist
+explizit interner Laufzeitnachweis. Erfolgreiche synthetische Gast-Overlayplatte
+wird erst jetzt entfernt; Artefakte, Payload und Originalarchive bleiben erhalten.
+
+Teilplanaudit6A.8/6A.9: explizite Profilfixture-Verträge/Transporte und tatsächlicher
+Release-Baseline-UI-Weg nachgewiesen, Archivierungsabweichung korrigiert und an
+Originaldaten erneut geprüft. Roadmapaudit: Phase6 weiterhin offen für echten
+zusammenhängenden GitHub-/Docker-Releaseworkflow und CI-Risikoauswahl; Phase7
+mit kopierten Nutzerdaten, menschlicher Freigabe und Veröffentlichung noch offen.

@@ -25,6 +25,10 @@ function fixture() {
   mkdirSync(directory, { recursive: true })
   writeFileSync(join(directory, `${id}.json`), '{"runtime":"original"}')
   writeFileSync(join(directory, `${id}.log`), 'original log\n')
+  writeFileSync(
+    join(directory, `${id}.runtime.json`),
+    '{"envelope":"original"}'
+  )
   return { source, destination, directory }
 }
 it('retains exact report/log bytes before disposable profile cleanup', () => {
@@ -43,15 +47,30 @@ it('retains exact report/log bytes before disposable profile cleanup', () => {
       'utf8'
     )
   ).toBe('{"runtime":"original"}')
+  expect(
+    readFileSync(
+      join(v.destination, 'home/release-qualification', `${id}.runtime.json`),
+      'utf8'
+    )
+  ).toBe('{"envelope":"original"}')
 })
 it.each([
   'missing-log',
+  'missing-envelope',
+  'orphan-envelope',
   'orphan-log',
   'symlink',
   'too-large',
   'existing-output'
 ] as const)('rejects %s evidence', (field) => {
   const v = fixture()
+  if (field === 'missing-envelope')
+    rmSync(join(v.directory, `${id}.runtime.json`))
+  if (field === 'orphan-envelope')
+    writeFileSync(
+      join(v.directory, '22222222-2222-4222-8222-222222222222.runtime.json'),
+      '{}'
+    )
   if (field === 'missing-log') rmSync(join(v.directory, `${id}.log`))
   if (field === 'orphan-log')
     writeFileSync(join(v.directory, 'extra.log'), 'orphan')

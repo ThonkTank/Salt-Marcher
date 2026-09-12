@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { inspectReleaseFile } from './bundle.js'
 
-/** Preserve only bounded inspection pairs, never recursively copy profiles or AppImage extraction trees. */
+/** Preserve only bounded inspection report/envelope/log groups, never recursively copy profiles or AppImage extraction trees. */
 export function retainRuntimeLogs(caseRoot: string, destination: string) {
   assert(!existsSync(destination), 'Runtime evidence destination must be new')
   const files = new Map<string, Buffer>()
@@ -17,7 +17,13 @@ export function retainRuntimeLogs(caseRoot: string, destination: string) {
     const directory = join(caseRoot, home.name, 'release-qualification')
     if (!existsSync(directory)) continue
     const names = readdirSync(directory)
-    const reports = names.filter((name) => name.endsWith('.json'))
+    const json = names.filter((name) => name.endsWith('.json'))
+    const reports = json.filter((name) => !name.endsWith('.runtime.json'))
+    assert.equal(
+      json.length,
+      reports.length * 2,
+      'Incomplete runtime report/envelope groups'
+    )
     const logs = names.filter((name) => name.endsWith('.log'))
     assert.equal(
       reports.length,
@@ -31,7 +37,8 @@ export function retainRuntimeLogs(caseRoot: string, destination: string) {
       )
       const id = name.slice(0, -5)
       assert(logs.includes(`${id}.log`), 'Missing runtime log')
-      for (const filename of [name, `${id}.log`]) {
+      assert(json.includes(`${id}.runtime.json`), 'Missing runtime envelope')
+      for (const filename of [name, `${id}.runtime.json`, `${id}.log`]) {
         const bytes = inspectReleaseFile(
           join(directory, filename),
           8 * 1024 * 1024,
