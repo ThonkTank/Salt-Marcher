@@ -6,6 +6,11 @@ on:
         description: 'Qualified draft version'
         required: true
         type: string
+      verify_only:
+        description: 'Verify draft origin only; skip human approval and publication'
+        required: false
+        default: false
+        type: boolean
       acceptance:
         description: 'Versioned live acceptance JSON with exact hashes, time, five completed checks and notes'
         required: true
@@ -41,6 +46,7 @@ jobs:
         run: pnpm exec tsx scripts/resolve-draft-release.ts "$RUNNER_TEMP/draft-controls"
   publish:
     needs: resolve
+    if: ${{ !inputs.verify_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release

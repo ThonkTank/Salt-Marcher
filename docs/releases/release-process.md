@@ -96,8 +96,14 @@ continue work, restore a backup. The full input format is
 [liveAcceptanceInputSchema](../../scripts/release/live-acceptance.ts); a prose
 sentence and AppImage hash alone are insufficient.
 
-Dispatch **Publish accepted release** on main with the version and that acceptance
-JSON. The resolver authenticates the draft's completed qualification workflow.
+Before live acceptance, **Publish accepted release** can be dispatched with
+`verify_only: true`, the draft version, and `{}` for the required but unused
+acceptance input. This verifies the actual draft resolver with workflow read
+permissions. The entire publish job, including approval and asset writes, is
+skipped. This check does not constitute live acceptance.
+
+After live acceptance, dispatch **Publish accepted release** on main with
+`verify_only: false`, the version and that acceptance JSON. The resolver authenticates the draft's completed qualification workflow.
 The publish job waits for the configured human reviewer in the `release`
 environment and checks out the exact qualified source commit. It downloads the
 original CI artifact afresh, compares the draft's controls and all bound file

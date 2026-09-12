@@ -13077,3 +13077,82 @@ gegenüber Main414f76ce7. 3.4s,133MiB/0Swap; work/phase6-operating-docs-checks.l
 Teilplanaudit6A.10: aktuelle Daten-/Quellgrenzen und Bedienung korrekt dokumentiert;
 Roadmapaudit: dokumentarische Diskrepanz behoben, Candidate-/Main-Nachweis und
 finaler Releaseentwurf weiter offen. Phase7 nicht begonnen.
+
+6A.8 PATH-Korrektur tatsächlich ausgeliefert:27eb532036b121bc8101e3a4da3dd707fbede83f,
+Candidate34715843664 vollständig grün, kanonische Promotion ohne Appänderung,
+Main34716784239 grün. Neuer Releaseauftrag SHA256
+f0ab0be714f454e82eabf3c45ebc68d2f508dd6e69159692e42324322127708f.
+6A.10 Dokumentation ebenfalls ausgeliefert:5f28fde3641aab757ebfe7371a1af2c22ed034bf,
+alle16Pflichtjobs in34716407049 grün, Originalauswahl und Local-Artefakt10304574790
+unabhängig verifiziert, kanonische Promotion und Main34717367510 grün, PR683 merged.
+
+6A echter Release-Gesamtlauf bestanden:34716827038/Attempt1 auf27eb53203.
+Frische Docker-/KVM-Vorbereitung, einmaliger Build, Offline-Gast mit Erstinstallation,
+43→43,42→43 und41→43 über ausdrücklich gebundenen Zwischenstand, beide Restores,
+früher Aktivierungsabbruch und Erhalt angenommener späterer Arbeit erfolgreich.
+Original-AppImage176900262Bytes, SHA256
+ef49ab927bcc4244790ab098dad078356d32f68e735e271bd115485bceecdf4a.
+Originalqualifikationsartefakt10304961431, ZIP179767199Bytes, SHA256
+c793f3fb9337b5b63f1fb0ebbfefe6b78b7955c9fa04bc2c2a35365c818a13bd;
+Transport10305430629, ZIP-SHA256
+485bbb01e4659f90e7dcdba44525b156b6dc3ce828436b3d8943939c0711efea.
+Beide Archive vor begrenztem Entpacken gegen die echte GitHub-Archivgröße und
+SHA256 geprüft. Entwurf387697175, v0.3.0, unveröffentlicht, Ziel27eb53203.
+Unabhängiger Audit der Originaldateien/Live-Herkunft, erneute vollständige
+semantische Assemblierung aller Fälle, exakter Entwurf-/CI-Dateivergleich und
+Dekodierung des ursprünglichen seriellen Exports bestanden:62JSON-Berichte,
+23Originalprotokolle, VMexit0/Testexit0. 7.7s,260MiB/0Swap.
+Qualifikationsdokument SHA256
+7433ea107e13a2b3da8f58bd39d8012ab4bd00f3c084ff6309f252bae4db142e.
+Belege: work/qualified-release-34716827038/independent-audit.json,
+work/audit-qualified-release-34716827038.log. Kein Host-AppImage ausgeführt.
+
+Korrekturplan6A.11 — tatsächliche Entwürfe finden und Version reservieren:
+Der unabhängige Collector bekommt für GET releases/tags/v0.3.0 HTTP404,
+während die authentifizierte Release-Liste und gh release view denselben
+existierenden Entwurf387697175 zeigen. GitHub hat für ihn noch keinen öffentlichen
+Tag. Der aktuelle Publish-Resolver verwendet ebenfalls diesen ungeeigneten
+Tag-Endpunkt; auch beide Reservierungsprüfungen können den Entwurf übersehen.
+Das ist eine reale offene Releaseprozess-Diskrepanz trotz erfolgreichem Entwurf.
+Korrektur: eine gemeinsame authentifizierte, begrenzte/paginierte Release-Suche
+nach exaktem Versions-Tag; Mehrdeutigkeit und API-Fehler ablehnen. Resolver nutzt
+den tatsächlichen Entwurf, Admission und Vorentwurfsprüfung lehnen vorhandene
+Entwürfe wie veröffentlichte Releases sowie bestehende Git-Tags ab. Öffentliche
+Vergleichsartefakte bleiben weiterhin ausschließlich veröffentlichte Releases.
+Prüfung: Unitfälle für Entwurf/Release/Prerelease, Pagination, Duplikate,
+fehlerhafte/unvollständige Antworten, reservierten Git-Tag und freie Version;
+anschließend der echte Resolver gegen den bestehenden unveränderten Entwurf
+inklusive Originalkontrollbytes und Herkunft. Kein Rebuild, kein Assetersatz,
+keine menschliche Freigabe. Appfingerprint muss unverändert bleiben; normale
+Candidate-/Main-Abnahme für die korrigierte Auslieferungsimplementierung.
+Phase6 bleibt bis zur Korrektur und erneuten getrennten Audits offen; Phase7
+hat weder begonnen noch eine manuelle Abnahme erhalten.
+
+6A.11 lokale Verifikation:63Tests in5Dateien, ESLint und beide Typprüfungen
+bestanden (60s,1.4GiB/0Swap; work/phase6-release-draft-lookup-checks.log).
+Zusätzliche Abnahmeplanung vor Workflowänderung: Der reale Publish-Resolver muss
+auch mit dem tatsächlichen contents:read/actions:read-Workflowtoken nachgewiesen
+werden, nicht allein mit der lokalen gh-Anmeldung. Der bestehende Publish-Workflow
+erhält deshalb einen expliziten booleschen verify_only-Modus (Standard false).
+Er führt ausschließlich den vorhandenen Resolver aus; der gesamte Publish-Job
+mit Environment, Approval, Assetupload und Veröffentlichung wird übersprungen.
+Der weiterhin erforderliche acceptance-String ist in diesem Modus unbenutzt;
+für die Probe wird {} übergeben, niemals ein erfundener bestandener Livetest.
+Normale Veröffentlichung und menschliche Freigabe bleiben unverändert verbindlich.
+Nach grünem Main wird genau dieser harmlose Workflowpfad gegen Entwurf387697175
+aufgerufen; erwarteter Resolver erfolgreich und Publish-Job skipped.
+
+6A.11 tatsächlicher lokaler Read-only-Resolver bestanden: Entwurf387697175
+über paginierte Release-Liste gefunden, Originalkontrollbytes heruntergeladen
+und bytegleich gegen das qualifizierte CI-Artefakt geprüft; frische Workflow-/
+Artefaktherkunft bestätigt. Ausgaben binden27eb53203/Run34716827038 an
+release-27eb532036b121bc8101e3a4da3dd707fbede83f. Vorhandener Entwurf wird von
+der gemeinsamen Verfügbarkeitsprüfung ausdrücklich als reserviert abgewiesen.
+Appfingerprint unverändert9d37cd44fbb3da88e571aef85c1bbae6223cec61f5bd1d8ef28ef231f5921d01.
+8s,164MiB/0Swap; work/phase6-live-draft-resolver.log und -controls/.
+Actionlint und Workflowformatprüfung ohne Befund. Teilplanaudit: Resolver und
+beide Versionsprüfungen nutzen dieselbe Suche; öffentliche Vergleichsquellen
+bleiben unverändert streng. verify_only umgeht keinen Publish-Check, sondern
+überspringt den gesamten Publish-Job. Roadmapaudit: Originalentwurf/volle
+Laufzeitbelege vorhanden; abschließende Candidate-/Main-Abnahme sowie tatsächlicher
+Workflow-Read-only-Probelauf noch offen. Phase6 noch nicht geschlossen.

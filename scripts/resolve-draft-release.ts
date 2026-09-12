@@ -7,18 +7,15 @@ import {
   releaseRepository,
   releaseVersionSchema
 } from '../src/shared/contracts/release.js'
-import { releaseGithubApi } from './release/github-api.js'
+import { readReleaseVersion } from './release/release-version.js'
 import { inspectReleaseFile } from './release/bundle.js'
 import { verifyQualificationDocuments } from './release/qualification.js'
 import { resolveQualificationOrigin } from './release/qualification-origin.js'
 
 const version = releaseVersionSchema.parse(process.env['RELEASE_VERSION'])
 const directory = resolve(z.string().min(1).parse(process.argv[2]))
-const response = releaseGithubApi(
-  'GET',
-  `repos/${releaseRepository}/releases/tags/v${version}`
-)
-assert.equal(response.status, 200)
+const found = readReleaseVersion(version)
+assert(found, 'No release draft exists for this version')
 const release = z
   .object({
     draft: z.literal(true),
@@ -33,7 +30,7 @@ const release = z
       })
     )
   })
-  .parse(response.body)
+  .parse(found)
 const controls = [
   'release-request.json',
   'release-manifest.json',

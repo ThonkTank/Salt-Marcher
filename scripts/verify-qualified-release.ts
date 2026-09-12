@@ -12,6 +12,7 @@ import { resolveComparisonSource } from './release/comparison-source.js'
 import { verifyReleaseEnvironment } from './release/environment-policy.js'
 import { createLiveAcceptanceReceipt } from './release/live-acceptance.js'
 import { releaseGithubApi } from './release/github-api.js'
+import { assertReleaseVersionAvailable } from './release/release-version.js'
 import { verifyQualifiedReference } from './release/qualified-reference.js'
 import { releaseRepository } from '../src/shared/contracts/release.js'
 
@@ -47,22 +48,8 @@ if (phase === 'draft') {
   assert.equal(origin.workflow.commit, process.env['GITHUB_SHA'])
 }
 const qualified = verifyReleaseBundle(directory, origin.workflow)
-if (phase === 'draft') {
-  for (const endpoint of [
-    `releases/tags/v${qualified.target.version}`,
-    `git/ref/tags/v${qualified.target.version}`
-  ]) {
-    const response = releaseGithubApi(
-      'GET',
-      `repos/${releaseRepository}/${endpoint}`
-    )
-    assert.equal(
-      response.status,
-      404,
-      'Release version was reserved during qualification'
-    )
-  }
-} else assert.equal(qualified.target.version, process.env['RELEASE_VERSION'])
+if (phase === 'draft') assertReleaseVersionAvailable(qualified.target.version)
+else assert.equal(qualified.target.version, process.env['RELEASE_VERSION'])
 const requestBytes = read('release-request.json'),
   manifestBytes = read('release-manifest.json')
 const request = releaseRequestSchema.parse(

@@ -9,7 +9,7 @@ import {
   readSuccessfulPostPromotionEvidence
 } from './candidate-delivery.js'
 import { verifyReleaseEnvironment } from './release/environment-policy.js'
-import { releaseGithubApi } from './release/github-api.js'
+import { assertReleaseVersionAvailable } from './release/release-version.js'
 import { releaseRequestSchema } from './release/request.js'
 import { releaseQualificationSchema } from './release/qualification.js'
 
@@ -51,20 +51,7 @@ assert(
   'Missing successful main promotion attestation'
 )
 const environment = verifyReleaseEnvironment()
-for (const endpoint of [
-  `releases/tags/v${version}`,
-  `git/ref/tags/v${version}`
-]) {
-  const response = releaseGithubApi(
-    'GET',
-    `repos/${releaseRepository}/${endpoint}`
-  )
-  assert.equal(
-    response.status,
-    404,
-    `Version is already reserved or could not be checked: ${endpoint}`
-  )
-}
+assertReleaseVersionAvailable(version)
 assert(
   readFileSync(join('docs/releases', `${version}.md`), 'utf8').trim().length >
     40,
