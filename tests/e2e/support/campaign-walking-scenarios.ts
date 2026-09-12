@@ -594,8 +594,12 @@ export async function runCampaignCombatScenario(): Promise<void> {
     await editor.waitForExist({ reverse: true, timeout: 5000 })
   }
   await client.$('button[aria-label="Session"]').click()
-  const characters = await openSceneWindow(client, 'characters', true)
-  await characters.$('button=Besetzung').click()
+  const characters = await openSceneWindow(client, 'party', true)
+  await characters.$('button[aria-label="Party-Aktionen"]').click()
+  await client
+    .$('.party-action-menu')
+    .$('button=Aktives Roster bearbeiten')
+    .click()
   const roster = client.$('.desktop-roster-popup')
   await roster.waitForDisplayed()
   for (const name of ['Alrik', 'Brynn'])
@@ -604,6 +608,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await roster.waitForExist({ reverse: true, timeout: 5000 })
   expect(await characters.getText()).toContain('Alrik')
   expect(await characters.getText()).toContain('Brynn')
+  await client.keys('Escape')
   await characters.$('button[aria-label="Fenster schließen"]').click()
 
   await (await client.$('button[aria-label="Katalog"]')).click()

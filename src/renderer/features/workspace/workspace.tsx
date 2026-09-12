@@ -191,7 +191,7 @@ export function WorkspaceApp() {
     [setCoordinatorSession]
   )
   const activeCampaignId = coordinator.campaigns.activeCampaignId
-  const openSceneWindow = (type: 'open-map' | 'open-characters') => {
+  const openSceneWindow = (type: 'open-map' | 'open-party') => {
     if (!activeCampaignId || !focusedSceneId) return
     changeWorkspace('session', () => {
       const scope = { campaignId: activeCampaignId, sceneId: focusedSceneId }
@@ -202,7 +202,7 @@ export function WorkspaceApp() {
           projection.dispatch({ type })
           if (type === 'open-map')
             projection.dispatch({ type: 'map-controls', value: true })
-          projection.requestFocus(type === 'open-map' ? 'map' : 'characters')
+          projection.requestFocus(type === 'open-map' ? 'map' : 'party')
         })
         .catch(() => featureError(message('desktop.referenceOpenFailed')))
     })
@@ -290,7 +290,7 @@ export function WorkspaceApp() {
           session={coordinator.session}
           dayOpen={dayOpen}
           setDayOpen={setDayOpen}
-          openCharacters={() => openSceneWindow('open-characters')}
+          openCharacters={() => openSceneWindow('open-party')}
           startTravel={() => openSceneWindow('open-map')}
           onError={featureError}
           theme={theme}

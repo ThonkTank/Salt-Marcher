@@ -1,3 +1,4 @@
+import type { PartyActionService } from '../../core/application/party-action-service.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
@@ -40,6 +41,7 @@ export type LootComposition = Readonly<{
 }>
 
 export function createLootComposition(dependencies: {
+  partyActions?: PartyActionService
   activeCampaignId(): string
   activeDatabase: SqliteDatabaseAccess
   rules: Readonly<{ read(): CampaignRules }>
@@ -225,7 +227,13 @@ export function createLootComposition(dependencies: {
           'loot.correctLedgerForCampaign': ({ campaignId, ...command }) => {
             if (campaignId !== dependencies.activeCampaignId())
               throw new CapabilityError('stale', false)
-            return loot.correctLedger(command)
+            if (loot.ledgerCorrectionStatus(command).receipt)
+              return loot.correctLedger(command)
+            return dependencies.partyActions
+              ? dependencies.partyActions.correctLoot(command, () =>
+                  loot.correctLedger(command)
+                )
+              : loot.correctLedger(command)
           },
           'loot.correctLedger': (input) => loot.correctLedger(input)
         }

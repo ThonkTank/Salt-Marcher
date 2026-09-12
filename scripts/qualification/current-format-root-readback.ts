@@ -41,6 +41,8 @@ type StructuralReadback = Readonly<{
   hexRoutePlanRows: number
   hexTravelReceiptRows: number
   scenePartyReceiptRows: number
+  partyActionHistoryRows: number
+  partyActionReceiptRows: number
   partyCharacterReceiptRows: number
   plannerCommandReceiptRows: number
   sceneGroupReceiptRows: number
@@ -79,6 +81,32 @@ export function readCurrentFormatRootFixture(
   const campaigns = new CampaignStore(dataRoot)
   try {
     const registry = campaigns.list()
+    campaigns.installationPersistenceAccess().use((db) => {
+      assert.equal(
+        (
+          db
+            .prepare('SELECT COUNT(*) AS count FROM party_history_installation')
+            .get() as { count: number }
+        ).count,
+        1
+      )
+      assert.equal(
+        (
+          db
+            .prepare('SELECT COUNT(*) AS count FROM party_history_index')
+            .get() as { count: number }
+        ).count,
+        0
+      )
+      assert.equal(
+        (
+          db
+            .prepare('SELECT COUNT(*) AS count FROM party_history_campaign')
+            .get() as { count: number }
+        ).count,
+        0
+      )
+    })
     const imports = campaigns.campaignImportRepository()
     const readbacks = fixture.campaigns.map((expected) => {
       const previous = imports.previous(expected.bundle.source.id)
@@ -195,6 +223,8 @@ function assertCampaignReadback(
     hexRoutePlanRows: 0,
     hexTravelReceiptRows: 0,
     scenePartyReceiptRows: 0,
+    partyActionHistoryRows: 0,
+    partyActionReceiptRows: 0,
     partyCharacterReceiptRows: 0,
     plannerCommandReceiptRows: 0,
     sceneGroupReceiptRows: 0,
@@ -385,6 +415,16 @@ function structuralReadback(database: Database.Database): StructuralReadback {
     scenePartyReceiptRows: (
       database
         .prepare('SELECT COUNT(*) AS value FROM scene_party_command_receipt')
+        .get() as { value: number }
+    ).value,
+    partyActionHistoryRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM party_action_history')
+        .get() as { value: number }
+    ).value,
+    partyActionReceiptRows: (
+      database
+        .prepare('SELECT COUNT(*) AS value FROM party_action_receipt')
         .get() as { value: number }
     ).value,
     partyCharacterReceiptRows: (

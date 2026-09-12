@@ -13,6 +13,7 @@ import {
   applyXpAdjustment,
   clearPartyHexPosition,
   initialXpForLevel,
+  levelForXp,
   positionPartyAtHex,
   xpAfterLevelSelection
 } from './party-roster-domain.js'
@@ -94,6 +95,25 @@ export function migratePartyBurden34To35(db: Database.Database): void {
       )
 }
 
+export function migratePartySections41To42(db: Database.Database): void {
+  const columns = new Set(
+    (db.pragma('table_info(player_characters)') as Array<{ name: string }>).map(
+      (column) => column.name
+    )
+  )
+  if (!columns.size) return
+  for (const [name, constraint] of [
+    ['rest_sections_closed', 'BETWEEN 0 AND 2'],
+    ['rest_section_start_xp', '>= 0'],
+    ['rest_sections_trusted', 'IN (0, 1)']
+  ]) {
+    if (!columns.has(name!))
+      db.exec(
+        `ALTER TABLE player_characters ADD COLUMN ${name} INTEGER NOT NULL DEFAULT 0 CHECK(${name} ${constraint})`
+      )
+  }
+}
+
 function createPartyTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS party_roster_metadata (
@@ -117,6 +137,9 @@ function createPartyTables(db: Database.Database): void {
       xp_since_long_rest INTEGER NOT NULL CHECK(xp_since_long_rest >= 0),
       short_rest_trusted INTEGER NOT NULL DEFAULT 0 CHECK(short_rest_trusted IN (0, 1)),
       long_rest_trusted INTEGER NOT NULL DEFAULT 0 CHECK(long_rest_trusted IN (0, 1)),
+      rest_sections_closed INTEGER NOT NULL DEFAULT 0 CHECK(rest_sections_closed BETWEEN 0 AND 2),
+      rest_section_start_xp INTEGER NOT NULL DEFAULT 0 CHECK(rest_section_start_xp >= 0),
+      rest_sections_trusted INTEGER NOT NULL DEFAULT 0 CHECK(rest_sections_trusted IN (0, 1)),
       movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999),
       travel_map_id TEXT,
       travel_q INTEGER,
@@ -157,6 +180,7 @@ export class PartyStore {
         SELECT id, name, player_name, species, character_class, level,
                passive_perception, passive_investigation, passive_insight, armor_class,
                active, xp, xp_since_short_rest, xp_since_long_rest, short_rest_trusted, long_rest_trusted,
+               rest_sections_closed, rest_section_start_xp, rest_sections_trusted,
                movement_speed_feet, travel_map_id, travel_q, travel_r,
                travel_state
         FROM player_characters ORDER BY position, id
@@ -214,7 +238,7 @@ export class PartyStore {
         )
       this.db
         .prepare(
-          'UPDATE player_characters SET short_rest_trusted = 1, long_rest_trusted = 1 WHERE id = ?'
+          'UPDATE player_characters SET short_rest_trusted = 1, long_rest_trusted = 1, rest_sections_trusted = 1 WHERE id = ?'
         )
         .run(id)
       this.replaceLanguages(id, parsed.languages)
@@ -409,13 +433,13 @@ export class PartyStore {
         .prepare(
           `
           UPDATE player_characters
-          SET xp = ?,
+          SET xp = ?, level = ?,
               xp_since_short_rest = ?,
               xp_since_long_rest = ?
           WHERE id = ?
         `
         )
-        .run(next.xp, next.shortXp, next.longXp, id)
+        .run(next.xp, next.level, next.shortXp, next.longXp, id)
     })
     return this.read()
   }
@@ -446,12 +470,21 @@ export class PartyStore {
       const update = this.db.prepare(
         `UPDATE player_characters
          SET xp_since_short_rest = ?, xp_since_long_rest = ?, short_rest_trusted = 1,
-             long_rest_trusted = CASE WHEN ? = 'long' THEN 1 ELSE long_rest_trusted END
+             long_rest_trusted = CASE WHEN ? = 'long' THEN 1 ELSE long_rest_trusted END,
+             rest_section_start_xp = CASE WHEN @restType = 'long' THEN 0 WHEN rest_sections_trusted = 1 AND rest_sections_closed < 2 THEN xp_since_long_rest ELSE rest_section_start_xp END,
+             rest_sections_closed = CASE WHEN @restType = 'long' THEN 0 WHEN rest_sections_trusted = 1 THEN MIN(2, rest_sections_closed + 1) ELSE rest_sections_closed END,
+             rest_sections_trusted = CASE WHEN @restType = 'long' THEN 1 ELSE rest_sections_trusted END
          WHERE id = ?`
       )
       for (const member of selected) {
         const next = applyRest(member, type)
-        update.run(next.shortXp, next.longXp, type, member.id)
+        update.run(
+          { restType: type },
+          next.shortXp,
+          next.longXp,
+          type,
+          member.id
+        )
       }
     })
     return this.read()
@@ -500,6 +533,11 @@ export class PartyStore {
         `
         )
         .run(xpEach, xpEach, xpEach, ...(selected ?? []))
+      const updateLevel = this.db.prepare(
+        'UPDATE player_characters SET level = ? WHERE id = ?'
+      )
+      for (const recipient of recipients)
+        updateLevel.run(levelForXp(recipient.xp + xpEach), recipient.id)
       this.bumpRevision()
     })()
     return this.read()

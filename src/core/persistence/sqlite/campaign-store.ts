@@ -1,3 +1,4 @@
+import { invalidatePartyHistoryForReplacement } from '../../party/party-history-store.js'
 import Database from 'better-sqlite3'
 import {
   activateCampaignReceiptSchema,
@@ -455,6 +456,7 @@ export class CampaignStore {
             this.filesystem.stagedCampaignDirectory(id),
             'campaign'
           )
+          invalidatePartyHistoryForReplacement(staged)
           const evidence = populateAndVerify(staged)
           if (staged.pragma('quick_check', { simple: true }) !== 'ok')
             throw new Error('Imported campaign failed quick_check')

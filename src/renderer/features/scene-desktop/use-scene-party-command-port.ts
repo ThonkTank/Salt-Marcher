@@ -1,3 +1,4 @@
+import { partyCommandGate } from '../party/party-command-gate.js'
 import { useContext, useMemo } from 'react'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { ScenePartyCommand } from '../../../shared/contracts/scene-party-command.js'
@@ -41,10 +42,10 @@ export function useScenePartyCommandPort(
       },
       execute: async (input) => {
         requireCampaign()
-        const receipt = await api.scene.executePartyCommand({
-          ...input,
-          campaignId
-        })
+        const receipt = await partyCommandGate(api, campaignId).run(
+          () => api.scene.executePartyCommand({ ...input, campaignId }),
+          () => api.scene.partyCommandStatus({ ...input, campaignId })
+        )
         try {
           requireCampaign()
         } catch {

@@ -296,7 +296,7 @@ export const moveSceneRosterInputSchema = setSceneRosterInputSchema
       z
         .object({
           kind: z.literal('new'),
-          title: z.string().trim().min(1).max(100)
+          title: z.string().trim().min(1).max(100).optional()
         })
         .strict()
     ])

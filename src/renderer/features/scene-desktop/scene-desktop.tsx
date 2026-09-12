@@ -1,5 +1,5 @@
+import { sceneChoiceLabel } from './scene-choice-label.js'
 import { useCombatCommands } from '../encounter/use-combat-commands.js'
-import { desktopXpDraftId } from './desktop-xp-draft-id.js'
 import {
   MaintenanceDraftConcernProvider,
   useMaintenanceEditingBlocked
@@ -10,8 +10,6 @@ import { useDesktopGroupDrop } from './use-desktop-group-drop.js'
 import { DesktopParty } from './desktop-party.js'
 import { DesktopGroups } from './desktop-groups.js'
 import { droppableGroup, groupDragMime } from './desktop-group-drop.js'
-import { DesktopRosterActions } from './desktop-roster-actions.js'
-import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
 import { SessionDialogHost } from '../session/session-dialog-host.js'
 import { SessionLootPanel } from '../session/session-groups-panel.js'
@@ -115,11 +113,14 @@ export function SceneDesktop(
   useEffect(() => {
     const node = stage.current
     if (!node) return
-    const measure = () =>
+    const measure = () => {
+      const width = Math.max(1, Math.floor(node.getBoundingClientRect().width))
+      projection.setStageWidth(width)
       setSize({
-        width: Math.max(1, Math.floor(node.getBoundingClientRect().width)),
+        width,
         height: Math.max(1, Math.floor(node.getBoundingClientRect().height))
       })
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
@@ -128,7 +129,7 @@ export function SceneDesktop(
       observer.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [])
+  }, [projection])
 
   const windows = snapshot.state?.windows ?? []
   const visible = windows.filter((window) => !window.minimized)
@@ -157,7 +158,7 @@ export function SceneDesktop(
           >
             {props.snapshot.scene.scenes.map((scene) => (
               <option key={scene.id} value={scene.id}>
-                {scene.title}
+                {sceneChoiceLabel(scene.id, props.snapshot)}
               </option>
             ))}
           </select>
@@ -184,22 +185,18 @@ export function SceneDesktop(
         >
           {message('desktop.search')}
         </button>
-        {(['groups', 'characters', 'map', 'combat', 'loot'] as const).map(
-          (kind) => (
-            <button
-              key={kind}
-              disabled={!snapshot.state || !!snapshot.error}
-              onClick={() => {
-                requestedFocus.current = { sceneId: focused.id, windowId: kind }
-                projection.dispatch({ type: `open-${kind}` })
-              }}
-            >
-              {kind === 'characters'
-                ? message('character.characters')
-                : message(`desktop.${kind}`)}
-            </button>
-          )
-        )}
+        {(['groups', 'map', 'combat', 'loot'] as const).map((kind) => (
+          <button
+            key={kind}
+            disabled={!snapshot.state || !!snapshot.error}
+            onClick={() => {
+              requestedFocus.current = { sceneId: focused.id, windowId: kind }
+              projection.dispatch({ type: `open-${kind}` })
+            }}
+          >
+            {message(`desktop.${kind}`)}
+          </button>
+        ))}
         <DesktopSceneFacts
           model={model}
           actions={actions}
@@ -269,39 +266,7 @@ export function SceneDesktop(
                   draftConcern.window(window.id)
                 ]}
               >
-                {window.kind === 'characters' ? (
-                  <DesktopCharacters
-                    sceneId={focused.id}
-                    campaignId={props.campaignId}
-                    partyRevision={props.snapshot.party.revision}
-                    actions={
-                      <DesktopRosterActions
-                        characterDraftIds={focused.partyMemberIds.map((id) =>
-                          desktopXpDraftId(props.campaignId, focused.id, id)
-                        )}
-                        key={focused.id}
-                        campaignId={props.campaignId}
-                        sceneId={focused.id}
-                        snapshot={props.snapshot}
-                        windowId="characters"
-                      />
-                    }
-                    members={focused.partyMemberIds.flatMap((id) =>
-                      props.snapshot.party.members.filter(
-                        (member) => member.id === id
-                      )
-                    )}
-                    comparison={window.comparison}
-                    change={(value) =>
-                      projection.dispatch({
-                        type: 'character-comparison',
-                        value
-                      })
-                    }
-                    openCharacter={props.openCharacter}
-                    onError={props.onError}
-                  />
-                ) : window.kind === 'search' ? (
+                {window.kind === 'search' ? (
                   <DesktopSearch
                     window={window}
                     dispatch={projection.dispatch.bind(projection)}
@@ -397,7 +362,10 @@ export function SceneDesktop(
                       onError={props.onError}
                     />
                     <SessionEncounterPanel
-                      commands={combatCommands}
+                      commands={{
+                        ...combatCommands,
+                        busy: combatCommands.busy || sceneBusy
+                      }}
                       snapshot={props.snapshot}
                       loot={model.loot}
                       setSnapshot={props.setSnapshot}
@@ -422,6 +390,8 @@ export function SceneDesktop(
                   <SessionLootPanel model={model.groups} actions={actions} />
                 ) : window.kind === 'party' ? (
                   <DesktopParty
+                    openCharacter={props.openCharacter}
+                    onError={props.onError}
                     key={focused.id}
                     campaignId={props.campaignId}
                     sceneId={focused.id}

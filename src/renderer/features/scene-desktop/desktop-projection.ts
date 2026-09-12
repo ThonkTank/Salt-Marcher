@@ -47,6 +47,16 @@ export class DesktopProjection {
   private unregister: (() => void) | null = null
   private unsubscribeMaintenance: (() => void) | null = null
   private readonly maintenanceId = `scene-desktop:${++nextMaintenanceId}`
+  private stageWidth = 800
+  setStageWidth(width: number): void {
+    this.stageWidth = width
+    if (
+      this.authoritative?.state === null &&
+      !this.desired &&
+      !this.writeRequest
+    )
+      this.publish({ state: initialDesktopState(width) })
+  }
   private writeTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
@@ -86,7 +96,7 @@ export class DesktopProjection {
       .then((value) => {
         this.authoritative = value
         this.publish({
-          state: value.state ?? initialDesktopState(),
+          state: value.state ?? initialDesktopState(this.stageWidth),
           loading: false
         })
       })
@@ -108,7 +118,12 @@ export class DesktopProjection {
       this.snapshotValue.error
     )
       return
-    this.desired = reduceDesktop(this.snapshotValue.state, action)
+    this.desired = reduceDesktop(
+      this.snapshotValue.state,
+      action.type === 'open-party'
+        ? { ...action, stageWidth: this.stageWidth }
+        : action
+    )
     this.registerMaintenance()
     this.publish({ state: this.desired })
     if (this.writeTimer) clearTimeout(this.writeTimer)
@@ -215,7 +230,7 @@ export class DesktopProjection {
     this.desired = null
     this.failedWrite = null
     this.publish({
-      state: fresh.state ?? initialDesktopState(),
+      state: fresh.state ?? initialDesktopState(this.stageWidth),
       error: null,
       loading: false,
       saving: false
@@ -243,7 +258,7 @@ export class DesktopProjection {
     this.failedWrite = null
     this.publish({
       error: null,
-      state: this.desired ?? fresh.state ?? initialDesktopState()
+      state: this.desired ?? fresh.state ?? initialDesktopState(this.stageWidth)
     })
     this.releaseIfClean()
   }

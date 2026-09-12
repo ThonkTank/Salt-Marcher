@@ -1,3 +1,4 @@
+import { initializePartyHistorySchema } from '../../party/party-history-store.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
@@ -9,6 +10,7 @@ import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import {
   migratePartySchema28To29,
+  migratePartySections41To42,
   migratePartyBurden34To35
 } from '../../party/party-store.js'
 import {
@@ -324,6 +326,25 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-40-to-41-hex-route-plans-and-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-41-to-42-party-sections-and-history',
+      role: 'campaign',
+      fromVersion: 41,
+      toVersion: 42,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        migratePartySections41To42(database)
+        initializePartyHistorySchema(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-41-to-42-party-sections-and-history',
             new Date().toISOString()
           )
       }

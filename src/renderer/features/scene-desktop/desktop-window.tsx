@@ -1,3 +1,4 @@
+import { DesktopTitleActionsContext } from './desktop-title-actions-context.js'
 import {
   useEffect,
   useRef,
@@ -31,6 +32,7 @@ export function DesktopWindow(props: {
   preview: (side: SnapSide | null) => void
   children: ReactNode
 }) {
+  const [titleActions, setTitleActions] = useState<HTMLElement | null>(null)
   const [gestureBounds, setGestureBounds] = useState<DesktopBounds | null>(null)
   const element = useRef<HTMLElement>(null)
   const cancelGesture = useRef<(() => void) | null>(null)
@@ -227,6 +229,7 @@ export function DesktopWindow(props: {
           ↔
         </button>
         <h2>{props.title ?? message('desktop.overview')}</h2>
+        <div className="desktop-title-actions" ref={setTitleActions} />
         <details
           className="desktop-arrange"
           onClick={(event) => {
@@ -314,7 +317,9 @@ export function DesktopWindow(props: {
           ×
         </button>
       </header>
-      <div className="desktop-window-content">{props.children}</div>
+      <DesktopTitleActionsContext.Provider value={titleActions}>
+        <div className="desktop-window-content">{props.children}</div>
+      </DesktopTitleActionsContext.Provider>
       {!props.window.maximized &&
         ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'].map((edge) => (
           <div

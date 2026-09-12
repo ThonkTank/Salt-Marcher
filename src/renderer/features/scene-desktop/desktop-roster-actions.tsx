@@ -1,10 +1,11 @@
+import { sceneChoiceLabel } from './scene-choice-label.js'
 import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { DesktopRestAction } from './desktop-rest-action.js'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
-import { message } from '../../i18n/session-runtime.de.js'
+import { message, formatMessage } from '../../i18n/session-runtime.de.js'
 import { characterShortId } from '../party/character-profile.js'
 
 import {
@@ -28,14 +29,12 @@ type Draft = {
   selected: string[]
   query: string
   target: string
-  title: string
   revision: number
   partyRevision: number
   rosterBasis: string
   submitted: boolean
 }
 export function DesktopRosterActions(props: {
-  singleCharacter?: { id: string; name: string }
   characterDraftIds?: readonly string[]
   windowId?: string
   campaignId: string
@@ -136,17 +135,11 @@ export function DesktopRosterActions(props: {
     setDraft({
       kind,
       anchor,
-      selected: props.singleCharacter
-        ? [props.singleCharacter.id]
-        : kind === 'roster'
-          ? [...source.partyMemberIds]
-          : [],
+      selected: kind === 'roster' ? [...source.partyMemberIds] : [],
       query: '',
-      target: props.singleCharacter
-        ? ''
-        : (props.snapshot.scene.scenes.find((scene) => scene.id !== source.id)
-            ?.id ?? ''),
-      title: '',
+      target:
+        props.snapshot.scene.scenes.find((scene) => scene.id !== source.id)
+          ?.id ?? '',
       revision: props.snapshot.scene.revision,
       partyRevision: props.snapshot.party.revision,
       rosterBasis: rosterBasis(props.snapshot),
@@ -163,12 +156,7 @@ export function DesktopRosterActions(props: {
       controller.snapshot().conflict
     )
       return false
-    if (
-      original.kind === 'move' &&
-      (!original.selected.length ||
-        (!original.target && !original.title.trim()))
-    )
-      return false
+    if (original.kind === 'move' && !original.selected.length) return false
     if (
       !maintenance &&
       maintenanceDraftCoordinator.hasDirty({
@@ -215,44 +203,30 @@ export function DesktopRosterActions(props: {
                 ...input,
                 target: original.target
                   ? { kind: 'existing', sceneId: original.target }
-                  : { kind: 'new', title: original.title }
+                  : { kind: 'new' }
               }
             }
     })
   }
   return (
     <div className="desktop-roster-actions">
-      {props.singleCharacter ? (
+      <>
+        <button
+          disabled={blocked || command.busy}
+          onClick={(event) => open('roster', event.currentTarget)}
+        >
+          {message('party.manage')}
+        </button>
         <button
           disabled={
-            blocked || command.busy || props.snapshot.scene.scenes.length < 2
+            blocked || command.busy || (!draft && !source.partyMemberIds.length)
           }
-          aria-label={`${props.singleCharacter.name} verschieben`}
           onClick={(event) => open('move', event.currentTarget)}
         >
-          {message('partyWindow.move')}
+          {message('roster.move')}
         </button>
-      ) : (
-        <>
-          <button
-            disabled={blocked || command.busy}
-            onClick={(event) => open('roster', event.currentTarget)}
-          >
-            {message('roster.manage')}
-          </button>
-          <button
-            disabled={
-              blocked ||
-              command.busy ||
-              (!draft && !source.partyMemberIds.length)
-            }
-            onClick={(event) => open('move', event.currentTarget)}
-          >
-            {message('roster.move')}
-          </button>
-          <DesktopRestAction {...props} />
-        </>
-      )}
+        <DesktopRestAction {...props} />
+      </>
       <AnchoredPopup
         open={visiblePopup && !!draft}
         anchor={draft?.anchor ?? null}
@@ -262,33 +236,14 @@ export function DesktopRosterActions(props: {
             !controller.unresolved()
           ) {
             setVisiblePopup(false)
-            if (props.singleCharacter && controller.reset()) setDraft(null)
           }
         }}
         className="desktop-roster-popup"
       >
         {draft && (
           <>
-            {props.singleCharacter ? (
-              <>
-                <h3>{message('partyWindow.target')}</h3>
-                {props.snapshot.scene.scenes
-                  .filter((scene) => scene.id !== source.id)
-                  .map((scene) => (
-                    <button
-                      key={scene.id}
-                      disabled={busy}
-                      onClick={() => {
-                        editDraft({ ...draft, target: scene.id })
-                        void apply()
-                      }}
-                    >
-                      {scene.title}
-                    </button>
-                  ))}
-              </>
-            ) : (
-              <>
+            <>
+              {draft.kind === 'roster' && (
                 <input
                   disabled={busy}
                   aria-label={message('roster.search')}
@@ -298,90 +253,97 @@ export function DesktopRosterActions(props: {
                     editDraft({ ...draft, query: event.target.value })
                   }
                 />
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    editDraft({
-                      ...draft,
-                      selected:
-                        draft.kind === 'roster'
-                          ? []
-                          : available.map((member) => member.id)
-                    })
-                  }
-                >
-                  {message(
-                    draft.kind === 'roster' ? 'roster.clear' : 'roster.all'
-                  )}
-                </button>
-                <div className="desktop-roster-list">
-                  {visible.map((member) => (
-                    <label key={member.id}>
-                      <input
-                        disabled={busy}
-                        type="checkbox"
-                        checked={draft.selected.includes(member.id)}
-                        onChange={(event) =>
-                          editDraft({
-                            ...draft,
-                            selected: event.target.checked
-                              ? [...draft.selected, member.id]
-                              : draft.selected.filter((id) => id !== member.id)
-                          })
-                        }
-                      />
-                      <span>
-                        {member.name}
-                        <small>
-                          {member.playerName ?? '—'}
-                          {available.some(
-                            (other) =>
-                              other.id !== member.id &&
-                              other.name === member.name &&
-                              other.playerName === member.playerName
-                          )
-                            ? ` · ${characterShortId(member, available)}`
-                            : ''}
-                        </small>
-                      </span>
-                    </label>
-                  ))}
-                  {!visible.length && <p>{message('roster.noResults')}</p>}
-                </div>
-                {draft.kind === 'move' && (
-                  <>
-                    <select
-                      disabled={busy}
-                      aria-label={message('roster.destination')}
-                      value={draft.target}
-                      onChange={(event) =>
-                        editDraft({ ...draft, target: event.target.value })
-                      }
-                    >
-                      {props.snapshot.scene.scenes
-                        .filter((scene) => scene.id !== source.id)
-                        .map((scene) => (
-                          <option key={scene.id} value={scene.id}>
-                            {scene.title}
-                          </option>
-                        ))}
-                      <option value="">{message('roster.newScene')}</option>
-                    </select>
-                    {!draft.target && (
-                      <input
-                        disabled={busy}
-                        aria-label={message('roster.sceneName')}
-                        placeholder={message('roster.sceneName')}
-                        value={draft.title}
-                        onChange={(event) =>
-                          editDraft({ ...draft, title: event.target.value })
-                        }
-                      />
-                    )}
-                  </>
+              )}
+              <span>
+                {formatMessage('party.selectedCount', {
+                  count: draft.selected.length
+                })}
+              </span>
+              <button
+                disabled={busy}
+                onClick={() =>
+                  editDraft({
+                    ...draft,
+                    selected:
+                      draft.kind === 'roster'
+                        ? []
+                        : available.map((member) => member.id)
+                  })
+                }
+              >
+                {message(
+                  draft.kind === 'roster' ? 'roster.clear' : 'roster.all'
                 )}
-              </>
-            )}
+              </button>
+              <div className="desktop-roster-list">
+                {visible.map((member) => (
+                  <label key={member.id}>
+                    <input
+                      disabled={busy}
+                      type="checkbox"
+                      checked={draft.selected.includes(member.id)}
+                      onChange={(event) =>
+                        editDraft({
+                          ...draft,
+                          selected: event.target.checked
+                            ? [...draft.selected, member.id]
+                            : draft.selected.filter((id) => id !== member.id)
+                        })
+                      }
+                    />
+                    <span>
+                      {member.name}
+                      <small>
+                        {source.partyMemberIds.includes(member.id)
+                          ? 'Aktuell'
+                          : member.active
+                            ? 'Unzugeordnet'
+                            : 'Inaktiv'}{' '}
+                        · {member.playerName ?? '—'}
+                        {available.some(
+                          (other) =>
+                            other.id !== member.id &&
+                            other.name === member.name &&
+                            other.playerName === member.playerName
+                        )
+                          ? ` · ${characterShortId(member, available)}`
+                          : ''}
+                      </small>
+                    </span>
+                  </label>
+                ))}
+                {!visible.length && <p>{message('roster.noResults')}</p>}
+              </div>
+              {draft.kind === 'move' && (
+                <>
+                  <select
+                    disabled={busy}
+                    aria-label={message('roster.destination')}
+                    value={draft.target}
+                    onChange={(event) =>
+                      editDraft({ ...draft, target: event.target.value })
+                    }
+                  >
+                    {props.snapshot.scene.scenes
+                      .filter((scene) => scene.id !== source.id)
+                      .map((scene) => (
+                        <option key={scene.id} value={scene.id}>
+                          {sceneChoiceLabel(scene.id, props.snapshot)}
+                        </option>
+                      ))}
+                    <option value="">{message('roster.newScene')}</option>
+                  </select>
+                  {!draft.target && (
+                    <small>
+                      {formatMessage('party.newScenePlace', {
+                        place:
+                          source.locationName || message('party.unknownPlace')
+                      })}
+                    </small>
+                  )}
+                </>
+              )}
+            </>
             {(command.error || error) && (
               <p role="alert">{command.error || error}</p>
             )}
@@ -396,21 +358,16 @@ export function DesktopRosterActions(props: {
                 {message('character.checkSavedState')}
               </button>
             )}
-            {!props.singleCharacter && (
-              <footer>
-                <button
-                  disabled={
-                    busy ||
-                    (draft.kind === 'move' &&
-                      (!draft.selected.length ||
-                        (!draft.target && !draft.title.trim())))
-                  }
-                  onClick={() => void apply()}
-                >
-                  {message('roster.apply')}
-                </button>
-              </footer>
-            )}
+            <footer>
+              <button
+                disabled={
+                  busy || (draft.kind === 'move' && !draft.selected.length)
+                }
+                onClick={() => void apply()}
+              >
+                {message('roster.apply')}
+              </button>
+            </footer>
           </>
         )}
       </AnchoredPopup>

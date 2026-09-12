@@ -48,6 +48,13 @@ export function xpAfterLevelSelection(
   return level === null ? currentXp : Math.max(currentXp, levelFloor(level))
 }
 
+export function levelForXp(xp: number): number {
+  return levelXp.reduce<number>(
+    (level, threshold, index) => (xp >= threshold ? index + 1 : level),
+    1
+  )
+}
+
 export function applyXpAdjustment(
   member: Readonly<{
     level: number | null
@@ -56,10 +63,11 @@ export function applyXpAdjustment(
     longXp: number
   }>,
   delta: number
-): Readonly<{ xp: number; shortXp: number; longXp: number }> {
-  const xp = Math.max(levelFloor(member.level), member.xp + delta)
+): Readonly<{ xp: number; level: number; shortXp: number; longXp: number }> {
+  const xp = Math.max(0, member.xp + delta)
   return {
     xp,
+    level: levelForXp(xp),
     shortXp: member.shortXp,
     longXp: member.longXp
   }

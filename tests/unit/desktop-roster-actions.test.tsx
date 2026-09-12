@@ -41,6 +41,26 @@ vi.mock(
   '../../src/renderer/features/scene-desktop/use-scene-party-command-port.js',
   () => ({ useScenePartyCommandPort: () => scenePort })
 )
+vi.mock('../../src/renderer/capabilities/use-capability-api.js', () => {
+  const api = {
+    party: {
+      previewXp: async ({
+        amount,
+        expectedRevision
+      }: {
+        amount: number
+        expectedRevision: number
+      }) => ({
+        revision: expectedRevision,
+        amount,
+        add: 2000 + amount,
+        subtract: Math.max(0, 2000 - amount),
+        set: amount
+      })
+    }
+  }
+  return { useCapabilityApi: () => api }
+})
 let resolution: MaintenanceDraftResolution | undefined
 afterEach(() => {
   resolution?.release()
@@ -101,7 +121,7 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
       </ModalLayerProvider>
     </CapabilityProvider>
   )
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   const boxes = await screen.findAllByRole('checkbox')
   const list = boxes[0]!.closest('.desktop-roster-list')!
   list.scrollTop = 85
@@ -125,7 +145,7 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
   })
 })
 
-function xpFixture() {
+async function xpFixture() {
   const party = {
     revision: 4,
     members: []
@@ -138,17 +158,27 @@ function xpFixture() {
     <ModalLayerProvider>
       <DesktopXpAction
         campaignId="campaign"
-        member={{ id: 'character', name: 'Edrik' } as never}
+        member={
+          {
+            id: 'character',
+            name: 'Edrik',
+            xp: 2000,
+            level: 3,
+            currentLevelFloor: 900,
+            nextLevelXp: 2700
+          } as never
+        }
         revision={3}
       />
     </ModalLayerProvider>
   )
   fireEvent.click(screen.getByText('XP'))
   fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
+  await waitFor(() => expect(screen.getByText('+')).toBeEnabled())
   return { ...view, receipt, party }
 }
 it('writes explicit XP actions with original receipts and keeps the confirmed amount reusable', async () => {
-  xpFixture()
+  await xpFixture()
   for (const [button, command] of [
     [
       '+',
@@ -165,7 +195,7 @@ it('writes explicit XP actions with original receipts and keeps the confirmed am
       }
     ],
     [
-      'Überschreiben',
+      'Übernehmen',
       {
         kind: 'set-xp',
         input: { id: 'character', amount: 50, expectedRevision: 3 }
@@ -188,7 +218,7 @@ it('writes explicit XP actions with original receipts and keeps the confirmed am
   ).toBe(3)
 })
 it('retains a never submitted XP amount, rejects ambiguous central save and permits discard', async () => {
-  xpFixture()
+  await xpFixture()
   fireEvent.click(screen.getByText('XP'))
   fireEvent.click(screen.getByText('XP'))
   expect(screen.getByLabelText('Betrag')).toHaveValue(50)
@@ -217,8 +247,9 @@ it('retains a never submitted XP amount, rejects ambiguous central save and perm
   expect(xpPort.execute).not.toHaveBeenCalled()
 })
 it('holds an unknown XP write and resolves the original command without replay', async () => {
-  xpFixture()
+  await xpFixture()
   xpPort.execute.mockRejectedValueOnce(new Error('lost response'))
+  await waitFor(() => expect(screen.getByText('+')).toBeEnabled())
   fireEvent.click(screen.getByText('+'))
   await screen.findByText('Speicherstatus erneut prüfen')
   const original = xpPort.execute.mock.calls[0]![0]
@@ -342,7 +373,16 @@ function sceneFixture(withXp = false) {
         <DesktopXpAction
           maintenanceId="xp-a"
           campaignId="campaign"
-          member={{ id: 'a', name: 'Edrik' } as never}
+          member={
+            {
+              id: 'a',
+              name: 'Edrik',
+              xp: 2000,
+              level: 3,
+              currentLevelFloor: 900,
+              nextLevelXp: 2700
+            } as never
+          }
           revision={7}
         />
       )}
@@ -352,11 +392,11 @@ function sceneFixture(withXp = false) {
 }
 it('retains roster selection through popup dismissal and central cancel, then saves under the editing lock', async () => {
   sceneFixture()
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   fireEvent.click(screen.getAllByRole('checkbox')[1]!)
   fireEvent.keyDown(document, { key: 'Escape' })
   expect(maintenanceDraftCoordinator.hasDirty()).toBe(true)
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked()
   act(() => {
     resolution = maintenanceDraftCoordinator.begin()
@@ -431,12 +471,10 @@ it('recovers a confirmed new-scene move after refresh failure without creating a
   scenePort.refresh.mockRejectedValueOnce(new Error('refresh lost'))
   fireEvent.click(screen.getByText('Verschieben'))
   fireEvent.click(screen.getByText('Alle auswählen'))
-  fireEvent.change(screen.getByLabelText('Szenenname'), {
-    target: { value: 'Vorhut' }
-  })
+  expect(screen.queryByLabelText('Szenenname')).toBeNull()
   fireEvent.click(screen.getByText('Übernehmen'))
   await screen.findByText('Speicherstatus erneut prüfen')
-  expect(screen.getByLabelText('Szenenname')).toBeDisabled()
+  expect(screen.getByText('Übernehmen')).toBeDisabled()
   fireEvent.click(screen.getByText('Speicherstatus erneut prüfen'))
   await waitFor(() =>
     expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
@@ -444,7 +482,7 @@ it('recovers a confirmed new-scene move after refresh failure without creating a
   expect(scenePort.execute).toHaveBeenCalledOnce()
   expect(scenePort.execute.mock.lastCall?.[0].command).toMatchObject({
     kind: 'move-roster',
-    input: { target: { kind: 'new', title: 'Vorhut' } }
+    input: { target: { kind: 'new' } }
   })
 })
 
@@ -453,7 +491,7 @@ it('direct roster apply cannot remove an unresolved XP editor and central discar
   fireEvent.click(screen.getByText('XP'))
   fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
   fireEvent.click(screen.getByText('XP'))
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   fireEvent.click(screen.getAllByRole('checkbox')[0]!)
   fireEvent.click(screen.getByText('Übernehmen'))
   await screen.findByRole('alertdialog', { name: 'Besetzung ändern' })
@@ -486,11 +524,12 @@ it('settles XP before roster save and uses the resulting Party revision without 
   xpPort.refresh.mockResolvedValue(current)
   scenePort.current.mockReturnValue(current)
   scenePort.refresh.mockResolvedValue(current)
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   fireEvent.click(screen.getAllByRole('checkbox')[0]!)
   fireEvent.keyDown(document, { key: 'Escape' })
   fireEvent.click(screen.getByText('XP'))
   fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
+  await waitFor(() => expect(screen.getByText('+')).toBeEnabled())
   fireEvent.click(screen.getByText('+'))
   await screen.findByText('Speicherstatus erneut prüfen')
   act(() => {
@@ -511,7 +550,7 @@ it('settles XP before roster save and uses the resulting Party revision without 
 })
 it('does not rebase an unsubmitted roster across changed membership', async () => {
   const snapshot = sceneFixture()
-  fireEvent.click(screen.getByText('Besetzung'))
+  fireEvent.click(screen.getByText('Aktives Roster bearbeiten'))
   fireEvent.click(screen.getAllByRole('checkbox')[0]!)
   scenePort.current.mockReturnValue({
     ...snapshot,

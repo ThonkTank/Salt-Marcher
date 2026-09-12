@@ -104,7 +104,7 @@ describe('party and group desktop contracts', () => {
         'level',
         'species'
       ])
-    ).toEqual(['Level 4'])
+    ).toEqual(['Klasse —', 'Level 4', 'Spezies —'])
   })
   it('rejects invalid, foreign, dead, archived and resolution drops', () => {
     const group = {

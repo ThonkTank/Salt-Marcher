@@ -26,6 +26,7 @@ export function AnchoredPopup(props: {
   placement?: Placement
   minWidth?: number
   matchAnchorWidth?: boolean
+  keepMounted?: boolean
 }) {
   const layer = useContext(OverlayLayerContext)
   if (!layer)
@@ -68,7 +69,7 @@ export function AnchoredPopup(props: {
     return () => unregister(id)
   }, [id, ownerId, props.open, register, unregister])
 
-  if (!props.open || !props.anchor) return null
+  if ((!props.open && !props.keepMounted) || !props.anchor) return null
   const anchorWidth = props.anchor.getBoundingClientRect().width
   if (!layer.layer) return null
   const stackIndex = layer.stack.findIndex((entry) => entry.id === id)
@@ -81,6 +82,7 @@ export function AnchoredPopup(props: {
       className={props.className}
       style={{
         ...floatingStyles,
+        display: props.open ? undefined : 'none',
         width: props.matchAnchorWidth
           ? Math.max(anchorWidth, props.minWidth ?? 0)
           : undefined,

@@ -1,4 +1,17 @@
 export const workspaceMessagesDe = {
+  'party.actions': 'Party-Aktionen',
+  'party.manage': 'Aktives Roster bearbeiten',
+  'party.selectedCount': '{count} ausgewählt',
+  'party.historyRefresh': 'Aktualisieren',
+  'party.resultCheck': 'Ergebnis prüfen',
+  'party.newScenePlace': 'Ort: {place} · Zeit wird übernommen',
+  'party.unknownPlace': 'Unbekannt',
+  'party.restLabel': 'Rast',
+  'party.addXp': 'XP addieren',
+  'party.subtractXp': 'XP subtrahieren',
+  'party.replaceXp': 'Gesamt-XP durch Betrag ersetzen',
+  'party.applyXp': 'Übernehmen',
+
   'travel.routeDraft': 'Routenentwurf',
   'travel.saveRoute': 'Route speichern',
   'travel.planConflict':

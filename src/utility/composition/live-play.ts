@@ -1,3 +1,4 @@
+import type { PartyActionService } from '../../core/application/party-action-service.js'
 import { combatOperationDefinitions } from '../../shared/contracts/operations/combat.js'
 import { encounterOperationDefinitions } from '../../shared/contracts/operations/encounter.js'
 import { partyOperationDefinitions } from '../../shared/contracts/operations/party.js'
@@ -22,13 +23,41 @@ const encounterHandlerOperations = composeOperationDefinitions(
 
 export function createPartyHandlers(
   play: LivePlayService,
-  activeCampaignId: () => string
+  activeCampaignId: () => string,
+  partyActions?: PartyActionService
 ): OperationHandlers<typeof partyOperationDefinitions> {
   return defineOperationHandlers('party_handlers', partyOperationDefinitions, {
+    'party.history': ({ campaignId }) => {
+      if (campaignId !== activeCampaignId() || !partyActions)
+        throw new CapabilityError('stale', false)
+      return partyActions.history()
+    },
+    'party.undoRedo': (input) => {
+      if (input.campaignId !== activeCampaignId() || !partyActions)
+        throw new CapabilityError('stale', false)
+      return partyActions.undoRedo(input)
+    },
+    'party.quickFields': (input) => {
+      if (input.campaignId !== activeCampaignId() || !partyActions)
+        throw new CapabilityError('stale', false)
+      return partyActions.quickFields(input)
+    },
+    'party.actionStatus': (input) => {
+      if (input.campaignId !== activeCampaignId() || !partyActions)
+        throw new CapabilityError('stale', false)
+      return partyActions.status(input)
+    },
+    'party.previewXp': ({ campaignId, id, amount, expectedRevision }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.previewPartyXp(id, amount, expectedRevision)
+    },
     'party.executeCharacterCommand': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())
         throw new CapabilityError('stale', false)
-      return play.executePartyCharacterCommand(command)
+      return partyActions
+        ? partyActions.executeCharacter(command)
+        : play.executePartyCharacterCommand(command)
     },
     'party.characterCommandStatus': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())
@@ -61,7 +90,8 @@ export function createPartyHandlers(
 
 export function createSessionHandlers(
   play: LivePlayService,
-  activeCampaignId: () => string
+  activeCampaignId: () => string,
+  partyActions?: PartyActionService
 ): OperationHandlers<typeof sessionHandlerOperations> {
   return defineOperationHandlers('session_handlers', sessionHandlerOperations, {
     'session.read': (input) => {
@@ -82,7 +112,9 @@ export function createSessionHandlers(
     'scene.executePartyCommand': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())
         throw new CapabilityError('stale', false)
-      return play.executeScenePartyCommand(command)
+      return partyActions
+        ? partyActions.executeScene(command)
+        : play.executeScenePartyCommand(command)
     },
     'scene.partyCommandStatus': ({ campaignId, ...command }) => {
       if (campaignId !== activeCampaignId())

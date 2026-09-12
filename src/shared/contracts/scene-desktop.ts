@@ -123,7 +123,7 @@ const version3WindowSchema = z.union([
     .readonly()
 ])
 
-export const characterComparisonSchema = z
+const characterComparisonSchema = z
   .object({
     language: z.string().max(100),
     passive: z.enum([
@@ -149,7 +149,7 @@ const version4WindowSchema = z.union([
     .readonly()
 ])
 
-export const sceneDesktopWindowSchema = z.union([
+const version5WindowSchema = z.union([
   version4WindowSchema.refine((window) => window.kind !== 'overview'),
   z
     .object({
@@ -169,10 +169,28 @@ export const sceneDesktopWindowSchema = z.union([
     .readonly()
 ])
 
+export const sceneDesktopWindowSchema = z.union([
+  previousWindowSchema.transform((window, context) => {
+    if (window.kind === 'overview') {
+      context.addIssue({
+        code: 'custom',
+        message: 'Overview was replaced by Party'
+      })
+      return z.NEVER
+    }
+    return window
+  }),
+  version3WindowSchema.options[1],
+  version3WindowSchema.options[2],
+  version3WindowSchema.options[3],
+  version5WindowSchema.options[1],
+  version5WindowSchema.options[2]
+])
+
 // Array order is the back-to-front order. Empty is a deliberately closed desktop.
 export const sceneDesktopStateSchema = z
   .object({
-    schemaVersion: z.literal(5),
+    schemaVersion: z.literal(6),
     mapView: desktopMapViewSchema,
     combatSelection: z.array(z.uuid()).max(1000).readonly(),
     windows: z.array(sceneDesktopWindowSchema).max(33).readonly()
@@ -201,6 +219,14 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
       legacyDesktopStateSchema,
       z
         .object({
+          schemaVersion: z.literal(5),
+          windows: z.array(version5WindowSchema).max(33),
+          mapView: desktopMapViewSchema,
+          combatSelection: z.array(z.uuid()).max(1000)
+        })
+        .strict(),
+      z
+        .object({
           schemaVersion: z.literal(4),
           windows: z.array(version4WindowSchema).max(32),
           mapView: desktopMapViewSchema,
@@ -227,25 +253,27 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
     old.success
       ? {
           ...old.data,
-          schemaVersion: 5,
-          windows: old.data.windows.flatMap((window) =>
-            window.kind === 'overview'
-              ? [
-                  { ...window, id: 'party', kind: 'party' },
-                  {
-                    ...window,
-                    id: 'groups',
-                    kind: 'groups',
-                    maximized: false,
-                    snap: null,
-                    bounds: {
-                      ...window.bounds,
-                      x: Math.min(100000, window.bounds.x + 40),
-                      y: Math.min(100000, window.bounds.y + 40)
+          schemaVersion: 6,
+          windows: mergePartyWindows(
+            old.data.windows.flatMap((window) =>
+              window.kind === 'overview'
+                ? [
+                    { ...window, id: 'party', kind: 'party' },
+                    {
+                      ...window,
+                      id: 'groups',
+                      kind: 'groups',
+                      maximized: false,
+                      snap: null,
+                      bounds: {
+                        ...window.bounds,
+                        x: Math.min(100000, window.bounds.x + 40),
+                        y: Math.min(100000, window.bounds.y + 40)
+                      }
                     }
-                  }
-                ]
-              : [window]
+                  ]
+                : [window]
+            )
           ),
           mapView:
             'mapView' in old.data
@@ -255,6 +283,35 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
             'combatSelection' in old.data ? old.data.combatSelection : []
         }
       : value
+  )
+}
+
+function mergePartyWindows(
+  windows: readonly z.infer<typeof version5WindowSchema>[]
+) {
+  const party = windows.find((window) => window.kind === 'party')
+  const characters = windows.find((window) => window.kind === 'characters')
+  if (!characters) return windows
+  const front = Math.max(
+    party ? windows.indexOf(party) : -1,
+    windows.indexOf(characters)
+  )
+  const base = party ?? characters
+  const merged = {
+    id: 'party' as const,
+    kind: 'party' as const,
+    bounds: base.bounds,
+    snap: base.snap,
+    maximized: base.maximized,
+    minimized: characters.minimized && (party?.minimized ?? true)
+  }
+  return windows.flatMap<z.infer<typeof version5WindowSchema>>(
+    (window, index) =>
+      index === front
+        ? [merged]
+        : window.kind === 'party' || window.kind === 'characters'
+          ? []
+          : [window]
   )
 }
 
@@ -316,5 +373,3 @@ export type SceneDesktopSnapshot = z.infer<typeof sceneDesktopSnapshotSchema>
 export type SaveSceneDesktopInput = z.infer<typeof saveSceneDesktopInputSchema>
 
 export type DesktopMapView = z.infer<typeof desktopMapViewSchema>
-
-export type CharacterComparison = z.infer<typeof characterComparisonSchema>

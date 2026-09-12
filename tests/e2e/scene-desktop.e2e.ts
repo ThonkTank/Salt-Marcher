@@ -16,11 +16,13 @@ describe('per-scene desktop', () => {
     const party = await openSceneWindow(client, 'party')
     await party.$('.desktop-party-toggle').click()
     await expect(party.$('.desktop-party-details')).toHaveText(
-      expect.stringContaining('Charakter')
+      expect.stringContaining('ft.')
     )
-    await party.$('button=Schnellwerte').click()
+    await party.$('button[aria-label="Party-Aktionen"]').click()
+    await client.$('.party-action-menu').$('button=Schnellwerte').click()
     await expect(client.$('.desktop-party-popup')).toBeDisplayed()
     await client.$('.desktop-party-popup').$('button=Fertig').click()
+    await client.keys('Escape')
     const combat = await openSceneWindow(client, 'combat')
     const groups = await openSceneWindow(client, 'groups')
     await groups.$('.desktop-group-grip').click()
@@ -65,6 +67,31 @@ describe('per-scene desktop', () => {
         expect.stringContaining('width: 240px')
       )
       await expectAccessibleInBothThemes(client)
+      if (kind === 'party') {
+        const layout = await client.execute(() => {
+          const frame = document.querySelector('[data-window-id="party"]')!
+          const bounds = frame.getBoundingClientRect()
+          const buttons = [
+            ...frame.querySelectorAll(
+              '.desktop-window-title button, .desktop-window-title summary'
+            )
+          ]
+          const row = frame.querySelector('.desktop-party-row')!
+          const name = row
+            .querySelector('.desktop-party-toggle')!
+            .getBoundingClientRect()
+          return {
+            controlsInside: buttons.every(
+              (button) => button.getBoundingClientRect().right <= bounds.right
+            ),
+            nameWidth: name.width,
+            meterCount: row.querySelectorAll('.party-meter').length
+          }
+        })
+        expect(layout.controlsInside).toBe(true)
+        expect(layout.nameWidth).toBeGreaterThan(35)
+        expect(layout.meterCount).toBe(2)
+      }
       await client.saveScreenshot(`/tmp/saltmarcher-${kind}-minimum.png`)
       await panel.$('.desktop-resize-keyboard').click()
       for (let i = 0; i < 7; i++) await client.keys('ArrowRight')
@@ -108,6 +135,7 @@ describe('per-scene desktop', () => {
     await waitSaved(client)
     const preferred = await geometry(client)
     await client.$('button[aria-label="Maximieren"]').click()
+    await waitSaved(client)
     await client.$('button[aria-label="Wiederherstellen"]').click()
     await waitSaved(client)
     expect(await geometry(client)).toEqual(preferred)
@@ -598,23 +626,14 @@ describe('per-scene desktop', () => {
   it('manages the campaign library and keeps scene quickinfos beside existing windows', async () => {
     const client = browser as unknown as WdioBrowser
     await selectScene(client, 'Hafen')
-    await openSceneWindow(client, 'characters')
-    const info = () => client.$('[data-window-id="characters"]')
+    await openSceneWindow(client, 'party')
+    const info = () => client.$('[data-window-id="party"]')
     await info().waitForDisplayed({ timeout: 15_000 })
     await expect(info()).toHaveText(expect.stringContaining('Zuga'))
     await expect(info()).not.toHaveText(expect.stringContaining('Vivian'))
-    const before = await info()
-      .$$('tbody')
-      .map((row) => row.getAttribute('data-character-id'))
-    await info()
-      .$('select[aria-label="Sprache hervorheben"]')
-      .selectByVisibleText('Abyssal')
-    expect(
-      await info()
-        .$$('tbody')
-        .map((row) => row.getAttribute('data-character-id'))
-    ).toEqual(before)
-    expect(await info().$$('tbody[data-match="true"]').length).toBe(2)
+    const before = await info().$$('.desktop-party-entry').length
+    await info().$('.desktop-party-toggle').click()
+    expect(await info().$$('.desktop-party-entry').length).toBe(before)
     await expectAccessibleInBothThemes(client)
     await info().$('button=Katalog').click()
     await client.$('.character-catalog-layout').waitForDisplayed()
@@ -662,11 +681,8 @@ describe('per-scene desktop', () => {
     )
     await client.$('button[aria-label="Session"]').click()
     await info().waitForDisplayed()
-    await expect(
-      info().$('select[aria-label="Sprache hervorheben"]')
-    ).toHaveValue('Abyssal')
     await selectScene(client, 'Wald')
-    await openSceneWindow(client, 'characters')
+    await openSceneWindow(client, 'party')
     await expect(info()).toHaveText(expect.stringContaining('Vivian'))
     await expect(info()).not.toHaveText(expect.stringContaining('Edrik'))
     await waitSaved(client)
@@ -675,193 +691,143 @@ describe('per-scene desktop', () => {
     await info().waitForDisplayed({ timeout: 30_000 })
     await expect(info()).toHaveText(expect.stringContaining('Vivian'))
   })
-  it('batches stable rosters, splits and merges scenes, changes XP and confirms selected rests', async () => {
+  it('batches rosters, changes XP through bars, confirms rests and reverses scene creation', async () => {
     const client = browser as unknown as WdioBrowser
+    const read = () =>
+      client.execute(async () => {
+        const campaignId = (await window.saltMarcher.campaigns.list())
+          .activeCampaignId!
+        return window.saltMarcher.session.read({ campaignId })
+      })
     await selectScene(client, 'Wald')
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
-    const info = () => client.$('[data-window-id="characters"]')
-    await info().$('button=Besetzung').click()
+    const info = await openSceneWindow(client, 'party')
+    const menu = async (label: string) => {
+      const popup = client.$('.party-action-menu')
+      if (!(await popup.isDisplayed()))
+        await info.$('button[aria-label="Party-Aktionen"]').click()
+      await popup.$(`button=${label}`).click()
+    }
+    await menu('Aktives Roster bearbeiten')
     const popup = () => client.$('.desktop-roster-popup')
     await popup().$('button=Auswahl leeren').click()
-    await popup()
-      .$('input[aria-label="Charakter oder Spieler"]')
-      .setValue('Reserve 4')
-    await popup().$('input[type="checkbox"]').click()
-    await popup()
-      .$('input[aria-label="Charakter oder Spieler"]')
-      .setValue('Reserve 5')
-    await popup().$('input[type="checkbox"]').click()
+    for (const name of ['Reserve 4', 'Reserve 5']) {
+      await popup()
+        .$('input[aria-label="Charakter oder Spieler"]')
+        .setValue(name)
+      await popup().$('input[type="checkbox"]').click()
+    }
     await popup().$('button=Übernehmen').click()
-    await popup().waitForExist({ reverse: true, timeout: 15_000 })
-    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
-    await expect(info()).not.toHaveText(expect.stringContaining('Vivian'))
-    const row = () => info().$('tbody')
-    const burden = await row().$('.desktop-character-burden').getText()
-    await row().$('button=XP').click()
-    await client.$('.desktop-xp-popup input').setValue('100')
-    await client.$('.desktop-xp-popup').$('button=+').click()
-    await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
-    await client.$('.desktop-xp-popup').$('button=−').click()
-    await expect(row()).toHaveText(expect.stringContaining('XP 0 /'))
-    await client.$('.desktop-xp-popup').$('button=Überschreiben').click()
-    await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
-    expect(await row().$('.desktop-character-burden').getText()).toBe(burden)
+    await popup().waitForExist({ reverse: true })
     await client.keys('Escape')
-    await row().$('button=XP').click()
-    await client.$('.desktop-xp-popup input').setValue('250')
-    await info().$('button[aria-label="Minimieren"]').click()
-    await expect(client.$('[role="alertdialog"]')).not.toBeExisting()
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
-    await info().waitForDisplayed()
-    await row().$('button=XP').click()
-    await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
-    const confirmation = () =>
-      client.$('[role="alertdialog"][aria-label="Fensteränderung bestätigen"]')
-    await info().$('button[aria-label="Fenster schließen"]').click()
-    await confirmation().waitForDisplayed({ timeout: 10_000 })
-    await confirmation().$('button=Abbrechen').click()
-    await info().waitForDisplayed()
-    await row().$('button=XP').click()
-    await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
-    await info().$('button[aria-label="Fenster schließen"]').click()
-    await confirmation().waitForDisplayed({ timeout: 10_000 })
-    await confirmation().$('button=Speichern und fortfahren').click()
-    await expect(confirmation().$('[role="alert"]')).toHaveText(
-      expect.stringContaining('XP:')
+    const row = info.$('.desktop-party-entry')
+    const beforeXp = await read()
+    const scene = beforeXp.scene.scenes.find(
+      (scene) => scene.id === beforeXp.scene.focusedSceneId
+    )!
+    const first = beforeXp.party.members.find(
+      (member) => member.id === scene.partyMemberIds[0]
+    )!
+    await row.$('.party-xp-meter').click()
+    await client.$('.desktop-xp-popup input').setValue('100')
+    await client
+      .$('.desktop-xp-popup button[aria-label="XP addieren"]')
+      .waitForEnabled()
+    await client.$('.desktop-xp-popup button[aria-label="XP addieren"]').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).party.members.find((member) => member.id === first.id)!
+          .xp ===
+        first.xp + 100
     )
-    await expect(info()).toBeExisting()
-    await confirmation().$('button=Verwerfen und fortfahren').click()
-    await info().waitForExist({ reverse: true })
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
-    await info().waitForDisplayed()
-    await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
-    await info().$('button=Rasten').click()
-    await popup().$('button=Kurze Rast').click()
-    await expect(popup().$('button=Kurze Rast bestätigen')).toBeDisplayed()
-    const checks = await popup().$$('input[type="checkbox"]')
-    await checks[1]!.click()
-    await expect(popup().$('button=Kurze Rast bestätigen')).not.toBeExisting()
+    await client
+      .$('.desktop-xp-popup button[aria-label="XP subtrahieren"]')
+      .waitForEnabled()
+    await client
+      .$('.desktop-xp-popup button[aria-label="XP subtrahieren"]')
+      .click()
+    await client.waitUntil(
+      async () =>
+        (await read()).party.members.find((member) => member.id === first.id)!
+          .xp === first.xp
+    )
+    await client
+      .$(
+        '.desktop-xp-popup button[aria-label="Gesamt-XP durch Betrag ersetzen"]'
+      )
+      .waitForEnabled()
+    await client
+      .$(
+        '.desktop-xp-popup button[aria-label="Gesamt-XP durch Betrag ersetzen"]'
+      )
+      .click()
+    await client.waitUntil(
+      async () =>
+        (await read()).party.members.find((member) => member.id === first.id)!
+          .xp === 100
+    )
+    expect(
+      (await read()).party.members.find((member) => member.id === first.id)!
+        .xpSinceLongRest
+    ).toBe(first.xpSinceLongRest)
+    await client.keys('Escape')
+    await menu('Rasten')
     await popup().$('button=Lange Rast').click()
     await popup().$('button=Lange Rast bestätigen').click()
     await popup().waitForExist({ reverse: true })
-    await expect(info().$('button=Rasten')).toBeEnabled()
-    await info().$('button=Verschieben').click()
-    await popup().$('button=Alle auswählen').click()
-    await popup()
-      .$('select[aria-label="Zielszene"]')
-      .selectByVisibleText('Neue Szene')
-    await popup().$('input[aria-label="Szenenname"]').setValue('Vorhut')
-    await popup().$('button=Übernehmen').click()
-    await popup().waitForExist({ reverse: true })
-    await expect(info()).toHaveText(expect.stringContaining('Keine Charaktere'))
-    await selectScene(client, 'Vorhut')
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
-    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
-    await info().$('button=Verschieben').click()
-    await popup().$('button=Alle auswählen').click()
-    await popup()
-      .$('select[aria-label="Zielszene"]')
-      .selectByVisibleText('Wald')
-    await popup().$('button=Übernehmen').click()
-    await popup().waitForExist({ reverse: true })
-    await selectScene(client, 'Wald')
-    await expect(info()).toHaveText(expect.stringContaining('Reserve 5'))
-    await info().$('tbody').$('button=XP').click()
-    await client.$('.desktop-xp-popup input').setValue('77')
     await client.keys('Escape')
-    await info().$('button=Besetzung').click()
-    await popup()
-      .$('input[aria-label="Charakter oder Spieler"]')
-      .setValue('Reserve 4')
+    const beforeMove = await read()
+    await menu('Verschieben')
+    expect(
+      await popup().$('input[aria-label="Charakter oder Spieler"]').isExisting()
+    ).toBe(false)
     await popup().$('input[type="checkbox"]').click()
-    await popup().$('button=Übernehmen').click()
-    const rosterConfirmation = () =>
-      client.$('[role="alertdialog"][aria-label="Besetzung ändern"]')
-    await rosterConfirmation().waitForDisplayed()
-    await rosterConfirmation().$('button=Speichern und fortfahren').click()
-    await expect(rosterConfirmation().$('[role="alert"]')).toHaveText(
-      expect.stringContaining('XP: Reserve 4')
+    await popup().$('select').selectByAttribute('value', '')
+    expect(await popup().$('input[aria-label="Szenenname"]').isExisting()).toBe(
+      false
     )
-    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
-    await rosterConfirmation().$('button=Abbrechen').click()
-    await rosterConfirmation().waitForExist({ reverse: true })
     await popup().$('button=Übernehmen').click()
-    await rosterConfirmation().waitForDisplayed()
-    await rosterConfirmation().$('button=Verwerfen und fortfahren').click()
-    await rosterConfirmation().waitForExist({ reverse: true })
     await popup().waitForExist({ reverse: true })
-    await expect(info()).toHaveText(expect.stringContaining('Reserve 4'))
-    await expect(info().$('tbody')).toHaveText(
-      expect.stringContaining('XP 100 /')
+    await client.keys('Escape')
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.length ===
+        beforeMove.scene.scenes.length + 1
     )
-    for (const choice of [
-      'Speichern und fortfahren',
-      'Verwerfen und fortfahren'
-    ]) {
-      await info().$('button=Besetzung').click()
-      await popup()
-        .$('input[aria-label="Charakter oder Spieler"]')
-        .setValue('Reserve 4')
-      await popup().$('input[type="checkbox"]').click()
-      await client.keys('Escape')
-      const originalScene = await client
-        .$('.scene-desktop')
-        .getAttribute('data-scene-id')
-      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
-      const confirmation = () =>
-        client.$('[role="alertdialog"][aria-label="Szene wechseln"]')
-      await confirmation().waitForDisplayed()
-      await expect(client.$('select[aria-label="Szene"]')).toBeDisabled()
-      await expect(client.$('.scene-desktop')).toHaveAttribute(
-        'data-scene-id',
-        originalScene!
-      )
-      await confirmation().$('button=Abbrechen').click()
-      await info().$('button=Besetzung').click()
-      await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
-      await client.keys('Escape')
-      await client.$('select[aria-label="Szene"]').selectByVisibleText('Vorhut')
-      await confirmation().waitForDisplayed()
-      await confirmation().$(`button=${choice}`).click()
-      await confirmation().waitForExist({ reverse: true })
-      const targetOption = client
-        .$('select[aria-label="Szene"]')
-        .$('option=Vorhut')
-      await expect(targetOption).toBeSelected()
-      await expect(client.$('.scene-desktop')).toHaveAttribute(
-        'data-scene-id',
-        (await targetOption.getAttribute('value'))!
-      )
-      await selectScene(client, 'Wald')
-      await info().$('button=Besetzung').click()
-      await popup()
-        .$('input[aria-label="Charakter oder Spieler"]')
-        .setValue('Reserve 4')
-      if (choice === 'Speichern und fortfahren') {
-        await expect(popup().$('input[type="checkbox"]')).not.toBeSelected()
-        await popup().$('input[type="checkbox"]').click()
-      } else await expect(popup().$('input[type="checkbox"]')).toBeSelected()
-      await popup().$('button=Übernehmen').click()
-      await popup().waitForExist({ reverse: true })
-    }
+    const added = (await read()).scene.scenes.find(
+      (scene) =>
+        !beforeMove.scene.scenes.some((previous) => previous.id === scene.id)
+    )!
+    expect(added.locationId).toBe(scene.locationId)
+    expect(added.gameTimeSeconds).toBe(scene.gameTimeSeconds)
+    await info.$('button[aria-label^="Rückgängig:"]').waitForEnabled()
+    await info.$('button[aria-label^="Rückgängig:"]').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.length === beforeMove.scene.scenes.length
+    )
+    await info.$('button[aria-label^="Wiederherstellen:"]').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.length ===
+        beforeMove.scene.scenes.length + 1
+    )
+    await info.$('button[aria-label^="Rückgängig:"]').click()
+    await client.waitUntil(
+      async () =>
+        (await read()).scene.scenes.length === beforeMove.scene.scenes.length
+    )
     await expectAccessibleInBothThemes(client)
     await waitSaved(client)
-    await client.reloadSession()
-    await resumeCampaignFromScreen(client)
-    await info().waitForDisplayed({ timeout: 30_000 })
-    await expect(info()).toHaveText(expect.stringContaining('XP 100 /'))
   })
   it('opens quickinfos with Alt+P from the catalog and releases repeated map windows', async () => {
     const client = browser as unknown as WdioBrowser
     await client.$('button[aria-label="Katalog"]').click()
     await client.$('.catalog-workspace').waitForDisplayed()
     await client.keys(['Alt', 'p'])
-    await client.$('[data-window-id="characters"]').waitForDisplayed()
+    await client.$('[data-window-id="party"]').waitForDisplayed()
     await client.waitUntil(() =>
       client.execute(
-        () =>
-          document.activeElement?.getAttribute('data-window-id') ===
-          'characters'
+        () => document.activeElement?.getAttribute('data-window-id') === 'party'
       )
     )
     await expect(client.$('.party-panel:not(.day-panel)')).not.toBeExisting()
@@ -1150,8 +1116,8 @@ describe('per-scene desktop', () => {
       (location) => location.id !== original
     )
     if (!destination) throw new Error('Fixture requires another location')
-    await client.$('.desktop-toolbar').$('button=Charaktere').click()
-    await client.$('[data-window-id="characters"]').$('button=XP').click()
+    await client.$('.desktop-toolbar').$('button=Party').click()
+    await client.$('[data-window-id="party"]').$('.party-xp-meter').click()
     await client.$('.desktop-xp-popup input').setValue('250')
     const chooseLocation = async () => {
       await client.$('.desktop-toolbar .desktop-scene-facts button').click()
@@ -1166,12 +1132,12 @@ describe('per-scene desktop', () => {
           .locationId === destination.id
     )
     await expect(client.$('[role="alertdialog"]')).not.toBeExisting()
-    await client.$('[data-window-id="characters"]').$('button=XP').click()
+    await client.$('[data-window-id="party"]').$('.party-xp-meter').click()
     await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
     expect((await read()).party).toEqual(before.party)
     await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
     await client
-      .$('[data-window-id="characters"] button[aria-label="Fenster schließen"]')
+      .$('[data-window-id="party"] button[aria-label="Fenster schließen"]')
       .click()
     const confirmation = client.$(
       '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
@@ -1211,11 +1177,15 @@ async function geometry(client: WdioBrowser) {
 }
 
 async function selectScene(client: WdioBrowser, title: string) {
-  const options = await client.$$('select[aria-label="Szene"] option')
-  let target = ''
-  for (const option of options)
-    if ((await option.getText()) === title)
-      target = (await option.getAttribute('value')) ?? ''
+  const target = await client.execute(async (name) => {
+    const campaignId = (await window.saltMarcher.campaigns.list())
+      .activeCampaignId!
+    return (
+      (await window.saltMarcher.session.read({ campaignId })).scene.scenes.find(
+        (scene) => scene.title === name
+      )?.id ?? ''
+    )
+  }, title)
   if (!target) throw new Error(`Missing scene ${title}`)
   await client
     .$('select[aria-label="Szene"]')

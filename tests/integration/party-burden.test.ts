@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   initializePartySchema,
   migratePartyBurden34To35,
+  migratePartySections41To42,
   PartyStore
 } from '../../src/core/party/party-store.js'
 import { partyCharacterDraftSchema } from '../../src/shared/contracts/party.js'
@@ -37,7 +38,7 @@ describe('XP burden provenance', () => {
       expect(party.members[0]!.xp).toBe(2000)
       party = store.adjustXp(id, -1_000_000, party.revision)
       expect(party.members[0]).toMatchObject({
-        xp: 900,
+        xp: 0,
         xpSinceShortRest: 123,
         xpSinceLongRest: 456
       })
@@ -125,4 +126,34 @@ describe('XP burden provenance', () => {
       db.close()
     }
   })
+})
+
+it('keeps legacy section history unknown until the next long rest', () => {
+  const db = new Database(':memory:')
+  try {
+    initializePartySchema(db)
+    const party = new PartyStore(db)
+    let state = party.create(draft, 0)
+    const id = state.members[0]!.id
+    state = party.setMembership(id, true, state.revision)
+    db.exec(
+      'ALTER TABLE player_characters DROP COLUMN rest_sections_closed; ALTER TABLE player_characters DROP COLUMN rest_section_start_xp; ALTER TABLE player_characters DROP COLUMN rest_sections_trusted; UPDATE player_characters SET xp_since_long_rest = 500, xp_since_short_rest = 200'
+    )
+    migratePartySections41To42(db)
+    state = party.read()
+    expect(state.members[0]).toMatchObject({
+      xpSinceLongRest: 500,
+      burden: { sectionsTrusted: false }
+    })
+    state = party.rest('short', state.revision, [id])
+    expect(state.members[0]!.burden?.sectionsTrusted).toBe(false)
+    state = party.rest('long', state.revision, [id])
+    expect(state.members[0]!.burden).toMatchObject({
+      sectionsTrusted: true,
+      completedShortRestSections: 0,
+      sectionStartXp: 0
+    })
+  } finally {
+    db.close()
+  }
 })
