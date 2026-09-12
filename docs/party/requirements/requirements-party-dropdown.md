@@ -1,5 +1,8 @@
 # Party Dropdown UI
 
+Current consolidated desktop behavior is defined by [Party window](requirements-party-window.md).
+Its XP, rest, history and window decisions supersede conflicting historical rules below.
+
 ## Component Purpose
 
 The party dropdown is the top-bar surface for the Campaign Roster and its

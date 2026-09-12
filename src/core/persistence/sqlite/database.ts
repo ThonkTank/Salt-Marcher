@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 export type DatabaseRole = 'installation' | 'campaign'
 
 export const databaseSchemaVersions: Readonly<Record<DatabaseRole, number>> =
-  Object.freeze({ installation: 42, campaign: 42 })
+  Object.freeze({ installation: 43, campaign: 43 })
 
 export const currentSchemaVersion = Math.max(
   ...Object.values(databaseSchemaVersions)

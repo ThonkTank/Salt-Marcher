@@ -60,7 +60,7 @@
         "segmentStartedAt": null,
         "segmentEndsAt": null,
         "nextBoundaryDelay": null,
-        "semanticSha256": "c8b598fef31271d577527f9ae03b968d7c14e7d96b252e869837fec628b834dd"
+        "semanticSha256": "ce66fd22f71d58bafd6650e9738ff2130515b702e1bf9eb44e87c691a288a49f"
       }
     },
     {
@@ -116,7 +116,7 @@
         "segmentStartedAt": 2002400,
         "segmentEndsAt": 2004800,
         "nextBoundaryDelay": 2400,
-        "semanticSha256": "1dde1623b3071f388c98b82955a144c5572fdda2ffae32dc9ca51d341896a87e"
+        "semanticSha256": "b53caad08a8091707a3d56ff817ccd69083722ff52f44a04be3c7abf5052b7e8"
       }
     }
   ]

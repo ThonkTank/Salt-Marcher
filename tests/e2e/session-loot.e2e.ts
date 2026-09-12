@@ -142,9 +142,12 @@ describe('Loot distribution and ledger', () => {
     await client
       .$('[data-window-id="loot"] button[aria-label="Fenster schließen"]')
       .click()
-    const characters = await openSceneWindow(client, 'characters')
-    const character = await characters.$(`tbody*=${prepared.characterName}`)
+    const characters = await openSceneWindow(client, 'party')
+    const character = await characters.$(
+      `.desktop-party-entry*=${prepared.characterName}`
+    )
     await character.waitForExist({ timeout: 10000 })
+    await character.$('.desktop-party-toggle').click()
     await character.$('button=Beute').click()
     const ledgerDialog = await client.$('.character-loot-dialog')
     await ledgerDialog.waitForDisplayed({ timeout: 10_000 })

@@ -1,3 +1,4 @@
+import { PartyActionService } from '../core/application/party-action-service.js'
 import { HexTravelCommandService } from '../core/hex/hex-travel-command-service.js'
 import type Database from 'better-sqlite3'
 import {
@@ -173,7 +174,14 @@ const play = new LivePlayService(activePersistence, biomeProjection, () => {
     return defaultGeneratorConfig
   }
 })
+const partyActions = new PartyActionService(
+  activePersistence,
+  campaigns.installationPersistenceAccess(),
+  () => campaigns.activeCampaignId(),
+  play
+)
 const lootComposition = createLootComposition({
+  partyActions,
   activeCampaignId: () => campaigns.activeCampaignId(),
   activeDatabase: activePersistence,
   rules: campaignRules,
@@ -372,8 +380,10 @@ const campaignHandlers = createCampaignHandlers({
   mutateReferences,
   recoverPendingPreparations: () => sessionPlanner.recoverPendingPreparations()
 })
-const partyHandlers = createPartyHandlers(play, () =>
-  campaigns.activeCampaignId()
+const partyHandlers = createPartyHandlers(
+  play,
+  () => campaigns.activeCampaignId(),
+  partyActions
 )
 const creatureHandlers = createReferenceHandlers({ creatures, references })
 
@@ -405,8 +415,10 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   publishFactionChange
 })
 
-const sessionHandlers = createSessionHandlers(play, () =>
-  campaigns.activeCampaignId()
+const sessionHandlers = createSessionHandlers(
+  play,
+  () => campaigns.activeCampaignId(),
+  partyActions
 )
 const sessionPlannerHandlers = createSessionPlannerHandlers({
   activeCampaignId: () => campaigns.activeCampaignId(),

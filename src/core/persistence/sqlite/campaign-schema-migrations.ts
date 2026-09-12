@@ -1,4 +1,5 @@
 import { initializeLootOperationJournalSchema } from '../../loot/loot-operation-journal.js'
+import { initializePartyHistorySchema } from '../../party/party-history-store.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
@@ -10,6 +11,7 @@ import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import {
   migratePartySchema28To29,
+  migratePartySections41To42,
   migratePartyBurden34To35
 } from '../../party/party-store.js'
 import {
@@ -330,19 +332,42 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
       }
     },
     {
-      id: 'campaign-41-to-42-active-loot-receipts',
+      id: 'campaign-41-to-42-party-sections-and-history',
       role: 'campaign',
       fromVersion: 41,
       toVersion: 42,
       migrate(database) {
         initializeCampaignSchemaMetadata(database)
+        migratePartySections41To42(database)
+        initializePartyHistorySchema(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-41-to-42-party-sections-and-history',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-42-to-43-converge-party-history-and-loot-receipts',
+      role: 'campaign',
+      fromVersion: 42,
+      toVersion: 43,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        // Both pre-release schema-42 histories must converge without resetting
+        // existing Party progress, history entries or active Loot receipts.
+        migratePartySections41To42(database)
+        initializePartyHistorySchema(database)
         initializeLootOperationJournalSchema(database)
         database
           .prepare(
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run(
-            'campaign-41-to-42-active-loot-receipts',
+            'campaign-42-to-43-converge-party-history-and-loot-receipts',
             new Date().toISOString()
           )
       }

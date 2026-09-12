@@ -12,3 +12,5 @@ state, party persistence behavior, and the public backend boundary `PartyApi`.
 - [Party Dropdown Requirements](requirements/requirements-party-dropdown.md)
 - [Adventuring Day Dropdown Requirements](requirements/requirements-adventuring-day-dropdown.md)
 - [Adventuring Day Calculator Requirements](requirements/requirements-adventuring-day-calculator.md)
+
+- [Consolidated Party window](requirements/requirements-party-window.md) — confirmed compact surface, rest sections and durable undo/redo.

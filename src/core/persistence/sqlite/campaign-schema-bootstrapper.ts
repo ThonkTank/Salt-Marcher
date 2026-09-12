@@ -1,3 +1,4 @@
+import { initializePartyHistorySchema } from '../../party/party-history-store.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
 import { initializeCombatCommandJournal } from '../../encounter/combat-command-journal.js'
@@ -55,6 +56,7 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
         'CREATE TABLE IF NOT EXISTS campaign_runtime (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
       )
     ),
+    registration('party-history', initializePartyHistorySchema, ['party']),
     registration('party', initializePartySchema, ['campaign-runtime']),
     registration(
       'party-character-receipts',

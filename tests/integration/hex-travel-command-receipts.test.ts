@@ -329,7 +329,7 @@ it('migrates 40 to 41 atomically while preserving the complete session and journ
   ).toEqual([])
   h.db.exec('DROP TRIGGER fail_migration')
   applySchemaMigrations(h.db, { role: 'campaign', path: h.root })
-  expect(h.db.pragma('user_version', { simple: true })).toBe(42)
+  expect(h.db.pragma('user_version', { simple: true })).toBe(43)
   expect({
     session: h.play.readSession(),
     travel: h.travel.read(h.sceneId)

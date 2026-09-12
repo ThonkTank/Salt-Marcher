@@ -11444,3 +11444,24 @@ Versionstruth/Fixtures, gezielte Integration/Typprüfung und vollständiger
 neuerCandidate-Check. Anschließend echte neue Zielartefakte mit explizitem
 Schema-/Readbackvertrag qualifizieren; unveränderte alte Artefakte bleiben
 historische Nachweise. Handoff erst auf sauberem vollständigem neuemStand.
+
+36569: sechs gezielte Testsuiten/37Tests bestanden, einschließlich beider42-
+Varianten,41→43 und transaktionalem Fehlerrollback. Anschließender TypeScript-
+Prozess scheitert am automatisch auf1GiB gesetzten V8-Heaplimit (Exit134),
+kein Testergebnisfehler und kein Host-OOM. Wiederholung mit explizitem1536MiB
+Heap innerhalb weiterhin2GiB/keinSwap/2CPU-Servicegrenze; Core-Dumps aus.
+Bestehende Migrations-Abschlussassertionen werden auf den neuen43-Endstand
+angepasst; historische Artefaktregistrierungen bleiben unverändert.
+
+76595 terminalExit0: beide TypeScript-Projekte, ausführbare Versionstruth und
+weitere sechs Integrationssuiten/84Tests bestanden. Zusammen121 gezielte Tests.
+14811 terminalExit0: vollständige Formatprüfung und ESLint der geänderten
+Migrations-/Prüfdateien bestanden. Alle Konfliktmarker entfernt, diff-check grün.
+Plan-Audit Merge: Main41→42 unverändert; zusätzlicher42→43-Schritt konvergiert
+beide realen Zweige über bestehende Eigentümerfunktionen, Werte und Receipts
+bleiben erhalten; Fehler rollbackt einschließlich DDL. Installation43 bleibt
+Main-original. Neue Main-Party-UI und vorherige Dialogbarrieren beide erhalten.
+Roadmap-Audit: Ziel43/43/Registry24 jetzt quellseitig und gezielt geprüft.
+Gepackte Beweise42/42 bleiben ihrem Originalstand zugeordnet. Neue Zielversion
+noch nicht als runtimequalifiziert, lokal übergeben oder aufMain ausgegeben.
+Vorbereitete b58-Handoffpayload wird nicht gestartet; neues exact-SHA-CI folgt.

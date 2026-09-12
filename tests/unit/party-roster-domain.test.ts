@@ -12,13 +12,13 @@ import {
 } from '../../src/core/party/party-roster-domain.js'
 
 describe('Party roster domain', () => {
-  it('caps downward XP corrections at the current level floor', () => {
+  it('derives the level on downward XP corrections without changing consumed rest XP', () => {
     expect(
       applyXpAdjustment(
         { level: 5, xp: 7_000, shortXp: 700, longXp: 1_200 },
         -2_000
       )
-    ).toEqual({ xp: 6_500, shortXp: 700, longXp: 1_200 })
+    ).toEqual({ xp: 5_000, level: 4, shortXp: 700, longXp: 1_200 })
     expect(levelFloor(null)).toBe(0)
     expect(initialXpForLevel(5)).toBe(6_500)
     expect(xpAfterLevelSelection(7_000, 4)).toBe(7_000)

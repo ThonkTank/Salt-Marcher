@@ -59,7 +59,10 @@ export function mapPartyCharacterRow(
     burden: {
       shortTrusted: Number(value['short_rest_trusted']) === 1,
       longTrusted: Number(value['long_rest_trusted']) === 1,
-      dailyBudget: level === null ? null : dailyXp[level - 1]!
+      dailyBudget: level === null ? null : dailyXp[level - 1]!,
+      completedShortRestSections: Number(value['rest_sections_closed'] ?? 0),
+      sectionStartXp: Number(value['rest_section_start_xp'] ?? 0),
+      sectionsTrusted: Number(value['rest_sections_trusted']) === 1
     }
   }
 }

@@ -1,3 +1,4 @@
+import { initializePartyHistoryIndex } from '../../party/party-history-index.js'
 import { initializeSceneDesktopSchema } from '../../scene-desktop/scene-desktop-store.js'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -115,6 +116,7 @@ export class InstallationDatabaseOwner {
   private initializeInstallationSchema(installationExists: boolean): void {
     this.registry.initialize()
     initializeSceneDesktopSchema(this.database)
+    initializePartyHistoryIndex(this.database)
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS installation_settings (
         singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),

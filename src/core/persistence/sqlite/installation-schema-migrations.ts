@@ -1,3 +1,4 @@
+import { initializePartyHistoryIndex } from '../../party/party-history-index.js'
 import { initializeSceneDesktopSchema } from '../../scene-desktop/scene-desktop-store.js'
 import type Database from 'better-sqlite3'
 import { migrateSessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
@@ -406,6 +407,24 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'installation-41-to-42-desktop-default-settings',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'installation-42-to-43-party-history-index',
+      role: 'installation',
+      fromVersion: 42,
+      toVersion: 43,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializePartyHistoryIndex(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-42-to-43-party-history-index',
             new Date().toISOString()
           )
       }

@@ -11,7 +11,10 @@ import {
   initializeSceneDesktopSchema
 } from '../../src/core/scene-desktop/scene-desktop-store.js'
 import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
-import { initialDesktopState } from '../../src/renderer/features/scene-desktop/desktop-state.js'
+import {
+  initialDesktopState,
+  initialPartyWindow
+} from '../../src/renderer/features/scene-desktop/desktop-state.js'
 
 import { applySchemaMigrations } from '../../src/core/persistence/sqlite/schema-migrations.js'
 import { persistedInstallationPreferences } from '../../src/shared/contracts/settings.js'
@@ -46,7 +49,21 @@ describe('installation-owned scene desktops', () => {
       expect(store.read(scope)).toEqual({
         ...scope,
         revision: 7,
-        state: initialDesktopState()
+        state: {
+          ...initialDesktopState(),
+          windows: initialDesktopState().windows.map((window) =>
+            window.kind === 'groups'
+              ? {
+                  ...window,
+                  bounds: {
+                    ...initialPartyWindow.bounds,
+                    x: initialPartyWindow.bounds.x + 40,
+                    y: initialPartyWindow.bounds.y + 40
+                  }
+                }
+              : window
+          )
+        }
       })
       expect(db.prepare('SELECT state_json FROM scene_desktop').get()).toEqual({
         state_json: JSON.stringify(old)
@@ -112,7 +129,7 @@ describe('installation-owned scene desktops', () => {
         preferences
       )
       applySchemaMigrations(db, { path: ':memory:', role: 'installation' })
-      expect(db.pragma('user_version', { simple: true })).toBe(42)
+      expect(db.pragma('user_version', { simple: true })).toBe(43)
       expect(
         db
           .prepare(

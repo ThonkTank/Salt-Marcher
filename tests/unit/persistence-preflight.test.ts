@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(22)
+    expect(migrationRegistryVersion).toBe(24)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -153,8 +153,8 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 42 },
-      { path: installation, role: 'installation', schemaVersion: 42 }
+      { path: campaign, role: 'campaign', schemaVersion: 43 },
+      { path: installation, role: 'installation', schemaVersion: 43 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(15)
+    ).toBe(16)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,7 +178,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(15)
+    ).toBe(16)
     expect(
       installationDatabase
         .prepare(
@@ -347,7 +347,7 @@ describe('persistence preflight', () => {
 
     applySchemaMigrations(database, { path, role: 'installation' })
 
-    expect(database.pragma('user_version', { simple: true })).toBe(42)
+    expect(database.pragma('user_version', { simple: true })).toBe(43)
     expect(
       database
         .prepare(

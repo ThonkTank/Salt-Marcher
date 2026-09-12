@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 42,
+    "campaignDatabaseSchemaVersion": 43,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -159,6 +159,14 @@
       "oraclePlan": "Require an empty journal in materialized fixtures; atomic character commands, query-only recovery and durable receipts across deletion/restart are covered by party-character-command-receipts integration tests."
     },
     {
+      "registration": "party-history",
+      "authority": "Party action history and command receipts",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize empty installation-scoped Party history and receipts in each campaign. Dedicated Party history tests exercise persisted changes, corrections and restart recovery.",
+      "oraclePlan": "Verify empty history on fresh/imported campaigns and preserve existing command receipts across migration and backup."
+    },
+    {
       "registration": "scene",
       "authority": "campaign.running-scenes",
       "stateClass": "durable-truth",
@@ -253,6 +261,12 @@
       "disposition": "shared-view-state",
       "fixturePlan": "Persist a non-default installation theme in the strict version-2 preferences envelope.",
       "oraclePlan": "Prove the preference remains installation-wide and unchanged rather than becoming per-Campaign truth."
+    },
+    {
+      "authority": "installation.party-history",
+      "disposition": "shared-view-state",
+      "fixturePlan": "Installation identity, campaign epochs and durable completion markers accompany the local Party history.",
+      "oraclePlan": "Check recovery across preference/index commit boundaries and isolation between campaigns."
     }
   ],
   "absentTechnicalProfileClasses": [

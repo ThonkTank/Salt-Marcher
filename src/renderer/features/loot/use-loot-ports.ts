@@ -1,3 +1,4 @@
+import { partyCommandGate } from '../party/party-command-gate.js'
 import type { TreasureEditorCommand } from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
@@ -107,10 +108,11 @@ export function useCharacterLootPort(): CharacterLootPort {
         return value
       },
       correctLedger: async (input) => {
-        const value = await loot.correctLedgerForCampaign({
-          ...input,
-          campaignId: requireCampaign()
-        })
+        const id = requireCampaign()
+        const value = await partyCommandGate(context.api, id).run(
+          () => loot.correctLedgerForCampaign({ ...input, campaignId: id }),
+          () => loot.ledgerCorrectionStatus({ ...input, campaignId: id })
+        )
         requireCampaign()
         return value
       },
@@ -123,7 +125,7 @@ export function useCharacterLootPort(): CharacterLootPort {
         return value
       }
     } satisfies CharacterLootPort
-  }, [loot, projection, campaignId])
+  }, [loot, projection, campaignId, context.api])
 }
 
 export function useTreasureEditorPort(): TreasureEditorPort {

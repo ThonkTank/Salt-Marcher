@@ -33,7 +33,6 @@ import {
   characterShortId
 } from '../../src/renderer/features/party/character-profile.js'
 import { CharacterProfileForm } from '../../src/renderer/features/party/character-profile-form.js'
-import { DesktopCharacters } from '../../src/renderer/features/scene-desktop/desktop-characters.js'
 import {
   initialDesktopState,
   reduceDesktop
@@ -110,41 +109,6 @@ describe('character library and scene facts', () => {
     fireEvent.click(screen.getByText('Speichern'))
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ level: null }))
   })
-  it('keeps scene order and missing values while highlighting matches', () => {
-    const other = {
-      ...member,
-      id: '01900000-0000-7000-8000-000000000202',
-      name: 'Vivian',
-      languages: []
-    }
-    const props = {
-      members: [other, member],
-      comparison: {
-        language: 'Abyssal',
-        passive: 'passiveInsight' as const,
-        minimum: null
-      },
-      change: vi.fn(),
-      openCharacter: vi.fn(),
-      onError: vi.fn()
-    }
-    const { container, rerender } = render(<DesktopCharacters {...props} />)
-    const ids = () =>
-      Array.from(container.querySelectorAll('tbody')).map((node) =>
-        node.getAttribute('data-character-id')
-      )
-    expect(ids()).toEqual([other.id, member.id])
-    expect(container.querySelectorAll('[data-match="true"]')).toHaveLength(1)
-    rerender(
-      <DesktopCharacters
-        {...props}
-        comparison={{ ...props.comparison, minimum: 0 }}
-      />
-    )
-    expect(ids()).toEqual([other.id, member.id])
-    expect(container.querySelectorAll('[data-match="true"]')).toHaveLength(0)
-    expect(screen.getAllByText('XP 900 / 2700')).toHaveLength(2)
-  })
   it('disambiguates identical UUID prefixes and retains v3 map state when upgrading', () => {
     const other = { ...member, id: '01900000-0000-7000-8000-000000000202' }
     expect(characterShortId(member, [member, other])).not.toBe(
@@ -159,12 +123,15 @@ describe('character library and scene facts', () => {
         ...previous.windows.slice(2)
       ]
     })
-    expect(upgraded).toEqual(previous)
-    const opened = reduceDesktop(upgraded, { type: 'open-characters' })
+    expect(upgraded.mapView).toEqual(previous.mapView)
+    expect(
+      upgraded.windows.find((window) => window.kind === 'party')?.bounds
+    ).toEqual(previous.windows[0]?.bounds)
+    const opened = reduceDesktop(upgraded, { type: 'open-party' })
     expect(readStoredDesktopState(opened)).toEqual(opened)
     expect(
-      reduceDesktop(opened, { type: 'open-characters' }).windows.filter(
-        (window) => window.kind === 'characters'
+      reduceDesktop(opened, { type: 'open-party' }).windows.filter(
+        (window) => window.kind === 'party'
       )
     ).toHaveLength(1)
   })

@@ -2,14 +2,12 @@ import type { Browser as WdioBrowser } from 'webdriverio'
 
 export async function openSceneWindow(
   client: WdioBrowser,
-  kind:
-    'party' | 'groups' | 'characters' | 'map' | 'combat' | 'loot' | 'search',
+  kind: 'party' | 'groups' | 'map' | 'combat' | 'loot' | 'search',
   maximize = false
 ) {
   const labels = {
     groups: 'Gruppen',
     party: 'Party',
-    characters: 'Charaktere',
     map: 'Karte & Reise',
     combat: 'Kampf',
     loot: 'Beute',

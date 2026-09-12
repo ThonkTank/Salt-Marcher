@@ -12,6 +12,7 @@
     "campaign-import",
     "hex-travel-receipts",
     "party-character-receipts",
+    "party-history",
     "hex-route-plans",
     "scene-group-receipts",
     "scene-party-receipts",
@@ -19,7 +20,7 @@
     "combat-receipts",
     "schema-version"
   ],
-  "coveredInstallationAuthorities": ["installation.campaign-registry"],
+  "coveredInstallationAuthorities": ["installation.campaign-registry", "installation.party-history"],
   "campaigns": [
     {
       "role": "A",

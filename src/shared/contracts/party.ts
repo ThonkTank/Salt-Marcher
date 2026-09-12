@@ -34,7 +34,10 @@ export const partyCharacterSchema = z
       .object({
         shortTrusted: z.boolean(),
         longTrusted: z.boolean(),
-        dailyBudget: z.number().int().positive().nullable()
+        dailyBudget: z.number().int().positive().nullable(),
+        completedShortRestSections: z.number().int().min(0).max(2).optional(),
+        sectionStartXp: z.number().int().nonnegative().safe().optional(),
+        sectionsTrusted: z.boolean().optional()
       })
       .strict()
       .optional()
@@ -231,3 +234,23 @@ export type PartyCharacterCommand = z.infer<typeof partyCharacterCommandSchema>
 export type PartyCharacterCommandReceipt = z.infer<
   typeof partyCharacterCommandReceiptSchema
 >
+
+export const partyXpPreviewInputSchema = z
+  .object({
+    campaignId: z.uuid(),
+    id: z.uuid(),
+    expectedRevision: z.number().int().nonnegative(),
+    amount: z.number().int().min(0).max(1_000_000)
+  })
+  .strict()
+  .readonly()
+export const partyXpPreviewSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    amount: z.number().int().nonnegative(),
+    add: z.number().int().nonnegative().safe(),
+    subtract: z.number().int().nonnegative().safe(),
+    set: z.number().int().nonnegative().safe()
+  })
+  .strict()
+  .readonly()

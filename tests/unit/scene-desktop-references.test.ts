@@ -135,7 +135,21 @@ describe('desktop reference state', () => {
         ],
         schemaVersion: 1
       })
-    ).toEqual(initialDesktopState())
+    ).toEqual({
+      ...initialDesktopState(),
+      windows: initialDesktopState().windows.map((window) =>
+        window.kind === 'groups'
+          ? {
+              ...window,
+              bounds: {
+                ...initialDesktopState().windows[0]!.bounds,
+                x: initialDesktopState().windows[0]!.bounds.x + 40,
+                y: initialDesktopState().windows[0]!.bounds.y + 40
+              }
+            }
+          : window
+      )
+    })
     const state = reduceDesktop(initialDesktopState(), {
       type: 'open-reference',
       entry: item

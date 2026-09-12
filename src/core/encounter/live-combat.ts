@@ -1,3 +1,4 @@
+import { applyXpAdjustment } from '../party/party-roster-domain.js'
 import {
   sceneCommandSchema,
   type SceneCommand
@@ -100,6 +101,26 @@ export class LivePlayService {
           revision: number
         } = () => defaultGeneratorConfig
   ) {}
+
+  previewPartyXp(id: string, amount: number, expectedRevision: number) {
+    const party = this.readParty()
+    if (party.revision !== expectedRevision)
+      throw new CapabilityError('stale', true)
+    const member = party.members.find((member) => member.id === id)
+    if (!member) throw new CapabilityError('not_found', false)
+    const basis = {
+      ...member,
+      shortXp: member.xpSinceShortRest,
+      longXp: member.xpSinceLongRest
+    }
+    return {
+      revision: party.revision,
+      amount,
+      add: applyXpAdjustment(basis, amount).xp,
+      subtract: applyXpAdjustment(basis, -amount).xp,
+      set: applyXpAdjustment(basis, amount - member.xp).xp
+    }
+  }
 
   readParty() {
     return this.withStores(({ party }) => party.read())
@@ -236,7 +257,7 @@ export class LivePlayService {
           throw new CapabilityError('validation_failed', false)
         const targetId =
           input.target.kind === 'new'
-            ? scene.createFromScene(source.id, input.target.title)
+            ? scene.createFromScene(source.id, input.target.title ?? 'Szene')
             : input.target.sceneId
         for (const id of source.partyMemberIds.filter((id) =>
           selected.has(id)

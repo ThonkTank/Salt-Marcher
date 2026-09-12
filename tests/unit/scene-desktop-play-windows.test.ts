@@ -50,7 +50,21 @@ describe('scene play window presentation', () => {
         ...previous.windows.filter((w) => w.kind === 'search')
       ]
     })
-    expect(restored).toEqual(previous)
+    expect(restored).toEqual({
+      ...previous,
+      windows: previous.windows.map((window) =>
+        window.kind === 'groups'
+          ? {
+              ...window,
+              bounds: {
+                ...previous.windows[0]!.bounds,
+                x: previous.windows[0]!.bounds.x + 40,
+                y: previous.windows[0]!.bounds.y + 40
+              }
+            }
+          : window
+      )
+    })
     expect(() =>
       sceneDesktopStateSchema.parse({
         ...restored,

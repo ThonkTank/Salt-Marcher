@@ -39,15 +39,19 @@ export function partyFieldValues(
               ? `${member.characterClass} ${member.level ?? '—'}`
               : member.characterClass
           ]
-        : []
+        : ['Klasse —']
     if (field === 'level')
       return fields.includes('characterClass') && member.characterClass
         ? []
         : [`Level ${member.level ?? '—'}`]
     if (field === 'species' || field === 'playerName')
-      return member[field] ? [member[field]] : []
+      return member[field]
+        ? [member[field]]
+        : [`${field === 'species' ? 'Spezies' : 'Spieler'} —`]
     if (field === 'languages')
-      return member.languages.length ? [member.languages.join(', ')] : []
+      return member.languages.length
+        ? [member.languages.join(', ')]
+        : ['Sprachen —']
     if (field === 'movementSpeedFeet')
       return [`Speed ${member[field] == null ? '—' : `${member[field]} ft.`}`]
     return [`${partyFieldLabels[field]} ${member[field] ?? '—'}`]

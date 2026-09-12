@@ -683,3 +683,18 @@ scoped presentation cleanup preserves recoverable campaign layouts. All six scen
 desktop phases are complete, with all required remote checks, exact-SHA canonical
 handoff and green main verified. The final cross-phase audit and immutable delivery
 evidence are recorded in `scene-desktop-execution.md`.
+
+### Consolidated Party window — 2026-09-12 implementation
+
+The approved [Party window specification](../../party/requirements/requirements-party-window.md)
+consolidates desktop Party/Characters into `party`, with document 6 geometry
+migration, compact inline XP/rest meters and frame-owned actions. Campaign 42
+adds trusted rest-section metadata and owner-scoped history/receipts;
+installation 43 adds recovery/index state (registry 23). Utility-owned Party
+commands coordinate targeted inverses for Party, Scene, Combat, Hex and Loot;
+quick-field changes recover across campaign and installation databases.
+Manual XP derives levels and preserves consumed rest XP. Existing receipt formats
+remain readable. Local tests cover migration, early rests, repeated history,
+restart, conflicts and compensation. Immutable delivery evidence is recorded in
+the candidate/main Check runs and canonical exact-SHA handoff receipt; this
+feature retains all existing promotion gates.

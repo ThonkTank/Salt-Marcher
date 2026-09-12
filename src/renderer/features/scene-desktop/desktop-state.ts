@@ -1,5 +1,4 @@
 import type {
-  CharacterComparison,
   DesktopBounds,
   DesktopMapView,
   DesktopReferenceEntry,
@@ -12,16 +11,16 @@ import { referenceTargetKey } from '../../../shared/reference/reference-target-k
 export const initialPartyWindow = {
   id: 'party',
   kind: 'party',
-  bounds: { x: 20, y: 20, width: 380, height: 420 },
+  bounds: { x: 432, y: 8, width: 360, height: 220 },
   minimized: false,
   maximized: false,
   snap: null
 } satisfies SceneDesktopWindow
-export function initialDesktopState(): SceneDesktopState {
+export function initialDesktopState(width = 800): SceneDesktopState {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     windows: [
-      initialPartyWindow,
+      newPartyWindow(width),
       {
         ...initialPartyWindow,
         id: 'groups',
@@ -33,10 +32,14 @@ export function initialDesktopState(): SceneDesktopState {
     combatSelection: []
   }
 }
+export function newPartyWindow(width: number): SceneDesktopWindow {
+  return {
+    ...initialPartyWindow,
+    bounds: { ...initialPartyWindow.bounds, x: Math.max(0, width - 368) }
+  }
+}
 export type DesktopAction =
-  | Readonly<{ type: 'open-characters' }>
-  | Readonly<{ type: 'character-comparison'; value: CharacterComparison }>
-  | Readonly<{ type: 'open-party' }>
+  | Readonly<{ type: 'open-party'; stageWidth?: number }>
   | Readonly<{ type: 'open-groups' }>
   | Readonly<{ type: 'open-search' }>
   | Readonly<{ type: 'open-map' }>
@@ -74,26 +77,6 @@ export function reduceDesktop(
   state: SceneDesktopState,
   action: DesktopAction
 ): SceneDesktopState {
-  if (action.type === 'character-comparison')
-    return {
-      ...state,
-      windows: state.windows.map((window) =>
-        window.kind === 'characters'
-          ? { ...window, comparison: action.value }
-          : window
-      )
-    }
-  if (action.type === 'open-characters') {
-    if (state.windows.some((window) => window.id === 'characters'))
-      return reduceDesktop(state, { type: 'raise', id: 'characters' })
-    return appendWindow(state, {
-      ...initialPartyWindow,
-      id: 'characters',
-      kind: 'characters',
-      comparison: { language: '', passive: 'passivePerception', minimum: null },
-      bounds: { x: 60, y: 40, width: 600, height: 480 }
-    })
-  }
   if (action.type === 'map-view') return { ...state, mapView: action.value }
   if (action.type === 'combat-selection')
     return { ...state, combatSelection: action.value }
@@ -144,7 +127,9 @@ export function reduceDesktop(
       state,
       id !== 'search'
         ? id === 'party'
-          ? initialPartyWindow
+          ? newPartyWindow(
+              action.type === 'open-party' ? (action.stageWidth ?? 800) : 800
+            )
           : { ...initialPartyWindow, id: 'groups', kind: 'groups' }
         : {
             ...initialPartyWindow,

@@ -93,7 +93,10 @@ describe('desktop window interaction', () => {
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'bounds',
       id: 'party',
-      bounds: { ...initialPartyWindow.bounds, x: 30 }
+      bounds: {
+        ...initialPartyWindow.bounds,
+        x: initialPartyWindow.bounds.x + 10
+      }
     })
     fireEvent.keyDown(
       view.getByRole('button', { name: 'Fenstergröße mit Pfeiltasten ändern' }),
@@ -102,7 +105,10 @@ describe('desktop window interaction', () => {
     expect(view.dispatch).toHaveBeenLastCalledWith({
       type: 'bounds',
       id: 'party',
-      bounds: { ...initialPartyWindow.bounds, height: 440 }
+      bounds: {
+        ...initialPartyWindow.bounds,
+        height: initialPartyWindow.bounds.height + 20
+      }
     })
     fireEvent.click(view.getByText('Linke Hälfte'))
     expect(view.dispatch).toHaveBeenLastCalledWith({
@@ -134,7 +140,11 @@ describe('desktop window interaction', () => {
     expect(view.dispatch).toHaveBeenCalledExactlyOnceWith({
       type: 'bounds',
       id: 'party',
-      bounds: { ...initialPartyWindow.bounds, x: 80, y: 60 }
+      bounds: {
+        ...initialPartyWindow.bounds,
+        x: initialPartyWindow.bounds.x + 60,
+        y: initialPartyWindow.bounds.y + 40
+      }
     })
   })
 

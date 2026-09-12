@@ -212,7 +212,7 @@ it('preserves existing schema-41 command receipts when applying the repair', () 
     journal.record(command)
     const before = db.prepare('SELECT * FROM loot_operation_receipt').all()
     applySchemaMigrations(db, { path: ':memory:', role: 'campaign' })
-    expect(db.pragma('user_version', { simple: true })).toBe(42)
+    expect(db.pragma('user_version', { simple: true })).toBe(43)
     expect(db.prepare('SELECT * FROM loot_operation_receipt').all()).toEqual(
       before
     )

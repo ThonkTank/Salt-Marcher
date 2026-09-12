@@ -1,3 +1,4 @@
+import { partyCommandGate } from './party-command-gate.js'
 import { useContext, useMemo } from 'react'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { PartyCharacterCommand } from '../../../shared/contracts/party.js'
@@ -34,10 +35,10 @@ export function useCharacterCommandPort(
     return {
       execute: async (input) => {
         requireCampaign()
-        const receipt = await api.party.executeCharacterCommand({
-          ...input,
-          campaignId
-        })
+        const receipt = await partyCommandGate(api, campaignId).run(
+          () => api.party.executeCharacterCommand({ ...input, campaignId }),
+          () => api.party.characterCommandStatus({ ...input, campaignId })
+        )
         try {
           requireCampaign()
         } catch {

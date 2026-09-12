@@ -17,6 +17,7 @@ export const currentFormatRootRegistrations = Object.freeze([
   'campaign-import',
   'hex-travel-receipts',
   'party-character-receipts',
+  'party-history',
   'hex-route-plans',
   'scene-group-receipts',
   'scene-party-receipts',
@@ -26,7 +27,8 @@ export const currentFormatRootRegistrations = Object.freeze([
 ] as const)
 
 export const currentFormatRootInstallationAuthorities = Object.freeze([
-  'installation.campaign-registry'
+  'installation.campaign-registry',
+  'installation.party-history'
 ] as const)
 
 const campaignRoleSchema = z.enum(['A', 'B'])

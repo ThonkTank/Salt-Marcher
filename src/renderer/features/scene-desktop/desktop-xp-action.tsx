@@ -1,4 +1,13 @@
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import { PartyTooltip, PartyMeter } from './party-meter.js'
+import { xpProgress } from './party-progress.js'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import type {
   PartyCharacter,
   PartyCharacterCommand
@@ -22,6 +31,7 @@ export function DesktopXpAction(props: {
   member: PartyCharacter
   revision: number
 }) {
+  const api = useCapabilityApi()
   const port = useCharacterCommandPort(props.campaignId)
   const [controller] = useState(() => new CharacterCommandController(port))
   const command = useSyncExternalStore(
@@ -31,6 +41,48 @@ export function DesktopXpAction(props: {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
+  const [preview, setPreview] = useState<{
+    revision: number
+    amount: number
+    add: number
+    subtract: number
+    set: number
+  } | null>(null)
+  useEffect(() => {
+    let active = true
+    const value = Number(amount)
+    if (
+      open &&
+      amount.trim() &&
+      Number.isSafeInteger(value) &&
+      value >= 0 &&
+      value <= 1_000_000
+    ) {
+      void api.party
+        .previewXp({
+          campaignId: props.campaignId,
+          id: props.member.id,
+          expectedRevision: props.revision,
+          amount: value
+        })
+        .then((value) => {
+          if (active) setPreview(value)
+        })
+        .catch(() => {
+          if (active) setPreview(null)
+        })
+    }
+    return () => {
+      active = false
+    }
+  }, [api, amount, open, props.campaignId, props.member.id, props.revision])
+  const currentPreview =
+    preview?.revision === props.revision &&
+    preview.amount === Number(amount) &&
+    amount.trim()
+      ? preview
+      : null
+  const progress = xpProgress(props.member)
   const amountRef = useRef('')
   const confirmedAmount = useRef('')
   const intent = useRef<Mode | null>(null)
@@ -120,16 +172,21 @@ export function DesktopXpAction(props: {
   }
   return (
     <>
-      <button
-        disabled={blocked || command.busy}
-        onClick={(event) => {
-          if (maintenanceDraftCoordinator.isLocked() || command.busy) return
-          setAnchor(event.currentTarget)
-          setOpen(!open)
-        }}
-      >
-        {message('xp.action')}
-      </button>
+      <PartyTooltip text={progress.text}>
+        <button
+          className="party-xp-meter"
+          aria-label={`${props.member.name}: ${progress.text}; XP ändern`}
+          disabled={blocked || command.busy}
+          onClick={(event) => {
+            if (maintenanceDraftCoordinator.isLocked() || command.busy) return
+            setAnchor(event.currentTarget)
+            setOpen(!open)
+          }}
+        >
+          <span>XP</span>
+          <PartyMeter fill={progress.fill} label={progress.text} />
+        </button>
+      </PartyTooltip>
       <AnchoredPopup
         open={open}
         anchor={anchor}
@@ -157,23 +214,42 @@ export function DesktopXpAction(props: {
               setAmount(event.target.value)
             }}
           />
-          <button
-            disabled={busy || command.conflict}
-            onClick={() => void write('add')}
+          <PartyTooltip
+            text={
+              currentPreview
+                ? `Ergebnis: ${currentPreview.add.toLocaleString('de-DE')} XP`
+                : 'Betrag eingeben'
+            }
           >
-            +
-          </button>
-          <button
-            disabled={busy || command.conflict}
-            onClick={() => void write('subtract')}
+            <button
+              aria-label={message('party.addXp')}
+              disabled={busy || command.conflict || !currentPreview}
+              onClick={() => void write('add')}
+            >
+              +
+            </button>
+          </PartyTooltip>
+          <PartyTooltip
+            text={
+              currentPreview
+                ? `Ergebnis: ${currentPreview.subtract.toLocaleString('de-DE')} XP`
+                : 'Betrag eingeben'
+            }
           >
-            −
-          </button>
+            <button
+              aria-label={message('party.subtractXp')}
+              disabled={busy || command.conflict || !currentPreview}
+              onClick={() => void write('subtract')}
+            >
+              −
+            </button>
+          </PartyTooltip>
           <button
             disabled={busy || command.conflict}
+            aria-label={message('party.replaceXp')}
             onClick={() => void write('set')}
           >
-            {message('xp.set')}
+            {message('party.applyXp')}
           </button>
         </div>
         {(command.error || error) && (
