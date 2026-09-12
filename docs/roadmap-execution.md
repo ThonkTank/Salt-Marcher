@@ -12050,3 +12050,54 @@ noch kein fertig nutzbarer Release-Workflow und wird so nicht als Phase6-Abschlu
 promotet. Main bleibt unverändert auf dem geprüften Phase5-Stand.
 Teilaudit Roadmapphase6: tatsächliche CI-Fixturebereitstellung, Qualifikation der
 unveränderten Zielbytes, Draft-/Publishanbindung und risikobasierte CI bleiben offen.
+
+6A.3 Umsetzungsplan für unveränderte Zielbytes: Einen lesenden Diagnoseeinstieg
+(identity/read) in das reguläre AppImage aufnehmen; kein nachträglicher
+Harness-Repack des Ziels. Main prüft separate-Kernel-/Ressourcenisolation,
+expliziten E2E-Modus und ein mit Lauf-ID markiertes kanonisches XDG-Testverzeichnis.
+Main hält die gemeinsame Profilsperre bis zum tatsächlichen Utility-Ende.
+Utility liest den fortsetzbaren Profilausschnitt über die vorhandenen
+Aggregatverantwortlichen; Identity enthält tatsächliche Schema- und Builddaten.
+Gleicher Markierungs-/Isolationsvertrag ermöglicht dem UI-Prüfer den Loopbackfeed
+und Debug-Port. Normale Appstarts aktivieren keinen dieser Zugänge.
+Die bestehende Isolationsprüfung wird als gemeinsames Modul wiederverwendet;
+historische Prüfer behalten ihre bisherigen Imports über Reexport.
+Anschließend den vollständigen UI-Prüfer auf eine explizite Unterscheidung zwischen
+historischem Fixture und unverändertem Releaseziel anpassen, History-/Dateibelege
+mit den Profilvergleichen verbinden und reale KVM-Abnahme durchführen.
+
+6A.3 erste Kontextprüfung:31 Tests, Lint und beide Typprüfungen bestanden.
+Erweiterte Runde:36 von37 Tests bestanden. Der Negativtest erwartete einen neuen
+Fehlertext, während bereits der bestehende Persistenz-Preflight korrekt mit
+IncompatibleDataError abbricht. Korrektur: den bestehenden Fehlertyp prüfen und
+weiterhin die bytegleiche Unverändertheit des abgewiesenen Profils verlangen.
+Zusätzlich den Diagnosebericht an die eingebettete saubere Release-Buildidentität
+binden, damit eine Versionszeichenkette allein nicht als Ziel-SHA-Nachweis genügt.
+
+6A.3 Diagnoseeinstieg lokal geprüft:37 gezielte Tests, ESLint und beide
+TypeScript-Projekte bestanden (`work/phase6-release-inspection-corrected-checks.log`,
+60s,1.4GiB,0Swap). Native Profilprüfung enthält Einstellungen, aktive/inaktive/
+wiederherstellbar gelöschte Kampagnen sowie unveränderte eigene Binärdateien und
+leere Verzeichnisse. Neues Datenformat wird ohne Dateiveränderung abgewiesen.
+Lebenszyklustests belegen Sperrhaltung bis zum Utility-Exit auch nach Antwort,
+falscher Antwort und Timeout. Kontexttests prüfen Marker/Laufbindung,
+kanonische Pfade, begrenzte separate Kernel und Loopbackfeed; Mutationsbefehle
+werden vom Diagnosevertrag abgewiesen.
+
+Zusätzlich69 Architekturtests bestanden und regulärer `pnpm build:release`
+erfolgreich: `out/main/release-inspection.js` ist Bestandteil der normalen
+Buildausgabe. `work/phase6-release-inspection-build.log`,29s,956MiB Spitze,0Swap.
+Es wurde kein Electron/AppImage auf dem Host ausgeführt. Der lokale Build ist
+explizit ein Dirty-Build zur Kompilierungsprüfung; sein Receipt ist keine
+Laufzeitqualifikation und der Diagnoseeinstieg akzeptiert ihn nicht als sauberen
+Release. Spätere Abnahme benötigt sauberen SHA/CI-Artefakt und KVM-Lauf.
+
+Teilaudit Plan6A.3: eingebetteter lesender Utility-Einstieg und isolierter
+UI-Transportzugang implementiert; noch keine vollständige Zielartefaktabnahme.
+Profilausschnitt entspricht dem bestehenden v3-Fixturevergleich; History und
+weitere Dateiinventare werden weiterhin durch die bestehenden Phase5-Nachweise
+abgedeckt und müssen beim neuen vollständigen Runner explizit mitgeführt werden.
+Teilaudit Roadmap: Phase6 bleibt offen, insbesondere tatsächliche unveränderte
+AppImage-Qualifikation, Release-/Publish-Workflow und CI-Auswahl. App-relevante
+Änderungen benötigen vor Main die vollständige Candidate-CI und kanonischen
+Handoff; bisher wurde kein neuer Main-Stand oder Release aktiviert.

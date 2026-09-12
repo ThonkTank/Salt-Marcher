@@ -1,3 +1,4 @@
+import { configureReleaseUiQualification } from './release/ui-qualification.js'
 import { registerQuitBarrier } from './application-lifecycle/quit-barrier.js'
 import { app } from 'electron'
 import {
@@ -11,13 +12,19 @@ import {
 
 const smokeTest = process.argv.includes('--smoke-test')
 
-void (
-  process.argv.includes('--release-maintenance')
-    ? import('./release/maintenance-entry.js').then(({ runMaintenanceEntry }) =>
-        runMaintenanceEntry()
-      )
-    : startApplication()
-)
+void Promise.resolve()
+  .then(() => {
+    configureReleaseUiQualification()
+    return process.argv.includes('--release-profile-inspection')
+      ? import('./release/inspection-entry.js').then(
+          ({ runReleaseInspection }) => runReleaseInspection()
+        )
+      : process.argv.includes('--release-maintenance')
+        ? import('./release/maintenance-entry.js').then(
+            ({ runMaintenanceEntry }) => runMaintenanceEntry()
+          )
+        : startApplication()
+  })
   .then(() => {
     if (smokeTest)
       void waitForCoreReady()

@@ -12,7 +12,10 @@ export default defineConfig({
         input: {
           index: resolve('src/main/index.ts'),
           utility: resolve('src/utility/index.ts'),
-          maintenance: resolve('src/utility/maintenance/worker.ts')
+          maintenance: resolve('src/utility/maintenance/worker.ts'),
+          'release-inspection': resolve(
+            'src/utility/release-qualification/worker.ts'
+          )
         }
       }
     }
