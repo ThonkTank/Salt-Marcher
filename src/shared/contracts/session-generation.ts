@@ -8,7 +8,11 @@ import {
 
 export const SESSION_ENCOUNTER_ENGINE_VERSION = 'encounter-v5' as const
 export const REWARD_ENGINE_VERSION = 'reward-v3' as const
-export const rewardEngineVersionSchema = z.enum(['reward-v2', 'reward-v3'])
+export const rewardEngineVersionSchema = z.enum([
+  'reward-v1',
+  'reward-v2',
+  'reward-v3'
+])
 /** @deprecated Use the component engine versions on persisted runs. */
 export const SESSION_GENERATION_ENGINE_VERSION =
   SESSION_ENCOUNTER_ENGINE_VERSION

@@ -6874,3 +6874,4074 @@ nur dieses Log; alle 352 übernommenen Änderungsdateien behalten ansonsten den
 bereits vollständig geprüften Stand. Repositoryformat (92716) und diff --check
 bestanden. Der neue Commit benötigt unabhängig davon eigene CI- und Handoff-
 Belege. Der vorherige Kandidatenbranch bleibt auf c5a9c78aa erhalten.
+
+### Phase 4 – Abschluss mit eigenem linearen Kandidaten und grünem Main
+
+Die anschließenden Warteturns haben jeweils den laufenden CI-Job 34318597826
+autoritativ abgefragt. Der vollständige Lauf für
+bd8b33c4f5b6e5f064deb64278d9097f739cac6d ist success, einschließlich des
+Exact-SHA-Aggregats. Neuer Reviewstand: PR 671. Die unabhängige
+delivery:verify-candidate-Prüfung 42309 besteht mit sauberem Arbeitsbaum,
+aktuellem Main als Vorfahr und sämtlichen erforderlichen Jobs.
+
+handoff:app 40821 endet mit Exit 0. Belegstate
+cd434d39-0a3b-401d-970e-80202bde9a8d, Versuch
+3f705929-d743-491e-9eb9-91067f716494. CI-Artefakt und installiertes AppImage
+haben denselben SHA-256
+59c509f13517430c5e15d95aed0c306e6c295be3f2bcc2a485957e9eff53d0c4.
+Vorherige Local-Daten wurden in 0d9906ff-e39b-4063-b421-d0bde1da9cce gesichert.
+Die installierte Laufzeit besteht zwei Quickchecks und vier fachliche Readbacks.
+
+delivery:promote 69490 übernimmt exakt bd8b33c4f nach Main (Exit 0), ohne
+Neubau oder Änderung des Kandidaten. delivery:verify-post-promotion 92905
+mit explizitem GITHUB_SHA besteht. Main-Check 34320025838 ist vollständig
+success. Seine Attestation bestätigt die vorherige vollständige Kandidaten-
+abnahme; die dort übersprungenen Kandidatenjobs sind keine erneut ausgeführten
+Tests. Kandidaten- und Main-SHA stimmen überein.
+
+Plan-Audit bestanden: gemeinsame Editorregistrierungen und konkrete Save-/
+Discard-Funktionen sind im release-editor-inventory.md den produktiven Besitzern
+und Tests zugeordnet. Die bisherigen Fixrunden belegen ursprüngliche Befehls-
+identität, Auflösung unklarer Ergebnisse, abhängige Editoren, erhaltene
+Teilerfolge und Eingabesperren. Der gemeinsame Dialog benennt die offenen
+Bereiche. Keine offenen Diskrepanzen aus den Phase-4-Fixplänen; die gesamte
+Implementierung besteht die eigenen Remote- und Handoff-Gates.
+
+Roadmap-Audit Phase 4 bestanden: mehrere offene Editoren, Speichern mit Fehler,
+Teilerfolg, Verwerfen, Abbrechen und neu hinzukommende Änderungen besitzen
+ausgeführte UI-/Koordinatortests. release-update-ui prüft explizit getrennte
+Aktionen, Weiterarbeit beim Download, kein Installieren beim Schließen,
+Offlinefehler und erneute Nutzeraktion. Die tatsächlichen Electronfälle prüfen
+unter anderem Reise-/Szenenübergänge und den benannten Routenentwurf.
+
+Phase 4 ist damit implementiert, automatisiert geprüft, lokal übergeben und
+auf grünem Main abgeschlossen. Dies ist keine vollständige historische
+AppImage-Qualifikation, keine öffentliche Liveabnahme und keine Veröffentlichung.
+Phasen 5–7 bleiben offen. Der nächste Schritt ist der konkrete Phase-5-Plan
+gegen die aktuelle Implementierung und die unveränderte kanonische Roadmap:
+echte historische Schemaartefakte, semantischer Profilvergleich, tatsächliche
+UI-Aktionen und Prozess-/Dateisystemfehler einschließlich Recovery und Restore.
+
+### Phase 5 – Verbindlicher Implementierungs- und Abnahmeplan
+
+Ausgangslage erneut geprüft: Phase 4 ist auf bd8b33c4f ausgeliefert; aktueller
+Branch candidate/release-artifact-qualification trägt zunächst nur den obigen
+Abschlusslog. Kanonisch bleiben release-maintenance-roadmap.md und die ursprüngliche
+Abnahmematrix. Die Quellenrecherche ist Vorbereitung, kein Artefaktnachweis.
+
+Ziel dieser Phase: ein ausführbarer Abnahmeauftrag identifiziert echte historische
+AppImages und den aktuellen Zielstand. Die Tests vergleichen vollständige Profile
+und fortsetzbare Fachzustände über Update, Fehler-Recovery und Wiederherstellung.
+Der gemeinsame produktive Wartungsablauf bleibt verantwortlich; Testcode darf
+keine eigene erfolgreiche Aktivierung oder eine erfundene Migration vortäuschen.
+
+Arbeitspakete in Reihenfolge:
+
+1. Historische Quellen unveränderlich festhalten und maschinell prüfen:
+   A=52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0 (37/34),
+   B=6e84a12c1c83cd6437680ae70529cdc9723c353b (38/34),
+   C=c583e05506e10d8446a4e210fa0603e3be53d63a (39/34).
+   Zusätzlich Loot30=b4927dbc0979906f71b2ee4e106ec22668245dd7 (30/30)
+   und Loot31=a3c506b50cac3ff3c6a52bb5285f9c96d5e0b0b8 (31/31).
+   Der aktuelle Zielcommit wird bei seinem Build ausdrücklich fixiert (derzeit
+   42/41); keine implizite Auswahl von latest oder einem Java-Release-Tag.
+2. In isolierten Quellbäumen originale Main-/Utility-/Schemaartefakte bauen.
+   Für fehlende historische Wartungs-/Prüfeinstiege einen getrennt ausgewiesenen
+   Harness verwenden, mit eigener Quellidentität und Hash. Die ursprünglichen
+   Schemaowner und Migrationsdateien bleiben unverändert. Provenienz umfasst
+   Originalcommit, Quellbaum, Harness, Werkzeuge und tatsächliche AppImage-Bytes.
+   Historischer Start, Seed, Migration und Readback müssen im jeweils benannten
+   Artefakt laufen; der aktuelle Arbeitscheckout darf Daten nicht vorher öffnen.
+3. Separate reichhaltige Fixture samt semantischem Erwartungszustand ergänzen:
+   Installationseinstellungen, aktive/inaktive/Trash-Kampagnen, eigene Dateien
+   einschließlich leerer Verzeichnisse, Weltinhalte, Gruppe, Loot/Belegidentität
+   und fortsetzbarer Kampf-/Reisezustand. Originalfixture release-0.2.0 unverändert
+   erhalten. Fachliche Werte/Identitäten vergleichen; zulässige neue Schema-
+   Metadaten getrennt bewerten. Leere, bestehende und beschädigte Profile sind
+   eigene Fälle. Nach Migration eine weitere echte Fachaktion ausführen.
+4. Kontrollierten Loopbackfeed und tatsächliche Rendererbedienung integrieren:
+   prüfen, herunterladen, bestätigen, installieren, Neustart, weiterarbeiten,
+   Sicherung auswählen und wiederherstellen. Die vorhandene Controller-Direkt-
+   prüfung bleibt Transportnachweis. Kein Download/Install ohne jeweilige Aktion;
+   Downloadabschluss und Profilsperren/Prozessende zuverlässig abwarten.
+5. Übergangsmatrix ausführen: A→B→C, A→C, historischer Stand→aktuelles Ziel,
+   zwei echte unterschiedlich versionierte Zielartefakte ohne Schemaänderung,
+   und vollständiger Loot30→Loot31-Profilübergang. Jeder Nachweis benennt die
+   tatsächlich ausgeführten Bytes und die erreichten Installation-/Kampagnenschemas.
+6. Fehlerfälle mit denselben Artefakten ergänzen: tatsächlicher Prozessabbruch
+   innerhalb einer produktiven Migration und an allen Aktivierungs-/Recovery-
+   Grenzen; WAL, Platzmangel, Zugriffsfehler, Parallelstart, beschädigte Downloads,
+   fehlende Migration und neueres Datenformat. Vor Freigabe konsistentes altes
+   oder neues Paar beweisen. Nach Freigabe spätere Änderungen erhalten und
+   automatischen Rollback ausschließen. Restore erstellt vorher eine vollständige
+   Sicherung des aktuellen Stands; diese muss spätere Arbeit wiederherstellen können.
+7. Maschinenlesbare Abnahmebelege und Grenzen dokumentieren, relevante statische,
+   native und echte Artefakt-/UI-Prüfungen ausführen, anschließend getrennte Audits
+   gegen diesen Plan und Phase 5 der Roadmap. Kandidaten-/Handoff-/Main-Gates wie
+   bisher einhalten. Erst danach Phase 6 beginnen.
+
+Betroffene Komponenten: neue Quellen-/Artefaktverträge und Runner unter
+scripts/qualification, historische Harness-Einstiege, semantische Fixtures und
+Tests; vorhandener Release-Qualification-/Feed-/Remote-Debugging-Adapter;
+erforderliche eng begrenzte Testports an produktiven Utility-/Wartungsgrenzen.
+Main behält Netzwerk und Prozesssteuerung, Utility die Datenarbeit, SQL bleibt
+bei Original- beziehungsweise Zielaggregaten. Fehlerports nur im ausdrücklich
+isolierten Testmodus, keine frei aktivierbare Störung normaler Profile.
+
+Erster konkreter Abschnitt vor Implementierung: Quellenkatalog und Inspektor
+erstellen. Vollständige Commit-IDs verlangen, Git-Bäume und Originaldateien lesen,
+Installation/Kampagne aus dem tatsächlichen TypeScript-Schemaowner bestimmen,
+erwartete Versionen abgleichen und Quelldigests ausgeben. Unbekannte Ownerform,
+fehlender Commit und abweichende Schemazuordnung müssen scheitern. Zielgerichtete
+Tests dieser Ablehnungen sowie echte Inspektion aller fünf historischen Quellen;
+kein AppImage-Erfolg aus diesen Metadaten ableiten. Danach erst den Buildadapter
+gegen die bestätigten Originalquellen konkretisieren und implementieren.
+
+Abschlussgrenze: Jeder geforderte Fall besitzt einen bestandenen Nachweis im
+passenden Umfang. Ein Vertrag, grüner Unit-Test, erfolgreicher Neubau oder Start
+allein schließt Phase 5 nicht. Releasepipeline/geschützte Freigabe und Risiko-CI
+bleiben Phase 6; vorhandene Nutzerdatenkopie, dokumentierter Livetest und die
+öffentliche Veröffentlichung unveränderter Bytes bleiben Phase 7.
+
+### Phase 5 – Quelleninspektor: erster geprüfter Abschnitt
+
+Implementiert: scripts/qualification/historical-release-sources.ts benennt die
+fünf Originalcommits und erwarteten Schemapaare. Der Inspektor verlangt volle
+Commit-IDs, liest Dateien mit git show aus diesem Commit und ermittelt die
+Schemawerte über den TypeScript-AST ohne Ausführung alten Anwendungscodes.
+Ausgabe enthält Quellbaum, Paket-/Paketmanagerversion und SHA-256 von Schemaowner,
+package.json und Lockfile, ausdrücklich als source-inspection-only gekennzeichnet.
+scripts/inspect-release-history.ts inspiziert alle fünf Originalstände.
+
+Validierung: 52822, elf Tests bestanden. Die Git-basierte Regression verändert
+nach dem Commit den Arbeitsbaum und belegt trotzdem die ursprünglichen
+Schemawerte; falsche Erwartungen und fehlende Commits werden abgelehnt. Weitere
+Fälle prüfen ungepinnte Referenzen, irreführende Kommentare, nichtliterale Werte,
+doppelte Deklarationen/Felder und unbekannte Ownerformen. Typprüfung 49645 und
+betroffenes ESLint/Format 75238 bestanden. Tatsächliche Quelleninspektion 30560
+bestanden: A 37/34, B 38/34, C 39/34, Loot30 30/30, Loot31 31/31. Bericht unter
+work/roadmap-phase5-historical-sources.json außerhalb des Repositorys.
+
+Abschnittsaudit gegen Plan bestanden: die gewählten Quellen sind nun anhand
+der Originaldateien maschinell prüfbar und bleiben unabhängig vom Arbeitsbaum.
+Roadmap-Audit: dies qualifiziert ausschließlich die Quellidentität. Noch keine
+historischen AppImages gebaut, keine reale Migration/UI- oder Fehlerabnahme
+dieser Phase bestanden. Nächster Abschnitt: Buildadapter mit unveränderten
+historischen Schemaownern und ausdrücklich separatem Harness konkretisieren.
+
+### Phase 5 – Historischer Buildadapter: konkreter nächster Abschnitt
+
+Quellenprüfung: A besitzt originale Release-Build-/Packaging-Skripte und dieselben
+grundlegenden Electron-/SQLite-Versionen, aber keinen Release-Updater. Der Build
+kann deshalb aus einem separaten detached Worktree mit eigenem node_modules
+erfolgen. Historische Runtime- und Migrationsdateien werden nicht bearbeitet.
+
+Implementierungsplan: Originalstand prüfen, frischen detached Worktree anlegen,
+Lockfile-Installation und originales build:release ausführen. Danach ausschließlich
+unter out/qualification einen separat gebündelten Test-Main und Test-Utility
+ergänzen. Packaging wählt den Test-Main als expliziten Wrapper: normale Starts
+delegieren an den originalen Main; nur der isolierte historische Testmodus startet
+die Test-Utility. Ein Alias bindet den originalen Schemaowner aus dem historischen
+Worktree ein. Native Module bleiben original paketiert. Testversionen sind explizite
+CLI-Eingaben und keine veröffentlichten Releases. Vor/nach dem Build unveränderten
+getrackten Quellbaum nachweisen; vorhandene Ausgabeordner nicht überschreiben.
+
+Erster Runtimeauftrag liefert ausschließlich Identität: tatsächliche Schemas,
+native SQLite-Funktion, Electron-/Node-Version. Ausgabe und Prüfumgebung liegen
+unter einem eigens gewählten isolierten XDG-Ort. Kein Öffnen vorhandener Profile.
+Ein Herkunftsbeleg bindet Originalquellen, separate Harness-Quelldigests,
+Buildwerkzeuge, eingepackte Harness-Dateien und AppImage-Hash zusammen. Dieser
+Abschnitt behauptet noch keine historische Updatebedienung oder Migration.
+Validierung: statische Prüfungen, tatsächlich A bauen und den eingebauten
+Utility-Einstieg aus exakt diesem AppImage starten. Bei Fehlern gezielte
+Fixrunden; erst danach Seed/Migrate/Readback und die übrigen Stände erweitern.
+
+Erste statische Prüfung des Buildadapters: Typprüfung 51299 bestanden; ESLint
+45070 beanstandet eine unvalidierte version-Eigenschaft aus JSON.parse bei der
+Vite-Werkzeugidentität. Korrekturplan: Paketmetadaten mit Zod validieren statt
+eines nachgeschalteten Typecasts; betroffenes ESLint erneut ausführen, dann
+erst den tatsächlichen historischen Build starten.
+
+Korrigiertes ESLint 1647 bestanden. Historischer Build A (89305) vollständig
+Exit 0: eigener detached Worktree, originales Lockfile installiert und originaler
+Release-Build durchgeführt; zwei separate Harness-Bundles ergänzt und AppImage
+gebaut. Der getrackte Originalbaum ist vor/nach dem Build unverändert. Artefakt
+SaltMarcher-0.0.137-x64.AppImage, 176562741 Bytes, SHA-256
+0ff4bc0bbb21b59e2fe2b7c55b8e39f6cb06066a8c90891a09442325b20c5bc6.
+Herkunftsbeleg liegt neben den Bytes unter work/historical-artifacts/a.
+
+Der erste Startaufruf erreichte das AppImage wegen fehlendem xvfb-run im PATH
+nicht (Exit 127). Mit dem vorhandenen Testwerkzeugpfad startet dieselbe Datei,
+ohne Neubau: 85992 Exit 0. Tatsächlicher Utility-Readback meldet Testversion
+0.0.137, Installation 37/Kampagne 34, SQLite 3.53.4, Node 24.18.0 und Electron
+43.2.0. Unabhängiger Vergleich bestätigt Dateigröße/Hash und Übereinstimmung
+von Laufzeitschema und ursprünglichem Quellenbeleg. Keine vorhandenen Profile
+geöffnet; Testmodus nutzte einen separaten XDG-Ort.
+
+Abschnittsaudit: Build- und Utility-Identitätsweg bestehen für A. Das ist ein
+echtes historisches AppImage mit unveränderten Originalschemas und bezeichnetem
+Harness. Normale UI-Delegation, weitere Quellen, Seed/Migration/Readback,
+Fehlerfälle und vollständige Updatebedienung sind noch unqualifiziert. Phase 5
+bleibt offen; kein historischer Migrations- oder Veröffentlichungserfolg behauptet.
+
+### Phase 5 – Historische Profilbefehle und erste semantische Fixture
+
+Plan vor Erweiterung: Test-Main erhält explizite seed/read/advance-Aufträge
+mit eindeutiger Request-ID. Er hält die vorhandene gemeinsame kanonische
+Profilsperre bis zum Ende seiner Utility. Profile liegen am Release-Profilort
+innerhalb des isolierten XDG-Verzeichnisses; Ergebnisse außerhalb des Profils,
+unveränderlich pro Request. IPC-Anfragen/-Antworten werden validiert. Keine
+Änderung normaler Anwendungsaktionen oder historischer SQL-Dateien.
+
+Utility bindet CampaignStore und PartyStore ausschließlich aus dem gewählten
+Originalbaum ein. Vor read/advance muss dessen ursprünglicher Persistence-
+Preflight alle Daten als ready bestätigen; kein Lesen mit versehentlicher
+Vorwärtsmigration. Seed verweigert bereits vorhandene Daten, erzeugt aktive,
+inaktive und Trash-Kampagne, abweichende Einstellungen, eigene Binär-/Textdateien
+und ein leeres Verzeichnis sowie benannte Charaktere mit XP/Sprachen/Werten.
+Read liefert konkrete Werte aus allen drei Kampagnen und eigene Dateiinhalte;
+advance verändert XP über den ursprünglichen PartyStore und belegt weitere
+Facharbeit. Diese Fixture ist zunächst ausdrücklich partiell; Weltinhalte,
+Kampf-/Reisezustand und Loot31-Fakten bleiben im Phase-5-Plan verpflichtend.
+
+Weil die gemeinsame Sperre zusätzliche aktuelle Harness-Abhängigkeiten einbindet,
+erfasst der Builder nun auch die tatsächlich gebündelten Quelldateien samt Hash,
+getrennt vom unveränderten Originalbaum. Nach statischer Prüfung neues A-Artefakt
+in neuem Ausgabeordner bauen; altes Identitätsartefakt erhalten. Seed/read/advance
+aus denselben Bytes prüfen und Schema/semantische Werte vergleichen. Ein
+Migrationsbefehl wird erst im nächsten Abschnitt über Original-Preflight und
+Original-Migrationsregistry auf einer Arbeitskopie ergänzt; kein In-place-Test
+als Nachweis journalgestützter Aktivierung ausgeben.
+
+Profilbefehle implementiert: validierte Request-/Response-Verträge und eindeutige
+Ergebnisdateien, gemeinsame Main-Profilsperre bis zum Utility-Ende, ursprüngliche
+CampaignStore-/PartyStore-/Preflight-Bindungen. read/advance verlangen ready vor
+Öffnen; seed verweigert jedes vorhandene Profil. Der Builder erfasst nun alle
+tatsächlich gebündelten Harness-Abhängigkeiten mit Dateidigests und prüft ihre
+Unverändertheit. Originaldateien bleiben separat durch Commit/Tree gebunden.
+
+Typprüfung 51960 und ESLint 67436 bestanden. Build A mit erweitertem Harness
+32275 Exit 0, neues eigenes Ausgabeverzeichnis a-profile-v1. AppImage-SHA-256
+9e05893db392a1c13dc60080ee8fc28683713a04d4eb1aa52f5a9ea8f4c955a6.
+Der vorherige reine Identitätsbuild bleibt erhalten. Tatsächliche AppImage-
+Abnahme 12556 Exit 0: seed, read, advance, read, abgelehnter seed und read.
+Jeder Aufruf prüfte Prozessende, Paketversion, Request-ID und Erfolg/Fehler.
+Initiales und erneut gelesenes Profil stimmen vollständig überein. Drei
+Kampagnen, eine davon im Trash, dunkles Theme, Charaktersprachen und leeres
+eigenes Verzeichnis explizit geprüft. Weiterarbeit erhöht nur die aktive
+Charakter-XP um 25; die anderen Kampagnen bleiben gleich. Nach verweigertem
+Neuanlegen bleibt der gesamte spätere Readback identisch.
+
+Unabhängige abschließende SQLite-Prüfung: genau vier Datenbanken, Installation
+37 und alle drei Kampagnen 34, jeweils integrity_check=ok und keine verletzten
+Fremdschlüssel. Ergebnisse unter work/roadmap-phase5-profile-a-evidence.json;
+pro Request unveränderte Berichte unter dem isolierten historischen Testprofil.
+
+Abschnittsaudit bestanden für die ausdrücklich partielle Fixture. Dies belegt
+Erzeugung, Persistenz und eine spätere Fachänderung in Originalruntime A. Keine
+historische Migration oder gekoppelte Aktivierung ausgeführt; Welt-/Kampf-/
+Reise-/Loot-Fakten und die vollständige Fehler-/UI-Matrix bleiben ausstehend.
+Nächster Abschnitt: wiederverwendbaren Artefaktrunner und Originalmigrations-
+auftrag auf Arbeitskopien ergänzen, dann A→B und A→C tatsächlich vergleichen.
+
+### Phase 5 – Runner und Originalmigrationen auf Arbeitskopien
+
+Konkreter Plan: ein wiederverwendbarer Runner validiert den historischen
+Artefaktbeleg und Dateinamen, prüft Größe/Hash vor Ausführung, bindet jeden
+AppImage-Aufruf an Request-ID/Operation/Version und wartet auf dessen tatsächliches
+Prozessende. Ergebnis und Laufzeitbeleg bleiben pro Aufruf erhalten. Eine
+Testdeadline beendet ausschließlich die eigens gestartete Prozessgruppe;
+Beobachtungszeitlimits lösen keinen neuen Lauf aus. Byteidentität nach dem Lauf
+erneut prüfen. Strukturierte fachliche Fehler sind von Prozess-/Protokollfehlern
+zu unterscheiden.
+
+Getrennte Arbeitskopie: nur in neuem Ziel-XDG-Ort anlegen, ursprüngliches
+Testprofil mit gemeinsamer Sperre halten und vollständigen Dateibaum einschließlich
+WAL/SHM/leerem Verzeichnis kopieren. Vorher/nachher Inventar der unveränderten
+Quelle vergleichen; Arbeitskopie außerhalb des Profils ausdrücklich markieren.
+Dies ist Fixturetransport unter exklusiver Sperre, kein Ersatz für den produktiven
+Online-Backup-/Updateablauf und kein Beleg seiner Aktivierung.
+
+Test-Utility erhält migrate nur für diese markierte Arbeitskopie. Vorab den
+vollständigen Original-Preflight ausführen; sämtliche ermittelten Datenbanken mit
+dem unveränderten applySchemaMigrations der Zielquelle aktualisieren, WAL
+abschließen und Integrität/Fremdschlüssel prüfen. Danach ready und fachlichen
+Readback durch dieselbe Zielruntime verlangen. Bericht enthält tatsächliche
+Migrations-IDs und vorherige/erreichte Versionen, getrennt von fachlichen Werten.
+
+Nach statischer Prüfung B mit Originalschema 38/34 bauen, A-Profil auf Arbeitskopie
+mit B migrieren und gegen A-Readback vergleichen; ursprüngliches A-Profil bleibt
+unverändert. Danach C für A→C und B→C einschließlich späterer Arbeit verwenden.
+Unveränderte Quellbäume, separate Harnessbelege, Datenpaaraktivierung und echte
+Update-UI bleiben strikt getrennte Nachweise im vollständigen Phase-5-Plan.
+
+Erste Runnerprüfung: 17 Quellen-/Artefaktfälle (39011) und Typprüfung 18441
+bestanden. ESLint 27520 fordert für den unbekannten kill-Fehler einen Error als
+Promise-Rejection. Fixplan: diesen Fehler mit Ursache in einen Error einbetten,
+ohne Timeout-/Prozessbeendigung zu ändern, und betroffenes ESLint wiederholen.
+
+Korrektur-ESLint 13336 bestanden. B-Build 68822 Exit 0 mit Originalcommit
+6e84a12c1c83cd6437680ae70529cdc9723c353b und Testversion 0.0.138;
+AppImage-SHA-256 f679ff8e6fa291487b70ce3c6c32185230555c720f4cb0b6117734509f6f482a.
+Der neue wiederverwendbare qualify-historical-migration.ts orchestriert Quelle,
+markierte Arbeitskopie, Ablehnung des unmigrierten Stands, Migration, Wiederlesen,
+Weiterarbeit und Kontrolle der Quelle. CLI-ESLint 8611 und Typprüfung 18589 bestanden.
+
+Tatsächlicher A→B-Lauf 91477 Exit 0, Nachweis
+work/historical-a-to-b-v1/historical-migration-evidence.json. A-Bytes
+9e05893db392a1c13dc60080ee8fc28683713a04d4eb1aa52f5a9ea8f4c955a6
+gegen die oben benannten B-Bytes. Die Originalmigration
+installation-37-to-38-campaign-registry-revision wurde tatsächlich ausgeführt;
+Installation ist danach 38, alle drei Kampagnen bleiben 34. Vor Migration
+verweigert B den Readback. Danach stimmen sämtliche bisher erfassten
+Profilwerte mit A überein; B kann XP weiter erhöhen und denselben späteren
+Stand nach Neustart lesen. Der abschließende A-Readback bleibt identisch.
+
+Abschnittsaudit: echte Originalmigration und eigene Zielruntime mit partieller
+Fixture belegt. Kein Beleg für Updatefeed, Programmaktivierung oder vollständigen
+Spielzustand. Nächster Lauf: C-Bytes bauen und A→C sowie B→C ausführen, damit
+das Überspringen und die mehrstufige Kette dieselben Originalmigrationen prüfen.
+
+C-Build 64706 Exit 0: Originalcommit
+c583e05506e10d8446a4e210fa0603e3be53d63a, Testversion 0.0.139, AppImage-SHA-256
+bcfadf0f953588db692c4766ea7a5a7c463e8a44a8d26e5eaedd24e2c61deecf.
+A→C 44982 besteht (Exit 0): echte Installation 37→38→39 über
+campaign-registry-revision und campaign-command-receipts, Kampagnen 34 bleiben
+34. Sämtliche partiell erfassten Inhalte werden vor/nach Migration und nach
+weiterer XP-Arbeit geprüft. Quelle unverändert. Nachweis
+work/historical-a-to-c-v1/historical-migration-evidence.json.
+
+B→C 46953 besteht (Exit 0) aus dem bereits unter B fortgeführten A-Profil:
+Installation 38→39 durch installation-38-to-39-campaign-command-receipts.
+Die nach A→B geleistete Arbeit bleibt erhalten, C ermöglicht weitere Arbeit,
+und der unveränderte B-Quellstand bleibt lesbar. Nachweis
+work/historical-b-to-c-v1/historical-migration-evidence.json. Dieselben C-Bytes
+wurden für beide Pfade verwendet; keine Neubauten zwischen diesen Abnahmen.
+
+Plan-Audit dieses Abschnitts bestanden: A→B→C und A→C laufen mit tatsächlichen
+Original-Schemawechseln in echten AppImages, nicht nur umbenannten aktuellen
+Bundles. Der Runner bindet Ergebnisse an Dateihashes, Request-IDs und Prozessende.
+Roadmap-Audit bleibt unvollständig: partielle Fixture, keine gekoppelte
+Programmaktivierung, kein UI-Updateweg, keine volle Fehler-/Restorematrix.
+Noch erforderlich: reichhaltiger Fachzustand, aktuelles Ziel 42/41, gleicher-
+Schema-Fall, Loot30→31, echte Unterbrechungen/WAL/Platz/Zugriff/Parallelstart,
+fehlende/neue Formate, Restore und spätere Arbeit. Phase 5 bleibt offen.
+
+### Phase 5 – Fortsetzbarer Kampf und eigene Orte
+
+Plan vor Fixture-Erweiterung: den tatsächlich vorhandenen Originalablauf aus
+live-play.test.ts verwenden: Charakter der Szene zuweisen, benannte feindliche
+Wolfsgruppe mit Notiz speichern, Kampf vorbereiten, Initiative bestätigen,
+poisoned auf einer Gegnerkarte setzen und einen Zug fortschalten. Pro Kampagne
+einen eigenen Ort mit Tags, Vorlesetext und Spielleitungsnotiz anlegen. Original-
+LivePlayService, DatabaseAccess und WorldLocationStore über explizite historische
+Aliase einbinden; keine direkte Fixture-SQL-Abkürzung.
+
+Readback erweitert sich um vollständigen LiveSessionSnapshot und Ortsbestand
+aller Kampagnen einschließlich Trash. Die Weiterarbeit im aktiven Bestand erhöht
+weiterhin XP und schaltet zusätzlich einen tatsächlich laufenden Kampfzug fort.
+Abnahme prüft vor Migration vorhandene Gruppen, Zustände und Initiative, danach
+vollständige Gleichheit sowie fortgesetzten und erneut geladenen Kampfzustand.
+Der generische Runner darf eine leere/unvorbereitete Kampfsnapshot nicht als
+Fortsetzbarkeit werten.
+
+Neue Fixturekennung und neue Artefakt-/Profilverzeichnisse verwenden; bisherige
+partielle Belege bleiben unverändert. Zuerst Typen/Lint, dann A und C mit demselben
+erweiterten Harness bauen und den überspringenden Originalmigrationspfad erneut
+prüfen. B und die vollständige Matrix folgen für die finale Fixture. Reise,
+Loot-Migration, NSC/Fraktionen und die übrigen Abnahmeanforderungen bleiben offen.
+
+Erweiterung implementiert und statisch geprüft: Typprüfung 66482 und ESLint
+27711 bestanden. combat-profile.ts nutzt ausschließlich die Originalservices;
+zusätzlich zu poisoned werden zwei Trefferpunkte Schaden gespeichert. Der
+Runner verlangt vorbereiteten Kampf, vergifteten verletzten Gegner, eigenen
+Ort und nach Weiterarbeit höhere Kampfrevision sowie andere aktive Karte/Runde.
+Die dünne CLI run-historical-artifact.ts macht einzelne Harness-Aufträge ohne
+temporäres Eval-Skript ausführbar.
+
+Buildsequenz 93418 vollständig Exit 0. A-combat-v2 hat SHA-256
+4c1c3196e42c6792df4d8d3e351693065f35c3cef37ca72aec90bebc44e5576f;
+C-combat-v2 hat SHA-256
+583b43ce40be8aa015ad805c41abfcd2e288f383a9f59042009bb17f54015e0f.
+Seed aus tatsächlichem A-AppImage 46367 Exit 0. A→C 5641 Exit 0, Beleg
+work/historical-a-to-c-combat-v2/historical-migration-evidence.json. Originale
+Installation 37→38→39, alle Kampagnen 34. Vollständige erfasste Sessions/Orte,
+Charaktere, Kampagnen und eigene Inhalte stimmen nach Migration überein. Der
+aktive Kampf wird unter C fortgesetzt; erneutes Lesen bestätigt den späteren
+Zustand. A bleibt unverändert. Alle drei Kampagnen, einschließlich Trash, tragen
+einen echten laufenden Kampf statt einer leeren Fachprojektion.
+
+Abschnittsaudit bestanden: fortsetzbarer Kampf und eigene Orte sind im
+überspringenden historischen Artefaktpfad belegt. Die Fixture bleibt ohne
+Reisefortschritt, NSC-/Fraktionsbestand und Loot-Migrationsfakten unvollständig;
+die volle Matrix ist mit der finalen Fixture erneut auszuführen. Aktueller
+Zielstand 42/41, gekoppelte Aktivierung, UI, Fehlerfälle und Restore bleiben
+weiterhin verpflichtend. Phase 5 bleibt offen.
+
+### Phase 5 – Verknüpfte Weltinhalte und pausierter Reisefortschritt
+
+Plan vor Erweiterung: Original-EncounterTableStore und WorldFactionStore erzeugen
+eine eigene Begegnungstabelle und Fraktion; WorldLocationStore verknüpft sie mit
+dem eigenen Ort. Original-WorldNpcApplicationService legt einen benannten NSC
+mit Fraktions- und Ortsbezug sowie eigenen Textfeldern an. Readback prüft die
+vollen jeweiligen Bestände und ausdrücklich die erhaltenen Verknüpfungen.
+
+Original-HexMapStore erzeugt eine kleine begehbare Karte mit fünf Hexfeldern und
+Ortsplatzierung. Der Charakter wird der Standardszene zugewiesen; originaler
+HexTravelService startet die Route, erreicht mit kontrollierter Uhr einen
+Wegpunkt und pausiert. Danach beginnt der bereits qualifizierte Kampf auf dieser
+Szene. Beide Zustände bleiben gespeichert; es läuft keine Hintergrunduhr im
+Harness. Readback ergänzt Karte/Chunks und vollständigen Reise-Snapshot.
+Weiterarbeit setzt die pausierte Reise über den Originalservice fort, erreicht
+einen weiteren Wegpunkt und pausiert erneut. Position, Spielzeit, Wegindex und
+unveränderte Route werden explizit geprüft, zusätzlich zum Kampfzug/XP-Nachweis.
+
+Fixturekennung v3 und neue Artefakt-/Profilverzeichnisse verwenden. Keine neuen
+produktiven SQL-Abkürzungen. Statische Prüfungen, dann A/C neu bauen und den
+überspringenden Migrationslauf mit vollständigem Vergleich wiederholen. Diese
+Erweiterung betrifft den Schema-34-Kohortenbestand; Loot30/31 benötigt weiter
+seine auf die damals verfügbaren Besitzer abgestimmte fachliche Fixture.
+
+V3-Erweiterung implementiert: world-profile.ts verwendet Originalbesitzer für
+Tabelle, Fraktion, verknüpften Ort und NSC; travel-profile.ts erzeugt Karte und
+pausierte Reise über Originalservices mit kontrollierter Uhr. Profil-Readback
+enthält vollständige Welt-, Karten-/Chunk- und Reiseprojektionen. Weiterarbeit
+setzt Kampf und Reise fort. Der Qualifier verlangt die Referenzbeziehungen,
+einen zusätzlichen Wegpunkt, unveränderte Route und 3600 zusätzliche Spielsekunden.
+
+Statische Validierung: erste Typprüfung 78270 Exit 0; ESLint 75020 Exit 0;
+abschließende Typprüfung einschließlich erweitertem Qualifier 32110 Exit 0.
+Planabgleich: Implementierung des V3-Abschnitts vorhanden, tatsächliche A/C-
+Artefaktprüfung noch ausstehend. Roadmapabgleich: Phase 5 bleibt unvollständig;
+diese statischen Prüfungen belegen weder historische Laufzeitkompatibilität noch
+Updateaktivierung. Nächster Schritt: neue A/C-world-travel-v3-AppImages bauen,
+Seed und überspringenden Migrationspfad ausführen, Abweichungen vor Korrektur
+protokollieren. Frühere Artefakte und deren Nachweise bleiben erhalten.
+
+V3-Artefaktprüfung abgeschlossen: A-Build 98646, A-Seed 66285, C-Build 16955
+und A→C-Qualifikation 63053 jeweils Exit 0. A-SHA256
+45883945c2dd3cc5e267d893fecaaf98b55085d48793d05019ad9f2bb7fccf44,
+C-SHA256 ec801da1a7d75adbbbd6fb9554a51a05814b2f5cfa01e2f20877986a2a254cdf.
+Beleg: work/historical-a-to-c-world-travel-v3/historical-migration-evidence.json.
+Alle drei Kampagnen (aktiv/inaktiv/Trash) enthalten verknüpfte Weltinhalte,
+laufenden Kampf und pausierte Reise bei Wegindex 1. Originale Installation
+37→38→39 ausgeführt, Kampagnen bleiben bei 34. Vollständige erfasste Projektionen
+nach Migration identisch, anschließend XP/Kampfzug/Reise fortgesetzt und erneut
+identisch geladen. Aktive Reise erreicht Index 2 mit 3600 zusätzlichen
+Spielsekunden; das Quellprofil bleibt im vollständigen Readback unverändert.
+
+Plan-Audit des V3-Abschnitts: bestanden einschließlich tatsächlicher historischer
+Laufzeiten, Referenzerhalt und fortsetzbarer Reise. Roadmap-Audit: Teilnachweis;
+Loot-Migration, vollständige finale Matrix, aktueller Zielstand 42/41,
+Produktionsaktivierung mit UI/Feed, Fehlermatrix und Restore bleiben offen.
+Phase 5 wird nicht geschlossen. Keine laufenden Builds/Tests nach diesem Lauf.
+
+### Phase 5 – Übergang zum aktuellen Originalstand 42/41
+
+Voriger Goal-Turn: Fortschritt durch V3-Implementierung und bestandenen echten
+A→C-Migrationsnachweis. Aktueller Checkout bestätigt den unveränderten grünen
+App-Commit bd8b33c4f5b6e5f064deb64278d9097f739cac6d mit Installation 42 /
+Kampagne 41. Keine laufenden Builds oder Tests festgestellt.
+
+Plan: Diesen vollständigen Commit als expliziten Vergleichsstand current in den
+Quellkatalog aufnehmen. Ein neues Test-AppImage 0.0.142 mit den unveränderten
+Originalquellen und demselben V3-Harness bauen. A→current auf neuer Profilkopie
+prüfen; dabei müssen erstmals auch die Kampagnenschemata 34→41 migrieren.
+Vollständiger Projektionsvergleich bleibt zunächst streng. Falls neue fachliche
+Felder einen begründeten Vergleichsvertrag benötigen, zuerst konkrete Differenz
+und Migrationsverantwortung untersuchen und einen Korrekturplan protokollieren;
+keine pauschale Entfernung unbekannter Felder oder Abschwächung der Assertions.
+Eigene Dateien, Referenzen, Kampf und Reise müssen erhalten und fortsetzbar sein.
+
+Current-Build 85775 Exit 0. A→current 31672 endet erwartungsgemäß am strengen
+Vergleich mit Exit 1, nachdem Originalmigrationen und Fachreadback erfolgreich
+waren. Konkrete Differenzen: neue burden-Projektion (shortTrusted/longTrusted
+false, dailyBudget 1200) an beiden Party-Lesestellen; lastOpenedAt null für alle
+Registry-Einträge; Settingsrevision +1 und entfallenes altes Standardlayout.
+
+Korrekturplan vor Änderung: Eigenständigen erwarteten Migrationszustand aus der
+Quellprojektion bilden, eng begrenzt auf den nachgewiesenen Übergang 34→41 /
+37–39→42. Nur die ausdrücklich erwarteten neuen Felder hinzufügen. Die damalige
+Fixture besitzt ausschließlich das alte Standardlayout; dessen Ablösung ist in
+scene-desktop-roadmap.md Phase 6 vorgesehen und Installation 41→42 umgesetzt.
+Nur exakt dieses Standardlayout darf dieser Vergleich entfernen, kundenspezifische
+Layoutwerte müssen den Test abbrechen und gesondert geprüft werden. Theme bleibt
+unverändert, Revision erhöht sich genau einmal. Alle übrigen Felder bleiben im
+vollständigen Gleichheitsvergleich; keine generische Normalisierung. Unitfälle
+prüfen Erwartungen, Quellunverändertheit und Ablehnung fremder Layoutwerte.
+Danach denselben unveränderten AppImage-Bytesatz auf frischer Arbeitskopie prüfen.
+
+Erwartungsvertrag implementiert in historical-profile-expectations.ts; dieser
+transformiert ausschließlich den bekannten Standardlayout-/Stufe-3-Kohortenfall.
+14 Unitfälle (inklusive bestehender Quellinspektion) in 37573 bestanden; ESLint
+und Typprüfung 31073 Exit 0. AppImage current unverändert mit SHA256
+4a4d93dd7c591911042adbb31e66f801e0e7e84316900a13af1b8d7b8d1c2bdb.
+
+Erneuter Lauf 57483 auf neuer Kopie endet Exit 1 erst bei advance: Migration
+37→42 / 34→41 und vollständiger erwarteter Profilvergleich sowie erneutes Lesen
+bestehen. Advance meldet scene_activity_conflict. Original-HexTravelStore.resume
+verhindert bei laufendem Kampf eine Reise; V3 hatte nach XP/Kampfzug die Reise
+auf derselben Szene fortgesetzt. Das war historisch zulässig, ist im aktuellen
+Fachmodell ausdrücklich verhindert. Kein Produktfehler aus dieser Beobachtung
+abgeleitet. Die fehlgeschlagene Kopie enthält bereits XP/Kampfzug-Änderungen und
+wird nicht als Ausgangsbestand wiederverwendet. Quellen und Artefakte unverändert.
+
+Korrekturplan vor nächster Harness-Änderung: Weiterarbeit in zwei explizite
+Aufträge aufteilen. Zuerst XP und Kampfzug, dann vollständiger read/persistierter
+Vergleich inklusive weiterhin unveränderter pausierter Reise. Anschließend über
+originales endCombat den Kampf beenden, Reise fortsetzen und erneut pausieren;
+separater Vergleich von Route, Position, Wegindex, Zeit, eigenen Weltinhalten und
+unberührten Kampagnen. Auch diesen Endzustand in neuem Utility-Prozess lesen.
+Der Nachweis des fortgesetzten Kampfs bleibt als Zwischenbeleg erhalten; kein
+Entfernen seiner Assertions zugunsten der Reise. Aufträge versioniert im Harness
+abbilden und neue Artefaktverzeichnisse verwenden; ältere V3-Bytes erhalten.
+Danach A→current mit vollständigen Nachweisen wiederholen und die übrige Matrix
+mit konsistentem Harness nachziehen.
+
+Plan-Audit aktueller Abschnitt: Originalmigration bis 42/41 und erwartete
+Fachreadbacks belegt, Fortsetzung wegen unpassender Testreihenfolge offen.
+Roadmap-Audit: Phase 5 bleibt offen, insbesondere echte Produktionsaktivierung,
+UI-Feed-Ablauf, Fehler-/Recoverymatrix und vollständige Restore-Abnahme. Kein
+Build-/Testprozess mehr aktiv am Ende dieses Abschnitts.
+
+Präzisierung vor Umsetzung: endCombat öffnet die Ergebnisphase. Der zweite
+Auftrag ruft danach completeCombat auf (keine besiegten Gegner, keine zusätzliche
+XP-Vergabe) und erst dann resume/tick/pause. Finale Kampfsnapshot muss null sein;
+der unveränderte gespeicherte Zwischenstand beweist zuvor den fortgesetzten Kampf.
+Neue Auftragsnamen advance-combat und finish-combat-and-travel vermeiden eine
+stille Umdeutung des bereits belegten V3-Auftrags advance.
+
+Korrektur implementiert: explizite Aufträge advance-combat und
+finish-combat-and-travel, vollständiger gespeicherter Kampf-Zwischenstand,
+anschließender Abschluss und gespeicherte Reise. Typprüfung 12809 und ESLint
+8736 Exit 0. Current-V4-Build 53764 Exit 0; SHA256
+18633206ffea1f4b3c24a91cfbdd7721cefd65a9396c3b55ace53408216534d9.
+A→current 27673 vollständig Exit 0, Beleg
+work/historical-a-to-current-sequential-v4/historical-migration-evidence.json.
+Originalinstallation 37→42 und alle drei Kampagnen 34→41; beide Fortsetzungs-
+Zwischenstände erneut geladen. Quelle unverändert. Plan-Audit Korrektur bestanden;
+Roadmap-Audit weiterhin Teilnachweis ohne gekoppelte Updateaktivierung.
+
+Nächster geplanter Matrixfall: aktuelles Original-AppImage erzeugt ein frisches
+V3-Fachprofil. Zweites AppImage desselben expliziten Originalcommits mit anderer
+Testversion 0.0.143 qualifiziert den Übergang ohne Schemaänderung. Neue Verzeichnisse,
+keine Wiederverwendung fehlgeschlagener Kopien. Vergleich darf keine Migration
+melden und keinen erwarteten Datenformatumbau anwenden; Fortsetzung von Kampf
+und Reise bleibt identisch verpflichtend. Dieser Fall bleibt als Daten-/Artefakt-
+prüfung vom noch offenen UI-Transport-/Aktivierungsnachweis getrennt.
+
+Ohne-Schemawechsel-Fall abgeschlossen: Current-Seed 22036 Exit 0, unabhängig
+gebautes zweites AppImage 36712 Exit 0, SHA256
+066d6a6eee0ed94614cc563348eda653d7b694f16b755ac5d0e29507ce01306e.
+Version 0.0.142→0.0.143, beide Originalcommit bd8b33c4f5b6e5f064deb64278d9097f739cac6d.
+Qualifikation 94768 Exit 0, Beleg
+work/historical-current-to-next-sequential-v4/historical-migration-evidence.json.
+Alle vier Datenbanken bleiben auf 42/41; keine Migration wird ausgeführt.
+Vollständiger Profilvergleich, fortgesetzter Kampf, Abschluss, fortgesetzte Reise,
+erneutes Laden beider Zwischenstände und unveränderte Quelle bestätigt.
+
+Abschließende statische Prüfung 37302 Exit 0. ESLint leer/erfolgreich und alle
+20 Unitfälle in 89649 bestanden. Keine Builds/Tests mehr aktiv.
+Plan-Audit dieses Abschnitts: sequenzielle Fortsetzung und echter Artefaktfall
+ohne Schemaänderung bestanden. Roadmap-Audit: A/B/C mit finalem Harness,
+Loot30→31, Fehler-/Abbruchmatrix, Produktionsaktivierung über kontrollierten Feed
+und UI sowie Restore bleiben offen. Kein vollständiger Updateweg behauptet;
+alle aktuellen Nachweise verwenden isolierte markierte Arbeitskopien und den
+expliziten historischen Utility-Harness. Phase 5 bleibt offen.
+
+### Phase 5 – Vollständiger Zwischenversionspfad mit späterer Arbeit
+
+Voriger Goal-Turn ist Fortschritt: sequenzielle Fortsetzung und schemafreier
+Artefaktvergleich bestanden. Aktuelle Dateien und Prozesszustand bestätigt.
+Plan vor Erweiterung: Qualifier erhält optional continuation-home. Nach dem
+vollständig erneut gelesenen Kampf-/XP-Zwischenstand wird das vollständige Profil
+unter bestehender exklusiver Kopiersperre in ein neues Verzeichnis kopiert und
+vom B-AppImage dort erneut gelesen. Der Vergleich muss exakt dem B-Zwischenstand
+entsprechen; dieser Beleg wird in den A→B-Nachweis aufgenommen. A→B schließt danach
+seinen Reise-/Abschlusstest weiterhin ab. B→C verwendet die erhaltene Kopie mit
+bereits erhöhten XP, fortgesetztem Kampf und eigener later-work.txt. So bleiben
+beide Abnahmeläufe vollständig, während der zweite echte spätere Arbeit übernimmt.
+
+B und C mit dem aktuellen sequenziellen Harness in neuen Verzeichnissen bauen.
+A→B, B→C und A→C ausführen. Keine Änderungen an historischen Appquellen oder SQL;
+keine Behauptung von Produktionsbackup/Updateaktivierung für die Harness-Kopie.
+
+B-Build 78847, C-Build 74530, A→B 66769 und B→C 17705 Exit 0.
+Parallel A→C 67046 Exit 1: Antwortdatei beweist Migration erfolgreich, jedoch
+stimmt Prozessabschluss nicht mit Erfolg überein; Runner verweigert korrekt den
+Erfolgsnachweis. Log enthält „Failed to clean up cache directory“, gemeinsame
+/tmp/appimage_extracted_d27f3a09da4c14919c9cd728a3dcfbc0 sowie Inotify-Limitmeldungen.
+Beide Prozesse verwendeten dasselbe C-AppImage mit standardmäßig gemeinsamem
+Extraktionsverzeichnis. Kein erneuter Start wegen Beobachtungstimeout: beide
+Prozesshandles sind terminal bestätigt.
+
+Korrekturplan: pro Harness-Auftrag eigenes TMPDIR innerhalb des isolierten
+Reportverzeichnisses mit restriktivem Modus bereitstellen. Damit konkurrieren
+Extraktion und Aufräumen desselben AppImages nicht um einen gemeinsamen Pfad.
+Fehlerdiagnose bei widersprüchlichem Abschluss um tatsächlichen/erwarteten Exitcode
+und Request-ID ergänzen, ohne die Erfolgsbedingung abzuschwächen. A→C anschließend
+auf neuer Kopie wiederholen; parallele Identitätsaufrufe desselben Artefakts mit
+isolierten Profilen prüfen zusätzlich die Extraktionsisolation. Inotify-Limits
+werden nicht global verändert. Historische AppImage-Bytes bleiben unverändert.
+
+Extraktionskorrektur geprüft: ESLint und sechs Runner-Unitfälle 8916 bestanden;
+A→C 13023 Exit 0 auf neuer Kopie. Zwei parallele C-Identitätsaufrufe 35170/85433
+beide Exit 0, während A→C lief. Kein gemeinsamer TMPDIR mehr. Abschließende
+Typprüfung 30263 Exit 0, git diff --check bestanden.
+
+A/B/C-Artefakte dieses Nachweises: A 45883945c2dd3cc5e267d893fecaaf98b55085d48793d05019ad9f2bb7fccf44;
+B b37be6fec9668cca8d6a3545a6c213d531e8455c459c24fa59cdc4b03ba6dd55;
+C bc5911f9789a61aa2706c3f1e197f65cf70b6818038c1e8c3d0ebfcd7e65d52e.
+A ist die unveränderte V3-Quellfixture; B/C besitzen die expliziten sequenziellen
+V4-Aufträge. Readback-Inhalt bleibt kompatibel. Kein identischer Harness-Build
+aller drei behauptet; deren individuelle Herkunft steht in jedem Manifest.
+
+Kettenbindung zusätzlich vollständig verglichen und in
+work/historical-a-b-c-chain-v4.json festgehalten: B-continuation entspricht exakt
+dem erneut gelesenen B-Zwischenstand sowie der B→C-Quelle; Artefakthash identisch.
+Unter B gespeicherte 1000 XP und later-work.txt werden übernommen. Beide
+Einzelnachweise sind mit SHA256 gebunden. A→C-Nachweis:
+work/historical-a-to-c-sequential-v4-isolated/historical-migration-evidence.json.
+
+Plan-Audit: A→B→C mit unter B entstandener Arbeit sowie direkter Sprung A→C und
+Fortsetzung/Neuladen in allen Zielständen bestanden. Roadmap-Audit weiterhin
+Teilnachweise: Loot30→31, echte Migrations-/Aktivierungsabbrüche, Fehlerfälle,
+Produktions-UI-Feed-Aktivierung und Restore fehlen. Keine parallele echte
+Profilnutzung aus separaten TMPDIR-Identitätsaufrufen abgeleitet. Phase 5 offen;
+alle gestarteten Prozesse dieses Abschnitts terminal beendet.
+
+### Phase 5 – Original-Loot-Kohorte 30→31
+
+Voriger Turn Fortschritt durch Kettennachweise und korrigierte Extraktionsisolation.
+Originalquellen 30/31 untersucht: LootService erzeugt manuelle Schätze und
+Verteilungen; Schema 31 ersetzt kopierte Itemfakten durch kanonische Referenzen.
+Der existierende Integrationstest verwendet reduzierte Tabellen und ersetzt den
+verpflichtenden Original-AppImage-Nachweis nicht. Schema 30 besitzt noch keine
+NSC-Services der V3-Fixture; CampaignStore bietet visitCampaignDatabases, aber
+noch nicht visitCampaignDatabase. Keine spätere API wird in alte Quellen kopiert.
+
+Plan: Generischen Migrationslauf in ein gemeinsames Harness-Modul extrahieren,
+mit Fachreadback als Callback. Builder bindet Worker-Profil über explizite
+Fixtureauswahl aus dem gepinnten Quellkatalog (30/31→Loot, sonst Welt/Spielstand).
+Eigenes Loot-Profil zunächst mit original erzeugtem manuellem Schatz, teilweiser
+Verteilung und Ledger aufbauen; eigene IDs außerhalb der Datenbank als
+Fixturemanifest speichern. Originalschema unverändert. Danach Generatorbestand,
+Verteilung/Korrektur und archivierte Receipts ergänzen; manuelle Teilfixture ist
+kein Abschluss des Loot-Nachweises. Strenger Readback mit expliziten erwarteten
+Referenzänderungen; keine generische Entfernung neuer Felder. Ziel 31 liest und
+bearbeitet migrierte Daten über seine eigenen Originalservices.
+
+Statische Prüfung 88723/6718 fehlgeschlagen: die heutige CampaignStore-Typreferenz
+enthält die in beiden Originalständen tatsächlich vorhandene Methode
+activeCampaignDatabase nicht mehr. Korrekturplan: eigener enger Legacy-Store-Port
+für die Loot-Kohorte mit den verwendeten, an Originalquellen nachgewiesenen
+Methoden. Keine Ergänzung der entfernten API in produktivem aktuellem Store;
+kein any-Cast. Builder bindet den Port weiterhin auf dieselbe Originaldatei.
+
+Loot-Kohortenport korrigiert, Typprüfung/ESLint 63815 bestanden. Original-Loot30-
+AppImage-Build 87638 und Seed 46653 Exit 0; Original-Loot31-Build 76437 Exit 0.
+Qualify-historical-loot.ts vergleicht ausschließlich die ausdrücklich ausgewiesene
+manuelle Teilfixture: kopierte Itemfakten werden in erwartete Legacy-Definitionen
+überführt, IDs/Referenzen/Werte/Verteilungen und übriger Profilinhalt vollständig
+verglichen. Zielservice teilt anschließend eine zweite Handkarte zu. Beide
+Ledger-Einträge und Schatz müssen dieselbe erwartete Definition auflösen.
+
+Qualifikation 55876 Exit 0; Beleg
+work/historical-loot30-to31-manual-v1/historical-loot-evidence.json.
+Installation und Kampagne original 30→31; Handkartenwert 250 cp und Gesamtmenge 3
+bleiben erhalten. Zuteilung nach Migration von 1 auf 2 erweitert, erneut geladen;
+Quellprofil unverändert. Qualifier-ESLint 69648 und abschließende Typprüfung 84787
+Exit 0. git diff --check bestanden. Alle Prozesse terminal.
+
+Plan-Audit manueller Teil: echte Erzeugung, Migration, Readback und weitere
+Verteilung nachgewiesen. Roadmap-Audit: Loot-Kohorte bleibt unvollständig bis
+Generatorbestand, relevante Korrekturen/Status und archivierte Receipts belegt
+sind. Dafür ist Originaltest loot-vertical-slice.test.ts ab Zeile 1144 der nächste
+konkrete Pfad: SessionGenerationService mit BundledEncounterCatalogProvider,
+sha256EncounterEntropy, OriginaldefaultGeneratorConfig und seed 1000 erzeugt
+und speichert einen echten Run; LootService.acceptGenerated übernimmt ihn.
+Keine generierten Fakten als neue Fixture-SQL-Zeilen nachbilden. Die ausgelagerte
+Migrationsimplementierung wird vor finaler Matrix auch für Welt/Spielstand erneut
+im neu gebauten Harness ausgeführt; frühere Artefaktbelege bleiben unverändert.
+Phase 5 und alle nachfolgenden Phasen bleiben offen.
+
+### Phase 5 – Original erzeugte Beute und unveränderlicher Generatorlauf
+
+Voriger Turn Fortschritt: manuelle Loot-Migration mit tatsächlichen 30/31-
+AppImages bestanden. Aktuelle Dateien/Prozesse geprüft; keine laufenden Tests.
+Plan vor Erweiterung: Original-SessionGenerationService erzeugt mit mitgeliefertem
+Katalog catalog-2026-07-16, Original-Entropy, Original-Defaultpreset und Seed 1000
+einen gespeicherten Run. Original-LootService.acceptGenerated übernimmt einen
+nichtleeren Schatz. Eine Position wird dem Fixturecharakter zugeteilt. Run-/
+Schatz-/Positions-IDs werden im Fixturemanifest gebunden. Readback enthält den
+vollständigen Originalrun, übernommenen Schatz und gemeinsamen Charakterledger.
+
+Die Originalressourcen werden innerhalb des AppImages über process.resourcesPath
+angesprochen; kein Zugriff auf einen Entwicklerkatalog. Versionierte V2-Fixture
+und neue Artefakte statt Überschreiben der manuellen V1-Belege. Ziel 31 liest den
+migrierten Run durch seinen Original-GeneratedRunStore. Vergleiche prüfen
+kanonische Referenzidentität zwischen Run, übernommenem Schatz und Ledger sowie
+alle übrigen Run- und Profilfakten. Die Umwandlung der Auditprojektion wird gegen
+die konkreten Originalmigrationen geprüft. Korrektur-/Archivbelege bleiben noch
+verpflichtend; generierte Teilfixture allein schließt Loot nicht ab.
+
+Typprüfung 19016 findet einen Einfügefehler: generated wurde zusätzlich im
+manuellen Verteilungsauftrag vor seiner Deklaration eingesetzt. Korrekturplan:
+diesen unzulässigen Zusatz nur dort entfernen; Manifestbindung nach dem
+Generatoraufruf bleibt erhalten. ESLint 73410 ohne Befund. Danach Typen erneut.
+
+Generated-V2: Loot30-Build 63459, Seed 42024, Loot31-Build 11762 Exit 0. Original-
+Generator erzeugt zwei Schätze und nach Übernahme zwei Ledger-Einträge insgesamt.
+Migrationsprobe 48350 Exit 1 beim Fachreadback: rewardEngineVersion reward-v1
+wird vom Original-31-Vertrag (literal reward-v2) abgelehnt. SQLite-Migration allein
+ist somit kein Fachlesbarkeitsnachweis. Auch der heutige Persistenzvertrag erlaubt
+nur reward-v2/v3; Herkunft darf nicht auf eine neuere Engine umetikettiert werden.
+
+Korrekturplan für Produktfehler: vollständige, vom Original-30-AppImage erzeugte
+Kampagnen-DB komprimiert als synthetische Regressionfixture einfrieren, mit
+Quellcommit/Artefakthash/DB-Hash und Originalrun-Readback. Auf frischer DB-Kopie
+heutige Originalmigrationskette ausführen; GeneratedRunStore muss reward-v1 und
+unveränderte Run-ID, Fingerprint, Erzeugungszeit, Katalog und Begegnungen lesen.
+Zunächst roten Test ausführen. Persistierten Versionsvertrag dann um die konkret
+bekannte reward-v1 ergänzen; neue Erzeugung bleibt auf reward-v3 beschränkt und
+unbekannte Versionen bleiben ungültig. Weitergehende Differenzen separat erfassen.
+Historisches 31-Artefakt bleibt unverändert als reproduzierbarer Fehlerbeleg.
+Dieser Befund macht für die Abnahme einen korrigierten aktuellen Zielcommit nötig;
+kein Patch in die als Original deklarierten 30/31-Quellen.
+
+Regression 73829 ist erwartungsgemäß rot: heutiger GeneratedRunStore lehnt den
+Original-run nach vollständiger heutiger Schema-Migration allein wegen reward-v1
+ab. Keine native ABI-/Testumgebungsstörung. Jetzt die geplante enge Erweiterung
+des persistierten Versionsvertrags ausführen und denselben Test wiederholen.
+
+Produktkorrektur implementiert: persistierter rewardEngineVersionSchema akzeptiert
+jetzt reward-v1/v2/v3. Erzeugungsverträge bleiben literal reward-v3; unbekannte
+Versionen werden abgewiesen. Regression mit eingefrorener Originaldatenbank sowie
+bestehender GeneratedRunStore-Suite: 16105 Exit 0, fünf Tests bestanden. Der Test
+prüft ausdrücklich, dass reward-v1 unverändert in SQLite bleibt und nicht als
+aktuell generierter Run akzeptiert wird. ESLint und abschließende Typprüfung
+95559 Exit 0; git diff --check bestanden.
+
+Neue synthetische Fixture tests/fixtures/historical-loot30: vollständige DB
+komprimiert (28 KiB), Originalrun (12 KiB), Provenienz und Nutzungshinweis.
+Original-AppImage-SHA256
+2e0c1d71e1336dce02e89f424cf191c68bd116b47d17175eee2e2d5ba7297dfc;
+unveränderte DB-SHA256
+d22c3fbf49a9f05b371a89038c1e9c507a9ee3a8405b5a344203edd05f1b32da.
+Readback-Provenienz im Fixturemanifest. Kein Nutzerprofil verwendet.
+
+Plan-Audit: Generatorfixture erzeugt; realer Kompatibilitätsfehler reproduziert,
+heutiger Persistenzvertrag korrigiert und native Regression bestanden. Vollständiger
+kanonischer Referenzvergleich des generierten Bestands, Ledger-Korrekturen und
+Receiptarchiv fehlen noch. Original-31-AppImage bleibt erwartbar inkompatibel;
+sein gescheiterter Readback ist kein qualifizierter Releasevergleich. Der korrigierte
+aktuelle Stand muss auf einem unveränderlichen Candidate-Commit neu gebaut und
+mit diesem Original-30-Profil tatsächlich qualifiziert werden. Eine Relabelung
+oder Änderung historischer Originalquellen ist ausgeschlossen.
+Roadmap-Audit: Phase 5 weiterhin offen; Produktkorrektur noch nicht kanonisch
+übergeben. Keine laufenden Tests/Builds am Ende dieses Abschnitts.
+
+### Phase 5 – Vollständige Loot-Referenzen und archivierte Befehlsbelege
+
+Voriger Turn Fortschritt: echter reward-v1-Readbackfehler behoben und Regression
+mit Originaldatenbank bestanden. Plan: Originalprofil-Readback ergänzend zum
+bereits eingefrorenen Run unverändert/hashgebunden ablegen; DB und Run unverändert
+lassen. Test vergleicht sämtliche generierten Itemdefinitionen und -positionen,
+übrige Generatorlaufdaten sowie übernommenen Schatz und Ledger gegen ausdrücklich
+abgeleitete Referenzumwandlung. Alle historischen Receipts vor der Migration
+vollständig lesen, anschließend das Archiv byte-/feldgleich vergleichen. Danach
+über CharacterLootStore einen empfangenen Eintrag als verkauft korrigieren und
+Original/Korrekturverkettung, Gegenstandsreferenz, Werte und erneutes Lesen prüfen.
+Der Archivevergleich wird nach Weiterarbeit erneut verlangt. Kein Nachbau alter
+Tabellen und keine Umbenennung der Generatorherkunft. Dies ist eine native
+fachliche Regression; das noch ausstehende neue AppImage ersetzt sie nicht.
+
+Vollvergleich 84449 scheitert gezielt am übernommenen Schatz: historisches
+provenance.catalogEntry wird in der aktuellen Projektion bei generated-Referenz
+null. Ownerbefund LootStore.project Zeilen 320ff: Katalogreferenzen werden nur
+für direkte catalog-Referenzen projiziert; generierte Definitionen tragen die
+ursprüngliche Katalog-ID in components.baseItemId. Bereits verglichener vollständiger
+Run/Definitionen ist identisch. Korrekturplan Vergleich: originale catalogEntry-ID
+und Art ausdrücklich gegen die zugehörige Definition prüfen, dann genau dieses
+redundante Projektionsfeld auf null erwarten. sourceLineId bleibt erhalten. Keine
+pauschale Entfernung der Provenienz und keine unbelegte Annahme von Datenerhalt.
+
+Vergleichskorrektur 32613 findet einen Adapterfehler: Zod-Projektion der alten
+Provenienz enthielt noch nicht catalogEntry und entfernte dieses vor der Prüfung.
+Korrekturplan: das vorhandene nullable Katalogfeld ausdrücklich in diesen engen
+Quellvertrag aufnehmen; Referenzvergleich unverändert beibehalten und wiederholen.
+
+67717 entdeckt einen weiteren Einfügefehler: die nur für Schatzpositionen gedachte
+Provenienztransformation wurde auch in den Ledger-Mapper eingesetzt. Korrekturplan:
+ausschließlich diesen Ledger-Zusatz entfernen; Ledgerprovenienz bleibt vollständig
+unverändert. Die Schatztransformation und ihr Katalog-ID-Nachweis bleiben bestehen.
+
+56018 besteht den vollständigen nativen Vergleich samt Korrektur und Archiv.
+Typprüfung 55984 beanstandet die nicht ausdrücklich typisierte characterId im
+Ledger-Erwartungswert. Korrekturplan: vorhandene characterId und revision im
+Quell-Ledgervertrag explizit validieren statt dynamischen Feldzugriff zu casten.
+Zusätzlich den korrigierten Stand nach Schließen/Neuöffnen der SQLite-Verbindung
+lesen, damit die Prüfung über einen neuen Store hinaus persistente Daten abdeckt.
+
+Vollständiger nativer Nachweis abgeschlossen: 72418 Exit 0, sechs Tests über
+Historical-Generated-Loot-, Loot31-Migrations- und GeneratedRunStore-Suites.
+Erwartungsvertrag historical-loot-expectations.ts vergleicht alle Run-Felder,
+sechs generierte Positionen/Definitionen, manuelle und übernommene Schätze sowie
+zwei Ledger-Einträge. Katalogherkunft ist in der Definition ausdrücklich gebunden.
+Alle vier alten Loot-Receipts stimmen nach Migration und nach Weiterarbeit exakt
+mit dem Archiv überein. Verkaufskorrektur erhält Originaleintrag und verknüpften
+Korrektureintrag; nach Schließen und neuer SQLite-Verbindung unverändert lesbar.
+Originalgeneratorlauf bleibt auch nach Korrektur vollständig unverändert.
+ESLint und Typprüfung 8530 Exit 0; git diff --check bestanden.
+
+Plan-Audit dieses nativen Abschnitts bestanden. Originalprofil-Readback ergänzt
+und via profileSha256 gebunden; zuvor eingefrorene DB/Runbytes unverändert.
+Roadmap-Audit: Abnahme im korrigierten aktuellen AppImage weiterhin offen. Der
+Legacy-Loot-Harness verwendet activeCampaignDatabase und Funktionszugriff, die
+heutige CampaignStore-/LootService-Schnittstelle nicht mehr anbietet. Vor dem
+neuen Artefaktnachweis einen ausdrücklichen Harness-Adapter über den in allen
+betroffenen Versionen vorhandenen visitCampaignDatabases-Owner-Scope vorsehen;
+aktuelle Services benötigen SqliteDatabaseAccess.use. Originalquellen unverändert
+lassen. Neuer aktueller Quellcommit muss die reward-v1-Korrektur enthalten und
+unveränderlich gebaut werden. Diese Adapter-/Artefaktarbeit ist noch nicht getan.
+Phase 5 offen, keine laufenden Prozesse.
+
+### Phase 5 – Aktueller Loot-Artefaktadapter
+
+Voriger Turn Fortschritt durch vollständigen nativen Referenz-/Archiv-/Korrektur-
+Nachweis. Checkout und Prozesszustand erneut bestätigt. Plan: Loot-Harness führt
+alle Datenbankarbeiten innerhalb visitCampaignDatabases aus und wählt darin nur
+die aktive Fixturekampagne. Kein Database-Handle verlässt den Callback. Ein
+expliziter Testzugriff unterstützt sowohl den historischen Funktionsaufruf als
+auch das heutige SqliteDatabaseAccess.use; beide sind auf den geöffneten Owner-
+Scope begrenzt. Builder erhält validierte optionale --fixture-Auswahl, damit ein
+aktueller unveränderlicher Quellcommit mit dem Loot-Readback gebaut werden kann.
+Ausgewählte Fixture wird im Artefaktmanifest dokumentiert. Eine aktuelle Loot-
+Neuerzeugung mit alten Itemeingaben wird nicht behauptet; Seed bleibt für Schema30.
+Gezielte Tests prüfen aktive Auswahl, Fehler ohne aktive Kampagne sowie Ablauf und
+Scope des Adapters. Danach Typen/Lint und kanonischen Candidate-Zwischenstand für
+das neue Originalquellen-Artefakt vorbereiten; Phase 5 dabei nicht schließen.
+
+Adapter implementiert und geprüft: Owner-Callback statt herausgereichtem aktivem
+DB-Handle; kompatibler Callable/use-Testzugriff; explizite validierte Builder-
+Fixtureauswahl im Manifest; Legacy-Seed verlangt Schema30. Typprüfung 29100,
+Adapter-/Originaldatenbanktests 93295, breites ESLint/Typprüfung 98649 und gezielter
+Checkpoint-Testlauf 63004 Exit 0. Keine laufenden Prozesse.
+
+Plan-Audit Adapter: implementiert und lokal geprüft. Roadmap-Audit: aktueller
+Artefaktlauf und gesamte restliche Phase 5 weiter offen. Jetzt den bestehenden
+Phase-5-Zwischenstand einschließlich reward-v1-Produktkorrektur auf dem vorhandenen
+Candidate-Branch festhalten und dort prüfen lassen. Dieser Commit ist ein
+unveränderlicher Ausgangspunkt für weitere Qualifikation, kein Phasenabschluss
+und keine Freigabe auf Main. Keine Veränderung realer Installationen vorgesehen.
+
+Candidate-Zwischenstand 1703c25c96366a7ff76d1d119b2250afcbf35690 committed und
+auf candidate/release-artifact-qualification gepusht; ursprünglicher Checkout
+anschließend sauber. Draft-PR 672 eröffnet, weil Check ausschließlich auf PRs
+und Main-Push reagiert. Vollständiger Check-Lauf 34329224274 für exakt diesen SHA
+ist queued bestätigt; kein CI-Erfolg und kein Handoff behauptet.
+
+Nächster konkreter Schritt: diesen Commit als neuen gepinnten Quellkatalogeintrag
+corrected (42/41) aufnehmen und mit --fixture loot in neuem Artefaktverzeichnis
+bauen. Historischer current-Eintrag bd8b33c bleibt unverändert als vorheriger
+Vergleichsstand. Der Builder verwendet den gepinnten vollständigen Commit, keine
+Arbeitskopie der Produktquellen. Lokale Artefaktqualifikation verändert keine
+reale Installation und ersetzt das vollständige Candidate-/Handoff-Gate nicht.
+
+Corrected-Loot-AppImage aus 1703c25c erfolgreich gebaut (14341 Exit 0).
+CI Portable-Job 102393613684 scheitert ausschließlich an Prettier für den
+hashgebundenen Original-Readback source-profile.json; übrige CI-Jobs laufen noch.
+Korrekturplan: die beiden bytegenau eingefrorenen Original-Readbacks gezielt von
+Formatierung ausnehmen, analog zu bereits ausgenommenen generierten Ressourcen.
+DB-/Readback-Provenienz und Integrationstest bleiben verbindlich; keine Umformatierung
+und kein Neuberechnen des Originalhashes. Alle übrigen Dateien weiter formatprüfen.
+Danach Probe mit dem bereits gebauten korrigierten Loot-AppImage ausführen.
+
+Formatterkorrektur 78286 Exit 0: vollständiger Prettier-Check besteht, eingefrorene
+Readbackbytes unverändert. Korrigiertes Loot-AppImage (Originalquellcommit 1703c25c)
+hat SHA256 5d0bf81ae71d7d891a064485e88cc46cc4bb4aeeca324bf69205587243005be9.
+Probe 29781 Exit 0: Originalkampagne 30→41, Installation 30→42 und vollständiger
+Loot-/Generator-Readback im aktuellen AppImage erfolgreich; reward-v1 bleibt erhalten.
+Probeausgabe work/roadmap-phase5-migrate-loot-corrected-v3-probe.log und
+Runtime-Receipts unter work/historical-loot30-to-corrected-v3-probe. Dieser Probe
+fehlt noch der gesamte erwartete Profilvergleich samt weiterer Bearbeitung und
+separatem Neustart; nicht als vollständige Artefaktabnahme gewertet.
+
+Plan-Audit: Adapter funktioniert auch im tatsächlichen korrigierten AppImage.
+Roadmap-Audit: kontrollierter Feed/UI-Aktivierung, Fehler-/Abbruchmatrix und Restore
+weiter offen. Vollständiger generierter Loot-Artefaktqualifier muss den bereits
+nativen Erwartungsvertrag plus explizite Installation-/Partyformat-Ergänzungen
+verwenden. Erst danach diesen Bereich schließen. Jetzt gezielte Formatterausnahme
+und gepinnte corrected-Quellidentität als Folgecommit pushen; neue CI muss den
+neuen SHA prüfen. Keine Main-Promotion/Handoff in diesem Abschnitt.
+
+### Phase 5 – Vollständiger generierter Loot-Artefaktvergleich bis 42/41
+
+Voriger Turn Fortschritt: Adapter, immutable Candidate/Draft-PR und erfolgreicher
+korrigierter AppImage-Readback. Check 34329574327 für 462c7a45 ist weiterhin pending
+bestätigt, nicht beendet. Aktueller Checkout sauber. Plan: neuer Qualifier nutzt
+das bestehende vollständige Loot-Erwartungsmodell und ergänzt exakt die anhand
+Originalmigrationen geprüften Profiländerungen 30→42/41: fünf Stufe-3-Mitglieder
+mit untrusted Burden/1200, Registryrevision 0 und lastOpenedAt null, Settingsrevision
++2 (altes Sessionlayout und spätere Desktopumstellung), Theme erhalten. Nur das
+bekannte Standardlayout zulassen. Alle übrigen Profilfelder vollständig vergleichen.
+
+Danach Originalzielservice teilt eine weitere manuelle Karte zu. Vergleich erlaubt
+nur deklarierte Schatz-/Ledgerrevision, Zuteilungsmenge/-wert, Änderungszeit und
+einen neuen Ledger-Eintrag; Generatorlauf, eigener Inhalt und vorhandene Einträge
+bleiben exakt gleich. Anschließend eigener neuer Prozess für Readback; Quelle
+ebenfalls erneut unverändert lesen. Aktuelle Artefaktbytes wiederverwenden, neue
+Arbeitskopie. Unitfälle schützen die enge Profilumwandlung vor stiller Normalisierung.
+
+### Phase 5 – Korrekturrunde: aktive Loot-Befehlsbelege nach Migration
+
+Erneut geprüft: der vollständige AppImage-Lauf in
+work/roadmap-phase5-generated-loot-full-artifact.log scheitert beim Weiterarbeiten
+mit `no such table: loot_operation_receipt`. Die Migration 30→31 archiviert die
+alten Belege; bereits auf 41 migrierte Profile können ohne aktive Belegtabelle
+vorliegen. Der bisherige native Korrekturtest umging den Befehlsservice und war
+für diese Fortsetzbarkeit zu schwach. Kein vollständiger Phasennachweis.
+
+Korrekturplan vor Produktänderungen: Regression mit der unveränderten originalen
+Schema-30-Fixture über LootService.distribute einschließlich Wiederholung und
+Neustart ergänzen. Fehlverhalten zuerst reproduzieren. Die kanonische Tabellen-
+initialisierung zum LootOperationJournal verschieben und sowohl für frische DBs
+als auch in einer neuen Vorwärtsmigration 41→42 verwenden. Historische Migration
+30→31 nicht umschreiben. Bestehende aktive und archivierte Belege erhalten;
+Registryversion von 21 auf 22 erhöhen. Neu benötigte Erwartungen gezielt anpassen,
+gepinnte historische Quellidentitäten unverändert lassen. Native Migrationstests,
+Versionstruth und Typprüfung durchführen; danach neues unveränderliches Ziel-
+artefakt für den vollständigen Lauf vorbereiten. Produktionsaktivierung, gesamte
+Fehlermatrix und restliche Phasen bleiben weiterhin offen.
+
+Check 34329574327 aktuell noch in_progress; Portable fehlgeschlagen, beide
+plattformnativen Jobs und verpackter Harness erfolgreich. Fehlerursache vor
+nächstem Candidate-Push ermitteln; kein Handoff aus unvollständigem Check.
+
+Regressionsbefund: RED-Lauf 99940 Exit 1 reproduziert exakt die fehlende aktive
+Tabelle im echten DistributeLootCommandHandler. Nach neuer 41→42-Migration besteht
+51822 Exit 0 einschließlich Befehlswiederholung und Neustart. Erweiterter Lauf
+16487: 23 Tests bestanden, zwei alte Erwartungen in combined-schema-35-migration
+verlangen weiterhin 41 statt aktuellem 42; Versionstruth und Typecheck bestanden.
+Korrekturplan: ausschließlich Assertions auf den aktuellen Endstand in den sieben
+betroffenen Migrationstests aktualisieren; historische Eingangsstände und gepinnte
+Artefakte unverändert lassen. Neuer Loot-Qualifier muss Ziel 42/42 verlangen.
+
+Erweiterte Prüfung 33681 Exit 0: 101 Tests in elf Dateien bestanden. Neue
+Vorwärtsmigration erhält bestehende aktive Belege und alle vier historischen
+Archivbelege; Verteilen ist nach Neustart idempotent. Lint und Formatprüfung
+78273 Exit 0; git diff --check sauber. Plan-Audit dieser Reparatur lokal erfüllt,
+Roadmap-Audit weiterhin offen bis neues tatsächliches Zielartefakt qualifiziert ist.
+
+Portable-Joblog 102394928389 jetzt direkt abgerufen: zwei Fehler in
+version-truth.test.ts, da die reward-v1-Erweiterung noch nicht im erwarteten
+Lesbarkeitsvertrag und Dokument abgebildet war. Dokument bereits im aktuellen
+Versionsabgleich korrigiert. Fixplan: erwartete explizite Liste um reward-v1
+ergänzen; Unknown-Version-Ablehnung und aktuelle Generatorversion unverändert
+prüfen. Gezielt Versionstruth-/historische Unitfälle erneut ausführen.
+
+Versionstruth-Unitlauf 33211 fand zusätzlich die explizite alte Kampagnenpfad-
+erwartung 41. Im Rahmen des aufgezeichneten Endstand-Abgleichs auf 42 samt
+vollständigem Pfad korrigiert. Wiederholung 22765 Exit 0: fünf Unitfälle bestanden.
+Keine lokale Prüfung läuft mehr. Nächster Schritt: aktuellen Reparaturstand
+als Candidate-Commit sichern, vollständigen Check auslösen und ihn als neuen
+unveränderlichen 42/42-Zielstand für die AppImage-Qualifikation verwenden.
+Historische Artefakte bleiben unverändert. Main und reale Installation unberührt.
+
+### Phase 5 – Unveränderliches Reparaturartefakt 42/42
+
+Voriger Turn war Fortschritt: neue Vorwärtsmigration samt 106 gezielten Tests.
+Vollständiger Formatcheck 7934 Exit 0. Reparatur jetzt als
+6d7889ca451762259bc4f472851c893bce57e1e0 auf dem Candidate gepusht (17125 Exit 0),
+Checkout danach sauber; vollständige CI noch nicht als bestanden behauptet.
+
+Plan: neuen Quellkatalogeintrag repaired mit genau diesem SHA und 42/42 ergänzen.
+Als Loot-Testartefakt 0.0.145 in neuem Verzeichnis repaired-loot-v4 bauen. Originale
+source30-Bytes wiederverwenden; vollständigen Qualifier auf neuer Arbeitskopie
+laufen lassen. Erfolg verlangt vollständigen Profilvergleich, zusätzliche
+Verteilung, separaten Prozessneustart und unveränderte Quelle. Erst dieser Lauf
+kann den vormals fehlgeschlagenen AppImage-Fall schließen; Produktionstransport,
+Aktivierung und Restore bleiben gesonderte Anforderungen der Phase 5.
+
+Reparaturartefakt gebaut: 87568 Exit 0. Vollständiger ursprünglicher Loot-Fall
+56947 Exit 0, Nachweis
+work/historical-loot30-to-repaired-v4-full/generated-loot-migration-evidence.json.
+Originalprofil 30→42/42 vollständig verglichen, weiter verteilt, neuer Prozess
+liest dieselben Daten, Originalquelle erneut unverändert. Der konkrete Fehler
+mit fehlender aktiver Belegtabelle ist damit auch im tatsächlichen AppImage behoben.
+Plan-Audit Reparaturartefakt bestanden; Roadmap-Audit Phase 5 weiter unvollständig.
+
+### Phase 5 – Vorbereitung des tatsächlichen UI-Updatewegs
+
+Quellinspektion: historischer Stand c583e055 besitzt noch keine Releaseoberfläche;
+er eignet sich nicht für einen behaupteten UI-Updatetest. Der vorhandene
+qualify-release-update.ts ruft Controller direkt auf und prüft nur Namen/Text.
+Nächster UI-Vergleich verwendet den tatsächlichen Main-Stand bd8b33c (42/41)
+gegen reparierten Stand 6d7889ca (42/42), plus historisch qualifizierte Daten.
+
+Plan vor Änderungen: im externen historischen Test-Harness einen ausdrücklich
+aktivierten UI-Modus ergänzen, der vor Start der unveränderten Originalapp nur
+GitHub-Requests auf einen Loopback-Testfeed umleitet und einen dynamischen
+Debuggingport für echte Eingabeereignisse öffnet. Normale Starts bleiben ohne
+Testmodus unverändert. Absolute isolierte XDG-Pfade, Loopback-URL und expliziter
+Opt-in sind zwingend; vorhandener Headless-Qualifikationsmodus bleibt getrennt.
+Kein direkter Aufruf von Update-/Restore-Controllern aus dem UI-Driver.
+
+Darauf aufbauend zwei neue unveränderliche Testartefakte erstellen, vollständige
+Originaldaten seed/read über die zugehörigen Utility-Harnesses, reale Fenster-
+Aktionen check/download/install/restart/continue/restore; jeden Prozess bis zum
+Ende verfolgen, Artefakt- und Feedhashes im Nachweis binden. Historische Ketten,
+Faultmatrix und veröffentlichte Bytes bleiben eigene Anforderungen. Dieser Plan
+ist Vorbereitung; UI-Nachweis ist noch nicht implementiert oder bestanden.
+
+UI-Transportadapter implementiert. 99061 Exit 0: 21 Unitfälle (Konfiguration,
+Routing und unveränderliche Quellidentitäten) und vollständige Typprüfung bestehen.
+Der Adapter wird ausschließlich bei explizitem HISTORICAL_UI-Opt-in aktiv; ein
+parallel aktivierter bisheriger Headless-Updater wird abgewiesen. Er übergibt
+Originalrequests außerhalb GitHub unverändert und bewahrt Signal/Header bei
+umgeleiteten Requests. Noch kein gestarteter UI-Updatefall und kein UI-Erfolg.
+
+Nächste konkrete Artefakte für den UI-Fall: current-ui-world-v5 Version 0.0.146
+(Original bd8b33c, 42/41) und repaired-ui-world-v5 Version 0.0.147 (Original
+6d7889ca, 42/42), beide mit demselben externen World-/UI-Harness. Der bestehende
+Livetestbestand mit Reise/Kampf/eigenen Dateien ist Ausgangspunkt des geplanten
+Profilvergleichs. Lint 99020 Exit 0. Vor den neuen Builds zunächst diesen
+Harnessstand sichern; kein Abschluss der Phase und keine Main-Promotion.
+
+Korrektur der unmittelbar vorherigen Lint-Aussage: 99020 beendete die Shell mit
+Exit 0 wegen nachfolgender Dokumentationsbefehle; die Lintdatei enthält tatsächlich
+einen no-base-to-string-Fehler im neuen Test. Kein Lint-Pass. Fixplan: das erwartete
+URL-Objekt direkt vergleichen statt einen Request/URL/String-Unionwert implizit
+zu stringifizieren. Lint anschließend als alleinigen Abschlussbefehl prüfen.
+
+Lintwiederholung 4824 Exit 0, anschließender gezielter UI-Feed-Unitlauf Exit 0.
+Plan-Audit des Transportadapters bestanden; echter UI-Lauf weiterhin offen.
+Harnessstand einschließlich gepinnter Reparaturquelle jetzt als Folgecommit
+auf Candidate sichern. Keine Änderung an den bereits qualifizierten Artefakten.
+
+Beide UI-Testartefakte gebaut: 59573 und 23101 jeweils Exit 0. Danach neuen
+DOM-/CDP-Driver und ersten ausführbaren Abschnitt des UI-Qualifiers ergänzt:
+Originalprofil erzeugen, Arbeitskopie, prüfen/download/install durch reale
+Mauseingaben, Zielneustart und vollständiger Readback im Ziel-AppImage. Explizite
+Negativassertions verhindern, dass automatische Downloads oder Aktivierung beim
+Download als Erfolg gelten. Der Nachweis kennzeichnet fehlende Weiterarbeit und
+Restore ausdrücklich; diese folgen im selben Phase-5-Ablauf nach erfolgreicher
+Prüfung dieses Abschnitts. Controller werden nicht direkt aufgerufen.
+
+Typprüfung 34912 Exit 2: TypeScript inferiert das zusammengesetzte env-Objekt zu
+eng für das Entfernen von ELECTRON_RUN_AS_NODE. Korrekturplan: expliziten
+NodeJS.ProcessEnv-Vertrag am Prozess-Environment verwenden; Verhalten unverändert.
+
+UI-Erstabschnitt 97097 Exit 0: realer Ablauf check/download/install/restart mit
+0.0.146→0.0.147 und Kampagnenschema41→42, danach kompletter Ziel-Readback gleich
+Original sowie unveränderte Quelle. Nachweis work/historical-ui-update-v5/
+ui-update-evidence.json; Transaktion e8c71d7f-2c23-41fa-bd43-3cff11ece5ba committed.
+Typprüfung 44703 und Lint 96528 jeweils Exit 0. Kein Restore-Nachweis bisher.
+
+Fortsetzungsplan: Zielversion erneut normal öffnen, Charakterfenster und XP-Popup
+über echte Eingaben bedienen, Mara 1 um 25 XP erhöhen, schließen und im separaten
+Zielprozess persistierte Änderung prüfen. Erwartungsvertrag erlaubt ausschließlich
+Partyrevision +1 und XP/Rastzähler +25 in aktiver Kampagne und deren Sessionprojektion.
+Danach UI-Wiederherstellung der einzigen Vor-Update-Sicherung bestätigen. Neuer
+Restorejournal muss eigene Sicherung der späteren Arbeit referenzieren; diese auf
+separater vollständiger Profilkopie durch Ziel-AppImage lesen und mit späterem
+Stand vollständig vergleichen. Wiederhergestelltes Profil muss Original entsprechen,
+Zielprogramm bleibt unverändert, neue Vorwärtsmigration erfolgt bei Restore.
+
+Lauf 4525 noch aktiv. Read-only DOM-Inspektion des tatsächlich gestarteten Fensters
+zeigt die Kampagnenauswahl mit genau einem Fortsetzen-Button; der Driver wartet
+bereits auf die erst danach sichtbare Charaktertoolbar. Konkreter Fixplan nach
+terminalem Lauf: Fortsetzen als echte UI-Aktion vor dem Charakterfenster ergänzen.
+Das ist fehlende Testnavigation, kein Nachweis eines Produktfehlers. Quellen
+während des laufenden AppImage-Tests nicht ändern.
+
+CI-Job102401426977 meldet drei veraltete Erwartungen: current-format-manifest
+verlangt Kampagnenschema41, Golden-Master-Preflight Registry21/Schema41. Plan nach
+Laufende: ausschließlich aktuelle Manifestzielversion und aktuelle Endstand-
+erwartungen auf42/22 aktualisieren; originale Golden-Masterbytes unverändert.
+Das Manifest ist ausdrücklich eine vorläufige Current-Format-Referenz und keine
+historische Releasefixture oder abgeschlossene RP-Abnahme. Gezielte Unitfälle
+und vollständige CI müssen den aktualisierten Stand erneut prüfen.
+
+4525 terminal Exit 1 mit genau dem erwarteten Navigations-Timeout; eigene
+Appprozesse beendet. Fortsetzen ergänzt. Quellprüfung zeigt zusätzlich:
+CampaignRegistryRepository.setActive aktualisiert last_opened_at und die Registry-
+revision. Der historische Readback enthält keine Registryrevision, aber explizite
+Zeitstempel. Erwartungsvertrag für diese echte Benutzeraktion deshalb erweitern:
+ausschließlich aktiven lastOpenedAt auf den beobachteten, innerhalb des Eingabe-
+intervalls liegenden ISO-Zeitpunkt setzen; alle übrigen Registryfelder unverändert.
+Keine pauschale Normalisierung von Zeitstempeln oder unbekannten Feldern.
+
+Wiederholung 41529 Exit 1: echte UI-XP-Eingabe erfolgreich, 1000 XP nach Neustart
+persistiert. Vollvergleich meldet ausschließlich unveränderte Rastzähler statt
+der angenommenen +25. Quellprüfung von applyXpAdjustment erforderlich, bevor der
+Erwartungsvertrag angepasst wird; keine Änderung an Produktsemantik anhand des
+Testergebnisses. Restore wurde wegen des strikten Vergleichs noch nicht gestartet.
+
+Quell-/Anforderungsabgleich: applyXpAdjustment erhält shortXp/longXp bewusst;
+party-burden.test.ts prüft unveränderte Zähler für alle manuellen XP-Modi, und
+requirements-party-dropdown.md verweist auf korrigierte manuelle XP-Semantik.
+Die +25-Annahme des neuen Qualifiers war falsch. Fixplan: XP +25 und Revision +1
+weiter verlangen, Rastzähler exakt unverändert vergleichen. Keine Produktänderung.
+
+### Phase 5 – Erster vollständiger UI-Update-/Restore-Nachweis
+
+Lauf 24891 Exit 0, evidence work/historical-ui-update-restore-v7/
+ui-update-evidence.json. Reale UI-Eingaben: prüfen, herunterladen, bestätigen,
+Installation und Zielneustart; erneut öffnen, Kampagne fortsetzen, Mara 1 +25 XP
+speichern; erneut öffnen, ganze Vor-Update-Sicherung wiederherstellen und Ziel-
+neustart. Unabhängige eigene AppImage-Prozesse lesen vollständigen Ausgangs-,
+Update-, Weiterarbeits-, Restore- und Sicherungsstand. Die Quelle bleibt unverändert.
+Rastzähler bleiben entsprechend aktueller manueller XP-Semantik unverändert.
+
+Vor-Update-AppImage SHA256
+639b0d4d797261f2fbc6ff3e27786d2f0562ea1598b577113c763582d876c5f9,
+Ziel-AppImage SHA256
+3e143eee43b745eb61f425c6e623d7ee3726bb14f91171c71eb4094bb556724c.
+Restore773dca7c-f985-4c49-b8b2-395163389f28 committed, zusätzliche Sicherung
+16791f9b-6ba1-47ca-a5e8-98cbd8785648 enthält vollständig die spätere Arbeit.
+Zielprogramm bleibt beim Restore identisch, Originalschema41 wird vorwärtsmigriert.
+
+Plan-Audit dieses UI-Ablaufs bestanden. Roadmap-Audit Phase5 bleibt offen:
+Prozessabbrüche in Migration/allen Aktivierungs-/Recoverygrenzen, volle Platte,
+Zugriffsfehler, WAL/Parallelstart/beschädigter Download und fehlende/neue Formate
+müssen noch in der abschließenden echten Artefaktmatrix belegt werden. Dieser
+Erfolg ersetzt weder diese Matrix noch Main-Handoff oder manuellen Livetest.
+18 CI-Regressionsunitfälle11952 bestanden; Golden-Masterbytes unverändert.
+
+Nachweisbindung des erfolgreichen Laufs:
+Report SHA256 492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90;
+Qualifier SHA256 10e38f3419dc9fce017a1362a7559cf85600ceddce1c3e6413b9c65ce359ab8e;
+UI-Driver SHA256 68ddbdd52b958ba8ed76a1438b26d0280e19f8aeb2146b4d636ef7a0e433134e.
+Update c27228c5-edd6-46f0-806c-b9d2fd962836. Lint6458 Exit0.
+
+### Phase 5 – Echte Transportfehler vor erfolgreichem UI-Update
+
+Voriger Turn Fortschritt: kompletter UI-Update-/Restore-Nachweis, Stand567cb13c
+gepusht, aktuelle CI34333006569 pending bestätigt. Checkout sauber.
+
+Plan: optionalen --transport-failures-Modus in bestehenden UI-Qualifier integrieren.
+Erster Feedversuch liefert HTTP503; UI muss verständlich fehlschlagen und normales
+Beenden/erneutes Öffnen und vollständigen eigenen Baseline-Readback erlauben.
+Danach unverändertes Manifest, aber einmal gleich große AppImage-Bytes mit einem
+gekippten Byte und einmal abgeschnittene Bytes ausliefern. Nach jedem Fehler:
+Fehlermeldung sichtbar, kein Installationsbutton, keine aktive oder partielle
+Cachedatei, keine Wartungstransaktion, vorheriges Deployment unverändert;
+App schließen, vollständiger Baseline-Readback muss Quelle entsprechen.
+Anschließend dasselbe echte Artefakt korrekt herunterladen und den gesamten
+bereits qualifizierten UI-Update-/Weiterarbeits-/Restoreweg durchlaufen. Keine
+Änderung der gespeicherten Artefaktbytes. Neue Arbeitskopie und eigener Nachweis.
+Dieser Modus ersetzt nicht WAL-, Kapazitäts- oder Prozessabbruchprüfungen.
+
+Transportfehlermatrix53227 Exit0. HTTP503, gleich große korrumpierte Datei und
+abgeschnittener Download wurden im echten Baseline-AppImage sichtbar abgewiesen.
+Nach jedem Fehler eigener vollständiger Baseline-Readback gleich Quellprofil,
+keine Cache-/Partialdatei, kein Wartungsjournal und unverändertes Deployment.
+Danach kompletter UI-Update-/Weiterarbeits-/Restoreweg bestanden. Nachweis:
+work/historical-ui-transport-failures-v1/ui-update-evidence.json,
+SHA256 dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a.
+Update7393cffb-2541-4140-9025-4eaa0e1d3d0c, Restore210ae205-5b9e-4082-aefd-ac00e869d5c7.
+Typprüfung45177 und Lint27286 Exit0. Plan-Audit Transportfälle bestanden.
+
+Roadmap-Audit weiter offen für restliche Phase5 sowie Phasen6–7. Abnahmematrix
+jetzt mit diesen Nachweisen aktualisieren, damit alte Bestandsaufnahme nicht
+mehr die neuen Artefaktläufe als fehlend bezeichnet. Fehlende Abbruch-/Kapazitäts-
+Nachweise weiterhin explizit lassen. Unshare-Usernamespace-Probe funktioniert;
+ein isoliertes begrenztes Dateisystem ist als nächste Kapazitätsprüfung möglich,
+aber noch nicht aufgebaut oder als ENOSPC-Nachweis gewertet.
+
+### Phase 5 – Harter Abbruch nach bestätigter Nutzung
+
+Plan: separaten --accepted-crash-Fall zum selben realen UI-Qualifier hinzufügen.
+Nach erfolgreichem Update und eigenständig verifiziertem späterem XP-Stand die
+Ziel-App normal öffnen, Bereitschaft über sichtbare Einstellungen prüfen, dann
+nur Prozesse mit dem einmaligen Test-XDG-Root per SIGKILL beenden. Exit-Signal des
+vom Driver gestarteten Prozesses explizit belegen; normale Starts weiter Exit0
+verlangen. Anschließend normalen Zielstart einschließlich Recovery ausführen,
+schließen und vollständigen eigenen Ziel-Readback mit späterem Stand vergleichen.
+Journal muss committed bleiben; kein Rücksprung auf Vor-Update-Daten. Danach
+wie bisher explizite Wiederherstellung und Sicherung späterer Arbeit prüfen.
+Dieser Fall qualifiziert ausschließlich Absturz nach Freigabe, nicht Abbrüche
+innerhalb der Migration oder der noch nicht bestätigten Aktivierung.
+
+88583 terminal Exit1. Korrektur zur vorherigen Zwischeninterpretation: nicht der
+Einstellungsklick scheiterte, sondern der anschließende Browser.close-Aufruf
+beendete nach dem Neustart nicht alle Appprozesse. Die Zeile395 und terminale
+Fehlermeldung belegen das; Einstellungen und Zielversion waren vorher geprüft.
+Der abschließende Cleanup beendete die Testprozesse, kein Datenverlustnachweis.
+
+Fixplan für den Driver: den tatsächlich verbundenen Renderer-Target explizit
+über Target.closeTarget schließen, damit das Electron-Fenster den normalen
+window-all-closed/quit-barrier-Pfad durchläuft. Target-ID aus derselben überprüften
+DevTools-Page übernehmen, Erfolg oder Socketende prüfen und weiterhin alle
+Prozessenden abwarten. Keine Lockerung des Exit-/Datenvergleichs und kein
+SIGTERM als erfolgreicher regulärer Beenden-Ersatz. Danach vollständigen
+accepted-crash-Fall auf frischer Arbeitskopie wiederholen.
+
+Parallel zur laufenden unveränderten AppImage-Prüfung eine isolierte Kapazitäts-
+Umgebung geprüft: eigener User-/Mount-Namespace mit 1MiB tmpfs, Schreiben von2MiB
+liefert echtes ENOSPC(errno28), Mount und temporärer Ordner danach entfernt.
+Keine Füllung des Host-Dateisystems. work/roadmap-phase5-capacity-probe.log, Exit0.
+Dies qualifiziert die spätere Fehlerumgebung, noch keinen App-Backup-/Updatefall.
+
+48961 ebenfalls terminal Exit1 am normalen Beenden nach dem akzeptierten Absturz.
+Target.closeTarget beseitigt den Fehler nicht. Kein weiterer Wiederholungslauf
+mit bloß verändertem Timeout. Nächster Diagnoseschritt: im isolierten fehlgeschlagenen
+Profil einen Start mit Main-Inspector beobachten, Fensterbestand und Quit-Lifecycle
+vor/nach demselben Close-Aufruf read-only erfassen. Anschließend ausschließlich
+diese Diagnoseprozesse beenden. Erst anhand dieses Befunds weitere Korrektur planen.
+
+Main-Inspector-Diagnosen im isolierten fehlgeschlagenen Profil:
+71642 Exit1 (nach Close war Main-Kontext bereits nicht mehr auswertbar),
+27575 Exit0 als Diagnose mit explizitem Cleanup, nicht regulärer Shutdown-Abnahme.
+Beide zeigen einen sichtbaren BrowserWindow und registrierte Quit-Barriere;
+Target.closeTarget meldet success. Core-Logs zeigen danach shutdown/exited0/closed.
+Mit offenen Einstellungen ebenfalls Main-Kontext beendet. Wegen anschließendem
+Inspector-Cleanup per SIGTERM zählen diese Proben nicht als bestandener normaler
+Beenden-Test. Keine Ursache durch bloße Timeoutverlängerung als behoben behauptet.
+
+Der Fehler ist bislang an die vollständige Kill-/Neustartsequenz gebunden.
+Nächster konkreter Schritt: genau diese Sequenz mit beobachtenden Main-Eventtraces
+(browser-window-created/close/closed, window-all-closed, before-quit) und gebundener
+CDP-Target-ID diagnostizieren; Inspector vor dem Schließen trennen, damit er
+Shutdown nicht selbst zurückhält. Danach begründete Korrektur und unveränderten
+regulären Abnahmefall erneut ausführen. Aktuell keine lokale Prüfung aktiv;
+Transporterweiterung und Matrix aktualisiert, accepted-crash bleibt unbestanden.
+
+### Phase 5 – Prozessidentität statt unzuverlässiger Environment-Erkennung
+
+Nach Unterbrechung revalidiert: Handle48742 fehlt, Log terminal Exit1, PID815440
+existiert nicht mehr. Voriger Turn lieferte entscheidende neue Evidenz: Trace
+schloss nach dem vermeintlichen SIGKILL noch Fenster aus ui-launch-2, während
+ui-launch-3 erst startete. /proc/815440/environ enthielt trotz laufendem Main keine
+XDG-/TMPDIR-Einträge; stat und cmdline belegten denselben lebenden Testprozess.
+Damit war die Environment-only-Prozessliste kein zulässiger Todesnachweis.
+
+Fixplan vor Änderungen: gestartete AppImage-Prozesse mit PID plus Kernel-Startzeit
+verfolgen, bekannte Nachfahren aufnehmen und Identitäten über Scans erhalten,
+auch wenn Environment-Einträge verschwinden. Den durch beide Profilleases
+verifizierten Main-PID zusätzlich aufnehmen, damit Relaunch/Orphans erfasst sind.
+Zombies gelten als beendet, wiederverwendete PID nicht als alter Prozess.
+Unitfälle mit kontrolliertem proc-Baum für leeres Environment, Nachfahren,
+PID-Wiederverwendung und Zombies. Danach echter accepted-crash-UI-Lauf ohne
+Inspector wiederholen; keine Lockerung von Shutdown- oder Inhaltsassertions.
+
+### Phase 5 – Desktop-Ausfall: Diagnose und Schutz vor weiteren GUI-Läufen
+
+2026-09-09: Voriger Turn ist Fortschritt durch neue Ursachen-Evidenz, keine
+bestandene Artefaktabnahme. Vorheriger Boot endet um11:37:47, aktueller Boot
+nach Neustart. Um11:20:42 und11:31:40 melden isolierte Test-Mains
+inotify_init/EMFILE. Um11:34:37 scheitert dbus-broker-launch beim
+Konfigurationsreload in dirwatch_new mit „Too many open files“; unmittelbar
+folgen D-Bus-Abbruch und Fatal-Abstürze von ChatGPT und SaltMarcher Local sowie
+WirePlumber-Segfault. Keine gespeicherte OOM-/GPU-Hang-Evidenz. Verursachender
+Ressourcenverbraucher nach Neustart nicht beweisbar; Testprozess-Leaks sind ein
+plausibler Beitrag. Warnungen hätten weitere Starts stoppen müssen.
+
+Keine GUI-/AppImage-Tests bis Absicherung. Aktuelle Prozessprüfung zeigt keine
+übrig gebliebenen Salt-Marcher-/Xvfb-/Qualifier-/Vitest-Prozesse. Der vor der
+Untersuchung gestartete Tracker-Unitlauf ist laut Log terminal:4Tests bestanden,
+208ms,11:45:05. Das ist kein Nachweis vollständiger Prozessbereinigung im E2E.
+
+Korrekturplan vor Änderungen:
+1. Historischen UI-Qualifier vor dem ersten Seed/Prozessstart sperren, wenn
+   tatsächliche cgroup-v2-Grenzen für Speicher und Prozesszahl fehlen oder der
+   Desktop-D-Bus verwendet wird. Kein Umgebungsflag als alleiniger Nachweis.
+2. Eigenen begrenzten Service und privaten D-Bus als Startweg ergänzen; gesamter
+   Test einschließlich Relaunch und Xvfb gehört zur Gruppe. Gruppencleanup statt
+   alleiniger PID-/Environment-Heuristik, kein Zugriff auf Desktop-D-Bus.
+3. Gemeinsame inotify-Ressourcen zusätzlich berücksichtigen: cgroup-Speicher-
+   und Prozesslimits begrenzen dieses benutzerweite Limit nicht zuverlässig.
+   Vor erneuter GUI-Abnahme separate Benutzer-/VM-Isolation oder eine nachweisbar
+   wirksame Grenze und Überwachung samt Abbruch vor Ressourcenerschöpfung nötig.
+4. Erst kleine Nicht-GUI-Proben, dann Fehler-/Cleanup-Prüfung. Keine Wiederholung
+   der vollständigen AppImage-Sequenz allein aufgrund bestandener Unitprüfungen.
+Plan-/Roadmap-Audit: Phase5 weiterhin offen; bisherige Inhaltsvergleiche bleiben
+Evidenz ihres Inhaltsumfangs, env-only-Prozessende ist kein vollständiger
+Cleanup-Nachweis. Keine Public-Release-/Handofffreigabe aus diesen Läufen.
+
+Erster Schutzschritt implementiert: historical-test-isolation.ts liest die
+wirkliche cgroup-v2-Zuordnung sowie memory.max/pids.max. Historischer UI-Qualifier
+prüft dies vor Seed/erstem AppImage. Verlangt eigene benannte Service-cgroup,
+maximal8GiB/256Tasks und privaten tmp-D-Bus statt Desktopbus. Unitprüfung für
+Isolation und Prozessidentität:15Tests/2Dateien bestanden (26350, Exit0).
+Read-only-Probe der tatsächlichen Desktopumgebung wird wie beabsichtigt
+abgewiesen; kein AppImage gestartet. git diff --check bestanden.
+
+Plan-Audit: Schritt1 erfüllt als Startsperre, Schritte2–4 offen. Diese Sperre
+allein ist KEIN vollständiger Sicherheitsnachweis: private-Bus-Adresse ist
+noch kein Nachweis vollständiger Sessionisolation, und benutzerweite inotify-
+Erschöpfung bleibt ungelöst. Daher weiterhin keine GUI-Läufe. Roadmap-Audit:
+Phase5 unverändert offen; keine neue Migrations-/Recovery-Abnahme behauptet.
+
+### Phase 5 – Eigener Kernel für GUI-Qualifikation
+
+Voriger Turn: Fortschritt (Startsperre +15 bestandene Tests), nicht vollständige
+Isolation. Iststand: /dev/kvm verfügbar, Podman installiert, QEMU nicht installiert.
+Korrekturplan: QEMU-Werkzeuge in einem begrenzten lokalen Container bereitstellen;
+keine Änderung an Desktopdiensten oder systemweiten inotify-Limits. Gast mit
+festem RAM/vCPU-Budget, eigenem Kernel, eigenem D-Bus und virtueller Grafik ohne
+Host-GPU-Passthrough. Nur explizite Testdateien übertragen. Zunächst Boot und
+Ressourcengrenzen ohne AppImage verifizieren. Erst danach kontrollierten Startweg
+mit Kernelidentität und kompletter Prozessgruppenbereinigung anbinden. QEMU-
+Systememulation/KVM-Aufruf anhand offizieller Invocation-Dokumentation geprüft:
+https://www.qemu.org/docs/master/system/invocation.html .
+
+Werkzeugbereitstellung abgeschlossen: erster Build wegen nicht unterstütztem
+--pids-limit abgewiesen, zweiter wegen relativem cwd abgewiesen; anschließend
+absoluter Kontext im begrenzten systemd-Service erfolgreich, Exit0,422.1MiB Peak.
+Podman-Image3d6445cd07b63f6032fff7c4505e1f72ede65ac90aecce1044ebb792ee66bc08.
+Ubuntu noble amd64 SHA256 mit Hersteller-SHA256SUMS über HTTPS verglichen:
+d0fe84bb5f80853425fa6be28e2c106f30104c3cfe8611933f2e65c9b63f0e30.
+Original unverändert als qcow2-Backing, neue12GiB-sparse-Overlay-Probe.
+
+Bootprobe12992 startet ausschließlich QEMU, keine SaltMarcher-App. Tatsächliche
+cgroup-Dateien im laufenden Container: memory.max2147483648,pids.max128,
+cpu.max200000/100000. /dev/dri und Desktopbus fehlen. Gast mit1024MiB,2vCPUs,
+KVM, serieller Ausgabe, ohne Netzkarte; eigener Kernel6.8.0-138-generic bereits
+im Bootlog. Container bei erster Stichprobe425.8MB/14Tasks. Harddeadline180s
+plus10s Kill-Nachlauf, automatisches Entfernen des Containers. Hostboot-ID
+ea2527db-9f4d-4588-b388-51f759fea11c. Vollständiger Boot-/Shutdownnachweis noch
+ausstehend; derzeit wartet Gast auf Netzwerk-online-Timeout. Keine GUI-Freigabe.
+
+Bootprobe12992 terminal Exit0: cloud-init-Probe bei129s vollständig, reguläres
+Powerdown bei161.33s vor180s-Deadline. Gastboot-ID
+8c4189f5-bf92-4f2c-9e69-a4f198333272 unterscheidet sich vom Host; MemTotal984196kB,
+eigenes inotify-Instanzlimit128. Container nach Abschluss entfernt. Das erwartete
+network-online-Timeout bei netzlosem Gast verzögerte den Boot, verhinderte aber
+Probe und Shutdown nicht. Log: work/qualification-vm/probe.log.
+
+Plan-Audit: Werkzeugbereitstellung, begrenzter eigener Kernel und regulärer
+Shutdown nachgewiesen. Noch offen: wiederverwendbarer Gast-Startweg, Übergabe
+unveränderlicher AppImages/Quellen, Startguard-Bindung an geprüften Gast und
+Fehlercleanup. Roadmap-Audit: keine neue AppImage-Abnahme; Phase5 bleibt offen.
+
+### Phase 5 – VM-Startvertrag und garantierter Abbruch
+
+Voriger Turn Fortschritt: Boot und Shutdown im eigenen Kernel nachgewiesen.
+Nächster Fixplan: wiederverwendbarer begrenzter Podman/QEMU-Startweg mit frischem
+Overlay, read-only Gastbasis/Seed, exklusiver Host-Laufsperre und harter Deadline.
+Nur eigene Container-ID beim Cleanup verwenden; keine breite Prozesssuche.
+Hostboot-ID als QEMU-fw_cfg in den Gast übertragen. UI-Guard verlangt diesen
+Kernelvertrag zusätzlich zu Gast-cgroup/private-D-Bus und lehnt denselben Boot
+ab. Kleine Abbruchprobe mit bestehendem netzlosem Seed vor AppTests, Unitfälle
+für fehlende/gleiche Boot-ID. Noch kein GUI-Start in diesem Korrekturschritt.
+
+Implementiert: scripts/qualification/run-historical-vm.sh mit exklusivem flock,
+frischem24GiB-sparse-Overlay, read-only Basis/Seed, einmal aufgelöster Toolimage-ID,
+Hostboot-ID per fw_cfg, Gast4GiB/2vCPU, Host-cgroup7GiB/128Tasks/2CPU ohne Swap,
+keinem Netz/Grafik-Passthrough, Deadline und UUID-spezifischem Cleanup. Isolations-
+Guard verlangt verschiedene UUID-Bootkennungen aus Kernel/QEMU-Dateien.
+
+Validierung:24185 terminal Exit0,17Unitfälle/2Dateien, Shellsyntax und diff-check
+bestanden. Reale Abbruchprobe27796 terminal Exit124 wie erwartet; serielles Log
+belegt SIGTERM von timeout nach10s. exit-code-Datei124; podman ps -a zeigt keinen
+zugehörigen Container mehr. Keine SaltMarcher-App ausgeführt. Testdaten unter
+work/qualification-vm/abort-probe-1, originale Basis bleibt read-only.
+
+Plan-Audit: Startweg und Deadline-Cleanup implementiert/geprüft. Signalunterbrechung
+des äußeren Runners und Konkurrenzstart noch gesondert zu prüfen; QEMU-fw_cfg-
+Lesbarkeit im fertig gebooteten Gast noch nicht praktisch bestätigt. Gastpakete,
+Übertragung der unveränderlichen Qualifikationseingaben und Ergebnisexport fehlen.
+Roadmap-Audit: Phase5 weiterhin offen; kein Ersatz echter Update-/Recoverytests
+oder Handoff durch Infrastrukturproben.
+
+Signal-/Konkurrenzprobe50683 abgeschlossen: zweiter Start korrekt Exit2 ohne
+Ausgabeordner. SIGTERM nur an Starter führt jedoch nach10s noch nicht zum Ende;
+Container existiert weiter. Diagnosecleanup entfernt ausschließlich Testcontainer.
+Fixplan vor Änderung: Podman-Aufrufe als eigene Hintergrundkinder starten und
+mit Bash wait warten (unterbrechbar durch Trap); auch Vorbereitung eindeutig
+benennen. EXIT-Cleanup zeichnet Exitstatus auf, entfernt eigenen aktiven Container
+und wartet Clientende. SIGTERM muss143 melden und Container zeitnah entfernen.
+
+Korrigierter Signal-/Konkurrenzlauf terminal Exit0: SIGTERM nur an Bash-Starter
+endet143, exit-code-Datei143, Container nach0.18s entfernt. Zweiter Start erneut
+Exit2 und kein Ausgabeordner. Shellsyntax bestanden. Logs unter
+work/qualification-vm/signal-probe-2*. Fehler im Vordergrund-Warten behoben.
+
+Noch offene Startgrenze: Signal exakt während Containererzeugung vor dessen
+Sichtbarkeit kann Cleanup-Prüfung überholen; vor GUI-Läufen gesondert absichern.
+Als nächstes Gast-bootstrap mit begrenztem ausgehendem Netzwerk nur für Pakete,
+privatem D-Bus und Xvfb vorbereiten, dann wieder offline qualifizieren. Keine
+Desktopprofile oder Host-GPU durchreichen. Gast muss QEMU-fw_cfg lesen können;
+Testeingaben samt SHA256 werden nur explizit als read-only Datenträger übertragen.
+
+### Phase 5 – Startgrenze schließen, Gast vorbereiten
+
+Voriger Turn Fortschritt durch korrigierten und geprüften Signalpfad. Fixplan:
+Container zunächst nur erzeugen (noch kein Gastprozess), danach vorhandene ID
+asynchron starten. Trap während synchronem create wird erst nach dessen Ende
+abgearbeitet, kann dann den erzeugten Container entfernen; start kann gelöschten
+Container nicht neu erzeugen. Gleicher Ablauf für Overlay-Vorbereitung. Danach
+kontrollierte Probe für Signal während verzögertem create plus reale Signalprobe.
+Gastbootstrap erhält ausdrücklich optionales ausgehendes NAT-Netz; Standard der
+Qualifikation bleibt ohne Netzwerk. Keine Portweiterleitung oder Hostfreigabe.
+
+69758 Exit0: verzögertes create mit echtem Podman, SIGTERM an Starter bevor
+create zurückkehrt:143, kein Gastoverlay gestartet, Preparecontainer entfernt.
+Bootstrap60276 Exit0 ist nur QEMU-Shutdown, KEIN Bootstrap-Pass: Pakete installiert,
+aber qemu_fw_cfg-Modul fehlt im minimalen Cloudkernel. Erfolgmarker fehlt. Fix:
+passendes linux-modules-extra-Paket im Gast installieren und Kernelvertrag erneut
+prüfen. Gebündelter Qualifier benötigt __filename/__dirname für enthaltenes
+TypeScript; erster Bundle-Start scheitert vor Guard. Bundlebanner ergänzen, dann
+Host-Abweisung explizit prüfen. Keine AppImage-Ausführung bisher.
+
+Payload1 vorbereitet: gebündelter Qualifier mit CJS-Pfadbanner startet auf Host
+bis zum Guard und scheitert dort an fehlender QEMU-fw_cfg-Datei (keine App).
+Baselinehash639b0d4d797261f2fbc6ff3e27786d2f0562ea1598b577113c763582d876c5f9,
+Targethash3e143eee43b745eb61f425c6e623d7ee3726bb14f91171c71eb4094bb556724c
+nach Kopie erneut geprüft, unveränderte Original-AppImages/Receipts; Node22-Tarball
+und Bundle ergänzen6dateiiges SHA256-Inventar. Manifest benennt ausdrücklich
+uncommittete Qualifieränderungen, kein falscher exact-commit-Buildnachweis.
+work/qualification-vm/payload-1. Gastbootstrap48433 aktuell laufend mit tatsächlichem
+Container086ce3e4-5b23-4d0b-a09c-77cfd6f96e3a; Quelle ist weiterhin frisches Overlay,
+keine Benutzerkampagnen. diff-check bestanden. Phase5 weiterhin offen.
+
+Bootstrap48433 terminal Exit0 mit explizitem QUALIFICATION_BOOTSTRAP_COMPLETE:
+Host-IDea2527db-9f4d-4588-b388-51f759fea11c via fw_cfg lesbar, Gast-ID
+56410099-75f5-4c5a-82f3-bff1fa6cc513, systemd-detect-virt=kvm. Vollständiger
+Shutdown, Container entfernt. linux-modules-extra behebt fehlendes qemu_fw_cfg.
+Plan-Audit: Startgrenze/create, Gastpakete, Kernelkennung und Eingabekopie geprüft.
+Für Offline-Qualifikation wird Gastoverlay als unabhängige qcow2-Basis exportiert
+(22729), damit keine Host-Backingpfade im späteren Gaststart erforderlich sind.
+Noch keine UI-Abnahme; Ergebnisexport und Ausführung des vollständigen
+accepted-crash-Update-/Restorefalls bleiben als nächster Schritt offen.
+
+### Phase 5 – Vollständiger UI-Fall im Offline-Gast
+
+Voriger Turn Fortschritt: Bootstrap, separate Kennungen und Payloadhashes belegt;
+Export22729 terminal Exit0. Plan: read-only Seed-ISO mit Payload/SHA256-Inventar,
+Gast kopiert und prüft alle Eingaben, führt als ubuntu in begrenztem systemd-Service
+mit privatem D-Bus/Xvfb den unveränderten accepted-crash-Fall aus. Gastservice
+liefert expliziten Exitcode; Bericht/Diagnoselogs werden seriell exportiert.
+QEMU-Exit0 allein gilt weiterhin nicht als Testpass. Keine Quellenänderungen
+während dieses AppImage-Laufs. Keine Desktopdaten oder Hostnetzfreigaben.
+
+UI-Gastlauf19278 terminal QEMU Exit0, aber Testservice Exit1: Timeout „target
+restart commits update“. Gastservice Peak2.3GiB, vollständig beendet/exportiert;
+kein laufender Container. Evidenz unter work/qualification-vm/ui-run-1/evidence.
+Journal5f58e3bd-77dd-4ae0-abfe-61532e3c982e: rolled-back aus prepared, Backup
+e681ece5-641b-4a29-b5cc-7aa8df431a3c vorhanden, frühere Programmreferenz0.0.146.
+Damit kein bestandener Update-/accepted-crash-Nachweis. Zielvorbereitung scheitert
+vor Aktivierung. Controller verwirft Wartungschild-stdio und meldet bei Exitfehler
+nur generische Ursache. Ubuntu-Sandboxunterschied ist eine Hypothese, kein Befund.
+
+Nächster Diagnoseplan: Ziel-AppImage im selben isolierten Gast mit ungültigem
+Wartungstoken und eigenem leeren Diagnoseprofil starten, stderr/Exit aufzeichnen;
+keine vorhandenen Profile verwenden. Außerdem Test-Timeout um UI-Fehlertext und
+terminalen Rollbackzustand ergänzen, damit keine120s trotz abgeschlossenem
+Fehlerversuch verstreichen. Erst nach Ursachenbeleg Produkt-/Harnesskorrektur;
+keine Deaktivierung von Host-Schutzmaßnahmen und kein stilles Lockern der Abnahme.
+
+Diagnose32204 terminal Exit0 (Gast), Wartungsprozess Exit1 erwartungsgemäß:
+liest maintenance-request.json im leeren Diagnoseprofil und meldet ENOENT.
+Kein grundsätzlicher Electron-/Sandbox-Startfehler belegt; Hypothese nicht als
+Ursache verwenden. Nächste geplante Diagnosekorrektur: UI-Wartekriterium erkennt
+rolled-back als terminal und berichtet Journal-ID plus lesbaren UI-Fehlertext.
+Danach frische VM mit identischen AppImage-Bytes; nur gebündelter Test geändert.
+
+63333 terminal TestExit1 nach22.6s statt120s: UI nennt „Der Starthelfer konnte
+nicht aus dem Ziel-AppImage gelesen werden.“ Diagnose60521 terminal GastExit0,
+separater Node-Leseaufruf Exit9: salt-marcher: bad option: --no-sandbox.
+Originales AppRun geprüft: unshare -Ur true scheitert → NO_SANDBOX=(--no-sandbox),
+unabhängig von ELECTRON_RUN_AS_NODE. Damit konkrete Plattformursache belegt,
+kein Migrationsfehler. Fedora-Erfolg deckte diese AppRun-Verzweigung nicht ab.
+
+Produkt-Fixplan: Hashprüfung beibehalten, Wartungsresource per AppImage-Runtime
+--appimage-extract in exklusivem temporären Ordner lesen, APPIMAGE_EXTRACT_AND_RUN
+und ELECTRON_RUN_AS_NODE entfernen; AppRun nicht ausführen. Extrahierte reguläre
+Datei innerhalb temporären Roots, Größenlimit, erneuter Artefakthash und Cleanup
+bei jedem Ergebnis. Unitfälle für Fehlpfad/Symlink/Größe/Extraktionsfehler/Hashwechsel
+und echte Extraktion im Gast. Danach neue unveränderliche Vergleichsartefakte mit
+Fix; bestehende historische Bytes niemals nachträglich ändern.
+
+Direkte Runtime-Extraktion78062 terminal GastExit0 UND DiagnoseExit0: unverändertes
+Ziel-AppImage extrahiert resources/maintenance/start.cjs als reguläre Datei mit
+169006Bytes. Kein AppRun-/Node-Modus, keine Sandbox-Flagänderung. Damit alternativer
+Leseweg auf derselben problematischen Gastplattform praktisch belegt. Produktfix
+und dessen Regressionstests noch ausstehend; Phase5 bleibt offen.
+
+Produkt-Leseweg auf direkte Runtime-Extraktion umgestellt, reguläre Pfadkomponenten,
+Dateigröße, Vor-/Nachhash und finally-Cleanup geprüft. Unit40372 Exit0:31Tests
+inklusive14Extraktionsfälle. Typecheck40654 Exit2: expliziter ProcessEnv-Typ und
+Indexsignaturzugriff fehlen, außerdem älterer DBUS-Zugriff im Isolationsguard.
+Fixrunde: diese3Typfehler korrigieren, typecheck/lint wiederholen; danach dieselbe
+Produktfunktion im isolierten Gast gegen unveränderte Targetbytes prüfen.
+
+Typecheck61766 vollständig bestanden; anschließender ESLint meldet7unsichere
+Zugriffe ausschließlich auf untypisierte Mock-Aufrufe im neuen Unitfile. Fixplan:
+Mock-Signatur konkret typisieren, Umgebungsvariablen per Index lesen; Lint und
+31gezielte Tests erneut prüfen. Produkt-Reader-Probe ist als separate Payload
+gebündelt, noch nicht ausgeführt.
+
+Fixvalidierung: Typecheck vollständig bestanden; gezieltes ESLint ohne Befund
+(leere Logdatei);35117 Exit0 mit31Tests. Produkt-Reader-Gastprobe44159 terminal
+GastExit0 UND ServiceExit0: readAppImageLauncher + readAppImageProfileProtocol
+gegen unverändertes0.0.147. Helper169006Bytes, SHA256
+b0c175f9c4e9c8244e800373ca678f488c8721e1009fe4a9b71eada4f34d77ce stimmt mit
+unabhängig vorhandenem Originalresource überein. Profilvertrag format1,
+canonical-profile-v1/complete-profile/outside-profile. Kein AppRun-Nodeaufruf.
+git diff --check bestanden. Plan-Audit des Lesewegfixes: implementiert und gezielt
+geprüft; kein vollständiger Paketupdate-Pass behauptet.
+
+Nächster Schritt: unveränderliche Quellen für neue Artefakte herstellen. Sowohl
+Ausgangs-App (Schema42/41) als auch Ziel-App (42/42) brauchen den Lesewegfix,
+weil die alte Ausgangs-App sonst weiterhin vor Zielaktivierung scheitert.
+Historische Artefakte/Quellen nicht nachträglich verändern: eigener deklarierter
+Backport-Commit für Ausgangsstand, eigener Zielcommit, neue Testversionen/Hashes.
+Danach kompletter accepted-crash-Update-/Restorefall im Gast. Phase5, exakter
+Candidate-CI/Handoff/Main-Abschluss und Phasen6–7 bleiben offen.
+
+### Phase 5 – Unveränderliche Quellen für Plattformkorrektur
+
+Voriger Turn Fortschritt: Produktfix,31Unitfälle, Typecheck/Lint und echter Reader-
+Gastpass. Nun aktueller Candidate einschließlich Isolation/Testdiagnose committen;
+separaten Ausgangsbranch vonbd8b33c mit ausschließlich demselben Resource-Reader-
+Fix und zugehörigen Regressionstests erzeugen. Schemata müssen42/41 bzw42/42
+bleiben. Beide SHA in historische Quellliste aufnehmen und zwei neue deklarierte
+Testversionen0.0.148/0.0.149 bauen, ohne bisherige Artefakte zu überschreiben.
+Bauten begrenzen; keine AppImageausführung auf Desktop. Vollständiges Candidate-
+Check/Handoff/Main erst nach Phase5-Abnahme, keine Freigabe durch bloßen Build.
+
+Candidate f633b89621a3307ba01ad3772dcaead51451f333 enthält Produktfix und bislang
+geprüfte Isolation/Testdiagnose. Formatprüfung meldete noch eine Testdatei; nach
+Commit in Folgeänderung korrigiert und erneut explizit grün geprüft. Keine
+falsche Format-/Checkfreigabe für f633 behauptet.
+Ausgangscommit ab32d4947ea8409bda679d60d3befe9103c176c0 von bd8b33c enthält nur
+Resource-Reader und Regressionstests. Quellliste benennt extraction-baseline
+42/41 und extraction-target42/42. Vor historischen Builds Metadaten/Tests prüfen,
+dann bounded build, keine Laufzeit auf Desktop.
+
+Quellen/Tests:49716 Exit0,25Tests für Quellinspektion und Ressourcenleser.
+Candidate796c3017dab9ead17de61d04562c99f99426121c und separater Baselinebranch
+gepusht; Check34340503082 auf genau796c läuft noch (abgefragt nach Builds).
+Erster bounded Aufruf42328 Exit1 vor Build: systemd löste anderes pnpm auf,
+Purge wurde mangelsTTY abgewiesen. Korrigiert durch absolutes Node22-Corepack;
+keine CI=true-/Purge-Umgehung und keine Quellenmutation während Build.
+
+10147 terminal Exit0,44.7s,Peak2.8GiB:0.0.148 ausab32d4947,Schema42/41,
+SHA25629404e318b4bd0a0da08df952c21cc9f971879d05b6db2abf96698f93fa6bfbb.
+11277 terminal Exit0,43.1s,Peak2.5GiB:0.0.149 ausf633b8962,Schema42/42,
+SHA256fce8c543bbdbd289e529e8f2f5f0c66cb3b2a1bf92d32d5479a702643263a7e0.
+Beide Manifeste und tatsächlichen Bytes nach Build erneut verglichen; Original-
+Quelltrees im Builder unverändert geprüft. Begrenzung10GiB/256Tasks/2CPU ohne
+Swap tatsächlich beim laufenden Baseline-Service gelesen. Keine Appausführung
+auf Desktop. Plan-Audit: neue unveränderliche Vergleichsartefakte fertig.
+Roadmap-Audit: Laufzeitabnahme dieser Bytes fehlt; Phase5 weiterhin offen.
+Nächster Schritt: aktuelle Qualifier-Payload mit genau diesen zwei Artefakten,
+frischer Offline-Gast, accepted-crash plus Update/Weiterarbeit/Restore.
+
+### Phase 5 – Aktualisiertes Artefaktpaar im vollständigen Gastlauf
+
+Voriger Turn Fortschritt: unveränderliche42/41→42/42-Artefakte neu gebaut und
+hashgeprüft. Plan: aktuelle796c-Qualifierquellen bündeln,0.0.148/0.0.149 und
+Receipts unverändert in frische Payload übertragen, alle Eingabehashes im Gast
+prüfen. Vollständiger accepted-crash-Update-/Restorefall; Host nurVM-Prozess.
+Keine Quellenänderung während dieses Laufs. Testexit und Vollprofilbericht sind
+maßgeblich, nicht QEMU-Exit. CI34340503082 gesondert nachverfolgen.
+
+Gastlauf76613 terminal Exit0 UND TestExit0: kompletter UI-Update/Weiterarbeit/
+accepted-crash/Restorefall mit0.0.148→0.0.149 bestanden, ServicePeak2.5GiB.
+ReportSHA25683a9c615116a180d35fc689711aa9301282d4524fddae609aad9b61fe8f97731
+unter work/qualification-vm/ui-run-3/evidence/qualification/ui-update-evidence.json.
+Update50dc8b4c-4bbd-4ed1-a3c8-c4f9d685b214 committed;
+Restore62b6991d-b3ad-4797-b039-6dee86e920b0 committed;
+Schutzbackupd2926da8-eb1e-42ec-b217-3adb4f9211aa.
+Prozessausgänge:963/1314/1555/1721 Exit0,1469 erwarteter SIGKILL. Akzeptierter
+Absturz enthält eigene Nachher-Lesung; keine stillschweigende Todesannahme.
+
+Export enthielt eingestreute cloud-init-SSH-Meldungen. Nur vollständige Base64-
+Zeilen zwischen Markern rekonstruiert; striktes Base64, gzip/tar-Prüfung und
+sicheres data-Filter-Entpacken erfolgreich. Bericht zusätzlich unabhängig gelesen:
+alle eigenen Runtime-Ausgänge0/response.ok; after/restored/unchanged vollständig
+==seeded; acceptedCrash.readback/protectedRead vollständig==continued;
+continued!=seeded. Damit Quellerhalt und spätere Arbeit explizit nachgewiesen.
+Kein Datenbank-/Dateifeld beim Vergleich entfernt. CI34340503082 weiterhin laufend,
+bisher kein fehlgeschlagener Job; kein Handoff/Main-Abschluss.
+
+Plan-Audit dieses Testfalls: bestanden. Roadmap-Audit: Phase5 NICHT abgeschlossen.
+Weiterhin Faultmatrix, Erststartfälle und andere Annahmen offen. Zusätzlich
+Codeprüfung findet denselben Node/AppRun-Fehler im stabilen Startpunkt:
+src/shared/maintenance/launcher.ts startet retained AppImage mit
+ELECTRON_RUN_AS_NODE=1. UI-Update relauncht Ziel direkt und deckt diesen Pfad nicht
+ab. Nächster Fixplan: stabilen Startpunkt auf direkt entpackte, hashgeprüfte
+Electron-Laufzeit umstellen, ohne AppRun im Node-Modus; Argumente/Exit/Cleanup und
+Recovery-Sperren bewahren, tatsächlichen installierten Start im Gast prüfen.
+Keine Behauptung, dass erfolgreicher UI-Fall bereits Desktopstart/Recovery beweist.
+
+### Phase 5 – Stabilen Startpunkt von AppRun entkoppeln
+
+Voriger Turn Fortschritt: kompletter UI-/accepted-crash-Fall bestanden, getrennte
+Launcher-Lücke benannt. Konkreter Fix: Shellstart prüft weiter Runtime/Helperhash,
+extrahiert zurückgehaltenes AppImage in eigenes temporäres Verzeichnis ohne
+AppRun/Node-Modus, prüft Runtimehash erneut und startet enthaltenes Electron
+im Node-Modus direkt. Shell erhält Exitcode/Argumente, räumt auch bei Signal auf;
+keine Änderung von Wartungsjournal/Profilsperren. Unit-Interpreterfixtures müssen
+AppImage-Extraktion statt direktem Node-Proxy modellieren. Danach tatsächlicher
+installierter Startpunkt im Gast; kein Ersatz durch direktes Zielrelaunch.
+
+Launcherfix implementiert: Hashprüfungen, direkte Extraktion, regular/non-symlink
+Laufzeit, Node-Ausführung ohne AppRun, Signaltraps und Cleanup.30684 terminalExit0:
+20Tests für Reader/Launcher inklusive Extraktionsfehler, fehlender Laufzeit,
+Helper-Exit23, Leerzeichen/Apostrophen, geerbten Startmodi und Tempbereinigung.
+Typ-/Lintlauf1785 separat nachverfolgt; echte installierte Gastlaufzeit und
+Signalprüfung noch nicht durch Unit-Erfolg ersetzt.
+
+### Phase 5 – Installierten Startpunkt mit vollständigem Profil prüfen
+
+Voriger Turn Fortschritt: Launcherfix und20gezielte Tests, Typen/Lint grün.
+Plan: eigenständiger Qualifier seedet Profil über tatsächliches Target-AppImage,
+installiert aktuellen Shellstart mit original verpacktem Helper, startet nur
+root/start, prüft sichtbare Version und reguläres Beenden, vergleicht danach
+vollständiges Profil und Temp-Cleanup. Gast-/cgroup-Guard zwingend. Separater
+Signaltest folgt, damit normaler Start nicht als Signal-/Recoverybeweis gilt.
+
+16353 terminal GastExit0, TestExit1: Starthelper meldet „Der Wartungsbeleg fehlt“.
+Kein Electronstartfehler, sondern unvollständiger Fixtureaufbau: Qualifier setzte
+nur current und installierte Launcher ohne Initialtransaktion. Fixplan: eigenes
+vollständig geschlossenes Seedprofil als Arbeitskopie bereitstellen, gemeinsamen
+MaintenanceCoordinator.begin/activate mit Profiljournal3 nutzen und Start NICHT
+im Test committen. Tatsächliche App muss über root/start die Startprüfung und
+committed-Übergang durchführen. Dann UI/Exit/Vollprofilvergleich wie geplant.
+
+41309 terminal GastExit0, TestExit1: „Keine bestätigte Installation vorhanden“.
+Quellprüfung admitDesktopStart erklärt dies: stabiler Desktopstart ruft rollback
+für unbestätigte Wartung auf; eine Erstinstallation ohne previous darf daher
+nicht über ihn bestätigt werden. Zweiter Fixtureaufbau ebenfalls unzutreffend,
+kein neuer Produktfehler belegt. Typprüfung40559 bestanden, ursprünglicher
+Qualifierlint leer; beide Gastfehler bleiben dokumentiert.
+
+Korrekturplan: authentischen Installationsabschluss nachbilden: begin/activate,
+direkter Ziel-AppImage-Start mit --release-complete <Transaktion> wie produktiver
+Controller, App selbst committed prüfen und regulär schließen. Erst anschließend
+root/start mit original verpacktem Helper starten, Version/Profil/Cleanup prüfen.
+Kein manuelles Journal-commit im Test; stabile Recovery-Semantik nicht lockern.
+Zusätzlich abgewiesene fehlende/unbestätigte Installation später als eigene
+Negativfälle behalten, nicht als normalen Start auswerten. Phase5 offen.
+
+82214 terminal GastExit0, TestExit1. Initialer direkter Zielstart bestätigt die
+Installation und endet0. Danach root/start scheitert konkret mit fehlender
+libfuse.so.2. Ursache der Launcheränderung: APPIMAGE_EXTRACT_AND_RUN wurde auch
+beim direkten Nodebinary entfernt; der echte Helper übernimmt sein Environment
+für den späteren AppImage-Appstart. Fixplan: nur bei Extraktion entfernen, bei
+direkt ausgeführtem Nodebinary ausdrücklich1 setzen (dieses führt kein AppRun aus).
+Regression muss diese vererbte FUSE-freie Appstartoption prüfen. Danach neuer
+Gastlauf, ohne FUSE zu installieren und damit den Produktfehler zu verdecken.
+
+65452 Exit0:6Launcher-Unitfälle inklusive FUSE-freier Environmentweitergabe.
+Gast47872 terminal GastExit0 UND TestExit0: installierter Startpfad bestanden.
+Bericht work/qualification-vm/launcher-run-4/evidence/qualification/
+installed-launcher-evidence.json SHA256
+e6f7af9f3b2a0c5427a1e238038d422244272f53a604e165e54d76a004a6fbd2.
+Initialer echter Zielstart bestätigt Installation (committed), endet0;
+anschließendes root/start mit originalem AppImage/Helper endet0, sichtbare
+Version0.0.149, vollständiger Nachherstand gleich Seed, keine salt-launcher-
+Tempverzeichnisse. Bericht unabhängig geparst und Profil/Journal/Exit geprüft.
+FUSE wurde nicht nachinstalliert. Payload enthält ausdrücklich uncommitteten
+Launcherfix; kein falscher exact-SHA-AppImagebuildnachweis.
+
+CI34340503082 auf796c3017d jetzt completed success. Diese CI umfasst NICHT die
+noch uncommittierten Launcher-/Qualifieränderungen. Plan-Audit normaler Start:
+bestanden. Signalabbruch des echten Starthelfers und Wiederherstellungsfälle
+bleiben separat offen; Phase5-Faultmatrix sowie erneute Candidate/Handoff/Main-
+Gates nach Produktänderung weiterhin erforderlich. Kein Phasenabschluss.
+
+### Phase 5 – Signalabbruch des bestätigten Startpunkts
+
+Voriger Turn Fortschritt: echter stabiler Start und vollständiger Datenvergleich
+bestanden. Plan: optionaler --signal-abort-Fall nach regulärem erfolgreichen Start:
+erneut root/start, sichtbare Bereitschaft, SIGTERM ausschließlich an Starter-PID,
+Exit143 und keine verbleibenden Testprozesse binnen10s. Journal bleibt committed,
+Tempverzeichnisse weg; danach voller Readback und erneuter regulärer Start mit
+Beenden. Nicht durch Kill aller Prozesse als erfolgreichen Signalpfad ersetzen.
+Fehlercleanup bleibt getrennt und zählt nicht als Abnahme.
+
+Signaltest33878 terminal GastExit0, TestExit1: nach10s verbleiben8Testprozesse
+(1198,1200,1203,1204,1225,1229,1256,1262). Cleanup separat im Gast; kein Pass.
+Fixplan: direkte Node-Laufzeit durch setsid in eigene Prozessgruppe starten;
+Starter-Signal beendet diese Gruppe statt nur unmittelbaren Node-PID, sodass
+spawnSync-Kinder nicht übrig bleiben. Rückgabecode/normaler Start unverändert,
+keine globalen Prozessnamenkills. Launcher-Units und echter Signal-/Neustartfall
+wiederholen. Typen/Lint des erweiterten Qualifiers zuvor bestanden.
+
+81930 Exit0:6Launcher-Unitfälle nach Prozessgruppenfix.31061 terminal GastExit0
+UND TestExit0: ursprünglicher Normalstart, SIGTERM nuranStarter, Exit143,
+keine erkannten Testprozesse binnen10s, Tempbereinigung, erneuter Normalstart
+und vollständiger Profilvergleich bestanden. ReportSHA256
+9a9e8f3571952d0879ae2262b86e73ffecf3788c4fbc515ce42955a6071a4084 unter
+work/qualification-vm/launcher-run-6/evidence/qualification/
+installed-launcher-evidence.json. Unabhängiger Berichtvergleich bestätigt
+seeded==after und committed; signalAbort={code:143,signal:null}. Fehlercleanup
+war nicht Teil des erfolgreichen Abbruchnachweises. AppImage0.0.149 unverändert,
+installierter Shellfix weiterhin als uncommittierte Testeingabe gekennzeichnet.
+
+Plan-Audit des Signal-nach-Bereitschaft-Falls: bestanden. Kein Nachweis für Signale
+während Extraktion/Prozessgruppenanlage oder SIGKILL innerhalb Migration. Phase5
+bleibt offen; übrige Faultmatrix und exakte neue CI/Handoff/Main-Gates fehlen.
+
+### Phase 5 – Unterbrechung während Launcher-Extraktion
+
+Voriger Turn Fortschritt: Signal nach UI-Bereitschaft korrigiert und Gastpass.
+Jetzt fokussierter Regressionstest mit langsamem synthetischem Extraktor (nur
+Node, keine GUI): nach sicherem Extraktionsbeginn SIGTERM nuranStarter, binnen3s
+Exit143, Extraktor beendet, Tempverzeichnis weg. Vorher-/Nachhernachweis. Falls
+Vordergrund-Warten verzögert reagiert, Extraktion ebenfalls in eigene Prozess-
+gruppe mit unterbrechbarem wait überführen. Keine Änderung am Profiljournal.
+
+60397 terminalExit1: neuer Test scheitert genau an ausbleibendem Exit143 nach3s,
+6bestehende Fälle bestehen. Diagnosecleanup beendet nur bekannte Test-PIDs.
+Bestätigter Fix: Entpacken asynchron mit setsid --wait, salt_child während
+Extraktion gesetzt; Waitstatus prüfen, danach Identität leeren. Cleanup versucht
+zuerst Prozessgruppe, vor Gruppenanlage fallback unmittelbarer eigener Kind-PID.
+
+59996:21gezielte Reader-/Launcherfälle bestanden; neuer Extraktions-Signaltest
+nun grün nach vorherigem Fehlbeleg. Extraktor nicht mehr lebend, Starter143,
+Tempverzeichnis weg. Lint ohne Befund; vollständige Typprüfung im selben Lauf.
+Dies ist ein synthetischer Nicht-GUI-Extraktionsabbruch, kein zusätzlicher echter
+AppImage-Migrationsabbruch. Normal-/Signal-Gastfall auf finalem Launcherstand
+nochmals erforderlich, anschließend Quelle/CI sichern und Faultmatrix fortsetzen.
+Phase5 weiterhin offen; keine anderen Profildaten angefasst.
+
+### Phase 5 – Finaler Launcher-Gastlauf: UI-Timeout diagnostizieren
+
+Fortsetzung nach erneuter Desktop-Diagnose: alter D-Bus-/EMFILE-Befund bestätigt;
+keine Host-GUI-Tests autorisiert. Lauf39900 ist terminal, QEMUExit0 aber
+QUALIFICATION_TEST_EXIT=1. launcher-run-7 exportierte Logs zeigen erfolgreiche
+Installationsbestätigung sowie gestarteten Main/Utility beim stabilen Start,
+anschließend Timeout der sichtbaren Versionsanzeige. Kein Pass und kein Beleg
+für einen Extraktionsfehler. Export separat unter launcher-run-7/evidence gelesen.
+
+Korrekturrundenplan vor Änderung: Qualifier speichert beim Fehler aktuelle Stufe,
+sichtbaren DOM-Text, Screenshot (als JSON für bestehenden Export), Journal und
+zugeordnete Prozess-IDs. Diagnostikfehler dürfen Originalfehler nicht ersetzen.
+Assertions bleiben unverändert. Danach gezielte Typ-/Lintprüfung und ein neuer
+begrenzter Gastlauf mit gleicher unveränderter AppImage-Datei. Erst dessen
+Bild-/Textnachweis entscheidet über Produkt- oder Treiberkorrektur.
+Plan-Audit: letzter Signal-Regressionstest grün, aktueller vollständiger Gastlauf
+rot; Roadmap-Audit: Phase5 weiterhin offen, spätere Phasen nicht begonnen.
+
+14067 terminal: launcher-run-8 GastExit0, TestExit1 erneut beim ersten stabilen
+Start. launcher-failure.json zeigt committed und vollständige Kampagnenübersicht,
+keinen geöffneten Einstellungsdialog. Screenshot failure.png visuell geprüft:
+Einstellungen unten rechts, keine Fehleransicht/überlagernder Dialog. Main lädt
+Fenster zunächst verborgen und zeigt erst bei ready-to-show; CDP-Verfügbarkeit
+allein ist keine sichtbare Startbereitschaft. Qualifier klickt bislang unmittelbar
+nach CDP-Verbindung. Kausalität noch Hypothese, nicht als Produktfehler verbuchen.
+
+Fixplan: Im installierten Launcherfall vor jeder Settings-Interaktion auf sichtbares
+Dokument und geladene Kampagnenauswahl warten. Dieser Fall hat explizit gesäten
+Kampagnenstand; Recoveryfälle behalten andere Bereitschaftskriterien. Kein
+wiederholtes Blindklicken, keine längeren Timeouts, kein direkter DOM-click oder
+Capability-Aufruf. Diagnose bleibt aktiv; gleicher finaler Launcher/AppImagestand
+in frischem Gast muss Normalstart, Signal, Neustart und Datenvergleich bestehen.
+
+29211 terminal: launcher-run-9 TestExit1 nach29s, sichtbare Dokumentprüfung
+bestand, nachfolgende Textprüfung scheiterte an document.body=null. Damit ist
+vorzeitiger DOM-Zugriff konkret belegt, nicht nur vermutet. Fixplan: text() liest
+fehlenden Body als leeren Ladezustand, sodass bestehendes begrenztes expectText
+weiter wartet. Andere DOM-Ausnahmen bleiben Fehler. Keine Timeoutverlängerung.
+Danach erneuter Gastfall und gezielte Typ-/Lintprüfung des gemeinsamen Treibers.
+
+86738 terminal: launcher-run-10 QEMUExit0 UND TestExit0 nach46s. Bericht
+installed-launcher-evidence.json SHA256
+978b2febb8249832ebb533509c50704fd9bc6541456d97023182c2cc5b022980.
+Unabhängig aus Export validiert: gesamter fachlicher seeded/readback-Inhalt gleich,
+committed, normaler LauncherExit0, SIGTERM nuranStarter ergibt143, anschließender
+regulärer Neustart und Beenden erfolgreich. Assertions für Prozessende und
+Tempbereinigung bestanden. Finaler Launcher mit asynchroner Extraktion unverändert
+gegenüber run7; nur belegte Test-Bereitschaft/Diagnostik korrigiert. Originales
+AppImage0.0.149 hashgleich, Quelle als uncommittierte Qualifiereingabe deklariert.
+
+Plan-Audit Launcher-Normal-/Signal-/Neustartfall nun bestanden. Roadmap-Audit:
+Phase5 bleibt offen; echte Migrations-/Aktivierungs-SIGKILL-Matrix und weitere
+Fehlerfälle sowie neue exakte CI/Handoff/Main-Gates fehlen. Keine Freigabe einer
+Installation auf dem Desktop oder Veröffentlichung aus diesem Nachweis.
+
+39780 terminalExit0: 21 Reader-/Launcher-Unitfälle, gezielter ESLint und beide
+vollständigen TypeScript-Projekte bestanden. Begrenzter Host-Nicht-GUI-Service
+salt-marcher-launcher-final-check; Log work/roadmap-phase5-launcher-current-check.log.
+Vorheriger versehentlicher pnpm11-Aufruf brach vor Dependencies-Purge ab; korrekt
+wiederholt über explizites Node22/corepack/pnpm10, kein Install-/Purge-Override.
+Änderungsstand wird als Candidate gesichert; kein Main-/Handoffabschluss daraus.
+
+### Phase 5 – Echte Prozessabbrüche des gemeinsamen Koordinators
+
+Voriger Turn Fortschritt: finaler Launcher-Gastnachweis, Candidate ad01235d3
+gepusht; CI34345111460 aktuell in_progress. Arbeitsbaum zu Rundenbeginn sauber.
+Roadmap-Refresh: Phase5 fordert Abbrüche innerhalb Migration sowie an Aktivierungs-
+und Recoverygrenzen. Bisherige Coordinatorfälle werfen Exceptions im selben
+Prozess. Konkreter Plan: ergänzende Linux-Subprozesssuite für Journal2/3, SIGKILL
+an vorhandenen dauerhaften Vorwärts-/Rollbackgrenzen, Recovery in separaten neuen
+Prozessen zweimal. Prüfen vollständigen Dateibaum/Leerordner, Programmverweis,
+erhaltenen fehlgeschlagenen Datenbaum und spätere Arbeit nach committed. Kind
+bestätigt erreichten Prüfschritt auf stdout, beendet sich selbst mit SIGKILL;
+Parent verlangt genau dieses Signal, kein bloßer Fehlerexit. Timeout und nur
+eigene temporäre Profile. Keine Electron-/AppImage-Ausführung auf Host.
+
+Dies ist ein ergänzender realer Prozessgrenzennachweis des gemeinsamen Moduls,
+kein Nachweis der Local-/Release-Adapter, realer SQLite-Migration, Stromverlust
+oder unveränderter Release-Artefakte. Anschließend Artefakt-Faultfälle anbinden;
+Phase5 aus dieser Suite allein keinesfalls schließen.
+
+54672 terminal:35 echte SIGKILL-Fälle bestanden, ESLint verlangt validierte
+statt any-typisierte JSON-Eingabe im Kind. Korrektur: vorhandenen Journalvertrag
+auf die Begin-Felder projizieren und Fixture-JSON damit parsen; kein neuer
+paralleler Vertrag. Gezielte Suite plus Lint/Typprüfung erneut ausführen.
+
+56485 terminalExit1: Zod lehnt pick() auf dem refinierenden Journalvertrag ab;
+kein SIGKILL-Fall erreicht. Korrekturplan: Fixture serialisiert vollständigen
+prepared-Journalwert, Kind validiert den unveränderten ganzen Vertrag und übergibt
+ihn an begin. Journal-Prüfungen bleiben wirksam; keine Typassertion/any-Umgehung.
+
+88678 terminalExit0:35 SIGKILL-Fälle, ESLint und vollständige Typprüfung bestanden;
+Log work/roadmap-phase5-process-interruption-check3.log. Kein Host-Electronlauf.
+Plan-Audit: zusätzliche Prozesssuite erfüllt ihren begrenzten Prüfauftrag;
+Roadmap-Audit: reale AppImage-/SQLite-Migrationsabbrüche und Adapterabdeckung fehlen
+weiterhin. pnpm check bleibt Abschlussgate, dessen GUI-Anteile nach Desktopvorfall
+nur in isolierter VM laufen dürfen; die fokussierte Suite ersetzt es nicht.
+Nächster Schritt: tatsächliche Zielruntime-/Migrations-Faultpunkte im
+Qualifikationsartefakt anbinden, originalen Profilreadback vor/nach Crash prüfen.
+
+### Phase 5 – Unterbrechung innerhalb originaler SQLite-Migrationen
+
+Voriger Turn Fortschritt:35 reale Coordinator-Prozessabbrüche grün, Candidate
+7c97eadee gesichert. Zu Beginn CI34345599892 pending, Vorgänger34345111460 läuft.
+Plan vor Änderungen: historischer Harness erhält optionalen Callback unmittelbar
+nach dem originalen SQL einer Migration, noch innerhalb der originalen
+applySchemaMigrations-Transaktion und vor user_version/Commit. Die vorhandene
+Registry-Funktion nimmt bereits explizite Migrationsobjekte entgegen: nur die
+vom Preflight aufgelösten Originalmigrationen dekorieren, keine SQL-Neufassung
+und keine Änderung der normalen App. Callback meldet ID, Rolle, Versionen und
+inTransaction; separater Utility-Abbruchfall muss dort SIGKILL auslösen.
+
+Reihenfolge: typed Harness-Callback und Welt-/Loot-Weiterleitung; dessen Ort und
+Originalaufruf mit gezielter Prüfung absichern; anschließend neues Testartefakt
+mit Utility-Todesbeleg/Runner qualifizieren. Bei fehlendem/außerhalb Transaktion
+liegenden Callback kein bestandener Abbruch. Quelle bleibt unangetastet, gestorbene
+Arbeitskopie wird mit Originalruntime gelesen, danach Zielmigration neu gestartet
+und vollständiger Readback verglichen. Der Callback allein ist kein Abnahmenachweis.
+
+54278 terminalExit0:Harness-Lint, beide TypeScript-Projekte und6 vorhandene
+Artifact-Runnerfälle bestanden. Neue migrate-kill-Operation schreibt vor dem
+Utility-SIGKILL einen validierten Transaktions-/Migrationsbeleg; Main bindet ihn
+an seine gestartete Worker-PID und speichert den beobachteten Utility-Exitcode.
+Runner verlangt zugehörigen Abbruchbericht und fehlgeschlagene normale Antwort.
+Der tatsächliche Exitcode und Datenrollback müssen im Gast noch geprüft werden.
+
+29805 terminalExit0:Test-AppImage0.0.150 aus Originalquelle f633b896... (42/42),
+unveränderter Sourcecheckout, neuer expliziter Harness.177044124Bytes,SHA256
+c5460bb82ff02f04c81b0db0f4aca8d9209c995358350228344828ed6e5c1a8a,
+work/historical-artifacts/migration-kill-target-v1. Gegenseite bleibt unverändertes
+0.0.148(42/41). Payload-migration-kill-1 hashbindet beide Artefakte und aktuellen
+uncommittierten Qualifier. Gastlauf74369 gestartet, separates neues Overlay,
+keine Host-GUI. Ergebnis nicht aus erfolgreichem Build ableiten.
+
+74369 terminal: migration-kill-run-1 GastExit0 UND TestExit0 nach33s. BerichtSHA
+ a9c38ce269a2a41c2e3594565c1fb4e5d833a15c0070cb0fbbb284520797ffd4
+unter evidence/qualification/migration-interruption-evidence.json. Beleg zeigt
+PID1017, Auftragd83d677b-b92b-498a-bc4a-07b276aff1f9, beobachteter UtilityExit9,
+SIGKILL nach campaign-41-to-42-active-loot-receipts bei inTransaction=true.
+Unabhängig aus exportiertem Bericht verglichen: seeded==recovered==sourceAfter,
+resumed.profile==after. Originalmigration erneut erfolgreich, Quelle unverändert.
+
+Audit-Korrekturplan: Runner akzeptierte bisher jeden Nichtnull-Utilityexit;
+Linux-SIGKILL wurde konkret als9 beobachtet. Auf literal9 verschärfen und den
+aufbewahrten Bericht gegen dieselbe Vorgabe validieren; andere Exitursachen
+zählen nicht. Keine neue Artefaktdatei für diese reine Orchestratorverschärfung.
+Plan-Audit Migrationscallback/erster echter Abbruch erfüllt. Roadmap-Audit:
+weitere Migrationsstände, komplette Updateaktivierung nach Fehler, Local-/Release-
+Adaptergrenzen, Kapazitäts-/Zugriffsfehler bleiben eigenständige Abnahmefälle.
+
+89796 terminalExit0: abschließender Harness-Lint, vollständige Typprüfung und6
+Artifact-Runner-Tests bestanden. Aufbewahrter echter Gastbericht separat auf
+workerExitCode===9 geprüft; Runner verlangt nun literal9. Abnahme gilt exakt für
+die geprüfte erste 41→42-Migration im Arbeitsprofil, nicht den gesamten Updateweg.
+Commit/Push als weiterer Candidate; keine Main-Promotion, kein Desktop-Handoff.
+
+### Phase 5 – Utility-SIGKILL im tatsächlichen Release-Update
+
+Voriger Turn Fortschritt: echter isolierter Migrationsabbruch mit vollständigem
+Readback bestanden. Aktuell Candidate0e3526011, neue CI34346407184 pending,
+Vorgänger34345599892 läuft. Arbeitsbaum sauber. Plan: optionales, ausdrücklich
+hashdokumentiertes Wartungs-Wrappermodul ausschließlich im historischen
+Test-AppImage. Originales gebautes maintenance.js unverändert als
+maintenance-original.js behalten; Wrapper dekoriert better-sqlite3.exec, ruft
+originales SQL unverändert auf und hält beim DDL der aktiven Loot-Receipts an,
+wenn UserVersion41, offene Transaktion und expliziter isolierter Arm-Auftrag
+passen. Parent-Qualifier sendet SIGKILL an genau diese Worker-PID, nachdem
+Profilpfad/Arbeitskopie und Grenze nachgewiesen sind. Normale Releasebuilds
+bekommen weder Wrapper noch neuen Schalter.
+
+UI-Qualifier erweitert: Check/Download/Install per Oberfläche, auf Barriere warten,
+Worker killen, verständliche Fehleranzeige und alte Programmversion prüfen;
+Anwendung schließen, vollständiger Readback durch alte Runtime. Arm entfernen,
+erneut öffnen und denselben geprüften Download installieren; bestehender ganzer
+Weiterarbeiten-/Restorefall muss danach bestehen. Backup vor Fehler separat
+validieren und erhalten. Keine erfolgreiche Abnahme durch Cleanup-Kills.
+Gekoppelter Vorbereitungsfehler ist ein Fall; Aktivierungs-/Recoverygrenzen
+bleiben separat offen. Originalmodule-/Wrapperhash im Artefaktbeleg erforderlich.
+
+93439 terminalExit1:Lint markiert absichtlich gelöste exec-Methode. Sie wird
+bereits mit original.call(this,sql) an dieselbe reale Datenbank gebunden;
+Fixplan: genau diese Stelle mit begründeter Lint-Ausnahme kennzeichnen, keine
+Änderung der SQLite-Ausführung. Anschließend Lint/Typprüfung wiederholen.
+
+68228 Lint/Typprüfung terminalExit0.69909 Testartefaktbuild terminalExit0,
+44.7s/2.6GiBSpitze. Vor Gasttest Prüfpräzisierung: erhaltene Sicherung nicht nur
+auf Manifest/Dateihashes prüfen, sondern zusätzlich mit alter AppImage-Runtime
+vollständig lesen und gegen Seed vergleichen. Qualifieränderung nach Buildende;
+Artefaktbytes unverändert. Dadurch wird kein bloß vorhandenes Backup als korrekter
+Sicherungsinhalt gewertet.
+
+Test-AppImage0.0.151:177059542Bytes,SHA256
+4741a6029e7608c3f68bdda3f43b27b8711539fbde03a2875272e57b7a428597.
+Original gebauter Wartungseinstieg bleibt bytegleich mitSHA
+bdc25b66cd4484b43a0ce3131c57129db0d39a367fb8923445d5d573ac9730db;
+WrapperSHA cf2c2236f1f9e35fb0bb7396507021b265b2c751e3db2e29f1baa14fbef27ff1.
+Receipt enthält beide Hashes und explizite Option; normales build:release wird
+nicht verändert. Payload-update-crash-1 dokumentiert uncommittierten Qualifier.
+82060 Gastlauf gestartet, ursprüngliche0.0.148 bleibt Vergleichsversion42/41.
+
+82060 terminal: GastExit0/TestExit1 nach183s. Fehler ist nicht der Utilityabbruch:
+Qualifier erreicht Wiederherstellung nach erfolgreichem Retry/Weiterarbeiten,
+findet aber wegen zweier erwartbar vorhandener Backups keinen einzigartigen
+Wiederherstellen-Button. Barriere belegt PID1109 in ursprünglicher Migration
+innerhalb staged-d11f1dd2-41cd-48db-90f6-8506a8003ebc, gelöschte Kampagne .trash.
+49065 Lint/Typprüfung terminalExit0. Kein voller UI-Pass aus Teilfortschritt.
+
+Fixplan vor Änderung: gewünschte Vor-Update-Sicherung aus committed-Updatejournal
+ermitteln; DOM-Zeile über sichtbares Datum (im Browser lokal formatiert) und
+Version eindeutig identifizieren, normalen Mausclick auf deren Button begrenzen.
+Keine Sicherungen löschen, keine erste beliebige Zeile wählen, keine direkte
+Bridge-Aktion. Bestätigten Utility-Fehlerteil als eigenen Zwischenbericht sichern,
+damit späterer Fehler seine bestandenen Vergleiche nicht verschwinden lässt.
+Dann gleicher unveränderter Artefaktsatz in frischem Gast erneut vollständig.
+
+60782 terminal: update-crash-run-2 GastExit0 UND TestExit0 nach80.9s. BerichtSHA
+ eac69a16dd473c772126e0207604a114de1c3c8d2a93d537115f25dec6f2f1c5
+unter evidence/qualification/ui-update-evidence.json. Barriere19b9196b-a8cc-481c-
+96c0-16302252181d, Worker1109, staged-e399e417-f3c0-45ba-840a-255e4e490546,
+.original-DLL41→42 in offener Transaktion einer wiederherstellbar gelöschten
+Kampagne. Parent sendet SIGKILL nuranverifizierte Worker-PID. App zeigt
+Unterbrechungsfehler, ursprüngliche Programmzuordnung und Profil bleiben gleich.
+Eine vollständige Sicherung aus dem fehlgeschlagenen Versuch erhalten und mit
+alter Runtime gelesen. Nach Entfernen der Arm-Datei vollständiger regulärer
+UI-Update-/Weiterarbeiten-/Restoreablauf bestanden, dieselben AppImagebytes.
+
+Unabhängige Exportprüfung: maintenanceCrash.readback==seeded; alle
+backupReadbacks==seeded; after==restored==unchanged==seeded;
+continued==protectedRead. Alle4 explizit gestarteten UI-Prozesse Exit0; der
+Utilityabbruch ist getrennt dokumentiert, kein pauschaler Prozesskill als Pass.
+Vorheriger Restore-Selektorfehler durch eindeutige sichtbare Backupzeile behoben,
+keine Sicherung gelöscht. Plan-Audit dieses gekoppelten Vorbereitungsabbruchs
+bestanden. Roadmap-Audit Phase5 weiterhin offen: SIGKILL an sämtlichen Aktivierungs-
+und Recoverygrenzen in ausgelieferten Adaptern, weitere Kapazitäts-/Zugriffs-/
+Kompatibilitätsfälle und abschließende unveränderte Artefakt-/CI-Gates bleiben.
+
+17753 terminalExit0:abschließender Lint und beide Typprüfungen bestanden,
+work/roadmap-phase5-update-crash-final2.log. Präzisierung des vorigen Eintrags:
+„original-DLL“ war Schreibfehler; geprüft wurde originales DDL. Candidate-CI
+34346407184 weiterhin in_progress; kein Green/Main-Abschluss behauptet.
+
+### Phase 5 – Aktivierungsabbruch nach dauerhaftem Datenwechsel
+
+Voriger Turn Fortschritt:gekoppelter Utility-Vorbereitungsabbruch/Retry/Restore
+mit Originalwartung grün. Zu Beginn sauberer Candidate f6406409f, CI34347682840
+in_progress. Plan vor Änderungen: historischer Main-Bootstrap lädt einen
+Testbeobachter für originale fs.renameSync/openSync/fsyncSync/closeSync-Aufrufe.
+Er ruft alle Originalfunktionen unverändert auf und pausiert erst nach erfolgreichem
+fsync des Elternverzeichnisses einer erkannten Journal-/Profil-/Programmänderung.
+Keine SQL-Änderung, keine neuen Schalter in normalen Releasebuilds. Expliziter
+Arm-Auftrag mit ID/Punkt; Barriere enthält originalen Journalzustand und Main-PID.
+
+Erster konkreter Fall: new-data-moved, Journal data-moving. UI führt echtes Update
+bis zum Haltepunkt aus; Parent beendet die zugeordneten Appprozesse mit SIGKILL,
+wartet auf deren Ende und startet den tatsächlichen aktuellen AppImage-Startpfad.
+Die App muss vor Datenöffnung zurücksetzen, alte Version sichtbar bereitstellen,
+Profil vollständig mit alter Runtime lesbar erhalten. Kein Test-Coordinator darf
+Rollback ausführen. Danach vollständiger erneuter UI-Update-/Restorefall, ohne
+Journal/Backup zu löschen. Vorheriges rolled-back-Journal als erwarteten
+Ausgangszustand berücksichtigen statt fälschlich Null zu verlangen.
+
+Anschließend dieselbe Beobachtung auf übrige Aktivierungs-/Recoverygrenzen
+anwenden; erster Fall schließt deren gesamte Matrix nicht ab. Der stabile
+Shellstarter und Local-Adapter benötigen weiterhin eigene End-to-End-Nachweise.
+
+53056 terminalExit0:Lint und vollständige Typprüfung.18168 terminalExit0:beide
+Test-AppImages aus unveränderten historischen Sourcecheckouts gebaut;
+0.0.152(42/41)177048458Bytes SHA285562ac0e40f24a0cb734439e6f24311f070ece24b0e33655d0389cba825157,
+0.0.153(42/42)177048079Bytes SHAc149e927db222c4863469ec78dcc1e36142e1bc274343ae7b4e845218889c8f3.
+Payload-publication-crash-1 enthält hashgebundenen uncommittierten Qualifier;
+91841 Gastlauf gestartet. Ereignisbeobachtung erfolgt nach originalem
+Verzeichnis-fsync, nicht durch Exception statt Dateiumbenennung. Lauf noch keine
+bestandene Abnahme; keine Host-Electron-Ausführung.
+
+91841 terminal GastExit0/TestExit1 nach48.6s. Tatsächlicher Datenwechselabbruch
+new-data-moved/data-moving wurde erreicht, alter Datenstand von App-Recovery
+wiederhergestellt, activation-crash-evidence.json mit vollständigem Readback
+liegt vor. Anschließender Retry wurde im Qualifier sofort fälschlich als Fehler
+gemeldet: waitFor akzeptiert noch das rolled-back-Journal des vorherigen Versuchs.
+Keine Produktkorrektur daraus ableiten; bisheriger Test erwartete leeres Journal.
+
+Fixplan: Abschlusswarteschleife darf nur eine Transaktions-ID ungleich dem
+startingJournal akzeptieren. Phase committed/rolled-back bleibt verpflichtend;
+neuer tatsächlicher Rollback bleibt Fehler. Originalartefakte wiederverwenden,
+vollständigen Gastfall erneut durchführen. Alten Beleg weder löschen noch resetten.
+
+47481 terminal: publication-crash-run-2 TestExit0 nach87.8s. BerichtSHA
+1259525343ddb697e8f885e96e3b06a23991e74dbe3e15a6adad912481470530.
+Barriere new-data-moved, Journal data-moving; ursprünglicher AppImage-PID970
+nachgewiesen SIGKILL. Tatsächlicher nächster Appstart setzt rolled-back; vier
+weitere gestartete UI-Prozesse Exit0. Unabhängiger Exportvergleich:
+activationCrash.readback==seeded; after==restored==unchanged==seeded;
+continued==protectedRead.43671 Lint/Typprüfung terminalExit0.
+
+Plan-Audit erster Aktivierungsfall bestanden; Roadmap-Audit gesamte Matrix offen.
+Nächste unveränderte Fälle: journal:data-ready und program-linked, jeweils frisches
+Profil und kompletter Recovery-/Retry-/Restorefall. Gleiche AppImage-/Qualifier-
+Bytes, nur explizit gewählter Barrierenname und getrennte Testhome-Verzeichnisse.
+Beide nacheinander in derselben begrenzten VM; Fehler eines Falls stoppt die Folge.
+
+86952 terminal: publication-pair-run-1 GastExit0/TestExit0 nach162.2s. Beide
+nacheinander ausgeführten Fälle vollständig bestanden, identische Artefaktbytes:
+- journal:data-ready / Journal data-ready:ReportSHA
+89437437405fcecb5df0fb57a04edc1b271d0305f260281016e056b847866f9c.
+- program-linked / Journal program-moving:ReportSHA
+6465be10afafef9a162d9229386d1e69c6a6765438a358e4aad818e44af87a45.
+Beide Exporte unabhängig gelesen:App-Recovery rolled-back,
+activationCrash.readback==seeded; after==restored==unchanged==seeded;
+continued==protectedRead. Der program-linked-Fall startet tatsächlich das nun
+verknüpfte Ziel-AppImage; dieses stellt vor Datennutzung das alte Paar wieder her.
+
+Plan-Audit drei konkrete Aktivierungsgrenzen bestanden. Roadmap-Audit weiterhin
+offen:prepared/data-moving/old-data-moved/program-moving/awaiting-start,
+Unterbrechung der Recovery selbst, stabiler Starter/Local-Adapter und weitere
+Fehlermatrix. Keine Phase5-/Public-Release-Freigabe aus den drei Fällen.
+
+CI34347682840 für unveränderten Candidate f6406409f ist jetzt terminal success.
+Dieser Nachweis deckt den vorigen Utility-Abbruchstand ab, nicht die noch
+uncommittierte neue Aktivierungsbeobachtung. Letztere wird separat gesichert und
+benötigt ihren eigenen vollständigen Check; kein Main-/Handoffabschluss daraus.
+
+### Phase 5 – Übrige Aktivierungsgrenzen mit unveränderten Artefakten
+
+Voriger Turn Fortschritt:drei echte Aktivierungsfälle grün, Candidate23d418557
+gepusht. Plan:die übrigen fünf Vorwärtsgrenzen journal:prepared,
+journal:data-moving, old-data-moved, journal:program-moving,
+journal:awaiting-start nacheinander mit unveränderten0.0.152/0.0.153 und
+Payload-publication-crash-2 prüfen. Jeweils frisches Testhome, kompletter
+App-Recovery-/Retry-/Weiterarbeiten-/Restorefall, Stop bei erstem Fehler.
+VM-Laufzeitlimit900s; keine Host-Appstarts oder Daten-/Codeänderung während Lauf.
+Dies schließt weder Recovery-Unterbrechungen noch Commit-/Local-/Starterfälle.
+
+Folgerundenplan nach Ende des laufenden Tests: Recovery-Unterbrechung ohne
+vorweggenommene Renderer-Verbindung. launch() in unveränderten Spawnteil und
+anschließende CDP-Verbindung trennen; nach initialem Aktivierungstod neuen
+Arm-Auftrag setzen, App nur starten, vor Fenstererstellung erreichte Recovery-
+Barriere abwarten, dieselbe Journal-ID und zugeordnete PID prüfen, erneut SIGKILL.
+Erst danach normal starten und vollständige alte sowie erhaltene fehlgeschlagene
+Profilbäume mit ihren AppImages lesen. Kein hängender connect()-Versuch darf in
+einen späteren Start hineinreichen. Historischen Observer für dauerhaftes
+maintenance-history-Journal ergänzen; Originalfunktionen/SQL unverändert.
+Codeänderungen erst nach terminalem Status des aktuellen VM-Laufs.
+
+9230 terminal:GastExit0/TestExit0 nach403.96s, alle5 übrigen Vorwärtsfälle grün.
+Export unabhängig geprüft:jeweils activationCrash.readback==seeded,
+after==restored==unchanged==seeded, continued==protectedRead, App-Recovery
+rolled-back. Berichtindex unter publication-remaining-run-1/validated-report-index.json:
+- journal:prepared ef7156071e7a89e3154572125927ce96d0cb5894407fb204f40f963c6dda7c54
+- journal:data-moving 7d1dbcfaa73d16527718ccb7ff037d1aad837e06cf2848657daa81fc9ed7eb33
+- old-data-moved 1dc3dead23ea927f7659f09ff36773b18a2971e6c9096e66f08bfbc96437c931
+- journal:program-moving 97fc82ca9a17df26bc9c6ab77bd668c8066d925d1f1502cc76a1522c34d5f509
+- journal:awaiting-start a0c100ca2757d6d068079bd177d3ef481efb145f272bde4b8940c7d5a5a55f89
+Zusammen mit den3 vorigen Fällen acht Vorwärtsgrenzen vor Bestätigung geprüft.
+Keine Aussage über Unterbrechung während Recovery oder nach committed daraus.
+
+Konkreter nächster Pilot gemäß Folgerundenplan: --activation-crash new-data-moved
+plus --recovery-crash failed-data-preserved mit unveränderten0.0.152/0.0.153.
+Beobachter unterstützt diesen Punkt bereits; keine neue Artefaktdatei notwendig.
+Wiederhergestelltes altes Profil UND aufbewahrtes fehlgeschlagenes Zielprofil
+mit ihrer jeweiligen Runtime vollständig lesen. Historiengrenze erst danach
+ergänzen. Arbeitsbaumänderung erst nach terminalem9230.
+
+21870 terminalExit0:Lint/Typprüfung des erweiterten Qualifiers.42105 terminal:
+recovery-crash-run-1 GastExit0/TestExit0 nach91.53s. BerichtSHA
+06c6910d166cb8031fe92708622846094c5955cfafc1993368d80a9745f7c09c.
+Zweiter Abbruch failed-data-preserved, Journal rollback-preserving derselben
+Transaktion. Zwei explizite AppImage-PIDs967/1146 beobachtet SIGKILL, anschließend
+vier normale Exit0. Kein wartender CDP-Verbindungsversuch beim Vorfenster-Abbruch.
+Unabhängige Exportprüfung:altes readback UND failedReadback==seeded;
+Recovery rolled-back; after==restored==unchanged==seeded;
+continued==protectedRead. Beide Profilbäume vollständig erhalten und mit passender
+AppImage-Runtime gelesen, anschließend ganzer UI-Retry-/Restorefall bestanden.
+
+Plan-Audit Recovery-Pilot bestanden. Roadmap-Audit übrige Recoverygrenzen,
+Historienübergang, committed/Starter/Local und weitere Fehlermatrix bleiben offen.
+Nächste unveränderte Matrix:Activation program-linked, dann Recovery an
+journal:rollback-started, journal:rollback-preserving, journal:rollback-restoring,
+old-data-restored, journal:rollback-program, program-linked, journal:rolled-back.
+So wird auch Rückkehr vom bereits ausgewählten Zielprogramm geprüft. Historien-
+beobachtung erfordert separat ergänzte Testartefakte, keine Produktionsänderung.
+
+### Phase 5 – Weitere Recoverygrenzen nach Programmwechsel
+
+Voriger Turn Fortschritt:acht Vorwärtsgrenzen und Recovery-Pilot grün,
+Candidate35a486c41 gesichert. Plan:unveränderte0.0.152/0.0.153 und
+Payload-recovery-crash-1 für sieben weitere Recoverypunkte verwenden.
+Erster SIGKILL jeweils program-linked, zweiter an journal:rollback-started,
+journal:rollback-preserving, journal:rollback-restoring, old-data-restored,
+journal:rollback-program, program-linked, journal:rolled-back. Pro Fall frisches
+Profil; beide Profilbäume und kompletter Retry-/Restoreablauf müssen bestehen.
+Sequenzieller Gastlauf, Stop bei erstem Fehler, Gast-/Hostdeadline1200s.
+Keine Codeänderung während Lauf; Historiengrenze/Commit/Local/Starter bleiben offen.
+
+### Phase 5 – Unterbrechung des Nachweisexports und Historiengrenze
+
+Voriger Turn Fortschritt: Host-Absturzprotokolle erneut gelesen und den eigenen
+laufenden VM-Container auf Nutzerwunsch gestoppt; keine weiteren Host-Appstarts.
+Aktueller Zustand: kein laufender Qualifikationscontainer. Der erhaltene serielle
+Lauf recovery-remaining-run-1 meldet sieben erfolgreiche Fälle und TestExit0,
+aber QUALIFICATION_EXPORT_END fehlt. Daher kein vollständiger unabhängiger
+Berichtvergleich und keine abgeschlossene Abnahme dieser sieben Fälle. Die
+Overlaydatei bleibt für spätere ausschließlich lesende Berichtgewinnung erhalten.
+
+Korrekturrundenplan: ausschließlich historischen Test-Beobachter um dauerhaft
+veröffentlichtes maintenance-history/<Transaktion>-rolled-back.json erweitern.
+Das vorhandene Original-rename und Original-fsync müssen zuerst erfolgreich
+sein; nur das Historienverzeichnis dieser Installation und die konkrete laufende
+Transaktion dürfen den Punkt rollback-history-written auslösen. Danach gezielte
+Lint-/Typprüfung und vorhandene echte Koordinator-Unterbrechungstests in begrenzter
+Host-Servicegruppe ohne Electron. Gepackter Nachweis erfordert anschließend neue,
+versionierte Testartefakte und einen isolierten Gastlauf; er ist durch diese
+Quelländerung nicht erbracht. Phase 5 und die Gesamtroadmap bleiben offen.
+
+Korrektur nach tatsächlicher Exportauswertung: Der gzip-Stream ist unvollständig,
+aber alle sieben vollständigen ui-update-evidence.json-Dateien liegen vor dem
+Abbruch. Sie wurden einzeln ohne Teil-JSON-Akzeptanz gelesen und separat abgelegt
+unter recovery-remaining-run-1/partial-export-validated. Beide Artefakthashes
+stimmen mit 0.0.152/0.0.153 überein; je zwei erwartete SIGKILL und vier Exit0.
+Alle vollständigen Profilvergleiche bestanden: readback und failedReadback sowie
+after/restored/unchanged entsprechen seeded; continued entspricht protectedRead.
+Beide Unterbrechungen gehören jeweils derselben Journal-ID, Recovery rolled-back.
+Der komplette Logexport bleibt unvollständig, die sieben Ergebnisberichte sind
+unabhängig geprüft. Ihre SHA-256:
+- journal:rollback-preserving d3d71c1e825ed994897d0883fec39dc9e19da418cab237141c81d5330a16eb3d
+- journal:rollback-program 127bd129103d4d11719da75550c51ff98cc81e7c1e80de86926ef8c9f8633ce3
+- journal:rollback-restoring 3453efa27ffee5c05068b90ddaca9aeaf9e03aff4892c396e66263140e3b986a
+- journal:rollback-started 7256c3648a9f33f8a2b735167aa6d61fe84c67473fe3296e380936ada388b7e6
+- journal:rolled-back 1f0d29ce7b291848ae2f204af91cae523413b68eb70801d6c8d90772744a6e79
+- old-data-restored bd5d384a9285d1dc707f8bf6c7ca5228850758ac5773332f89b65a08019db3ae
+- program-linked a61ec12d5a9c65cacff1a29833f1bda374d110239d41091000c98ef645834951
+
+86263 terminal laut Serviceprotokoll: Lint, beide Typprüfungen und 35 vorhandene
+Koordinator-Prozessabbruchtests grün; Spitzen-RAM 1.5 GiB, kein Swap, kein Electron.
+Plan-Audit: Beobachter ergänzt und lokal geprüft. Roadmap-Audit: gepackte
+Historiengrenze weiterhin offen; keine Phasenfreigabe.
+
+Nächster konkreter Plan: neue Testartefakte 0.0.154/0.0.155 aus unveränderten
+extraction-baseline/extraction-target mit ergänztem historischem Bootstrap bauen.
+Danach isolierter vollständiger UI-Fall: activation program-linked, recovery
+rollback-history-written, beide Profilbäume und Retry/Weiterarbeiten/Restore prüfen.
+Keine parallelen Quelländerungen während Build/Test. Keine öffentlichen Assets,
+kein Main-Handoff und keine echten Nutzerprofile werden hierbei verändert.
+
+70210 terminalExit0: beide neuen historischen Test-AppImages gebaut.
+0.0.154 SHA25be40406418275d60b31cdbcd5c4980aec3888916466385edbe69a966003169
+(177048228 Bytes), 0.0.155
+SHAb89464df053290c8b6469dbe8a98cea3ba87021889213435db1ad24129c2cb3b
+(177048138 Bytes). Beide Herkunftsbelege enthalten den Hash des erweiterten
+Testbeobachters; Originalquellen ab32/f633 und Schemas42/41→42/42 unverändert.
+58415 terminalExit0; history-crash-run-1 TestExit0, vollständiger Export gelesen.
+BerichtSHA af1f82c11ba405e5a248507e35a05db2daf695e43865c3a2a42b05afc5a1b926
+Initialer Abbruch program-linked, zweiter rollback-history-written im Zustand
+rollback-program derselben Transaktion. Zwei erwartete SIGKILL und vier Exit0.
+Unabhängiger Vergleich beider vollständiger Profilbäume, Retry, gespeicherter
+Weiterarbeit, Restore, vorgeschalteter Sicherung und unveränderter Quelle grün.
+
+Plan-Audit Historiengrenze bestanden einschließlich echtem AppImage-Ablauf.
+Roadmap-Audit: Phase5 bleibt offen (u.a. gepackte Commit-/Starter-/Local-Fälle,
+Platz-/Zugriffs-/WAL-/Import- und weitere Fehlermatrix); Phasen6/7 unverändert offen.
+Keine Host-GUI gestartet, keine Nutzerdaten verändert, kein Release veröffentlicht.
+
+### Phase 5 – Dauerhafte Annahme des Updates
+
+Voriger Turn Fortschritt: historische Recoverygrenze mit AppImages grün,
+0585fd78b gepusht. Arbeitsbaum sauber, kein Qualifikationscontainer aktiv.
+Plan: UI-Qualifier um --commit-crash ergänzen. Historischen Beobachter vor
+normalem UI-Update auf journal:committed scharfstellen; nach erfolgreichem
+Original-fsync Ziel-Main anhand eigener Prozesse zuordnen und SIGKILL auslösen.
+Beim nächsten echten Appstart müssen dasselbe committed-Journal und Zielprogramm
+bestehen bleiben. Anschließend vollständigen Datenvergleich, Weiterarbeiten,
+zusätzlichen --accepted-crash nach gespeicherter Arbeit und Restore prüfen.
+Vorhandene unveränderte0.0.154/0.0.155 unterstützen diesen Beobachterpunkt bereits.
+Nur Testdriver ändern; Lint/Typprüfung ohne GUI, dann ein isolierter Gastlauf mit
+neuem Payload und vollständigem Berichtsexport. Keine Test-/Quelländerung während
+Lauf, keine Freigabe allein anhand eines beobachteten Journalwerts.
+
+27042 terminalExit0: Lint und beide Typprüfungen grün. 26121 terminalExit0,
+commit-crash-run-1 TestExit0 und vollständiger Export. Unveränderte Testartefakte
+0.0.154/0.0.155. BerichtSHA f8040582fe0e01126580ac984b5ebb7de8077ef7525b1f3b9843048752bd36df
+Abbruch unmittelbar nach dauerhaftem journal:committed; echter Neustart behält
+dasselbe vollständige Journal und Zieldeployment. after/restored/unchanged==seeded.
+Spätere gespeicherte XP-Änderung überlebt zusätzlichen SIGKILL und Neustart;
+acceptedCrash.readback==continued==protectedRead, dieser Stand unterscheidet sich
+vom Seed. Wiederherstellung erhält spätere Arbeit in vorgeschalteter Sicherung.
+
+Plan-Audit Annahmegrenze bestanden. Roadmap-Audit Phase5 bleibt offen für
+Starter-/Local-Integration und übrige Daten-/Umgebungsfehlermatrix. Remote Check
+34350796115 für35a486c41 ist vollständig grün; daraus folgt keine Freigabe des
+geänderten aktuellen Candidate-Stands. Keine Host-GUI, kein Main-/Nutzerhandoff.
+
+### Phase 5 – Update und Recovery über den installierten Startpunkt
+
+Voriger Turn Fortschritt: dauerhafte Annahme plus Erhalt späterer Arbeit mit
+AppImages grün,5c852f3b7 gepusht. Arbeitsbaum sauber, keine laufende Test-VM.
+Plan: --installed-launcher im UI-Qualifier ergänzt echten Installationsstartpunkt
+über installMaintenanceLauncher mit aus unverändertem Baseline-AppImage gelesenem
+Originalhelfer. Alle expliziten Appstarts laufen dann über root/start; Herkunft
+vor jedem Start sowie nach Abschluss prüfen und Startweg im Bericht festhalten.
+Pilot: Aktivierung old-data-moved abbrechen (Profil fehlt zeitweise), anschließend
+Recovery über den installierten Starter, vollständiger alter Datenvergleich und
+normaler UI-Update-/Weiterarbeiten-/Restorefall. Keine Test-Recoveryfunktion.
+Historischer Main-Beobachter kann nicht im eigenständigen Originalhelfer pausieren;
+--recovery-crash zusammen mit diesem Startweg deshalb ausdrücklich ablehnen, nicht
+stillschweigend einen ungeprüften zweiten Abbruch behaupten. Beobachtung dieses
+Helfers bleibt separat offen. Vorhandene0.0.154/0.0.155 unverändert verwenden.
+Lint/Typprüfung und anschließend isolierter Gastlauf; keine Quelländerung während
+Build/Test, keine Host-GUI oder echten Nutzerprofile.
+
+49300 terminalExit0: erster Driverstand Lint/Typen grün. Statischer Integrations-
+Audit vor Gaststart findet fehlenden initialen Wartungsbeleg der bisher direkt
+gestarteten Fixture. Korrekturplan: Baseline als echte Installations-Transaktion
+aktivieren und ausschließlich diesen ersten Start mit --release-complete direkt
+anstoßen. Erst die App bestätigt ihre Daten; danach alle Starts über root/start.
+Fehlerfälle müssen den bestätigten initialen Beleg unverändert lassen statt null
+zu erwarten. Kein künstlicher committed-Beleg, kein Test-Koordinator-commit.
+
+18414 terminalExit0: korrigierter Driver Lint/Typen grün. Weitere statische
+Prüfung vor Gaststart: installLauncher wird bei jedem Update aufgerufen. Die
+alten ab32/f633-Testartefakte würden daher die dort noch alte Shellimplementierung
+installieren. Neue explizite Vergleichsquellen sind erforderlich: Baseline ab32
+mit ausschließlich aktuellem src/shared/maintenance/launcher.ts (Schemas und SQL
+unverändert42/41), Ziel aktueller geprüfter Quellstand5c852f3b7 (42/42). Baseline
+separat committen und veröffentlichen, beide immutable IDs im Quellenkatalog
+registrieren. Neue Testversionen0.0.156/0.0.157; bestehende Assets unverändert.
+Dies ist ein dokumentierter Vergleichsstand, kein nachträgliches Verändern alter
+Releasebytes oder eine künstliche Migration. Erst danach Starter-Pilot ausführen.
+
+73409 terminalExit0: neue Testartefakte0.0.156/157 gebaut.63927 terminalExit0:
+Gast-TestExit0 nach121.5s, aber serieller Export enthält eine abgebrochene Base64-
+Zeile während Shutdown-Ausgaben (14 statt76 Zeichen), gzip deshalb ungültig.
+Kein vollständiger Berichtvergleich behauptet. Korrekturplan nur Gast-Export:
+ui-update-evidence.json gezielt exportieren, Ausgabe flushen und zehn Sekunden
+vor Shutdown zum Austragen des Konsolenpuffers lassen. Dasselbe unveränderte
+Payload erneut in frischem Gast und Testhome ausführen; kein Quell-/Artefaktwechsel.
+
+62948 terminalExit0, installed-update-run-2 TestExit0 und vollständiger Export
+mit gültigem gzip. BerichtSHA 3fdc016f5f2082eac8daa849b8e45e84576f1e5aa29400c6c88af419e2634fc0
+Baseline0.0.156 SHA8b6776d37bb8efa5a56bb625cb8e43249847253291517f51ebaba5d43cfd4286
+(177048277 Bytes), Ziel0.0.157
+SHA9b23022f613491ad3b55be0eac2fd8088549d7b56a261e2ec14d9698d30effd8
+(177048160 Bytes). Initialer Abschluss durch Baseline-Runtime; danach Starts über
+den installierten, hashgeprüften Shellstarter. Abbruch old-data-moved, Recovery
+rolled-back mit altem Programm; vollständiger alter Profilvergleich bestanden.
+Anschließend UI-Update, Schemawechsel, Weiterarbeiten und Restore grün:
+after/restored/unchanged==seeded; continued==protectedRead. Keine Test-Recovery
+und kein künstlicher commit. Neuer Quellenkatalog referenziert Baselineb64a408a5
+und Ziel5c852f3b7 mit unveränderten echten Schemaständen42/41→42/42.
+
+Plan-Audit Starter-Pilot bestanden. Roadmap-Audit: weitere Startergrenzen, Abbruch
+im eigenständigen Helfer, Local-Adapter und übrige Fehlermatrix bleiben offen.
+Phase5 nicht abgeschlossen; keine Freigabe/Handoff/Veröffentlichung.
+
+### Phase 5 – Übrige Aktivierungsgrenzen über installierten Starter
+
+Voriger Turn Fortschritt: Starter-Pilot old-data-moved vollständig geprüft und
+9449f8d56 gepusht. Aktuell sauberer Arbeitsbaum und keine laufende Test-VM.
+Plan: unverändertes Payload-installed-update-1 und Artefakte0.0.156/0.0.157 für
+sieben weitere Aktivierungsgrenzen verwenden: journal:prepared,
+journal:data-moving,new-data-moved,journal:data-ready,journal:program-moving,
+program-linked,journal:awaiting-start. Achter Fall --commit-crash --accepted-crash
+über denselben installierten Startpunkt. Pro Fall eigenes frisches Profil, echte
+Baseline-Installationsbestätigung und kompletter UI-/Datenvergleich/Restore.
+Sequenziell, Stop beim ersten Fehler; begrenzter Gast mit RuntimeMaxSec1800 und
+Hostdeadline1800. Vollständige Ergebnisberichte exportieren, zehn Sekunden vor
+Shutdown austragen lassen. Keine Code-/Teständerungen während des Laufs. Der
+Originalhelfer wird dabei als Recovery-Einstieg geprüft, sein eigener interner
+Abbruch und Local-/WAL-/Platz-/Zugriffs-/Importmatrix bleiben weiterhin offen.
+
+Read-only Folgerundenaudit während Startermatrix: scripts/local-app-installation.ts
+bindet den gemeinsamen Koordinator inklusive afterMaintenanceBoundaryForTest und
+renameForInstall tatsächlich an; bestehende tests/unit/local-app-installation.test.ts
+werfen LocalInstallCrashForTest (ab Zeile760/818), belegen aber keinen realen
+Prozessabbruch. verifyLocalRuntimeStartup verlangt die tatsächliche committed-
+Bestätigung des Kindes und versucht bei Fehlern gemeinsamen Rollback (der nach
+committed wirkungslos bleibt). Nächster Local-Nachweis muss den unveränderten
+Installer in separatem Prozess mit SIGKILL am vorhandenen Hook sowie vollständigen
+Profil-/Desktop-/Programmvergleich verwenden; echte Local-Artefaktannahme bleibt
+separater Pflichtnachweis. Kein Schluss von synthetischen AppImagebytes auf Runtime.
+Implementierung erst nach terminalem Status der aktiven Startermatrix.
+
+Fortsetzungsprüfung: Session43001 erneut live bestätigt, unveränderter Container
+5d7a28f5-ba79-4421-b2bd-f524ae5d3d4e. Serielle Erfolgsmeldung für ersten Fall
+journal:prepared bei Gast154.201s; übrige sieben Fälle noch aktiv. Dies ist eine
+Laufmeldung, noch kein vollständiger Export-/Berichtvergleich der Matrix.
+Read-only Local-Audit konkretisiert: bestehende Fixture verwendet künstliche
+artifact-a/b-Bytes und synthetischen Helfer; installAndAccept bestätigt im Test
+per coordinator.commit. Für den echten Prozessabbruchtest müssen diese Grenzen
+im Bericht ausdrücklich bestehen bleiben. Aussage über Prozess-/Daten-/Desktop-
+Recovery ist möglich, eine gepackte Local-Runtime-Abnahme folgt daraus nicht.
+
+### Phase 5 – Wiederaufnahme nach abgebrochenem Tool-Turn
+
+43001 ist nach explizitem Turn-Abbruch nicht mehr vorhanden; podman ps zeigt keinen
+Testcontainer. Kein exit-code und kein Exportabschluss im bisherigen Lauf. Der
+Lauf gilt beendet, nicht bestanden. Erste Erfolgsmeldung journal:prepared bleibt
+indirekte Evidenz ohne vollständigen Bericht. Kein paralleler Neustart.
+Korrekturplan: kleinere Gruppen mit Export nach jedem abgeschlossenen Fall.
+Unverändertes Payload-installed-update-1 zuerst für journal:prepared und
+journal:data-moving erneut verwenden, jeweils eigenes Profil. Snapshotexport vor
+Beginn des nächsten Falls, damit eine spätere Unterbrechung frühere Nachweise nicht
+verliert. Fehler stoppt die Gruppe; finaler TestExit und separate Exportmarker.
+Danach übrige Aktivierungs- und Commitfälle fortsetzen. Keine Quell-/Artefaktänderung.
+
+### Betriebsfehler – Host-Speicherplatz am 10. September 2026
+
+Nutzer meldet volle Rootpartition. Verifiziert:231GiB gesamt,5.4MiB frei;
+209GiB im eigenen work-Verzeichnis,176GiB davon qualification-vm. Keine aktive
+Test-VM oder Buildprozesse. Ursache: unbegrenzt aufbewahrte beschreibbare Testdisks.
+Acht abgeschlossene guest.qcow2-Dateien mit vorhandenem vollständigem UI-Bericht
+und TestExit0 entfernt:installed-update-run-2,history-crash-run-1,commit-crash-run-1,
+publication-remaining-run-1,publication-pair-run-1,recovery-crash-run-1,
+publication-crash-run-2,update-crash-run-2. Berichte, Logs, AppImages, Quellcode,
+Basisimage und Nutzerprofile unverändert. Danach73GiB frei (69% belegt).
+
+Korrekturplan vor neuer Qualifikation: VM-Runner muss vor Ausgabeordner/Container
+mindestens40GiB freien Hostspeicher verlangen (24GiB maximale Gastdisk plus16GiB
+Reserve). Fehlermeldung mit tatsächlich verfügbarem Speicher und nächster Aktion.
+Ablehnung bei4MiB durch kontrollierte df-Antwort testen; kein Container/Output darf
+entstehen. Nach künftigem validiertem Berichtsexport disposable guest.qcow2 sofort
+entfernen; fehlende/ungültige Exporte zuerst klären. Keine automatische Löschung
+von Nutzer-Backups oder Beweisen. Roadmaparbeit pausiert bis Betriebsprüfung grün.
+
+Speicherwächter geprüft: bash-Syntax grün; kontrollierte Werte4MiB,40GiB-minus1Byte
+und unlesbarer Kapazitätswert jeweils Exit2 mit verständlicher Meldung. Kein
+Ausgabeordner und kein Podman-Aufruf. Keine VM gestartet. Host weiterhin73GiB frei.
+Plan-Audit Betriebsentlastung und Vorabgrenze bestanden. Gesamtroadmap weiterhin
+offen; komplette pnpm-check/CI-Freigabe wird dadurch nicht ersetzt.
+
+Wiederaufnahme nach Platzentlastung: sauberer Candidatebe4d624b6,73GiB frei,
+keine laufende VM. installed-pair-run-1 enthält nur host-boot-id und ist kein
+qualifizierter Lauf. Bestehendes unverändertes installed-pair-seed-1 in frischem
+installed-pair-run-2 gestartet (Session9015,Deadline600s). Neuer Speicherwächter
+hat den Start zugelassen. Nach vollständigem Exportvergleich guest.qcow2 entfernen.
+
+CI-Audit während Lauf9015: Check34354498665 für9449f8d56 fehlgeschlagen.
+Portable-Job102475876503 scheitert ausschließlich am vorangestellten
+prettier --check .: publication-interruption.ts und qualify-historical-ui-update.ts
+nicht formatiert. Aggregat folgerichtig fehlgeschlagen; keine Gesamtfreigabe.
+Korrekturplan nach terminalem Gastlauf: beide Dateien mit Repository-Prettier
+formatieren, Formatprüfung und Lint prüfen, neuen Candidate committen/pushen und
+exakte vollständige CI abwarten. Bestehende AppImagebytes bleiben unverändert.
+
+9015 terminalExit0 des Gastes, aber kein TestExit: cloud-init scheitert schon beim
+Kopieren aus installed-pair-seed-1.img mit Input/output error (AppImagebaseline,
+Ziel-AppImage und Manifest). Das vor/bei vollem Host erzeugte ISO ist unbrauchbar;
+kein Appstart und keine Abnahme. Korrektur: Payload-SHA256SUMS verifizieren, neues
+ISO mit neuer Kennung erzeugen und beide enthaltenen AppImages vor Gaststart per
+isoinfo auslesen und gegen Originalhash vergleichen. Alten Fehlstart-Datenträger
+nach gesichertem Diagnoseprotokoll entfernen; keinerlei Nutzerdaten darin.
+
+16242: beide AppImages direkt aus neuem installed-pair-seed-2.img gelesen;
+Dateigröße und SHA256 stimmen vollständig mit Originalartefakten überein. Alle
+Payload-SHA256SUMS grün. Alte Fehlstart-Guestdisk entfernt, Diagnose-Log erhalten.
+Prettier korrigiert beide gemeldeten Dateien; gezielter Formatcheck und Lint grün.
+Änderungen betreffen ausschließlich Formatierung, keine AppImagebytes verändert.
+
+installed-pair-run-3 (Session46337) live: erster kompletter Export während laufender
+VM unabhängig gelesen und geprüft. journal:prepared BerichtSHA
+ded65decad0a40134c5b522070e2e7258239c8c8ee710527bc0b31b6b9866467.
+Hashgeprüfte0.0.156/0.0.157, Startweg installed-launcher, Recovery rolled-back;
+readback/after/restored/unchanged==seeded,continued==protectedRead. Bericht unter
+installed-pair-run-3/validated/journal-prepared.json gesichert. Zweiter Fall
+journal:data-moving noch aktiv; Guestdisk erst nach terminalem Gesamtstatus und
+verifiziertem zweitem Bericht entfernen. Kein Neustart bei bloßem Beobachtungsende.
+
+46337 terminalExit0,installed-pair-run-3 TestExit0 nach370.1s. Alle drei
+Exportarchive vollständig inklusive gzip-Prüfsumme gelesen. Beide Berichte
+unabhängig verglichen: vollständige Profile, Quelle, Retry/Weiterarbeiten/Restore
+und vorgeschaltete Sicherung stimmen. SHA256:
+- journal:prepared ded65decad0a40134c5b522070e2e7258239c8c8ee710527bc0b31b6b9866467
+- journal:data-moving 546b23190f91b0406f6836513747d806dabaf18685235160eef5dffb1925c3fc
+Nach terminalem Status und abgeschlossener Prüfung guest.qcow2 entfernt;
+Berichte, Logs, Herkunft und Original-AppImages bleiben erhalten. Plan-Audit
+Zweierlauf bestanden. Roadmap-Audit weitere Startergrenzen/Local/Fehlermatrix offen.
+
+Nächster Zweierplan: unveränderte0.0.156/157 und Payload-installed-update-1,
+Abbrüche new-data-moved und journal:data-ready über installierten Starter.
+Je frisches Profil und Export nach abgeschlossenem Fall; vollständiger
+Retry-/Weiterarbeiten-/Restore-/Profilvergleich. Neues Seed,Deadline600s.
+Nach validiertem Export wieder Gastdisk entfernen. Keine Quelländerung während Lauf.
+
+Dokumentationsabgleich während unveränderter Testinputs: Abnahmematrix M05/M06
+enthält noch pauschale ältere Testangaben. Plan: ausschließlich diese Evidenzfelder
+mit den bereits exportgeprüften AppImage-Abbrüchen, durable-commit/later-work und
+drei nachgewiesenen Startergrenzen präzisieren. Laufende Fälle nicht als bestanden
+aufführen. Canonical roadmap unverändert; verbleibende Grenzen ausdrücklich offen.
+
+89755 weiterhin aktiv: erster Bericht new-data-moved aus vollständigem gzip-Export
+geprüft, SHA65f197ec6d53bf13731ca47750c8f9e9a784d26d3e4233e53d1d8d69bd8f592a
+Startweg installed-launcher; Artefakthashes bestätigt, vollständiger alter
+Profilvergleich und Retry/Weiterarbeiten/Restore/Quellerhalt grün. Zweiter Fall
+journal:data-ready noch offen; Gastdisk bleibt bis zum terminalen Status erhalten.
+
+89755 terminalExit0,installed-data-run-1 TestExit0 nach535.2s. Alle drei
+Archive vollständig inklusive gzip-Prüfsumme geprüft; beide vollständigen
+Profilvergleiche, Source/Retry/Weiterarbeiten/Restore und Sicherungen grün. SHA256:
+- new-data-moved 65f197ec6d53bf13731ca47750c8f9e9a784d26d3e4233e53d1d8d69bd8f592a
+- journal:data-ready 81a3c245369f9eeffeedd0e1a459ef9f5957e4a7a8784793d981eb5ee09f1518
+Guestdisk nach terminaler Abnahme entfernt; alle Belege erhalten. Plan-Audit
+Datenübergänge bestanden. Noch offen: Starter-Programmwechsel, awaiting-start und
+committed/later-work; eigener Helfer-Abbruch,Local und übrige Fehlermatrix.
+
+Nächster Zweierplan: journal:program-moving und program-linked über installierten
+Starter; unveränderte0.0.156/157, eigenes Profil je Fall, Export nach jedem Fall,
+vollständiger UI-/Daten-/Restorevergleich. Gast-/Hostdeadline900s, da vorherige
+Gruppe535s benötigte; Ressourcen- und40GiB-Speichergrenze unverändert. Gastdisk nach
+validierter Abnahme entfernen. Noch keine Quelle während laufendem Test ändern.
+
+Remote-Gate: Check34455617730 für exakt4cc692ba06be45d75b73d36070d202ca80fe5cc8
+completed/success verifiziert. Dies bestätigt die vollständige CI dieses
+committeten Stands, nicht die zusätzlich noch laufenden Starterfälle oder einen
+Main-Handoff. Lokale Dokumentationsfortschreibung liegt noch uncommittet vor.
+Aktuelle Session87965 installiert unveränderte0.0.156/157 und bleibt aktiv.
+
+87965 live: journal:program-moving komplett exportiert und unabhängig geprüft.
+BerichtSHA 5b672e4b252bdfce19505082aed0283cb7f1cc838733100ec354ac140cd8b597
+Passende Artefakthashes, installierter Starter, Recovery rolled-back; vollständige
+Profilvergleiche/Retry/Weiterarbeiten/Restore/Quellerhalt grün. Zweiter Fall
+program-linked läuft weiter; Guestdisk noch erforderlich.
+
+87965 terminalExit0,installed-program-run-1 TestExit0 nach426.9s; drei vollständige
+gzip-Archive einschließlich Prüfsummen verifiziert. Beide Programmwechselgrenzen
+über installierten Starter bestehen vollständigen Profil-/Update-/Restorevergleich.
+- journal:program-moving 5b672e4b252bdfce19505082aed0283cb7f1cc838733100ec354ac140cd8b597
+- program-linked a9d6b54d20211866b9d79e6feb490098e3acdcc4fc686352d75031184d4590d6
+Gastdisk nach Abnahme entfernt, alle Berichte und Logs bleiben. Plan-Audit
+Programmwechsel bestanden; awaiting-start und committed/later-work über Starter
+sowie weitere Local-/Fehlermatrixnachweise bleiben offen. Keine Phasenfreigabe.
+
+Letzter Zweierplan der Starter-Reihe: journal:awaiting-start und separater Fall
+--commit-crash --accepted-crash. Unveränderte0.0.156/157 und Payload, eigener
+Installationsabschluss/Profil je Fall, unabhängiger Export nach jedem Fall,
+Deadline900s und bisherige Ressourcenreserve. Im zweiten Fall muss derselbe
+committed-Beleg erhalten bleiben und später gespeicherte Arbeit nach erneutem
+SIGKILL sowie vorgeschalteter Restore-Sicherung exakt übereinstimmen. Nach
+terminalem Gesamtstatus/validiertem Export Gastdisk entfernen. Danach Local-
+Prozessnachweis implementieren; Phase5 bleibt bis gesamter Fehlermatrix offen.
+
+Read-only Vorbereitung Local-Folgerunde: vorhandene Coordinator-Hooks des echten
+advanceLocalAppInstallation verwenden, keine zweite Wartungslogik. Separater
+Node-Prozess mit eigener SQLite-Fixture, drei Kampagnen (aktiv/inaktiv/trash),
+Party/XP, Einstellungen und eigenen Dateien; nach beobachtetem Hook SIGKILL.
+Elternprozess vergleicht vollständigen Profilbaum plus Desktopintegration und
+Programmverweis, erneute Recovery in frischem Prozess. Artefakt-/Helferfixture und
+simulierte Runtime-Annahme ausdrücklich als solche benennen; keine Behauptung
+gepackter Local-Ausführung. Erst nach terminalem34202 implementieren und native
+Host-Tests ausschließlich ohne GUI mit begrenzten Ressourcen ausführen.
+
+### Phase 5 – Diagnose fehlender eindeutiger Sicherungszeile
+
+34202 terminal: GastExit0, aber TestExit1. Erster Fall awaiting-start erreicht
+Timeout „unique visible pre-update backup row“; zweiter committed-Fall wurde wegen
+set-e nicht begonnen. Kein vollständiger UI-Abnahmebericht. Guestdisk behalten.
+Korrekturplan zunächst ausschließlich Diagnose: VM-Runner um optionales
+`evidence-disk PATH` erweitern, welches eine beendete eigene Gastdisk nur lesend
+als zusätzliche Platte in einem frischen isolierten Diagnosegast einbindet.
+Originalquelle und Basis bleiben read-only; Ressourcen-/Platz-/Einzellaufgrenzen
+bleiben erhalten. Gast mountet mit ro,noload und exportiert Logs, Backup-Manifeste
+und vorhandene Zwischenberichte. Kein Appstart und keine Datenmigration. Danach
+Ursache des UI-Selektors anhand tatsächlicher Daten klären, erst dann korrigieren.
+
+1694 Diagnosegast terminalExit0, DIAGNOSTIC_EXPORT_EXIT0; Quell-Gastdisk vor/nach
+identischer SHAea5b98f0fd6aaaa7f85e7eb227a841b9578ee543494bdb0feeaacbd03c54f5c1.
+27057 Export gelesen, Diagnosegastdisk entfernt. Zwei verschiedene Backupzeiten
+08:58:16.743Z und08:58:57.309Z, beide0.0.156; committed-Update verweist auf letztere
+Sicherung736fc266-b70b-47e3-9fb9-988096571f43. Core ready laut Startlog; spätere
+Prozessfehler erst beim Test-Cleanup. Kein Beweis für Datendefekt oder Zeitkollision.
+
+Korrekturplan Diagnosequalität: im UI-Qualifier vor finally bei Fehler sichtbaren
+Text und DOM als ui-failure-evidence.json sichern, Originalfehler stets erhalten.
+Keine Auswahlheuristik ohne beobachteten UI-Zustand ändern. Lint/Format/Typprüfung,
+neues Driverpayload mit denselben AppImagebytes, nur awaiting-start-Fall erneut.
+Fehlerexport muss auch ui-failure-evidence.json enthalten, bevor Gast beendet wird.
+
+98378 installed-diagnostic-run-1 terminalExit0/TestExit0: awaiting-start über
+installierten Starter vollständig bestanden. Vollständiger gzip-Export geprüft,
+Bericht SHA07d9c9f85f4756ec142e119089b1f03289dd71701c0e6e84988f786194d9ee46;
+Rollbackprofil, erneutes Update, Restore und Quelle == Seed; spätere Arbeit ==
+vorgeschaltete Sicherung. Artefakthashes unverändert0.0.156/157. Gastdisk nach
+Vergleich entfernt. Ursprünglicher Timeout bleibt ungeklärt/sporadisch, nicht als
+behoben deklarieren. Fehleraufzeichnung bleibt für weitere Läufe aktiv. Nächster
+Einzelfall: installierter Starter, committed-Abbruch und späterer Arbeitsabbruch.
+
+93852 installed-commit-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export
+und JSON validiert, SHA0d00ea54b8b2755f4548a45e47a6386124bb0943a4f5135c78ebaae3e7b5c983.
+Installierter Starter nach committed-SIGKILL: Journal identisch zur angenommenen
+Transaktion. Zweiter SIGKILL nach späteren Änderungen: vollständiger Readback ==
+continued == vorgeschaltete Restore-Sicherung != Seed. Restore/Quelle/after ==
+Seed. Unveränderte Artefakte0.0.156/157. Gastdisk anschließend entfernt.
+Plan-Audit Diagnoseaufzeichnung implementiert, Lint/Typprüfung bestanden; zwei
+gezielte Artefaktläufe bestanden. Früherer Timeout bleibt ungeklärt. Roadmap-Audit:
+keine Phase5-Freigabe, Local/eigener Helfer/weitere Fehlerfälle offen. Änderungen
+an Testinfrastruktur und Abnahmedokumentation jetzt gemeinsam formatieren,
+Candidate committen/pushen und vollständige exakte CI abwarten.
+
+### Phase 5 – Local-Abbruchnachweise als echte Prozesse
+
+Voriger Goal-Turn: Fortschritt, Candidate2d2f2f2fd mit zwei geprüften Gastläufen.
+Arbeitsbaum sauber, keine VM aktiv. Remote PR672 zeigt exakten Head, aber noch
+keine Check-Runs; kein grüner Nachweis für diesen SHA behauptet.
+Umsetzungsplan: isolierter Node-Worker ruft originalen Local-Installer auf und
+beendet sich am vorhandenen Maintenance-Hook mit SIGKILL. Erstinstallation mit
+inerten Artefakt-/Helperbytes, ausdrücklich simulierte Runtime-Annahme; danach
+reale SQLite-Registry mit drei Kampagnen, Party/XP, Einstellungen und eigenen
+Dateien. Acht Aktivierungsgrenzen, neun Recoverygrenzen und durable commit.
+Recovery über frischen Installerprozess, wiederholter Wiederanlauf, Vergleich
+von Profilinhalt, Programmlink und Desktopintegration. Spätere Arbeit nach
+simulierter Annahme darf nicht zurückgesetzt werden. Kein gepackter Local-/GUI-
+Nachweis und kein historischer Schemawechsel durch diese Suite. Native Tests
+nur begrenzt ohne Desktop, dann Lint/Typecheck und getrennte Plan-/Roadmapaudits.
+
+67620 terminalExit1:18 Fälle fehlgeschlagen.17 Vergleiche zeigen zusätzliche
+SQLite-WAL/SHM-Dateien durch den eigenen logischen Readback nach zuvor erfasstem
+Rohbaum; kein belegter Nutzdatenverlust. Commit-Fall erwartet unzulässig dieselbe
+Transaktions-ID bei ausdrücklich erneutem Installeraufruf nach geänderten Daten;
+der Installer erstellt dafür eine neue Transaktion mit b als previous/next.
+Korrekturplan: vollständigen logischen SQLite-Inhalt und Dateien vergleichen,
+WAL über SQLite lesen statt Begleitdatei-Existenz zur Nutzdateninvariante erklären;
+Binärdateien per SHA vergleichen, um riesige irrelevante Fehlerausgaben zu meiden.
+Commit-Fall verlangt unveränderte spätere Daten und denselben Programmstand bei
+explizitem Wiederaufruf, keine identische Wartungs-ID. Kein Lock-/Recoverycode
+ändern. Gesamte18-Fälle-Suite erneut ausführen, danach statische Prüfungen.
+
+39935 terminalExit0:18/18 Local-Prozessfälle bestanden (224s); anschließend
+ESLint und beide Typechecks bestanden. Dienstmaximum1.5GiB, kein GUI-Start.
+Vollständige Tabelleninhalte inkl. Einstellungen, Registry/Trash und Party/XP
+sowie eigene Dateien/Verzeichnisse identisch nach Recovery und erneutem Update;
+Programmverweis, Desktopdatei und Icon wiederhergestellt. Spätere eigene Datei
+bleibt bei erneuter Installation desselben angenommenen Builds erhalten.
+Plan-Audit: echte Prozessabbrüche am Originalinstaller, wiederholte Recovery und
+Retry sowie committed-Fall geprüft. Artefakte weiterhin inert, Runtime-Annahme
+simuliert; keine gepackte Local-Abnahme. Roadmap-Audit: dieser Prozessnachweis
+ergänzt Phase5, ersetzt weder Local-Runtime, Helfer-Abbrüche, weitere Fehlerfälle
+noch den ungeklärten UI-Timeout. Check34460289741 für2d2f2f2fd läuft noch.
+Neue Tests und Nachweise als eigenen Candidate-SHA pushen; dessen vollständige
+CI ist zusätzlich erforderlich. Keine Main-Promotion oder Phasenfreigabe.
+
+### Phase 5 – Eigenständiger Starthelfer während Recovery
+
+Voriger Turn Fortschritt:ee8c1024e enthält18 bestandene echte Local-Prozessfälle.
+Nächster Plan: unveränderte0.0.156/157-AppImages verwenden. Den vorhandenen
+fsync-Beobachter separat als CJS-Testpreload bündeln; nur beim expliziten
+Recovery-Start des installierten Starters über NODE_OPTIONS laden und auf
+ELECTRON_RUN_AS_NODE=1 beschränken. Originalhelper und AppImagebytes nicht ändern.
+Marker ergänzt Prozessrolle, Driver muss launcher-Rolle und eigene PID prüfen.
+Ein Fall program-linked→failed-data-preserved zunächst als Pilot; alte und
+fehlgeschlagene Zielprofile vollständig lesen, normalen Update/Restoreweg prüfen.
+Observer-Datei mit SHA im Bericht identifizieren. Format/Lint/Typprüfung vor VM,
+frisches Payload,40GiB-Grenze und anschließende Exportprüfung/Datenträgerbereinigung.
+Keine behauptete vollständige Helfer-Matrix aus einem einzelnen Pilotfall.
+
+48584 terminalExit0 des Gastes, TestExit1: erneuter Timeout Sicherungszeile.
+Fehlerexport vollständig geprüft:ui-failure SHA b8ff670c735bb99e08c840b5bf99b0c2a26bf045786c76717ed71a54f94da6eb.
+DOM zeigt Kampagnenübersicht und Einstellungen-Trigger, keinen geöffneten Dialog.
+Teilbericht activation-crash SHA229103cc3c316af67b9a19c4468ad3d5d134dda93c655392c7a4d360cd75e83a
+belegt helper-Rolle launcher/PID1323, Abbruch failed-data-preserved nach
+rollback-preserving und erfolgreiche alte/fehlgeschlagene Readbacks. Kein
+vollständiger UI-Erfolg. Gastdisk bleibt für Diagnose erhalten.
+Korrekturplan Driver-Actionability: Klick erst bei sichtbarem fokussiertem Dokument,
+unverändertem Mittelpunkt über zwei Beobachtungen und tatsächlichem Treffer auf
+den Button (keine Überdeckung/inert). DOM-Listener beobachtet genau einen echten
+vertrauenswürdigen Maus-Klick; keine programmatic clicks oder blinden Wiederholungen.
+Fehlende Zustellung sofort ausdrücklich melden. Bestehende Sicherungsauswahl und
+Produktcode unverändert. Format/Lint/Typecheck, frisches Driverpayload und gleicher
+Helfer-Pilot erneut; bei weiter fehlendem Dialog trotz Klick separate Produktdiagnose.
+
+57880 launcher-recovery-run-2 terminalExit0/TestExit0: vollständiger gzip-Export
+und BerichtSHA4a65302d946a38bd887d271fd65a4d084acc1dcf1e490c4b78092c385daf9cfb
+validiert. Markerrolle launcher, eigene getötetePID, failed-data-preserved in
+derselben Update-Transaktion. Altes und fehlgeschlagenes Zielprofil == Seed;
+Update/Restore/Quelle == Seed, continued == vorgeschaltete Sicherung != Seed.
+Observer-SHA mit Payload verglichen, AppImages0.0.156/157 unverändert. Erfolgsdisk
+und vorherige Pilotdisk nach gesichertem vollständigem DOM/Teilbericht entfernt.
+Plan-Audit: ein eigenständiger Helfer-Recoverypunkt plus kompletter UI-Ablauf
+bestanden. Klicks jetzt actionability-geprüft und trusted beobachtet, keine
+programmatischen Ersatzklicks. Ursprüngliche Ursache fehlender Dialogöffnung
+nicht abschließend bewiesen; nicht als Produktfehlerbehebung deklarieren.
+Roadmap-Audit: weitere Helfergrenzen, gepackter Local-Lauf und übrige Fehlermatrix
+bleiben offen. Vorherige statischeChecks51710/44217 vollständig grün.
+
+Abschluss dieser Korrekturrunde: Formatcheck und diff-check grün. Check34461096738
+füree8c1024e bleibt nach erneuter Prüfung im Job campaign-workspaces aktiv; keine
+vollständige grüne CI behauptet. Neue Driver-/Beobachteränderungen mit Pilotbeleg
+auf Candidate pushen; vollständige CI für den neuen SHA erforderlich. Abnahme-
+Matrix nennt ausschließlich den tatsächlich geprüften Helferpunkt.
+
+### Phase 5 – Weitere eigenständige Helfergrenzen
+
+Voriger Turn Fortschritt:957a63118 enthält Helper-Beobachter, trusted-click-
+Nachweis und bestandenen Pilotlauf. Arbeitsbaum sauber, keine VM aktiv,62GiB frei.
+Plan: dasselbe unveränderte Payload-launcher-recovery-2 zunächst in einem
+Zweierlauf journal:rollback-started und journal:rollback-preserving prüfen,
+jeweils nach initialem program-linked-Abbruch. Pro Fall vollständiger Export
+vor dem nächsten Fall, am Ende erneut Export mit verzögertem Herunterfahren.
+Helferrolle/PID, konsistente alte und fehlgeschlagene Profile, Retry/Continue/
+Restore/Quelle prüfen; keine Generalisierung auf noch ungeprüfte Grenzen.
+Nach terminalem Lauf und validiertem Export Gastdisk entfernen. Keine Source-
+oder Teständerung während des Laufes. CI957a63118 separat beobachten.
+
+62246 noch aktiv: erster vollständiger Export journal:rollback-started validiert,
+SHA27f2691bb299950e224ed64d0c4f07b8dd25ba60751c88fe06f58118ed7d1328.
+Helferrolle/eigenePID, rolled-back, beide Profile==Seed, Update/Restore/Quelle
+==Seed und continued==protected!=Seed geprüft. Zweiter Fall noch ohne Endergebnis;
+Gastdisk bleibt bis terminalem Status und kompletter Exportsicherung erhalten.
+
+Read-only Vorbereitung nächste Fehlerrunde: neuer isolierter Profile-Fault-
+Qualifier soll Originaltarget0.0.157 mit vollständigem synthetischem Profil nutzen.
+Fälle neueres Format, bewusst fehlender Pfad, beschädigte Installation und echte
+Zugriffsverweigerung getrennt starten. Versionseingriffe ausdrücklich Ablehnungs-
+Fixtures, keine historischen Migrationen. Vor/nach dem fehlerhaften Start konkrete
+Profilinhalte vergleichen; verständlichen Recoveryhinweis und Erreichbarkeit der
+Sicherungsansicht durch reale UI prüfen. Beschädigter Stand vor Restore als
+restorable=false erhalten, validiertes Backup auf Arbeitskopie einspielen und
+vollständig lesen. Bestehender qualify-profile-recovery.ts ist eine Vorlage,
+aber sein alter Prozess-/CDP-Harness ersetzt den aktuellen isolierten Driver nicht.
+Erst nach terminalem aktuellen VM-Lauf implementieren. WAL/Platz/Parallelstart
+und fehlender Transportherkunftsnachweis bleiben weitere getrennte Fälle.
+
+62246 terminalExit0/TestExit0: beide Helferfälle bestanden, drei vollständige
+gzip-Exporte CRC-validiert. journal:rollback-started
+SHA27f2691bb299950e224ed64d0c4f07b8dd25ba60751c88fe06f58118ed7d1328;
+journal:rollback-preserving
+SHAc80c11f97718e663bced9b28c1054f2715de8fe4a8dc908fe1ea467894abbc25.
+Helferrolle/eigenePID und Transaktions-ID geprüft; alte/failed Profile==Seed,
+Update/Restore/Quelle==Seed, continued==protected!=Seed. Beide Artefakthashes und
+Observerhash unverändert gegen Payload geprüft. Berichte und Index gespeichert,
+Gastdisk entfernt. Plan-Audit Zweierlauf bestanden. Roadmap-Audit weitere sechs
+Helfergrenzen, gepackter Local-Lauf und Fehlermatrix offen; keine Phasenfreigabe.
+
+Nächster Zweierlauf ohne Codeänderung: journal:rollback-restoring und
+old-data-restored, jeweils initial program-linked und unverändertes Payload2.
+Gleiche Export-, Rollen-, Profil- und Wiederanlaufkriterien; abgeschlossene
+Gastdisk nach vollständiger Prüfung entfernen. Aktuelle CI957a63118 läuft weiter,
+Dokumentationsnachweise bis zum Abschluss dieses Helferblocks gemeinsam sammeln.
+
+CI-Audit: Check34462695103 für957a63118f1f52d18150588a9c049a8d65fc8956
+terminal completed/success, keine fehlgeschlagenen oder laufenden Jobs. Vollständiger
+Candidate-Nachweis grün; kein Main-/Handoff- oder Releaseabschluss daraus ableiten.
+99971 weiter aktiv, erster Export journal:rollback-restoring vollständig validiert,
+SHAbc2c83e422aa81655be77f7c23697ca30804676ba0553b3c02ac34a4e406c2b4.
+Zweiter Fall old-data-restored noch offen.
+
+99971 terminalExit0/TestExit0, drei vollständige gzip-Exporte CRC-geprüft.
+journal:rollback-restoring SHAbc2c83e422aa81655be77f7c23697ca30804676ba0553b3c02ac34a4e406c2b4;
+old-data-restored SHAfd7bf948525d79eb80fb6a4a2d7e59c089e20b12ac6667a4d13533023783bad5.
+Helferrolle, eigenePID/Transaktion, altes/failed Profil, Retry/Continue/Restore/
+Quelle und unveränderte Artefakt-/Observerhashes vollständig geprüft. Gastdisk
+nach Berichten/Index entfernt. Plan-Audit Zweierlauf bestanden. Roadmap-Audit:
+noch journal:rollback-program, program-linked, rollback-history-written und
+journal:rolled-back als eigenständiger Helfer offen, außerdem gepackter Local-
+Lauf/Fehlermatrix. Nachweise dieser beiden Zweierläufe als Dokumentationscommit
+sichern; Codebasis957a63118 hat die vollständige grüne CI34462695103. Neue Docs-
+SHA benötigt ihren eigenen Check, keine Main-Promotion oder Phasenfreigabe.
+
+### Phase 5 – Helfer-Programmrollback
+
+Voriger Turn Fortschritt: vier neue Helfergrenzen mit validierten Vollberichten,
+0cbb9912a gepusht. Arbeitsbaum sauber, keine VM aktiv,62GiB frei. Check34464652882
+läuft. Nächster Zweierlauf unverändertes Payload-launcher-recovery-2:
+journal:rollback-program und program-linked während Recovery, jeweils vorheriger
+Aktivierungsabbruch program-linked. Rollen-/PID-/Transaktionsprüfung, vollständige
+alte/failed Profile und Retry/Continue/Restore/Quelle; drei Exporte, terminale
+Prüfung und Gastdiskbereinigung. Keine Codeänderung während Lauf. Danach bleiben
+rollback-history-written und journal:rolled-back für den eigenständigen Helfer.
+
+86850 terminalExit0/TestExit0. Drei vollständige gzip-Exporte CRC-validiert;
+journal:rollback-program SHA01f2384a53708a255d6e977870c657a93812da9693bf84716da6e53e3ff3d572;
+program-linked SHA9a7dd5839e8720c703e79725d5c2ab0166cd094c079ab2f75deeb6cd77f77355.
+Originalartefakte/Observerhash, Helferrolle/eigenePID/Transaktion, alte und failed
+Profile, Retry/Continue/Restore/Quelle vollständig verglichen. Gastdisk entfernt.
+Plan-Audit beide Programmrollbackgrenzen bestanden. Roadmap-Audit letzter
+Helfer-Zweierlauf rollback-history-written und journal:rolled-back noch offen.
+
+Plan letzter Helfer-Zweierlauf: unverändertes Payload2, initial program-linked,
+Recoveryabbruch nach dauerhafter Historie bzw. finalem rolled-back-Journal.
+Gleiche drei Exporte und vollständige Vergleiche, danach Gastdisk entfernen.
+Weitere Phase5-Fehlermatrix/Local-Runtime dadurch nicht als erledigt behandeln.
+
+CI34464652882/Portable102830270336 fehlgeschlagen:17/18 Local-Prozessfälle
+bestanden (19–25s), ausschließlich letzter committed/later-work-Fall scheitert
+mit30.466s am pauschalen30s-Testlimit.1640 weitere Tests bestanden; keine Daten-
+Assertion fehlgeschlagen. Vollständiger Joblog gesichert. Korrekturplan nach
+terminalem73618: nur neue Local-Mehrprozessfälle auf60s Gesamtbudget setzen,
+20s-Hardlimit jedes einzelnen Kindes und sämtliche Assertions unverändert.
+Fehlerfall gezielt unter1CPU-Quota prüfen, Lint/Format, dann vollständige CI für
+neuen Candidate. Keine globale Timeout-Erhöhung, kein Weglassen des Testfalls.
+Erster finaler Helferexport rollback-history-written bereits vollständig geprüft,
+SHA50d0fc3a9b986f9bcb99655548dfae8f21ae184d9b52676ab761a71c213cd020;
+zweiter journal:rolled-back noch aktiv, keine Gesamtfreigabe.
+
+73618 terminalExit0/TestExit0; letzte zwei Helfergrenzen vollständig geprüft.
+rollback-history-written SHA50d0fc3a9b986f9bcb99655548dfae8f21ae184d9b52676ab761a71c213cd020;
+journal:rolled-back SHAfea17a8d7d506fe2313314110b1aa02d09b149557eb32ddd80a1ed4eca504aa5.
+Drei gzip-Exporte CRC-validiert, Helferrolle/PID/Transaktion und alle vollständigen
+Profile/Restore/Quelle/Observer-/Artefakthashes verglichen; Gastdisk entfernt.
+Plan-Audit Helferblock9/9 bestanden. Roadmap-Audit Phase5 weiter offen wegen
+gepacktem Local-Lauf und übriger Fehlermatrix; keine öffentliche Releasefreigabe.
+Jetzt nur geplante Local-Testbudgets60s gesetzt; Prozessdeadline20s unverändert.
+
+27745 terminalExit0: gezielter zuvor gescheiterter Fall unterCPUQuota100% besteht
+in32.208s (oberhalb altem30s-Limit);17 andere Fälle in diesem gezielten Lauf nicht
+ausgeführt, nicht als erneut geprüft zählen. ESLint/Format und beide Typechecks
+grün. Prozessdeadline20s/Assertions unverändert, ausschließlich fallbezogenes
+60s-Budget für die neue Mehrprozesssuite. Plan-Audit Timeoutkorrektur bestanden;
+Roadmap-Audit vollständige neue CI noch erforderlich. Check34464652882 terminal
+failure wegen dokumentierter Zeitüberschreitung, nicht als grün behandeln.
+Helferblock9/9 vollständig nachgewiesen, Phase5 bleibt insgesamt offen.
+
+### Phase 5 – Gepackte Profilfehler und Recoveryoberfläche
+
+Voriger Turn Fortschritt:7dbeecd8c mit9/9 Helfergrenzen und geprüftem Testbudgetfix.
+Arbeitsbaum sauber, keine VM,61GiB frei. Check34466605053 läuft. Konkreter Plan:
+neuer isolierter Qualifier mit Originaltarget0.0.157. Vollständiges synthetisches
+Profil im Artefakt erzeugen; über tatsächliche Einstellungen/Bestätigung ein
+leeres Profil anlegen, damit der originale Utility-Ablauf eine geprüfte Sicherung
+anlegt. App schließen, eigene Quellkopie unter Sperre zurückkopieren und genau
+einen Fehler setzen: neueres Installationsformat43, fehlender Pfad0 (explizite
+Ablehnungsfixtures, keine historischen Schemabelege), beschädigte Datei oder
+Zugriffsrecht000. Vor/nach fehlerhaftem Appstart das vollständige logische Profil
+per Datei-/Verzeichnisinventar vergleichen; Browserlaufzeit liegt laut Architektur
+außerhalb. Recoveryhinweis und Sicherungsansicht mit trusted Mausaktionen prüfen.
+Für lesbare Fehler vollständiges Restore, vorherige restorable=false-Sicherung
+mit defektem Stand und Originalprofil-Readback vergleichen. Access-denied muss
+Restore ohne Ersetzung verweigern; nach Ende und Rechtekorrektur identischer
+Datenstand. Node-SQLite nur zum Aufbau der Versionsfehlerfixture verwenden.
+Fehlerbericht auch ohne erreichbares DOM schreiben. Zunächst einzelner newer-
+format-Pilot in begrenzter VM, dann übrige Fälle; keine Nutzerprofile berühren.
+
+15641 terminalExit1 vor Typprüfung: ESLint findet unnötige Initialzuweisung des
+Fehler-DOM-Werts und direktes throw im finally. Korrekturplan: DOM-Wert in beiden
+Zweigen zuweisen, Prozessbeendigung in separate Hilfsfunktion verlagern. Erneutes
+Kopieren nach leerem Profil ebenfalls mit exklusiver Quellsperre und vollständigem
+Vorher/Nachher-Kopievergleich absichern; bisherige Quellen waren nur garantiert
+beendete Testfixtures. Danach Format/Lint/Typecheck erneut, noch kein Gast gestartet.
+
+20179 terminalExit0/TestExit1: Pilot stoppt vor Setzen des Versionsfehlers, weil
+nach bewusstem Leerprofil der Text für vorhandene Kampagnen erwartet wurde.
+Vollständiger Fehlerexport SHA254e235f4d080333b8ec01da3dfafa9128f3e3e67fae74614a57dcee7a49432c
+zeigt korrekt „Noch keine Kampagne vorhanden“, leere Liste und0 Kampagnen.
+Kein Nachweis des newer-format-Falls. Korrekturplan ausschließlich Setup-Erwartung:
+leeren Hinweis und tatsächlich0 Listenzeilen prüfen; späterer Restore behält
+Erwartung für bestehende Kampagnen. Fehlerdisk nach gesichertem DOM/Log entfernen,
+Format/Lint/Typprüfung, neues Driverpayload und gleicher einzelne Pilot erneut.
+
+78917 profile-newer-run-2 terminalExit0/TestExit0, vollständiger gzip-Export
+CRC-validiert. BerichtSHA5a62dfb590b764686a7e760b82b92d2311854de01ff3c4c9ec3e1b0f9cfac6a7.
+Neueres Format43 gegenüber App42 abgewiesen, Profilinventar vor/nach unverändert,
+Recoveryhinweis/UI bestätigt. Restore derselben Programmdeployment-ID committed,
+restored==seeded==unchanged, vorgeschaltete restorable=false-Sicherung enthält
+exaktes Datei-/Verzeichnisinventar des abgewiesenen Stands. Eigene Prozesse
+normal beendet; Gastdisk entfernt. Plan-Audit Pilot bestanden, übrige Fälle offen.
+Nächster Zweierlauf unverändertes Payload-profile-fault-2: missing-path und corrupt,
+separate Profile, Export nach jedem Fall und am Ende; gleiche vollständige
+Daten-/Sicherungs-/Quellvergleiche. Danach access-denied als eigener Lauf.
+
+### Phase 5 – Fortsetzung nach Hostprüfung und CI-Diagnose
+
+Voriger Turn liefert neue Betriebsevidenz: Root60GiB frei, keine Test-VM;
+Journal bestätigt ENOSPC bei Desktop-/Codex-Coredumps. Direkte Crashursache bleibt
+unbewiesen. Keine Host-GUI-Tests. Phase5 aktiv, Phasen6/7 unverändert offen.
+24551 profile-fault-pair-run-1 terminalExit0/TestExit0; drei vollständige gzip-
+Exporte geprüft. missing-path SHA03087ab8c9476524338a2de435e45a6c67e946add5c4c976ec9f5f9741efd17c,
+corrupt SHA4c01b2ecd1e9a071a28027fea48ffc2b9b8523712a6fe980ac6f4684b469c331.
+Inventare, vorgeschaltete defekte Sicherung, Restore und unveränderte Quelle
+vollständig verglichen; Gastdisk entfernt. Access-denied bleibt offen.
+
+Check34466605053 auf7dbeecd8c terminal failure: campaignCombat Zeile463 findet
+Fraktionen nicht. Gesichertes Screenshot zeigt expliziten Schutzdialog wegen
+laufender Szenenaktionen. setSceneLocation wartet bisher nur auf Auswahl; die
+letzte Verwendung wartet nicht einmal auf den bestätigten Ort. DesktopOverview
+zeigt commands.busy als disabled am Ortsbutton. Korrekturplan: gemeinsamer
+Testhelper wartet nach Auswahl auf erwarteten Ort UND wieder aktivierten Button.
+Keine Änderung am Schutzdialog, keine automatische Bestätigung, kein Schlafen.
+Format/Lint/Typprüfung, danach vollständige Candidate-CI. Separat unverändertes
+Profilfehlerpayload2 für access-denied in frischer begrenzter VM prüfen.
+
+85456 Format/Lint/beide Typechecks bestanden (36.49s,1.4GiB). Plan-Audit
+Szenentest: Abschlussbedingung bezieht sich auf bestätigten Ortswert plus aktiven
+Button; Screenshotursache adressiert, tatsächlicher E2E-Nachweis noch CI-offen.
+61850 profile-access-run-1 terminalExit0/TestExit0. Ein vollständiger gzip-Export
+CRC-geprüft; Zugriffshinweis, verweigerte Wiederherstellung ohne Journalwechsel,
+Dateirechte000 bis expliziter Testkorrektur und identisches vollständiges Profil
+geprüft. Readback nach Rechtekorrektur==Seed==unveränderte Quelle, originale
+Artefakthashes und normale Prozessexits bestätigt. Bericht siehe validated im
+Laufverzeichnis; Gastdisk nach Prüfung entfernt. Dies ist ein Ablehnungsnachweis,
+kein erfolgreiches Restore bei fehlenden Rechten. Plan-Audit Profilfehler4/4
+bestanden. Roadmap-Audit Phase5 weiter offen, insbesondere WAL/Platzmangel und
+gepackter Local-Ablauf. Kein Handoff, keine Main-Promotion oder Veröffentlichung.
+19af07da9835d0073713dc31f68fd1bdc0fadd3e77cc276b4c4a4341b8d7a163
+
+### Phase 5 – WAL im echten Updateweg
+
+Voriger Turn Fortschritt:7c1740e64 gepusht,4/4 Profilfehler bestanden; Check34469294183
+jetzt in_progress auf exakt diesem SHA. Arbeitsbaum sauber. Konkreter Plan:
+UI-Updatequalifier um optionalen WAL-Fall ergänzen. Unter exklusiver Profilsperre
+nach beendeter Baseline-App einen eigenen Node-SQLite-Fixtureprozess starten:
+bestehende Installationseinstellungen lesen, abweichenden Theme-Wert checkpointen,
+Originaleinstellungen nur in WAL committen, ohne Close mit SIGKILL beenden.
+Keine Schemaänderung. Nach Prozessende nur Hauptdatei separat lesen und Abweichung
+beweisen; vollständige DB+WAL-Kopie muss Originaleinstellungen lesen. WAL-Größe,
+Hash, Prozesssignal und beide Werte protokollieren. Erst dann originalen
+installierten Starter und gesamten geprüften UI-Update-/Weiterarbeits-/Restoreweg
+mit unveränderten0.0.156/157 laufen lassen. Seed/Quelle bleiben unverändert.
+Dies qualifiziert WAL-Recovery vor Update und Datenerhalt im Wartungsweg;
+keine Aussage über unkooperierende laufende Fremdprofile. Neue Payload/VM erst
+nach Format/Lint/Typprüfung, Hostreserve und vollständigen Export sichern.
+
+14567 Format/Lint/beide Typechecks bestanden. Vertragsprüfung vor Gastlauf zeigt
+preferences_json enthält {schemaVersion:2,preferences:{theme,...}} statt Theme
+auf oberster Ebene. Korrekturplan: Fixtureassertion und checkpointed-Wert exakt
+auf eingebettete preferences beziehen; gesamten Originaltext unverändert in WAL
+zurückschreiben. Scratch-Erstellung ebenfalls im Lock-finally schützen. Noch
+kein Gast gestartet; anschließend statische Prüfung erneut und Payload einfrieren.
+
+98959 erneute Format/Lint/beide Typechecks bestanden (30.30s,1.5GiB).
+Payload-wal-1 und wal-seed-1 neu eingefroren;37002 wal-run-1 aktiv, noch kein
+Ergebnis. Read-only Folgeplanung: Platzprüfung liegt in ProfileMaintenance.prepare
+vor Backup, aber AppImage-Deployment wird vorher kopiert. Für echten Platzmangel
+nur root/salt-marcher als kleines ext4 innerhalb Gast mounten; TMPDIR und Berichte
+außerhalb lassen. Vor Installation nach Download gezielt Restplatz knapp oberhalb
+AppImagegröße lassen, sodass Programmkopie noch möglich, Backupreserve64MiB aber
+nicht verfügbar ist. Ausschließlich Testvolume füllen; Host darf nie Ziel sein.
+Dieses Folgeexperiment noch nicht implementiert oder als Nachweis gewertet.
+
+37002 wal-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export CRC-validiert,
+BerichtSHA2c901c830b6b6c83512ce3cbf686477a800b40b858a9244c24c872d64764c6e4.
+Fixtureprozess tatsächlich SIGKILL; nackte Hauptdatei Theme light, DB+WAL Theme
+dark. Originaler installierter Starter, AppImages0.0.156→0.0.157 (42/41→42/42),
+vollständiger UI-Updateweg bestanden. after==seeded==restored==unchanged;
+continued==protectedRead und verschieden von seeded. Quellprofil unverändert,
+keine Datenformatmutation, WAL-Bytes/Hash im Bericht. Gastdisk nach vollständiger
+Prüfung entfernt. Plan-Audit WAL-Fall bestanden; Roadmap-Audit Phase5 weiterhin
+offen wegen Platzmangel, parallelen gepackten Starts, gepacktem Local und weiteren
+Transportfällen. Neuer Candidate braucht vollständige CI, kein Main/Handoff jetzt.
+
+### Phase 5 – Begrenzter echter Platzmangel
+
+Voriger Turn Fortschritt:0dec1a787 WAL-Nachweis gepusht. CI34469919756 pending,
+34469294183 weiterhin live; keine doppelte Prüfung starten. Arbeitsbaum sauber.
+Konkreter Implementierungsplan: optionales space-volume im UI-Qualifier verweist
+auf eigenes maximal3GiB großes ext4-Gastdateisystem mit anderer Device-ID als
+Gastroot/Home. Nur selbst erzeugten Installationsroot dorthin kopieren und am
+bisherigen Pfad verlinken; Quelle, Extraktionen und Berichte bleiben außerhalb.
+Nach echter UI-Prüfung/Download eine eigene reservierte Datei mit fallocate
+anlegen, sodass AppImagegröße+32MiB frei bleiben. Verbleibenden Platz messen.
+Installation muss im originalen Ziel-Utility vor Sicherung/Migration mit passender
+Platzmeldung scheitern, Programm/Journal/Sicherungsliste unverändert lassen.
+Füllung im finally entfernen; App schließen, vollständigen Original-Readback
+vergleichen, danach gesamten Update-/Weiterarbeits-/Restoreweg erneut ausführen.
+Seed richtet ausschließlich innerhalb Gast eine2GiB Loop-ext4 ein. Weder Host-
+Dateisystem noch Gastroot darf Füllziel werden. Statische Prüfungen, neue immutable
+Payload, einzelner begrenzter VM-Lauf, vollständiger Bericht und Diskbereinigung.
+
+77934 Format/Lint/beide Typechecks bestanden. Vor Gastlauf Setupkorrektur:
+Baseline-Erstaktivierung hat absichtlich backup:null, daher kann backups fehlen.
+Sicherungsliste als [] bei fehlendem Verzeichnis behandeln, nach Fehlversuch
+identisch prüfen. Keine Sicherung künstlich erzeugen. Check34469294183 wurde
+cancelled (auch campaign-workspaces); kein E2E-Erfolgsnachweis. Nachfolger
+34469919756 auf0dec1a787 in_progress; neue lokale Änderungen noch nicht gepusht.
+
+86910 Format/Lint/Typechecks grün.94446 space-run-1 terminalExit0/TestExit0,
+vollständiger gzip-Export CRC-validiert. BerichtSHA586e9ee78d4b0650cd32430883696725a7a5b0dc770d509739c0498c8344d2b2.
+Vor Deployment210595840Bytes frei, AppImage177048160Bytes. Originales Ziel meldet
+fehlenden Platz für Sicherung/Migration; Programm/Journal/Sicherungsliste unverändert,
+Readback==Seed. Nach Freigabe vollständiger UI-Update-/Weiterarbeits-/Restoreweg
+bestanden, Quelle unverändert, spätere Arbeit geschützt. Gastdisk entfernt.
+Plan-Audit Platzvorprüfung bestanden, keine Behauptung über ENOSPC beim Kopieren.
+
+Korrekturrunde verbleibender Platzfall: explizites space-exhausted zusätzlich zu
+space-volume. Auf demselben geprüften Gastvolume nach Download nur1MiB frei lassen,
+Programmdateikopie muss mit echtem ENOSPC scheitern. Gleiche Unverändertheits- und
+Retrybeweise; reservierte Datei auch bei Testfehler entfernen. Keine Produkt-
+Fehlerinjektion oder Hostfüllung. Neue Payload und separater Gast nach statischen
+Prüfungen; Matrix unterscheidet Vorprüfung und tatsächlichen Schreibfehler.
+
+86970 Format/Lint/beide Typechecks bestanden.77778 space-exhausted-run-1 terminal
+Exit0/TestExit0. Vollständiger Export CRC-validiert, BerichtSHA
+a8e19a4ac9cbfe8c8ce8101f98002eefbed77555b2ddaaefb5041d04164ce641.
+Echter ENOSPC bei copyfile von Cache nach neuem Deployment, höchstens1MiB frei.
+Journal/Programm/Sicherungen unverändert; Fehler-Readback==Seed, Retry mit echtem
+Update/Weiterarbeit/Restore vollständig bestanden, Quelle unverändert. Disk
+entfernt. Datensicherheits-Plan-Audit beide Platzfälle bestanden.
+
+Roadmapabweichung bestätigt: UI zeigt rohes ENOSPC samt absoluten Dateipfaden ohne
+verständliche nächste Aktion. Korrekturplan: Main übersetzt ENOSPC/EDQUOT anhand
+Fehlercode in klare deutsche Platzfreigabe-/Erneutversuchen-Meldung. Andere
+fachliche Meldungen bleiben erhalten; unbekannte Fehler erhalten bestehenden
+Fallback. Utility-Platzvorprüfungen um nächste Aktion ergänzen. Reine Unitfälle
+prüfen Systemcodes vs fachliche Meldungen/Fallback, statische Prüfungen. Echte
+gepackte UI-Freigabe dieses Fixes erfordert anschließend neu gebaute unveränderte
+Artefakte; bisherige0.0.156/157 beweisen ausschließlich Altfehlermeldung plus
+Datenerhalt, nicht den UX-Fix. Noch keine Phase5-/Handoff-/Main-Freigabe.
+
+7960 terminalExit0:5/5 Fehlertexttests, Format/Lint und beide Typechecks bestanden
+(29.45s,1.5GiB). Plan-Audit UX-Implementierung und reine Fehlerklassifikation
+bestanden. Gepackter Nachweis neuer Fehlermeldung bleibt offen; neue Artefakte
+müssen den optionalen ENOSPC-Test mit explizit erwarteter verständlicher Meldung
+wiederholen. Alte Artefakte unverändert weiter als ENOSPC-Datensicherheitsbeleg.
+Check34469919756 weiterhin live, zuletzt nur campaign-workspaces und hex-npc-
+restart offen, keine fehlgeschlagenen Jobs. Candidate lokal sichern; Push wird
+nach diesem bereits laufenden Nachweis fortgesetzt, um ihn nicht erneut abzubrechen.
+Keine aktive Test-VM,59GiB frei. Phase5 bleibt aktiv, Phasen6/7 offen.
+
+### Phase 5 – Gepackte Abnahme der Platzmeldungen
+
+Voriger Turn Fortschritt:c26f04a0a lokal committed, zwei Platzfehler mit echten
+Artefakten bestätigt und UX-Abweichung behoben. CI34469919756 weiterhin live,
+keine VM. Konkreter Plan: neue Baseline aus unverändertem b64a408a5 plus exakt den
+3 Produktdateien des Platzmeldungsfixes; Schema/SQL bleiben42/41. Ziel unveränderter
+c26f04a0a (42/42). Neue Testversionen0.0.158/159, neue IDs space-baseline/space-target,
+bisherige Quellen und Artefakte unangetastet. Optionaler space-actionable-Schalter
+im Qualifier verlangt ausdrücklich deutsche Meldung samt nächster Aktion und
+verbietet sichtbares ENOSPC. Beide2GiB-Gastfälle mit neuen Originalartefakten
+wiederholen. Baselinebackport separat committen; Quelle und Treiber vor Builds
+festschreiben, keine Änderungen während Build/Test. Danach vollständige CI und
+weiterer Phase5-Audit; kein Main/Handoff/Publicrelease aus diesen Teilnachweisen.
+
+89946 Format/Lint/beide Typechecks grün. Quellenkatalog/Driverd95bf8f3c lokal
+committed. Baseline2ccba43f60b92f99aa7fddbfcbb354bf00c44761 separat gepusht;
+exakt3 Fehlertextdateien gegenüber b64, kein SQL-/Schemawechsel.40999 beide Builds
+terminalExit0 (95.998s,3.7GiB). Baseline0.0.158 SHA
+e23244fd8204b10e4b2c075aea9350ccf9b5449314b53e44bbefd8a231b94df9;
+Ziel0.0.159 SHA004c0daa980cfa59aae4a44534b2e683b50a74c3ebfcf45124f8eb736a7c5da4.
+Payload-space-actionable-1 mit unveränderten Quellen-/Artefakthashes eingefroren.
+38412 erster Vorprüfungs-Gastlauf aktiv, keine Produkt-/Treiberänderungen dabei.
+
+Check34469919756 auf exakt0dec1a787648d015b333daf3974cd972fc3b3a6c jetzt vollständig
+completed/success, inklusive zuvor problematischem campaign-workspaces. Damit ist
+der Testwartefix aus7c1740e64 durch vollständige nachfolgende CI qualifiziert.
+Neue Platzmeldungsänderungen waren darin nicht enthalten; jetzt Candidate inklusive
+c26f04a0a/d95bf8f3c pushen und neue exakte CI abwarten. Keine Main-Promotion.
+
+38412 space-actionable-run-1 terminalExit0/TestExit0; vollständiger gzip-Export
+CRC-geprüft. SHAce0b5be3bcb7c585afb0c8c51625ff2fd6287cf8b1d193213b880a38bf789f70.
+99790 space-actionable-exhausted-run-1 terminalExit0/TestExit0; vollständiger
+Export SHA12c4904aaa9d5e76aa908bb65add8d7288159fd91677df0c5949964bb48f8222.
+Echter ENOSPC-Fall hatte1044480Bytes frei, Vorprüfungsfall210595840Bytes vor
+AppImagekopie. Beide ursprünglichen0.0.158/159 zeigen jetzt nächste Aktion
+„Gib Speicherplatz frei und versuche den Vorgang erneut.“ ohne ENOSPC-Text.
+Vollständige Fehler-Readbacks==Seed==after==restored==unchanged; continued==
+protectedRead und verschieden vom Seed. Starter-/Artefakthashes und sämtliche
+normalen Prozessexits bestätigt; beide Gastdisks nach Exportprüfung entfernt.
+Plan-Audit Fehlertextkorrektur einschließlich gepackter Abnahme bestanden.
+Roadmap-Audit Phase5 weiter offen (Parallelstart, übrige Transportablehnungen,
+Erstinstallation/Übernahme und gepacktes Local); Phasen6/7 offen.
+
+383f6f4a3784840f5c107173f73bac5d3ba52cbd gepusht; Check34471542570 jetzt
+in_progress. Neue Dokumentation lokal committen, diesen Lauf nicht durch einen
+reinen Beleg-Push abbrechen. Vollständige CI des Produktfixes bleibt erforderlich;
+kein Handoff oder Main-Promotion. Nächster Arbeitsblock: gepackte parallele Starts
+und restliche Feedablehnungen. Read-only Vorbereitung zeigt strenge assetUrl-
+Herkunftsprüfung und Manifest-Zod-Validierung; deren bisher ungeprüfte UI-Fehler
+und nächste Aktionen müssen ausdrücklich mit erfasst werden.
+
+### Phase 5 – Gepackter Parallelstart und kanonische Aliase
+
+Voriger Turn Fortschritt:485a5f3fe gepackte Platzmeldung nachgewiesen; Check34471542570
+auf383f6f4a3 weiterhin live, Arbeitsbaum sauber, keine VM. Konkreter Plan:
+optional parallel-starts im bestehenden UI-Qualifier. Nach Baseline-Setup unter
+exklusiver Installer-Profilsperre den originalen installierten Starter starten:
+Ablehnung vor Recovery/Datenzugriff. Danach bei tatsächlich geöffneter Baseline-UI
+zweiten Starter direkt und über Symlinkalias sowie das AppImage direkt starten.
+Jeder eigene Prozess muss innerhalb20s mit Exit1 und ProfileLocked-Meldung enden;
+Timeout/SIGKILL ist Testfehler. Vorher/Nachher identische kanonische Profil- und
+Legacy-Lockbytes sowie Journal/Programm prüfen. Alias nur im eigenen Testhome.
+Erste UI muss weiter ansprechbar sein; anschließend unveränderter vollständiger
+Update-/Weiterarbeits-/Restore-/Quellvergleich. 0.0.158/159 unverändert verwenden.
+Keine realen Nutzerprofile, keine Host-GUI. Statische Prüfungen, neue Payload,
+begrenzte VM und vollständiger Export vor Disklöschung. Cross-channel-Local
+bleibt ein separater Nachweis; dieser Block behauptet ihn nicht.
+
+58670 Format/Lint bestanden, Typprüfung Exit2: inferierter Environment-Typ erlaubt
+kein Entfernen von ELECTRON_RUN_AS_NODE. Korrekturplan: explizit NodeJS.ProcessEnv
+verwenden. Deadline beendet nur das eigene ChildProcess über child.kill; übrige
+Testprozesse bleiben beim bestehenden PID-Identitäts-/Home-basierten Cleanup.
+Keine rohe Prozessgruppen-ID für Timeout verwenden. Danach statische Checks erneut;
+noch keine Test-VM gestartet, kein Lauf als bestanden gewertet.
+
+1567 statische Prüfungen vollständig grün (29.82s,1.5GiB). Letzter Harness-Audit:
+Child-Kill allein garantiert kein close-Ereignis, wenn ein fehlerhaft gestarteter
+Nachkomme die Pipe hält. Korrekturplan: Deadline muss zusätzlich das Warte-Promise
+explizit ablehnen, damit vorhandenes äußeres Cleanup erreicht wird. Keine Änderung
+an geforderter normaler Exit1-Ablehnung; Timeout zählt niemals als Erfolg.
+
+68049 Format/Lint/beide Typechecks grün. Payload-parallel-1 mit Original0.0.158/159
+und neuem Driver eingefroren;49728 parallel-run-1 aktiv. Keine Quelländerung dabei.
+Read-only Vorbereitung nächster Feedfälle: Manifestvertrag erzwingt Repository,
+Format1,linux/x64,Commit/Schemata/Größe/Hash; assetUrl erlaubt ausschließlich exakte
+GitHub-Assetpfade. Qualifier leitet HTTPS GitHub/API zu eigenem Loopbackserver um,
+führt unveränderte Originalprüfungen aus. Zu ergänzen sind getrennte Ablehnungen
+für fremden Assetpfad, falsches Repository/Manifestformat/Architektur und
+Versionsabweichung, jeweils ohne AppImageanforderung/Download/Aktivierung sowie
+anschließend erfolgreicher Retry. Zod-/JSON-Fehler gelangen bisher als technischer
+Text zum Renderer; eine konkrete Bedienbarkeitsabweichung muss anhand tatsächlichem
+Fehlerreport vor Produktkorrektur belegt werden. Noch kein solcher Test gestartet.
+
+49728 parallel-run-1 terminalExit0/TestExit0. Vollständiger gzip-Export CRC-geprüft,
+BerichtSHAae7a5e77ba724a155e711abd34863ea80ada1cfebc7209c3994258dd574adb5c.
+Vier geforderte Fälle mit normalem Exit1 ohne Signal bestätigt: Installer-Sperre
++Starter sowie geöffnete App+Starter,Alias,AppImage. Profil-/Legacy-Lockbytes
+unverändert; gespeicherte Besitzer installer bzw.application unabhängig geprüft.
+Journal/Programm unverändert, erste UI weiter ansprechbar. Vollständiger originaler
+0.0.158→0.0.159 UI-Updateweg grün: after==seeded==restored==unchanged;
+continued==protectedRead != seeded. Normale Hauptprozesse Exit0, Originalhashes
+bestätigt. Gastdisk nach vollständiger Prüfung entfernt.
+Plan-Audit Parallelstartblock4/4 bestanden. Roadmap-Audit Phase5 noch offen wegen
+restlicher Feedablehnungen, Erstinstallation/Übernahme und gepacktem Local-Kanal.
+Check34471542570 auf383f6f4a3 weiterhin live mit3 offenen Jobs, keiner fehlgeschlagen.
+Neue Driver-/Belegänderungen lokal committen, Push erst nach diesem laufenden
+Nachweis fortsetzen. Keine Behauptung über kanalübergreifende gepackte Local-Starts.
+
+### Phase 5 – Abweisung ungültiger Releaseinformationen
+
+Voriger Turn Fortschritt:6e413860e vier gepackte Parallelstarts qualifiziert.
+CI34471542570 weiter live, Arbeitsbaum sauber. Konkreter Plan: feed-failures im
+UI-Qualifier mit6 getrennten kontrollierten Antworten: fremder Manifest-Assetpfad,
+fremder AppImage-Assetpfad, Repositoryabweichung, arch=arm64,formatVersion=2,
+Manifestversion ungleich GitHub-Tag. Produktionsvalidator und Original0.0.158/159
+unverändert. Pro Fall neue UI-Instanz, sichtbare konkrete Ablehnung, keine
+AppImageanforderung und keine Cachedatei/Aktivierung; Programm/Journal unverändert.
+Vollständigen Readback mit Seed vergleichen; nach allen Fällen normaler vollständiger
+Update-/Weiterarbeits-/Restore-/Quellvergleich. Statusmeldungen im Bericht erfassen,
+um die vermutete rohe Zod-Darstellung sachlich zu prüfen. Statische Checks, neue
+Payload/Seed, einzelne begrenzte VM. Bekannte UI-Unzulänglichkeiten nicht als
+Roadmap-Abnahme darstellen; Datensicherheit und Bedienbarkeit getrennt auditieren.
+
+51270 Format bestanden, ESLint Exit1 vor Typprüfung: inspect liefert unknown und
+hat keinen generischen Typparameter. Korrekturplan: gemeinsame lokale readNotice-
+Funktion validiert CDP-Ergebnis mit z.string().parse, statt einen Rückgabetyp
+anzunehmen. Erneute statische Prüfungen; kein Gast gestartet.
+
+49412 statische Prüfungen bestanden.13965 feed-run-1 terminalExit0/TestExit0 nach
+240.78s; vollständiger gzip-Export CRC-geprüft. BerichtSHA
+70bbe97e91ced28e48f0e58e310fd4a2f7745933fabe92085cedef418541ad5d.
+Alle6 Ablehnungen ohne AppImageanforderung/Cache/Aktivierung, jeweils vollständiger
+Readback==Seed. Danach after==restored==unchanged==Seed, continued==protectedRead
+und verschieden von Seed. Originale0.0.158/159 und normale Prozessexits bestätigt.
+Gastdisk entfernt. Sicherheits-Plan-Audit Feed6/6 bestanden; UX-Audit gescheitert:
+Repository/Architektur/Format zeigen rohe Zod-JSON-Fehler, übrige Ablehnungen ohne
+nächste Aktion. Korrekturplan: checkRelease kapselt Schema-/JSON-Fehler in klare
+Updateinformationen-Meldung samt späterer Prüfung; Herkunfts-/Versions-/fehlende
+Manifestmeldungen ergänzen nächste Aktion. Strenge Prüfung unverändert, Fehlerursache
+intern erhalten. Unitfälle echte JSON-/Schemafehler und keine weiteren Fetches,
+Format/Lint/Typecheck; spätere neue gepackte Abnahme erforderlich.
+
+Separater CI-Befund:34471542570 auf383f6f4a3 terminalfailure, nur sceneDesktop im
+campaign-workspaces plus Aggregate. Log und ZIP10150267523 lokal gesichert.
+Erster Fehler scene-desktop.e2e.ts:487 nach Pause: erwartet pausiert, erhalten
+travelling plus Aktualisierungshinweis. Screenshot danach completed und Konflikt/
+outcome_unknown;3 Folgefehler bei offenem Reisedialog. CI-Fixture-DBs gesichert:
+01a08b17-ba81... enthält nur Position- und Start-Receipt (Reiserevision0,
+Szenenrevision15/16), keine Pause-Receipt. Kein Nachweis eines erfolgreich
+committeten Pausebefehls. Hypothesen getrennt prüfen: automatische Fortschritte
+ändern Revision zwischen UI-Intent und Utility-Ausführung; Command-Port behandelt
+überholte Session-Refreshes als stale. Keine pauschale Timeout-/Testlockerung.
+Nach Feed-Textfix ist dieser reproduzierbare Reiseablauf nächster Korrekturblock.
+
+94776 ESLint Exit1 vor Tests: zwei expect.any-Matcher tragen im Objekt any.
+Korrekturplan: Matcherausgaben als unknown typisieren, Prüfungsinhalt unverändert.
+Danach8 Transporttests einschließlich vorhandener Offline-/Downloadfälle sowie
+Format/Lint/beide Typechecks erneut. Keine Änderung an Validierungsbedingungen.
+
+94846 terminalExit0:8/8 Transporttests, Format/Lint und beide Typechecks grün
+(29.70s,1.5GiB). Plan-Audit Feed-Fehlertextimplementierung bestanden; gepackter
+Nachweis neuer Texte offen. Sicherheitsnachweise sechs Fälle bleiben auf
+unveränderten0.0.158/159 gültig. Roadmap-Audit weiterhin unvollständig, insbesondere
+CI-Reisepausefehler, neue gepackte Feed-Texte, Erstinstallation/Übernahme und Local.
+Aktuellen Candidate pushen; kein Main/Handoff. Folgende Fehlerrunde muss zunächst
+Reisepause reproduzieren und Ursache zwischen automatischem Fortschritt,
+Intentrevision und Command-Receipt/Refresh isolieren; nicht nur Testwartezeit erhöhen.
+
+### Phase 5 – Pause gegen ausschließlich automatischen Reisefortschritt
+
+Voriger Turn Fortschritt:496bc1feb gepushte Feedfehlerqualifikation/UX-Korrektur;
+Check34473788814 live, Arbeitsbaum sauber. CI383f6f4a3 hat keinen Pause-Receipt.
+Codeprüfung: jeder erfolgreich automatisch zurückgelegte Hex erhöht genau einmal
+Reiserevision, current_index und globale Szenenrevision. Pause prüft alte Reise-
+und Szenenrevision strikt. Geplanter enger Fix: optionaler erwarteter Fortschritts-
+index nur im Pausekommando. Innerhalb derselben Command-Transaktion darf ausschließlich
+bei weiterhin reisender Szene und identischem positiven Delta aller drei Zähler
+auf die aktuelle Revision pausiert werden. Kein Rebase bei anderem Szenenwechsel,
+Gruppen-/Routen-/Kontrolländerung, beendeter Reise oder fehlendem Index. Bestehende
+Kommandos bleiben strikt, keine neue Datenbankversion. Originalkommando bleibt
+unverändert im idempotenten Receipt-Journal.
+Zuerst optionalen Vertrag plus deterministischen Clock-Regressionsfall hinzufügen,
+vor Verhaltensfix stale reproduzieren. Danach eng begrenzten Core-Guard und
+Fortschrittsindex aus dem originalen UI-Descriptor bis zum Hexprovider übertragen;
+bei Entwurfsklärung Index frisch aus vorbereitetem Descriptor übernehmen.
+Tests für automatische Schritte, echte Kontroll-/Szenenkonflikte, alte Reise,
+Receipt-Replay und Providerweitergabe; bestehende Reise-/Owner-Tests beibehalten.
+Keine pauschale Retry-Schleife oder Lockerung der normalen Revisionsprüfung.
+Anschließend statische Checks und isolierte E2E-/gepackte Abnahme; CI-Ursache bleibt
+bis entsprechender Laufzeitbestätigung teilweise unbewiesen, kein Phasenabschluss.
+
+29859 Regression vor Core-Fix terminalExit1: optionales Pausefeld akzeptiert, genau
+ein automatischer Hexschritt ausgeführt; Pause scheitert in
+hex-travel-command-service.ts:62 mit stale an der Szenenrevision. Damit ist diese
+Race-Bedingung deterministisch nachgewiesen; ein überholter Refresh ist dafür
+nicht erforderlich. Jetzt den geplanten Drei-Zähler-Guard und UI-Weitergabe
+implementieren, positive Mehrschritt-/Replay- und negative Kontroll-/Roster-/
+Neustart-/Abschluss-/Legacyfälle prüfen. Keine Änderung der allgemeinen Revisionen.
+
+69490 terminalExit0:77/77 bestehende und neue Tests in6 Dateien bestanden,
+inklusive18 SQLite-Receiptfälle. Ein/zwei automatische Schritte pausieren und
+Receipt-Replay schreibt nicht erneut; Kontroll-/Roster-/Reiseersatz-/Abschluss-
+und Legacykonflikte bleiben abgewiesen. Ergänzende geplante Absicherung vor
+Freigabe: reine Szenenänderung trotz unveränderter Reise sowie Providerweitergabe
+des ursprünglichen Index und frischer Index nach Entwurfsklärung. Danach dieselbe
+Testsuite plus Format/Lint/beide Typechecks; gepackte/CI-Bestätigung noch offen.
+
+22850 terminalExit0: abschließende 80/80 Tests in sechs Dateien, ESLint und beide
+Typechecks bestanden; 38.829s, maximal1.7GiB, kein Swap. git diff --check grün.
+Plan-Audit Pausekorrektur: optionaler ursprünglicher Fortschrittsindex durch alle
+Providerpfade, frischer Index nach Entwurfsklärung, enger Drei-Zähler-Guard in der
+Command-Transaktion und unveränderte Receipt-Identität implementiert. Positive
+Ein-/Mehrschritt- und Replayfälle sowie sechs Konfliktarten nachgewiesen.
+Roadmap-Audit: diese Korrektur beseitigt eine reproduzierte Laufzeitblockade der
+Phase5; weder vollständige E2E-Bestätigung noch Artefaktabnahme damit ersetzt.
+Check34473788814 für496bc1feb weiterhin live (campaign-workspaces), kein Fehler
+bis zur letzten Abfrage. Kein Main/Handoff/Release. Host56GiB frei, keine VM.
+Vorheriger Goalturn: Fortschritt durch erneute Prüfung von Speicher und
+Vorboot-Protokoll; Speicherursache bestätigt, Absturzmitwirkung weiter unbewiesen.
+
+Fixplan gepackte Feed-Fehleranzeige: bisherigen sechs negativen Feedfälle erhalten;
+optional --feed-actionable verlangt zusätzlich den verständlichen Hinweis mit
+nächster Aktion und schließt sichtbare rohe Zod-Diagnosen aus. Flag darf nur
+zusammen mit --feed-failures verwendet werden. Alte Artefaktprüfungen bleiben
+reproduzierbar. Nach statischen Checks neue unveränderte Vergleichsartefakte
+bauen und denselben vollständigen Update-/Weiterarbeits-/Restoreweg prüfen.
+
+Feed-Prüfer: erster statischer Lauf15528 scheiterte an falsch platzierter
+Notice-Prüfung und unnötigen Regex-Escapes. Vor Laufzeitverwendung innerhalb des
+Feedblocks korrigiert. Wiederholung45927 terminalExit0: Format, ESLint und beide
+Typechecks grün; diff-check grün. Plan-Audit: sechs Ablehnungsfälle bleiben
+unverändert sicherheitsgeprüft, neues Flag verlangt nächste Aktion und keine
+rohen Schemafelder. Roadmap-Audit: gepackter Nachweis neuer Fehlertexte offen;
+diese statische Erweiterung ersetzt ihn nicht.
+Remote Check34473788814 terminal success für exakt496bc1feb8f6a91073467904678b8e88a5e73e67.
+Jetzt neuer Kandidat mit Pausekorrektur und Feed-Prüfer, vollständige CI erneut;
+keine Main-Promotion und keine neue Host-GUI-Ausführung.
+
+Fortsetzung: vorheriger Goalturn Fortschritt (Pausekorrektur ac3a0b76d, Feed-Prüfer
+983feb554 committed/pushed, statische Validierung). Check34475495340 für exakt
+983feb554869a4719e441bac26b1b472855ab09a ist live. Host56GiB frei.
+Konkreter Vergleichsartefaktplan: neue Baseline aus2ccba43f60 mit ausschließlich
+Pause- und GitHub-Fehleranzeige-Quelldateien aus983feb554; Schema42/41 bleibt
+unverändert. Ziel983feb554 Schema42/42. Neue Katalog-IDs feed-baseline/feed-target,
+neue Testversionen0.0.160/161 und neue Ausgabeverzeichnisse; bestehende Bytes
+unverändert. Beide Originalquellen werden vom vorhandenen Builder in getrennten
+unveränderlichen Checkouts gebaut. Danach isolierter Gastlauf mit --feed-failures
+--feed-actionable --installed-launcher. Vollständige sechs Ablehnungen, keine
+Aktivierung/Artefaktanfrage, Profilvergleich und anschließender normaler Update-,
+Weiterarbeits- und Restoreweg müssen gemeinsam bestehen. Keine neue Aussage über
+Pause-E2E allein aus diesem Feedlauf. Gastdisk erst nach geprüftem Export entfernen.
+
+14061 terminalExit1: Baseline0.0.160 vollständig gebaut; Ziel beim pnpm-install
+mit ENOSPC abgebrochen. df weiterhin55.46GiB frei. btrfs filesystem usage zeigt
+230.30GiB vollständig zugeordnet, nur1MiB unallocated; Metadata2.67/3GiB benutzt.
+Keine feste Inodezahl bei Btrfs; deshalb kein Beweis einer Inode-Erschöpfung.
+35 historische Buildcheckouts enthalten insgesamt1.885M Dateieinträge. Belegplan
+roadmap-phase5-build-cache-cleanup.json validiert34 fertige Artefakte (Größe/SHA),
+zugehörige unveränderte HEADs und saubere versionierte Dateien. Jetzt ausschließlich
+deren generierte node_modules entfernen, Quellcheckouts/Artefakte/Beweise erhalten.
+Keine aktive VM/Build. Anschließend Kapazität und begrenzten Dateierzeugungstest
+prüfen. Builder soll nach erfolgreicher Artefakt-/Receipt-Erzeugung seine
+rekonstruierbaren Abhängigkeiten entfernen, damit diese Ansammlung nicht fortgeht.
+
+80528 terminalExit0:34 hash-/quellgeprüfte generierte node_modules entfernt.
+Btrfs-Metadaten danach1.07/3GiB statt2.67/3GiB; keine Artefakt-/Quelllöschung.
+Builder entfernt künftig nach vollständigem Receipt und unveränderter
+Quellprüfung ausschließlich das eigene node_modules. 100 begrenzte Datei-/
+Verzeichnis-/Rename-Proben im eigenen .tmp erfolgreich, automatisch entfernt.
+Fehlgeschlagener Zielcheckout bleibt zur Diagnose erhalten; neuer Versuch
+verwendet neuen unveränderlichen Checkout. Baseline-Bytes0.0.160 bleiben erhalten:
+4681358dd3aabe1d6dab54f68803a5b4543302c64cc3f8bd55219eeb4d2656bd.
+
+80766 terminalExit0: Builder-/Quellkatalogformat, ESLint und beide Typechecks grün.
+72462 Wiederholungsbuild terminalExit0,48.665s,2.7GiB ohne Swap. Originale
+Zielquelle983feb554 unverändert gebaut; eigenes node_modules nach Receipt entfernt.
+Beide Artefakte per Größe/SHA erneut verifiziert:
+0.0.160(42/41)177048243Bytes4681358dd3aabe1d6dab54f68803a5b4543302c64cc3f8bd55219eeb4d2656bd.
+0.0.161(42/42)177048367Bytes27ba6b7b92352ea49701faa440c644805828931484134814df1d4c5007ef3d00.
+Plan-Audit Builderbereinigung: erfolgreiche Ausführung nach vollständiger
+Artefakterzeugung und Erhalt des Quellcheckouts nachgewiesen. Roadmap-Audit:
+Build ist kein UI-/Update-Nachweis; Phase5 offen.
+
+Externe Zustandsabweichung während72462: gesamtes work/qualification-vm fehlt;
+df jetzt188GiB frei. Die hier ausgeführte Bereinigung80528 betraf ausschließlich
+34 in roadmap-phase5-build-cache-cleanup.json enumerierte node_modules innerhalb
+Salt-Marcher/.tmp. Kein VM-Verzeichnis in diesem Plan. Nutzer asynchron nach
+paralleler Bereinigung gefragt. Containerimage weiterhin vorhanden, VM-Basis,
+Seeds, Payloads und lokale validierte Berichte am bekannten Pfad fehlen.
+Historische Logeinträge bleiben unverändert, aber deren lokale VM-Beweise sind
+aktuell nicht erneut prüfbar. Keine daraus abgeleitete Phasenfreigabe. Neue
+VM-Ausführung bis Klärung dieser konkurrierenden Änderung zurückgestellt.
+Check34475495340 für983feb554 weiterhin live, bislang keine fehlgeschlagenen Jobs.
+Vorheriger Goalturn Fortschritt: Baselinebau, belegte Cachebereinigung und
+Builderkorrektur; aktueller Zielbau jetzt nachgewiesen erfolgreich.
+
+Beweisverfügbarkeit nach externer Verzeichnisänderung: rein lesende Inventur
+roadmap-phase5-surviving-evidence-inventory.json findet18 JSON-Evidenzdateien,
+darunter15 historische Berichte außerhalb qualification-vm. Zwei erhaltene
+vollständige UI-Berichte erneut semantisch geprüft: seeded==after==restored==
+unchanged, continued==protectedRead!=seeded, alle Readback-Exitcodes0/ResponseOK,
+beide Wartungsjournale committed. Berichthashes:
+restore-v7 492f97ea40b8dd9e7ca232c62d9ea97f1013fb731a00b20f23abb518ee40af90;
+transport-failures-v1 dbafa3ce6a35a535d45d12bb13f06453d8d69035a11f072d411c3e4fe1420a9a.
+Dies ersetzt keine neueren Starter-/Unterbrechungs-/WAL-/Kapazitäts-/Feednachweise.
+Fixplan Dokumentation: Abnahmematrix erhält datierten Verfügbarkeitshinweis vor
+den historischen Klassifizierungen; ursprüngliche Befunde nicht überschreiben.
+Plan-Audit Wiederauffinden teilweise erfolgreich, keine Kopie neuerer VM-Berichte
+am untersuchten work-Pfad. Roadmap-Audit Phase5 weiter offen; Wiederbeschaffung
+oder Wiederholung fehlender Nachweise vor Abschluss erforderlich. Vorheriger
+Goalturn Fortschritt durch erfolgreichen Zielbau und belegte Builderbereinigung.
+
+Phase5 unabhängiger Prüfplan während offener VM-Bereinigungsklärung: ergänze einen
+separaten Erstinstallationsprüfer für ein tatsächlich leeres isoliertes Ziel.
+AppImage direkt aus Downloadordner mit geprüftem angrenzendem Release-Manifest
+starten, ursprüngliches „Auf diesem Rechner installieren“ und Bestätigung über
+UI bedienen. Kein vorab stageDeployment/setCurrent/installMaintenanceLauncher.
+Danach committed-Journal, originale Artefaktbytes, installierten Starter und
+leere Kampagnenansicht prüfen; normal schließen, über installierten Starter
+neu öffnen und unverändertes Journal prüfen. Keine Profilübernahme hier behaupten:
+deren Dialog-/Quellsperrennachweis bleibt eigener offener Fall. Neue Ausführung
+verlangt vorhandene Gastisolation und neues Home, findet jetzt nicht auf Host statt.
+Validierung zunächst Format/Lint/Typechecks; Laufzeit ausdrücklich noch offen.
+
+CI34475495340 Portable-Job102865137690 terminal failure:1652/1653 Tests bestanden.
+Einziger Fehler session-travel-console „fresh preparation ... (false)“ erwartet
+altes Pauseobjekt ohne neues optionales expectedProgressIndex. Tatsächlicher
+Aufruf genau einmal mit korrekten Revisionen6/8 plusIndex0. Fixplan: Erwartung um
+frischen Index ergänzen und Fixture mit nicht-null Fortschrittsindex von altem
+Stand unterscheiden; Sperr-/Unmountprüfungen unverändert. Keine Produktlockerung.
+Erstinstallationsprüfer73313 ESLintfehler korrigiert (Program.sha256 statt
+manifest, kein Throw im finally);54812 noch TS4111 bei Env-Indexzugriff, fixen.
+Danach gezielte Console-Suite plus Format/Lint/Typechecks gemeinsam ausführen.
+
+35244 terminalExit0:13/13 Console-Tests inklusive frischemIndex2 und Unmountfall,
+Format/ESLint/beide Typechecks bestanden. Neuer Erstinstallationsprüfer statisch
+geprüft; kein Gast-/Host-GUI-Lauf erfolgt. Plan-Audit: kein Vorinstallationshelper
+im Prüfer; UI-Setup aus Download mit angrenzendem Manifest, committed, Launcher,
+Artefakthash, Desktopziel und zweiter regulärer Start werden verlangt.
+Roadmap-Audit: Erstinstallation zur Laufzeit und Profilübernahme weiterhin offen;
+Console-Testkorrektur ersetzt nicht den verbleibenden vollständigen CI-Lauf.
+
+Fortsetzung: vorheriger Goalturn Fortschritt durch Erstinstallationsprüfer und
+Console-Testkorrektur5a028380f. Noch unveröffentlichte Kandidatencommits werden
+nach terminalem vorherigem CI-Lauf gepusht, um dessen letzte E2E-Beobachtung nicht
+abzubrechen. Watch75023 beobachtet konkret34475495340; letzter Job102866526609
+campaign-workspaces ist nach erneuter API-Abfrage in_progress, kein bloßer Lock.
+
+Profilübernahme-Prüfplanung gegen aktuellen Code: qualifySourceProfile verlangt
+terminales committed/rolled-back Journal, übereinstimmenden current-Symlink,
+AppImage-Hash, validierten Starter und eingebettetes Profilprotokoll. Ein nur
+mit stageDeployment und kopiertem Datenordner vorbereiteter Quellstand genügt
+nicht. Kommender Test muss zuerst reale Quellinstallation durch Setup abschließen,
+dann repräsentatives synthetisches Vollprofil unter exklusiver Sperre vorbereiten,
+Quell-App schließen und native Ordnerauswahl plus verständliche Bestätigung im
+Ziel bedienen. Vollständiger Quellenvergleich vor/nach und Zielreadback über
+originalen Utility erforderlich; Alias/parallel geöffnete Quelle bleibt ein
+separater Ablehnungsfall. Keine direkte IPC-Ausführung als Ersatz für UI-Abnahme.
+VM-Bereinigungsrückfrage unbeantwortet; kein neuer VM-Start dieses Turns.
+
+75023 Watch terminalExit1: Check34475495340 exakt983feb554 terminal failure.
+Alle eigentlichen Jobs außer Portable erfolgreich; Aggregat folgerichtig failed.
+Portable einziger Fehler ist die bereits in5a028380f korrigierte veraltete
+Console-Pause-Erwartung. Campaign-workspaces102866526609 terminal success:
+scene-desktop10/10 inklusive „continues travel with its window closed and
+restores an explicitly paused journey after restart“ bestanden; sieben weitere
+Workspace-Suiten ebenfalls erfolgreich. Original-Joblog gesichert in
+work/roadmap-phase5-ci-34475495340-campaign.log. Damit Pause-E2E-Korrektur auf
+983feb554 belegt; vollständiges grünes Kandidatengate bleibt erneut erforderlich.
+Vorheriger Goalturn verifiziertes Warten auf75023/102866526609. Jetzt alle seitdem
+lokal validierten Änderungen als neuen Kandidaten pushen. Keine Main-Promotion.
+
+Phase5 Nachweissicherung-Fixplan: wiederverwendbarer Collector prüft terminalen
+VM-Exitmarker, vollständige Base64-Exportblöcke, gzip-CRC und tar-Einträge vor
+Archivierung außerhalb des VM-Verzeichnisses. Nur reguläre JSON-Berichte mit
+relativen sicheren Pfaden; keine Links, Traversal oder doppelte Pfade pro Export.
+Originalarchiv und Berichte mit SHA/Größe und Exitwerten bewahren. Manifest nennt
+explizit nur Transportintegrität, niemals semantisch bestandene Abnahme. Keine
+Gastdisklöschung im Collector, keine Quelländerung. Neue Zielverzeichnisse ohne
+Überschreiben; Manifest zuletzt schreiben. Tests für gültige Exporte, fehlenden
+Endmarker, beschädigtes gzip, unsicheren Archiveintrag und Ziel im VM-Verzeichnis.
+Anbindung als eigener CLI-Schritt für zukünftige Gastläufe. Kein VM-Start nötig.
+
+Collector10025 erster statischer Lauf scheiterte an unknown Promise-Rejection;
+Fehlernormalisierung ergänzt.34429 terminalExit0:7/7 zielgerichtete Tests,
+Format/ESLint/beide Typechecks bestanden. Plan-Audit: außerhalb VM-Ziel geprüft,
+keine Quelllöschung, vorhandenes Ziel abgewiesen, gzip/Archive/JSON geprüft,
+Originale und Hashes retained, semantische Abnahme ausdrücklich nicht behauptet.
+Roadmap-Audit: verbessert künftige Nachweishaltung, ersetzt verschwundene Berichte
+nicht. CLI und getrennte fachliche Auditpflicht in Abnahmematrix dokumentiert.
+Vorheriger Goalturn Fortschritt: erfolgreicher Pause-E2E nachgewiesen, korrigierter
+Kandidat8494e663a gepusht. Check34477259628 für8494e663a derzeit live. Kein VM-Start.
+
+Betriebsentscheidung nach erneuter Prüfung:187GiB frei, kein rm-/QEMU-/Build-
+Prozess (pgrep-f Selbsttreffer ausgeschlossen), Quellcheckouts unverändert. Ursache
+des verschwundenen Verzeichnisses weiterhin offen, aber kein Beleg fortdauernder
+Bereinigung. Frühere VM-Pause war eine eigene Vorsichtsentscheidung, keine
+zusätzliche Nutzerfreigabeanforderung. Autorisierte Roadmap fortsetzen mit neuem
+work/qualification-vm-v2 und separat aufbewahrten Nachweisen außerhalb dieses
+Baums. Zunächst Hersteller-Cloudimage und SHA256SUMS über HTTPS laden, Hash
+prüfen; erst dann Ressourcen-/Kernel-Bootstrap ohne SaltMarcher. Bestehender
+40GiB-Guard,7GiB/128Tasks/2CPU-Container und private Gastumgebung gelten weiter.
+Keine verschwundenen Nachweise als bestanden ausgeben oder Logs überschreiben.
+
+76248 Download terminalExit0,624829952Bytes; Hersteller-SHA256SUMS überHTTPS:
+d0fe84bb5f80853425fa6be28e2c106f30104c3cfe8611933f2e65c9b63f0e30,
+identisch mit ursprünglichem Basisimage. Versioniertes bootstrap-cloud-init.yaml
+enthält nur Gastpaketinstallation und Kernel-/Paketnachweis, keine Appausführung.
+16088 neue Bootstrapausführung live: Container
+salt-marcher-qualification-0be6183e-c82d-4705-94ae-77c9159a1aea,
+work/qualification-vm-v2/bootstrap-run-1. Zeitlimit900s; bestehender Runner mit
+Speicher-/Task-/CPU-Grenzen und opt-in NAT nur für Gastpakete. Boot im eigenen
+Kernel begonnen, Host weiterhin187GiB frei. Erfolg/Export noch nicht belegt;
+keine Quelldateien während der Ausführung ändern. Danach neuen Collector nach
+outputs/qualification-evidence anwenden, semantisch Host/Gast/KVM prüfen und erst
+dann unveränderliche vorbereitete Basis erzeugen. Vorheriger Goalturn Fortschritt
+durch Collector07fb720e7; aktive Roadmap bleibt vollständig offen abPhase5.
+
+16088 Bootstrap terminalExit0, regulärer Powerdown68.66s. Collector archiviert
+Originalgzip+Bericht außerhalbVM unter outputs/qualification-evidence/bootstrap-v2-run-1.
+Transport plus Semantik geprüft:VMExit0/TestExit[0], Hostkennung stimmt mit
+Runner überein, Gast55845ed3-6992-4835-ae10-240231dfc1f3 verschieden, Kernel
+6.8.0-138-generic, erforderliche Pakete vorhanden. ReportSHA
+eae7cf706e7b7bf4cb127febded689a8e64883ddd411b34d9100a7c79fda2688.
+27718 Konvertierung/SeedISO terminalExit0; qemu-img-info bestätigt unabhängige
+24GiB-qcow2 ohne Backingreferenz. Erst danach abgeschlossenes Bootstrapoverlay
+entfernt. Basis bleibt read-only bei Teststarts.
+8033 first-install-run-1 läuft offline mit geprüftem0.0.161 und eingefrorenem
+payload-first-install-1. Keine Appquelle geändert. Prüfer/Node/Artefakt/Receipt mit
+SHA-Inventar aufread-onlySeed. Deadline600s, innerer3GiB/256Tasks-Service/private
+D-Bus/Xvfb. Geplanter Berichtexport first-install-evidence.json bzw Fehlerbericht;
+noch keine Laufzeitfreigabe. Nach terminalem Lauf Collector nach separatem
+outputs/qualification-evidence verwenden, dann Szenarioinvarianten prüfen.
+Vorheriger Goalturn Fortschritt: verifizierte Basisbeschaffung und neuerBootstrap.
+
+8033 Erstinstallation terminalExit0/TestExit0. Collector archiviert vollständigen
+Export nach outputs/qualification-evidence/first-install-v2-run-1. BerichtSHA
+448b212e701a58b29f5eb9ffc1fbaa457f98080b3f00bcf7ad342f562e918d4a.
+Semantische Prüfung:transaction committed, zwei reguläre ProzesseExit0/signalnull,
+installierte SHA entspricht0.0.161/27ba6b7b92352ea49701faa440c644805828931484134814df1d4c5007ef3d00,
+Desktopziel eigenerstart. Originalprüfer bestätigt tatsächlichen Setup-Klick,
+leere Kampagnenansicht, gültigen Starter und unverändertes Journal beim zweiten
+Starterstart. Danach Gastdisk entfernt. Plan-Audit Erstinstallation bestanden;
+Roadmap-Audit Profilübernahme und vollständiges Phase5-Gate weiterhin offen.
+38629 vollständiger Feedlauf mit0.0.160/161 gestartet: neuerread-onlyPayload und
+Seed, sechs Ablehnungen mit next-action-Text, danach normalerUpdate/Weiterarbeit/
+Restore. Offlinegast mit kontrolliertem Loopbackfeed. Deadline900s. Keine Quellen
+während Testlauf ändern. Bericht nachTerminal separat archivieren und alle
+Profil-/Prozess-/Artefaktinvarianten prüfen, dann disposableGastdisk entfernen.
+Vorheriger Goalturn Fortschritt durch neuenBootstrap und sicherenNachweisexport.
+
+Während38629 unverändert läuft, rein lesende Local-Artefaktvorbereitung:
+CI34477259628 stellt10152231791 bereit,35433 Download terminalExit0. Zip enthält
+exaktAppImage,Manifest,CandidateReceipt. AppImageSHA und Manifest-Build geprüft:
+8494e663a/channelLocal/dirtyfalse,Schema42/42, SHA
+9c6d9933bf1c04d82cbaf12fad821605601c9a26f37d3068d7e0bcc8b7c434b9.
+Separat bewahrtes OriginalLocal ausrelease/local:bd8b33c4/Schema42/41,
+SHA59c509f13517430c5e15d95aed0c306e6c295be3f2bcc2a485957e9eff53d0c4,
+Kopie erneut gehasht nachwork/local-artifact-bd8b33c4. Neues Ziel liegt in
+work/local-artifact-8494e663a samt Downloadherkunft. Keine Ausführung aufHost,
+kein kanonischerHandoff, kein vollständigesCI-grün behauptet. Diese echtenLocal-
+Artefakte erlauben künftig den fehlenden Local-Schemawechselnachweis imGast.
+VorherigerGoalturn Fortschritt durch bestätigteErstinstallation undFeedstart.
+
+38629 terminalExit0/TestExit0. NeuerCollector erhält Originalexport und Bericht
+außerhalbVM in outputs/qualification-evidence/feed-actionable-v2-run-1.
+BerichtSHA dcea76ed74cae9eadbafbbb119fb54d9e39c6fa6948d77a112424f519f9daee9.
+SechsFehlerfälle manifest-origin/artifact-origin/repository/architecture/
+manifest-format/version jeweils mit „Bitte später erneut prüfen.“ ohneZod-Rohtext,
+keine AppImage-Anfrage; volleReadbacks stimmen mitSeed. Danach installierter
+Starter mit0.0.160(42/41)→0.0.161(42/42), committed Update undRestore,
+seeded==after==restored==unchanged, continued==protectedRead!=seeded; alle
+ReadbacksExit0/OK und sämtliche normalenUI-ProzesseExit0/signalnull.
+BeideArtefakt-SHAs und jeder archivierteDateihash erneut geprüft. Erst danach
+Gastdisk entfernt. Plan-Audit gepackteFeed-UX bestanden; Roadmap-Audit Phase5
+weiterhin offen (u.a. direkteProfilübernahme, Local-Schemawechsel, Wiederbeschaffung
+fehlenderUnterbrechungsnachweise und vollständigeFreigabegates). VorherigerTurn
+Fortschritt durch gesicherteOriginalLocal-Vergleichsartefakte.
+
+CI34477259628 exakt8494e663a terminal failure:Portable nun grün, aber
+campaign-workspaces102872110081 fehlgeschlagen, Aggregat folgerichtig rot.
+Gesichertes Originaljoblog work/roadmap-phase5-ci-34477259628-campaign.log:
+campaign creation/switching scheitert in support/campaign-walking-scenarios.ts:251,
+Klick auf„Campaign B Archiv bearbeiten“ wird von offener modal-backdrop abgefangen.
+Noch keine Ursachenbehauptung. NächsterFixplan erst nach zugehörigemScreenshot,
+vorherigerDialogsequenz und Produktzustand; keine blinde Klick-/Timeoutlockerung.
+Erfolgreicher neuerAppImage-Feedlauf davon getrennt; kein vollerCandidatepass.
+
+CI-Fehlerklassifizierung34477259628: OriginalScreenshot ausArtifact10152637596
+zeigtPapierkorb mit erfolgreicherWiederherstellung; Logposition251 ist zweiter
+Editklick nachRestore/Close, nichtRenameabschluss. Produktcode setztModalCloseButton
+disabled während busy/Reconciliation; Test klickt direkt nachWiederherstellen ohne
+Abschlussbarriere. Fixplan: beide Papierkorb-Schließungen in diesemSzenario über
+scopedModalClose ausführen, auf klickbarenKnopf warten, nachKlick aufverschwundenen
+Dialog warten. Kein JS-Klick, keinTimeoutanstieg, keineÄnderung derBusy-Sicherheit.
+Format/Lint/Typechecks; tatsächlicheE2E-Bestätigung im nächstenvollenCI-Lauf.
+
+35538 terminalExit0:Format,ESLint,beideTypechecks unddiff-check grün.
+Plan-Audit: ausschließlich zweiPapierkorb-Schließungen warten aufbedienbaren
+scopedKnopf undverschwundenenDialog; nativeKlicks undvorhandeneTimeouts bleiben.
+Roadmap-Audit: plausibleBusy-Race damit gezielt adressiert, tatsächlicheBehebung
+noch durch vollständigenCI-/E2E-Lauf zu bestätigen. Screenshot allein beweist
+nicht den exakten Busy-Wert imMomentdesvorherigenCloseklicks. KeineProduktfreigabe.
+Jetzt neuerKandidat mitCollector/Bootstrapnachweisen undTestbarriere pushen.
+
+Local-Qualifikationsplan gegenIstcode: migratePreparedCompleteProfile läuft im
+jeweiligenInstaller, deshalb Baseline undZiel mit OriginalInstallerquellen aus
+bd8b33c4 bzw8494e663a prüfen, keine Zielmigration beimBaseline-Setup verwenden.
+BeideAppImages bereits hashgeprüft. Vor Bundles festeSourcecheckouts erstellen,
+readWorkspaceIdentity gegenManifest prüfen, Originalmodule (Installer/Runtime-
+Annahme) exportieren und Quellen vor/nachBundling unverändert bestätigen.
+Gast erhält diesen separat ausgewiesenenTestadapter und eingefrorene verifizierte
+WorkspaceIdentity statt eines fiktiven Source-Fingerprints. Echte Migration,
+Launcherextraktion und Runtime-Annahme bleiben original; dies ist kein Ersatz für
+kanonischenHandoff samtGit-/CI-Gate. NativeNode-SQLite fürGast gesondert prüfen.
+Erst danach vollständigenLocal-Daten-/Runtime-/Rollbacktest aufsynthetischemProfil
+aufbauen. Aktuell keinVM-/Buildprozess; letzterGoalturn Fortschritt durch gezielte
+Kampagnen-Testbarriere undKandidatenpush. Check34479373201 füra5317c1c4 live.
+
+65999 terminalExit0: Format/ESLint/beideTypechecks bestanden; beideOriginal-
+Local-Adapter erfolgreich gebaut. VollständigeWorkspaceIdentity entsprichtjeweils
+AppImage-Manifest vor/nachBundling; Schema42/41 und42/42 bleiben getrennt.
+Ausgaben work/local-adapter-baseline-v1 undlocal-adapter-target-v1 enthalten
+AdapterSHA,IconSHA,ManifestSHA,Originalcommit/Fingerprints undexpliziteKennzeichnung
+„not-runtime-qualification-or-handoff“. Kein GUI-Start. Peak1.5GiB/keinSwap.
+Plan-Audit Adapterherkunft bestanden; Roadmap-Audit tatsächlicheLocal-Migration,
+Startannahme, Profilvergleich undRecovery bleiben offen. NativeBibliothek wird
+separat inGast geprüft; lokalesprebuild verlangt maximalGLIBC_2.34 (readelf),
+das allein belegt wederNodeABI-Kompatibilität noch erfolgreichenGastbetrieb.
+
+KonkreterLocal-Laufzeitprüferplan: Originalhistorischer42/41-Runtime erzeugt
+reiches synthetischesSeed. Kopie unter gemeinsamerProfilsperre in neuenLocal-
+Installationsort. BaselineAdapter installiert OriginalLocal42/41; Original
+verifyLocalRuntimeStartup startet unverändertesAppImage mit bestehenden
+installed-runtime-verification/Smoke-Flags und verlangt reales committed.
+Readback überunverändertehistorischeRuntime aufgesperrterKopie vergleichen.
+DannOriginalZielinstaller42/42 migriert, startet realesZiel undliestvollständig
+zurück. NativeNode-SQLite zuerst imGast öffnen; SHA/Manifest/Adapteridentitäten
+prüfen. FehlendeQuellGit-Umgebung wird nur durchvorher realverifizierte eingefrorene
+Identity ersetzt, keineFake-Runtimeannahme. Dieser ersteLauf decktLocal-Schema-
+Update ab; Unterbrechung/Recovery unddirekterProfilimport bleiben weitereFälle.
+
+36316 statischerErstlauf: zweiTS-Narrowingfehler anReadback-Response. ExpliziteOK-
+Assertions anAufrufstellen ergänzt; Native-Diagnose inFehlerberichtspfad verschoben.
+44433 terminalExit0:Format/ESLint/beideTypechecks bestanden. Plan-Audit Prüfer
+implementiert OriginalInstaller+Runtime-Annahme, vollständigenSeed-/Vorher-/Nachher-
+undunverändertenQuellreadback. Noch keinLaufzeitpass.
+38290 local-schema-run-1 gestartetinvorbereiteterOfflineVM:600s,3GiB/256Tasks im
+Gast,OriginalLocalbd8b33c4→8494e663a,OriginalAdapter separatHashgeprüft,Historical-
+Runtime42/41 und42/42 fürsynthetischeVollprofilreadbacks. Nativebetter-sqlite3
+13.0.2/lib+linux-x64prebuild undalleTesteingaben imread-onlyPayload samtSHA-Liste.
+Noch keinHost-GUI-Test/keinHandoff. KeineQuelldateiänderungen währendLauf.
+NachTerminal Collector inoutputs/qualification-evidence undSemantikprüfen; nicht
+alleinVMExit0 alsErfolgwerten. VorherigerGoalturn Fortschritt: beideOriginalAdapter
+herkunftsgeprüftgebaut. CI34479373201 fora5317c1c4 zuletztlive ohneFehler.
+
+38290 terminalVMExit0/TestExit1. Fehlerexport transportgeprüft separatarchiviert
+unteroutputs/qualification-evidence/local-schema-v2-run-1. NativeProbe/Seed
+überstanden; OriginalBaseline-Backup startet --import tsx auscwd/ und scheitert
+anfehlendemtsx. KeineUpdateabnahme. Adapteraudit findet zusätzlich kollabierte
+import.meta.url-Workerpfade. Fixplan: Bundle inlocal-installation/adapter.mjs,
+beideOriginalBackup-Worker separat daneben aufOriginalrelativpfaden bündeln;
+Originalpackage.json fürESM-Grenze erhalten, jedenWorkerhash imAdaptermanifest
+verankern undvorVerwendung prüfen. Prüfprozess cwd aufAdapterroot setzen, echte
+installierteTsx/esbuild-Abhängigkeiten mitHashinventar inGast mitnehmen. Keine
+ProduktSourceänderung, keineStubWorker odersimuliertenBackups. NeueAdapter-
+Ausgaben undPayload,alteFehlerbeweise behalten. WiederstatischePrüfung plusneuer
+vollständigerGastlauf erforderlich. Baseline-/ZielAppImagebytes unverändert.
+
+5825 terminalExit0:Format/ESLint/beideTypechecks undbeideOriginalAdapter-v2-Builds
+bestanden. Backup-Worker mitjeweilsOriginalquellen gebündelt, separateHashprüfung
+plusOriginalpackage.json undrelativeWorkerpfade. Qualifier setztcwd aufverifizierte
+Adapterwurzel. Payload-local-schema-2 enthält realeTsx4.23.1/esbuild0.28.1 und
+linux-x64Binary nebenNativeSQLite; kompletteSHA-Liste, keineStub-Abhängigkeiten.
+53272 local-schema-run-2 gestartet mitOriginalAppImagebytes undneuemSeed,Offline-
+Gast600s. Quellen währendLauf unverändertlassen. Plan-Audit statischeWorkerpfade
+undAbhängigkeiten ergänzt; Roadmap-Laufzeitnachweis weiterhin offen.
+VorherigerGoalturn Fortschritt: Local-Prüfer implementiert/statischgeprüft und
+Erstlauf gestartet; dessenFehler nunlokalisiert undarchiviert.
+
+
+### Phase 5 – Speicherprüfung und Local-Baseline-Diagnose
+
+Voriger Goalturn: Fortschritt durch aktuelle Host-Kapazitätsprüfung und Abgleich
+mit dem protokollierten Speicherfehler. Aktuell 177.72GiB frei, Btrfs-Metadaten
+925MiB/3GiB, keine QEMU-/Podman-Prozesse. Keine Bereinigung oder Host-GUI gestartet.
+Die zuvor ausgesprochene vorläufige Testpause ist keine externe Freigabeschranke;
+Diagnose wird unter bestehenden Ressourcen- und Isolationsgrenzen fortgesetzt.
+
+Check34479373201 für a5317c1c4d00e54d423916cd573c8f46e0ea1486 ist jetzt
+completed/success. Damit vollständige Remoteprüfung einschließlich der
+Trash-Schließbarriere für genau diesen SHA bestanden. Lokale uncommittete
+Adapter-/Qualifieränderungen sind davon ausdrücklich nicht abgedeckt.
+
+Local-schema-run-2 ist terminal: VMExit0, TestExit1. Vorhandenes Archiv
+outputs/qualification-evidence/local-schema-v2-run-2 erneut anhand sämtlicher
+Dateigrößen und SHA-256 geprüft. Es belegt den Fehler, keinen erfolgreichen
+Local-Schemaübergang. Gastdisk bleibt für Diagnose erhalten.
+
+Codevergleich des originalen bd8b33c4-Installers zeigt: dessen Ressourcenleser
+verwendet AppImage -e mit ELECTRON_RUN_AS_NODE und APPIMAGE_EXTRACT_AND_RUN.
+Er verwendet noch nicht den aktuellen direkten --appimage-extract-Leseweg.
+Der früher dokumentierte Gastbefund60521 war Exit9/bad option --no-sandbox,
+verursacht durch AppRun nach fehlgeschlagenem unshare -Ur. Dies erklärt einen
+plausiblen Zusammenhang, ist ohne stderr des aktuellen Fehlers noch kein
+endgültiger Ursachenbeleg. Backup-Workerfehler des ersten Laufs trat diesmal
+nicht erneut als Abbruchstelle auf.
+
+Fokussierter Diagnoseplan vor weiterem Test: In frischem begrenztem Offlinegast
+nur den originalen Ressourcenleseaufruf des unveränderten Baseline-AppImages
+reproduzieren und Exit, Signal, stdout/stderr sowie unshare-Ergebnis als JSON
+exportieren. Keine Änderung von Originalinstaller, AppImage oder Host-Schutz.
+Erst danach entscheiden, ob die Gastumgebung für den historischen Installer
+angepasst werden muss oder ein gesonderter Vergleichsstand erforderlich ist.
+Ein Austausch des alten Installers gegen den aktuellen darf nicht als Prüfung
+des ursprünglichen Local-Ablaufs ausgegeben werden. Plan-Audit: Fehlerarchiv und
+CI-Status verifiziert. Roadmap-Audit: Local-Laufzeitmigration, Unterbrechungen und
+weitere fehlende Phase-5-Nachweise weiterhin offen; Phasen6/7 nicht begonnen.
+
+80278 Diagnosegast terminalExit0/TestExit0. Original-AppImage SHA vor/nach gleich;
+Node-Ressourcenleseaufruf Exit9 mit bad option: --no-sandbox; unshare -Ur true
+Exit1 mit uid_map Operation not permitted. Diagnosearchiv vollständig inklusive
+SHA/Größe geprüft, BerichtSHA d239bdf737e7855c456c79def95423ba1b2d3b6b21673ffc6ce6d0e68280fa
+(Korrektur: maßgeblich ist SHA im archivierten Manifest, nicht diese Abschrift).
+Nur Diagnosegastdisk nach Prüfung entfernt. Kein Migrationserfolg behauptet.
+
+Korrekturplan Gastkompatibilität: unveränderte Local-Payload2 in neuem Gast
+verwenden. Ausschließlich dort kernel.apparmor_restrict_unprivileged_userns=0
+setzen, davor vom QEMU-Hostbootwert abweichende Gastboot-ID erzwingen. Dadurch
+kann historisches AppRun die ursprünglich vorausgesetzte unprivilegierte
+Namensraumfunktion verwenden. Kein Host-sysctl, kein Artefaktpatch und keine
+simulierte Runtimeannahme. Seed dokumentiert diese abweichende Gastkonfiguration;
+Ergebnis gilt nur dafür. Aktuelle Release-Läufe unter unveränderten strengeren
+Gastbedingungen bleiben eigenständige Nachweise. Vollständigen ursprünglichen
+Local-Installer-/Migrations-/Runtime-/Profilvergleich wiederholen.
+
+Diagnosebericht SHA korrekt: d239bdf737e7855c456c79def95423ba1b2d3b6b21673ffc6ce6d6e0e68280fa.
+
+54379 Local-schema-run-3 terminalVMExit0/TestExit0. Vollständiges Archiv außerhalb
+der VM unter outputs/qualification-evidence/local-schema-v2-run-3 aufbewahrt;
+alle Größen/Hashes erneut geprüft. Originalinstaller bd8b33c4 und8494e663a
+starten jeweils ihre unveränderten Local-AppImages und erhalten reale ready-
+Bestätigung mit passendem Buildcommit. Beide Journale committed, zweiter previous
+entspricht exakt erstem next, getrennte Sicherungen vorhanden. Seed, Vorher,
+Nachher und unveränderte Quelle vollständig logisch gleich: Einstellungen,
+Registry, Kampagnen, Präferenzen und eigene Dateien. Alle Readbacks Exit0/OK.
+BerichtSHA: 0a8129aad563a7bc298c58ba20603fd2a10a0f2385f7c966e22f073d2ac20155.
+Gastdisk nach vollständigem Belegvergleich entfernt; frühere Fehlerdisks bleiben.
+
+Plan-Audit Local-Schemaübergang42/41→42/42 mit Originalinstallern und tatsächlichen
+AppImages bestanden, ausdrücklich im Gast mit erlaubten unprivilegierten
+User-Namespaces. Kein canonical handoff, kein Local-Abbruch-/Recoverynachweis und
+kein direkter UI-Profilimport. Roadmap-Audit Phase5 bleibt für diese und zuvor
+festgehaltene fehlende Nachweise offen. Nächste Arbeit: qualifizierten Local-
+Prüfer samt Adapteränderungen reviewen/committen und direkte Profilübernahme
+sowie unterbrochene Local-Aktivierung mit realen Artefakten ergänzen.
+
+
+### Phase 5 – Local-Aktivierungsabbrüche mit echten AppImages
+
+Voriger Goalturn Fortschritt: realer Local-Schemawechsel einschließlich beider
+Runtimeannahmen und vollständiger Profilreadbacks bestanden. Prüfer/Adapter in
+ee4e8b030 committed; gezieltes Format und ESLint erneut bestanden.
+Plan vor Änderung: bestehenden realen Local-Qualifier um expliziten optionalen
+Aktivierungs-Abbruchpunkt ergänzen. Separater Node-Unterprozess lädt denselben
+hashgeprüften Original-Zielinstaller, beendet sich genau an bestehender
+Maintenance-Testnaht mit SIGKILL; keine simulierte Ausnahme oder Runtimeannahme.
+Elternprozess verlangt erreichten Marker und echtes SIGKILL. Original-Baseline-
+Installer stellt zurück, zweimalige Recovery bleibt idempotent, Programmverweis,
+Desktopintegration und vollständiger ursprünglicher Profilreadback bleiben gleich.
+Danach derselbe Zielinstaller erneut, reale Zielruntime ready und alle bisherigen
+Profilvergleiche. Acht Vorwärtsgrenzen explizit zulassen; Rollback-Unterbrechungen
+sind ein nachfolgender separater Nachweis. Statische Prüfung, danach Gastpilot
+new-data-moved, dann übrige Grenzen mit frischen Profilen und Belegen.
+
+79599 statische Prüfung terminalExit0: Format, ESLint, beide Typechecks bestanden.
+42730 Local-Abbruchpilot terminalVMExit0/TestExit0. Echte SIGKILL-Unterbrechung
+new-data-moved erreicht; Originalinstaller zweimalige Recovery rolled-back mit
+identischem Journal. Beide vollständigen Recoveryreadbacks entsprechen Seed;
+anschließendes echtes Ziel-AppImage ready und committed. Seed/Vorher/Nachher/
+Quelle gleich, alle Readbacks Exit0/OK; Programmidentitäten und Journalverkettung
+geprüft. Belegarchiv außerhalb VM, alle Dateigrößen/SHA geprüft. BerichtSHA:
+5aa034d1949cf69d723c428031bcb0904d1e5bc5dd05b51c4b19f061363a19ee.
+Gastdisk nach Semantikprüfung entfernt. Plan-Audit Pilot bestanden; sieben übrige
+Aktivierungsgrenzen und Rollback-Unterbrechungen noch nicht dadurch abgedeckt.
+Roadmap-Audit Phase5 weiterhin offen. Gastkonfiguration wie Local-schema-run-3,
+Originalartefakte unverändert, keine Host-GUI oder Host-Schutzänderung.
+
+Nächster Local-Gastbatch: prepared, old-data-moved, program-linked, je neues
+vollständiges synthetisches Profil. Unverändertes Payload-local-interruption-1,
+Originalartefakte und Prüfer. Ein Gast, Fälle sequenziell, Abbruch bei Fehler mit
+anschließendem Export aller vorhandenen Berichte. VMDeadline600s, proFall600s
+Gast-Cgroup-Limit; keine Quellenänderung während Lauf. Aktuell173GiB frei.
+Voriger Goalturn Fortschritt: SIGKILL-Pilot samt vollständiger Semantik bestanden.
+
+84098 Batch terminalVMExit0/TestExit0; drei vollständige Local-Abbruchnachweise
+transport- und semantikgeprüft. Je echtes SIGKILL, zweimal idempotentes rolled-back,
+vollständiger Recoveryreadback==Seed, erneutes Zielruntime-ready/committed,
+alle Vorher-/Nachher-/Quellvergleiche gleich. Archiv außerhalb VM, Gastdisk entfernt.
+program-linked BerichtSHA 5045626c9e206b5c5c09ae1639b8366b67a4799cbb6f9d81d36e17648c5cdcb0
+prepared BerichtSHA 6b4e8f6f1df4468e3af20feb477431846fab267d0fabc5285c63d53e4994b79b
+old-data-moved BerichtSHA 89f6b4f68e97b22a7f6587dab07b70f2e9d6360586ee71f9fccedb2615717b05
+Plan-Audit diese drei Grenzen bestanden. Zusammen mit Pilot vier von acht
+Vorwärtsgrenzen qualifiziert; data-moving, data-ready, program-moving und
+awaiting-start folgen. Rollback-Unterbrechungen und direkter UI-Import weiter offen.
+
+Nächster unveränderter Local-Batch: data-moving, data-ready, program-moving,
+awaiting-start, vier separate Profile, sequenziell im Gast, Deadline900s.
+Gleicher qualifizierter Prüfer/Payload/Originalartefakte, Export auch bei Fehler.
+Voriger Goalturn Fortschritt: drei weitere SIGKILL-Nachweise vollständig auditiert
+und Testimplementierung974a2cb0c committed. Keine Quellenänderung während Lauf.
+
+17355 terminalVMExit0/TestExit0. Vier Berichte transport-/semantikgeprüft:
+program-moving SHA 88af8d7db3397928981cc6837f6889133f55611f45aeb52f1a12513280ebc0b8
+awaiting-start SHA 6c514cc18e84e04624650bb4e0cd1962c22687668217b41ec5399bd336c32955
+data-moving SHA 93b59e45cadf05fd7eb00871c8fd057a0061481ade4f362ef430efeb71b7f4de
+data-ready SHA e1ceafd1ea6355236941689a517305a9ffd7e90bb409946760a408e75e4b816a
+Je echtes SIGKILL, zweimal idempotentes rolled-back, beide Recoveryreadbacks
+entsprechen vollständig Seed, erneutes Zielruntime-ready/committed und sämtliche
+Vorher-/Nachher-/Quellvergleiche gleich. Archiv außerhalb VM, Disk danach entfernt.
+Plan-Audit alle acht Local-Vorwärtsgrenzen mit Originalinstallern/echten AppImages
+bestanden. Nicht auf Recovery-Abbrüche oder canonical handoff ausweiten.
+Roadmap-Audit Phase5 bleibt offen: insbesondere neun Recoverygrenzen, UI-Import
+und zuvor benannte fehlende Originalnachweise.
+
+
+### Phase 5 – Abbrüche während Local-Recovery
+
+Voriger Goalturn Fortschritt: acht von acht Vorwärtsgrenzen real qualifiziert.
+Plan: optionalen rollback-boundary-Modus ergänzen; zuerst echtes Zielinstaller-
+SIGKILL bei awaiting-start, dann separater Original-Baseline-Installer mit
+SIGKILL an einer von neun Recoverygrenzen. Getrennte Marker/Prozessresultate und
+Journale halten beide Unterbrechungen auseinander. Danach Original-Recovery
+zweimal, vollständiger Profil-/Programm-/Desktopvergleich, erneutes echtes
+Zielupdate und unveränderte Quelle. Keine simulierte Annahme und keine geänderten
+AppImages. CLI-Pfade vor Arbeitsverzeichniswechsel auflösen. Statische Checks,
+Gastpilot old-data-restored; danach übrige acht Recoverygrenzen. Neues Payload,
+alte Belege unverändert behalten. Kein aktiver Gast während Codeänderung.
+
+78385 statische Prüfung terminalExit0: Format, ESLint und beideTypechecks bestanden.
+24922 Recoverypilot terminalVMExit0/TestExit0. Echte SIGKILLs bei awaiting-start
+und old-data-restored, gleicher Transaktionsbezug und rollbackFrom=awaiting-start.
+Anschließend zweimal identisches rolled-back, beide Recoveryreadbacks==Seed,
+Original-Zielruntime ready/committed, alle Profil-/Quellvergleiche gleich.
+Archiv außerhalb VM vollständig transport-/semantikgeprüft. BerichtSHA:
+5e10b1103e7271fe1320dca6c45b1973beac7416ff0b49a9fb699d12cc08d3cb.
+Gastdisk nach vollständiger Prüfung entfernt. Plan-Audit Doppelabbruchpilot
+bestanden; übrige acht Recoverygrenzen offen. Roadmap-Audit keine Phase5-Freigabe,
+UI-Profilimport und zuvor festgehaltene fehlende Nachweise bleiben offen.
+
+Nächster Recoverybatch mit unverändertem Payload-local-recovery-1: rollback-started,
+rollback-preserving, failed-data-preserved, rollback-restoring. Vier separate
+Profile, sequenzieller Offlinegast, Deadline900s, Export bei Fehler. Voriger
+Goalturn Fortschritt: Doppel-SIGKILL-Pilot old-data-restored semantikgeprüft.
+Keine Sourceänderungen während der Qualifikation.
+
+57905 terminalVMExit0/TestExit0. Vier Recoveryfälle vollständig transport-/
+semantikgeprüft: beide SIGKILLs, gleiche Transaktion, zweimal identisches
+rolled-back und vollständiger Recoveryreadback, realer Zielrestart/committed,
+sämtliche Vorher-/Nachher-/Quellvergleiche gleich. BerichtSHA:
+rollback-restoring ffe7ec57df6cacf2b23e2f6893457f70813759344fe74c4bc0b9d22df9ff2c23
+rollback-started 6fd0daff7874744e3249818c35a9b871c4ec94fc659bd0b97e5e0476732aff7f
+rollback-preserving a4b1b7529cff310909ea6d803de2faed0786c06c32a894da7c91dfb5e2ac1175
+failed-data-preserved 96cf395ae0abcb99fd2718180aa7a011189e17036a6e48f8e26a5d98e7e6cc3f
+Archiv außerhalb VM; Gastdisk nach Prüfung entfernt. Plan-Audit fünf von neun
+Recoverygrenzen qualifiziert. Roadmap-Audit übrige vier Recoverygrenzen, direkter
+UI-Import und frühere fehlende Nachweise offen. Abnahmematrix auf tatsächlich
+vorhandene Local-/Release-Nachweise aktualisiert, keine Gesamtfreigabe.
+
+Letzter Local-Recoverybatch: rollback-program, program-linked,
+rollback-history-written, rolled-back. Gleiches unverändertes Payload-local-
+recovery-1, vier separate Profile, Offlinegast900s. Export und vollständige
+Semantikprüfung vor Entfernen der Gastdisk. Voriger Goalturn Fortschritt: vier
+weitere Doppelabbruchnachweise und aktualisierte Abnahmematrix committed7b2fd2357.
+Keine Sourceänderungen während Lauf.
+
+
+Vorbereitung nächster Phase5-Prüfung (nur Dokumentation während laufendem Gast):
+Direkter UI-Import soll den echten abgeschlossenen Local-Zielstand des vorhandenen
+Qualifiers als Quelle verwenden, nicht ein synthetisch behauptetes Journal.
+Release-AppImage aus Downloadordner in demselben isolierten XDG-Bereich über
+Erstinstallations-UI installieren, damit das benachbarte Local-Profil als Kandidat
+erscheint. Release zunächst leer; danach sichtbaren Local-Profilknopf, App-
+Bestätigung, native Ordnerauswahl und native Ersetzungsbestätigung bedienen.
+Gast-xdotool darf ausschließlich reale Gastfenster/Tastatureingaben bedienen;
+kein ersetztes dialog.showOpenDialog und keine versteckte IPC-Übernahme.
+Vorher vollständige Quellinventare und logischen Seed festhalten, Quelle geschlossen.
+Nach Import: Journal committed/backup gesetzt, vollständiger Zielreadback==Seed,
+Quellbytes/Inventar unverändert (Lockdateien getrennt dokumentieren), vorgeschaltete
+Sicherung enthält den vorher leeren Zielstand. Regulär schließen, installierten
+Startpunkt erneut starten und fortsetzbaren Zustand lesen. Exklusive Quellsperre
+zusätzlich als eigener Ablehnungsfall; native Dialogbedienung zuerst im Gast
+belegen. Fixturepfade und Programmidentitäten vor/nach prüfen. Das ist ein Plan,
+noch kein UI-Importnachweis und keine Phase5-Abnahme.
+
+13997 terminalVMExit0/TestExit0. Letzte vier Local-Recoveryfälle vollständig
+transport-/semantikgeprüft, je beide echte SIGKILLs, Transaktionsbezug, zweimal
+identisches rolled-back, vollständige Recovery-/Vorher-/Nachher-/Quellvergleiche
+und Zielruntime-ready/committed. BerichtSHA:
+rollback-program 9951d6ff6da3657742507d5f59e6e04e707d502a8b9fa133c9ce9404ed38ff68
+rollback-history-written 43b8cc6b553b4bfbec8c571bda77e50cec5e28ced127ee732c71ad51d9a7d334
+program-linked 13102e369f3452e8ad621133cd0fff32a9a715efa2f714df0d6c22a6ca407281
+rolled-back fe0afb6b3e32553a7a62889a343b0fee3bcb2a1ab8a6ba7ffd5f50ec46bd198f
+Alle neun Local-Recoverygrenzen damit qualifiziert; Archiv außerhalb VM, Disk
+nach Prüfung entfernt. Plan-Audit Local-Vorwärts-/Recovery-Abbruchmatrix bestanden.
+Roadmap-Audit Phase5 nicht abgeschlossen: direkter UI-Profilimport und zuvor
+festgehaltene fehlende Release-Nachweise bleiben offen; kein canonical handoff.
+
+71400 Importprüfer statisch bestanden: Format, ESLint, beideTypechecks. Neues
+Payload-profile-import-1 enthält unveränderten Local-Prüfer und AppImages plus
+neuen UI-Prüfer. Local-Setup zuerst, dann reale Release-Erstinstallation und
+Native-Dialog-Import. Quelle vollständig byteinventarisiert; Zielreadbacks sollen
+Seed entsprechen, vorgeschaltete Sicherung logisch dem leeren Vorprofil. Noch
+kein Runtimepass. Gast900s, gleiche Ressourcen-/Isolationsgrenzen; keine Source-
+änderung während Pilot.
+
+41119 terminalVMExit0/TestExit1. Local-Setup Exit0; UI-Importprüfer wartet vergeblich
+auf native Bestätigung „Vollständiges Profil übernehmen“. Ordnerauswahlfenster
+wurde zuvor gefunden; daraus ist nicht bewiesen, dass die Auswahl abgeschlossen
+wurde. Fehlerarchiv unter outputs/qualification-evidence/profile-import-v2-run-1;
+Gastdisk zur Diagnose behalten. Kein Importpass. Fixplan vor Änderung: bei Fehler
+sichtbare native Fenstertitel/IDs und bislang ausgeführte Eingaben protokollieren,
+bevor Cleanup sie schließt. Prüfer soll reale Dialogzustände sichtbar machen;
+keine Produktänderung oder simulierte Dialogantwort. Erst Ursache bestimmen,
+dann präzise native Auswahl korrigieren.
+
+Diagnoseplan ergänzt vor Änderung: natives X11-Gastbild im Fehlerfall über
+libX11 lesen, als PNG im JSON-Fehlerbericht erhalten. Helper verweigert Hostbetrieb
+ohne vom Gast abweichende QEMU-Hostboot-ID. Keine neuen Abhängigkeiten, kein
+Hostdesktopzugriff. Fenstertitel plus Bild unterscheiden offene Ordnerauswahl
+von anders benannter Bestätigung. Neuer unveränderlicher Diagnoselauf.
+
+78294 terminalVMExit0/TestExit1. Diagnosearchiv transportgeprüft. NativeFensterliste
+zeigt weiterhin Ordnerdialog; Gast-PNG visuell geprüft: korrekter Profilpfad im
+Adressfeld, Open unten rechts sichtbar, Autovervollständigung offen. Alt+o hat
+Dialog nicht bestätigt. Kein Import-/Datenverlustbeleg. Fixplan: echten Mausklick
+auf die visuell bestätigte Open-Schaltfläche im kontrollierten Gastlayout statt
+nicht wirksamen Kurzbefehl. Fenstergeometrie lesen, relative Position innerhalb
+Fenstergrenzen prüfen; nativen Bestätigungsdialog weiterhin tatsächlich abwarten.
+Keine IPC-/Produktänderung; neues Prüfpayload und kompletter Wiederholungslauf.
+
+Wiederholung nach visuell belegter GTK-Auswahlkorrektur: neues Payload-profile-
+import-3, unveränderte Original-AppImages und Local-Setup. Native Open-Schaltfläche
+per echtem Gastklick. Vollständiger Import-/Backup-/Quell-/Restartvergleich bleibt
+Abnahme. Voriger Goalturn Fortschritt: native Ursache mit Gastbild belegt und
+Prüfer korrigiert, Format/ESLint10056 bestanden. Keine Sourceänderung im Lauf.
+
+46019 terminalVMExit0/TestExit1, bereits Erstinstallation abgebrochen. Gastbild
+zeigt Recoveryansicht/Incompatible persisted data, nativeActions leer. Keine
+Aussage zur Open-Korrektur möglich. Diagnoseplan: abgeschlossene Gastdisk als
+read-only Zusatzlaufwerk einbinden, ext4 ro/noload; Logs/Journal lesen und SQLite
+ausschließlich auf Kopien im neuen Gast untersuchen. Keine Reparatur/Mutation
+der Fehlerdisk oder Host-GUI. Neuer Fehler zuerst lokalisieren.
+
+21136 read-only Diagnosegast terminalVMExit0/TestExit0, Export vollständig
+transportgeprüft. installation.sqlite quick/integrity ok, user_version0, bereits
+Tabellen campaigns/settings/campaign_commands/scene_desktop vorhanden. Startlog:
+Generation1 starting→terminating/closed, Generation2 incompatible-data Exit78.
+Originale InstallationDatabaseOwner initialisiert Tabellen einzeln und setzt
+user_version erst am Ende, ohne gemeinsame Transaktion. Das hinterlässt bei
+beendetem Start eine gespeicherte Teilinitialisierung. DiagnoseberichtSHA:
+047971e6c60b1913b717bda732512f21d643fb267b9352a8fe3e33bf9bab0131.
+Diagnosegastdisk entfernt, ursprüngliche Fehlerdisk bleibt unangetastet.
+
+Produkt-Fixplan vor Änderungen: neue Installationsdatenbank vollständig atomar
+initialisieren (alle DDL/Defaultdaten/Metadaten plus Schema-Version in einer
+SQLite-Transaktion). Nach Abbruch darf allein eine nachweislich leere SQLite-Datei
+mit Version0 und keinerlei Schemaobjekten als noch nicht initialisiert gelten;
+vorhandene Tabellen/Daten, fremde Dateien und unbekannte Versionen weiter
+unverändert ablehnen. Preflightprüfung dafür auf ihrer bereits vorhandenen
+Arbeitskopie ausführen, keine neue Quelle verändern. Eigentümer bleibt für SQL
+zuständig. Regressionsnachweis mit echtem Prozessabbruch während Schemaaufbau,
+anschließender sicherer Neuinitialisierung; Negativfälle teilweise/befüllt/
+neueres Schema behalten. Initialisierungsstop kann durch Wartungsbeginn während
+starting auftreten; Transaktionsschutz muss unabhängig vom UI-Timing gelten.
+Danach statische/gezielte Prüfungen, neue unveränderliche AppImages und vollständige
+Erstinstallations-/Importqualifikation. Keine Fixture-Wartezeit als Produktfix.
+Phase5 bleibt offen; Open-Dialog-Korrektur in diesem Lauf nicht erreicht.
+
+3203 statischer Erstlauf stoppt vor Tests: ESLint beanstandet absichtlich
+ausgehängte Prototypmethode im SIGKILL-Fixture. Fix: Originalimplementierung über
+Property-Descriptor mit explizitem Methodentyp erfassen, weiter mit tatsächlichem
+this aufrufen. Produkttransaktion und Abnahmekriterien unverändert.
+
+73973 terminalExit0:21Tests bestanden (16vorhandene Preflightfälle plus echter
+Bootstrap-SIGKILL und vier Schutzfälle), ESLint/beideTypechecks grün. Prozess
+stirbt nach tatsächlicher Registry-DDL; Preflight liest unveränderte Quelldateien,
+erkennt zurückgerollten leeren Container, Originalowner initialisiert vollständig.
+Gespeicherte Einstellungen über erneutes Öffnen erhalten. Teilweise/befüllte
+Version0-Datenbanken, zusätzliche Datei und neueres leeres Schema unverändert
+abgewiesen. Peak1.5GiB, keinSwap, keineHost-GUI. SQL bleibt beim Eigentümer.
+Plan-Audit atomare Initialisierung und eng begrenzte Wiederaufnahme bestanden.
+Roadmap-Audit neue AppImage-Qualifikation/Erstinstallationsrennen noch offen;
+keine Übertragung des Unit-Erfolgs auf den fehlgeschlagenen UI-Lauf.
+Nächster Schritt: Produktfix committen, neuen unveränderlichen Release-Teststand
+bauen und Erstinstallation sowie nativen Profilimport erneut qualifizieren.
+
+Neuer unveränderlicher Vergleichsstand bootstrap-target: Originalcommit
+ d64573c4cf65f463d8087dd2dd9c61c2c4e1cbb7, Testversion0.0.162, Schema42/42.
+Nur Quellenkatalog ergänzen; bestehende Artefakte bleiben unverändert. Standard-
+Historicalbuilder mit Originalquellen-/Receipt-/Hashprüfung und anschließendem
+Entfernen eigener rekonstruierbarer Abhängigkeiten. Ressourcenlimit4GiB/128Tasks/
+2CPU, keine Host-App-Ausführung. Voriger Goalturn Fortschritt: atomare Bootstrap-
+Korrektur und21Tests/Typen grün. Build allein ist kein Runtimepass.
+
+78890 Build terminalExit1: esbuild/Go newosproc errno11 beim Passive-Preload-
+Build unter128Tasks. Kein Artefakt erzeugt, keine Produktkompilierungsdiagnose.
+Fix des Buildaufrufs: GOMAXPROCS=2 explizit setzen, TasksMax128/Memory4GiB/CPU2
+beibehalten; neuer Originalcheckout, gleicher Zielcommit und neue Artefaktbytes
+erst bei erfolgreichem vollständigem Build. Fehlgeschlagenen Checkout behalten.
+
+37522 terminalBuildExit0,47.568s/2.7GiB/keinSwap. AppImage0.0.162 Größe undSHA
+mitReceipt geprüft: {'name': 'SaltMarcher-0.0.162-x64.AppImage', 'bytes': 177048456, 'sha256': '1e1f2e3324eec139d03d8d4e36e195c277145a4ea348d20074b423f7e91d9ba3'}
+Neuer Importgast verwendet unveränderten letzten UI-Prüfer und OriginalLocal-
+Artefakte, aber neuen Release-Zielstand0.0.162 mit atomarem Bootstrap. Neuer
+Payload/Seed/900s-Offlinegast; Sourceänderungen während Lauf unterlassen.
+
+5532 terminalVMExit0/TestExit1. Neuer0.0.162-Stand übersteht Erstinstallation samt
+committed/leerem Neustart und erreicht Ordnerauswahl. Ersetzungsdialog weiterhin
+nicht erreicht. Gastbild4: korrekter Profilpfad, Open sichtbar, vorheriger
+Autocomplete-Popup jetzt weg. Klick schloss offenbar den Popupgrab statt Auswahl.
+Fixplan vor Änderung: sichtbare native Fensterliste stabil abwarten; nur bei
+belegtem Autocomplete-Fenster „salt-marcher“ Escape senden, dessen Verschwinden
+abwarten, danach tatsächliches Open klicken. Ordnerdialog nicht blind mit Escape
+abbrechen. Native Bestätigung und sämtliche Datenvergleiche unverändert. Kein
+Importpass; weder Produktpatch noch Zeitlimitverlängerung.
+
+Nächster Importlauf mit gezieltem Schließen der sichtbaren Pfadvervollständigung:
+neues Payload-profile-import-5, unverändertes Release0.0.162/Local-Artefaktpaar,
+900s-Offlinegast. Voriger Goalturn Fortschritt: Bootstrap-Artefakt gebaut und
+Erstinstallation durchlaufen; weiterer nativer Eingabefehler visuell lokalisiert.
+149GiB frei, Quellen während Lauf unverändert.
+
+91717 terminalVMExit0/TestExit1. Gastbild5 zeigt nun „no such table:
+installation_settings“, nicht mehr Incompatible persisted data. Codeaudit:
+migrateProfile behandelt fresh ohne Datenbanken als leere Migrationsliste;
+migratePreparedProfile ruft danach readbackProfile auf, das wegen vorhandener
+leerer Datei bereits Einstellungen liest. Fixplan: fresh-Arbeitskopie im
+Migrationsvorbereitungspfad über InstallationDatabaseOwner vollständig atomar
+initialisieren und dann wie bisher validieren. Quelle/Backup unverändert, keine
+Tabellenerzeugung in Read-only-Readback. Regressionstest vollständiger
+ProfileMaintenance.prepare für leeren Container samt Backup und Quellhash;
+Negativ-/Abbruchtests beibehalten, anschließend neue Artefaktqualifikation.
+
+65157 terminalExit0:22Tests/ESLint/beideTypechecks grün, neue vollständige
+ProfileMaintenance.prepare-Regression erhält Quelle und Backup bytegleich und
+liefert aktuelle lesbare Arbeitsdatenbank. Local-Gesamtsuite78617:50/51 bestanden;
+ein veralteter Fresh-Test erwartet [] statt nun initialisierter leerer Datenbank.
+Fixplan Testvertrag: aktuelle Schema-Version, null Kampagnen und initialisierte
+Installationseinstellungen prüfen, statt fehlender Persistenzdateien. Alle
+Migration-/Backup-/Recoveryfälle der Suite bestanden. Danach gezielter Fresh-
+Retest; keine erneute komplette Suite ohne neue Produktänderung erforderlich.
+
+61168 Fresh-Retest terminalExit0, ESLint und gezielter Test bestanden. Zusammen
+mit den50 unveränderten erfolgreichen Local-Fällen kein verbleibender Fehler
+dieser Suite. Plan-Audit Fresh-Arbeitskopie vor Readback initialisiert, Quellen-/
+Backuperhalt und negative Datenfälle belegt. Roadmap-Audit gepackter Erststart
+und kompletter nativer Import weiterhin offen; neues Artefakt erforderlich.
+
+Neuer Teststand0.0.163 aus 7c6d08205e42cd9227bab98e1920dbb64f0c18c9: atomarer Bootstrap plus
+Initialisierung frischer Wartungsarbeitskopien. Originalquellenkatalog ergänzt,
+Builder mit GOMAXPROCS2/4GiB/128Tasks/2CPU. Voriger Goalturn Fortschritt: fehlenden
+Vorbereitungsschritt ergänzt und zielgerichtete plus Local-Prüfungen bestanden.
+Keine Sourceänderung während Build, kein Runtimepass allein aus Build.
+
+7707 Build terminalExit0. Test-AppImage0.0.163 Größe/SHA geprüft: {'name': 'SaltMarcher-0.0.163-x64.AppImage', 'bytes': 177044089, 'sha256': '8bf3690cfc8f4c6efc565feceee5a7f6476ca76ffff5cb1b38637cedf9f751a6'}
+Importlauf6 benutzt exakt diese Bytes mit gleichem UI-Prüfer und Original-
+Localartefakten. Eigenes Payload/Seed/Gast,900s. Quellen bis Terminal unverändert.
+
+45423 terminalVMExit0/TestExit1. Neuer0.0.163-Stand übersteht Erstinstallation.
+Ordnerdialog schließt nun, App lehnt ausgewählten Pfad als nicht „profile“ ab;
+Gastbild6 zeigt genaue fachliche Meldung, keine native Bestätigung vorhanden.
+Kein Importpass. Nächster Diagnoseplan: native Auswahl direkt vor Open als PNG-
+JSON erfassen und exportieren, statt nur Zustand nach Fehlermeldung. Auswahl muss
+vor weiterer Eingabekorrektur tatsächlich sichtbar belegt sein. Produkt unverändert.
+Build0.0.163 SHA8bf3690cfc8f4c6efc565feceee5a7f6476ca76ffff5cb1b38637cedf9f751a6.
+
+Importdiagnose7: gleicher0.0.163-Stand, zusätzliche Aufnahme direkt vor Open,
+Export native-before-open.json. Voriger Goalturn Fortschritt: neues Artefakt
+qualifiziert bis zur nativen Auswahl und konkrete Ablehnung lokalisiert.
+Keine Sourceänderungen im900s-Gastlauf.
+
+33273 terminalVMExit0/TestExit1. Export enthält native-before-open.json; PNG
+visuell geprüft: Breadcrumb endet korrekt auf profile, aber erste Kindzeile
+campaign-data blau ausgewählt. Damit falsche Rückgabe konkret erklärt. Fixplan:
+native GTK-Auswahl per Ctrl+Shift+A aufheben, dann aktuellen Ordner mit tatsächlichem
+Open bestätigen; Bild vor Open weiterhin erfassen. Keine Import-IPC-Simulation
+oder Produktänderung. Vollständiger Import-/Quell-/Backupnachweis bleibt offen.
+
+Run8 terminalVMExit0/TestExit1, vier Dateien nach profile-import-v2-run-8 exportiert.
+Gastbilder zeigen weiterhin ausgewählte campaign-data-Zeile; Ctrl+Shift+A hat
+die Auswahl nicht aufgehoben. Quelle wird korrekt abgewiesen. Fixplan: im nativen
+Dialog zum Elternordner navigieren; damit das zuvor geöffnete profile-Verzeichnis
+selbst auswählen. Aufnahme vor Open und vollständige Inhaltsprüfungen beibehalten.
+Voriger Goalturn Fortschritt: Hostplatz/Metadaten und Absturzbelege geprüft; aktuell
+125GiB frei, keine laufende VM. Kein neuer Build, vorhandenes0.0.163 verwenden.
+
+43508 Run9 terminalVMExit0/TestExit0. Vollständiger nativer Profilimport mit
+Release0.0.163 bestanden. Report8d516ae1c5e1194a969a87c05d2aab70a5776e7aa6b498e099da29e87acbb3a3
+unter outputs/qualification-evidence/profile-import-v2-run-9; alle Exporthashes
+und Größen nachgeprüft. Erstinstallation und Import committed, native Auswahl
+und Bestätigung erfolgt, drei normale Prozesse Exit0. Import-/Neustartreadback
+gleich reichhaltigem Local-Seed; Prüfer bestätigt Quelle bytegleich und Journal
+unverändert, Backup des vorherigen leeren Profils logisch vollständig. Nur eigene
+Gastdisk9 nach Audit entfernt; Artefakte/Reports/Fehlerdiagnosen erhalten.
+Plan-Audit nativer Erfolgsweg bestanden. Roadmap-Audit Phase5 bleibt offen:
+gehaltene Quellsperre im nativen Import und übrige Releasefehlernachweise fehlen.
+
+61514 abschließendes ESLint und beide Typechecks Exit0,28.102s/1.5GiB/keinSwap.
+Python-Diagnosehelfer syntaktisch geprüft und im Gast tatsächlich ausgeführt.
+git diff --check grün. Nativer Importprüfer und Nachweise werden als separater
+Candidate-Commit gesichert; vollständige exakte Remote-CI/Handoff noch ausstehend.
+
+Fixrunde Quellsperre: Codeaudit zeigt ProfileLockedError wird durch releaseOperationErrorText
+unübersetzt ausgegeben. Plan: echte Sperrklasse auf verständliche Schließen-/
+Wiederholen-Aktion abbilden (application/installer/unknown), keine Textheuristik.
+Nativer Importprüfer hält gemeinsame application-Profilsperre der Quelle,
+bestätigt echte Dialoge, erwartet Ablehnung, vergleicht beide Profile, Journale
+und Backupbestand. Nach Freigabe vollständigen bisherigen Erfolgsweg wiederholen.
+Neue Produktbytes benötigen eigenes historisches Artefakt und Gastnachweis.
+Voriger Goalturn Fortschritt: nativer Erfolgsweg qualifiziert/committed61035df22.
+
+21257 Sperrfehlerprüfungen:8Tests, ESLint und beide Typechecks bestanden.
+Native Prüferergänzung vergleicht unveränderte Profile/Journale/Backupbestand
+nach gehaltenem application-Lease und wiederholt nach Freigabe den Erfolgsweg.
+Plan-Audit Fehlermeldung statisch bestanden; gepackter Nachweis noch offen.
+
+77278 Build0.0.164 Exit0,2.7GiB/keinSwap; Originalquellea6465210fe392c0bc4a30989e709d9c7d6cdf1bf.
+Artefakt177044011Bytes SHAe758d500a12465a2bc0366eca7dcabe5a416f32e5db47c3bfdcd338151496a4d.
+Neuer Offlinegast Run10 mit gehaltenem Quelllease, Ablehnung und Retry.
+Keine Sourceänderungen während Lauf; kein Abnahmenachweis allein aus Build.
+
+28476 Run10 terminalVMExit0/TestExit1: neues AppImage im Payload nicht ausführbar
+wegen copyfile statt metadataerhaltender Kopie. Kein Produktlauf/kein Importpass.
+Fehlerexport außerhalb VM gesichert. Neues Payload11 erhält Originalmodus;
+unveränderte Bytes/Prüfer/Originalquellen erneut im Offlinegast geprüft.
+
+49875 Run11 terminalVMExit0/TestExit0. Exporthashes/Größen und semantische
+Invarianten nachgeprüft: Quellsperre über echten nativen Import verständlich
+abgewiesen; Quelle/Ziel/Journal/Backupbestand unverändert. Nach Leasefreigabe
+vollständiger Import und zweiter Start mit Seed-gleichem Inhalt; vier Prozesse
+Exit0, vier native Dialogaktionen. ReportSHA6875da497b3bda16c9e218b902067be19a81d96a0f1524ef8f4cfd39b2fb72bc
+unter outputs/qualification-evidence/profile-import-v2-run-11. Nur Gastdisk11
+nach erfolgreichem Audit entfernt. Plan-Audit Sperrablehnung und Wiederholung
+bestanden. Roadmap-Audit Phase5 weiterhin offen; andere Releasefaults fehlen.
+
+Voriger Goalturn Fortschritt: Sperrablehnung und Retry qualifiziert, Candidate
+3cd8fcb260f39ff85bc5343ff840895bd890caad gepusht; exakte Check34496966290 läuft.
+Nächster Phase5-Nachweis: vorhandener UI-Prüfer mit --wal --parallel-starts
+--accepted-crash --installed-launcher auf unveränderten0.0.160/0.0.164-Artefakten.
+WAL-only-Wert, abgewiesene drei Startwege, späteres gespeichertes Spiel nach
+SIGKILL, Wiederherstellung samt Sicherung späterer Arbeit vollständig vergleichen.
+Neue Payload/Seed, kein Sourcepatch/Build, Gastdisk erst nach Exportaudit löschen.
+
+83001 terminalVMExit0/TestExit0. Vollständiger Nachweis mit0.0.160→0.0.164
+(42/41→42/42) über installierten Starter: WAL4152Bytes mit nur dort enthaltenem
+dark-Wert gegenüber checkpointed light; vier abgewiesene Parallelstarts
+(maintenance starter, active starter/alias/AppImage); SIGKILL nach gespeichertem
+XP975→1000, unverändertes committed-Journal und fortsetzbarer Gesamtinhalt.
+Restore auf Seed, vorgeschalteter Backupreadback gleich vollständiger späterer
+Arbeit; Quellreadback gleich Seed. Exporthashes und alle Inhaltsvergleiche erneut
+geprüft. ReportSHA795095efc4d154a4edc16ceecd52f3af0e9926d0fe567bd40833e82cbace16c4 unter
+outputs/qualification-evidence/wal-parallel-accepted-v2-run-1. Nur Gastdisk nach
+Audit entfernt. Plan-Audit bestanden. Roadmap-Audit übrige Unterbrechungs-,
+Kapazitäts- und beschädigte/inkompatible Profilfälle weiterhin offen.
+
+Voriger Goalturn Fortschritt: WAL/Parallelstart/spätererCrash inklusive Restore
+mit vollständigem Bericht requalifiziert. Nächster Plan: unveränderter
+qualify-historical-profile-fault mit0.0.164 für newer-format, missing-path, corrupt
+seriell im isolierten Gast. Prüfen Ablehnung vor Datenzugriff, unveränderten Stand,
+Recovery ohne startfähige Datenbank und ausdrücklich bestätigten Restore mit
+bytegleicher Schutzkopie des defekten Profils. Access-denied separat: bestehender
+Prüfer erwartet rohes EACCES; nächste Fixrunde muss verständliche nächste Aktion
+fordern. Keine Sourceänderung während Gast, keine automatische Recoveryfreigabe.
+
+Explizite Pause durch Nachricht aus Task01a08515-df97-7832-bd88-9e4407ac3d2a:
+laufende historische VM sofort stoppen wegen I/O-Einfluss auf Leistungsabnahme;
+bis erneuter Meldung nicht fortfahren. Eigener profile-faults-run-1-Container
+gestoppt und terminal verifiziert. Diagnose/Serial/Status nach
+outputs/qualification-evidence/profile-faults-v2-run-1-interrupted gesichert;
+ausschließlich regenerierbare guest.qcow2 entfernt. Keine Gesamtqualifikation
+aus Teilergebnissen. Quellstand, Profile, Backups, fertige Ausgaben erhalten.
+
+12. September: Nutzer hebt Pause ausdrücklich auf. Bisheriger separater Candidate
+3cd8fcb260f39ff85bc5343ff840895bd890caad weiterhin vorhanden; Check34496966290
+completed/success. Neuer Kontextcheckout enthält fremde laufende Dokumentation,
+daher isolierten bisherigen Checkout weiterverwenden.185GiB frei; regenerierbare
+VM-Basis fehlt, fertige externe Nachweise erhalten. Keine erneute Qualifikation
+behauptet. Fixplan Zugriffsrechte: gemeinsame typisierte Dateisystemfehlertexte
+für Main und Utility; EACCES/EPERM verständlich mit Rechte-/Wiederholen-Aktion,
+ENOSPC/EDQUOT unverändert verständlich. Utility übersetzt vor Nachrichtentransport,
+weil Main dort nur message erhält. Domänenmeldungen unverändert lassen. Tests
+für beide Grenzen; nativen Access-denied-Prüfer auf nächste Aktion statt rohem
+EACCES umstellen. Gepackten Nachweis nach Aufbau begrenzter Gastumgebung ergänzen.
+
+68749 Lint stoppt vor Tests: neuer Test greift auf message des unknown-Felds zu.
+Korrektur nur Testtypisierung: erwarteten Domaintext lokal als string halten.
+Keine Änderung der Fehlersemantik; danach dieselben Prüfungen erneut ausführen.
+
+47486 Retest Exit0:15Tests in zwei Dateien, ESLint und beide Typechecks bestanden,
+35.710s/1.5GiB/keinSwap. Echter Worker-Einstieg mit kontrollierter Fehlerrückgabe
+prüft Übersetzung vor IPC und unveränderte Weitergabe durch Main. Plan-Audit
+Fehlertexte und Grenze bestanden; Roadmap-Audit echte Access-denied-Gastprüfung
+und übrige Phase5-Nachweise weiterhin ausstehend. Kein neues Handoff/Release.
+
+Voriger Goalturn Fortschritt: Dateisystemmeldungen in Main/Utility korrigiert,
+15Tests/Typen/Lint bestanden,8de859320387d535a413d725117407c8e7433515 gepusht.
+Gastumgebungv2 vollständig entfernt, Toolimage und KVM vorhanden. Aufbauplanv3:
+Ubuntu-noble-amd64 mit Hersteller-SHA256 verifizieren, begrenzten vorhandenen
+Bootstraprunner verwenden, unabhängige vorbereitete Basis erzeugen; keine
+SaltMarcher-Ausführung auf Host. Neue Läufe behalten 40GiB-Vorprüfung und
+Export-vor-Löschung; fertige Nachweise außerhalb des regenerierbaren VM-Verzeichnisses.
+
+56718 Bootstrapv3 terminalVMExit0/TestExit0. Herstellerhash612b2c0cc1bc413a6cb8c38fd611794caf0f2b436c50013d8b3794db12ad7354
+verifiziert; unterschiedliche Host/Gastboot-ID. Bericht extern unter
+outputs/qualification-evidence/bootstrap-v3-run-1 hashgeprüft. Unabhängige
+24GiB-sparse-Basis vorbereitet und fehlendes Backing verifiziert; temporäre
+Bootstrapdisk entfernt. Kein App-/Migrationsnachweis daraus.
+CI-Startlücke lokalisiert: PR672 kollidiert mit neuer Main-Basis c9133d69d.
+Read-only merge-tree zeigt genau einen Konflikt campaign-walking-scenarios.ts
+(Papierkorb-Dialogschließen), drei weitere Produkt-/Testdateien automatisch
+zusammengeführt. Integration muss Main-Draftkoordination erhalten und neue
+lineare Candidatehistorie mit vollständiger eigener CI liefern.
+
+Integrationsplan vor Historienänderung: alten Candidate mit sämtlichen Belegen
+erhalten. Neuen Branch candidate/release-maintenance-current-main anlegen,
+Main c9133d69d76ef5b5e4947f1c1b56487575de00a2 ohne Commit zusammenführen.
+Einzigen Testkonflikt mit Main-Dialogscope plus Clickable-Warten lösen; alle
+anderen Änderungen beider Seiten erhalten. Mergezustand beenden, neuen lokalen
+Branch soft auf Main setzen und vollständigen integrierten Index als linearen
+Commit speichern. Kein Force-Push und keine Änderung alten Branches nach dessen
+Sicherung. Integrierte Reise-/Drafttests, Typechecks, Lint; anschließend eigener
+PR und vollständige exakte CI. Keine Übertragung alter CI-/Artefaktfreigaben.
+
+20632 integrierter Stand:44gezielteTests, Lint, Format und beide Typechecks grün,
+43.792s/1.5GiB/keinSwap. Indexbaum gegen merge-tree beider Quellen geprüft: nur
+geplante Konfliktauflösung und Log weichen ab. Main-Draftkoordination und
+Candidate-Pausefortschritt sind beide erhalten. Neuer linearer Candidate auf
+c9133d69d benötigt eigene vollständige CI; bisherige Artefakte bleiben getrennte
+Phase5-Belege und sind keine Freigabe dieses integrierten Produktstands.

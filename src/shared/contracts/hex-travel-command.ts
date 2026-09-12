@@ -58,7 +58,8 @@ export const hexTravelCommandSchema = z
         .object({
           kind: z.literal('pause'),
           input: mutateHexTravelInputSchema.extend({
-            expectedSceneRevision: z.number().int().nonnegative()
+            expectedSceneRevision: z.number().int().nonnegative(),
+            expectedProgressIndex: z.number().int().nonnegative().optional()
           })
         })
         .strict(),

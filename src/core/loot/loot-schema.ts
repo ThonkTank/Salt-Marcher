@@ -1,3 +1,4 @@
+import { initializeLootOperationJournalSchema } from './loot-operation-journal.js'
 import type Database from 'better-sqlite3'
 
 export function initializeLootSchema(db: Database.Database): void {
@@ -70,17 +71,6 @@ export function initializeLootSchema(db: Database.Database): void {
       ON loot_treasure(anchor_kind, location_id, updated_at, id);
     CREATE INDEX IF NOT EXISTS loot_treasure_group
       ON loot_treasure(anchor_kind, scene_id, group_id, updated_at, id);
-    CREATE TABLE IF NOT EXISTS loot_operation_receipt (
-      command_id TEXT PRIMARY KEY NOT NULL,
-      operation_type TEXT NOT NULL CHECK(operation_type IN (
-        'create','update','move','accept_generated','commit_group_reward',
-        'distribute','correct_ledger'
-      )),
-      request_fingerprint TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      result_schema_version INTEGER NOT NULL CHECK(result_schema_version = 1),
-      result_json TEXT NOT NULL
-    );
     CREATE TABLE IF NOT EXISTS loot_metadata (
       singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
       revision INTEGER NOT NULL CHECK(revision >= 0)
@@ -88,4 +78,5 @@ export function initializeLootSchema(db: Database.Database): void {
     INSERT OR IGNORE INTO loot_metadata (singleton, revision)
       VALUES (1, 0);
   `)
+  initializeLootOperationJournalSchema(db)
 }

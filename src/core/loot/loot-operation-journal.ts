@@ -11,6 +11,24 @@ export type LootOperationType =
   | 'distribute'
   | 'correct_ledger'
 
+export function initializeLootOperationJournalSchema(
+  db: Database.Database
+): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS loot_operation_receipt (
+      command_id TEXT PRIMARY KEY NOT NULL,
+      operation_type TEXT NOT NULL CHECK(operation_type IN (
+        'create','update','move','accept_generated','commit_group_reward',
+        'distribute','correct_ledger'
+      )),
+      request_fingerprint TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      result_schema_version INTEGER NOT NULL CHECK(result_schema_version = 1),
+      result_json TEXT NOT NULL
+    );
+  `)
+}
+
 export class LootOperationJournal {
   constructor(private readonly db: Database.Database) {}
 

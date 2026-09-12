@@ -492,7 +492,27 @@ describe('local AppImage installation', () => {
     )
     expect(result.paths.icon).toContain('/hicolor/256x256/apps/')
     expect(existsSync(result.paths.profile)).toBe(true)
-    expect(readdirSync(result.paths.campaignData)).toEqual([])
+    const initialized = new Database(
+      join(result.paths.campaignData, 'installation.sqlite'),
+      { readonly: true, fileMustExist: true }
+    )
+    try {
+      expect(initialized.pragma('user_version', { simple: true })).toBe(
+        schemaVersion
+      )
+      expect(
+        initialized.prepare('SELECT COUNT(*) AS count FROM campaigns').get()
+      ).toEqual({ count: 0 })
+      expect(
+        initialized
+          .prepare(
+            'SELECT revision FROM installation_settings WHERE singleton = 1'
+          )
+          .get()
+      ).toEqual({ revision: 0 })
+    } finally {
+      initialized.close()
+    }
     expect(new MaintenanceCoordinator(result.paths.root).read()?.phase).toBe(
       'awaiting-start'
     )

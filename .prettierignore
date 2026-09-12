@@ -6,3 +6,6 @@ out/
 /release/
 src/core/reference/*.generated.json
 src/core/creatures/*.generated.json
+# Original runtime bytes; provenance hashes are verified by integration tests.
+tests/fixtures/historical-loot30/source-profile.json
+tests/fixtures/historical-loot30/source-run.json

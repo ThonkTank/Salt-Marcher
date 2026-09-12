@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { InstallationDatabaseOwner } from '../persistence/sqlite/installation-database-owner.js'
 import {
   copyFileSync,
   existsSync,
@@ -86,6 +87,11 @@ export function migrateProfile(
   migrations: readonly SchemaMigration[] = schemaMigrations
 ): void {
   const preflight = preflightPersistence(root, migrations)
+  if (preflight.kind === 'fresh') {
+    // Bootstrap only the prepared working copy before aggregate readback.
+    const installation = new InstallationDatabaseOwner(root)
+    installation.close()
+  }
   for (const item of preflight.databases) {
     const database = new Database(item.path, { fileMustExist: true })
     try {
