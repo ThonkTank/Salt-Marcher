@@ -457,3 +457,49 @@ Retained archive: `outputs/qualification-evidence/capacity-v3-run-2`.
 
 - `qualification-capacity-preflight`: `f791dc4a90dca07fb76ceedac7349599f936e22dfe1d9b6700d61bcafa4ea409`
 - `qualification-capacity-exhausted`: `a99be5fbac012ac74e2567d7f18b2d527427f5c8ae59d089322995fe26ac9cdb`
+
+## Migration and committed-state interruptions requalified
+
+Original source `2b5b4d55a59c45b815a9b84676f91a4c47ed07e8`, test artifact
+`0.0.166` SHA-256 `2ee7de38fef0e8551759279189e60f0c8336eb385de2b1ea3edfd28669524666`, passed the installed-starter
+update from `0.0.160` with the explicit maintenance observer. The Utility was
+killed after original migration DDL in an open schema-41 transaction, including
+a recoverable trashed campaign. Complete prior profile and backup readbacks
+matched the seed. Retry passed; killing immediately after durable committed
+preserved the exact accepted journal and target. A further kill after saved XP
+975→1000 preserved the full later profile, which restore first backed up intact.
+
+Archive `outputs/qualification-evidence/migration-commit-crash-v3-run-1`, report
+SHA-256 `2e480e106f41f0f8f2c91b62faea8614edca05c746c9b11c6ef71a5f3a954a8e`. Transport and semantic assertions audited before disposable
+disk deletion. This reestablishes migration, immediate-commit and later-use
+crash evidence; the other Release activation/recovery boundaries remain open.
+
+## Release activation boundaries requalified, first batch
+
+With unchanged `0.0.160`/`0.0.166` AppImages and the installed starter,
+`journal:prepared`, `old-data-moved` and `new-data-moved` each passed a real
+process kill, rollback to the same transaction with the complete prior profile,
+and a subsequent full update/continue/restore path protecting later work.
+Source contents remained unchanged. Full exports and semantics were checked
+before removing the disposable disk. Five further activation points and nine
+launcher recovery points remain to be requalified.
+
+Archive: `outputs/qualification-evidence/activation-v3-run-1`.
+
+- `journal:prepared`: `619282b378b5b555fe54d26ca7ce7e0ed9fbe92dd766a7ab29adee562c05b6dc`
+- `new-data-moved`: `ed4202467335a31a9fde460639297e44320d3c7f3afb2cd4c6accb10a9b24383`
+- `old-data-moved`: `bf4c7829adceeaad4601d9f6ddc89083ea753d17929216d7fa4aeca3c512812d`
+
+## Release activation boundaries requalified, second batch
+
+The unchanged 0.0.160/166 pair passed data-moving, data-ready and
+program-moving interruptions with full rollback, retry, continued XP editing
+and restore/protected-later-profile comparisons. VM and test exit codes are zero.
+All archive hashes and semantic assertions were independently checked before
+removing the disposable disk. Reports in `outputs/qualification-evidence/activation-v3-run-2`:
+
+- `journal:data-ready`: `fc19ce92567f92878ea68fe0f4c62abedf39bc6c9f4ea20ce02fd09444bc98b8`
+- `journal:data-moving`: `321e7793e8a28e206c6234690a7c2df8a00b5db2a0a18949b0442e5f65ce0e11`
+- `journal:program-moving`: `173a63cb72261c4bb69e39651d8dafae08bc029b57dc174e85644fade0d12881`
+
+Two forward activation boundaries and nine launcher recovery boundaries remain.

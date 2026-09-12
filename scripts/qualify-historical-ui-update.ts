@@ -724,10 +724,7 @@ try {
         'read'
       )
       assert(failed.result.response.ok)
-      assert.deepEqual(
-        failed.result.response.result,
-        seeded.result.response.result
-      )
+      assert.deepEqual(failed.result.response.result, expectedTargetSeed)
       failedReadback = failed
     }
     activationCrash = {

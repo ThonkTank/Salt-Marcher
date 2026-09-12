@@ -11016,3 +11016,128 @@ qualification-capacity-preflight: f791dc4a90dca07fb76ceedac7349599f936e22dfe1d9b
 qualification-capacity-exhausted: a99be5fbac012ac74e2567d7f18b2d527427f5c8ae59d089322995fe26ac9cdb
 Plan-Audit Kapazität bestanden. Roadmap-Audit Phase5 weiterhin offen: echte
 Release-Migrations-/Aktivierungs-/Recovery-Unterbrechungen requalifizieren.
+
+Voriger Goalturn Fortschritt: beide Kapazitätsfälle samt Retry/Restore
+qualifiziert und44406ee8c gepusht. Plan nächste Unterbrechungsprüfung: separates
+Testartefakt0.0.166 aus unveränderter Quelle2b5b4d55a mit bestehendem
+--maintenance-interruption-Wrapper. Originalmaintenance.js-Hash bleibt erhalten.
+Prüfer hält nach Original-DDL der41→42-Migration in offener Transaktion und
+SIGKILLt ausschließlich diese Utility-PID. Danach bisherige Installation und
+Backups vollständig lesen, Retry durchführen; außerdem journal:committed-Kill
+und späteren Nutzungscrash kombinieren, um beide Rollbackgrenzen nachzuweisen.
+Zieldefaultoption explizit, alle Inhalte vergleichen, nur isolierter Gast.
+
+85842 Build0.0.166 Exit0,2.6GiB/keinSwap. Artefakt177067848Bytes SHA2ee7de38fef0e8551759279189e60f0c8336eb385de2b1ea3edfd28669524666.
+Gast migration-commit-crash-run-1 mit drei zeitlich getrennten Killprüfungen
+gestartet. Prüfer unverändert seit44406ee8c, kein AppImage-Hoststart.
+
+58664 terminalVMExit0/TestExit0. Drei Unterbrechungen bestanden: echte Utility-
+Migration41→42 nach Original-DDL in offener Transaktion einer wiederherstellbar
+gelöschten Kampagne; bisheriger kompletter Seed und Backupreadback erhalten.
+Retry mit Kill nach durable journal:committed: exakt gleiches Zieljournal und
+Programm nach Neustart. Weiterarbeit XP975→1000 gespeichert, weiterer echter
+SIGKILL erhält vollständigen späteren Inhalt. Restore schützt spätere Arbeit
+in geprüftem Vollprofilbackup. Alle Exporthashes/Größen sowie Inhalts- und
+Grenzvergleiche erneut geprüft. BerichtSHA2e480e106f41f0f8f2c91b62faea8614edca05c746c9b11c6ef71a5f3a954a8e
+unter outputs/qualification-evidence/migration-commit-crash-v3-run-1. Nur
+Gastdisk nach Audit entfernt. Plan-Audit bestanden; Roadmap-Audit verbleibende
+Release-Aktivierungs-/Recoverygrenzen weiterhin offen, keine Phase5-Gesamtfreigabe.
+
+Voriger Goalturn Fortschritt: echte Migrationsutility-Unterbrechung, durable
+committed-Kill und späterer Nutzungscrash samt vollständiger Wiederherstellung
+qualifiziert. Nächster Plan Releaseaktivierung mit identischem0.0.160/166-Paar:
+erster Batch journal:prepared, old-data-moved, new-data-moved. Pro Punkt echte
+PID beenden, über installierten Starter zurückkehren, alten Gesamtseed und
+Programm prüfen, vollständigen Retry/Weiterarbeit/Restore durchführen. Drei
+getrennte Profile im selben begrenzten Gast; Abbruch bei erstem Fehler und
+abschließender externer Export. Übrige fünf Grenzen folgen separat.
+
+49006 erster Aktivierungsbatch terminalVMExit0/TestExit0, drei vollständige
+Berichte extern nach activation-v3-run-1 exportiert und Hash/Größe/Inhalt geprüft.
+Grenzen journal:prepared, old-data-moved, new-data-moved: echte Kill-PID am
+Marker, rolled-back mit gleichem Journalauftrag, vollständiger alter Seed
+lesbar. Danach jeweiliger kompletter Update-/Weiterarbeit-/Restoreweg samt
+Schutzbackup späterer Arbeit bestanden, Quellen unverändert. Eigene Gastdisk
+nach Audit entfernt. Berichte outputs/qualification-evidence/activation-v3-run-1:
+journal:prepared: 619282b378b5b555fe54d26ca7ce7e0ed9fbe92dd766a7ab29adee562c05b6dc
+new-data-moved: ed4202467335a31a9fde460639297e44320d3c7f3afb2cd4c6accb10a9b24383
+old-data-moved: bf4c7829adceeaad4601d9f6ddc89083ea753d17929216d7fa4aeca3c512812d
+Plan-Audit erster Batch bestanden. Roadmap-Audit weitere fünf Vorwärts- und
+neun Recoverygrenzen offen. Check34684571849 für44406ee8c70d780eb30308ee4bf174a1d5b54f98
+completed/success; 15historische Altberichte gegen erhaltene Hashliste erneut
+verifiziert, deren eingeschränkte Coverage ausdrücklich unverändert.
+
+Fortsetzung nach aufgehobener Pause:174GiB frei, keine eigene VM aktiv,
+Audit und Löschung der ersten Aktivierungsgastdisk bestätigt. Plan zweiter
+Batch mit unverändertem0.0.160/166-Paar und unverändertem Prüfer: journal:data-moving,
+journal:data-ready, journal:program-moving. Jeweils echte Unterbrechung,
+Rollback mit vollständigem Datenvergleich, Retry/Weiterarbeit/Restore.
+Gleiche begrenzte Gastumgebung, neue Profile, keine Host-AppImage-Ausführung.
+
+Aktivierungsbatch2 läuft in Session94355, Run activation-run-2, Seed
+activation-seed-2.img, Deadline3000s. Keine Quelländerungen während Lauf.
+Lesender Folgeaudit bestätigt vor Recoverytests nötige gezielte Prüferkorrektur:
+failedReadback wird mit Zielruntime gelesen, vergleicht aktuell aber alten Seed
+(qualify-historical-ui-update.ts um Zeile727). Plan nach VM-Ende: nur diesen
+Zielvergleich auf bereits unabhängig definiertes expectedTargetSeed umstellen;
+Baseline-Rollbackvergleich strikt unverändert. Bestehende Defaultprojektions-
+tests plus Format/Lint/Typprüfung, danach neues Prüferpayload mit unveränderten
+AppImages und gehashtem Launcherobserver. Dies ist noch nicht implementiert.
+
+Lesender Vorabgleich Phase6 während unveränderter Phase5-VM (keine vorzeitige
+Phasenfreigabe): package-release-baseline.ts baut für0.2.0 die gleiche Quelle
+unter0.1.99 neu, andernfalls lädt es ohne explizites Tag den letzten Release.
+qualify-release-update.ts belegt Namen/eine Textdatei/Backup, sein Bericht enthält
+keinen Baseline-Hash oder Baseline-Commit und keine Schemaübergänge. publish-
+release.yml prüft bisher Zielhash/Versionsungleichheit und Freitextlänge;
+Checkout ist ohne expliziten ref, Release-SHA wird dort nicht an den Assetprüfer
+übergeben. environment:release steht im YAML; tatsächliche serverseitige
+Freigaberegel bleibt separat zu prüfen. Diese konkreten Lücken gehören in den
+verbindlichen Phase6-Plan nach Abschluss Phase5, nicht als durch die lokalen
+Artefaktberichte bereits erfüllt behandeln. Keine Workflowänderung vorgenommen.
+
+Voriger Goalturn Fortschritt: erster Fall des aktiven Batch2 terminal0,
+zusätzlich konkrete Workflowlücken lesend belegt. Session94355 weiter live
+gepollt, nicht neu gestartet. Aktueller externer Stand Sep12: PR676 OPEN/DRAFT
+CLEAN, Head44406ee8c70d780eb30308ee4bf174a1d5b54f98 gegen Mainc9133d69d76ef5b5e4947f1c1b56487575de00a2;
+Check34684571849 completed/success am gleichen SHA. GitHub-API
+GET repos/ThonkTank/Salt-Marcher/environments liefert total_count0/environments[].
+GET environments/release liefert404: manuelle Releaseumgebung nachweislich
+noch nicht eingerichtet. Tagrefs/v0.3.0 liefert404 zum Prüfzeitpunkt;
+Verfügbarkeit vor späterer Veröffentlichung erneut prüfen. Keine externen
+Änderungen durch diesen Audit. Systempartition zuletzt164GiB frei.
+
+Lesender Abgleich M10: release-maintenance.test.ts Fall newer database format
+setzt nach echter Sicherung user_version9999 und erneuert die Dateihashes;
+importBackup lehnt ab, Ziel-Dateiinventar bleibt identisch. Dies ist belastbare
+Core-Abweisung einer intakten Zukunftssicherung, aber der Test nutzt den
+Defaultpayload campaign-data/Manifest1 und nicht den UI-Restore eines vollständigen
+Manifest2-Profils. Worker restore delegiert backupSource→prepare; Vollprofil
+verwendet snapshotCompleteProfile→migrateProfile. Nicht mit dem bereits
+qualifizierten Startfehler newer-format verwechseln. Beim Phase5-Abschlussaudit
+gezielt Vollprofil-Restoreabweisung einschließlich intakter Quelle/Programm
+und späterer Zielarbeit gegen vorhandene Nachweise abgleichen.
+
+Voriger Goalturn verifizierte Wartephase: Session94355 wiederholt live bestätigt.
+Nun terminalVMExit0/TestExit0: alle drei Fälle abgeschlossen (224s/658s/1136s).
+Archiv activation-v3-run-2 außerhalb VM: alle Größen/Hashes und vollständigen
+Inhaltsvergleiche geprüft. Echte Marker-PIDs beendet; gleicher Journalauftrag
+rolled-back, alter Gesamtseed unverändert; Retry/Weiterarbeit/Restore mit genau
+den erwarteten XP-/Revisionsänderungen und Schutzbackup des vollständigen
+späteren Stands. Programme identisch bei Restore, Quellen unverändert.
+Nur erfolgreiche Gastdisk nach Audit entfernt. Berichte:
+journal:data-ready: fc19ce92567f92878ea68fe0f4c62abedf39bc6c9f4ea20ce02fd09444bc98b8
+journal:data-moving: 321e7793e8a28e206c6234690a7c2df8a00b5db2a0a18949b0442e5f65ce0e11
+journal:program-moving: 173a63cb72261c4bb69e39651d8dafae08bc029b57dc174e85644fade0d12881
+Plan-Audit Batch2 bestanden. Roadmap-Audit Phase5 bleibt offen: noch
+program-linked, journal:awaiting-start sowie neun Launcher-Recoverygrenzen.
+
+Recovery-Prüferkorrektur nach beendeter VM umgesetzt: ausschließlich
+failed.result.response.result wird gegen expectedTargetSeed verglichen.
+Baseline-/Quellvergleich unverändert streng. Session70534 Exit0: Format,
+Lint, vier Defaultprojektionsfälle und beide TypeScript-Projekte bestanden,
+34.133s/1.5GiB/keinSwap. Plan-Audit bestanden; reale Recoverygrenzen noch
+nicht ausgeführt. Zwei verbleibende Vorwärtsgrenzen verwenden weiter das
+unveränderte bisherige Payload (die Korrektur betrifft dort keinen Pfad).
+Nächster Batch: program-linked und journal:awaiting-start, isolierte Profile,
+vollständiger Kill/Rollback/Retry/Weiterarbeit/Restoreweg.174GiB frei.
