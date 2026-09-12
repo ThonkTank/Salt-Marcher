@@ -12273,3 +12273,69 @@ Provenienz und Zielidentity. Identity-Abfrage erfolgt erst nach den beendeten
 Installations-/Starter-UI-Prozessen; Journal/Programmidentität bleiben danach
 unverändert. Noch kein Laufzeitabschluss: nun sauberer Kandidatencommit und
 separater frischer KVM-Gast mit bestehenden c11d7fcb5 Releasebytes.
+
+Plan6A.4 Laufzeitbelege zusammenführen, erster Implementierungsschritt:
+Ein reiner Profil-/History-Prüfer berechnet den Digestnachweis ausschließlich
+nach tatsächlichen Inhaltsprüfungen der vollständigen v3-Snapshots. Er validiert
+Quellunverändertheit, Registry-Zuordnung aktiver/inaktiver/gelöschter Kampagnen,
+additive QuickField-/Burden-Migrationsdefaults, genau eine gespeicherte XP+25-
+Änderung samt Partyrevision/Öffnungszeit und exakte Wiederherstellungen.
+Die vollständigen Party-History-Daten werden einbezogen; Migrationen prüfen neue
+leere Tabellen/UUIDs, Weiterarbeit prüft Command/Receipt/Index-Verknüpfungen und
+unveränderte vorhandene Zeilen. Nur eine nachweislich neu erzeugte, leere
+Installationsepoche wird für den Restorevergleich deterministisch normalisiert.
+Kein Normalisieren vorhandener History oder beliebiger Identitätsabweichungen.
+Zunächst gezielte Positiv-/Manipulationstests und Gegenprüfung aller drei
+archivierten realen UI-Berichte. Dieser reine Prüfer ersetzt allein noch keine
+Workflow-/Artefakt-/Prozessprovenienzprüfung; jene folgt beim Zusammenführen des
+Abnahmeberichts und bleibt bis dahin offen. Umsetzung nach Ende der laufenden
+Erstinstallations-VM, um die validierten Quellen unverändert zu halten.
+
+Reale Erstinstallation bestanden: VMexit0/Testexit0, Originalexport mit5 Dateien
+unter `qualification-evidence/release-first-install-v3-run-1` archiviert.
+Unabhängiger Audit `work/phase6-release-first-install-audit.json` prüft Archiv-
+und Serialhashes, saubere eingebettete c11d7fcb5-Identity43/43, tatsächlich
+installierte176755374Bytes mit unverändertem Zielhash, committed Installjournal,
+Desktop-Startpunkt und zwei erfolgreiche UI-Prozessabschlüsse (Installation und
+Starter-Neustart). Dieser Fall belegt das leere Profil; Profilimport bleibt ein
+separater Nachweis. Nur die erfolgreiche auditierte Gastplatte wurde entfernt.
+Phase6A.3 ist damit für diese internen Releasezielbytes in den vier realen
+UI-Fällen nachgewiesen; finale Releaseversion und Pipeline bleiben offen.
+
+Profilprüfer:12 Verhaltenstests bestanden. ESLint meldet23 Typunsicherheiten in
+untypisierten Manipulationscallbacks der Testtabelle; keine erfolgreiche
+statische Gesamtabnahme. Korrektur auf explizite Fixture-Typen dieser Callbacks
+begrenzt, danach relevante Tests/Lint/Typprüfung wiederholen. Erst anschließend
+Gegenprüfung gegen alle drei unveränderten realen Updateberichte.
+
+Review des Nachweisumfangs: Der bestehende UI-Harness liest die Quellhistory am
+Ende bereits erneut und vergleicht sie exakt, exportiert diesen zweiten Snapshot
+jedoch nicht. Für den künftigen unabhängigen Aggregator wird dieser vorhandene
+Readback zusätzlich als `partyHistoryEvidence.unchanged` exportiert und im
+Profilprüfer verpflichtend gegen `source` verglichen. Alte unveränderte Berichte
+werden nicht nachträglich umgeschrieben oder mit erfundenen Readbacks ergänzt.
+Ihre bestehenden Laufzeitassertionen bleiben gültige bisherige Evidenz; die neue
+Aggregatorschnittstelle benötigt neue vollständige Berichte. Inhaltliche
+Regressionstests alter Snapshots werden ausdrücklich nur als Replay des
+vorhandenen Inhalts und nicht als neuer Quellhistory-Laufzeitnachweis bezeichnet.
+
+Profilprüfer final geprüft:26 Tests, ESLint und beide Typprüfungen bestanden
+(`work/phase6-profile-proof-final-checks.log`,60s,1.4GiB,0Swap). Historische
+History-Assertions sind unverändert in ein reines Modul verschoben; bestehender
+SQLite-Reader reexportiert sie kompatibel. Der UI-Harness exportiert jetzt den
+bereits zuvor geprüften finalen Quellhistory-Readback ausdrücklich.
+
+Drei archivierte reale Inhaltsvergleiche durch neuen Prüfer erfolgreich erneut
+berechnet (`work/replay-phase6-profile-proof.ts`,
+`work/phase6-profile-proof-replay.json`). Die unveränderten alten Berichte werden
+vom neuen vollständigen Eingabevertrag korrekt abgewiesen, weil der finale
+History-Snapshot dort fehlt. Ausschließlich für den Inhaltsregressionstest wurde
+im Arbeitsspeicher die Quellhistory als Vergleichswert verwendet; Archive bleiben
+unverändert. Dies ist ausdrücklich kein neuer Laufzeit-/Freigabenachweis.
+Migrationen mit separat erzeugter leerer Epoche ergeben konsistente Digests;
+History der Weiterarbeit wird vollständig und ohne Normalisierung geprüft.
+
+Teilaudit6A.4: Inhaltsprüfer erfüllt den festgehaltenen ersten Umsetzungsschritt.
+Offen bleiben Runtime-/Manifest-/Prozessbelegprüfung, Zusammenführung des realen
+Abnahmeauftrags, Workflowanbindung und neue endgültige Laufzeitberichte.
+Phase6 und Gesamroadmap sind nicht abgeschlossen.

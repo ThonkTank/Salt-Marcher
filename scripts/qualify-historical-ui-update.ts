@@ -1341,11 +1341,10 @@ try {
     'read'
   )
   assert(unchanged.result.response.ok)
-  if (sourceHistory)
-    assert.deepEqual(
-      readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile')),
-      sourceHistory
-    )
+  const unchangedHistory = sourceHistory
+    ? readPartyHistoryEvidence(join(sourceHome, 'salt-marcher/profile'))
+    : null
+  if (sourceHistory) assert.deepEqual(unchangedHistory, sourceHistory)
   assert.deepEqual(
     unchanged.result.response.result,
     seeded.result.response.result
@@ -1385,6 +1384,7 @@ try {
         partyHistoryEvidence: historyScenario
           ? {
               source: sourceHistory,
+              unchanged: unchangedHistory,
               after: afterHistory,
               continued: continuedHistory,
               restored: restoredHistory,
