@@ -503,3 +503,15 @@ removing the disposable disk. Reports in `outputs/qualification-evidence/activat
 - `journal:program-moving`: `173a63cb72261c4bb69e39651d8dafae08bc029b57dc174e85644fade0d12881`
 
 Two forward activation boundaries and nine launcher recovery boundaries remain.
+
+## Release activation boundaries requalified, final batch
+
+Both remaining 0.0.160/166 forward interruptions passed with complete profile,
+rollback, retry, later work and restore/protective-backup comparisons.
+Archive `outputs/qualification-evidence/activation-v3-run-3` was independently
+hash- and content-checked before disposable guest deletion.
+
+- `journal:awaiting-start`: `6d8a66e6103e201a119208fef3b82e5d04a3aa1368a2e3b68784280ad4553e14`
+- `program-linked`: `9840a3f12604e9f02774349c141d0c72fba76db2618731a94c6bfe4f0cdeaecc`
+
+All eight forward boundaries are requalified; nine launcher recovery boundaries remain.

@@ -39,6 +39,31 @@ describe('maintenance worker error transport', () => {
     }
   )
 
+  it.each([
+    ['newer', 'Aktualisiere SaltMarcher'],
+    ['missing', 'Wähle eine unterstützte Sicherung'],
+    ['corrupt', 'Wähle eine andere geprüfte Sicherung']
+  ])('explains %s data before serializing the error', async (kind, action) => {
+    const { IncompatibleDataError, CorruptDataError } =
+      await import('../../src/core/persistence/sqlite/database.js')
+    failure.value =
+      kind === 'corrupt'
+        ? new CorruptDataError('/private/campaign-data/installation.sqlite')
+        : new IncompatibleDataError(
+            '/private/campaign-data/installation.sqlite',
+            kind === 'newer' ? 43 : 0,
+            42
+          )
+    const response = await dispatch()
+    expect(response.ok).toBe(false)
+    expect(response.message).toContain(action)
+    expect(response.message).not.toContain('/private')
+    expect(response.message).not.toContain('persisted')
+    expect(releaseOperationErrorText(new Error(response.message))).toBe(
+      response.message
+    )
+  })
+
   it('preserves an actionable domain message across the same boundary', async () => {
     const message = 'Bitte eine geprüfte Sicherung auswählen.'
     failure.value = new Error(message)

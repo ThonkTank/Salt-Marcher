@@ -11141,3 +11141,62 @@ nicht ausgeführt. Zwei verbleibende Vorwärtsgrenzen verwenden weiter das
 unveränderte bisherige Payload (die Korrektur betrifft dort keinen Pfad).
 Nächster Batch: program-linked und journal:awaiting-start, isolierte Profile,
 vollständiger Kill/Rollback/Retry/Weiterarbeit/Restoreweg.174GiB frei.
+
+Voriger Goalturn Fortschritt: Batch2 vollständig auditiert; Prüferfix1cf52c4c2989b544b974112c7ebf08679b6b013f
+committed/gepusht, Batch3 in Session42861 gestartet (activation-run-3,2400s).
+Jetzt Session42861 live bestätigt; Check34686972372 am exakten neuen SHA läuft.
+Fokussierter Restplan M10 nach laufendem Batch, vor Phase5-Abschluss: optionaler
+--newer-backup-Fall im bestehenden vollen UI-Qualifizierer. Aus echter
+Manifest2-Vorupdatesicherung eine getrennte Kopie mit neuer UUID/Datum erzeugen;
+ausschließlich deren Installation-user_version auf43 setzen und vollständige
+Dateihashes erneuern. Das ist negative Formatprüfung, keine historische Migration.
+Originalsicherung bleibt unverändert, readVerifiedBackup muss neue Kopie als
+integritätsgültig erkennen. Nach gespeicherter XP-Weiterarbeit über tatsächliche
+Backupzeile/Bestätigung wiederherstellen; verständliche Neuformatablehnung und
+unverändertes Programm/Journal sowie vollständigen späteren Profilreadback
+belegen. Alle vorhandenen Sicherungen/Kopien unverändert behalten, zusätzliche
+Schutzsicherung bei fehlgeschlagener Vorbereitung darf existieren und muss
+spätere Arbeit vollständig schützen. Danach normalen älteren Restore samt
+Schutzbackup durchführen. Kein direkter UI-IPC-Aufruf. Kleine Fixturetests
+prüfen getrennte Quelle und korrekte Hashinventare; Format/Lint/Typprüfungen,
+neues Prüferpayload mit unveränderten0.0.160/166-AppImages. Neun Recoverygrenzen
+bleiben ebenfalls auszuführen. Während aktueller VM keine Quellenänderung.
+
+Fokussierte Korrektur vor M10-Artefakttest, nach laufender VM: Codeaudit belegt
+IncompatibleDataError.message="Incompatible persisted data" (database.ts),
+Worker serialisiert derzeit diesen Text unverändert; Main rekonstruiert nur
+Error(message). CorruptDataError enthält außerdem einen internen Dateipfad.
+Wartungs-Fehlerabbildung muss deshalb innerhalb Utility vor Serialisierung
+IncompatibleDataError (neueres Format versus fehlender Migrationspfad) und
+CorruptDataError auf verständliche deutsche Ursache plus nächste Aktion
+abbilden. Bestehende Dateisystemabbildung und verständliche Domainmeldungen
+erhalten. Keine Änderung von SQL/Migration oder Aktivierungslogik. Erweiterte
+Worker-Grenztests müssen echte Fehlerklassen dynamisch aus demselben Modul
+wie Worker verwenden, neuere/fehlende/beschädigte Daten und Pfadfreiheit
+belegen; zuerst bestehenden Fehler reproduzieren, dann reparieren. Neue
+unveränderliche Ziel-AppImage nötig für die tatsächliche UI-Ablehnung; ältere
+0.0.166-Unterbrechungsnachweise bleiben mit ihrem exakten Scope dokumentiert.
+
+Session42861 terminalVMExit0/TestExit0. Batch3 program-linked/awaiting-start
+vollständig exportiert nach activation-v3-run-3 und unabhängig auditiert:
+Dateigrößen/Hashes, Marker-Kill-PIDs, gleiches Rollbackjournal und alter Seed,
+Retry/XP-Weiterarbeit/Restore/Schutzbackup, unveränderte Quelle und gleiches
+Restoreprogramm. Erfolgreiche Gastdisk danach entfernt. Berichte:
+journal:awaiting-start: 6d8a66e6103e201a119208fef3b82e5d04a3aa1368a2e3b68784280ad4553e14
+program-linked: 9840a3f12604e9f02774349c141d0c72fba76db2618731a94c6bfe4f0cdeaecc
+Plan-Audit Batch3 bestanden: acht Releaseaktivierungsgrenzen nun erneut
+qualifiziert. Roadmap-Audit Phase5 weiterhin offen: neun Launcher-Recoverygrenzen
+und tatsächliche Vollprofil-Zukunftssicherungsabweisung samt Fehlertextkorrektur.
+
+Regression zuerst nachgewiesen:35719 Exit1, neue drei Domainfehlerfälle
+fehlgeschlagen mit exakt englischer Inkompatibilitätsmeldung beziehungsweise
+Dateipfad bei Beschädigung; fünf bisherige Fälle bestanden. Danach typisierte
+Utility-Abbildung error-message.ts eingeführt, vor Serialisierung aufgerufen;
+SQL/Migrations-/Aktivierungslogik unverändert. Vollständige Prüfung folgt.
+
+13796 Exit0:18 Worker-/Main-Fehlertests, Format/Lint und beide TypeScript-
+Projekte bestanden,36.082s/1.5GiB/keinSwap. Vorher-drei-fehlgeschlagen/
+nachher-bestanden belegt echte Grenzkorrektur. Plan-Audit Fehlerabbildung
+bestanden; Roadmap-Audit tatsächliche UI-Zukunftssicherung und neue
+AppImage-Bytes weiterhin ausstehend. Diese Änderung vor weiteren
+Qualifiziererergänzungen als unveränderliche Kandidatenquelle sichern.
