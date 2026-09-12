@@ -12499,3 +12499,14 @@ Jetzt sauberer Kandidatencommit für den realen Bündelbau. Dieser Bau startet
 kein Electron/AppImage; der anschließende reine Node-Negativtest muss bereits
 an der fehlenden separaten Gastkernel-Identität scheitern. Ein vollständiger
 gebündelter Gastlauf ist damit noch nicht behauptet.
+
+Bündelbau von87e2b9360 erfolgreich (2.2s,412MiB,0Swap), aber anschließender
+Node-Starttest fehlgeschlagen: eingebundenes TypeScript benötigt `__filename`;
+wegen fehlender ESM-Pfadvariablen entsteht ERR_AMBIGUOUS_MODULE_SYNTAX vor der
+Isolationsprüfung. Keine Electron-/AppImage-Ausführung. Der Kandidatencommit
+wurde gepusht; er ist ausdrücklich nicht als lauffähige Qualifikation abgenommen.
+Korrekturplan: denselben vollständigen ESM-Bootstrap mit require/__filename/
+__dirname verwenden, der in den zuvor bestandenen KVM-Harnessbündeln enthalten
+ist. Neuer sauberer Commit, separates neues Bündelverzeichnis; fehlgeschlagenes
+Bündel bleibt unverändert. Lint und tatsächlicher gebündelter Node-Starttest
+müssen anschließend bis zur erwarteten Host-Kernelsperre gelangen.

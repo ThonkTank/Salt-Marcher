@@ -41,7 +41,7 @@ for (const [index, name] of qualificationRunnerNames.entries())
       '--target=node22',
       '--external:electron',
       '--external:better-sqlite3',
-      '--banner:js=import { createRequire as __createRequire } from "node:module";const require=__createRequire(import.meta.url);',
+      '--banner:js=import { createRequire as qualificationCreateRequire } from "node:module"; import { fileURLToPath as qualificationFilePath } from "node:url"; import { dirname as qualificationDirname } from "node:path"; const require=qualificationCreateRequire(import.meta.url); const __filename=qualificationFilePath(import.meta.url); const __dirname=qualificationDirname(__filename);',
       `--outfile=${join(root, name)}`
     ],
     { stdio: 'inherit', timeout: 120_000 }
