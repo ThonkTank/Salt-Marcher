@@ -13501,3 +13501,28 @@ Journal-/Programmzustände dokumentieren, keine menschliche Abnahme erfinden.
 Anleitung, exakt gebundene Artefaktdaten und konkrete Oberfläche vor der Bitte
 um diesen notwendigen menschlichen Schritt bereitstellen. Erst danach die
 separate tatsächliche GitHub-Environment-Freigabe und Veröffentlichung anstoßen.
+
+Teilplan 7.7: reine Anzeigevorbereitung erfolgreich (Bootstrap-Test und VMexit 0).
+Der neue eigenständige Gastdatenträger enthält openbox, x11vnc, noVNC und
+websockify, keine Nutzerdaten und keine AppImages. SHA256
+90a329d9f72ebe469fb854b7bb3dc1f41b54d7d4022a752fa1b61078cfcc56ea;
+Originalbasis unverändert. Beleg: work/phase7-human-environment-1.
+
+Erster interaktiver Prüfgast installiert 0.2.0, übernimmt die unveränderte
+Sicherungskopie und meldet nach geladener Session PHASE7_HUMAN_READY.
+Die Browserverbindung scheitert jedoch: HTTP innerhalb des VM-Containers liefert
+200 von websockify; derselbe Zugriff über die ausschließlich lokale Podman-
+Portweiterleitung läuft in einen Timeout. Damit ist die Anzeige im Gast belegt,
+nicht die Übergabe an einen Menschen. Der Gast wurde vor jeder menschlichen
+Abnahme kontrolliert beendet; ursprünglicher Datenträger und Serialausgabe unter
+work/phase7-human-vm-1 bleiben erhalten. VMexit 0 durch QEMU-SIGTERM ist ausdrücklich
+kein abgeschlossener Livetest und kein erfolgreicher Export.
+
+Korrekturplan 7.7a vor Harnessänderung: die fehlerhafte zusätzliche Podman-
+Portweiterleitung entfernen. Nur der unveränderte QEMU-Container verwendet das
+Hostnetz; QEMU bindet seine Weiterleitung unmittelbar an 127.0.0.1:16080.
+Der eigentliche Prüfgast behält restrict=on, keine externe Netzverbindung,
+keine Hostprofil-Mounts, bestehende Ressourcenlimits, Ein-VM-Sperre und Deadline.
+Neue private Kopie starten, HTTP-Erreichbarkeit vom Host, tatsächliche lokale
+Bindung und sichtbare Browseroberfläche prüfen. Erst dann menschliche Schritte
+anfordern. Keine Produktänderung und keine Umdeutung der bisherigen Abnahme.
