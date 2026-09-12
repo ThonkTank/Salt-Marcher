@@ -13394,3 +13394,59 @@ bleibt verpflichtend. Damit ändert sich nur die Eingabegeste des Testtreibers,
 nicht der unterstützte Sicherungsimport, der Inhalt oder der gesamte weitere
 Update-/Wiederherstellungsumfang. Beide Gastkopien und die Hostquelle bleiben
 unverändert. Neuer Gast, unveränderte AppImages, Phase 7 weiter offen.
+
+Korrekturrunde 7.5 erfolgreich: sechster frischer Gast, Payload von
+206aef8dec8a062add5f17a7c6c57704ce83a156. Sichtbare Sicherungsordnerauswahl,
+Installation, vollständiger Nutzerdatenimport, gespeicherte Kampagnenänderung,
+Update auf die unveränderten 0.3.0-Bytes, weitere gespeicherte Änderung sowie
+beide tatsächlichen Wiederherstellungen bestanden. Alle fünf Wartungsjournale
+committed, sechs gestartete Prozesse regulär mit Exit 0 beendet, Testexit 0,
+Gast-Speicherspitze 2.7 GiB. Keine menschliche Abnahme oder Veröffentlichung.
+
+Transportbefund nach dem abgeschlossenen App-Test: Während der umfangreicheren
+seriellen Bildausgabe fügt der Gastkernel eine Soft-Lockup-Meldung in eine Base64-
+Zeile ein. Der strikte erste Collector verweigert die beschädigte Rahmung korrekt.
+Die Originaldatei wurde nicht verändert. Genau die beobachtete Diagnose zwischen
+70 und 6 Zeichen derselben Zeile wurde für die Rekonstruktion getrennt; das
+resultierende vollständige Gzip-Archiv besteht CRC- und Längenprüfung
+(1531107 komprimierte Bytes, 11161600 Original-Tar-Bytes). Recovery-Rezept und
+Original-Serialhash: work/phase7-live-vm-6/transport-recovery/recovery.json.
+Originalarchiv und alle 32 exportierten Dateien sind unter
+work/phase7-live-evidence-6 dauerhaft archiviert. Das ist ein Gast-Exportproblem,
+kein behaupteter Hostabsturz und kein stillschweigend übergangener App-Testfehler.
+
+Unabhängiger SQLite-Audit bestanden: vollständige Originaltabellen/-zeilen bei
+Migration 42/41 nach 43/43 erhalten; ausschließlich erwartete Ledgerergänzungen
+und neue Historytabellen. Datenstände vor/nach Update sind exakt identisch,
+ebenso ursprünglicher Stand nach Restore und Weiterarbeit nach Schutzrestore.
+Die zwei tatsächlichen Änderungen haben jeweils genau die erwartete Umbenennung,
+Aktivierung und zwei verknüpfte Command-Receipts erzeugt. Andere Originalinhalte
+unverändert. Beleg: work/phase7-run6-independent-audit.json; Originalbericht-SHA256
+14300c51005b120399263722d536cd841928a11ab79120c855c9c5a9271a8f04.
+
+Teilplanaudit noch nicht vollständig bestanden: Die unabhängige Bildprüfung
+zeigt Aufnahmen vor fertig gerenderter Oberfläche; die Sessionaufnahme zeigt
+noch „Arbeitsfläche wird geladen“. Überschrift und erfolgreiche Wartungsjournale
+reichen als Nachweis benutzbarer Arbeitsfläche nicht aus. Zusätzlich fehlen im
+privaten Livebericht vollständige Dateiinventare der übernommenen/restaurierten
+Profile außerhalb von SQLite. Die bereits geprüften automatisierten SQL-Wege
+bleiben belegt; menschliche Live-Abnahme und Phase-7-Abschluss bleiben offen.
+
+Korrekturplan 7.6 vor weiteren Harnessänderungen:
+- Nach Kampagnenöffnung tatsächliche Session-/Campaign-Identität, Revision,
+  benutzbare scene-desktop-Fläche und beendeten Ladestatus abwarten; Aufnahmen
+  erst nach passenden sichtbaren Inhalten. Import-/Update-/Restorebilder dürfen
+  keine bloße leere Startfläche dokumentieren. Downloadbild erst bei tatsächlich
+  verfügbarer Installationsaktion aufnehmen.
+- Zu jedem geschlossenen Datenbank-Snapshot vollständige Datei- und Verzeichnis-
+  inventare des Profils erfassen. Eigene Dateien und Einstellungen konkret gegen
+  Quelle, Update- und beide Restorestände prüfen; keine pauschalen Ausnahmen.
+  Tatsächliche installierte AppImage-Bytes zusätzlich gegen Zielhash prüfen.
+- Vor dem seriellen Export SHA256 und Länge des Originalarchivs ausgeben und
+  die Ausgabe in begrenzten, kurzen Pausen unterbrochenen Blöcken übertragen.
+  Damit die Diagnoseausgabe nicht erneut den Gast beim Herunterfahren blockiert;
+  Diagnosen bleiben erhalten und Collector verlangt die genaue Archividentität.
+- Neuen vollständigen Gastlauf mit denselben qualifizierten Programmbytes
+  durchführen, danach unabhängigen SQL-/Datei-/UI-Audit wiederholen. Private
+  Nutzerdaten und Bilder bleiben lokal. Dies bleibt eine automatisierte
+  Vorbereitung auf die anschließend notwendige menschliche Live-Abnahme.
