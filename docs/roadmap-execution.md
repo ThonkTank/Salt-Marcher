@@ -12187,3 +12187,89 @@ Teilaudit6A.3: unverändertes Releaseziel besteht erstmals vollständigen
 same-schema-UI-Pfad. Echte Schemawechsel/Skip/Recovery mit diesen Zielbytes,
 Erstinstallation und automatisierte Release-Workflowanbindung bleiben offen.
 Keine Abnahme der geplanten0.3.0 und kein Abschluss der Gesamtphase6.
+
+Fortsetzung nach aufgehobener Pause: Root141GiB frei, kein laufender VM-Prozess
+mehr; vorhandener Lauf2 wurde nicht neu gestartet. VMexit0/Testexit0 und
+Originalexport unter `qualification-evidence/release-target-v3-run-2` archiviert
+(27 Dateien). Unabhängiger Audit `work/audit-phase6-release-migration.py`
+bestanden; Ergebnis `work/phase6-release-migration-audit.json`.
+Original .16742/42 → unverändertes sauberes Release c11d7fcb5 43/43:
+alle drei Kampagnen, Settings, eigene Dateien und fortsetzbare Spielzustände
+verglichen. Ausschließlich die erwarteten drei Burden-Standardfelder kommen
+hinzu. Neue leere Party-History einschließlich UUID-Installationsepoche,
+Weiterarbeit975→1000XP und verknüpfte History/Receipts vollständig geprüft.
+Erzwungener SIGKILL nach `new-data-moved` setzt auf bisheriges Programm und
+Originalprofil zurück; erneutes Update besteht. Späterer SIGKILL erhält die
+bereits gespeicherte Weiterarbeit. Originalrestore, tatsächlicher Schutzrestore
+und zweite Schutzsicherung erhalten jeweils die erwarteten Inhalte/History.
+ReportSHA256`c9a85c3987f08f24e95cc473e056e9b7fc24330954e210dfe86a7a3856a6ad8b`.
+ZielSHA256 weiterhin`e9864378ec628235776eeae36efd39f3a5232846a12c0af7ad920f3e89ccead3`.
+Nur die erfolgreiche Gastplatte dieses extern archivierten/auditierten Laufs
+wird entfernt. Zwischenstand-Skip, echte Release-Erstinstallation und
+Workflowintegration bleiben offen; historische Midmigration-/Commit-Hooks
+wurden in diesem Lauf ausdrücklich nicht geprüft. Phase6 bleibt aktiv.
+
+Nächster Prüfschritt6A.3: Original .16042/41 direkt gegen dieselben Releasebytes
+prüfen, mit explizitem .16742/42 als Zwischenstand. Separater begrenzter KVM-Gast,
+gleiche unveränderte Harnessbytes, vollständige UI-Weiterarbeit und tatsächlicher
+Schutzrestore. Originalartefakte und Belege bleiben unverändert; keine neue
+Paketierung des Releaseziels. Erst nach Export und unabhängigem Inhaltsaudit
+wird dieser Skip-Nachweis als bestanden gewertet.
+
+Plan6A.3 Erstinstallationsadapter nach Abschluss des laufenden Skip-Tests:
+`qualify-historical-first-install.ts` verwendet künftig den geprüften
+UpdateArtifact-Adapter statt historische Receipts vorauszusetzen. Historische
+Berichte bleiben v1; reale Releaseziele erhalten v2 mit Manifest, separater
+Provenienz und geprüfter eingebetteter Utility-Identity. Der neue leere Homepfad
+wird vor Erzeugung geprüft; Qualifikationsmarker erst anschließend gesetzt.
+Der bestehende lokale503-Feed bleibt Offline-Nachweis; reale Release-UI erhält
+die bereits isolationsgeprüften Feedflags. Zielidentity erst nach beendeten
+UI-Prozessen lesen, damit Erstinstallation nicht durch vorab angelegte Profildaten
+verfälscht wird. Bestehende UI-Installation, Desktop-Eintrag, Journalabschluss,
+Starter-Neustart und Null-Exits bleiben verpflichtend. Validierung: gezielte
+Adapter-/Identitytests, Lint, beide Typprüfungen und anschließend eigenständiger
+KVM-Lauf mit genau den bereits gebauten unveränderten Releasebytes. Keine
+Quelländerung während des aktuell laufenden VM-Tests.
+
+Befund für den noch ausstehenden Qualifikationsaggregator: Beim Restore eines
+Vor-History-Backups erzeugt dessen Vorwärtsmigration eine neue zulässige
+Installationsepoche. Der unabhängige Migrationsaudit prüft deshalb UUID-Form,
+leere neue Tabellen und danach die exakten Command-/Receipt-/Indexverknüpfungen;
+er verlangt keine identische neu erzeugte UUID zwischen zwei Migrationen.
+Der bisherige Digestvertrag `restored == migratedActual` darf bei Einbeziehung
+der vollständigen History nicht blind auf rohe JSON-Bytes angewendet werden.
+Vor Implementierung des Aggregators ist diese Erwartung ausdrücklich abzubilden:
+vorhandene Identitäten/History unverändert, neu erzeugte Epochen validiert und
+nur dort erwartungsgemäß normalisiert beziehungsweise gesondert belegt. Keine
+pauschale Entfernung der History aus dem Profilvergleich.
+
+Skip-Lauf3 abgeschlossen: VMexit0/Testexit0,23 Dateien extern archiviert unter
+`qualification-evidence/release-target-v3-run-3`. Unabhängiger Audit
+`work/audit-phase6-release-skip.py` bestanden. Original .16042/41 direkt auf
+dieselben Releasebytes43/43 aktualisiert; mitgeliefertes explizites .16742/42
+Zwischenartefakt auf Originalcommit, Formate und tatsächlichen Hash geprüft.
+Alle Inhalte vor/nach Update, additive QuickField-/Burden-Defaults, komplette
+neue History und verknüpfte Weiterarbeit, Originalrestore, tatsächlich
+wiederhergestellte Schutzsicherung und zweite Schutzsicherung geprüft.
+ReportSHA256`65f46b69e0a9c138349042ed370ce2f7ed228bbdb2f9742e58fe94299bbaa469`.
+Nur die erfolgreich archivierte/auditierte Gastplatte wurde entfernt.
+Check34702850625 für3a4ebebf9 vollständigSUCCESS. Keine Main-Promotion.
+Erstinstallationsadapter wird jetzt gemäß zuvor festgehaltenem Plan umgesetzt.
+
+Erstinstallations-Review ergänzt einen konkreten Byte-Nachweis: Der bisherige
+Test liest für `installed.sha256` lediglich das Deploymentmanifest. Obwohl die
+Produktinstallation selbst Kopien verifiziert, soll der Abnahmebericht nach dem
+Starter-Neustart den tatsächlichen installierten AppImage-Hash und Dateiumfang
+separat belegen. Ergänzung nach Abschluss der laufenden statischen Prüfung;
+kein erneuter Build des AppImages erforderlich.
+
+Erstinstallationsadapter statisch geprüft:11 gezielte Tests bestanden; ESLint
+und beide Typprüfungen erfolgreich (`work/phase6-release-first-install-checks.log`).
+Nach Ergänzung des tatsächlichen installierten Byte-/Hashnachweises erneut
+ESLint und beide Typprüfungen erfolgreich
+(`work/phase6-release-first-install-byte-checks.log`,56s,1.4GiB,0Swap).
+Historische v1-Receipts bleiben erhalten; reale Releaseziele erhalten v2-Manifest,
+Provenienz und Zielidentity. Identity-Abfrage erfolgt erst nach den beendeten
+Installations-/Starter-UI-Prozessen; Journal/Programmidentität bleiben danach
+unverändert. Noch kein Laufzeitabschluss: nun sauberer Kandidatencommit und
+separater frischer KVM-Gast mit bestehenden c11d7fcb5 Releasebytes.
