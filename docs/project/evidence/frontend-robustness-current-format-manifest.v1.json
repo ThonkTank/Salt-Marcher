@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 43,
+    "campaignDatabaseSchemaVersion": 44,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [

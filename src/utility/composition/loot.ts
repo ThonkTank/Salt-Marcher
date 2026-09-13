@@ -1,3 +1,8 @@
+import { GroupEditorHandler } from '../../core/application/group-editor-handler.js'
+import { GroupLootBalanceHandler } from '../../core/application/group-loot-balance-handler.js'
+import { sha256EncounterEntropy } from '../session-generation/sha256-entropy.js'
+import { defaultGeneratorConfig } from '../../shared/generator/system-generator-preset.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import type { PartyActionService } from '../../core/application/party-action-service.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type Database from 'better-sqlite3'
@@ -41,6 +46,7 @@ export type LootComposition = Readonly<{
 }>
 
 export function createLootComposition(dependencies: {
+  lootRules?: () => GeneratorLootRules
   partyActions?: PartyActionService
   activeCampaignId(): string
   activeDatabase: SqliteDatabaseAccess
@@ -108,6 +114,40 @@ export function createLootComposition(dependencies: {
     },
     (work) => new CampaignUnitOfWork(activeDatabase()).run(work)
   )
+  const editorContext = () => {
+    const db = activeDatabase(),
+      resolver = definitions(db)
+    return {
+      containerExists: (id: string) =>
+        catalogIndexes
+          .require(dependencies.currentCatalogReference())
+          .containers.has(id),
+      generatedRuns: new GeneratedRunStore(db),
+      party: new PartyStore(db),
+      scenes: new SceneStore(db),
+      treasures: new TreasureStore(db, resolver),
+      definitions: resolver,
+      journal: new LootOperationJournal(db),
+      groupCommands: dependencies.groupCommands,
+      projections: new LootProjectionStore(db, resolver),
+      now: () => new Date().toISOString()
+    }
+  }
+  const editor = new GroupEditorHandler(editorContext, (work) =>
+    new CampaignUnitOfWork(activeDatabase()).run(work)
+  )
+  const balance = new GroupLootBalanceHandler(
+    () => ({
+      ...editorContext(),
+      characterLoot: new CharacterLootStore(
+        activeDatabase(),
+        definitions(activeDatabase())
+      ),
+      rules: dependencies.rules.read(),
+      lootRules: dependencies.lootRules?.() ?? defaultGeneratorConfig.loot
+    }),
+    sha256EncounterEntropy
+  )
   return {
     createHandlers: (publishChange) => {
       const publish = (
@@ -122,6 +162,18 @@ export function createLootComposition(dependencies: {
         'loot_handlers',
         lootOperationDefinitions,
         {
+          'loot.evaluateGroup': (input) => balance.evaluate(input),
+          'loot.commitGroupEditor': (input) =>
+            publish(
+              lootOperationDefinitions['loot.commitGroupEditor'],
+              'updated',
+              () => editor.commit(input)
+            ),
+          'loot.groupEditorReceipt': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return editor.receipt(input)
+          },
           'loot.read': (input) => loot.read(input.treasureId),
           'loot.catalog': (input) => catalog.search(input),
           'loot.generateForGroupDraft': (input) => rewards.generate(input),

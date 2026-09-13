@@ -89,6 +89,25 @@ describe('group Loot draft', () => {
     })
   })
 
+  it('adds manually, removes the last item and restores it through history', () => {
+    const item = groupLootDraftFromRun(run()).items[0]!
+    let history = createGroupLootDraftHistory({
+      label: 'Manual',
+      items: [],
+      containers: []
+    })
+    history = mutateGroupLootDraft(history, { kind: 'add-item', item })
+    expect(history.draft.items).toEqual([item])
+    history = undoGroupLootDraft(history)
+    expect(history.draft.items).toEqual([])
+    history = redoGroupLootDraft(history)
+    history = mutateGroupLootDraft(history, {
+      kind: 'remove-item',
+      id: item.draftId
+    })
+    expect(history.draft.items).toEqual([])
+    expect(undoGroupLootDraft(history).draft.items).toEqual([item])
+  })
   it('coalesces one focused edit into a single undo step', () => {
     const initial = groupLootDraftFromRun(run())
     let history = createGroupLootDraftHistory(initial)

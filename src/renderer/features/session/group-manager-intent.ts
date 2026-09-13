@@ -17,7 +17,7 @@ export type GroupManagerIntent =
   | { kind: 'archive' }
   | { kind: 'join-combat' }
 
-export type GroupManagerGuard = 'current-loot' | 'all-drafts'
+export type GroupManagerGuard = 'current-loot' | 'all-drafts' | 'none'
 
 export type PendingGroupManagerIntent = Readonly<{
   intent: GroupManagerIntent
@@ -33,6 +33,7 @@ export function groupManagerIntentNeedsConfirmation(
   guard: GroupManagerGuard,
   dirty: GroupManagerDirtyState
 ): boolean {
+  if (guard === 'none') return false
   if (guard === 'all-drafts') return dirty.anyDraft
   return dirty.currentLoot
 }
@@ -42,15 +43,16 @@ export function groupManagerIntentGuard(
 ): GroupManagerGuard {
   switch (intent.kind) {
     case 'close':
-    case 'save':
     case 'archive':
     case 'join-combat':
       return 'all-drafts'
+    case 'save':
     case 'add-creature':
     case 'change-quantity':
     case 'remove-creature':
     case 'roster-history':
     case 'generate-roster':
+      return 'none'
     case 'regenerate-loot':
       return 'current-loot'
   }

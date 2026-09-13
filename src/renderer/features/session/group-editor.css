@@ -1,0 +1,304 @@
+.group-editor.session-group-manager {
+  width: min(1080px, calc(100vw - 2rem));
+  height: min(760px, calc(100vh - 2rem));
+  max-height: calc(100vh - 2rem);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-sheet);
+  color: var(--text-1);
+  border-radius: var(--radius-0);
+}
+.group-editor > header,
+.group-editor > footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.group-editor > header h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.group-editor-context {
+  flex: 1;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.group-editor > header input {
+  flex: 1;
+  min-width: 120px;
+}
+.group-editor .creature-collection-tools {
+  padding: var(--space-3) var(--space-4);
+  max-height: 35vh;
+  overflow: auto;
+}
+.group-editor .creature-collection-layout {
+  grid-template-areas: 'catalog divider draft';
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+}
+.group-editor .creature-collection-divider {
+  min-width: 1px;
+  width: 1px;
+  background: var(--border-hair);
+}
+.group-editor select,
+.group-editor textarea {
+  color: var(--text-1);
+  background: var(--surface-control);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-0);
+  font: inherit;
+  padding: var(--space-2);
+}
+.group-editor .creature-collection-layout > .creature-collection-catalog,
+.group-editor .creature-collection-layout > .creature-collection-draft {
+  overflow: hidden;
+}
+.group-editor .creature-collection-layout .creature-collection-table-wrap {
+  overflow: auto;
+}
+.group-editor .creature-collection-pane {
+  min-height: 0;
+}
+.group-editor .creature-collection-catalog,
+.group-editor .creature-collection-draft {
+  min-width: 0;
+  min-height: 0;
+}
+.group-editor-catalog,
+.group-editor .loot-catalog-pane,
+.group-editor-selection {
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.group-editor-catalog > .creature-collection-pane {
+  flex: 1;
+  min-height: 0;
+}
+.group-editor-catalog > details {
+  flex-shrink: 0;
+  max-height: 42%;
+  overflow: auto;
+}
+.group-editor .creature-collection-table-wrap {
+  min-height: 0;
+  flex: 1;
+}
+.group-editor .creature-collection-table th,
+.group-editor .creature-collection-table td {
+  padding: var(--space-2) var(--space-3);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.group-editor .creature-collection-table td strong {
+  font-size: var(--text-base);
+}
+.group-editor .creature-collection-table small {
+  display: block;
+}
+.group-editor .loot-catalog-filters {
+  display: block;
+}
+.group-editor .loot-catalog-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.group-editor .loot-catalog-filters label {
+  display: grid;
+}
+.group-editor .loot-catalog-table td:nth-child(2),
+.group-editor .loot-catalog-table th:nth-child(2) {
+  display: none;
+}
+.group-editor details summary {
+  cursor: pointer;
+  font-size: var(--text-ui);
+  padding-block: var(--space-1);
+}
+.group-editor-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.group-editor-line > select,
+.group-editor-line > input {
+  min-width: 0;
+  flex: 1;
+}
+.group-editor-generation,
+.group-editor .group-history-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+.group-editor [role='tablist'] {
+  display: flex;
+  gap: var(--space-2);
+}
+.group-editor [aria-selected='true'] {
+  background: var(--surface-chip);
+  border-color: var(--accent-rubric);
+}
+.group-editor-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.group-editor-details > label {
+  display: grid;
+  flex: 1;
+  min-width: 120px;
+}
+.group-editor-selection-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.group-editor-rows {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.group-editor-rows > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-hair);
+}
+.group-editor-rows > li > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.group-editor-rows strong {
+  font-weight: var(--weight-semibold);
+}
+.group-editor-rows small {
+  display: block;
+  color: var(--text-muted);
+}
+.group-editor-quantity {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: var(--space-1);
+}
+.group-editor-quantity output {
+  min-width: 1.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.group-editor-quantity button {
+  padding: 0;
+  width: 26px;
+  min-height: 26px;
+}
+.group-editor-balance {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-2);
+  padding-top: var(--space-2);
+  max-height: 45%;
+  overflow: auto;
+}
+.group-editor-balance table {
+  width: 100%;
+  font-size: var(--text-ui);
+  font-variant-numeric: tabular-nums;
+}
+.group-editor-balance td {
+  text-align: right;
+}
+.group-editor-balance th {
+  text-align: left;
+  font-weight: normal;
+}
+.group-editor-meter {
+  height: 8px;
+  background: var(--surface-chip);
+  position: relative;
+  margin-block: var(--space-2);
+}
+.group-editor-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent-verdigris);
+}
+.group-editor-meter i {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-left: 1px solid var(--text-1);
+}
+.group-editor-thresholds {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+.group-editor .group-editor-include {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.group-editor > footer > div {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+@media (max-width: 800px) {
+  .group-editor-context {
+    display: none;
+  }
+}
+@media (max-height: 480px) {
+  .group-editor > header,
+  .group-editor > footer,
+  .group-editor .creature-collection-tools {
+    padding-block: var(--space-1);
+  }
+  .group-editor button:not(.group-editor-quantity button) {
+    min-height: 28px;
+    padding: var(--space-1) var(--space-2);
+  }
+}
+@media (max-width: 560px) {
+  .group-editor.session-group-manager {
+    width: calc(100vw - 2rem);
+    height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
+  }
+  .group-editor .creature-collection-layout {
+    display: grid;
+    grid-template-areas: 'catalog' 'divider' 'draft';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 1fr) 1px minmax(240px, 1.2fr);
+    overflow: auto;
+  }
+  .group-editor .creature-collection-divider {
+    width: 100%;
+    height: 1px;
+  }
+  .group-editor-context {
+    display: none;
+  }
+}
+
+.group-editor .creature-collection-table th:last-child {
+  min-width: 44px;
+  white-space: nowrap;
+}

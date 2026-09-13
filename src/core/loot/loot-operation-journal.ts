@@ -8,6 +8,7 @@ export type LootOperationType =
   | 'move'
   | 'accept_generated'
   | 'commit_group_reward'
+  | 'commit_group_editor'
   | 'distribute'
   | 'correct_ledger'
 
@@ -18,7 +19,7 @@ export function initializeLootOperationJournalSchema(
     CREATE TABLE IF NOT EXISTS loot_operation_receipt (
       command_id TEXT PRIMARY KEY NOT NULL,
       operation_type TEXT NOT NULL CHECK(operation_type IN (
-        'create','update','move','accept_generated','commit_group_reward',
+        'create','update','move','accept_generated','commit_group_reward','commit_group_editor',
         'distribute','correct_ledger'
       )),
       request_fingerprint TEXT NOT NULL,
@@ -27,6 +28,17 @@ export function initializeLootOperationJournalSchema(
       result_json TEXT NOT NULL
     );
   `)
+}
+
+/** Preserve all prior receipts while widening the operation constraint. */
+export function migrateGroupEditorReceipts(db: Database.Database): void {
+  db.exec(
+    'ALTER TABLE loot_operation_receipt RENAME TO loot_operation_receipt_v43'
+  )
+  initializeLootOperationJournalSchema(db)
+  db.exec(
+    'INSERT INTO loot_operation_receipt SELECT * FROM loot_operation_receipt_v43; DROP TABLE loot_operation_receipt_v43;'
+  )
 }
 
 export class LootOperationJournal {

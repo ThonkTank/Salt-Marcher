@@ -23,8 +23,9 @@ owners of the referenced content.
 3. PCs are moved between scenes; one PC can be in at most one running scene.
 4. The GM selects one World Planner location and any number of World Planner
    NPCs for the focused scene.
-5. The GM creates or edits named creature groups in one catalog-backed builder
-   and may manually compose, fill, or replace its transient roster.
+5. The GM creates or edits groups in one compact Monster / Loot manager.
+   Manual selection, fill and replacement preserve optional group metadata and Loot.
+   Expanded groups also expose living quantities and species removal directly.
 6. Switching scenes immediately switches the visible Encounter session.
 7. Every persisted scene and Encounter session is restored after restart.
 

@@ -1,0 +1,16 @@
+.group-editor-quantity {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: var(--space-1);
+}
+.group-editor-quantity output {
+  min-width: 1.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.group-editor-quantity button {
+  padding: 0;
+  width: 26px;
+  min-height: 26px;
+}

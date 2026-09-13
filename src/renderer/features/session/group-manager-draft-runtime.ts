@@ -129,7 +129,7 @@ export class GroupManagerDraftRuntime {
           state: { ...state, activeKey: key },
           snapshot,
           focused,
-          session,
+          session: { ...session, includeLoot: true },
           group: session.group,
           entries: groupDraftEntries(
             session.group.quantities,

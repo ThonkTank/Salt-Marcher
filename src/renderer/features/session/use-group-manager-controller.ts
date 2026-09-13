@@ -38,6 +38,8 @@ export function useGroupManagerController(
     inspect: (creature: Creature) => void
     onError: (message: string) => void
     reinforcementMode: boolean
+    initialLootKey?: string
+    initialMode?: 'group' | 'loot'
   },
   ports: GroupManagerPorts
 ) {
@@ -45,17 +47,16 @@ export function useGroupManagerController(
   const initialFocused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const initialSelection =
-    props.group?.id ??
-    (initialFocused.groups.every((group) => group.archived)
-      ? newGroupDraftKey
-      : null)
+  const initialSelection = props.group?.id ?? newGroupDraftKey
   const { runtime, state, snapshot, pending, uncertain } =
     useGroupManagerDraftRuntime(
       {
         activeKey: initialSelection,
         initialGroup: props.group,
-        locationId: initialFocused.locationId
+        locationId: initialFocused.locationId,
+        ...(props.initialLootKey
+          ? { initialLootKey: props.initialLootKey }
+          : {})
       },
       props.snapshot
     )
@@ -95,6 +96,14 @@ export function useGroupManagerController(
     }
   )
   const dispatch = runtime.dispatch
+  useEffect(() => {
+    if (props.initialMode === 'loot')
+      runtime.dispatch({
+        kind: 'view',
+        catalogMode: 'loot',
+        workspaceMode: 'loot'
+      })
+  }, [runtime, props.initialMode])
   const focused = snapshot.scene.scenes.find(
     (scene) => scene.id === snapshot.scene.focusedSceneId
   )!
@@ -155,11 +164,12 @@ export function useGroupManagerController(
     state.activeKey && state.activeKey !== newGroupDraftKey
       ? state.activeKey
       : state.prospectiveGroupId
-  const assigned = snapshot.party.members.filter((member) =>
-    focused.partyMemberIds.includes(member.id)
+  const assigned = snapshot.party.members.filter(
+    (member) => member.active && focused.partyMemberIds.includes(member.id)
   )
   const canGenerate =
     state.activeKey !== null &&
+    (!ports.loot.scene || session?.lootLoaded === true) &&
     assigned.length > 0 &&
     assigned.every((member) => member.level !== null)
 

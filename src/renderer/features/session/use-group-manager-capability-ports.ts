@@ -7,7 +7,10 @@ import {
   type GroupLifecyclePort
 } from './use-group-lifecycle-port.js'
 import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
-import type { CommitGroupRewardInput } from '../../../shared/contracts/loot.js'
+import type {
+  CommitGroupEditorInput,
+  CommitGroupRewardInput
+} from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
@@ -35,10 +38,19 @@ export type GroupManagerPorts = Readonly<{
     }>
   session: Readonly<{ read(): Promise<LiveSessionSnapshot> }>
   campaignRules: Pick<SaltMarcherApi['campaignRules'], 'read'>
-  loot: Pick<
-    SaltMarcherApi['loot'],
-    'catalog' | 'generateForGroupDraft' | 'commitGroupReward'
-  > &
+  loot: Partial<
+    Pick<
+      SaltMarcherApi['loot'],
+      'scene' | 'read' | 'onChanged' | 'evaluateGroup' | 'commitGroupEditor'
+    >
+  > & {
+    groupEditorReceipt?: (
+      input: CommitGroupEditorInput
+    ) => ReturnType<SaltMarcherApi['loot']['groupEditorReceipt']>
+  } & Pick<
+      SaltMarcherApi['loot'],
+      'catalog' | 'generateForGroupDraft' | 'commitGroupReward'
+    > &
     Readonly<{
       groupRewardReceipt(
         input: CommitGroupRewardInput
@@ -86,6 +98,11 @@ export function useGroupManagerCapabilityPorts(): GroupManagerPorts {
       campaignRules: api.campaignRules,
       loot: {
         ...api.loot,
+        groupEditorReceipt: (input: CommitGroupEditorInput) =>
+          api.loot.groupEditorReceipt({
+            ...input,
+            campaignId: requireCampaign()
+          }),
         groupRewardReceipt: async (input: CommitGroupRewardInput) =>
           api.loot.groupRewardReceipt({
             ...input,

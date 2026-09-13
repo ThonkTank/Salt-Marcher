@@ -181,6 +181,8 @@ const partyActions = new PartyActionService(
   play
 )
 const lootComposition = createLootComposition({
+  lootRules: () =>
+    generatorPresets.configFor(campaigns.list().activeCampaignId).config.loot,
   partyActions,
   activeCampaignId: () => campaigns.activeCampaignId(),
   activeDatabase: activePersistence,

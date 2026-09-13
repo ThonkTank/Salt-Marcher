@@ -6,6 +6,8 @@ import { useGroupManagerCapabilityPorts } from './use-group-manager-capability-p
 import { useGroupManagerController } from './use-group-manager-controller.js'
 
 export type GroupDialogProps = Readonly<{
+  initialLootKey?: string
+  initialMode?: 'group' | 'loot'
   snapshot: LiveSessionSnapshot
   group: SceneGroup | null
   close: () => void

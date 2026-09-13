@@ -1,3 +1,4 @@
+import { saveGroupEditor } from './group-editor-save.js'
 import type {
   CommitGroupRewardInput,
   CommitGroupRewardResult
@@ -100,6 +101,15 @@ export function createGroupManagerLootCommands(
   }
 
   async function commitLoot(): Promise<CommitGroupRewardResult | null> {
+    if (ports.loot.commitGroupEditor) {
+      const result = await saveGroupEditor(input, commands)
+      return result
+        ? {
+            groupResult: result.groupResult,
+            treasure: result.treasures[0]?.treasure ?? null
+          }
+        : null
+    }
     const key = state.activeKey
     const run = session?.loot.run
     const treasure = run?.treasures[0]

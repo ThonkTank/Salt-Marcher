@@ -62,6 +62,10 @@ const testApplication = electronTestApplication(
   join(process.cwd(), 'out', 'main', 'index.js'),
   [
     '--no-sandbox',
+    // Exercise native Electron zoom instead of Wayland's emulated resize fallback.
+    ...(suite === 'groupLoot' && process.platform === 'linux'
+      ? ['--ozone-platform=x11']
+      : []),
     '--salt-marcher-e2e-runtime',
     `--user-data-dir=${browserRuntimePath(userData)}`,
     `--salt-marcher-profile=${userData}`,

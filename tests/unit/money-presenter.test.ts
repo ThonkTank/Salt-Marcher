@@ -8,6 +8,8 @@ describe('renderer Money presenter', () => {
     expect(formatCopper(0)).toBe('0 GM')
     expect(formatCopper(1)).toBe('0,01 GM')
     expect(formatCopper(105)).toBe('1,05 GM')
+    expect(formatCopper(-39950)).toBe('-399,50 GM')
+    expect(formatCopper(-1)).toBe('-0,01 GM')
     expect(formatCopper(12_300)).toBe('123 GM')
   })
 

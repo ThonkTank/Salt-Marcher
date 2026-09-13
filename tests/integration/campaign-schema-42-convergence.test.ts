@@ -46,7 +46,7 @@ it.each(['main42', 'candidate42', 'legacy41'] as const)(
           ? db.prepare('SELECT * FROM party_action_history').all()
           : []
       applySchemaMigrations(db, { path: ':memory:', role: 'campaign' })
-      expect(db.pragma('user_version', { simple: true })).toBe(43)
+      expect(db.pragma('user_version', { simple: true })).toBe(44)
       expect(db.prepare('SELECT * FROM player_characters').get()).toEqual({
         rest_sections_closed: 0,
         rest_section_start_xp: 0,

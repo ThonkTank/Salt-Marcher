@@ -47,6 +47,8 @@ export type SessionLootRow = Readonly<{
 export type SessionDialogState =
   | Readonly<{ kind: 'none' }>
   | Readonly<{
+      initialLootKey?: string
+      initialMode?: 'group' | 'loot'
       kind: 'group-editor'
       group: SceneGroup | null
       reinforcement: boolean
@@ -95,6 +97,12 @@ export type SessionWorkspaceActions = Readonly<{
   setSceneLocation: (locationId: string | null) => void
   openLedger: (character: PartyCharacter) => void
   inspectCreature: (creatureId: string, context: string) => void
+  changeGroupQuantity?: (
+    groupId: string,
+    creatureId: string,
+    delta: number | null
+  ) => void
+  editGroupLoot?: (group: SceneGroup) => void
   editGroup: (group: SceneGroup) => void
   manageGroups: () => void
   reinforce: () => void

@@ -35,6 +35,10 @@ export function SessionDialogHost(props: {
         <LazyGroupDialog
           snapshot={props.model.snapshot}
           group={dialog.group}
+          initialMode={dialog.initialMode ?? 'group'}
+          {...(dialog.initialLootKey
+            ? { initialLootKey: dialog.initialLootKey }
+            : {})}
           close={props.actions.closeDialog}
           saved={props.actions.groupSaved}
           lootChanged={props.actions.lootChanged}

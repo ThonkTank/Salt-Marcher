@@ -1,12 +1,6 @@
 import { z } from 'zod'
 
-export const lootRarityKeys = [
-  'Common',
-  'Uncommon',
-  'Rare',
-  'Very Rare',
-  'Legendary'
-] as const
+export { lootRarityKeys } from '../values/loot-rarity.js'
 
 const shareSchema = z.number().min(0).max(1)
 const weightSchema = z.number().nonnegative().max(100)

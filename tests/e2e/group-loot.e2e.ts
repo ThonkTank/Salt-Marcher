@@ -1,182 +1,122 @@
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
-import type {
-  Browser as WdioBrowser,
-  ChainablePromiseArray,
-  Element as WdioElement
-} from 'webdriverio'
+import type { Browser as WdioBrowser } from 'webdriverio'
 import {
   expectAccessible,
   expectElementGolden,
-  replaceFieldValue,
   setElectronWindowSize
 } from './support/e2e-assertions.js'
 
 describe('Group Loot editor', () => {
-  it('edits only quantities and packing while keeping generated facts fixed', async () => {
+  it('manually selects loot and keeps both compact views and histories', async () => {
     const client = browser as unknown as WdioBrowser
     await resumeCampaignFromScreen(client)
     await setElectronWindowSize(client, 1280, 800)
-    await (
-      await client.$('h1=Session · Gruppenloot-Abnahme')
-    ).waitForExist({ timeout: 15_000 })
-    await (
-      await client.$(
-        '[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]'
-      )
-    ).click()
-    const dialog = await client.$(
-      'section[aria-labelledby="group-builder-title"]'
+    await client
+      .$('h1=Session · Gruppenloot-Abnahme')
+      .waitForExist({ timeout: 15000 })
+    const expand = client.$('button[aria-label="E2E Gruppenbeute aufklappen"]')
+    if (await expand.isExisting()) await expand.click()
+    await client
+      .$('.group-register[aria-label="E2E Gruppenbeute"]')
+      .$('button=Loot bearbeiten')
+      .click()
+    const dialog = client.$('section[aria-labelledby="group-builder-title"]')
+    await dialog.waitForDisplayed({ timeout: 10000 })
+    await expect(dialog.$('[role="tab"]=Loot')).toHaveAttribute(
+      'aria-selected',
+      'true'
     )
-    await dialog.waitForDisplayed({ timeout: 10_000 })
-    await client.waitUntil(
-      () =>
-        client.execute(() =>
-          Boolean(
-            document.activeElement?.closest(
-              'section[aria-labelledby="group-builder-title"]'
-            )
-          )
-        ),
-      { timeout: 5_000, timeoutMsg: 'Focus did not enter the Group dialog.' }
+    const search = () => dialog.$('.loot-catalog-pane input[type="search"]')
+    await search().setValue('Gold Coin')
+    const add = dialog.$('button[aria-label="Gold Coin hinzufügen"]')
+    try {
+      await add.waitForDisplayed()
+    } catch (cause) {
+      throw new Error(await dialog.getText(), { cause })
+    }
+    await add.click()
+    await dialog.$('.group-editor-selection').$('summary=Münzen').click()
+    const coins = dialog.$(
+      '.group-editor-selection button[aria-label="Gold Coin: Menge erhöhen"]'
     )
-    await (
-      await dialog.$('select[aria-label="Gruppe auswählen"]')
-    ).selectByVisibleText('E2E Gruppenbeute')
-    await (await dialog.$('[role="tab"]=Schatz-Draft')).click()
-    const generate = await dialog.$('button=Loot erzeugen')
-    await client.waitUntil(() => generate.isEnabled(), {
-      timeout: 10_000,
-      timeoutMsg: 'Group Loot generator did not become available.'
-    })
-    await generate.click()
-    const panel = await dialog.$('.group-loot-inline-panel')
-    await (
-      await panel.$('.generated-loot-results')
-    ).waitForDisplayed({
-      timeout: 15_000
-    })
-
-    await (await dialog.$('[role="tab"]=Loot')).click()
-    const catalog = await dialog.$('.loot-catalog-pane')
-    await catalog.waitForDisplayed({ timeout: 10_000 })
-    expect(await catalog.$$('button[aria-label$=" hinzufügen"]')).toHaveLength(
-      0
+    await coins.click()
+    await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
+    await dialog.$('[role="tab"]=Monster').click()
+    await expect(dialog.$('input[aria-label="Monster suchen"]')).toBeDisplayed()
+    const monsterCatalog = () => dialog.$('.group-editor-catalog')
+    await monsterCatalog().$('summary=Filter').click()
+    for (const label of [
+      'CR minimum',
+      'CR maximum',
+      'Größe',
+      'Typ',
+      'Unterart',
+      'Biom',
+      'Gesinnung',
+      'Tabelle',
+      'Fraktionen',
+      'Ort'
+    ])
+      await expect(monsterCatalog().$(`[aria-label="${label}"]`)).toBeExisting()
+    await monsterCatalog()
+      .$('select[aria-label="CR maximum"]')
+      .selectByAttribute('value', '1')
+    await dialog.$('[role="tab"]=Loot').click()
+    await dialog.$('[role="tab"]=Monster').click()
+    await monsterCatalog().$('summary=Filter').click()
+    await expect(
+      monsterCatalog().$('select[aria-label="CR maximum"]')
+    ).toHaveValue('1')
+    await dialog.$('[role="tab"]=Loot').click()
+    await expect(search()).toHaveValue('Gold Coin')
+    await dialog.$('.group-editor-selection').$('summary=Münzen').click()
+    await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
+    await dialog.$('button[aria-label="Änderung zurücknehmen"]').click()
+    await expect(dialog.$('.group-editor-selection output')).toHaveText('1')
+    await dialog.$('button[aria-label="Änderung wiederholen"]').click()
+    await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
+    await dialog.$('button=Loot generieren').click()
+    const discard = client.$('.discard-changes-dialog')
+    await discard.waitForDisplayed()
+    await discard.$('button=Abbrechen').click()
+    await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
+    await expect(dialog.$('.group-editor-balance')).toHaveText(
+      expect.stringContaining('Abweichung')
     )
-
-    const item = await findStackableItem(
-      await panel.$$('.treasure-item-editor-row')
-    )
-    await item.waitForDisplayed({ timeout: 5_000 })
-    const name = await item.$('input[aria-label="Gegenstand"]')
-    const value = await item.$('input[aria-label="Wert in Kupfermünzen"]')
-    const stackable = await item.$('input[aria-label="Teilbar"]')
-    const removeItem = await item.$('button[aria-label="Gegenstand entfernen"]')
-    expect(await name.getAttribute('readonly')).not.toBeNull()
-    expect(await value.getAttribute('readonly')).not.toBeNull()
-    expect(await stackable.isEnabled()).toBe(false)
-    expect(await removeItem.isEnabled()).toBe(false)
-
-    const quantity = await item.$('input[aria-label="Menge"]')
-    const quantityBefore = Number(await quantity.getValue())
-    await replaceFieldValue(client, quantity, String(quantityBefore + 1))
-
-    const container = await panel.$('.treasure-container-editor-row')
-    await container.waitForDisplayed({ timeout: 5_000 })
-    expect(
-      await (
-        await container.$('input[aria-label="Behälter"]')
-      ).getAttribute('readonly')
-    ).not.toBeNull()
-    expect(
-      await (
-        await container.$('input[aria-label="Kapazität"]')
-      ).getAttribute('readonly')
-    ).not.toBeNull()
-    expect(
-      await (
-        await container.$('button[aria-label="Behälter entfernen"]')
-      ).isEnabled()
-    ).toBe(false)
-
-    await client.execute(() => {
-      document.querySelector<HTMLElement>('.group-draft-scroll')?.focus()
-      document.activeElement?.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'z',
-          ctrlKey: true,
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    })
-    await client.waitUntil(
-      async () => Number(await quantity.getValue()) === quantityBefore,
-      { timeout: 5_000, timeoutMsg: 'Keyboard undo did not restore quantity.' }
-    )
-    await client.execute(() => {
-      document.activeElement?.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'z',
-          ctrlKey: true,
-          shiftKey: true,
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    })
-    await client.waitUntil(
-      async () => Number(await quantity.getValue()) === quantityBefore + 1,
-      { timeout: 5_000, timeoutMsg: 'Keyboard redo did not restore quantity.' }
-    )
-
-    expect(await panel.getText()).toContain('Magie Ist/Soll')
-    await (await panel.$('button=Loot neu würfeln')).click()
-    const discard = await client.$('.discard-changes-dialog')
-    await discard.waitForDisplayed({ timeout: 5_000 })
-    expect(await discard.getText()).toContain(
-      'Eigene Loot-Änderungen verwerfen?'
-    )
-    await (await discard.$('button=Abbrechen')).click()
-    await discard.waitForExist({ reverse: true, timeout: 5_000 })
-
-    await client.execute(() => {
-      document.documentElement.style.zoom = '200%'
-    })
-    const layout = await client.execute(() => {
-      const pane = (selector: string) => {
-        const root = document.querySelector<HTMLElement>(selector)
-        if (!root) return null
-        const scrollOwners = [
-          root,
-          ...root.querySelectorAll<HTMLElement>('*')
-        ].filter((element) => {
-          const overflow = getComputedStyle(element).overflowY
-          return overflow === 'auto' || overflow === 'scroll'
-        }).length
-        return {
-          horizontalOverflow: root.scrollWidth - root.clientWidth,
-          scrollOwners
-        }
-      }
-      return {
-        catalog: pane('.loot-catalog-pane'),
-        workspace: pane('.group-manager-draft-sheet')
-      }
-    })
-    expect(layout.catalog?.horizontalOverflow ?? 1).toBeLessThanOrEqual(1)
-    expect(layout.workspace?.horizontalOverflow ?? 1).toBeLessThanOrEqual(1)
-    expect(layout.catalog?.scrollOwners).toBe(1)
-    expect(layout.workspace?.scrollOwners).toBe(1)
-    await client.execute(() => {
-      document.documentElement.style.zoom = ''
-    })
-
+    await setElectronWindowSize(client, 720, 540)
     await expectAccessible(client)
+    await captureEditor(client, 'group-editor-minimum')
+    await setElectronWindowSize(client, 1280, 800)
+    await setZoom(client, 2)
+    const geometry = await client.execute(() => {
+      const editor = document.querySelector<HTMLElement>('.group-editor')!
+      const rect = editor.getBoundingClientRect()
+      return {
+        right: rect.right,
+        bottom: rect.bottom,
+        width: innerWidth,
+        height: innerHeight,
+        overflow: [
+          ...document.querySelectorAll<HTMLElement>(
+            '.group-editor,.loot-catalog-pane,.group-editor-selection'
+          )
+        ].map((e) => e.scrollWidth - e.clientWidth)
+      }
+    })
+    expect(geometry.right).toBeLessThanOrEqual(geometry.width + 1)
+    expect(geometry.bottom).toBeLessThanOrEqual(geometry.height + 1)
+    for (const value of geometry.overflow) expect(value).toBeLessThanOrEqual(1)
+    await expectAccessible(client)
+    await captureEditor(client, 'group-editor-zoom')
+    await setZoom(client, 1)
+    await setElectronWindowSize(client, 1280, 800)
     await expectElementGolden(
       client,
       'group-loot-preview-light',
-      '.group-loot-inline-panel',
+      '.group-editor',
       false
     )
     await client.execute(() => {
@@ -185,17 +125,67 @@ describe('Group Loot editor', () => {
     await expectElementGolden(
       client,
       'group-loot-preview-dark',
-      '.group-loot-inline-panel',
+      '.group-editor',
       false
     )
   })
 })
 
-async function findStackableItem(
-  rows: readonly WdioElement[] | ChainablePromiseArray
-): Promise<WdioElement> {
-  for await (const row of rows)
-    if (await (await row.$('input[aria-label="Teilbar"]')).isSelected())
-      return row
-  throw new Error('Generated Group Loot has no stackable item row.')
+async function setZoom(client: WdioBrowser, factor: number) {
+  // The resize helper can emulate a viewport on desktop hosts. Clear that
+  // override so this assertion exercises Electron zoom on the real window.
+  const url = await client.getUrl()
+  const puppeteer = await client.getPuppeteer()
+  const page = (await puppeteer.pages()).find(
+    (candidate) => candidate.url() === url
+  )
+  if (!page) throw new Error('Renderer page missing')
+  const cdp = await page.createCDPSession()
+  await cdp.send('Emulation.clearDeviceMetricsOverride')
+  await cdp.detach()
+  const electronClient = client as WdioBrowser & {
+    electron: {
+      execute: (
+        script: (
+          electron: typeof import('electron'),
+          url: string,
+          factor: number
+        ) => number,
+        url: string,
+        factor: number
+      ) => Promise<number>
+    }
+  }
+  const previousScale = await client.execute(() => devicePixelRatio)
+  const previousZoom = await electronClient.electron.execute(
+    (electron, url, next) => {
+      const candidates = electron.BrowserWindow.getAllWindows().filter(
+        (w) => w.webContents.getURL() === url
+      )
+      const target =
+        candidates.find((w) => w.isFocused()) ??
+        candidates.find((w) => w.isVisible()) ??
+        candidates[0]
+      if (!target) throw new Error('Renderer window missing')
+      const previous = target.webContents.getZoomFactor()
+      target.webContents.setZoomFactor(next)
+      return previous
+    },
+    await client.getUrl(),
+    factor
+  )
+  await client.waitUntil(
+    async () =>
+      Math.abs(
+        (await client.execute(() => devicePixelRatio)) -
+          (previousScale * factor) / previousZoom
+      ) < 0.01
+  )
+}
+
+async function captureEditor(client: WdioBrowser, name: string) {
+  const artifacts =
+    process.env['SALT_MARCHER_E2E_ARTIFACT_DIR'] ?? '.tmp/visual-diffs'
+  mkdirSync(artifacts, { recursive: true })
+  await client.saveScreenshot(join(artifacts, `${name}.png`))
 }

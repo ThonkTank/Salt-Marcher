@@ -1,3 +1,5 @@
+import { saveGroupEditor } from './group-editor-save.js'
+import { allEditorLoot } from './group-editor-loot.js'
 import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
@@ -104,17 +106,32 @@ export function createGroupManagerCommands(
           }
         )
       })
-      await lootCommands.generateLoot(
-        groupDraftEntries(quantities, deadQuantities),
-        generationSeed(ports.runtime.e2e),
-        key
+      if (
+        !input.session ||
+        !Object.values(allEditorLoot(input.session)).some(
+          (l) =>
+            l.persisted ||
+            l.history?.draft.items.length ||
+            l.history?.draft.containers.length
+        )
       )
+        await lootCommands.generateLoot(
+          groupDraftEntries(quantities, deadQuantities),
+          generationSeed(ports.runtime.e2e),
+          key
+        )
     } else if (outcome.status === 'failure') failCommand(key, outcome.cause)
   }
 
   async function save(): Promise<LiveSessionSnapshot | null> {
     const key = state.activeKey
     if (!key || !validateAvailableMonster()) return null
+    if (ports.loot?.commitGroupEditor) {
+      const result = await saveGroupEditor(input, commands)
+      return result
+        ? applySceneGroupCommandResult(snapshot, result.groupResult)
+        : null
+    }
     const request: SaveSceneGroupInput = {
       commandId: crypto.randomUUID(),
       sceneId: focused.id,

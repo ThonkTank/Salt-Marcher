@@ -1,4 +1,7 @@
-import { initializeLootOperationJournalSchema } from '../../loot/loot-operation-journal.js'
+import {
+  initializeLootOperationJournalSchema,
+  migrateGroupEditorReceipts
+} from '../../loot/loot-operation-journal.js'
 import { initializePartyHistorySchema } from '../../party/party-history-store.js'
 import { initializeHexRoutePlanSchema } from '../../hex/hex-route-plan-store.js'
 import { initializeHexTravelCommandJournal } from '../../hex/hex-travel-command-journal.js'
@@ -368,6 +371,23 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-42-to-43-converge-party-history-and-loot-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-43-to-44-group-editor-receipts',
+      role: 'campaign',
+      fromVersion: 43,
+      toVersion: 44,
+      migrate(database) {
+        migrateGroupEditorReceipts(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-43-to-44-group-editor-receipts',
             new Date().toISOString()
           )
       }

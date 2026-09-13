@@ -1,190 +1,103 @@
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
-import type {
-  Browser as WdioBrowser,
-  ChainablePromiseArray,
-  Element as WdioElement
-} from 'webdriverio'
-import {
-  replaceFieldValue,
-  setElectronWindowSize
-} from './support/e2e-assertions.js'
-import {
-  clickWhenInteractable,
-  selectByVisibleTextWhenInteractable
-} from './support/e2e-interactions.js'
+import type { Browser as WdioBrowser } from 'webdriverio'
+import { setElectronWindowSize } from './support/e2e-assertions.js'
 import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot atomic commit', () => {
-  it('persists editable quantity and packing with generated references', async () => {
+  it('persists mixed manual and generated loot with original references', async () => {
     const client = browser as unknown as WdioBrowser
     await resumeCampaignFromScreen(client)
     await setElectronWindowSize(client, 1280, 800)
-    await (
-      await client.$('h1=Session · Gruppenloot-Abnahme')
-    ).waitForExist({ timeout: 15_000 })
-    await clickWhenInteractable(
-      client,
-      async () =>
-        await client.$(
-          '[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]'
-        )
-    )
-    const dialogSelector = 'section[aria-labelledby="group-builder-title"]'
-    let dialog = await client.$(dialogSelector)
-    await dialog.waitForDisplayed({ timeout: 10_000 })
-    await selectByVisibleTextWhenInteractable(
-      client,
-      async () =>
-        await (
-          await client.$(dialogSelector)
-        ).$('select[aria-label="Gruppe auswählen"]'),
-      'E2E Gruppenbeute'
-    )
-    await clickWhenInteractable(
-      client,
-      async () =>
-        await (await client.$(dialogSelector)).$('[role="tab"]=Schatz-Draft')
-    )
+    await client
+      .$('h1=Session · Gruppenloot-Abnahme')
+      .waitForExist({ timeout: 15000 })
+    const expand = client.$('button[aria-label="E2E Gruppenbeute aufklappen"]')
+    if (await expand.isExisting()) await expand.click()
+    await client
+      .$('.group-register[aria-label="E2E Gruppenbeute"]')
+      .$('button=Loot bearbeiten')
+      .click()
+    const dialog = client.$('section[aria-labelledby="group-builder-title"]')
+    await dialog.waitForDisplayed({ timeout: 10000 })
+    const generate = dialog.$('button=Loot generieren')
+    await client.waitUntil(() => generate.isEnabled(), { timeout: 10000 })
+    await generate.click()
     await client.waitUntil(
       async () =>
-        await (
-          await (await client.$(dialogSelector)).$('button=Loot erzeugen')
-        ).isEnabled(),
-      { timeout: 10_000 }
+        await dialog.$('[data-group-loot-phase="ready"]').isExisting(),
+      { timeout: 15000 }
     )
-    await clickWhenInteractable(
-      client,
-      async () =>
-        await (await client.$(dialogSelector)).$('button=Loot erzeugen')
-    )
-    dialog = await client.$(dialogSelector)
-    const panel = await dialog.$('.group-loot-inline-panel')
-    await (
-      await panel.$('.generated-loot-results')
-    ).waitForDisplayed({
-      timeout: 15_000
-    })
-
-    const catalog = await dialog.$('.loot-catalog-pane')
-    await catalog.waitForDisplayed({ timeout: 10_000 })
-    expect(await catalog.$$('button[aria-label$=" hinzufügen"]')).toHaveLength(
-      0
-    )
-
-    const item = await findStackableItem(
-      await panel.$$('.treasure-item-editor-row')
-    )
-    const itemName = await (
-      await item.$('input[aria-label="Gegenstand"]')
-    ).getValue()
-    const quantity = await item.$('input[aria-label="Menge"]')
-    const committedQuantity = Number(await quantity.getValue()) + 1
-    await replaceFieldValue(client, quantity, String(committedQuantity))
-
-    const container = await panel.$('.treasure-container-editor-row')
-    await container.waitForDisplayed({ timeout: 5_000 })
-    const containerName = await (
-      await container.$('input[aria-label="Behälter"]')
-    ).getValue()
-    await selectByVisibleTextWhenInteractable(
-      client,
-      async () => {
-        const currentDialog = await client.$(dialogSelector)
-        const currentPanel = await currentDialog.$('.group-loot-inline-panel')
-        const currentItem = await findStackableItem(
-          await currentPanel.$$('.treasure-item-editor-row')
-        )
-        return await currentItem.$('select[aria-label="Behälter"]')
-      },
-      containerName
-    )
-
-    const commit = await panel.$('button=Gruppe & Loot übernehmen')
-    expect(await commit.isEnabled()).toBe(true)
-    await clickWhenInteractable(
-      client,
-      async () =>
-        await (
-          await (await client.$(dialogSelector)).$('.group-loot-inline-panel')
-        ).$('button=Gruppe & Loot übernehmen')
-    )
-    const readCommitState = async (): Promise<'pending' | 'closed' | 'error'> =>
-      await client.execute((selector) => {
-        const currentDialog = document.querySelector(selector)
-        if (!currentDialog) return 'closed'
-        const error = currentDialog.querySelector('.group-loot-inline-error')
-        return error && error.getClientRects().length > 0 ? 'error' : 'pending'
-      }, dialogSelector)
-    try {
-      await client.waitUntil(
-        async () => (await readCommitState()) !== 'pending',
-        { timeout: 10_000, timeoutMsg: 'Group Loot commit did not settle.' }
+    await dialog
+      .$('.loot-catalog-pane input[type="search"]')
+      .setValue('Gold Coin')
+    const add = dialog.$('button[aria-label="Gold Coin hinzufügen"]')
+    await add.waitForDisplayed()
+    await add.click()
+    await dialog.$('.group-editor-selection').$('summary=Münzen').click()
+    await dialog
+      .$(
+        '.group-editor-selection button[aria-label="Gold Coin: Menge erhöhen"]'
       )
-    } catch (cause) {
-      const currentPanel = await (
-        await client.$(dialogSelector)
-      ).$('.group-loot-inline-panel')
-      throw new Error(
-        `Group Loot commit did not settle: ${await currentPanel.getText()}`,
-        { cause }
-      )
-    }
-    const commitState = await readCommitState()
-    if (commitState === 'error')
-      throw new Error(
-        `Group Loot commit failed: ${await client.execute(
-          (selector) =>
-            document
-              .querySelector(selector)
-              ?.querySelector('.group-loot-inline-error')?.textContent ?? '',
-          dialogSelector
-        )}`
-      )
+      .click()
+    await dialog.$('[role="tab"]=Monster').click()
+    const increment = dialog.$(
+      '.group-editor-selection button[aria-label$="Menge erhöhen"]'
+    )
+    await increment.click()
+    await dialog.$('button=Übernehmen').click()
+    await dialog.waitForExist({ reverse: true, timeout: 10000 })
     await client.reloadSession()
     await resumeCampaignFromScreen(client)
     await waitForGmRendererReady(client)
-    const committed = await client.execute(async () => {
-      const api = window.saltMarcher
-      const campaignId = (await api.campaigns.list()).activeCampaignId!
-      const live = await api.session.read({ campaignId })
-      const scene = live.scene.scenes.find(
-        (candidate) => candidate.id === live.scene.focusedSceneId
-      )!
-      const group = scene.groups.find(
-        (candidate) => candidate.name === 'E2E Gruppenbeute'
-      )!
-      const projection = await api.loot.scene({ sceneId: scene.id })
-      const treasures =
-        projection.groupTreasures.find(
-          (candidate) => candidate.groupId === group.id
-        )?.treasures ?? []
-      return {
-        count: treasures.length,
-        items: treasures.flatMap((treasure) => treasure.items),
-        containers: treasures.flatMap((treasure) => treasure.containers)
-      }
+    const result = await client.execute(async () => {
+      const api = window.saltMarcher,
+        campaignId = (await api.campaigns.list()).activeCampaignId!
+      const snapshot = await api.session.read({ campaignId }),
+        scene = snapshot.scene.scenes.find(
+          (s) => s.id === snapshot.scene.focusedSceneId
+        )!
+      const group = scene.groups.find((g) => g.name === 'E2E Gruppenbeute')!
+      const loot = await api.loot.scene({ sceneId: scene.id })
+      return (
+        loot.groupTreasures.find((t) => t.groupId === group.id)?.treasures ?? []
+      )
     })
-    const committedItem = committed.items.find(
-      (candidate) => candidate.definition.name === itemName
+    expect(result).toHaveLength(1)
+    expect(result[0]?.source.kind).toBe('generated')
+    expect(
+      result[0]?.items.some(
+        (i) =>
+          i.itemReference.kind === 'generated' &&
+          i.provenance.kind === 'generator'
+      )
+    ).toBe(true)
+    expect(
+      result[0]?.items.find(
+        (i) =>
+          i.itemReference.kind === 'catalog' &&
+          i.itemReference.catalogId === 'coin:gp'
+      )?.quantity
+    ).toBe(2)
+    const expanded = client.$(
+      'button[aria-label="E2E Gruppenbeute aufklappen"]'
     )
-    const committedContainer = committed.containers.find(
-      (candidate) => candidate.name === containerName
+    if (await expanded.isExisting()) await expanded.click()
+    const register = client.$('.group-register[aria-label="E2E Gruppenbeute"]')
+    const species = register.$('.scene-group-species')
+    const original = Number(await species.$('output').getText())
+    const increase = species.$('button[aria-label$="Menge erhöhen"]')
+    await increase.click()
+    await increase.click()
+    await expect(species.$('output')).toHaveText(String(original + 2))
+    await species.$('button[aria-label$="Menge verringern"]').click()
+    await expect(species.$('output')).toHaveText(String(original + 1))
+    const count = await register.$$('.scene-group-species').length
+    await species.$('button[aria-label$=" entfernen"]').click()
+    await client.waitUntil(
+      async () =>
+        (await register.$$('.scene-group-species').length) === count - 1
     )
-    expect(committed.count).toBe(1)
-    expect(committedItem).toMatchObject({
-      quantity: committedQuantity,
-      provenance: { kind: 'generator' }
-    })
-    expect(committedItem?.containerId).toBe(committedContainer?.id)
+    await expect(dialog).not.toBeExisting()
   })
 })
-
-async function findStackableItem(
-  rows: readonly WdioElement[] | ChainablePromiseArray
-): Promise<WdioElement> {
-  for await (const row of rows)
-    if (await (await row.$('input[aria-label="Teilbar"]')).isSelected())
-      return row
-  throw new Error('Generated Group Loot has no stackable item row.')
-}

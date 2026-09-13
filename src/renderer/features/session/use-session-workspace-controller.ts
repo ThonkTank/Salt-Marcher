@@ -1,3 +1,4 @@
+import { useInlineGroupCommands } from './use-inline-group-commands.js'
 import { useGroupLifecycle } from './use-group-lifecycle.js'
 import type { Dispatch, SetStateAction } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
@@ -67,7 +68,14 @@ export function useSessionWorkspaceController(input: {
       })
   })
 
+  const inline = useInlineGroupCommands({
+    campaignId: input.campaignId,
+    sceneId: focused.id,
+    applied: input.setSnapshot
+  })
   const actions: SessionWorkspaceActions = {
+    changeGroupQuantity: inline.change,
+    editGroupLoot: dialog.editGroupLoot,
     toggleRow: groups.toggleRow,
     focusScene: scene.focus,
     setSceneLocation: scene.setLocation,
@@ -96,8 +104,23 @@ export function useSessionWorkspaceController(input: {
     },
     openLootInbox: () => void loot.openInbox(),
     loadMoreLoot: () => void loot.loadMore(),
-    createLoot: dialog.createLoot,
-    editLoot: dialog.editLoot,
+    createLoot: (anchor) => {
+      const group =
+        anchor.kind === 'group' && anchor.sceneId === focused.id
+          ? focused.groups.find((g) => g.id === anchor.groupId && !g.archived)
+          : null
+      if (group) dialog.editGroupLoot(group, crypto.randomUUID())
+      else dialog.createLoot(anchor)
+    },
+    editLoot: (treasure) => {
+      const anchor = treasure.anchor
+      const group =
+        anchor.kind === 'group' && anchor.sceneId === focused.id
+          ? focused.groups.find((g) => g.id === anchor.groupId && !g.archived)
+          : null
+      if (group) dialog.editGroupLoot(group, treasure.id)
+      else dialog.editLoot(treasure)
+    },
     distribute: dialog.distribute,
     closeDialog: dialog.close,
     groupSaved: (snapshot) => {
@@ -156,7 +179,7 @@ export function useSessionWorkspaceController(input: {
   return {
     model,
     actions,
-    lifecycleNotice: lifecycle.notice,
+    lifecycleNotice: inline.notice ?? lifecycle.notice,
     sceneNotice: scene.notice,
     sceneDialog: scene.dialog,
     sceneBusy: scene.busy
