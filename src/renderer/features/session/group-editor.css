@@ -1,7 +1,7 @@
 .group-editor.session-group-manager {
-  width: min(1080px, calc(100vw - 32px));
-  height: min(760px, calc(100vh - 32px));
-  max-height: calc(100vh - 32px);
+  width: min(1080px, calc(100vw - 2rem));
+  height: min(760px, calc(100vh - 2rem));
+  max-height: calc(100vh - 2rem);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   padding: 0;
@@ -261,16 +261,32 @@
   gap: var(--space-2);
 }
 @media (max-width: 800px) {
+  .group-editor-context {
+    display: none;
+  }
+}
+@media (max-height: 480px) {
+  .group-editor > header,
+  .group-editor > footer,
+  .group-editor .creature-collection-tools {
+    padding-block: var(--space-1);
+  }
+  .group-editor button:not(.group-editor-quantity button) {
+    min-height: 28px;
+    padding: var(--space-1) var(--space-2);
+  }
+}
+@media (max-width: 560px) {
   .group-editor.session-group-manager {
-    width: calc(100vw - 12px);
-    height: calc(100vh - 12px);
-    max-height: calc(100vh - 12px);
+    width: calc(100vw - 2rem);
+    height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
   }
   .group-editor .creature-collection-layout {
     display: grid;
     grid-template-areas: 'catalog' 'divider' 'draft';
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(110px, 1fr) 1px minmax(180px, 1.2fr);
+    grid-template-rows: minmax(200px, 1fr) 1px minmax(240px, 1.2fr);
     overflow: auto;
   }
   .group-editor .creature-collection-divider {

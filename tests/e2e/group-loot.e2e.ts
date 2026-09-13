@@ -1,3 +1,5 @@
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
@@ -86,6 +88,7 @@ describe('Group Loot editor', () => {
     )
     await setElectronWindowSize(client, 720, 540)
     await expectAccessible(client)
+    await captureEditor(client, 'group-editor-minimum')
     await setElectronWindowSize(client, 1280, 800)
     await setZoom(client, 2)
     const geometry = await client.execute(() => {
@@ -107,7 +110,9 @@ describe('Group Loot editor', () => {
     expect(geometry.bottom).toBeLessThanOrEqual(geometry.height + 1)
     for (const value of geometry.overflow) expect(value).toBeLessThanOrEqual(1)
     await expectAccessible(client)
+    await captureEditor(client, 'group-editor-zoom')
     await setZoom(client, 1)
+    await setElectronWindowSize(client, 1280, 800)
     await expectElementGolden(
       client,
       'group-loot-preview-light',
@@ -127,6 +132,17 @@ describe('Group Loot editor', () => {
 })
 
 async function setZoom(client: WdioBrowser, factor: number) {
+  // The resize helper can emulate a viewport on desktop hosts. Clear that
+  // override so this assertion exercises Electron zoom on the real window.
+  const url = await client.getUrl()
+  const puppeteer = await client.getPuppeteer()
+  const page = (await puppeteer.pages()).find(
+    (candidate) => candidate.url() === url
+  )
+  if (!page) throw new Error('Renderer page missing')
+  const cdp = await page.createCDPSession()
+  await cdp.send('Emulation.clearDeviceMetricsOverride')
+  await cdp.detach()
   const electronClient = client as WdioBrowser & {
     electron: {
       execute: (
@@ -134,13 +150,14 @@ async function setZoom(client: WdioBrowser, factor: number) {
           electron: typeof import('electron'),
           url: string,
           factor: number
-        ) => void,
+        ) => number,
         url: string,
         factor: number
-      ) => Promise<void>
+      ) => Promise<number>
     }
   }
-  await electronClient.electron.execute(
+  const previousScale = await client.execute(() => devicePixelRatio)
+  const previousZoom = await electronClient.electron.execute(
     (electron, url, next) => {
       const candidates = electron.BrowserWindow.getAllWindows().filter(
         (w) => w.webContents.getURL() === url
@@ -150,10 +167,25 @@ async function setZoom(client: WdioBrowser, factor: number) {
         candidates.find((w) => w.isVisible()) ??
         candidates[0]
       if (!target) throw new Error('Renderer window missing')
+      const previous = target.webContents.getZoomFactor()
       target.webContents.setZoomFactor(next)
+      return previous
     },
     await client.getUrl(),
     factor
   )
-  await client.pause(150)
+  await client.waitUntil(
+    async () =>
+      Math.abs(
+        (await client.execute(() => devicePixelRatio)) -
+          (previousScale * factor) / previousZoom
+      ) < 0.01
+  )
+}
+
+async function captureEditor(client: WdioBrowser, name: string) {
+  const artifacts =
+    process.env['SALT_MARCHER_E2E_ARTIFACT_DIR'] ?? '.tmp/visual-diffs'
+  mkdirSync(artifacts, { recursive: true })
+  await client.saveScreenshot(join(artifacts, `${name}.png`))
 }
