@@ -1,7 +1,10 @@
 # Party Domain Model
 
-Current consolidated desktop behavior is defined by [Party window](../requirements/requirements-party-window.md).
-Its XP, rest, history and window decisions supersede conflicting historical rules below.
+Current behavior is defined by [Party window](../requirements/requirements-party-window.md).
+The architectural terminology (`PartyApi`, `PartyRoster` and character-owned
+travel storage) below describes the historical model, not the Electron target
+architecture. Current responsibilities follow the target architecture and the
+Party window specification. The progression rules below reflect current behavior.
 
 ## Context Role
 
@@ -40,7 +43,8 @@ The authored write model is the persisted Campaign Roster and character state:
 - optional player, species, class, ordered language, level, passive
   Perception, passive Investigation, passive Insight, armor, and movement facts
 - explicit current-Party membership state
-- XP and rest progression without inventing a missing authored level
+- optional authored level before an XP change; XP changes derive the corresponding
+  level, while merely reading a character preserves a missing level
 - character-specific travel location and whether that character is attached to
   the party token
 
@@ -86,9 +90,12 @@ Core invariants:
   changes XP or rest progress; changing or clearing the authored level never
   discards earned XP, while a raised level establishes at least that level's XP
   floor
-- negative XP correction is capped at the current level's XP floor and reduces
-  rest-cadence XP counters by the applied correction amount without going below
-  zero
+- manual XP correction is capped at zero and derives the corresponding level,
+  including downward level changes; adding, subtracting and setting manual XP
+  never change consumed short- or long-rest XP
+- the first two short rests close an adventure-day section at actual consumption;
+  additional short rests only reset short-rest consumption. A long rest clears
+  consumption and completed sections and initializes trustworthy section metadata
 - character-specific travel location is stored with the character, not in a
   campaign-level model, shell session, dungeon map, or presentation model
 - the party token is derived from attached character travel state instead of

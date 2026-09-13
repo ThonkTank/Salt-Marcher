@@ -7,6 +7,7 @@ import {
   Suspense,
   useLayoutEffect,
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore
 } from 'react'
@@ -41,6 +42,10 @@ const Ledger = lazy(async () => ({
     .CharacterLootLedgerDialog
 }))
 
+type HistoryRead =
+  | { request: object; status: 'ready'; history: PartyHistory }
+  | { request: object; status: 'failure'; cause: unknown }
+
 export function DesktopParty(props: {
   openCharacter?: ((id: string) => void) | undefined
   onError?: (message: string) => void
@@ -61,10 +66,10 @@ export function DesktopParty(props: {
     controller.subscribe,
     controller.snapshot
   )
-  const [history, setHistory] = useState<PartyHistory | null>(null)
+  const [historyRead, setHistoryRead] = useState<HistoryRead | null>(null)
   const [historyRefresh, refreshHistory] = useState(0)
   useLayoutEffect(() => {
-    controller.attach((receipt) => setHistory(receipt.history))
+    controller.attach(() => refreshHistory((value) => value + 1))
   })
   useLayoutEffect(() => controller.detach, [controller])
   const historyBlocked = useMaintenanceDraft({
@@ -85,27 +90,48 @@ export function DesktopParty(props: {
     },
     { kind: 'concerns', concerns: [draftConcern.scene(props.sceneId)] }
   )
+  const historyRequest = useMemo(
+    () => ({
+      api,
+      campaignId: props.campaignId,
+      snapshot: props.snapshot,
+      busy: command.busy,
+      ledger,
+      refresh: historyRefresh
+    }),
+    [
+      api,
+      props.campaignId,
+      props.snapshot,
+      command.busy,
+      ledger,
+      historyRefresh
+    ]
+  )
+  const currentHistoryRead =
+    historyRead?.request === historyRequest ? historyRead : null
+  const history =
+    currentHistoryRead?.status === 'ready' ? currentHistoryRead.history : null
   useEffect(() => {
     let active = true
     void api.party
-      .history({ campaignId: props.campaignId })
+      .history({ campaignId: historyRequest.campaignId })
       .then((value) => {
-        if (active) setHistory(value)
+        if (active)
+          setHistoryRead({
+            request: historyRequest,
+            status: 'ready',
+            history: value
+          })
       })
-      .catch(() => {
-        if (active) setHistory(null)
+      .catch((cause: unknown) => {
+        if (active)
+          setHistoryRead({ request: historyRequest, status: 'failure', cause })
       })
     return () => {
       active = false
     }
-  }, [
-    api,
-    props.campaignId,
-    props.snapshot,
-    command.busy,
-    ledger,
-    historyRefresh
-  ])
+  }, [api, historyRequest])
   const busy = command.busy || command.uncertain || historyBlocked
   function undoRedo(direction: 'undo' | 'redo') {
     const step = history?.[direction]
@@ -227,6 +253,17 @@ export function DesktopParty(props: {
           </div>
         </AnchoredPopup>
       </DesktopTitleActions>
+      {currentHistoryRead?.status === 'failure' && (
+        <div className="desktop-party-history-error" role="alert">
+          <span>
+            {message('party.historyUnavailable')}{' '}
+            {capabilityErrorText(currentHistoryRead.cause)}
+          </span>
+          <button onClick={() => refreshHistory((value) => value + 1)}>
+            {message('party.historyRetry')}
+          </button>
+        </div>
+      )}
       {members.map((member) => {
         const open = props.expanded.includes(member.id)
         return (

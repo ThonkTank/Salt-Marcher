@@ -35,6 +35,13 @@ export type E2eSuiteRegistration = Readonly<{
 
 export const e2eSuiteRegistry = [
   {
+    name: 'partyHistoryRead',
+    spec: './tests/e2e/party-history-read.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 91 } }
+  },
+  {
     name: 'sceneDesktop',
     spec: './tests/e2e/scene-desktop.e2e.ts',
     fixture: 'v8/scene-desktop',

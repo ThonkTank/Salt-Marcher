@@ -3,6 +3,8 @@ export const workspaceMessagesDe = {
   'party.manage': 'Aktives Roster bearbeiten',
   'party.selectedCount': '{count} ausgewählt',
   'party.historyRefresh': 'Aktualisieren',
+  'party.historyUnavailable': 'Verlauf konnte nicht geladen werden.',
+  'party.historyRetry': 'Erneut versuchen',
   'party.resultCheck': 'Ergebnis prüfen',
   'party.newScenePlace': 'Ort: {place} · Zeit wird übernommen',
   'party.unknownPlace': 'Unbekannt',

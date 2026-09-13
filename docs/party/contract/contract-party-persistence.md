@@ -1,9 +1,11 @@
 # Party Persistence
 
-Current consolidated desktop behavior is defined by [Party window](../requirements/requirements-party-window.md).
-Its XP, rest, history and window decisions supersede conflicting historical rules below.
+Current behavior is defined by [Party window](../requirements/requirements-party-window.md).
+Historical `PartyApi`/adapter and character-travel terminology below records the
+previous implementation model. It does not prescribe the Electron architecture.
 
-This document is normative for the `party` feature's persistence path.
+The validation rules describe current progression semantics; the Party window
+specification records current history, rest metadata and schema responsibilities.
 
 ## Adapter Boundary
 
@@ -66,12 +68,13 @@ through the feature contract.
 - party writes MUST reject malformed character identity, roster, progression,
   or travel-location payloads instead of silently persisting partial character
   truth
-- a present level requires at least its rules-profile XP floor; XP since the
-  short rest cannot exceed XP since the long rest, and neither rest-progress
-  counter can exceed current XP
-- nullable optional facts MUST round-trip as SQL `NULL`; readers and writers
-  MUST NOT replace absence with level `1`, passive perception `10`, AC `10`, or
-  another compatibility/default value
+- XP writes clamp totals at zero and derive the corresponding level. Profile
+  edits follow their separate authored-level rules. Consumed short-rest XP cannot
+  exceed consumed long-rest XP; either counter may exceed current XP after a
+  manual correction because manual XP never changes consumed rest XP
+- nullable optional facts MUST round-trip as SQL `NULL`; reads and unrelated
+  profile edits MUST NOT invent defaults. An explicit XP change derives level
+  from the resulting XP, including for a previously missing level
 - dungeon and overworld travel references MUST be validated as party-owned
   scalar location references rather than expanded into authored map truth
 - storage and schema failures MUST surface through Party API result statuses

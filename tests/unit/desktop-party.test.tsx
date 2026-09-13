@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import {
   cleanup,
+  act,
   fireEvent,
   render,
   screen,
@@ -20,11 +21,16 @@ import * as scenePort from '../../src/renderer/features/scene-desktop/use-scene-
 import * as characterPort from '../../src/renderer/features/party/use-character-command-port.js'
 import * as actionPort from '../../src/renderer/features/scene-desktop/use-party-action-port.js'
 import { CampaignWorkspaceProjection } from '../../src/renderer/capabilities/campaign-workspace-projection.js'
+import type { PartyHistory } from '../../src/shared/contracts/party-actions.js'
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
 })
-function fixture() {
+function fixture(
+  options: {
+    readHistory?: SaltMarcherApi['party']['history']
+  } = {}
+) {
   const member = {
     id: 'mira',
     name: 'Mira',
@@ -97,7 +103,12 @@ function fixture() {
   const xp = vi
     .fn<characterPort.CharacterCommandPort['execute']>()
     .mockResolvedValue({ characterId: 'mira', party: snapshot.party } as never)
-  const action = vi.fn().mockResolvedValue({ snapshot, settings, history })
+  const action = vi
+    .fn<actionPort.PartyActionPort['execute']>()
+    .mockResolvedValue({ snapshot, settings, history })
+  const readHistory = vi.fn<SaltMarcherApi['party']['history']>(
+    options.readHistory ?? (() => Promise.resolve(history))
+  )
   vi.spyOn(scenePort, 'useScenePartyCommandPort').mockReturnValue({
     current: () => snapshot,
     refresh: () => Promise.resolve(snapshot),
@@ -125,7 +136,7 @@ function fixture() {
   const api = {
     settings: { read: () => Promise.resolve(settings) },
     party: {
-      history: () => Promise.resolve(history),
+      history: readHistory,
       previewXp: ({
         amount,
         expectedRevision
@@ -143,7 +154,13 @@ function fixture() {
     },
     session: { onChanged: () => () => {} }
   } as unknown as SaltMarcherApi
-  function Harness() {
+  function Harness({
+    campaignId,
+    currentSnapshot
+  }: {
+    campaignId: string
+    currentSnapshot: LiveSessionSnapshot
+  }) {
     const [expanded, setExpanded] = useState<string[]>([])
     return (
       <DesktopWindow
@@ -157,9 +174,9 @@ function fixture() {
         preview={() => {}}
       >
         <DesktopParty
-          campaignId="campaign"
+          campaignId={campaignId}
           sceneId="source"
-          snapshot={snapshot}
+          snapshot={currentSnapshot}
           expanded={expanded}
           toggle={(id) =>
             setExpanded((ids) =>
@@ -171,14 +188,24 @@ function fixture() {
       </DesktopWindow>
     )
   }
-  render(
+  const tree = (campaignId = 'campaign', currentSnapshot = snapshot) => (
     <CapabilityProvider api={api}>
       <ModalLayerProvider>
-        <Harness />
+        <Harness campaignId={campaignId} currentSnapshot={currentSnapshot} />
       </ModalLayerProvider>
     </CapabilityProvider>
   )
-  return { move, xp, action }
+  const view = render(tree())
+  return {
+    move,
+    xp,
+    action,
+    readHistory,
+    snapshot,
+    unmount: view.unmount,
+    rerender: (campaignId: string, currentSnapshot = snapshot) =>
+      view.rerender(tree(campaignId, currentSnapshot))
+  }
 }
 it('keeps compact bars beside names, replaces quick information with details and uses the real title bar', async () => {
   fixture()
@@ -265,4 +292,143 @@ it('shows an XP input only on bar activation and shares preview with all three a
     'adjust-xp',
     'set-xp'
   ])
+})
+
+const availableHistory: PartyHistory = {
+  undo: { id: 'undo-step', description: 'XP ändern', blockedReason: null },
+  redo: { id: 'redo-step', description: 'Rasten', blockedReason: null },
+  pending: false
+}
+function deferredHistory() {
+  let resolve!: (value: PartyHistory) => void
+  let reject!: (cause: unknown) => void
+  const promise = new Promise<PartyHistory>((yes, no) => {
+    resolve = yes
+    reject = no
+  })
+  return { promise, resolve, reject }
+}
+it('keeps pending and ready-empty history non-actionable without showing a false failure', async () => {
+  const pending = deferredHistory()
+  fixture({ readHistory: () => pending.promise })
+  expect(
+    screen.getByRole('button', { name: 'Party-Aktion rückgängig machen' })
+  ).toBeDisabled()
+  expect(screen.queryByRole('alert')).toBeNull()
+  await act(async () => {
+    pending.resolve({ undo: null, redo: null, pending: false })
+    await pending.promise
+  })
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText('Erneut versuchen')).toBeNull()
+  expect(
+    screen.getByRole('button', { name: 'Party-Aktion wiederherstellen' })
+  ).toBeDisabled()
+})
+it('reports repeated read failures and restores current actions on retry without submitting writes', async () => {
+  const read = vi
+    .fn<SaltMarcherApi['party']['history']>()
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockRejectedValueOnce(new Error('still offline'))
+    .mockResolvedValue(availableHistory)
+  const h = fixture({ readHistory: read })
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Verlauf konnte nicht geladen werden.'
+  )
+  const retry = screen.getByRole('button', { name: 'Erneut versuchen' })
+  retry.focus()
+  expect(retry).toHaveFocus()
+  expect(retry.tabIndex).toBe(0)
+  fireEvent.click(retry)
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Verlauf konnte nicht geladen werden.'
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Rückgängig: XP ändern' })
+    ).toBeEnabled()
+  )
+  expect(
+    screen.getByRole('button', { name: 'Wiederherstellen: Rasten' })
+  ).toBeEnabled()
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(read).toHaveBeenCalledTimes(3)
+  expect(h.action).not.toHaveBeenCalled()
+  expect(h.xp).not.toHaveBeenCalled()
+  expect(h.move).not.toHaveBeenCalled()
+})
+it('disables previously available actions immediately when their snapshot is replaced', async () => {
+  const pending = deferredHistory()
+  const read = vi
+    .fn<SaltMarcherApi['party']['history']>()
+    .mockResolvedValueOnce(availableHistory)
+    .mockImplementation(() => pending.promise)
+  const h = fixture({ readHistory: read })
+  await screen.findByRole('button', { name: 'Rückgängig: XP ändern' })
+  h.rerender('campaign', structuredClone(h.snapshot))
+  expect(
+    screen.getByRole('button', { name: 'Party-Aktion rückgängig machen' })
+  ).toBeDisabled()
+  await act(async () => {
+    pending.reject(new Error('offline'))
+    await pending.promise.catch(() => undefined)
+  })
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Verlauf konnte nicht geladen werden.'
+  )
+  expect(
+    screen.getByRole('button', { name: 'Party-Aktion rückgängig machen' })
+  ).toBeDisabled()
+})
+it.each(['campaign', 'snapshot'] as const)(
+  'ignores late success and failure after a %s change',
+  async (change) => {
+    const first = deferredHistory()
+    const second = deferredHistory()
+    const read = vi
+      .fn<SaltMarcherApi['party']['history']>()
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise)
+      .mockResolvedValue(availableHistory)
+    const h = fixture({ readHistory: read })
+    h.rerender(
+      change === 'campaign' ? 'second-campaign' : 'campaign',
+      structuredClone(h.snapshot)
+    )
+    h.rerender(
+      change === 'campaign' ? 'third-campaign' : 'campaign',
+      structuredClone(h.snapshot)
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Rückgängig: XP ändern' })
+      ).toBeEnabled()
+    )
+    await act(async () => {
+      first.resolve({ undo: null, redo: null, pending: false })
+      second.reject(new Error('obsolete failure'))
+      await Promise.allSettled([first.promise, second.promise])
+    })
+    expect(
+      screen.getByRole('button', { name: 'Rückgängig: XP ändern' })
+    ).toBeEnabled()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(h.action).not.toHaveBeenCalled()
+  }
+)
+it('ignores a closed window reply after another Party window mounts', async () => {
+  const pending = deferredHistory()
+  const first = fixture({ readHistory: () => pending.promise })
+  first.unmount()
+  fixture({ readHistory: () => Promise.resolve(availableHistory) })
+  await screen.findByRole('button', { name: 'Rückgängig: XP ändern' })
+  await act(async () => {
+    pending.reject(new Error('closed window'))
+    await pending.promise.catch(() => undefined)
+  })
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(
+    screen.getByRole('button', { name: 'Rückgängig: XP ändern' })
+  ).toBeEnabled()
 })

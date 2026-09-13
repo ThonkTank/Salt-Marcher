@@ -20,6 +20,14 @@ menu: Aktives Roster bearbeiten, Rasten, Verschieben, Schnellwerte. There is no
 inner title bar, comparison, individual move, scene/member subtitle or permanent
 status footer. Errors remain actionable when an operation fails.
 
+History reads distinguish loading, ready-empty, ready-with-actions and failure.
+Undo/redo stay disabled without a successful current read. Failure shows a compact
+wrapping alert and keyboard-operable retry, without a permanent success/loading
+footer. Retry reads history only; uncertain writes retain their original-command
+recovery path. Late replies from replaced campaign/snapshot requests or closed
+windows cannot publish stale actions or errors. The alert remains reachable at
+360 px and the 240 px minimum window width.
+
 ## XP and rest
 
 XP hover/focus states show total XP and the next level threshold, with explicit

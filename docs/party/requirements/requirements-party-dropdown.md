@@ -1,7 +1,10 @@
-# Party Dropdown UI
+# Party Dropdown UI — historical record
 
-Current consolidated desktop behavior is defined by [Party window](requirements-party-window.md).
-Its XP, rest, history and window decisions supersede conflicting historical rules below.
+This entire document records the retired dropdown and intermediate desktop
+phases. Its surfaces, acceptance criteria and XP/rest rules are historical,
+not current requirements. Current behavior is defined exclusively by
+[Party window](requirements-party-window.md), including XP changes down to zero,
+automatic level derivation and unchanged consumed rest XP for manual corrections.
 
 ## Component Purpose
 

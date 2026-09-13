@@ -760,3 +760,15 @@
     gap: 4px;
   }
 }
+.desktop-party-history-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.desktop-party-history-error span {
+  min-width: 0;
+}
