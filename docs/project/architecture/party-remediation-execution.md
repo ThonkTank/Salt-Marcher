@@ -7,8 +7,8 @@ Canonical scope: [Party remediation roadmap](party-remediation-roadmap.md).
 | Package | Implemented | Validated | Delivered |
 | --- | --- | --- | --- |
 | 1 — History errors and Party documentation | Yes | Yes | Yes — 4b885295f |
-| 2 — Handoff preflight and invocation | Yes | Local checks passed; remote pending | No |
-| 3 — Independent desktop scenarios | No | No | No |
+| 2 — Handoff preflight and invocation | Yes | Yes | Yes — e77a997db |
+| 3 — Independent desktop scenarios | Yes | Yes | Pending exact-SHA delivery |
 | 4 — History capture investigation | No | No | No |
 
 ## Package 1 plan — 2026-09-13
@@ -204,3 +204,175 @@ current AGENTS invocation now matches the tested `pnpm handoff:app --resume`.
 No migration, new persistence format, process termination, live-lock removal,
 or weakening of handoff/promotion checks was introduced. Exact-SHA remote
 qualification, canonical handoff and Main confirmation remain delivery work.
+
+### Package 2 delivery — 2026-09-13
+
+Closed for `e77a997db9e94966488086c6a55ff3d9eeb9f6f7` after:
+
+- Candidate Check https://github.com/ThonkTank/Salt-Marcher/actions/runs/34755246055
+  passed all 16 required jobs.
+- Canonical handoff completed with state `9fe524af-2971-4d08-9123-604955b38e2f`,
+  original attempt `bdb8af76-9b81-40c6-aac0-c488952cc41a`. Downloaded and installed
+  bytes both hash to `43f0ff20504223b6e1f234ab8b00a4dbb2c531d8f6e9d7849a16cda2bd212f46`.
+  Backup `b8bfe53b-2c59-4c06-bcac-cfecac186a62` preceded activation, and installed
+  runtime readbacks passed.
+- The same SHA was promoted; PR #689 merged. Main Check passed:
+  https://github.com/ThonkTank/Salt-Marcher/actions/runs/34756202235.
+
+## Package 3 plan — 2026-09-13
+
+Baseline: clean `codex/party-remediation-3` from current Main
+`e77a997db9e94966488086c6a55ff3d9eeb9f6f7`. Package 2 is closed.
+
+1. Measure the existing eleven-case `sceneDesktop` suite in a detached baseline
+   worktree at that SHA, with its own build/output/test profiles and the same
+   host/toolchain. Keep this immutable while editing the candidate. Preserve
+   suite/per-case timings as the comparison baseline.
+2. Extract the eleven `it` bodies into separate registered specs, retaining
+   their original acceptance titles/assertions. Export only existing shared
+   save/geometry/scene-navigation helpers. Each spec resumes its own seeded
+   campaign before any reads; initial restarts that only inherited previous
+   test state become normal initial navigation. Internal restart assertions keep
+   the same scenario profile.
+3. Make setup dependencies explicit: map/combat opens its own reference document;
+   travel prepares and starts its own combat before exercising the existing
+   resolution/travel sequence. Existing fixture provides two populated scenes,
+   locations, map, groups and the character library. Each scenario selects its
+   needed scene/windows rather than inheriting another scenario's final state.
+4. Register all specs with the existing v8 scene fixture and functional CI
+   registry. Add a completeness check for the original eleven acceptance titles,
+   one scenario per spec, fresh campaign entry and removal of the old combined
+   spec. Preserve existing registry, fixture and warning validation mechanisms.
+5. Run every scenario separately through the standard isolated runner, correct
+   discovered missing setup with recorded fix rounds, and run the complete set
+   in reversed order. For the fault-containment experiment, temporarily inject
+   an explicit abort into the reference scenario only, run it followed by the
+   Party layout/accessibility and Party action scenarios, then restore exact
+   test bytes. Preserve expected failure evidence and verify the two independent
+   scenarios still pass; do not ship a disabled assertion or fault hook.
+6. Compare baseline and isolated timings on the same host, record fresh-start
+   costs and removed inherited restarts, and replace registry estimates with
+   measured suite durations. Run format/lint/types and registry/architecture
+   checks before remote validation. Audit against this plan and the original
+   roadmap, then deliver on the exact-SHA candidate path. No application code
+   changes or new local installation are intended for this test-only phase.
+
+Acceptance: all eleven original cases mapped and passed independently and in
+changed order; reference abort contained; restart/geometry/travel/combat/history
+coverage retained; actual runtime comparison; no assertion disabled or blanket
+wait increase; original user document unchanged.
+
+### Package 3 baseline and corrective round 1
+
+The unchanged combined suite passed all eleven cases in baseline run
+`functional-1789301465434-1303357`: 174819 ms total suite duration, 167.2 s
+reported test duration, no regression warnings. It used a detached worktree at
+`e77a997db`; the only untracked item is its dependency-directory symlink, so the
+build reports dirty metadata despite unchanged tracked source. Its app-build
+fingerprint is exactly `fa16f62e8e5e90ef3d3d10cbaaaafdb84ac777a68595504623ef974561685bdf`.
+The candidate measurements will reuse these identical built application bytes.
+
+Registry/order/matrix/runner checks passed (15 tests). Extraction exposed six
+existing untyped WebDriver matcher calls in the new shared helper, which no
+longer falls under the old spec-file lint exception. Corrective plan: express
+its same error-absence and scene-attribute conditions with typed WebDriver
+`waitUntil` predicates, preserving normal wait defaults and all acceptance
+conditions. Do not broaden lint exceptions or remove assertions. Repeat focused
+lint, then validate each independently registered scenario with the normal
+isolated runner.
+
+### Package 3 corrective round 2 — startup timing investigation
+
+The first isolated layout, geometry and reference scenarios passed, but their
+reported durations (91.4/77.1/79.1 s) suggest a repeated approximately one-minute
+setup cost beyond the combined baseline. The normal-order run remains unchanged
+and active. Plan: run the short shortcuts scenario with WebDriver command logs
+to locate the delay. In particular, inspect the newly explicit scene selection
+when that scene is already selected. If the trace confirms a redundant selection
+wait, avoid that no-op while retaining scene identity verification; do not
+increase deadlines or accept an unexplained cost as fixture startup overhead.
+Apply any correction only after the current run is terminal, then repeat the
+relevant scenarios before the reverse-order and failure-containment audit.
+
+### Package 3 corrective round 2 result
+
+The additional trace disproved the scene-selection hypothesis. In the existing
+WebDriver shutdown, `deleteSession()` begins at 12:23:43.514 UTC, the utility
+process reports closed at 12:23:43.542, and the command returns at 12:24:53.534: a
+70.020 s shutdown call. No other logged gap exceeds 2.243 s. The normal selection
+needs no corrective edit. The diagnostic shortcuts run passed; its duration is
+not used as the primary benchmark because it overlapped the normal run. This
+is session teardown overhead, not slow scenario setup or a product action.
+The unchanged runner also charges shutdown to its displayed test duration, so
+that label is not a pure assertion-body measurement. Final evidence will report
+whole-suite time and separately identify this observed shutdown component. No
+runner timeout, process-lifecycle code or acceptance assertion will be changed
+to conceal the measured cost. Lint and type checks passed after round 1.
+
+### Package 3 normal-order evidence and CI placement plan
+
+All eleven independent suites passed on their first attempt in run
+`functional-1789301907598-1312518`, 951385 ms total, with zero regression warnings.
+The unchanged combined baseline took 174819 ms; isolation adds 776566 ms on
+this host. Approximately 700 seconds are explained by ten additional shutdowns
+of the kind measured in the command trace. This estimate is not a claim that
+each shutdown was separately traced. The remaining difference includes fresh
+fixtures, startup, additional explicit setup and orchestration, less three
+removed inherited restarts. Layout/geometry/reference code matched the original
+assertions, and a full body diff of all eleven cases found only the recorded
+independent setup additions/removal of inherited initial restarts.
+
+After fault containment and reverse-order validation, replace the temporary
+zero registry durations with the rounded-up maximum of normal/reverse measured
+suite durations. Distribute only the eleven newly extracted cases across the
+existing four functional CI shards by assigning longest cases first to the
+currently least-loaded shard. Preserve unrelated suite assignments, the visual
+matrix, all four job identities and registry order grouped by functional shard.
+This prevents the added profile cost from being concentrated in one CI job.
+Rerun registry/matrix/completeness checks after this measured placement.
+
+### Package 3 controlled-failure evidence
+
+Run `functional-1789302864183-1330257` intentionally throws
+`Controlled reference scenario abort` after the first reference document opens.
+The standard runner reports References as the single product failure, then
+passes PartyLayout (including both-theme accessibility) and PartyActions. No
+retry or excluded assertion was used. The reference file was restored in a
+finally block to SHA-256
+`f81c206fcebf23f14659681dcc2f77279f8f0cf0c207bbad2a54a78d8985c3e2`
+before the full reversed-order run began. This is expected failure evidence,
+not a green run or a shipped fault hook.
+
+### Package 3 validation and audits — 2026-09-13
+
+The reversed-order run `functional-1789303128493-1333994` passed all eleven
+suites on their first attempt, with zero regression warnings and the same
+built application identity as baseline/normal/fault runs. Total 950153 ms;
+normal-order total 951385 ms, baseline 174819 ms. The evidence inventory and
+normalized raw outcomes are checked in under `docs/project/evidence/` with
+reproduction steps and the shutdown-cost limitation.
+
+After the final measured CI assignment, format, focused ESLint and both type
+checks passed. The final architecture/registry/matrix/order run passed 80 tests
+in nine files, and runner-core passed four tests. The earlier complete
+architecture command passed 88 tests, including alignment/developer-feedback
+checks. `git diff --check` passed. Application fingerprint recomputation equals
+Main exactly: `fa16f62e8e5e90ef3d3d10cbaaaafdb84ac777a68595504623ef974561685bdf`.
+
+Plan audit: passes. The eleven original titles and assertion bodies are mapped
+to eleven independently registered specs with separate profiles. Added setup
+is explicit, no earlier scenario state is used, and internal restart
+persistence checks retain their scenario profile. The reference-abort
+experiment caused no Party/accessibility cascade. The normal and reversed
+orders pass completely; all temporary fault bytes are gone. Registry weights
+are measured, the four existing functional shards remain complete, and the
+visual matrix/unrelated assignments are unchanged.
+
+Roadmap audit: F4 passes. All original restart, geometry, travel, combat,
+roster and Undo/Redo acceptance cases remain covered. The real added runtime
+is documented rather than hidden by timeout or assertion changes. No product
+code, campaign data, schema, public contract, extra CI gate or user's original
+local document was changed. F3 uses existing format/lint/type/architecture
+checks before candidate submission. Package 3 is implemented and locally
+validated; exact-SHA remote qualification and Main confirmation remain the
+delivery steps. Package 4 has not started.

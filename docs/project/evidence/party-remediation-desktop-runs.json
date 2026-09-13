@@ -1,0 +1,588 @@
+{
+  "baseline": {
+    "runId": "functional-1789301465434-1303357",
+    "buildIdentity": "73b6f527d0cef8690ca6996638089d6f024950b0c6a64da636f8dd6d4bdd6747",
+    "registryIdentity": "95a05539c90ec497b03b50c9af39a7616ede72ca1fa566be30d30a40b8101f46",
+    "selectedSuites": [
+      "sceneDesktop"
+    ],
+    "updatedAt": "2026-09-13T12:14:00.254Z",
+    "results": [
+      {
+        "name": "sceneDesktop",
+        "status": "passed",
+        "durationMs": 174819,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 174819,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "normal": {
+    "runId": "functional-1789301907598-1312518",
+    "buildIdentity": "73b6f527d0cef8690ca6996638089d6f024950b0c6a64da636f8dd6d4bdd6747",
+    "registryIdentity": "edab9a4869d2172d6846cf9753f45032bb292a53985e8cb17ca68b722cc9552e",
+    "selectedSuites": [
+      "sceneDesktopPartyLayout",
+      "sceneDesktopWindowGeometry",
+      "sceneDesktopReferences",
+      "sceneDesktopMapCombat",
+      "sceneDesktopTravel",
+      "sceneDesktopCharacterLibrary",
+      "sceneDesktopPartyActions",
+      "sceneDesktopShortcuts",
+      "sceneDesktopGroupLifecycle",
+      "sceneDesktopCombatResolution",
+      "sceneDesktopLocationDraft"
+    ],
+    "updatedAt": "2026-09-13T12:34:18.987Z",
+    "results": [
+      {
+        "name": "sceneDesktopPartyLayout",
+        "status": "passed",
+        "durationMs": 99704,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 99704,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopWindowGeometry",
+        "status": "passed",
+        "durationMs": 85135,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 85135,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopReferences",
+        "status": "passed",
+        "durationMs": 87736,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 87736,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopMapCombat",
+        "status": "passed",
+        "durationMs": 86163,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 86163,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopTravel",
+        "status": "passed",
+        "durationMs": 85046,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 85046,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopCharacterLibrary",
+        "status": "passed",
+        "durationMs": 88300,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 88300,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopPartyActions",
+        "status": "passed",
+        "durationMs": 84606,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 84606,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopShortcuts",
+        "status": "passed",
+        "durationMs": 83324,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 83324,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopGroupLifecycle",
+        "status": "passed",
+        "durationMs": 87205,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 87205,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopCombatResolution",
+        "status": "passed",
+        "durationMs": 82930,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 82930,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopLocationDraft",
+        "status": "passed",
+        "durationMs": 81236,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 81236,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reverse": {
+    "runId": "functional-1789303128493-1333994",
+    "buildIdentity": "73b6f527d0cef8690ca6996638089d6f024950b0c6a64da636f8dd6d4bdd6747",
+    "registryIdentity": "edab9a4869d2172d6846cf9753f45032bb292a53985e8cb17ca68b722cc9552e",
+    "selectedSuites": [
+      "sceneDesktopLocationDraft",
+      "sceneDesktopCombatResolution",
+      "sceneDesktopGroupLifecycle",
+      "sceneDesktopShortcuts",
+      "sceneDesktopPartyActions",
+      "sceneDesktopCharacterLibrary",
+      "sceneDesktopTravel",
+      "sceneDesktopMapCombat",
+      "sceneDesktopReferences",
+      "sceneDesktopWindowGeometry",
+      "sceneDesktopPartyLayout"
+    ],
+    "updatedAt": "2026-09-13T12:54:38.652Z",
+    "results": [
+      {
+        "name": "sceneDesktopLocationDraft",
+        "status": "passed",
+        "durationMs": 81894,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 81894,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopCombatResolution",
+        "status": "passed",
+        "durationMs": 82732,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 82732,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopGroupLifecycle",
+        "status": "passed",
+        "durationMs": 87090,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 87090,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopShortcuts",
+        "status": "passed",
+        "durationMs": 82292,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 82292,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopPartyActions",
+        "status": "passed",
+        "durationMs": 84556,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 84556,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopCharacterLibrary",
+        "status": "passed",
+        "durationMs": 87851,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 87851,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopTravel",
+        "status": "passed",
+        "durationMs": 85074,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 85074,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopMapCombat",
+        "status": "passed",
+        "durationMs": 86043,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 86043,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopReferences",
+        "status": "passed",
+        "durationMs": 87721,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 87721,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopWindowGeometry",
+        "status": "passed",
+        "durationMs": 85290,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 85290,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopPartyLayout",
+        "status": "passed",
+        "durationMs": 99610,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 99610,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "controlledAbort": {
+    "runId": "functional-1789302864183-1330257",
+    "buildIdentity": "73b6f527d0cef8690ca6996638089d6f024950b0c6a64da636f8dd6d4bdd6747",
+    "registryIdentity": "edab9a4869d2172d6846cf9753f45032bb292a53985e8cb17ca68b722cc9552e",
+    "selectedSuites": [
+      "sceneDesktopReferences",
+      "sceneDesktopPartyLayout",
+      "sceneDesktopPartyActions"
+    ],
+    "updatedAt": "2026-09-13T12:38:47.764Z",
+    "results": [
+      {
+        "name": "sceneDesktopReferences",
+        "status": "failed",
+        "durationMs": 80290,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "failed",
+            "exitCode": 1,
+            "durationMs": 80290,
+            "failureKind": "product",
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopPartyLayout",
+        "status": "passed",
+        "durationMs": 99538,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 99538,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "sceneDesktopPartyActions",
+        "status": "passed",
+        "durationMs": 83752,
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "passed",
+            "exitCode": 0,
+            "durationMs": 83752,
+            "failureKind": null,
+            "knownNoise": 3,
+            "regressionWarnings": {
+              "windowRect": 0,
+              "scrollFallback": 0,
+              "staleElement": 0
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

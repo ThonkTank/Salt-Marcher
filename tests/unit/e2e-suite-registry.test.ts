@@ -17,6 +17,75 @@ import { architectureGate } from '../architecture/support/architecture-gate.js'
 
 describe('E2E suite registry', () => {
   architectureGate(
+    'behavior-integration',
+    'preserves all eleven desktop acceptance cases in independent fixture-owned specs',
+    () => {
+      const originalCases = [
+        [
+          'sceneDesktopPartyLayout',
+          'shows party details and accepts a group drop without preparing initiative'
+        ],
+        [
+          'sceneDesktopWindowGeometry',
+          'preserves separate arrangements and intentional closure through navigation and process restart'
+        ],
+        [
+          'sceneDesktopReferences',
+          'reads independent item and location documents with history and restored scroll'
+        ],
+        [
+          'sceneDesktopMapCombat',
+          'keeps map presentation and combat alive independently of their windows'
+        ],
+        [
+          'sceneDesktopTravel',
+          'continues travel with its window closed and restores an explicitly paused journey after restart'
+        ],
+        [
+          'sceneDesktopCharacterLibrary',
+          'manages the campaign library and keeps scene quickinfos beside existing windows'
+        ],
+        [
+          'sceneDesktopPartyActions',
+          'batches rosters, changes XP through bars, confirms rests and reverses scene creation'
+        ],
+        [
+          'sceneDesktopShortcuts',
+          'opens quickinfos with Alt+P from the catalog and releases repeated map windows'
+        ],
+        [
+          'sceneDesktopGroupLifecycle',
+          'restores archived groups and deletes only after confirmation across restart'
+        ],
+        [
+          'sceneDesktopCombatResolution',
+          'resolves result drafts and awards XP exactly once through completion and restart'
+        ],
+        [
+          'sceneDesktopLocationDraft',
+          'changes scene location without resolving an independent XP draft'
+        ]
+      ] as const
+      const scenarios = e2eSuiteRegistry.filter((suite) =>
+        suite.name.startsWith('sceneDesktop')
+      )
+      expect(scenarios.map((suite) => suite.name).toSorted()).toEqual(
+        originalCases.map(([name]) => name).toSorted()
+      )
+      for (const [name, title] of originalCases) {
+        const scenario = scenarios.find((suite) => suite.name === name)!
+        const module = readTypeScriptModule(scenario.spec)
+        expect(scenario.fixture).toBe('v8/scene-desktop')
+        expect(callCount(module, 'it')).toBe(1)
+        expect(module.stringLiterals).toContain(title)
+        expect(hasCall(module, 'resumeCampaignFromScreen')).toBe(true)
+        expect(hasCall(module, 'selectScene')).toBe(true)
+      }
+      expect(existsSync('tests/e2e/scene-desktop.e2e.ts')).toBe(false)
+    }
+  )
+
+  architectureGate(
     'typed-contract',
     'is the complete source for regular specs and fixture ownership',
     () => {

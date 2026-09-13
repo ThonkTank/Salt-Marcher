@@ -42,11 +42,11 @@ export const e2eSuiteRegistry = [
     ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 91 } }
   },
   {
-    name: 'sceneDesktop',
-    spec: './tests/e2e/scene-desktop.e2e.ts',
+    name: 'sceneDesktopPartyActions',
+    spec: './tests/e2e/scene-desktop-party-actions.e2e.ts',
     fixture: 'v8/scene-desktop',
     types: ['functional'],
-    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 125 } }
+    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 85 } }
   },
   {
     name: 'workspaces',
@@ -106,6 +106,13 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'sceneDesktopLocationDraft',
+    spec: './tests/e2e/scene-desktop-location-draft.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'hex-npc-restart', measuredSeconds: 82 } }
+  },
+  {
     name: 'campaignQualification',
     spec: './tests/e2e/campaign-qualification.e2e.ts',
     fixture: 'v1/empty-installation',
@@ -152,6 +159,51 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'sceneDesktopPartyLayout',
+    spec: './tests/e2e/scene-desktop-party-layout.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'dialogs-generation-loot', measuredSeconds: 100 }
+    }
+  },
+  {
+    name: 'sceneDesktopReferences',
+    spec: './tests/e2e/scene-desktop-references.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'dialogs-generation-loot', measuredSeconds: 88 }
+    }
+  },
+  {
+    name: 'sceneDesktopMapCombat',
+    spec: './tests/e2e/scene-desktop-map-combat.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'dialogs-generation-loot', measuredSeconds: 87 }
+    }
+  },
+  {
+    name: 'sceneDesktopTravel',
+    spec: './tests/e2e/scene-desktop-travel.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'dialogs-generation-loot', measuredSeconds: 86 }
+    }
+  },
+  {
+    name: 'sceneDesktopCombatResolution',
+    spec: './tests/e2e/scene-desktop-combat-resolution.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'dialogs-generation-loot', measuredSeconds: 83 }
+    }
+  },
+  {
     name: 'dialogs',
     spec: './tests/e2e/dialog-architecture.e2e.ts',
     fixture: 'v1/empty-installation',
@@ -181,6 +233,34 @@ export const e2eSuiteRegistry = [
     ci: {
       functional: { shard: 'dialogs-generation-loot', measuredSeconds: 76 }
     }
+  },
+  {
+    name: 'sceneDesktopWindowGeometry',
+    spec: './tests/e2e/scene-desktop-window-geometry.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'group-loot-travel', measuredSeconds: 86 } }
+  },
+  {
+    name: 'sceneDesktopCharacterLibrary',
+    spec: './tests/e2e/scene-desktop-character-library.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'group-loot-travel', measuredSeconds: 89 } }
+  },
+  {
+    name: 'sceneDesktopShortcuts',
+    spec: './tests/e2e/scene-desktop-shortcuts.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'group-loot-travel', measuredSeconds: 84 } }
+  },
+  {
+    name: 'sceneDesktopGroupLifecycle',
+    spec: './tests/e2e/scene-desktop-group-lifecycle.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'group-loot-travel', measuredSeconds: 88 } }
   },
   {
     name: 'groupLoot',
