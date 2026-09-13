@@ -8,8 +8,8 @@ Canonical scope: [Party remediation roadmap](party-remediation-roadmap.md).
 | --- | --- | --- | --- |
 | 1 — History errors and Party documentation | Yes | Yes | Yes — 4b885295f |
 | 2 — Handoff preflight and invocation | Yes | Yes | Yes — e77a997db |
-| 3 — Independent desktop scenarios | Yes | Yes | Pending exact-SHA delivery |
-| 4 — History capture investigation | No | No | No |
+| 3 — Independent desktop scenarios | Yes | Yes | Yes — aa325e9a0 |
+| 4 — History capture investigation | Yes — investigation only | Yes | Pending exact-SHA delivery |
 
 ## Package 1 plan — 2026-09-13
 
@@ -376,3 +376,177 @@ local document was changed. F3 uses existing format/lint/type/architecture
 checks before candidate submission. Package 3 is implemented and locally
 validated; exact-SHA remote qualification and Main confirmation remain the
 delivery steps. Package 4 has not started.
+
+### Package 3 delivery — 2026-09-13
+
+Closed for `aa325e9a08eabbd5bf8dab39d62d21c2561d7144`. Candidate Check
+https://github.com/ThonkTank/Salt-Marcher/actions/runs/34758494155 passed all
+16 required jobs. The standard promotion verified the unchanged app-build
+fingerprint and promoted the same SHA without a new application installation.
+PR #691 merged. Main Check passed for that exact SHA:
+https://github.com/ThonkTank/Salt-Marcher/actions/runs/34759384440.
+
+## Package 4 plan — 2026-09-13
+
+Baseline: clean `codex/party-remediation-4` from current Main
+`aa325e9a08eabbd5bf8dab39d62d21c2561d7144`. Package 3 is closed. This phase
+is an investigation with a documented decision, not a production optimization.
+
+Inspection finds that `PartyActionService.execute` captures all four state
+owners before work, and each owner's `changes` recaptures its domain afterward.
+Scene/travel use broad strict row schemas; combat enumerates every stored scene
+and loads both runtime and history. Measurement must separate those costs from
+domain work, projections, history persistence and installation reconciliation.
+
+1. Add a reproducible test-only measurement harness using actual CampaignStore,
+   LivePlayService and PartyActionService with temporary synthetic databases.
+   Reuse the existing test database-access adapter. No installed profiles or
+   application sources are edited. Synthetic fixtures vary characters (6/100),
+   scenes (2/12/100), and independent combat/travel state: no states, small
+   state sets, and larger participant/history/path sets. Include matching empty
+   and populated scenes so unrelated-state cost can be distinguished from size.
+2. Instrument owner capture/change methods and history/index persistence only
+   within the benchmark process, restoring original methods afterward. Count
+   executed prepared read/write calls and returned rows on both SQLite owners,
+   with SQL shapes and exclusive phase timing. Separate transaction boundary
+   time when possible, and state any measurement exclusion precisely. Capture
+   output payload bytes independently from stored receipt bytes.
+3. Measure XP, quick fields, short rest and move-with-new-scene through the real
+   action service. Keep one selected character and a fixed active roster while
+   varying unrelated data. The first history action on a reopened database is
+   reported separately from seven repeated actions. Undo outside the timed
+   region restores the domain fixture between repetitions and bounds history
+   length; revision/receipt advancement remains real. This is service/database
+   cold initialization, not an OS-cache flush or cold process measurement.
+4. Run equivalent uninstrumented timing controls to quantify profiler overhead.
+   Preserve raw samples/configuration, runtime/toolchain/source identities and
+   a concise comparison. Validate that actions actually commit, payloads contain
+   the intended changes, undo restores affected state, and unrelated owners do
+   not enter the persisted payload. Small and large cases receive equal repeats.
+5. Audit concrete schema coupling, including a temporary unrelated added scene
+   column against the strict SELECT-* capture, in a disposable database. Record
+   expected incompatibility separately from successful benchmark actions.
+6. Decide from observed absolute and scaling costs. Keep the existing capture
+   when no relevant disadvantage is demonstrated. If a disadvantage is proven,
+   document a bounded follow-up by action/owner, expected benefit, atomicity and
+   side-effect requirements, conflict protection and regression tests; do not
+   perform that optimization in this phase. Run existing format/lint/types and
+   appropriate tests before candidate validation, audit plan and roadmap
+   separately, and deliver this investigation through the exact-SHA path.
+
+Acceptance: reproducible real-action measurements, first/repeated separation,
+query/row counts, capture/comparison/storage/total times, persisted sizes,
+unrelated-scene dependence and concrete schema-coupling evidence. No production
+refactor or new public contract is part of this phase.
+
+### Package 4 fixture corrective round 1
+
+The disposable fixture probe rejected its character draft because the real
+PartyStore contract requires an explicit nullable passive-perception value.
+Plan: supply that ordinary character field, verify the fixture against the
+actual type/contracts, and repeat the populated-state probe before running
+measurements. No benchmark samples have been accepted from the failing setup.
+
+The same fixture/type probe also found the adapter used `SceneStore.read` rather
+than its actual `snapshot` method. Correct that call in this fixture-only round;
+its missing return type caused the dependent implicit-any diagnostics. The
+small real-action probe already passed XP, quick fields, rest and move, their
+Undo checks and the expected unrelated-column failure; it is diagnostic only.
+
+### Package 4 corrective round 2 — measurement boundary and lint
+
+The first full series is diagnostic. Review found its quick-field closure
+reads the expected settings revision inside the timed region, whereas other
+inputs are prepared outside. Move that input lookup outside for an equivalent
+service-call boundary. Lint also identifies one unused fixture assignment and
+two `this` aliases in instrumentation. Remove the unused read and use bound
+phase/accessor callbacks while preserving wrapped method receivers; do not add
+lint exceptions. Add source-file hashes to the measurement record and fail
+closed on uncounted pragma calls. After the diagnostic series is terminal,
+repeat format/lint/types and the full equal-repeat measurement on final harness
+bytes. Do not treat the preliminary timings as accepted results.
+
+### Package 4 corrective round 3 — profiler transaction contract
+
+The independent row/count oracle exposed a real instrumentation defect: SQLite
+transaction-mode functions are non-configurable properties, so proxying their
+property reads violates JavaScript proxy invariants. Default transactions used
+by the diagnostic action series passed, but the profiler must preserve the
+complete callable transaction surface. Plan: wrap the transaction callable and
+copy its documented mode/database descriptors with separately wrapped functions,
+rather than replacing immutable proxy property values. Preserve receiver and
+exclusive phase accounting. Use reflective identity reads in the restoration
+test to satisfy unbound-method lint without weakening assertions. Repeat the
+oracle, existing history integration tests, lint/types and final measurements.
+
+### Package 4 corrective round 4 — matched foreign-state controls
+
+The completed seven-case series passes all 448 real action/Undo checks and
+source-hash verification. It shows large populated-state cost, while XP on 100
+empty scenes remains near the small case. Audit found that empty versus
+populated fixtures also changes the source scene's own combat/travel, so that
+pair alone cannot isolate the foreign-scene contribution. Plan: add two matched
+source-only controls (6 characters/12 scenes and 100 characters/100 scenes),
+with the exact same source actors/history/path as the deep and combined cases
+but zero foreign states. Enable source state by nonzero actor count rather
+than foreign-state count, and require the same source-side move payload checks.
+Repeat the full nine-case equal-repeat series on final harness hashes. This
+strengthens the planned unrelated-state attribution without changing product
+code or introducing a new optimization scope.
+
+### Package 4 validation and audits — 2026-09-13
+
+Accepted measurement: `party-history-measurement.json`, recorded at
+2026-09-13T13:40:17.252Z, on baseline `aa325e9a0`, with exact harness source
+hashes verified. Nine cases × four actions × two instrumentation modes ×
+eight calls = 576 committed actions, each followed by validated real Undo.
+All foreign combat/travel states remained unchanged; move histories include
+both affected source owners. The seven-case and setup probes remain diagnostic
+only. The report `party-history-capture-assessment.md` includes full methods,
+first/repeated timings, instrumentation controls, read/write/row counts, phase
+attribution, actual payload/receipt sizes and source-coupling evidence.
+
+The matched large source-only case takes 20.84 ms median for XP; adding 50
+unchanged foreign combat/journey states increases that to 224.79 ms. The
+small/large XP payload stays 1305 bytes while reads rise from 42 to 3252 and
+returned rows from 118 to 39536. Empty scene count alone has little XP cost;
+other actions also pay existing projection costs. These are synthetic host
+measurements with documented timing boundaries, not an application-wide SLO.
+
+Format, focused lint and both type checks pass. Independent profiler oracles
+and existing history integration checks pass (13 tests); full architecture
+checks pass (88 tests). The explicit unrelated-column probe fails as expected
+without committing history. App-build fingerprint remains exactly equal to
+Main: `fa16f62e8e5e90ef3d3d10cbaaaafdb84ac777a68595504623ef974561685bdf`.
+
+Plan audit: passes after corrective rounds 1–4. Real services and disposable
+databases provide all measurements. Inputs are prepared outside the action
+timer; first service/database operation, repeated calls, setup/opening and
+instrumentation controls are separated. Captures and comparisons have exclusive
+time accounting, transaction boundaries remain visible, unexpected SQL paths
+fail closed, and hashes prove the measured harness bytes. Matched source-only
+controls establish the foreign-state dependency rather than attributing all
+large-case latency to it. No production source or installed data was edited.
+
+Roadmap audit: F2 passes as an investigation. A relevant disadvantage is
+demonstrated and a bounded follow-up is specified by action/domain owner, with
+benefit expectations and required atomicity, side-effect, compatibility and
+conflict regressions. The proposed internal scope/effect contract is explicitly
+a separate implementation package, not an implicit extension of this roadmap.
+The existing capture remains unchanged. F3 uses existing gates; no new CI gate
+or weakened check was introduced. Exact-SHA candidate qualification, promotion
+and Main confirmation are still required to deliver this evidence package.
+
+### Cross-package audit before final delivery
+
+All four packages now satisfy their local plan and roadmap acceptance criteria.
+Packages 1–3 have recorded exact-SHA candidate/Main delivery evidence; app
+packages 1–2 also have completed canonical handoffs. Package 3 preserved all
+eleven acceptance cases and proved failure containment. Package 4 distinguishes
+measured findings from proposed future implementation. The canonical roadmap
+is unchanged and the original checkout still contains only the user's existing
+`action-scoped-draft-coordination-execution.md` change, untouched by this work.
+No unresolved functional discrepancy remains in the approved scope. Deliver
+package 4, then record its delivery and final cross-package closure in a pure
+documentation candidate so the persisted execution log has a truthful final
+status without anticipating remote results.
