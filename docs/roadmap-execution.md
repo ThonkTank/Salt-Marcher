@@ -13291,3 +13291,248 @@ Originalquelle unverändert, tatsächliche menschliche Freigabe und öffentliche
 Download identisch mit den qualifizierten Bytes. Anschließend getrennte
 Plan-/Roadmap-Audits und abschließender phasenübergreifender Anforderungsabgleich.
 Das Ziel bleibt bis zu diesen Nachweisen aktiv.
+
+Phase 7 Vorbereitung: Der Abschlussstand bc3e325707d331fa242e5e09b3b12b3d5b94b110
+ist mit ausgewähltem Check 34720799284, unabhängiger Auswahl-/Artefaktprüfung,
+kanonischer Promotion und Main-Check 34721489297 grün ausgeliefert.
+Der lokale Controller ist erfolgreich beendet (167.3 MiB, kein Swap).
+
+Die vorhandene vollständige Sicherung wurde mit readVerifiedBackup vor/nach
+Kopie geprüft: 64 Dateien, 14906002 Bytes, Manifest-SHA256
+64786207bc316f43a828d7332b5f1d87937015e0b61d0041c16b78f2112aff0a.
+Quelle und Kopie identisch; die laufenden Datenbanken wurden nicht geöffnet.
+Separate schreibgeschützte Prüfung der Kopie: SQLite-Integrität und Fremdschlüssel
+beider Datenbanken bestanden, Formate Installation 42 / Kampagne 41. Eine echte
+Kampagne ist vorhanden, aber keine gefüllte Party oder Gruppe; ein bestehender
+fortsetzbarer Charakterspielstand wird daraus nicht behauptet.
+Private Belege: work/phase7-user-data-source/{copy-evidence,sqlite-readonly-inventory}.json.
+
+Der private UI-Prüfer verwendet den bereits vorhandenen internen Release 0.2.0
+c11d7fcb5 als Ausgangsprogramm und die unveränderten qualifizierten 0.3.0-Bytes.
+Er soll Installation, echten Sicherungsimport, gespeicherte Kampagnenänderung,
+Update, Weiterarbeit und beide Wiederherstellungen samt Originalbildern und
+schreibgeschützten Datenbank-Snapshots belegen. Dieser automatisierte Lauf mit
+Nutzerdaten ersetzt keine menschliche Live-Abnahme. Nutzerdaten und Bilder bleiben
+außerhalb des Repositorys und werden nicht an GitHub übertragen.
+
+Erster Lauf: work/phase7-live-vm-1, Payload von sauberem bc3e32570 und separat
+gehashten privaten Harnessquellen; sämtliche Payloadhashes im Gast bestätigt.
+Ausgangs-AppImage tatsächlich installiert und Journal committed. Danach wählt
+der Testtreiber beim nativen Sicherungsdialog den falschen Ordner. Die App weist
+ihn korrekt mit „kein lesbares SaltMarcher-Sicherungsmanifest“ ab; der erwartete
+Bestätigungsdialog erscheint deshalb nicht. Testexit 1, VM regulär beendet;
+1.8 GiB Gast-Speicherspitze. Originalexport und Fehlernachweise sind sicher
+archiviert unter work/phase7-live-evidence-1. Kein Import-/Update-Erfolg behauptet.
+
+Korrekturplan 7.1 vor Änderung des privaten Testtreibers: Die pauschale Navigation
+in den Elternordner entfernen und den tatsächlich angezeigten nativen Dialog vor
+der Auswahl als Gastbild sichern. Explizit den vollständigen Sicherungsordner
+wählen, App-Bestätigung erwarten und anschließend den vollständigen geplanten
+UI-Ablauf fortsetzen. Neue unveränderliche Payload und frischer begrenzter Gast;
+keine Änderung der AppImages, keine synthetische Quelle und kein Übergehen der
+produktiven Sicherungsprüfung. Quell- und Ergebnis-Snapshots dienen erst nach
+separatem Inhaltsaudit als Daten-Erhaltungsnachweis. Der fehlgeschlagene Lauf
+bleibt erhalten; Phase 7 ist offen.
+
+Korrekturrunde 7.1 geprüft: zweiter frischer Gast mit unveränderten AppImages,
+Testexit 1 am selben Bestätigungsdialog, Quelle weiterhin unangetastet. Die neue
+native Bildschirmaufnahme liefert jetzt den konkreten Befund: GTK vervollständigt
+die eingegebene Adresse automatisch zu /opt/qualification/backup/data/; der
+angehängte Teil data/ ist im Eingabefeld markiert. Der Test hat dadurch eine
+Unterstruktur statt des vollständigen Sicherungsordners gewählt. Die vorherige
+Annahme, allein die Elternnavigation verursache den Fehler, war unvollständig.
+Originaltransport, Fehler und native Aufnahme: work/phase7-live-evidence-2.
+
+Korrekturplan 7.2: Die native Adresse ausdrücklich als backup/. eingeben und
+ohne vorheriges Return direkt über die sichtbare Öffnen-Schaltfläche bestätigen.
+Damit bleibt der adressierte Ordner eindeutig, ohne die automatische Ergänzung
+des Unterordners zu übernehmen. Die Aufnahme vor dem Klick bleibt verpflichtend;
+der Produktdialog und die echte Manifestprüfung werden weiter vollständig benutzt.
+Erneut neuer Gast und unveränderte qualifizierte AppImages. Keine Änderung an
+Nutzerdaten oder Produktcode und keine behauptete Abnahme vor dem Ergebnis.
+
+Korrekturrunde 7.2: Originalaufnahme des dritten Laufs zeigt jetzt die korrekte,
+unvervollständigte Adresse backup/., aber weiterhin den Inhalt des Homeordners.
+Das direkte Klicken auf Öffnen hat die Ortsadresse nicht aktiviert. Die App hat
+wieder sicher einen Ordner ohne Manifest abgewiesen. Testexit 1; tatsächliche
+Gastdaten/Originalbilder unter work/phase7-live-evidence-3 archiviert.
+
+Korrekturplan 7.3: Nach der unvervollständigten Adresse backup/. die Ortsnavigation
+mit Return aktivieren, erst anschließend den nativen Ordnerdialog aufnehmen und
+Öffnen betätigen. Die automatische Ergänzung zum data-Unterordner bleibt durch
+die explizite Punktadresse ausgeschlossen. Wieder neuer begrenzter Gast mit
+unveränderten Programmbytes. Kein Umgehen des Sicherungsimports; Phase 7 bleibt
+offen, bis der vollständige echte Ablauf und die Inhaltsprüfung bestehen.
+
+Korrekturrunde 7.3: Auch der vierte Gastlauf wird vor dem Import sicher abgewiesen.
+Die native Aufnahme zeigt weiterhin die Ortszeile über der Home-Liste. Testexit 1,
+Originalexport unter work/phase7-live-evidence-4. Die reine Return-Ergänzung war
+kein ausreichender Fix; es gibt weiterhin keinen bestandenen Nutzerdatenimport.
+
+Korrekturplan 7.4: Den vereinfachten privaten Ordnerdialogtreiber durch den
+bereits real geprüften Ablauf aus scripts/qualify-historical-profile-import.ts
+ersetzen. Dieser wartet auf stabile native Fenster, erkennt und schließt das
+zusätzliche salt-marcher-Vervollständigungsfenster ausdrücklich, wählt danach den
+Quellordner selbst und bestätigt den nativen Produktdialog. Nur Quellpfad und
+Sicherungsdialogtitel anpassen; native Fensterliste und Originalaufnahme archivieren.
+Dies ersetzt keine Produktfunktion und keine Datenprüfung. Neuer unveränderlicher
+Payload/Gast; bisherige fehlgeschlagene Quellen und Bilder bleiben erhalten.
+
+Korrekturrunde 7.4: Fünfter Lauf terminal, Testexit 1 vor Import. Die zusätzliche
+native Fensterliste zeigt kein salt-marcher-Vervollständigungsfenster; der
+übernommene frühere Treiber navigiert in dieser GTK-Konstellation ebenfalls nicht
+zum getippten Ort. Originalbild zeigt nach Alt+Up /home mit ausgewähltem ubuntu.
+Belege: work/phase7-live-evidence-5. Kein Produkt- oder Datenfehler daraus abgeleitet.
+
+Korrekturplan 7.5: Den nativen, regulären Auswahlweg über die sichtbare Ordnerliste
+verwenden. Die unveränderte vollständige Sicherung zusätzlich ausschließlich im
+Gast als /home/ubuntu/aa-user-backup bereitstellen und mit readVerifiedBackup gegen
+das übertragene Original prüfen. Im standardmäßig geöffneten Home-Verzeichnis
+liegt sie sichtbar neben dem Testarbeitsordner; diesen Quellordner auswählen und
+die normale App-Bestätigung durchlaufen. Aufnahme der tatsächlich markierten Zeile
+bleibt verpflichtend. Damit ändert sich nur die Eingabegeste des Testtreibers,
+nicht der unterstützte Sicherungsimport, der Inhalt oder der gesamte weitere
+Update-/Wiederherstellungsumfang. Beide Gastkopien und die Hostquelle bleiben
+unverändert. Neuer Gast, unveränderte AppImages, Phase 7 weiter offen.
+
+Korrekturrunde 7.5 erfolgreich: sechster frischer Gast, Payload von
+206aef8dec8a062add5f17a7c6c57704ce83a156. Sichtbare Sicherungsordnerauswahl,
+Installation, vollständiger Nutzerdatenimport, gespeicherte Kampagnenänderung,
+Update auf die unveränderten 0.3.0-Bytes, weitere gespeicherte Änderung sowie
+beide tatsächlichen Wiederherstellungen bestanden. Alle fünf Wartungsjournale
+committed, sechs gestartete Prozesse regulär mit Exit 0 beendet, Testexit 0,
+Gast-Speicherspitze 2.7 GiB. Keine menschliche Abnahme oder Veröffentlichung.
+
+Transportbefund nach dem abgeschlossenen App-Test: Während der umfangreicheren
+seriellen Bildausgabe fügt der Gastkernel eine Soft-Lockup-Meldung in eine Base64-
+Zeile ein. Der strikte erste Collector verweigert die beschädigte Rahmung korrekt.
+Die Originaldatei wurde nicht verändert. Genau die beobachtete Diagnose zwischen
+70 und 6 Zeichen derselben Zeile wurde für die Rekonstruktion getrennt; das
+resultierende vollständige Gzip-Archiv besteht CRC- und Längenprüfung
+(1531107 komprimierte Bytes, 11161600 Original-Tar-Bytes). Recovery-Rezept und
+Original-Serialhash: work/phase7-live-vm-6/transport-recovery/recovery.json.
+Originalarchiv und alle 32 exportierten Dateien sind unter
+work/phase7-live-evidence-6 dauerhaft archiviert. Das ist ein Gast-Exportproblem,
+kein behaupteter Hostabsturz und kein stillschweigend übergangener App-Testfehler.
+
+Unabhängiger SQLite-Audit bestanden: vollständige Originaltabellen/-zeilen bei
+Migration 42/41 nach 43/43 erhalten; ausschließlich erwartete Ledgerergänzungen
+und neue Historytabellen. Datenstände vor/nach Update sind exakt identisch,
+ebenso ursprünglicher Stand nach Restore und Weiterarbeit nach Schutzrestore.
+Die zwei tatsächlichen Änderungen haben jeweils genau die erwartete Umbenennung,
+Aktivierung und zwei verknüpfte Command-Receipts erzeugt. Andere Originalinhalte
+unverändert. Beleg: work/phase7-run6-independent-audit.json; Originalbericht-SHA256
+14300c51005b120399263722d536cd841928a11ab79120c855c9c5a9271a8f04.
+
+Teilplanaudit noch nicht vollständig bestanden: Die unabhängige Bildprüfung
+zeigt Aufnahmen vor fertig gerenderter Oberfläche; die Sessionaufnahme zeigt
+noch „Arbeitsfläche wird geladen“. Überschrift und erfolgreiche Wartungsjournale
+reichen als Nachweis benutzbarer Arbeitsfläche nicht aus. Zusätzlich fehlen im
+privaten Livebericht vollständige Dateiinventare der übernommenen/restaurierten
+Profile außerhalb von SQLite. Die bereits geprüften automatisierten SQL-Wege
+bleiben belegt; menschliche Live-Abnahme und Phase-7-Abschluss bleiben offen.
+
+Korrekturplan 7.6 vor weiteren Harnessänderungen:
+- Nach Kampagnenöffnung tatsächliche Session-/Campaign-Identität, Revision,
+  benutzbare scene-desktop-Fläche und beendeten Ladestatus abwarten; Aufnahmen
+  erst nach passenden sichtbaren Inhalten. Import-/Update-/Restorebilder dürfen
+  keine bloße leere Startfläche dokumentieren. Downloadbild erst bei tatsächlich
+  verfügbarer Installationsaktion aufnehmen.
+- Zu jedem geschlossenen Datenbank-Snapshot vollständige Datei- und Verzeichnis-
+  inventare des Profils erfassen. Eigene Dateien und Einstellungen konkret gegen
+  Quelle, Update- und beide Restorestände prüfen; keine pauschalen Ausnahmen.
+  Tatsächliche installierte AppImage-Bytes zusätzlich gegen Zielhash prüfen.
+- Vor dem seriellen Export SHA256 und Länge des Originalarchivs ausgeben und
+  die Ausgabe in begrenzten, kurzen Pausen unterbrochenen Blöcken übertragen.
+  Damit die Diagnoseausgabe nicht erneut den Gast beim Herunterfahren blockiert;
+  Diagnosen bleiben erhalten und Collector verlangt die genaue Archividentität.
+- Neuen vollständigen Gastlauf mit denselben qualifizierten Programmbytes
+  durchführen, danach unabhängigen SQL-/Datei-/UI-Audit wiederholen. Private
+  Nutzerdaten und Bilder bleiben lokal. Dies bleibt eine automatisierte
+  Vorbereitung auf die anschließend notwendige menschliche Live-Abnahme.
+
+Korrekturrunde 7.6 erfolgreich: siebter vollständiger Gastlauf von sauberem
+Harness-Commit dad846acceb54fab558c0345bc357c65da5dac18, Testexit 0 und VMexit 0.
+Die Session ist vor und nach dem Update mit passender Kampagnenidentität,
+Revision und sichtbarer scene-desktop-Arbeitsfläche nachgewiesen; beide Bilder
+unabhängig angesehen. Tatsächlich installierte 0.3.0-Datei: 176900262 Bytes und
+SHA256 ef49ab927bcc4244790ab098dad078356d32f68e735e271bd115485bceecdf4a.
+Der neue Originalexport besteht ohne Rekonstruktion gegen den im Gast ausgegebenen
+SHA256 729fe2d8808141b5ae82b75a1f8d8739b91108676ce85e317482325dbe8f4d11
+und 2526639 Bytes. Keine Soft-Lockup-Meldung in diesem Gastlauf.
+
+Unabhängiger vollständiger Audit: Originalzeilen der beiden Datenbanken erhalten,
+Migrationen 42/41 nach 43/43 korrekt eingegrenzt; Update, ursprünglicher Restore,
+Schutzrestore sowie alle drei vorgeschalteten Sicherungsstände logisch exakt.
+Zehn vollständige Dateiinventare verglichen: identische 64 Dateipfade und 27
+Verzeichnisse; alle 62 Nicht-SQLite-Dateien bytegleich mit der Quelle, ohne
+pauschal ausgeblendete Pfade. SQLite-Dateibytes werden durch Online-Backup und
+Migration verändert, ihre vollständigen Tabellen-/Zeileninhalte sind gesondert
+geprüft. Die Original-Hostsicherung wurde unabhängig erneut vollständig gehasht
+und ist unverändert. Native Importauswahl und beide Restores erfolgten durch die
+produktiven Dialoge. Belege: work/phase7-live-evidence-7 und
+work/phase7-run7-independent-audit.json; Originalbericht-SHA256
+e67349f0670532390d79a91d9aa4431d27c39de1812e5bca1dde6dba2163edb9.
+
+Teilplanaudit 7.6 bestanden: Die festgestellten Lücken bei geladener Oberfläche,
+Dateiinventaren, Schutzständen und installierten Bytes sind geschlossen. Der
+Screenshotausschnitt direkt nach Update zeigt die Versionsanzeige während die
+Sicherungsübersicht noch lädt; die bedienbare Sicherungsliste ist durch die
+anschließend tatsächlich ausgeführten Restoreauswahlen belegt. Dieser Ausschnitt
+wird nicht als Nachweis einer leeren Sicherungsliste oder ihres Ladeabschlusses
+verwendet. Automatisierter Nutzerdatentest bestanden; menschliche Live-Abnahme,
+GitHub-Freigabe und öffentlicher Download bleiben offen.
+
+Teilplan 7.7 – konkrete Umgebung für die menschliche Live-Abnahme:
+Eine bedienbare, begrenzte VM vorbereiten, damit der menschliche Prüfer dieselben
+unveränderten Programme und ausschließlich eine Sicherungskopie verwenden kann.
+Keine Test-AppImages auf dem Host starten und die laufende Local-App unberührt
+lassen. Eine zusätzliche reine Gastvorbereitung darf Ubuntu-Pakete für einen
+Fenstermanager und eine VNC-Browseransicht beziehen; dieser Netzwerkschritt enthält
+keine Nutzerdaten. Den bisherigen geprüften Basisdatenträger nicht verändern.
+
+Der eigentliche Prüfgast bleibt auf eine lokale Browserverbindung beschränkt,
+mit nur an 127.0.0.1 gebundener Portweiterleitung, privaten Kopien, kontrolliertem
+Updatefeed, einer VM gleichzeitig, unveränderten Speicher-/Prozessgrenzen und
+festem Laufzeitlimit. Ausgangsversion und Import dürfen vorbereitet werden;
+Speichern, Update, Weiterarbeit und Wiederherstellung muss der menschliche Prüfer
+bewusst durchführen und bestätigen. Automatisierte Beobachtung darf nur reale
+Journal-/Programmzustände dokumentieren, keine menschliche Abnahme erfinden.
+Anleitung, exakt gebundene Artefaktdaten und konkrete Oberfläche vor der Bitte
+um diesen notwendigen menschlichen Schritt bereitstellen. Erst danach die
+separate tatsächliche GitHub-Environment-Freigabe und Veröffentlichung anstoßen.
+
+Teilplan 7.7: reine Anzeigevorbereitung erfolgreich (Bootstrap-Test und VMexit 0).
+Der neue eigenständige Gastdatenträger enthält openbox, x11vnc, noVNC und
+websockify, keine Nutzerdaten und keine AppImages. SHA256
+90a329d9f72ebe469fb854b7bb3dc1f41b54d7d4022a752fa1b61078cfcc56ea;
+Originalbasis unverändert. Beleg: work/phase7-human-environment-1.
+
+Erster interaktiver Prüfgast installiert 0.2.0, übernimmt die unveränderte
+Sicherungskopie und meldet nach geladener Session PHASE7_HUMAN_READY.
+Die Browserverbindung scheitert jedoch: HTTP innerhalb des VM-Containers liefert
+200 von websockify; derselbe Zugriff über die ausschließlich lokale Podman-
+Portweiterleitung läuft in einen Timeout. Damit ist die Anzeige im Gast belegt,
+nicht die Übergabe an einen Menschen. Der Gast wurde vor jeder menschlichen
+Abnahme kontrolliert beendet; ursprünglicher Datenträger und Serialausgabe unter
+work/phase7-human-vm-1 bleiben erhalten. VMexit 0 durch QEMU-SIGTERM ist ausdrücklich
+kein abgeschlossener Livetest und kein erfolgreicher Export.
+
+Korrekturplan 7.7a vor Harnessänderung: die fehlerhafte zusätzliche Podman-
+Portweiterleitung entfernen. Nur der unveränderte QEMU-Container verwendet das
+Hostnetz; QEMU bindet seine Weiterleitung unmittelbar an 127.0.0.1:16080.
+Der eigentliche Prüfgast behält restrict=on, keine externe Netzverbindung,
+keine Hostprofil-Mounts, bestehende Ressourcenlimits, Ein-VM-Sperre und Deadline.
+Neue private Kopie starten, HTTP-Erreichbarkeit vom Host, tatsächliche lokale
+Bindung und sichtbare Browseroberfläche prüfen. Erst dann menschliche Schritte
+anfordern. Keine Produktänderung und keine Umdeutung der bisherigen Abnahme.
+
+Korrekturplan 7.7b: Bei der abschließenden Quellenprüfung des privaten Beobachters
+wurde eine weitere Lebenszykluslücke erkannt: die drei Anzeige-Kindprozesse
+würden den Node-Prozess nach dem bewussten Schließen der App offen halten.
+Den zweiten Gast deshalb vor einer menschlichen Übergabe beendet und erhalten.
+Die Anzeigeprozesse im Beobachter entkoppeln; die bestehende systemd-Servicegruppe
+beendet sie nach Abschluss des Hauptprozesses. Dadurch wird der Beleg regulär
+exportiert, statt erst am festen Gesamtzeitlimit zu enden. Den dritten Gast erst
+mit dieser Korrektur starten; Versions-/Profildaten und Abnahmekriterien bleiben
+unverändert. Keine menschliche Prüfung wurde als durchgeführt gewertet.
