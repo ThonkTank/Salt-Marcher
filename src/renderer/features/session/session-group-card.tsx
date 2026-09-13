@@ -1,3 +1,4 @@
+import { GroupEditorQuantity } from './group-editor-quantity.js'
 import { useState } from 'react'
 import type { Treasure } from '../../../shared/contracts/loot.js'
 import { formatInteger } from '../../i18n/domain-formatters.de.js'
@@ -65,17 +66,39 @@ export function SessionGroupCard(props: {
           <span className="empty-group-label">{message('group.empty')}</span>
         ) : (
           group.entries.map((entry) => (
-            <button
-              key={entry.id}
-              className={entry.available ? '' : 'unavailable'}
-              disabled={!entry.available}
-              aria-label={memberLabel(entry)}
-              onClick={() =>
-                props.actions.inspectCreature(entry.creatureId, group.name)
-              }
-            >
-              {memberLabel(entry)}
-            </button>
+            <div className="scene-group-species" key={entry.id}>
+              <button
+                className={entry.available ? '' : 'unavailable'}
+                disabled={!entry.available}
+                aria-label={memberLabel(entry)}
+                onClick={() =>
+                  props.actions.inspectCreature(entry.creatureId, group.name)
+                }
+              >
+                {memberLabel(entry)}
+              </button>
+              {props.row.kind === 'active-group' &&
+                props.actions.changeGroupQuantity && (
+                  <GroupEditorQuantity
+                    name={entry.displayName}
+                    quantity={entry.aliveQuantity}
+                    change={(delta) =>
+                      props.actions.changeGroupQuantity?.(
+                        group.id,
+                        entry.creatureId,
+                        delta
+                      )
+                    }
+                    remove={() =>
+                      props.actions.changeGroupQuantity?.(
+                        group.id,
+                        entry.creatureId,
+                        null
+                      )
+                    }
+                  />
+                )}
+            </div>
           ))
         )}
         <div className="row-actions">
@@ -92,9 +115,14 @@ export function SessionGroupCard(props: {
             </button>
           )}
           {props.row.kind === 'active-group' ? (
-            <button onClick={() => props.actions.editGroup(group)}>
-              {message('ui.bearbeiten')}
-            </button>
+            <>
+              <button onClick={() => props.actions.editGroup(group)}>
+                {message('groupEditor.addMonster')}
+              </button>
+              <button onClick={() => props.actions.editGroupLoot?.(group)}>
+                {message('groupEditor.editLoot')}
+              </button>
+            </>
           ) : (
             <>
               <button

@@ -25,6 +25,59 @@ import {
 import { groupManagerHistoryShortcut } from '../../src/renderer/features/session/group-manager-shortcuts.js'
 
 describe('group manager state', () => {
+  it('does not create a dirty treasure when a generator returns no reward', () => {
+    let state = createGroupManagerState({
+      activeKey: 'new',
+      initialGroup: null,
+      prospectiveGroupId: 'new-id',
+      locationId: null
+    })
+    const run = { ...generatedRun(), treasures: [] }
+    state = groupManagerReducer(state, {
+      kind: 'loot-generated',
+      key: 'new',
+      run,
+      draft: groupLootDraftFromRun(run),
+      seed: 1
+    })
+    expect(groupManagerAnyLootDirty(state)).toBe(false)
+  })
+
+  it('preserves separate loot selections and histories across switching and acknowledges excluded edits', () => {
+    let state = stateWithLoot()
+    const first = state.sessions['group-a']!.loot
+    state = groupManagerReducer(state, {
+      kind: 'editor-loot-select',
+      key: 'group-a',
+      selection: 'second'
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-command',
+      key: 'group-a',
+      command: { kind: 'set-label', label: 'Second' }
+    })
+    const second = state.sessions['group-a']!.loot
+    state = groupManagerReducer(state, {
+      kind: 'editor-loot-select',
+      key: 'group-a',
+      selection: 'new'
+    })
+    expect(state.sessions['group-a']!.loot).toBe(first)
+    state = groupManagerReducer(state, {
+      kind: 'editor-loot-select',
+      key: 'group-a',
+      selection: 'second'
+    })
+    expect(state.sessions['group-a']!.loot).toBe(second)
+    state = groupManagerReducer(state, {
+      kind: 'editor-loot-saved',
+      key: 'group-a',
+      treasures: [],
+      discardExcluded: true
+    })
+    expect(groupManagerAnyLootDirty(state)).toBe(false)
+  })
+
   it('does not replace a newer acknowledged revision with a delayed older result', () => {
     let state = stateWithLoot()
     const submitted = signature(state.sessions['group-a']!.group)
@@ -274,7 +327,7 @@ describe('group manager state', () => {
         update: { quantities: { wolf: 1 }, deadQuantities: {} }
       }
     })
-    expect(activeGroupSession(state)?.loot.run).toBeNull()
+    expect(activeGroupSession(state)?.loot.run).toBe(run)
   })
 
   it('applies coordinated async results to their addressed draft', () => {
@@ -398,11 +451,14 @@ describe('group manager state', () => {
       { kind: 'remove-creature', creatureId: 'wolf' },
       { kind: 'roster-history', direction: 'undo-roster' },
       { kind: 'generate-roster', mode: 'fill' },
-      { kind: 'regenerate-loot', mode: 'reroll' }
+      { kind: 'save' }
     ]
     for (const intent of currentLoot)
-      expect(groupManagerIntentGuard(intent)).toBe('current-loot')
-    for (const kind of ['close', 'save', 'archive', 'join-combat'] as const)
+      expect(groupManagerIntentGuard(intent)).toBe('none')
+    expect(
+      groupManagerIntentGuard({ kind: 'regenerate-loot', mode: 'reroll' })
+    ).toBe('current-loot')
+    for (const kind of ['close', 'archive', 'join-combat'] as const)
       expect(groupManagerIntentGuard({ kind })).toBe('all-drafts')
   })
 

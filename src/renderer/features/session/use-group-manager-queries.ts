@@ -1,3 +1,4 @@
+import { useGroupEditorQueries } from './use-group-editor-queries.js'
 import { useCallback, useEffect, type Dispatch } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -34,6 +35,7 @@ export function useGroupManagerQueries(
     query: string
   ) => Promise<readonly SearchableSelectOption[]>
 }> {
+  useGroupEditorQueries(input, commands)
   const { dispatch, focused, onError, ports, session, snapshot, state } = input
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export function useGroupManagerQueries(
 
   useEffect(() => {
     const run = session?.loot.run
-    if (!run || state.catalogMode !== 'loot') return
+    if (state.catalogMode !== 'loot') return
     const abort = new AbortController()
     void commands
       .run({
@@ -186,8 +188,8 @@ export function useGroupManagerQueries(
         execute: () =>
           ports.loot.catalog({
             ...state.lootCatalog.query,
-            runId: run.id,
-            catalogContentHash: run.catalogContentHash
+            runId: run?.id ?? null,
+            catalogContentHash: run?.catalogContentHash ?? null
           })
       })
       .then((outcome) => {

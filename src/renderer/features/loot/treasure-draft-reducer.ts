@@ -4,7 +4,7 @@ import type {
   EditableTreasureItem
 } from './treasure-draft.js'
 
-export type TreasureDraftPolicy = 'manual' | 'catalog'
+export type TreasureDraftPolicy = 'manual' | 'catalog' | 'group-editor'
 
 export type TreasureItemPatch = Partial<
   Pick<
@@ -59,7 +59,7 @@ export function reduceTreasureDraft<
     case 'patch-item':
       return updateItem(draft, command.id, command.patch)
     case 'remove-item':
-      return draft.items.length === 1 ||
+      return (draft.items.length === 1 && policy !== 'group-editor') ||
         !draft.items.some((item) => item.draftId === command.id)
         ? draft
         : {
@@ -83,11 +83,11 @@ export function reduceTreasureDraft<
         )
       }
     case 'add-item':
-      return policy === 'manual'
+      return policy !== 'catalog'
         ? insertItem(draft, command.item, draft.items.length)
         : draft
     case 'add-container':
-      return policy === 'manual'
+      return policy !== 'catalog'
         ? insertContainer(draft, command.container, draft.containers.length)
         : draft
     case 'insert-item':
@@ -165,7 +165,7 @@ export function planTreasureDraftOperation<
     }
   }
   if (command.kind === 'remove-item') {
-    if (draft.items.length === 1) return null
+    if (draft.items.length === 1 && policy !== 'group-editor') return null
     const index = draft.items.findIndex((entry) => entry.draftId === command.id)
     if (index < 0) return null
     return {
@@ -198,14 +198,14 @@ export function planTreasureDraftOperation<
     }
   }
   if (command.kind === 'add-item') {
-    if (policy !== 'manual') return null
+    if (policy === 'catalog') return null
     return {
       forward: [command],
       backward: [{ kind: 'remove-item', id: command.item.draftId }]
     }
   }
   if (command.kind === 'add-container') {
-    if (policy !== 'manual') return null
+    if (policy === 'catalog') return null
     return {
       forward: [command],
       backward: [{ kind: 'remove-container', id: command.container.draftId }]

@@ -1,3 +1,5 @@
+import { addEditorCatalogEntry, allEditorLoot } from './group-editor-loot.js'
+import type { LootCatalogEntry } from '../../../shared/contracts/loot.js'
 import type { Dispatch } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
@@ -101,9 +103,26 @@ export function projectGroupManagerView(input: {
     pending: commands.pending,
     anyLootDirty: groupManagerAnyLootDirty(state),
     currentLootDirty,
-    effectiveCatalogMode: (state.catalogMode === 'loot' && loot?.run
-      ? 'loot'
-      : 'creatures') as GroupCatalogMode,
+    effectiveCatalogMode: state.catalogMode,
+    editorTreasures: session ? allEditorLoot(session) : {},
+    selectTreasure: (selection: string) => {
+      if (state.activeKey)
+        dispatch({
+          kind: 'editor-loot-select',
+          key: state.activeKey,
+          selection
+        })
+    },
+    includeLoot: (include: boolean) => {
+      if (state.activeKey)
+        dispatch({ kind: 'editor-loot-include', key: state.activeKey, include })
+    },
+    addLoot: (entry: LootCatalogEntry) => {
+      if (lootHistory)
+        interactions.dispatchLoot(
+          addEditorCatalogEntry(entry, lootHistory.draft)
+        )
+    },
     loot: {
       run: loot?.run ?? null,
       draft: lootHistory?.draft ?? null,

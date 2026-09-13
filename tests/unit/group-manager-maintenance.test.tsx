@@ -142,7 +142,10 @@ describe('group maintenance owner', () => {
     runtime.dispatch({
       kind: 'loot-generated',
       key: 'a',
-      run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+      run: {
+        id: 'run',
+        treasures: [{ id: 'generated-treasure' }]
+      } as unknown as GroupRewardGeneratedRun,
       draft: { label: 'Kein zusätzlicher Loot', items: [], containers: [] },
       seed: 1
     })
@@ -201,7 +204,10 @@ describe('group maintenance owner', () => {
     runtime.dispatch({
       kind: 'loot-generated',
       key: 'a',
-      run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+      run: {
+        id: 'run',
+        treasures: [{ id: 'generated-treasure' }]
+      } as unknown as GroupRewardGeneratedRun,
       draft: { label: 'No loot', items: [], containers: [] },
       seed: 1
     })
@@ -317,7 +323,10 @@ describe('group maintenance owner', () => {
       hook.result.current.dispatch({
         kind: 'loot-generated',
         key: 'a',
-        run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+        run: {
+          id: 'run',
+          treasures: [{ id: 'generated-treasure' }]
+        } as unknown as GroupRewardGeneratedRun,
         draft: { label: 'No loot', items: [], containers: [] },
         seed: 1
       })
@@ -396,7 +405,7 @@ describe('group maintenance owner', () => {
                 key: 'a',
                 run: {
                   id: 'run',
-                  treasures: []
+                  treasures: [{ id: 'generated-treasure' }]
                 } as unknown as GroupRewardGeneratedRun,
                 draft: { label: 'No loot', items: [], containers: [] },
                 seed: 1
@@ -594,7 +603,10 @@ describe('group maintenance owner', () => {
     runtime.dispatch({
       kind: 'loot-generated',
       key: 'a',
-      run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+      run: {
+        id: 'run',
+        treasures: [{ id: 'generated-treasure' }]
+      } as unknown as GroupRewardGeneratedRun,
       draft: { label: 'No loot', items: [], containers: [] },
       seed: 1
     })

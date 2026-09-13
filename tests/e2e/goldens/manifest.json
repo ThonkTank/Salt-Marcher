@@ -154,8 +154,8 @@
     {
       "name": "group-loot-preview-light",
       "suite": "groupLoot",
-      "testPattern": "edits only quantities and packing while keeping generated facts fixed",
-      "selector": ".group-loot-inline-panel",
+      "testPattern": "manually selects loot and keeps both compact views and histories",
+      "selector": ".group-editor",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -164,8 +164,8 @@
     {
       "name": "group-loot-preview-dark",
       "suite": "groupLoot",
-      "testPattern": "edits only quantities and packing while keeping generated facts fixed",
-      "selector": ".group-loot-inline-panel",
+      "testPattern": "manually selects loot and keeps both compact views and histories",
+      "selector": ".group-editor",
       "viewport": {
         "width": 1280,
         "height": 800

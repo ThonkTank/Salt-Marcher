@@ -1,3 +1,4 @@
+import { editorLootChanges } from './group-editor-loot.js'
 import type { Dispatch } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
@@ -42,7 +43,12 @@ export function createGroupManagerInteractions(input: {
   const { commands, dispatch, entries, group, ports, session, state } = input
 
   function requestIntent(intent: GroupManagerIntent) {
-    const guard = groupManagerIntentGuard(intent)
+    const guard =
+      intent.kind === 'save' &&
+      session?.includeLoot === false &&
+      editorLootChanges(session).length > 0
+        ? 'all-drafts'
+        : groupManagerIntentGuard(intent)
     if (
       groupManagerIntentNeedsConfirmation(guard, {
         anyDraft: groupManagerAnyDirty(state),

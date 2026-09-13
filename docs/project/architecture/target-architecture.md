@@ -654,3 +654,14 @@ presentation writes, reconcile uncertain replies by readback and stop on conflic
 An explicit reload discards unsaved presentation intent. Installation migration
 41→42 removes preview and column preferences, preserving theme in strict envelope
 version 2. Historical settings codecs exist only for validated migration.
+
+## Compact group editor
+
+`GroupManagerState` owns group drafts, view mode, per-Treasure drafts, separate
+histories and transient balance. `loot.evaluateGroup` is read-only Utility domain
+work using existing budget/ledger rules with a stable draft seed.
+`loot.commitGroupEditor` owns the atomic Scene/Loot save and journal receipt; SQL
+stays with the two aggregates. Definitions and historical Generator Runs are never
+rewritten. Campaign schema 44 widens the Loot receipt operation constraint without
+changing existing receipts. Scene quantity actions serialize per group and reuse
+revision-checked saves plus member/Combat reconciliation.

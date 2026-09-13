@@ -659,22 +659,11 @@ export async function runCampaignCombatScenario(): Promise<void> {
     'section[aria-labelledby="group-builder-title"]'
   )
   await expectAccessibleInBothThemes(client)
-  const groupSelection = await groupDialog.$(
-    'select[aria-label="Gruppe auswählen"]'
+  await expect(await groupDialog.$('[role="tab"]=Monster')).toHaveAttribute(
+    'aria-selected',
+    'true'
   )
-  await expect(await groupSelection.$('option:checked')).toHaveText(
-    'Neue Gruppe'
-  )
-  await expect(await groupDialog.$('button*=Neue Gruppe')).toBeExisting()
-  await expect(
-    await groupDialog.$('section[aria-label="Filter und Generator"]')
-  ).toBeExisting()
-  const draftDivider = await groupDialog.$(
-    '[aria-label="Breite des Gruppenentwurfs"]'
-  )
-  await expect(draftDivider).toHaveAttribute('aria-valuenow', '460')
-  await pressDividerKey(client, 'Breite des Gruppenentwurfs', 'ArrowLeft')
-  await expect(draftDivider).toHaveAttribute('aria-valuenow', '470')
+  await (await groupDialog.$('summary=Gruppendetails')).click()
   await (
     await groupDialog.$('input[aria-label="Gruppenname"]')
   ).setValue('Wolf Pack')
@@ -690,7 +679,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await waitForGroupManagementReady(client)
   await expectGroupManagementGolden(client)
   await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
-  await (await groupDialog.$('button=Gruppe')).click()
+  await (await groupDialog.$('[role="tab"]=Monster')).click()
   const undoGenerated = await groupDialog.$(
     'button[aria-label="Änderung zurücknehmen"]'
   )
@@ -700,21 +689,6 @@ export async function runCampaignCombatScenario(): Promise<void> {
   })
   await undoGenerated.click()
   const dialogSearch = await groupDialog.$('input[aria-label="Monster suchen"]')
-  const discardGeneratedLoot = await client.$('section[role="alertdialog"]')
-  await discardGeneratedLoot.waitForDisplayed({ timeout: 5_000 })
-  expect(
-    await client.execute(() =>
-      Boolean(
-        document
-          .querySelector(
-            'section[aria-labelledby="group-builder-title"] input[aria-label="Monster suchen"]'
-          )
-          ?.closest('[inert]')
-      )
-    )
-  ).toBe(true)
-  await (await discardGeneratedLoot.$('button=Änderungen verwerfen')).click()
-  await discardGeneratedLoot.waitForExist({ reverse: true, timeout: 5_000 })
   await dialogSearch.setValue('wolf')
   const addWolf = await client.$('button[aria-label="Wolf hinzufügen"]')
   await client.waitUntil(() => addWolf.isExisting(), {
@@ -725,14 +699,11 @@ export async function runCampaignCombatScenario(): Promise<void> {
   for (let count = 1; count < 4; count += 1)
     await client.execute(() => {
       const increase = document.querySelector<HTMLButtonElement>(
-        'button[aria-label="Anzahl Wolf erhöhen"]'
+        'button[aria-label="Wolf: Menge erhöhen"]'
       )
       increase?.click()
     })
-  await (await groupDialog.$('button=Speichern')).click()
-  const confirmSave = await client.$('section[role="alertdialog"]')
-  await confirmSave.waitForDisplayed({ timeout: 5_000 })
-  await (await confirmSave.$('button=Änderungen verwerfen')).click()
+  await (await groupDialog.$('button=Übernehmen')).click()
   await expect(await client.$('.group-name=Wolf Pack')).toBeExisting()
   const expandWolf = await client.$('button[aria-label="Wolf Pack aufklappen"]')
   if (await expandWolf.isExisting()) await expandWolf.click()
@@ -844,11 +815,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   const reopenedGroupDialog = await client.$(
     'section[aria-labelledby="group-builder-title"]'
   )
-  const reopenedSelection = await reopenedGroupDialog.$(
-    'select[aria-label="Gruppe auswählen"]'
-  )
-  await reopenedSelection.selectByVisibleText('Wolf Pack')
-  await (await reopenedGroupDialog.$('button*=Neue Gruppe')).click()
+  await (await reopenedGroupDialog.$('summary=Gruppendetails')).click()
   const emptyGroupName = await reopenedGroupDialog.$(
     'input[aria-label="Gruppenname"]'
   )
@@ -859,13 +826,8 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await (
     await reopenedGroupDialog.$('textarea[aria-label="Gruppennotiz"]')
   ).setValue('Erhält automatisch einen Namen.')
-  await reopenedSelection.selectByVisibleText('Wolf Pack')
-  await reopenedSelection.selectByVisibleText('Neue Gruppe')
   await expect(emptyGroupName).toHaveValue('')
-  await (await reopenedGroupDialog.$('button=Speichern')).click()
-  const confirmNewGroupSave = await client.$('section[role="alertdialog"]')
-  await confirmNewGroupSave.waitForDisplayed({ timeout: 5_000 })
-  await (await confirmNewGroupSave.$('button=Änderungen verwerfen')).click()
+  await (await reopenedGroupDialog.$('button=Übernehmen')).click()
   await expect(await client.$('.group-name=Gruppe 1')).toBeExisting()
 
   await openSceneWindow(client, 'combat', true)
@@ -1106,26 +1068,6 @@ async function setSceneLocation(
   await waitForSceneLocation(client, location)
 }
 
-async function pressDividerKey(
-  client: WdioBrowser,
-  label: string,
-  key: string
-): Promise<void> {
-  await client.execute(
-    (ariaLabel, keyboardKey) => {
-      const divider = document.querySelector<HTMLElement>(
-        `[aria-label="${ariaLabel}"]`
-      )
-      divider?.focus()
-      divider?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: keyboardKey, bubbles: true })
-      )
-    },
-    label,
-    key
-  )
-}
-
 async function expectScenarioGolden(
   client: WdioBrowser,
   name: 'initiative' | 'combat' | 'resolution'
@@ -1214,16 +1156,16 @@ async function waitForGroupManagementReady(client: WdioBrowser): Promise<void> {
         const dialog = document.querySelector(
           'section[aria-labelledby="group-builder-title"]'
         )
-        const draft = dialog?.querySelector('.group-manager-draft-rim')
-        const catalog = dialog?.querySelector('.loot-catalog-pane')
+        const draft = dialog?.querySelector('.group-editor-selection')
+        const catalog = dialog?.querySelector('.group-editor-catalog')
         const selectedTabs = dialog?.querySelectorAll(
           'button[role="tab"][aria-selected="true"]'
         )
         return (
           draft?.getAttribute('data-group-draft-ready') === 'true' &&
-          catalog?.getAttribute('data-loot-catalog-ready') === 'true' &&
-          selectedTabs?.length === 2 &&
-          dialog?.querySelector('.generated-loot-results') !== null
+          catalog?.querySelector('.creature-collection-row') !== null &&
+          selectedTabs?.length === 1 &&
+          draft?.getAttribute('data-group-loot-phase') === 'ready'
         )
       }),
     {

@@ -1,3 +1,17 @@
+import {
+  synchronizeEditorLoot,
+  editorBudgetSeed
+} from './group-editor-loot-sync.js'
+import {
+  emptyEditorLoot,
+  editorLootFromTreasure,
+  allEditorLoot,
+  preserveAllocatedEditorLoot
+} from './group-editor-loot.js'
+import type {
+  Treasure,
+  GroupLootBalance
+} from '../../../shared/contracts/loot.js'
 import type {
   CreatureCatalogPage,
   CreatureCatalogQuery,
@@ -19,8 +33,8 @@ import {
   redoGroupLootDraft,
   undoGroupLootDraft,
   type GroupLootDraft,
-  type GroupLootDraftCommand,
-  type GroupLootDraftHistory
+  type GroupLootDraftHistory,
+  type GroupLootDraftCommand
 } from '../loot/group-loot-draft.js'
 import {
   emptyCreatureOptions,
@@ -42,22 +56,14 @@ export type GroupWorkspaceMode = 'group' | 'loot'
 export type GroupDraftLootPhase =
   'idle' | 'generating' | 'ready' | 'committing' | 'error'
 
-export type GroupManagerLootState = Readonly<{
-  run: GroupRewardGeneratedRun | null
-  history: GroupLootDraftHistory | null
-  committedSignature: string | null
-  seed: number | null
-  phase: GroupDraftLootPhase
-  error: string
-  issues: readonly CapabilityIssue[]
-}>
-
-export type GroupDraftSession = Readonly<{
-  sourceRevision: number | null
-  group: GroupDraftState
-  loot: GroupManagerLootState
-  externalConflict: boolean
-}>
+export type {
+  GroupManagerLootState,
+  GroupDraftSession
+} from './group-editor-types.js'
+import type {
+  GroupManagerLootState,
+  GroupDraftSession
+} from './group-editor-types.js'
 
 type LootCatalogDraftQuery = Omit<
   LootCatalogQuery,
@@ -87,6 +93,21 @@ export type GroupManagerState = Readonly<{
 }>
 
 export type GroupManagerAction =
+  | { kind: 'editor-loot-loaded'; key: string; treasures: readonly Treasure[] }
+  | { kind: 'editor-loot-select'; key: string; selection: string }
+  | { kind: 'editor-loot-include'; key: string; include: boolean }
+  | {
+      kind: 'editor-loot-balance'
+      key: string
+      balance: GroupLootBalance | null
+      error: string
+    }
+  | {
+      kind: 'editor-loot-saved'
+      discardExcluded?: boolean
+      key: string
+      treasures: readonly { key: string; treasure: Treasure }[]
+    }
   | {
       kind: 'activate'
       key: string | null
@@ -187,6 +208,7 @@ export type GroupManagerAction =
   | { kind: 'sync-external'; groups: readonly SceneGroup[] }
 
 export function createGroupManagerState(input: {
+  initialLootKey?: string
   activeKey: string | null
   initialGroup: SceneGroup | null
   prospectiveGroupId: string
@@ -198,7 +220,9 @@ export function createGroupManagerState(input: {
       ? {
           [input.activeKey]: createSession(
             groupDraftStateFromGroup(input.initialGroup),
-            input.initialGroup?.revision ?? null
+            input.initialGroup?.revision ?? null,
+            input.initialGroup?.id ?? input.prospectiveGroupId,
+            input.initialLootKey
           )
         }
       : {},
@@ -233,26 +257,60 @@ export function groupManagerReducer(
   state: GroupManagerState,
   action: GroupManagerAction
 ): GroupManagerState {
+  if (action.kind === 'editor-loot-loaded')
+    return updateSession(state, action.key, (session) =>
+      synchronizeEditorLoot(session, action.treasures)
+    )
+  if (action.kind === 'editor-loot-select')
+    return updateSession(state, action.key, (session) => {
+      const cache = allEditorLoot(session)
+      return {
+        ...session,
+        lootSelection: action.selection,
+        lootCache: cache,
+        loot: cache[action.selection] ?? emptyEditorLoot()
+      }
+    })
+  if (action.kind === 'editor-loot-include')
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      includeLoot: action.include
+    }))
+  if (action.kind === 'editor-loot-balance')
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      balance: action.balance,
+      balanceError: action.error
+    }))
+  if (action.kind === 'editor-loot-saved')
+    return updateSession(state, action.key, (session) => {
+      const cache = { ...allEditorLoot(session) }
+      if (action.discardExcluded)
+        for (const [key, loot] of Object.entries(cache))
+          cache[key] = loot.persisted
+            ? editorLootFromTreasure(loot.persisted)
+            : emptyEditorLoot()
+      for (const saved of action.treasures)
+        cache[saved.key] = editorLootFromTreasure(saved.treasure)
+      return {
+        ...session,
+        lootCache: cache,
+        loot: cache[session.lootSelection ?? 'new'] ?? session.loot
+      }
+    })
   if (action.kind === 'activate') {
     if (action.key === state.activeKey) return state
-    const nextSession = action.key ? state.sessions[action.key] : undefined
-    const lootAvailable = Boolean(nextSession?.loot.run)
     return {
       ...state,
       activeKey: action.key,
-      ...(lootAvailable
-        ? {}
-        : {
-            catalogMode: 'creatures' as const,
-            workspaceMode: 'group' as const
-          }),
       sessions:
         action.key && !state.sessions[action.key]
           ? {
               ...state.sessions,
               [action.key]: createSession(
                 action.fallback,
-                action.sourceRevision
+                action.sourceRevision,
+                action.key
               )
             }
           : state.sessions,
@@ -314,9 +372,7 @@ export function groupManagerReducer(
     return updateActiveSession(state, (session) => ({
       ...session,
       group: groupDraftReducer(session.group, action.mutation),
-      ...(groupMutationInvalidatesLoot(action.mutation)
-        ? { loot: emptyLoot() }
-        : {})
+      balance: null
     }))
   if (action.kind === 'group-message')
     return updateSession(state, action.key, (session) => ({
@@ -355,7 +411,7 @@ export function groupManagerReducer(
         message: action.message,
         generationSummary: action.generationSummary
       },
-      loot: emptyLoot()
+      balance: null
     }))
   }
   if (action.kind === 'invalidate-loot')
@@ -375,30 +431,24 @@ export function groupManagerReducer(
       }
     }))
   if (action.kind === 'loot-generated') {
-    return updateSession(
-      {
-        ...state,
-        ...(state.activeKey === action.key
-          ? {
-              catalogMode: 'loot' as const,
-              workspaceMode: 'loot' as const
-            }
-          : {})
-      },
-      action.key,
-      (session) => ({
-        ...session,
-        loot: {
-          run: action.run,
-          history: createGroupLootDraftHistory(action.draft),
-          committedSignature: null,
-          phase: 'ready',
-          error: '',
-          issues: [],
-          seed: action.seed
-        }
-      })
-    )
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      loot: {
+        persisted: session.loot.persisted ?? null,
+        run: action.run,
+        history: createGroupLootDraftHistory(
+          preserveAllocatedEditorLoot(session.loot, action.draft)
+        ),
+        committedSignature:
+          !session.loot.persisted && !action.run.treasures.length
+            ? groupLootDraftSignature(action.draft)
+            : null,
+        phase: 'ready',
+        error: '',
+        issues: [],
+        seed: action.seed
+      }
+    }))
   }
   if (action.kind === 'loot-committed')
     return updateSession(state, action.key, (session) =>
@@ -539,13 +589,14 @@ export function groupManagerAnyDirty(state: GroupManagerState): boolean {
 
 export function groupDraftSessionDirty(session: GroupDraftSession): boolean {
   return (
-    groupDraftStateDirty(session.group) || groupManagerLootDirty(session.loot)
+    groupDraftStateDirty(session.group) ||
+    Object.values(allEditorLoot(session)).some(groupManagerLootDirty)
   )
 }
 
 export function groupManagerAnyLootDirty(state: GroupManagerState): boolean {
   return Object.values(state.sessions).some((session) =>
-    groupManagerLootDirty(session.loot)
+    Object.values(allEditorLoot(session)).some(groupManagerLootDirty)
   )
 }
 
@@ -565,12 +616,19 @@ export function groupManagerLootDirty(loot: GroupManagerLootState): boolean {
 
 function createSession(
   group: GroupDraftState,
-  sourceRevision: number | null
+  sourceRevision: number | null,
+  seedKey = 'existing',
+  lootSelection = 'new'
 ): GroupDraftSession {
   return {
     sourceRevision,
     group,
-    loot: emptyLoot(),
+    budgetSeed: editorBudgetSeed(seedKey),
+    loot: emptyEditorLoot(),
+    lootSelection,
+    lootCache: {},
+    lootLoaded: false,
+    includeLoot: true,
     externalConflict: false
   }
 }
@@ -651,10 +709,12 @@ function synchronizeExternalGroups(
     if (groupDraftSessionDirty(session)) {
       sessions[key] = { ...session, externalConflict: true }
     } else {
-      sessions[key] = createSession(
-        groupDraftStateFromGroup(group),
-        group.revision
-      )
+      sessions[key] = {
+        ...session,
+        group: groupDraftStateFromGroup(group),
+        sourceRevision: group.revision,
+        balance: null
+      }
     }
     changed = true
   }
@@ -670,13 +730,5 @@ function synchronizeExternalGroups(
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value
-  )
-}
-
-function groupMutationInvalidatesLoot(mutation: GroupDraftMutation): boolean {
-  return (
-    mutation.kind === 'roster' ||
-    mutation.kind === 'undo-roster' ||
-    mutation.kind === 'redo-roster'
   )
 }

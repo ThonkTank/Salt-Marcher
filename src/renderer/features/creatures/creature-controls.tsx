@@ -18,6 +18,8 @@ export function CreatureFilters(props: {
   searchBiomeOptions?:
     ((query: string) => Promise<readonly SearchableSelectOption[]>) | undefined
   compact?: boolean
+  hideName?: boolean
+  allReferenceFilters?: boolean
   clustered?: boolean
 }) {
   const q = props.query
@@ -164,15 +166,18 @@ export function CreatureFilters(props: {
     <div
       className={`creatures-filters${props.compact ? ' creatures-filters--compact' : ''}`}
     >
-      <input
-        aria-label={message('ui.monster.suchen')}
-        placeholder={message('ui.monster.suchen.2')}
-        value={q.name}
-        onChange={(event) => update({ name: event.target.value })}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') update({ name: event.currentTarget.value })
-        }}
-      />
+      {!props.hideName && (
+        <input
+          aria-label={message('ui.monster.suchen')}
+          placeholder={message('ui.monster.suchen.2')}
+          value={q.name}
+          onChange={(event) => update({ name: event.target.value })}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter')
+              update({ name: event.currentTarget.value })
+          }}
+        />
+      )}
       <select
         aria-label={message('ui.cr.minimum')}
         value={q.crMin ?? ''}
@@ -236,7 +241,8 @@ export function CreatureFilters(props: {
         selected={q.alignments}
         changed={(alignments) => update({ alignments })}
       />
-      {props.options.encounterTables.length > 0 && (
+      {(props.allReferenceFilters ||
+        props.options.encounterTables.length > 0) && (
         <SearchableMultiFilter
           label={message('catalog.table')}
           options={props.options.encounterTables}
@@ -244,7 +250,7 @@ export function CreatureFilters(props: {
           changed={(encounterTableIds) => update({ encounterTableIds })}
         />
       )}
-      {props.options.factions.length > 0 && (
+      {(props.allReferenceFilters || props.options.factions.length > 0) && (
         <SearchableMultiFilter
           label={message('ui.fraktionen')}
           options={props.options.factions}
@@ -252,7 +258,7 @@ export function CreatureFilters(props: {
           changed={(factionIds) => update({ factionIds })}
         />
       )}
-      {props.options.locations.length > 0 && (
+      {(props.allReferenceFilters || props.options.locations.length > 0) && (
         <SearchableSelect
           mode="single"
           label={message('ui.ort')}

@@ -20,24 +20,29 @@ tab. Scene owns runtime composition; Session does not own a second group list.
 - Activating a Roster PC through `Zur Party` assigns that PC atomically to the
   focused Scene. Removing Party membership removes the PC from every Scene.
   Manual Scene removal remains stable until membership is toggled again.
-- `Gruppen managen` is the only creation and editing entry point. Its group
-  selector and adjacent action start a transient `Neue Gruppe` draft; when no
-  active group exists, that draft is selected automatically. A new group may
-  be saved with an empty roster and without a custom name. Disposition is
-  descriptive metadata and does not assign a Combat side.
-- The dialog's left pane contains the Creature catalog with name, CR, size,
-  type, subtype, biome, and alignment filters. The right pane selects an
-  existing Scene group or the new draft. A blank or whitespace-only name is
-  replaced atomically on save with the smallest free `Gruppe N` name in that
-  Scene. Active and archived groups reserve their exact `Gruppe N` number;
-  this rule applies equally to new groups and renamed existing groups.
-- Catalog rows add monsters to the draft explicitly. The draft supports
-  quantity changes, removal, and an optional persisted group note. A custom
-  name is optional; creatures are optional, but a non-empty draft needs at
-  least one available creature before saving.
-- Every draft change shows base XP, adjusted XP, Party thresholds, creature
-  count, multiplier, semantic difficulty band, and status without persisting
-  the draft.
+- `Neue Gruppe` opens a blank Monster draft directly. `Monster hinzufügen`
+  edits that Scene group; `Loot bearbeiten` opens its Loot view. One Monster / Loot
+  switch changes both catalog and selection; there is no start screen or wizard.
+- Both views provide catalog search, explicit add actions and selected rows with
+  quantities and removal. Monster filters include name, CR minimum/maximum, size,
+  type, subtype, biome, alignment, encounter table, faction and location. Loot
+  filters include search, type, category and rarity. Filter options are real
+  catalog data; multiselect, search, chips and reset remain available.
+- A blank or whitespace-only name is replaced atomically on save with the smallest
+  free `Gruppe N` in that Scene. Active and archived groups reserve their number.
+  Names, notes and disposition are never changed by generation. Empty groups are
+  valid; a nonempty group requires at least one available creature.
+- Filters, group details and detailed balance start collapsed. Compact rows use
+  existing tokens and common editor controls. Mode changes retain queries,
+  filters, selections and independent semantic undo/redo histories.
+- Monster balance always shows difficulty, adjusted XP and living count. Details
+  show base XP, multiplier, all four party thresholds, a threshold meter and assigned
+  levels. Dead members are shown separately and retain their domain treatment.
+  Missing Party, levels or creatures produce an unavailable status.
+- Expanded Scene groups expose living quantity and remove actions for each
+  creature species. Quantity changes preserve dead members; removing a species
+  removes its entry. Writes serialize per group through the revision-checked group
+  save command and reconcile remaining members and running Combat.
 - One group may contain several creature identities. Scene stores stable
   creature references and quantities, not copied statblocks.
 - Active groups can be edited or archived. Archived groups appear under
@@ -51,15 +56,20 @@ the current draft and adds filtered creatures until the requested difficulty
 band is reached; an already sufficient or stronger group remains unchanged.
 `Neu generieren` replaces only the draft roster. Both operations receive the
 focused Scene, assigned Party, optional Location, current draft, filters, and
-tuning. A successful roster generation immediately creates an inline Loot
-preview for the same unsaved roster. Manual roster edits, undo, and redo remove
-that preview; `Loot neu würfeln` replaces only Loot. Seeds remain internal and
-independent. `Gruppe & Loot übernehmen` saves both owners atomically, while the
-ordinary save action remains group-only. Generator results remain transient
-until explicitly saved and do not survive restart. Each selected group keeps
-its own transient draft and Loot preview while the dialog remains open, so
-switching groups does not lose work. Closing the dialog with any dirty draft
-requires explicit discard confirmation.
+tuning. A first successful roster generation may create a Loot proposal only when the group
+has no Loot. Subsequent monster edits, fill, replace and undo/redo preserve every
+Treasure and Loot draft. `Loot generieren` explicitly replaces the selected draft,
+with discard confirmation for edited contents. Generation never changes group
+metadata. Seeds remain internal and stable for read-only balance recalculation.
+
+`Übernehmen` saves the group and included new/modified Treasures atomically and
+closes only after confirmed success. Manual Loot requires neither Party nor a
+Generator Run. `Loot mit übernehmen` defaults on; disabling it does not delete
+persisted Treasures and explicitly resolves excluded unsaved changes before closing.
+Each treasure retains its draft while switching. The full economic balance and
+immutable provenance rules are specified in the Loot requirements. Failed and
+uncertain writes preserve the editor and use receipt recovery. Closing a dirty
+editor requires explicit discard confirmation.
 
 ## Three-column workspace
 

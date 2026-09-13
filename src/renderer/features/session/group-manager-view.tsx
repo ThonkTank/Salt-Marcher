@@ -1,350 +1,240 @@
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { KeyboardEvent } from 'react'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
-import {
-  formatMessage,
-  message as uiMessage
-} from '../../i18n/session-runtime.de.js'
+import { message } from '../../i18n/session-runtime.de.js'
 import { CreatureCollectionManagerDialog } from '../creature-collection/creature-collection.js'
 import { DiscardChangesDialog } from '../../shell/modal-dialog.js'
-import { newGroupDraftKey } from './group-draft.js'
-import {
-  GroupManagerCatalogPane,
-  GroupManagerCatalogTools
-} from './group-manager-catalog.js'
-import { GroupManagerDraftPane } from './group-manager-draft-pane.js'
+import { GroupEditorCatalog } from './group-editor-catalog.js'
+import { GroupEditorSelection } from './group-editor-selection.js'
 import type { GroupManagerController } from './use-group-manager-controller.js'
 import { groupManagerHistoryShortcut } from './group-manager-shortcuts.js'
 import './session-dialogs.css'
-import './group-dialog-frame.css'
-import './group-dialog-generator.css'
-import './group-dialog-draft.css'
-import './group-dialog-footer.css'
+import './group-editor.css'
 
-export function GroupManagerView(props: {
+export function GroupManagerView({
+  controller: c
+}: {
   controller: GroupManagerController
 }) {
-  const controller = props.controller
-  const { state, group, loot } = controller
-  const totalInDraft = Object.fromEntries(
-    Array.from(
-      new Set([
-        ...Object.keys(group.quantities),
-        ...Object.keys(group.deadQuantities)
-      ])
-    ).map((id) => [
-      id,
-      (group.quantities[id] ?? 0) + (group.deadQuantities[id] ?? 0)
-    ])
-  )
-  const filteredCount = state.creatureCatalog.page?.total ?? 0
-  const filterSummary = formatMessage('group.catalogCount', {
-    filtered: filteredCount,
-    total: state.creatureCatalog.total
-  })
-  const catalogFooterStatus = [
-    state.creatureCatalog.page?.message ||
-      formatMessage('group.filteredMonsters', { count: filteredCount }),
-    group.generationSummary
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const sceneContext = [
-    controller.focused.title,
-    controller.focused.locationName
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const levelContext = controller.assigned
-    .map((member) => member.level?.toString() ?? '—')
-    .join(' / ')
-  const keyboard = (event: KeyboardEvent): void => {
+  const keyboard = (event: KeyboardEvent) => {
+    const target = event.target
     const direction = groupManagerHistoryShortcut({
       key: event.key,
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
       shiftKey: event.shiftKey,
-      editable: isEditableTarget(event.target)
+      editable:
+        target instanceof HTMLElement &&
+        (target.matches('input,textarea,select') || target.isContentEditable)
     })
-    if (!direction) return
+    if (!direction || c.busy) return
     event.preventDefault()
-    if (state.workspaceMode === 'loot') {
-      if (direction === 'redo') loot.redo()
-      else loot.undo()
+    if (c.state.workspaceMode === 'loot') {
+      if (direction === 'redo') c.loot.redo()
+      else c.loot.undo()
     } else
-      controller.moveRosterHistory(
-        direction === 'redo' ? 'redo-roster' : 'undo-roster'
-      )
+      c.moveRosterHistory(direction === 'redo' ? 'redo-roster' : 'undo-roster')
   }
-
   return (
     <>
       <CreatureCollectionManagerDialog
-        className="group-dialog session-group-manager"
-        headerClassName="group-manager-header"
-        toolsClassName="group-manager-tools"
-        layoutClassName="group-manager-workspace"
-        footerClassName="group-manager-footer"
-        title={uiMessage('ui.gruppen.managen')}
+        className="group-dialog session-group-manager group-editor"
+        title={
+          c.selectedPersistedGroup
+            ? message('ui.gruppen.managen')
+            : message('group.createTitle')
+        }
         titleId="group-builder-title"
-        heading={<GroupManagerHeading />}
-        closeLabel={uiMessage('ui.dialog.schliessen')}
-        closeClassName="close"
-        close={controller.close}
-        busy={controller.busy}
+        closeLabel={message('ui.dialog.schliessen')}
+        close={c.close}
+        busy={c.busy}
         onKeyDown={keyboard}
-        toolsLabel={uiMessage('group.tools')}
         headerControls={
-          <GroupManagerHeader
-            controller={controller}
-            sceneContext={sceneContext}
-          />
+          <>
+            <span className="group-editor-context">
+              {[c.focused.title, c.focused.locationName]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+            <input
+              aria-label={message('ui.gruppenname')}
+              placeholder={message('group.name.placeholder')}
+              maxLength={100}
+              value={c.group.name}
+              disabled={c.busy}
+              onChange={(e) => c.setName(e.target.value)}
+            />
+          </>
         }
         tools={
           <>
-            {controller.lifecycleNotice}
-            {controller.combatNotice}
-            {controller.uncertain && (
-              <div role="status">
-                {uiMessage('group.saveUnconfirmed')}
-                {controller.canReconcile && (
+            <div className="group-editor-line">
+              <div role="tablist" aria-label={message('loot.catalogMode')}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={c.state.workspaceMode === 'group'}
+                  onClick={() => c.setWorkspaceMode('group')}
+                >
+                  {message('ui.monster')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={c.state.workspaceMode === 'loot'}
+                  onClick={() => c.setWorkspaceMode('loot')}
+                >
+                  {message('loot.catalogLoot')}
+                </button>
+              </div>
+              <div className="group-editor-generation">
+                {c.state.workspaceMode === 'group' ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={c.busy || !c.canGenerate}
+                      onClick={() => c.generateRoster('fill')}
+                    >
+                      {message('ui.auffuellen')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={c.busy || !c.canGenerate}
+                      onClick={() => c.generateRoster('replace')}
+                    >
+                      {message('ui.neu.generieren')}
+                    </button>
+                  </>
+                ) : (
                   <button
                     type="button"
-                    disabled={controller.pending}
-                    onClick={() => void controller.retryUnknown()}
+                    disabled={c.busy || !c.canGenerateLoot}
+                    onClick={c.loot.reroll}
                   >
-                    {uiMessage('group.checkSavedState')}
+                    {message('groupEditor.generateLoot')}
+                  </button>
+                )}
+              </div>
+            </div>
+            <details>
+              <summary>{message('groupEditor.details')}</summary>
+              <div className="group-editor-details">
+                <label>
+                  {message('group.note')}
+                  <textarea
+                    aria-label={message('group.note')}
+                    maxLength={1000}
+                    rows={2}
+                    value={c.group.note}
+                    onChange={(e) => c.setNote(e.target.value)}
+                  />
+                </label>
+                <label>
+                  {message('groupEditor.disposition')}
+                  <select
+                    value={c.group.disposition}
+                    onChange={(e) =>
+                      c.setDisposition(e.target.value as SceneGroupDisposition)
+                    }
+                  >
+                    {(['hostile', 'neutral', 'allied'] as const).map(
+                      (value) => (
+                        <option key={value} value={value}>
+                          {message(`group.disposition.${value}`)}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </label>
+              </div>
+            </details>
+            {c.lifecycleNotice}
+            {c.combatNotice}
+            {c.uncertain && (
+              <div role="status">
+                {message('group.saveUnconfirmed')}
+                {c.canReconcile && (
+                  <button
+                    type="button"
+                    disabled={c.pending}
+                    onClick={() => void c.retryUnknown()}
+                  >
+                    {message('group.checkSavedState')}
                   </button>
                 )}
               </div>
             )}
-            <GroupManagerCatalogTools
-              mode={controller.effectiveCatalogMode}
-              lootAvailable={Boolean(loot.run)}
-              query={state.creatureCatalog.query}
-              options={state.creatureCatalog.options}
-              searchBiomeOptions={controller.searchBiomeOptions}
-              queryChanged={controller.setCreatureQuery}
-              modeChanged={controller.setCatalogMode}
-              filterSummary={filterSummary}
-              busy={controller.busy}
-              canGenerate={controller.canGenerate}
-              generate={controller.generateRoster}
-            />
           </>
         }
-        catalog={
-          <GroupManagerCatalogPane
-            mode={controller.effectiveCatalogMode}
-            lootAvailable={Boolean(loot.run)}
-            query={state.creatureCatalog.query}
-            options={state.creatureCatalog.options}
-            page={state.creatureCatalog.page}
-            queryChanged={controller.setCreatureQuery}
-            addCreature={controller.addCreature}
-            inspectCreature={(creature) =>
-              void controller.inspectCreature(creature)
-            }
-            quantities={totalInDraft}
-            footerStatus={catalogFooterStatus}
-            lootQuery={state.lootCatalog.query}
-            lootPage={state.lootCatalog.page}
-            lootError={state.lootCatalog.error}
-            lootQueryChanged={controller.setLootQuery}
-          />
-        }
-        divider={{
-          kind: 'resizable',
-          value: state.draftPaneWidth,
-          minimum: 400,
-          maximum: 620,
-          label: uiMessage('group.draftWidth'),
-          changed: controller.setDraftPaneWidth
-        }}
-        draft={
-          <GroupManagerDraftPane
-            mode={state.workspaceMode}
-            modeChanged={controller.setWorkspaceMode}
-            lootAvailable={controller.active}
-            active={controller.active}
-            name={group.name}
-            note={group.note}
-            message={group.message}
-            externalConflict={Boolean(controller.session?.externalConflict)}
-            entries={controller.entries}
-            facts={group.facts}
-            evaluation={group.evaluation}
-            canUndoRoster={group.history.past.length > 0}
-            canRedoRoster={group.history.future.length > 0}
-            canGenerateLoot={controller.canGenerateLoot}
-            loot={loot}
-            moveRosterHistory={controller.moveRosterHistory}
-            changeQuantity={controller.changeQuantity}
-            removeCreature={controller.removeCreature}
-            retryLoot={loot.retry}
-            rerollLoot={loot.reroll}
-            commitLoot={loot.commit}
-            noteChanged={controller.setNote}
-          />
-        }
-        footer={
-          <GroupManagerFooter
-            controller={controller}
-            levelContext={levelContext}
-          />
-        }
+        toolsLabel={message('group.tools')}
+        catalog={<GroupEditorCatalog controller={c} />}
+        divider={{ kind: 'fixed' }}
+        draft={<GroupEditorSelection controller={c} />}
+        footer={<GroupEditorFooter controller={c} />}
       />
-      {controller.archiveDialog}
-      {controller.combatDialog}
-      {state.pendingIntent && (
+      {c.archiveDialog}
+      {c.combatDialog}
+      {c.state.pendingIntent && (
         <DiscardChangesDialog
           message={
-            state.pendingIntent.guard === 'all-drafts'
-              ? uiMessage('ui.ungespeicherte.aenderungen.verwerfen')
-              : uiMessage('loot.discardQuestion')
+            c.state.pendingIntent.intent.kind === 'save'
+              ? message('groupEditor.excluded')
+              : c.state.pendingIntent.guard === 'all-drafts'
+                ? message('ui.ungespeicherte.aenderungen.verwerfen')
+                : message('loot.discardQuestion')
           }
-          cancelLabel={uiMessage('action.cancel')}
-          discardLabel={uiMessage('ui.aenderungen.verwerfen')}
-          onCancel={controller.cancelPendingIntent}
-          onDiscard={controller.confirmPendingIntent}
+          cancelLabel={message('action.cancel')}
+          discardLabel={
+            c.state.pendingIntent.intent.kind === 'save'
+              ? message('groupEditor.apply')
+              : message('ui.aenderungen.verwerfen')
+          }
+          onCancel={c.cancelPendingIntent}
+          onDiscard={c.confirmPendingIntent}
         />
       )}
     </>
   )
 }
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.matches('input, textarea, select') || target.isContentEditable)
-  )
-}
-
-function GroupManagerHeading() {
-  return (
-    <div className="title-group">
-      <span className="illuminated-initial" aria-hidden="true">
-        {uiMessage('ui.gruppen.managen').charAt(0)}
-      </span>
-      <h2 id="group-builder-title">
-        {uiMessage('ui.gruppen.managen').slice(1)}
-      </h2>
-    </div>
-  )
-}
-
-function GroupManagerHeader(props: {
+function GroupEditorFooter({
+  controller: c
+}: {
   controller: GroupManagerController
-  sceneContext: string
-}): ReactNode {
-  const { controller } = props
-  return (
-    <>
-      <span className="scene-crumb" title={props.sceneContext}>
-        {props.sceneContext}
-      </span>
-      <select
-        className="group-manager-selection"
-        disabled={controller.busy}
-        aria-label={uiMessage('group.select')}
-        value={controller.selection ?? ''}
-        onChange={(event) => controller.activate(event.target.value || null)}
-      >
-        <option value="">{uiMessage('group.selectPlaceholder')}</option>
-        {controller.activeGroups.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
-            {candidate.name}
-            {controller.groupInCombat(candidate.id)
-              ? ` · ${uiMessage('encounter.inCombat')}`
-              : ''}
-          </option>
-        ))}
-        <option value={newGroupDraftKey}>
-          {uiMessage('group.createTitle')}
-        </option>
-      </select>
-      <button
-        className="group-manager-new"
-        disabled={controller.busy}
-        type="button"
-        onClick={() => controller.activate(newGroupDraftKey)}
-      >
-        + {uiMessage('group.createTitle')}
-      </button>
-      <input
-        className="group-manager-name"
-        aria-label={uiMessage('ui.gruppenname')}
-        placeholder={uiMessage('group.name.placeholder')}
-        maxLength={100}
-        disabled={!controller.active || controller.busy}
-        value={controller.group.name}
-        onChange={(event) => controller.setName(event.target.value)}
-      />
-      <select
-        className="group-manager-disposition"
-        aria-label={uiMessage('group.disposition')}
-        disabled={!controller.active || controller.busy}
-        value={controller.group.disposition}
-        onChange={(event) =>
-          controller.setDisposition(event.target.value as SceneGroupDisposition)
-        }
-      >
-        <option value="hostile">
-          {uiMessage('group.disposition.hostile')}
-        </option>
-        <option value="neutral">
-          {uiMessage('group.disposition.neutral')}
-        </option>
-        <option value="allied">{uiMessage('group.disposition.allied')}</option>
-      </select>
-    </>
-  )
-}
-
-function GroupManagerFooter(props: {
-  controller: GroupManagerController
-  levelContext: string
 }) {
-  const { controller } = props
   return (
     <>
-      <span>
-        {controller.focused.locationName || uiMessage('ui.kein.ort.gesetzt')} ·{' '}
-        {controller.assigned.length} {uiMessage('ui.zugewiesene.pcs')}
-        {controller.assigned.length > 0
-          ? ` · ${uiMessage('group.levels')} ${props.levelContext}`
-          : ''}
-        {controller.anyDirty ? ` · ${uiMessage('group.unsaved')}` : ''}
-      </span>
+      <label className="group-editor-include">
+        <input
+          type="checkbox"
+          checked={c.session?.includeLoot !== false}
+          onChange={(e) => c.includeLoot(e.target.checked)}
+        />
+        {message('groupEditor.includeLoot')}
+      </label>
       <div>
-        {controller.canJoinCombat && (
+        {c.canJoinCombat && (
           <button
             type="button"
-            disabled={controller.busy || controller.dirty}
-            onClick={controller.joinCombat}
+            disabled={c.busy || c.dirty}
+            onClick={c.joinCombat}
           >
-            {uiMessage('encounter.joinCombat')}
+            {message('encounter.joinCombat')}
           </button>
         )}
-        {controller.selectedPersistedGroup && (
-          <button
-            className="danger"
-            type="button"
-            disabled={controller.busy}
-            onClick={controller.archive}
-          >
-            {uiMessage('group.archive')}
+        {c.selectedPersistedGroup && (
+          <button type="button" disabled={c.busy} onClick={c.archive}>
+            {message('group.archive')}
           </button>
         )}
-        <button className="secondary" type="button" onClick={controller.close}>
-          {uiMessage('action.cancel')}
+        <button type="button" onClick={c.close}>
+          {message('action.cancel')}
         </button>
         <button
           className="primary-action"
           type="button"
-          disabled={controller.busy || !controller.active}
-          onClick={controller.save}
+          disabled={c.busy || !c.active || c.session?.externalConflict}
+          onClick={c.save}
         >
-          {uiMessage('action.save')}
+          {message('groupEditor.apply')}
         </button>
       </div>
     </>

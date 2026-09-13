@@ -102,6 +102,32 @@ describe('Loot catalog service', () => {
     ).toBe(true)
   })
 
+  it('exposes canonical manual coins through the validated catalog without a run', () => {
+    const full = provider().loadFull()
+    const service = new LootCatalogService({
+      readRun: () => null,
+      currentReference: () => full.encounter,
+      index: () => createLootCatalogIndex(full)
+    })
+    const result = service.search({
+      ...baseQuery(full),
+      runId: null,
+      catalogContentHash: null,
+      search: 'Gold Coin'
+    })
+    expect(result.entries).toMatchObject([
+      {
+        id: 'coin:gp',
+        unitValueCp: 100,
+        stackable: true,
+        definition: {
+          components: {
+            coinDenominations: [{ denominationId: 'gp', quantity: 1 }]
+          }
+        }
+      }
+    ])
+  })
   it('rounds item copper values once and caches the index by content hash', () => {
     const full = provider().loadFull()
     const first = full.items[0]!
@@ -134,7 +160,7 @@ describe('Loot catalog service', () => {
       readRun: () => runFor(altered),
       index: (reference) => indexes.require(reference)
     })
-    const query = { ...baseQuery(altered), limit: 30 }
+    const query = { ...baseQuery(altered), search: 'Rounded', limit: 30 }
     expect(service.search(query).entries).toMatchObject([
       { id: 'item:test:rounded', unitValueCp: 2 }
     ])

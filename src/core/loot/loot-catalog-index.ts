@@ -1,3 +1,4 @@
+import { coinCatalogEntries } from './coin-catalog-entries.js'
 import type {
   LootCatalogEntry,
   LootCatalogQuery
@@ -40,6 +41,7 @@ export function createLootCatalogIndex(
   catalog: FullSessionGenerationCatalog
 ): LootCatalogIndex {
   const entries: LootCatalogEntry[] = [
+    ...coinCatalogEntries(catalog.encounter),
     ...catalog.items
       .filter((item) => item.active)
       .map((item): LootCatalogEntry => {

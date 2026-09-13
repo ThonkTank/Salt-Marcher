@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import {
+  commitGroupEditorInputSchema,
+  commitGroupEditorResultSchema,
+  evaluateGroupLootInputSchema,
+  groupLootBalanceSchema,
   acceptGeneratedTreasureInputSchema,
   characterLootInputSchema,
   characterLootLedgerSchema,
@@ -27,6 +31,21 @@ import {
 import { read, utilityOperationFragment, write } from './registry.js'
 
 export const lootOperationDefinitions = utilityOperationFragment({
+  'loot.commitGroupEditor': write(
+    'loot:commit-group-editor',
+    commitGroupEditorInputSchema,
+    commitGroupEditorResultSchema
+  ),
+  'loot.groupEditorReceipt': read(
+    'loot:group-editor-receipt',
+    commitGroupEditorInputSchema.safeExtend({ campaignId: z.uuid() }),
+    commitGroupEditorResultSchema.nullable()
+  ),
+  'loot.evaluateGroup': read(
+    'loot:evaluate-group',
+    evaluateGroupLootInputSchema,
+    groupLootBalanceSchema
+  ),
   'loot.read': read('loot:read', treasureIdInputSchema, treasureSchema),
   'loot.catalog': read(
     'loot:catalog',

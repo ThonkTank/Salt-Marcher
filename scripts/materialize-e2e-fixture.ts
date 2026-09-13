@@ -285,7 +285,8 @@ try {
             }
           ],
           live.scene.revision,
-          null
+          null,
+          '01900000-0000-7000-8000-000000000003'
         )
         if (fixture.version === 4) {
           const snapshot = play.readSession()

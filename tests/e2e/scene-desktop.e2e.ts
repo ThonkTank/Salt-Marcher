@@ -924,18 +924,20 @@ describe('per-scene desktop', () => {
       await resumeCampaignFromScreen(client)
       await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
       await client.$('.desktop-toolbar').$('button=Gruppen').click()
+      const expand = client.$('button[aria-label="Lifecycle E2E aufklappen"]')
+      if (await expand.isExisting()) await expand.click()
       await client
-        .$('[data-window-id="groups"] button[aria-label="Gruppen bearbeiten"]')
+        .$('.group-register[aria-label="Lifecycle E2E"]')
+        .$('button=Monster hinzufügen')
         .click()
       const manager = client.$('section[aria-labelledby="group-builder-title"]')
-      await manager.waitForDisplayed({ timeout: 10_000 })
-      await manager
-        .$('select[aria-label="Gruppe auswählen"]')
-        .selectByVisibleText('Lifecycle E2E')
-      if (edit)
+      await manager.waitForDisplayed({ timeout: 10000 })
+      if (edit) {
+        await manager.$('summary=Gruppendetails').click()
         await manager
-          .$('.group-manager-disposition')
+          .$('.group-editor-details select')
           .selectByAttribute('value', 'allied')
+      }
       await manager.$('button=Archivieren').click()
       if (edit) {
         const confirmation = client.$(

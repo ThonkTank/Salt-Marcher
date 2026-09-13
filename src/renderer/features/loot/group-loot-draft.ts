@@ -33,6 +33,9 @@ import {
 } from './treasure-draft-reducer.js'
 
 export type GroupLootDraftItem = EditableTreasureItem & {
+  coin?: boolean
+  persistedId?: string
+  allocatedQuantity?: number
   origin: GroupRewardTreasureItemOrigin
   sourceLineId: string | null
   itemReference: ItemReference
@@ -117,6 +120,7 @@ export function groupLootDraftFromRun(
       origin: { kind: 'generator' as const, sourceLineId: item.id },
       sourceLineId: item.id,
       itemReference: item.itemReference,
+      coin: definition.components.coinDenominations.length > 0,
       name: definition.name,
       quantity: item.quantity,
       unitValueCp: definition.unitValueCp,
@@ -161,13 +165,38 @@ export function mutateGroupLootDraft(
   state: GroupLootDraftHistory,
   command: GroupLootDraftCommand
 ): GroupLootDraftHistory {
-  const operation = planTreasureDraftOperation(state.draft, command, 'catalog')
+  if (command.kind === 'patch-item' || command.kind === 'remove-item') {
+    const item = state.draft.items.find((i) => i.draftId === command.id)
+    if (!item) return state
+    if (command.kind === 'remove-item' && (item.allocatedQuantity ?? 0) > 0)
+      return state
+    if (command.kind === 'patch-item') {
+      if (
+        Object.keys(command.patch).some(
+          (key) => key !== 'quantity' && key !== 'containerId'
+        )
+      )
+        return state
+      const quantity = command.patch.quantity ?? item.quantity
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < Math.max(1, item.allocatedQuantity ?? 0) ||
+        (!item.stackable && quantity !== 1)
+      )
+        return state
+    }
+  }
+  const operation = planTreasureDraftOperation(
+    state.draft,
+    command,
+    'group-editor'
+  )
   if (!operation) return state
   const draft = applyTreasureDraftOperation(
     state.draft,
     operation,
     'forward',
-    'catalog'
+    'group-editor'
   )
   if (state.transaction) {
     const transaction = state.transaction
@@ -230,7 +259,7 @@ export function undoGroupLootDraft(
       settled.draft,
       operation,
       'backward',
-      'catalog'
+      'group-editor'
     ),
     past: settled.past.slice(0, -1),
     future: [operation, ...settled.future]
@@ -249,7 +278,7 @@ export function redoGroupLootDraft(
       settled.draft,
       operation,
       'forward',
-      'catalog'
+      'group-editor'
     ),
     past: [...settled.past, operation].slice(-50),
     future: settled.future.slice(1)
@@ -264,7 +293,7 @@ export function patchGroupLootItem(
   return reduceTreasureDraft(
     draft,
     { kind: 'patch-item', id, patch },
-    'catalog'
+    'group-editor'
   )
 }
 
@@ -276,7 +305,7 @@ export function patchGroupLootContainer(
   return reduceTreasureDraft(
     draft,
     { kind: 'patch-container', id, patch },
-    'catalog'
+    'group-editor'
   )
 }
 
@@ -284,14 +313,18 @@ export function removeGroupLootItem(
   draft: GroupLootDraft,
   id: string
 ): GroupLootDraft {
-  return reduceTreasureDraft(draft, { kind: 'remove-item', id }, 'catalog')
+  return reduceTreasureDraft(draft, { kind: 'remove-item', id }, 'group-editor')
 }
 
 export function removeGroupLootContainer(
   draft: GroupLootDraft,
   id: string
 ): GroupLootDraft {
-  return reduceTreasureDraft(draft, { kind: 'remove-container', id }, 'catalog')
+  return reduceTreasureDraft(
+    draft,
+    { kind: 'remove-container', id },
+    'group-editor'
+  )
 }
 
 export function groupLootCommitDraft(

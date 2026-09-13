@@ -76,26 +76,39 @@ given-away entries remain counted; a superseded row is replaced by its linked
 effective correction. Accepted but undistributed Treasure is not Character
 Loot and therefore does not count.
 
-The inline draft is a projection of the immutable generated Treasure. Its
-generated item and container sets, item references, definition facts, and
-container facts are fixed. The GM may edit item quantity and container
-assignment. Stable draft IDs make assignments and semantic undo/redo
-independent of array positions. The left Loot catalog is searchable context,
-not an insertion surface for the Group draft. Reroll replaces the draft after
-the usual dirty-draft discard confirmation.
+The Group editor owns one compact Monster / Loot workspace, with manual catalog
+selection available without generation or assigned Party. Loot search, type,
+category and rarity narrow actual catalog entries. Add, quantity and remove actions
+match the Monster view. Existing Treasures load into a compact selector; `Neuer Loot`
+creates another local draft. All changed Treasures of the group can be included in
+one save. Container assignments and facts are instance edits; item definitions and
+provenance remain immutable. Nonstackable items stay individual instances. Distributed
+quantities cannot be removed or reduced. Coins use canonical denomination definitions.
 
-The budget header shows gold target, draft non-magic value, difference, and
-magic target/current count. Configured tolerance classifies the draft but does
-not block confirmation.
+Monster mutations and history do not invalidate Loot. An automatic initial proposal
+is allowed only with no existing Loot. Explicit `Loot generieren` replaces the selected
+proposal after discard confirmation. Generated references survive subsequent roster
+changes, with their original definitions and source lines validated against saved runs.
 
-`Gruppe & Loot übernehmen` submits the complete draft through one atomic,
-idempotent command. Utility revalidates Party, rules, ledger revisions, source
-run, the complete generated item/container set, and every reference. It saves
-or updates the Group, reconciles Combat, materializes the Treasure, advances
-the Loot projection once, and records the original result in one transaction.
-Any failure writes neither owner. If the deficit is empty, the same command
-accepts `generatedTreasureId: null` and `treasureDraft: null`, saves the Group,
-returns `treasure: null`, and does not advance Loot.
+Loot balance is a read-only Utility capability: actual / target / difference for
+nonmagical copper value and magical count remain visible. Details include coin and
+item values and actual/target counts by rarity. It evaluates all undistributed group
+Loot, replacing persisted treasures with submitted drafts, without double counting
+allocations. Targets reuse the cumulative ledger budget, current roster, XP rule,
+assigned active Party, configured Loot rules and tolerance. The draft budget seed is
+stable. Recalculation neither changes items nor creates or persists generator runs.
+Missing party, level, roster or creature facts yield an explicit status and null targets.
+Over/under budget remains advisory.
+
+`Übernehmen` calls `loot.commitGroupEditor`, an atomic idempotent command for the
+Group and any included new or updated Treasures, independent of a Generator Run.
+Utility checks group and Treasure revisions, anchors, immutable definitions/provenance,
+container references and protected distributions inside one transaction. It reconciles
+Combat, advances Loot once, and records the original result. `loot.groupEditorReceipt`
+recovers an uncertain response without resubmitting. Any failure rolls back both owners.
+Excluding Loot never deletes existing treasures; excluded unsaved changes require explicit
+resolution before closing. Existing Generator Run formats and the legacy fixed-run
+commit command remain compatible for historical callers.
 
 ## Session Reward Generation
 

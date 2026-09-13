@@ -22,6 +22,14 @@ export function useSessionDialogController(scope = '') {
     close: () => setDialog({ kind: 'none' }),
     openLedger: (character: PartyCharacter) =>
       setDialog({ kind: 'character-ledger', character }),
+    editGroupLoot: (group: SceneGroup, initialLootKey?: string) =>
+      setDialog({
+        kind: 'group-editor',
+        group,
+        reinforcement: false,
+        initialMode: 'loot',
+        ...(initialLootKey ? { initialLootKey } : {})
+      }),
     editGroup: (group: SceneGroup) =>
       setDialog({ kind: 'group-editor', group, reinforcement: false }),
     manageGroups: () =>

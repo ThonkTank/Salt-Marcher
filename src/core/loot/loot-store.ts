@@ -404,7 +404,7 @@ export class TreasureStore {
 
   private insertManualItem(
     treasureId: string,
-    draft: TreasureItemDraft,
+    draft: TreasureItemDraft & { sourceLineId?: string | null },
     position: number
   ): void {
     this.db
@@ -412,11 +412,12 @@ export class TreasureStore {
         `INSERT INTO loot_item (
            id, treasure_id, source_line_id, item_reference_json, quantity,
            container_id, position
-         ) VALUES (?, ?, NULL, ?, ?, ?, ?)`
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         draft.id ?? uuidv7(),
         treasureId,
+        draft.sourceLineId ?? null,
         JSON.stringify(draft.itemReference),
         draft.quantity,
         draft.containerId,
@@ -506,7 +507,7 @@ export class TreasureStore {
 
   private insertManualContainer(
     treasureId: string,
-    draft: TreasureContainerDraft,
+    draft: TreasureContainerDraft & { sourceContainerId?: string | null },
     position: number
   ): void {
     this.db
@@ -514,11 +515,12 @@ export class TreasureStore {
         `INSERT INTO loot_container (
            id, treasure_id, source_container_id, catalog_container_id, name,
            capacity, position
-         ) VALUES (?, ?, NULL, ?, ?, ?, ?)`
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         draft.id,
         treasureId,
+        draft.sourceContainerId ?? null,
         draft.catalogContainerId,
         draft.name.trim(),
         draft.capacity,

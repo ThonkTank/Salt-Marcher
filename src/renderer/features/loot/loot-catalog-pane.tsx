@@ -22,6 +22,7 @@ export function LootCatalogPane(props: {
     preserveOffset?: boolean
   ) => void
   add: (entry: LootCatalogEntry) => void
+  compact?: boolean
   readOnly?: boolean
 }) {
   const options = props.page?.filterOptions ?? emptyOptions
@@ -41,56 +42,63 @@ export function LootCatalogPane(props: {
             onChange={(event) => update({ search: event.target.value })}
           />
         </label>
-        <label>
-          <span>{message('loot.catalogType')}</span>
-          <select
-            value={props.query.types[0] ?? ''}
-            onChange={(event) =>
-              update({ types: event.target.value ? [event.target.value] : [] })
-            }
-          >
-            <option value="">{message('loot.catalogAll')}</option>
-            {options.types.map((type) => (
-              <option key={type} value={type}>
-                {type === 'container' ? message('loot.container') : type}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>{message('loot.catalogCategory')}</span>
-          <select
-            value={props.query.categories[0] ?? ''}
-            onChange={(event) =>
-              update({
-                categories: event.target.value ? [event.target.value] : []
-              })
-            }
-          >
-            <option value="">{message('loot.catalogAll')}</option>
-            {options.categories.map((category) => (
-              <option key={category}>{category}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>{message('loot.catalogRarity')}</span>
-          <select
-            value={props.query.rarities[0] ?? ''}
-            onChange={(event) =>
-              update({
-                rarities: event.target.value
-                  ? [event.target.value as LootRarity]
-                  : []
-              })
-            }
-          >
-            <option value="">{message('loot.catalogAll')}</option>
-            {options.rarities.map((rarity) => (
-              <option key={rarity}>{rarity}</option>
-            ))}
-          </select>
-        </label>
+        <details open={props.compact ? undefined : true}>
+          <summary>{message('groupEditor.filters')}</summary>
+          <div className="loot-catalog-filter-options">
+            <label>
+              <span>{message('loot.catalogType')}</span>
+              <select
+                value={props.query.types[0] ?? ''}
+                onChange={(event) =>
+                  update({
+                    types: event.target.value ? [event.target.value] : []
+                  })
+                }
+              >
+                <option value="">{message('loot.catalogAll')}</option>
+                {options.types.map((type) => (
+                  <option key={type} value={type}>
+                    {type === 'container' ? message('loot.container') : type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{message('loot.catalogCategory')}</span>
+              <select
+                value={props.query.categories[0] ?? ''}
+                onChange={(event) =>
+                  update({
+                    categories: event.target.value ? [event.target.value] : []
+                  })
+                }
+              >
+                <option value="">{message('loot.catalogAll')}</option>
+                {options.categories.map((category) => (
+                  <option key={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{message('loot.catalogRarity')}</span>
+              <select
+                value={props.query.rarities[0] ?? ''}
+                onChange={(event) =>
+                  update({
+                    rarities: event.target.value
+                      ? [event.target.value as LootRarity]
+                      : []
+                  })
+                }
+              >
+                <option value="">{message('loot.catalogAll')}</option>
+                {options.rarities.map((rarity) => (
+                  <option key={rarity}>{rarity}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </details>
       </div>
       {props.error && (
         <p className="group-loot-inline-error" role="alert">

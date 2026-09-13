@@ -1,5 +1,15 @@
 # Electron greenfield migration
 
+## Compact group manager — 2026-09-13
+
+Implemented the shared Monster/Loot workspace, manual and existing Treasure drafts,
+read-only ledger balance, atomic editor receipts and serialized inline Scene quantity
+actions. Campaign schema 44 preserves earlier receipts and adds the editor operation.
+Coverage includes transaction rollback, idempotency, protected allocations, mixed
+provenance, independent histories, complete filters, both themes and Electron scaling.
+Canonical delivery evidence is keyed by application SHA in the handoff state and the
+candidate/main Check runs; this document does not substitute for that evidence.
+
 ## Historical status record
 
 > This versioned document records the greenfield migration decisions at the

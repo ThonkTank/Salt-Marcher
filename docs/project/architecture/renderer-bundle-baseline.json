@@ -1,13 +1,13 @@
 {
-  "recordedAt": "2026-09-09",
-  "reason": "Account for typed action-scoped draft concerns, targeted transition locking, and mounted minimized scene windows.",
-  "dependencyRationale": "No dependency or lockfile change. The implementation reuses React context and the existing draft coordinator and transition dialog.",
-  "chunkRationale": "Coordination metadata and selection logic remain in the existing lazy Workspace and SceneDesktop graphs. Measured growth is 18137 reachable bytes, including 3100 bytes in the common Workspace graph and 26 bytes in the shell graph; Pixi and unrelated routes remain isolated, and all absolute budgets plus the 16 KiB growth gate are unchanged.",
+  "recordedAt": "2026-09-13",
+  "reason": "Ratchet the Catalog graph after the compact Group editor reuses the shared creature filters; retain the existing ceilings for other graphs.",
+  "dependencyRationale": "No dependency or lockfile change. The Group editor uses the existing React controls, capabilities and draft coordinator.",
+  "chunkRationale": "Catalog shrinks by 1412 bytes to 185265. New group state, balance and selection components remain in the existing lazy SceneDesktop graph. Measured reachable growth is 11262 bytes and common Workspace growth is 2030 bytes, within the unchanged 16 KiB growth gate; Pixi and unrelated routes remain isolated.",
   "graphs": {
     "shell": 420931,
     "workspace": 530075,
     "session": 1348,
-    "catalog": 186677,
+    "catalog": 185265,
     "hex": 175900,
     "reference": 37404,
     "pixi": 409405,
