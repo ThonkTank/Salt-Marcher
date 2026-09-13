@@ -1,3 +1,4 @@
+import { evaluateSceneGroupDraft } from '../../src/core/scene/group-generator.js'
 import {
   createGroupLootDraftHistory,
   groupLootDraftFromRun
@@ -221,6 +222,34 @@ describe('atomic group editor', () => {
   })
 })
 describe('read-only loot balance', () => {
+  it('uses all four party thresholds and excludes dead members across difficulty transitions', () => {
+    const c = setup()
+    c.assign()
+    const party = c.party.read().members.filter((m) => m.active)
+    expect(party).toHaveLength(2)
+    for (const [quantity, adjustedXp, label] of [
+      [1, 75, 'Trivial'],
+      [2, 200, 'Easy'],
+      [3, 375, 'Medium'],
+      [4, 500, 'Hard'],
+      [7, 1050, 'Deadly']
+    ] as const) {
+      const e = evaluateSceneGroupDraft(c.sceneId, party, [
+        { creatureId: 'wolf', quantity, deadQuantity: 5 }
+      ])
+      expect(e.partyThresholds).toEqual([150, 300, 450, 800])
+      expect(e.baseXp).toBe(quantity * 50)
+      expect(e.adjustedXp).toBe(adjustedXp)
+      expect(e.difficultyLabel).toBe(label)
+      expect(e.creatureCount).toBe(quantity)
+    }
+    const smaller = evaluateSceneGroupDraft(c.sceneId, party.slice(0, 1), [
+      { creatureId: 'wolf', quantity: 3 }
+    ])
+    expect(smaller.partyThresholds).toEqual([75, 150, 225, 400])
+    expect(smaller.difficultyLabel).toBe('Hard')
+  })
+
   it('reports a missing party without inventing target values', () => {
     const c = setup(),
       balance = c.balance.evaluate(c.evaluate(c.request()))
