@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "encounter",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/encounter-panel.test.tsx",
+    "tests/unit/encounter-generator-settings.test.tsx",
+    "tests/unit/encounter-selection-policy.test.ts",
+    "tests/unit/generated-encounter-import.test.ts",
+    "tests/unit/session-planner-encounter-search.test.tsx",
+    "tests/integration/encounter-sources.test.ts",
+    "tests/integration/generated-encounter-plans.test.ts",
+    "tests/integration/party-catalog-encounter.test.ts"
+  ],
+  "maxWorkers": 2
+}

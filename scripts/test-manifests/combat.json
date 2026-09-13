@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "combat",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/combat-partition-policy.test.ts",
+    "tests/unit/combat-state-reducer.test.ts",
+    "tests/unit/live-session-contract.test.ts",
+    "tests/integration/live-play.test.ts"
+  ],
+  "maxWorkers": 2
+}
