@@ -9,7 +9,7 @@ Canonical scope: [Party remediation roadmap](party-remediation-roadmap.md).
 | 1 — History errors and Party documentation | Yes | Yes | Yes — 4b885295f |
 | 2 — Handoff preflight and invocation | Yes | Yes | Yes — e77a997db |
 | 3 — Independent desktop scenarios | Yes | Yes | Yes — aa325e9a0 |
-| 4 — History capture investigation | Yes — investigation only | Yes | Pending exact-SHA delivery |
+| 4 — History capture investigation | Yes — investigation only | Yes | Yes — 1c5d4c13d |
 
 ## Package 1 plan — 2026-09-13
 
@@ -594,3 +594,47 @@ Plan and roadmap audits pass again: the investigation is complete, the bounded
 follow-up remains proposed only, and no application difference or new handoff
 is introduced. The rebased final SHA requires a fresh Candidate Check; the
 previous green run is not reused as qualification for it.
+
+### Package 4 delivery — 2026-09-13
+
+Closed for `1c5d4c13d5b69d9977b222c40d5634cc9c37b73f`. Current-baseline
+Candidate Check https://github.com/ThonkTank/Salt-Marcher/actions/runs/34762049130
+passed all 16 required jobs. Standard promotion verified the unchanged app
+fingerprint against Main `6267594b2` and promoted exactly that candidate without
+a new local installation. PR #692 merged. Main Check passed for the same SHA:
+https://github.com/ThonkTank/Salt-Marcher/actions/runs/34762981196.
+The earlier qualified but stale candidate `4fe670eb9` was never promoted.
+
+## Final cross-package audit and closure — 2026-09-13
+
+All four approved packages are implemented, validated and delivered. Their
+recorded delivery SHAs are ancestors of current Main. The canonical roadmap
+is byte-identical to the copy committed with package 1.
+
+- F5/F7b: explicit history read states, compact keyboard-accessible retry,
+  disabled stale Undo/Redo, superseded-response protection, 240/360 px
+  acceptance and corrected current/historical Party domain documentation.
+- F6/F7a: read-only profile/process-based free/busy/unknown diagnosis before
+  artifact download/new handoff attempt; final race lock retained; real launcher,
+  aliases, stale/invalid/unreadable metadata and actual resume entry point
+  verified. App-relevant packages 1–2 have completed exact-SHA canonical handoffs.
+- F4: all eleven original desktop cases separately registered with owned
+  profiles/setup, normal/reversed order and contained reference abort proven,
+  runtime overhead reported and existing CI shards balanced by measurement.
+  The subsequent Main UI adaptation retains the isolated lifecycle case.
+- F2: reproducible current-schema measurements and matched foreign-state
+  controls, first/repeated and instrumentation separation, query/row/phase/size
+  evidence and concrete schema coupling. The measured disadvantage supports
+  the documented bounded follow-up. That optimization is proposed only; the
+  production capture remains unchanged by the investigation.
+- F3: existing format/lint/type/architecture checks used before qualification,
+  no new approval gate, no disabled assertion or blanket timeout increase.
+  Changed Main invalidated stale delivery evidence and triggered full
+  current-baseline measurement/qualification again.
+
+No acceptance discrepancy or blocker remains within the approved roadmap.
+Original local `action-scoped-draft-coordination-execution.md` edits and valuable
+user campaign data were not repurposed or overwritten. The separate performance
+follow-up is not unfinished work hidden inside this roadmap. This final entry
+records completed package deliveries; its own publication uses the same
+selected exact-SHA documentation-candidate path.
