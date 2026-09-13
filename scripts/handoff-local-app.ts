@@ -1,3 +1,4 @@
+import { assertLocalInstallationAvailable } from './local-installation/installation-lock.js'
 import { installationPhaseEvidence } from './installation-phase-evidence.js'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
@@ -49,7 +50,6 @@ import {
 } from './handoff-preflight.js'
 import {
   inspectLocalAppInstallation,
-  isInstalledLocalAppRunning,
   localInstallationPaths,
   type InstallLocalAppOptions,
   type LocalInstallationTarget
@@ -84,11 +84,10 @@ const installation = localInstallationPaths(
 )
 // Auth, network, candidate, workspace, installation availability and disk
 // capacity are all checked before an attempt or state file is created.
+assertLocalInstallationAvailable(installation)
 const candidateState = assertCandidateReady()
 const workspace = readWorkspaceIdentity(workspaceRoot)
 const inputFingerprints = readWorkspaceInputFingerprints(workspaceRoot)
-if (isInstalledLocalAppRunning(installation.appImage))
-  throw new Error('SaltMarcher Local is running; close it before handoff')
 assertHandoffResourcePreflight(
   readHandoffResourceSnapshot(
     workspaceRoot,

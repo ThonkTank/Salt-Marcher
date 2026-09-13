@@ -114,6 +114,31 @@ export function acquireProfileLock(
   throw new ProfileLockedError(lockPath, 'unknown')
 }
 
+export type ProfileLockInspection =
+  | Readonly<{ kind: 'free'; evidence: 'absent' | 'stale' }>
+  | Readonly<{ kind: 'busy'; owner: ProfileLockOwner }>
+  | Readonly<{ kind: 'unknown' }>
+
+/** Diagnose the same identity used by acquisition, without reclaiming any lock. */
+export function inspectProfileLock(
+  lockPath: string,
+  options: Pick<AcquireProfileLockOptions, 'procRoot' | 'bootIdPath'> = {}
+): ProfileLockInspection {
+  const procRoot = options.procRoot ?? '/proc'
+  const observed = inspectExistingLock(
+    lockPath,
+    procRoot,
+    options.bootIdPath ?? join(procRoot, 'sys/kernel/random/boot_id')
+  )
+  if (observed.kind === 'live') return { kind: 'busy', owner: observed.owner }
+  if (observed.kind === 'stale')
+    return {
+      kind: 'free',
+      evidence: observed.serialized === '' ? 'absent' : 'stale'
+    }
+  return { kind: 'unknown' }
+}
+
 /** Read-only admission for a child working under its parent's retained lease. */
 export function assertProfileLockOwner(
   lockPath: string,
@@ -156,7 +181,20 @@ function readProcessIdentity(
   bootIdPath: string
 ): ProcessIdentity {
   try {
-    const stat = readFileSync(join(procRoot, String(pid), 'stat'), 'utf8')
+    const directory = join(procRoot, String(pid))
+    let stat: string
+    try {
+      stat = readFileSync(join(directory, 'stat'), 'utf8')
+    } catch (error) {
+      if (errorCode(error) === 'ENOENT' && lstatSync(procRoot).isDirectory()) {
+        try {
+          lstatSync(directory)
+        } catch (processError) {
+          if (errorCode(processError) === 'ENOENT') return { kind: 'missing' }
+        }
+      }
+      return { kind: 'unknown' }
+    }
     const commandEnd = stat.lastIndexOf(')')
     if (commandEnd < 0) return { kind: 'unknown' }
     const fieldsAfterCommand = stat
@@ -181,8 +219,7 @@ function readProcessIdentity(
       kind: 'known',
       value: `${bootId}:${startTicks}:${executable}`
     }
-  } catch (error) {
-    if (errorCode(error) === 'ENOENT') return { kind: 'missing' }
+  } catch {
     return { kind: 'unknown' }
   }
 }
@@ -196,6 +233,7 @@ function inspectExistingLock(
   | Readonly<{ kind: 'unknown' }>
   | Readonly<{ kind: 'stale'; serialized: string }> {
   try {
+    if (!lstatSync(lockPath).isFile()) return { kind: 'unknown' }
     const serialized = readFileSync(lockPath, 'utf8')
     const metadata = profileLockSchema.safeParse(JSON.parse(serialized))
     if (!metadata.success) return { kind: 'unknown' }

@@ -9,6 +9,7 @@ import {
   prepareProfileDirectory
 } from '../../src/shared/maintenance/profile-path.js'
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -23,6 +24,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   acquireProfileLock,
+  inspectProfileLock,
   assertProfileLockOwner,
   ProfileLockedError
 } from '../../src/main/local-profile/local-profile-lock.js'
@@ -345,4 +347,104 @@ describe('maintenance parent admission', () => {
       JSON.stringify({ pid: 101 })
     )
   })
+})
+
+describe('read-only profile lock inspection', () => {
+  it('distinguishes absence, a live identity and stale evidence without reclaiming it', () => {
+    const fixture = createFixture()
+    const options = { procRoot: fixture.proc }
+    expect(inspectProfileLock(fixture.lock, options)).toEqual({
+      kind: 'free',
+      evidence: 'absent'
+    })
+    writeProcess(fixture.proc, 101, '1000')
+    const lease = acquireProfileLock(fixture.lock, 'application', {
+      ...options,
+      pid: 101
+    })
+    const original = readFileSync(fixture.lock, 'utf8')
+    expect(inspectProfileLock(fixture.lock, options)).toEqual({
+      kind: 'busy',
+      owner: 'application'
+    })
+    writeProcess(fixture.proc, 101, '2000')
+    expect(inspectProfileLock(fixture.lock, options)).toEqual({
+      kind: 'free',
+      evidence: 'stale'
+    })
+    expect(readFileSync(fixture.lock, 'utf8')).toBe(original)
+    lease.release()
+  })
+
+  it.each(['boot-id', 'stat', 'proc-root', 'unreadable-identity'])(
+    'keeps missing or unreadable %s information unknown instead of reclaiming a live lock',
+    (missing) => {
+      const fixture = createFixture()
+      writeProcess(fixture.proc, 101, '1000')
+      acquireProfileLock(fixture.lock, 'application', {
+        procRoot: fixture.proc,
+        pid: 101
+      })
+      const original = readFileSync(fixture.lock, 'utf8')
+      if (missing === 'boot-id')
+        rmSync(join(fixture.proc, 'sys/kernel/random/boot_id'))
+      else if (missing === 'stat') rmSync(join(fixture.proc, '101/stat'))
+      else if (missing === 'proc-root')
+        rmSync(fixture.proc, { recursive: true })
+      else {
+        rmSync(join(fixture.proc, 'sys/kernel/random/boot_id'))
+        mkdirSync(join(fixture.proc, 'sys/kernel/random/boot_id'))
+      }
+      expect(
+        inspectProfileLock(fixture.lock, { procRoot: fixture.proc })
+      ).toEqual({ kind: 'unknown' })
+      expect(readFileSync(fixture.lock, 'utf8')).toBe(original)
+    }
+  )
+
+  it('proves a missing process separately from missing identity support files', () => {
+    const fixture = createFixture()
+    writeProcess(fixture.proc, 101, '1000')
+    acquireProfileLock(fixture.lock, 'application', {
+      procRoot: fixture.proc,
+      pid: 101
+    })
+    rmSync(join(fixture.proc, '101'), { recursive: true })
+    expect(
+      inspectProfileLock(fixture.lock, { procRoot: fixture.proc })
+    ).toEqual({ kind: 'free', evidence: 'stale' })
+  })
+
+  it('does not trust malformed or non-regular lock contents', () => {
+    const fixture = createFixture()
+    writeFileSync(fixture.lock, 'invalid metadata')
+    expect(inspectProfileLock(fixture.lock)).toEqual({ kind: 'unknown' })
+    expect(readFileSync(fixture.lock, 'utf8')).toBe('invalid metadata')
+    rmSync(fixture.lock)
+    mkdirSync(fixture.lock)
+    expect(inspectProfileLock(fixture.lock)).toEqual({ kind: 'unknown' })
+  })
+
+  it.skipIf(process.platform !== 'linux')(
+    'reports unreadable lock metadata as unknown',
+    () => {
+      const fixture = createFixture()
+      writeProcess(fixture.proc, 101, '1000')
+      acquireProfileLock(fixture.lock, 'application', {
+        procRoot: fixture.proc,
+        pid: 101
+      })
+      const original = readFileSync(fixture.lock, 'utf8')
+      chmodSync(fixture.lock, 0)
+      try {
+        expect(() => readFileSync(fixture.lock)).toThrow()
+        expect(
+          inspectProfileLock(fixture.lock, { procRoot: fixture.proc })
+        ).toEqual({ kind: 'unknown' })
+      } finally {
+        chmodSync(fixture.lock, 0o600)
+      }
+      expect(readFileSync(fixture.lock, 'utf8')).toBe(original)
+    }
+  )
 })

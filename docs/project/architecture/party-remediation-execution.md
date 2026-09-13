@@ -6,8 +6,8 @@ Canonical scope: [Party remediation roadmap](party-remediation-roadmap.md).
 
 | Package | Implemented | Validated | Delivered |
 | --- | --- | --- | --- |
-| 1 — History errors and Party documentation | Yes | Local checks passed; remote pending | No |
-| 2 — Handoff preflight and invocation | No | No | No |
+| 1 — History errors and Party documentation | Yes | Yes | Yes — 4b885295f |
+| 2 — Handoff preflight and invocation | Yes | Local checks passed; remote pending | No |
 | 3 — Independent desktop scenarios | No | No | No |
 | 4 — History capture investigation | No | No | No |
 
@@ -100,3 +100,107 @@ historical dropdown is explicitly retired, current XP/rest rules no longer
 contradict the Party specification, and the normal compact layout is unchanged.
 The required exact-SHA Candidate/Check, handoff, promotion and Main evidence
 remain outstanding; package 1 is not yet delivered. Packages 2–4 remain open.
+
+### Package 1 delivery — 2026-09-13
+
+Closed after verifying all three delivery boundaries for
+`4b885295ffd0e406daa1d0a030d00c8b529b1255`:
+
+- Candidate Check: https://github.com/ThonkTank/Salt-Marcher/actions/runs/34753469862
+  (all 16 required jobs passed).
+- Canonical `corepack pnpm handoff:app`: completed; state
+  `a0ec877f-86b5-4bd5-8ea4-5c287a63a1dc`, original attempt
+  `0db4b1b8-a6e3-4cdf-ad26-922bed302907`; packaged and installed bytes both
+  `ef312a046da3f5be3a9f7fb956d0fa5a4248fa33f5a1e4fbffad4e421e8e9123`.
+  Backup `532d4808-6a39-438c-bd68-566923b15873` preceded activation;
+  installed-runtime verification passed.
+- Promotion used that same SHA; PR #688 merged. Main Check passed:
+  https://github.com/ThonkTank/Salt-Marcher/actions/runs/34754430009.
+
+## Package 2 plan — 2026-09-13
+
+Baseline: `origin/main@4b885295ffd0e406daa1d0a030d00c8b529b1255`, clean branch
+`codex/party-remediation-2`. Package 1 is closed. The original checkout's local
+document modification remains outside this work.
+
+1. Expose a read-only inspection from the existing profile-lock owner, reusing
+   its metadata schema and PID/boot/start/executable identity comparison. Return
+   absent/stale, live-owner, or unknown evidence without removing any lock.
+   Missing identity support files must not count as a missing process.
+2. Compose installation availability from canonical profile/launch locks and
+   compatible legacy runtime/launch locks. Resolve profile aliases with the
+   existing canonical-path mechanism. A live owner means busy; uncertainty
+   prevents a free result. Keep the final installation lock authoritative for
+   app starts after the preflight and preserve existing lock/receipt formats.
+3. Put that admission check before candidate/artifact acquisition and attempt
+   creation in canonical handoff. Keep the legacy process scan as supplemental
+   compatibility behavior in the already-locked installer; do not confuse its
+   Boolean result with the authoritative preflight.
+4. Correct the AGENTS resume invocation. Test the actual package-script/front
+   door argument forwarding and real canonical entrypoint rejection on an
+   occupied or unknown isolated installation before it can reach external
+   qualification, download, or handoff-state writes.
+5. Cover live/stale/malformed/unreadable evidence, missing process identity,
+   canonical aliases, launcher reservations, a late app start, and read-only
+   inspection. Reuse and extend state-machine resumption checks to prove normal
+   close followed by resume retains hash-proven completed phases.
+6. Run focused format/lint/types and lock/installation/handoff/architecture
+   tests; separately audit plan and roadmap. Qualify, hand off and promote the
+   exact SHA under current repository rules before starting package 3.
+
+Acceptance: free/busy/unknown diagnosis independent of executable spelling;
+unknown never admitted; no lock/process deletion by diagnosis; material work
+blocked early; final locks still stop races; documented resume command accepted
+through the real entrypoint; previous phase identities and proofs retained.
+
+### Package 2 local validation and audit preparation
+
+- 112 tests passed across profile locks, installation preflight, actual handoff
+  entrypoints, Local installation, handoff resources/state machine/dry-run
+  (six files, 249.30 s). The documented package command forwarded `--resume`;
+  busy/unknown entrypoint tests stopped before qualification in an isolated
+  workspace without Git metadata and created no artifact/attempt directories.
+- 18 Local startup/launcher tests passed (919 ms). A real `launchDesktop`
+  invocation selected its deployment and ran a child probe: admission reported
+  busy while the launcher retained its reservation, then free after normal exit.
+- Type checks, focused ESLint/Prettier and production build passed.
+- The live/stale inspection uses the original Zod lock schema and process
+  identity owner. Read-only inspection leaves stale/live/invalid metadata intact;
+  missing process support data is unknown. A missing process directory is
+  independently established before considering an owner gone.
+- Original checkout status still contains only the pre-existing modified
+  `action-scoped-draft-coordination-execution.md`.
+
+Plan audit so far: the shared read-only owner and composed canonical/legacy
+inspection are in place; admission precedes candidate qualification, artifact
+acquisition and attempt creation. Final installation leases remain unchanged.
+The installed-application Boolean scan remains supplemental inside the locked
+installer and is no longer authoritative handoff admission. There is no new
+persistent format or IPC contract. Real entrypoint and late-start/resume proof
+checks pass. Architecture and process-interruption results are still pending;
+therefore phase validation and final audits are not closed yet.
+
+### Package 2 final local audits
+
+Architecture and real-process installation interruption validation completed:
+seven files, 87 tests passed in 453.48 s. Together with the prior focused and
+launcher checks, 217 relevant tests passed. The interruption tests retained
+their original per-child and per-case deadlines; no assertion or warning gate
+was disabled. Build, type checks, format and lint are green.
+
+Plan audit: pass. All six implementation/validation steps are represented by
+current code and tests. Canonical and legacy lease formats and the public
+installer module surface are unchanged. The actual stable launcher and actual
+package command are exercised; admission blocks before any candidate lookup,
+download or attempt state. Existing final lease acquisition still prevents a
+late-start race, and normal close permits continuation with the same backup
+proof. Original handoff identity and hash-chain reuse remain covered by the
+existing state-machine boundary cases.
+
+Roadmap audit: F6/F7a local acceptance passes. Diagnosis is read-only and based
+on shared profile/process identity, independent of current/deployment AppImage
+spelling. Missing/unreadable/invalid metadata cannot grant admission. The
+current AGENTS invocation now matches the tested `pnpm handoff:app --resume`.
+No migration, new persistence format, process termination, live-lock removal,
+or weakening of handoff/promotion checks was introduced. Exact-SHA remote
+qualification, canonical handoff and Main confirmation remain delivery work.

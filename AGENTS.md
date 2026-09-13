@@ -35,7 +35,7 @@
   verifies that installed runtime. Handoff state is keyed by the immutable
   application SHA. Repeated
   invocations for the same SHA must validate and reuse hash-proven phases
-  idempotently; `pnpm handoff:app -- --resume` remains an explicit recovery
+  idempotently; `pnpm handoff:app --resume` remains an explicit recovery
   intent but may not replace the provenance of the invocation that created the
   SHA state.
 - Pure documentation or test-only changes finish with the independently verified

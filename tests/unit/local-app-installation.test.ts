@@ -1,3 +1,5 @@
+import { acquireProfileAccess } from '../../src/main/local-profile/profile-access.js'
+import { assertLocalInstallationAvailable } from '../../scripts/local-installation/installation-lock.js'
 import { installationPhaseEvidence } from '../../scripts/installation-phase-evidence.js'
 import { defaultSessionLayoutPreference } from '../../src/shared/contracts/session-layout.js'
 import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
@@ -69,6 +71,46 @@ function installAndAccept(options: InstallLocalAppOptions) {
 }
 
 describe('local AppImage installation', () => {
+  it('blocks an application started after preflight and resumes with the same backup proof after normal close', () => {
+    const fixture = createFixture(build('a'))
+    const prepared = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    const proof = installationPhaseEvidence(prepared, 'backup-created')
+    assertLocalInstallationAvailable(prepared.paths)
+    const application = acquireProfileAccess(
+      prepared.paths.profile,
+      'application',
+      prepared.paths.root
+    )
+    try {
+      expect(() => assertLocalInstallationAvailable(prepared.paths)).toThrow(
+        /occupied/
+      )
+      expectFailure(
+        () => installAndAccept(fixture.options),
+        'installation-locked'
+      )
+      expect(
+        installationPhaseEvidence(
+          inspectLocalAppInstallation(fixture.options, 'backup-created')!,
+          'backup-created'
+        )
+      ).toEqual(proof)
+    } finally {
+      application.release()
+    }
+    assertLocalInstallationAvailable(prepared.paths)
+    installAndAccept(fixture.options)
+    expect(
+      installationPhaseEvidence(
+        inspectLocalAppInstallation(fixture.options, 'backup-created')!,
+        'backup-created'
+      )
+    ).toEqual(proof)
+  })
+
   it('keeps every installation phase proof stable after later steps and runtime acceptance', () => {
     const fixture = createFixture(build('a'))
     const targets = [

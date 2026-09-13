@@ -1,3 +1,7 @@
+import { pathToFileURL } from 'node:url'
+import { resolve } from 'node:path'
+import { readLocalInstallationAvailability } from '../../scripts/local-installation/installation-lock.js'
+import { localInstallationPaths } from '../../scripts/local-installation/contract.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import {
   admitDesktopStart,
@@ -206,6 +210,55 @@ describe('Local external startup verification', () => {
 })
 
 describe('stable desktop admission', () => {
+  it('exposes actual stable-launcher ownership to handoff preflight while the selected deployment runs', () => {
+    const executable = join(
+      root,
+      'deployments',
+      'b'.repeat(64),
+      'SaltMarcher.AppImage'
+    )
+    const probe = join(root, 'availability-probe.mts')
+    const report = join(root, 'availability.json')
+    const paths = {
+      ...localInstallationPaths(root),
+      root,
+      profile: join(root, 'profile')
+    }
+    const inspection = pathToFileURL(
+      resolve('scripts/local-installation/installation-lock.ts')
+    ).href
+    writeFileSync(
+      probe,
+      `
+      import { writeFileSync } from 'node:fs'
+      import { readLocalInstallationAvailability } from ${JSON.stringify(inspection)}
+      writeFileSync(${JSON.stringify(report)}, JSON.stringify(readLocalInstallationAvailability(${JSON.stringify(paths)})))
+    `
+    )
+    const quote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'"
+    writeFileSync(
+      executable,
+      '#!/bin/sh\nexec ' +
+        [process.execPath, '--import', import.meta.resolve('tsx'), probe]
+          .map(quote)
+          .join(' ') +
+        '\n'
+    )
+    chmodSync(executable, 0o700)
+    const state = coordinator.read()!
+    durableJson(coordinator.journalPath, {
+      ...state,
+      next: { ...state.next, sha256: sha256(executable) }
+    })
+    coordinator.commit(id)
+    expect(launchDesktop(root, [])).toBe(0)
+    expect(JSON.parse(readFileSync(report, 'utf8'))).toMatchObject({
+      status: 'busy',
+      owner: 'installer'
+    })
+    expect(readLocalInstallationAvailability(paths)).toEqual({ status: 'free' })
+  })
+
   it.each([false, true])(
     'cleans only empty runtime directories (relaunch=%s)',
     (relaunch) => {
