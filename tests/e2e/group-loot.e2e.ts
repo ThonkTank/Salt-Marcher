@@ -27,8 +27,8 @@ describe('Group Loot editor', () => {
       'aria-selected',
       'true'
     )
-    const search = dialog.$('.loot-catalog-pane input[type="search"]')
-    await search.setValue('Gold Coin')
+    const search = () => dialog.$('.loot-catalog-pane input[type="search"]')
+    await search().setValue('Gold Coin')
     const add = dialog.$('button[aria-label="Gold Coin hinzufügen"]')
     try {
       await add.waitForDisplayed()
@@ -44,8 +44,8 @@ describe('Group Loot editor', () => {
     await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
     await dialog.$('[role="tab"]=Monster').click()
     await expect(dialog.$('input[aria-label="Monster suchen"]')).toBeDisplayed()
-    const monsterCatalog = dialog.$('.group-editor-catalog')
-    await monsterCatalog.$('summary=Filter').click()
+    const monsterCatalog = () => dialog.$('.group-editor-catalog')
+    await monsterCatalog().$('summary=Filter').click()
     for (const label of [
       'CR minimum',
       'CR maximum',
@@ -58,18 +58,18 @@ describe('Group Loot editor', () => {
       'Fraktionen',
       'Ort'
     ])
-      await expect(monsterCatalog.$(`[aria-label="${label}"]`)).toBeExisting()
-    await monsterCatalog
+      await expect(monsterCatalog().$(`[aria-label="${label}"]`)).toBeExisting()
+    await monsterCatalog()
       .$('select[aria-label="CR maximum"]')
       .selectByAttribute('value', '1')
     await dialog.$('[role="tab"]=Loot').click()
     await dialog.$('[role="tab"]=Monster').click()
-    await monsterCatalog.$('summary=Filter').click()
+    await monsterCatalog().$('summary=Filter').click()
     await expect(
-      monsterCatalog.$('select[aria-label="CR maximum"]')
+      monsterCatalog().$('select[aria-label="CR maximum"]')
     ).toHaveValue('1')
     await dialog.$('[role="tab"]=Loot').click()
-    await expect(search).toHaveValue('Gold Coin')
+    await expect(search()).toHaveValue('Gold Coin')
     await dialog.$('.group-editor-selection').$('summary=Münzen').click()
     await expect(dialog.$('.group-editor-selection output')).toHaveText('2')
     await dialog.$('button[aria-label="Änderung zurücknehmen"]').click()
