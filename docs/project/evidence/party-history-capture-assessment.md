@@ -7,7 +7,11 @@ change. The current implementation remains in place until a separately scoped
 implementation preserves its atomicity, side effects and conflict checks.
 
 Evidence: [complete samples and source hashes](party-history-measurement.json).
-Baseline application source is `aa325e9a08eabbd5bf8dab39d62d21c2561d7144`.
+Measurement checkout is `1c5aed433edf30a1c919867c03239b371d79c621`.
+Its application inputs match current Main `6267594b27d479ecf9cacdd46f9ad71e9b129837`
+exactly (`ab74d3e623f229024d7c4e5def829fa1097d3e808ece6b12d5e038a701ef45e7`).
+This complete series was repeated after Main's campaign-schema-44 migration;
+prior-baseline measurements remain historical diagnostics in the execution log.
 All 576 measured real actions committed and were followed by successful real
 Undo. Assertions verified the intended payload, restored selected character and
 scene count, preserved every unrelated combat/journey, and included both source
@@ -83,22 +87,22 @@ Uninstrumented repeated medians, milliseconds:
 
 | Fixture | XP | Quick fields | Short rest | Move + new scene |
 | --- | ---: | ---: | ---: | ---: |
-| `small` | 2.48 | 5.23 | 7.61 | 8.66 |
-| `roster` | 5.85 | 10.66 | 18.29 | 19.66 |
-| `scenes` | 2.37 | 35.02 | 53.99 | 67.85 |
-| `state-control` | 2.28 | 8.04 | 12.20 | 14.12 |
-| `states-small` | 18.24 | 25.88 | 34.79 | 39.98 |
-| `source-only` | 8.33 | 28.40 | 44.42 | 51.23 |
-| `states-deep` | 49.16 | 77.29 | 93.86 | 106.34 |
-| `combined-source-only` | 20.84 | 57.94 | 93.73 | 110.19 |
-| `combined` | 224.79 | 303.56 | 359.44 | 393.66 |
+| `small` | 2.51 | 5.17 | 8.25 | 8.53 |
+| `roster` | 5.89 | 10.78 | 19.17 | 20.50 |
+| `scenes` | 2.38 | 34.84 | 55.09 | 67.01 |
+| `state-control` | 2.26 | 8.14 | 13.11 | 14.01 |
+| `states-small` | 20.45 | 27.26 | 34.48 | 41.35 |
+| `source-only` | 8.36 | 28.67 | 43.85 | 51.03 |
+| `states-deep` | 49.76 | 80.25 | 96.89 | 108.01 |
+| `combined-source-only` | 21.48 | 56.09 | 93.65 | 107.15 |
+| `combined` | 228.56 | 307.79 | 357.29 | 395.84 |
 
 The matched foreign-state additions cost the following uninstrumented median differences (ms):
 
 | Pair | XP | Quick fields | Short rest | Move |
 | --- | ---: | ---: | ---: | ---: |
-| `source-only` → `states-deep` | 40.84 | 48.89 | 49.44 | 55.11 |
-| `combined-source-only` → `combined` | 203.95 | 245.61 | 265.71 | 283.47 |
+| `source-only` → `states-deep` | 41.41 | 51.58 | 53.04 | 56.98 |
+| `combined-source-only` → `combined` | 207.08 | 251.71 | 263.64 | 288.68 |
 
 Hundred empty scenes alone barely change XP latency; quick/rest/move also pay
 for existing session projections, so not all scene-count cost belongs to history.
@@ -136,23 +140,23 @@ returned history conflict check, where that action performs one.
 
 | Action | Capture | Compare | History persistence | Transaction boundaries | Domain work | Other + history reads | Profiled total | Uninstrumented total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| xp | 234.49 | 17.44 | 0.59 | 0.20 | 2.34 | 1.46 | 256.28 | 224.79 |
-| quick-fields | 242.77 | 17.09 | 0.56 | 0.08 | 0.00 | 75.03 | 336.62 | 303.56 |
-| rest | 230.88 | 17.43 | 1.24 | 0.46 | 67.73 | 71.75 | 388.35 | 359.44 |
-| move | 238.91 | 17.29 | 1.84 | 0.63 | 100.74 | 72.25 | 434.90 | 393.66 |
+| xp | 234.88 | 17.33 | 0.59 | 0.20 | 2.29 | 1.47 | 256.39 | 228.56 |
+| quick-fields | 235.47 | 17.41 | 0.56 | 0.08 | 0.00 | 72.66 | 326.03 | 307.79 |
+| rest | 234.52 | 17.22 | 1.19 | 0.49 | 70.45 | 71.56 | 399.05 | 357.29 |
+| move | 225.37 | 17.19 | 1.86 | 0.64 | 98.99 | 73.15 | 417.19 | 395.84 |
 
 First action versus repeated median (milliseconds), and instrumentation ratio:
 
 | Case/action | Plain first | Plain repeated median (range) | Profiled repeated median | Profiled/plain median |
 | --- | ---: | ---: | ---: | ---: |
-| `small` / xp | 3.14 | 2.48 (2.34–2.72) | 3.47 | 1.40× |
-| `small` / quick-fields | 5.62 | 5.23 (5.01–5.73) | 6.11 | 1.17× |
-| `small` / rest | 8.42 | 7.61 (7.32–8.66) | 9.62 | 1.26× |
-| `small` / move | 9.34 | 8.66 (8.42–10.84) | 10.18 | 1.18× |
-| `combined` / xp | 251.63 | 224.79 (220.07–249.57) | 256.28 | 1.14× |
-| `combined` / quick-fields | 346.11 | 303.56 (295.34–439.32) | 336.62 | 1.11× |
-| `combined` / rest | 382.34 | 359.44 (347.89–374.38) | 388.35 | 1.08× |
-| `combined` / move | 625.41 | 393.66 (377.84–551.31) | 434.90 | 1.10× |
+| `small` / xp | 3.19 | 2.51 (2.46–3.28) | 3.44 | 1.37× |
+| `small` / quick-fields | 5.67 | 5.17 (5.07–6.54) | 6.09 | 1.18× |
+| `small` / rest | 8.34 | 8.25 (7.49–9.81) | 9.54 | 1.16× |
+| `small` / move | 9.34 | 8.53 (8.34–11.13) | 9.92 | 1.16× |
+| `combined` / xp | 242.55 | 228.56 (224.15–242.94) | 256.39 | 1.12× |
+| `combined` / quick-fields | 336.72 | 307.79 (293.21–458.42) | 326.03 | 1.06× |
+| `combined` / rest | 393.64 | 357.29 (348.12–486.41) | 399.05 | 1.12× |
+| `combined` / move | 427.38 | 395.84 (367.45–407.05) | 417.19 | 1.05× |
 
 The original XP and preference payload sizes stay constant in small/large cases,
 while read amplification rises substantially. Move intentionally retains its

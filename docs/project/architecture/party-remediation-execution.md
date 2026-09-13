@@ -550,3 +550,47 @@ No unresolved functional discrepancy remains in the approved scope. Deliver
 package 4, then record its delivery and final cross-package closure in a pure
 documentation candidate so the persisted execution log has a truthful final
 status without anticipating remote results.
+
+### Package 4 corrective round 5 — Main advanced during qualification
+
+Candidate `4fe670eb90256e5c135dbe16eaaaf17c242bfd16` passed all 16 required
+jobs in Check 34760799477. Promotion then correctly refused it: Main advanced
+to `6267594b27d479ecf9cacdd46f9ad71e9b129837` (compact group manager; Main
+Check 34760837655 passed). No stale candidate was promoted.
+
+Plan: rebase this task-owned candidate on the current Main while preserving
+this execution log. Review incoming changes, including campaign migrations and
+the updated independent group-lifecycle spec. Rerun all nine measurement cases
+on the new application/schema baseline rather than reusing old qualification.
+Retain the prior measured evidence as historical diagnostics in the execution
+record; replace the final report/raw samples with current-baseline evidence.
+Repeat focused profiler/history tests, format/lint/types and architecture checks,
+then push with an exact lease on the prior task-owned branch head and obtain
+fresh exact-SHA CI before promotion. App fingerprint must equal the new Main;
+no handoff or unrelated application change is introduced by this rebase.
+
+### Package 4 current-Main revalidation and audit
+
+The candidate rebase is conflict-free. Current Main changes campaign schema
+43 to 44 for group-editor receipts and adapts the isolated group-lifecycle UI
+case; PartyActionService and the four state-history owners are unchanged.
+Fresh fixtures therefore use schema 44. The prior accepted raw series is
+preserved in commit `1c5aed433edf30a1c919867c03239b371d79c621` before the
+current evidence replacement, so the earlier dated audit remains historical.
+
+The complete replacement series, recorded 2026-09-13T14:11:12.070Z, again
+passes 576 real actions and 576 Undos with all payload/foreign-state assertions.
+Harness hashes match. Its measurement checkout is `1c5aed433...`; application
+inputs match Main `6267594b2` exactly. Matched large XP medians are now 21.48 ms
+(source only) versus 228.56 ms (50 foreign combat/journey states), confirming
+the same conclusion. The report and raw samples now use only this current
+baseline; prior samples are not mixed into the statistics.
+
+Focused lint, both type checks, the combined architecture/profiler/history run
+(88 tests, including the 13 profiler/history cases), and a separate complete
+architecture run (88 tests) all pass. The current app fingerprint equals Main:
+`ab74d3e623f229024d7c4e5def829fa1097d3e808ece6b12d5e038a701ef45e7`.
+Plan and roadmap audits pass again: the investigation is complete, the bounded
+follow-up remains proposed only, and no application difference or new handoff
+is introduced. The rebased final SHA requires a fresh Candidate Check; the
+previous green run is not reused as qualification for it.
