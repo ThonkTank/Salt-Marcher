@@ -38726,10 +38726,11 @@
         "original": {
           "sequence": "Kartenansicht > Navigation → Hand tool",
           "options": null,
-          "effect": null,
+          "effect": "In der geprüften Originaloberfläche kein dauerhaft auswählbarer Hand-Knopf; Statusleiste bietet Space/Mitteltaste für Pan.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md"
           ]
         },
         "target": "Nach Originalmessung offen: „Hand tool“ verschiebt die Kartenkamera ohne Karteninhalt zu verändern.",
@@ -38767,7 +38768,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Inventareintrag Hand tool hat keinen bestätigten Originalbefehl. Host-Knopf ist eine Zugabe; Fallklassifikation noch offen, nicht als native Pflichtfunktion abgenommen."
         }
       },
       {
@@ -38778,15 +38779,17 @@
         "command": "Space temporary pan",
         "scope": "required",
         "original": {
-          "sequence": "Kartenansicht > Navigation → Space temporary pan",
+          "sequence": "Leertaste + Linksziehen 96 × 64 Bildschirmpixel bei 100 % und 125 % Zoom.",
           "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
+          "effect": "Kamera −384/−256 native Einheiten bei 100 % und −307,2/−204,8 bei 125 %; Zoom und Karteninhalt unverändert. Ältere P1-Messungen betreffen Auswahl, laufendes Polygon, Leertastenwechsel und Escape.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; isolierter RFB-Lauf mit lesendem Kamera-QA-Mod",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/DD-041-HAND-PAN.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Space temporary pan“ verschiebt die Kartenkamera ohne Karteninhalt zu verändern.",
+        "target": "Leertaste + Linksziehen verschiebt den Ausschnitt im nativen Maßstab und erhält Karten-/Verlaufszustand; P1-Zeitfolgen ebenfalls angleichen.",
         "baseline": {
           "editor": {
             "sequence": "Host-Leertaste und Ziehen verschieben Ausschnitt",
@@ -38813,15 +38816,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-installed-pan/evidence/1791189684191-dd041-pan-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "main.js SHA-256 b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-installed-pan/evidence/1791189684191-dd041-pan-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ],
+          "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
         }
       },
       {
@@ -38832,15 +38846,17 @@
         "command": "Middle-mouse pan",
         "scope": "required",
         "original": {
-          "sequence": "Kartenansicht > Navigation → Middle-mouse pan",
+          "sequence": "Mitteltastenzug 96 × 64 Bildschirmpixel bei 100 % und 125 % Zoom.",
           "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
+          "effect": "Kamera −384/−256 native Einheiten bei 100 % und −307,2/−204,8 bei 125 %; Zoom und Karteninhalt unverändert. Ältere P1-Messungen betreffen Auswahl, laufendes Polygon, Leertastenwechsel und Escape.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; isolierter RFB-Lauf mit lesendem Kamera-QA-Mod",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/DD-041-HAND-PAN.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Middle-mouse pan“ verschiebt die Kartenkamera ohne Karteninhalt zu verändern.",
+        "target": "Mitteltastenzug verschiebt den Ausschnitt im nativen Maßstab und erhält Karten-/Verlaufszustand; P1-Zeitfolgen ebenfalls angleichen.",
         "baseline": {
           "editor": {
             "sequence": "Host-Mausbewegungspfad vorhanden",
@@ -38867,15 +38883,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-installed-pan/evidence/1791189684191-dd041-pan-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "main.js SHA-256 b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-installed-pan/evidence/1791189684191-dd041-pan-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ],
+          "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
         }
       },
       {
@@ -38886,15 +38913,16 @@
         "command": "Ctrl + wheel zoom",
         "scope": "required",
         "original": {
-          "sequence": "Kartenansicht > Navigation → Ctrl + wheel zoom",
+          "sequence": "Strg + ein Radeignis hoch/runter bei 100/125 % und Zeiger abseits des Sichtzentrums.",
           "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
+          "effect": "100 → 125 % beziehungsweise 125 → 100 %; Zeiger-Weltpunkt bleibt fest, Karte und Undo unverändert.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; isolierter RFB-Lauf mit lesendem Kamera-QA-Mod",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Ctrl + wheel zoom“ verschiebt die Kartenkamera ohne Karteninhalt zu verändern.",
+        "target": "Strg+Rad schaltet für den gemessenen Radschritt zwischen 100 und 125 % um den Zeiger-Weltpunkt; Karteninhalt und Undo bleiben unverändert.",
         "baseline": {
           "editor": {
             "sequence": "Host-Mausrad/Touchpad zoomt",
@@ -38921,15 +38949,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "src/navigation.ts",
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "deviation",
+          "build": "main.js SHA-256 b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-host/evidence/1791189319550-dd041-navigation-edit/dd041-navigation-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
+          ],
+          "gap": "Isolierter Host zoomt bei Ctrl+Rad ±100 auf etwa 133,4 % beziehungsweise 93,7 % statt 125 %/100 %. Andere Radsignale und Zoomstufen noch nicht gemessen."
         }
       },
       {
