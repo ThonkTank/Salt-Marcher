@@ -307,6 +307,7 @@ export class DungeonEditor {
   private separatePrefabButton: HTMLButtonElement;
   private forgetPrefabButton: HTMLButtonElement;
   private forgettingPrefab = false;
+  private prefabSetChoice: HTMLSelectElement;
   private prefabChoice: HTMLSelectElement;
   private prefabPanel: HTMLDetailsElement;
   private space = false;
@@ -538,6 +539,13 @@ export class DungeonEditor {
     this.prefabPanel.open = true;
     element("summary", "", this.prefabPanel, "Zeichenvorlagen");
     const prefabControls = element("div", "dn-menu-content", this.prefabPanel);
+    element("p", "dn-help", prefabControls, "Sammlung");
+    this.prefabSetChoice = element("select", "dn-floor", prefabControls);
+    this.prefabSetChoice.setAttribute("aria-label", "Sammlung");
+    this.prefabSetChoice.addEventListener("change", () => {
+      this.refreshPrefabs(undefined, this.prefabSetChoice.value);
+      this.renderer.cancelPreview();
+    });
     this.prefabChoice = element("select", "dn-floor", prefabControls);
     this.prefabChoice.setAttribute("aria-label", "Vorlage");
     this.prefabChoice.addEventListener("change", () => {
@@ -1149,21 +1157,37 @@ export class DungeonEditor {
       entities: [change],
     });
   }
-  private refreshPrefabs(selected?: string): void {
+  private refreshPrefabs(selected?: string, requestedSet?: string): void {
+    const prefabs = this.host.prefabs?.() ?? [];
     const previous = selected ?? this.prefabChoice.value;
+    const previousSet = this.prefabSetChoice.value;
+    const sets = [...new Set(prefabs.map((prefab) => prefab.set))];
+    const previousPrefab = prefabs.find((prefab) => prefab.id === previous);
+    const activeSet = requestedSet && sets.includes(requestedSet) ? requestedSet
+      : previousPrefab?.set ?? (sets.includes(previousSet) ? previousSet : sets[0] ?? "");
+    this.prefabSetChoice.replaceChildren();
+    for (const set of sets) {
+      const option = document.createElement("option");
+      option.value = set;
+      option.textContent = set;
+      this.prefabSetChoice.append(option);
+    }
+    this.prefabSetChoice.value = activeSet;
+    this.prefabSetChoice.disabled = sets.length === 0;
     this.prefabChoice.replaceChildren();
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Vorlage wählen";
     this.prefabChoice.append(placeholder);
-    for (const prefab of this.host.prefabs?.() ?? []) {
+    const available = prefabs.filter((prefab) => prefab.set === activeSet);
+    for (const prefab of available) {
       const option = document.createElement("option");
       option.value = prefab.id;
       option.textContent = `${prefab.set} / ${prefab.name}`;
       this.prefabChoice.append(option);
     }
-    this.prefabChoice.value = [...this.prefabChoice.options]
-      .some((option) => option.value === previous) ? previous : "";
+    this.prefabChoice.value = available.some((prefab) => prefab.id === previous)
+      ? previous : "";
     this.forgetPrefabButton.disabled = this.forgettingPrefab ||
       !this.prefabChoice.value || !this.host.forgetPrefab;
   }
