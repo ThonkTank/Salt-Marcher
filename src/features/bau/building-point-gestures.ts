@@ -29,7 +29,7 @@ export type BuildingPointEdit =
       readonly command: Command;
       readonly after: Building;
     }
-  | { readonly status: "minimum" | "locked" | "stale"; readonly command: null };
+  | { readonly status: "minimum" | "locked" | "stale" | "unchanged"; readonly command: null };
 
 const samePoint = (a: Point, b: Point): boolean => a.x === b.x && a.y === b.y;
 const validTolerance = (value: number): boolean =>
@@ -54,6 +54,57 @@ export function buildingVertexGrip(
         point,
       }
     : null;
+}
+
+function moveVertex(
+  before: Building,
+  grip: BuildingVertexGrip,
+  destination: Point,
+): Building | null {
+  const contour = buildingContourEntries(before)[grip.contour];
+  if (
+    before.id !== grip.buildingId ||
+    !contour?.points[grip.index] ||
+    !samePoint(contour.points[grip.index]!, grip.point) ||
+    !Number.isFinite(destination.x) ||
+    !Number.isFinite(destination.y)
+  ) return null;
+  const points = contour.points.map((point, index) =>
+    index === grip.index ? { x: destination.x, y: destination.y } : point,
+  );
+  return replaceBuildingContour(before, grip.contour, points);
+}
+
+/** Transient floor and wall geometry while a Building point is held. */
+export function previewBuildingVertexDrag(
+  before: Building,
+  grip: BuildingVertexGrip,
+  destination: Point,
+): Building | null {
+  return before.locked ? null : moveVertex(before, grip, destination);
+}
+
+/** Commit the exact previewed contour only after pointer release. */
+export function planBuildingVertexDrag(
+  entities: readonly Entity[],
+  before: Building,
+  grip: BuildingVertexGrip,
+  destination: Point,
+): BuildingPointEdit {
+  if (before.locked) return { status: "locked", command: null };
+  const after = moveVertex(before, grip, destination);
+  if (!after) return { status: "stale", command: null };
+  if (samePoint(grip.point, destination))
+    return { status: "unchanged", command: null };
+  const command = planBuildingContourMutation({
+    entities,
+    before,
+    after,
+    edit: { kind: "move", contour: grip.contour, index: grip.index },
+  });
+  return command
+    ? { status: "command", command, after }
+    : { status: "unchanged", command: null };
 }
 
 /** Native Backspace on a hovered point removes exactly that point, down to three. */
