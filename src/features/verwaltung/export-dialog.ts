@@ -1,5 +1,7 @@
-import { App, ButtonComponent, Modal, Setting } from "obsidian";
-import { exportFormatLabels, exportPixelDimensions, nonNegativePercent,
+import { App, ButtonComponent, Modal, Setting, SliderComponent, TextComponent } from "obsidian";
+import { defaultExportQualityPercent, exportFormatLabels, exportPixelDimensions,
+  exportQualityPercent, nonNegativePercent, qualityForExportRequest,
+  supportsExportQuality,
   positivePixelsPerCell, validExportCrop,
   type ExportAdvancedKey, type ExportAdvancedOptions, type ExportChoice,
   type ExportCrop, type ExportFormat, type ExportRequest } from "./export-options";
@@ -41,7 +43,9 @@ export class ExportDialog extends Modal {
     super(app);
     if (!(config.initial.format in exportFormatLabels) ||
       !Number.isSafeInteger(config.initial.pixelsPerCell) ||
-      config.initial.pixelsPerCell <= 0)
+      config.initial.pixelsPerCell <= 0 ||
+      (config.initial.qualityPercent !== undefined &&
+        exportQualityPercent(String(config.initial.qualityPercent)) === null))
       throw new RangeError("Ungültige Exportvorgabe");
     this.initial = { ...config.initial };
     this.onExport = config.onExport;
@@ -75,6 +79,10 @@ export class ExportDialog extends Modal {
     let pixelsText = String(this.initial.pixelsPerCell);
     let includeGrid = this.initial.includeGrid;
     let includeLighting = this.initial.includeLighting;
+    let qualityText = String(this.initial.qualityPercent ?? defaultExportQualityPercent);
+    let qualitySetting: Setting | undefined;
+    let qualitySlider: SliderComponent | undefined;
+    let qualityInput: TextComponent | undefined;
     const supported = new Set(this.advanced?.supported ?? []);
     const supports = (key: ExportAdvancedKey) => supported.has(key);
     const levels = this.advanced?.levels ?? [];
@@ -99,6 +107,7 @@ export class ExportDialog extends Modal {
     const message = this.contentEl.createDiv({ cls: "dn-export-message" });
     message.setAttribute("role", "alert");
     const valid = () => positivePixelsPerCell(pixelsText) !== null &&
+      qualityForExportRequest(format, qualityText) !== null &&
       (!supports("sourceLevelId") || levels.some(({ id }) => id === sourceLevelId)) &&
       (!supports("brightnessPercent") || nonNegativePercent(brightnessText) !== null) &&
       (!supports("focusPercent") || nonNegativePercent(focusText) !== null) &&
@@ -109,6 +118,8 @@ export class ExportDialog extends Modal {
       (!supports("gridPresetId") || presets.some(({ id }) => id === gridPresetId)) &&
       (!supports("crop") || crop === null || validExportCrop(crop, this.advanced?.mapSize));
     const refresh = () => {
+      if (qualitySetting)
+        qualitySetting.settingEl.style.display = supportsExportQuality(format) ? "" : "none";
       exportButton?.setDisabled(this.busy || !valid());
       cropButton?.setDisabled(this.busy || !supports("crop"));
       resetCropButton?.setDisabled(this.busy || !supports("crop") || crop === null);
@@ -133,7 +144,31 @@ export class ExportDialog extends Modal {
     new Setting(this.contentEl).setName("Format").addDropdown((dropdown) =>
       dropdown.addOptions(exportFormatLabels).setValue(format).onChange((value) => {
         if (value in exportFormatLabels) format = value as ExportFormat;
+        refresh();
       }));
+    qualitySetting = new Setting(this.contentEl).setName("Quality (%)")
+      .addSlider((slider) => {
+        qualitySlider = slider.setLimits(0, 100, 1)
+          .setValue(exportQualityPercent(qualityText) ?? defaultExportQualityPercent)
+          .onChange((value) => {
+            qualityText = String(value);
+            qualityInput?.setValue(qualityText);
+            refresh();
+          });
+      })
+      .addText((input) => {
+        qualityInput = input;
+        input.inputEl.type = "number";
+        input.inputEl.min = "0";
+        input.inputEl.max = "100";
+        input.inputEl.step = "1";
+        input.setValue(qualityText).onChange((value) => {
+          qualityText = value;
+          const parsed = exportQualityPercent(value);
+          if (parsed !== null) qualitySlider?.setValue(parsed);
+          refresh();
+        });
+      });
     new Setting(this.contentEl).setName("Pixel pro Feld")
       .addText((input) => {
         input.inputEl.type = "number";
@@ -242,7 +277,9 @@ export class ExportDialog extends Modal {
         exportButton = button.setButtonText("Exportieren").setCta();
         button.onClick(() => {
           const pixelsPerCell = positivePixelsPerCell(pixelsText);
-          if (pixelsPerCell === null || !valid() || this.busy || !this.controller) {
+          const quality = qualityForExportRequest(format, qualityText);
+          if (pixelsPerCell === null || quality === null || !valid() ||
+            this.busy || !this.controller) {
             message.textContent = "Bitte die Exportwerte prüfen.";
             return;
           }
@@ -267,6 +304,7 @@ export class ExportDialog extends Modal {
           if (supports("crop")) advanced.crop = crop;
           const request: ExportRequest = {
             format, pixelsPerCell, includeGrid, includeLighting,
+            ...quality,
             ...(Object.keys(advanced).length && { advanced }),
           };
           void (async () => {

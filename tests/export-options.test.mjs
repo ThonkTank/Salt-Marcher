@@ -1,12 +1,30 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { exportFormatLabels, exportPixelDimensions, nonNegativePercent,
-  positivePixelsPerCell, validExportCrop } from
+import { defaultExportQualityPercent, exportFormatLabels, exportPixelDimensions,
+  exportQualityPercent, nonNegativePercent, positivePixelsPerCell,
+  qualityForExportRequest, supportsExportQuality, validExportCrop } from
   "../src/features/verwaltung/export-options.ts";
 
 test("Exportformate bieten alle vier angeforderten Ausgaben", () => {
   assert.deepEqual(Object.keys(exportFormatLabels),
     ["png", "jpeg", "webp", "universal-vtt"]);
+});
+
+test("Qualitätsregler gilt nur für JPEG und WEBP und beginnt bei 90 Prozent", () => {
+  assert.equal(defaultExportQualityPercent, 90);
+  assert.equal(supportsExportQuality("jpeg"), true);
+  assert.equal(supportsExportQuality("webp"), true);
+  assert.equal(supportsExportQuality("png"), false);
+  assert.equal(supportsExportQuality("universal-vtt"), false);
+  assert.equal(exportQualityPercent("90"), 90);
+  assert.equal(exportQualityPercent("75"), 75);
+  assert.deepEqual(qualityForExportRequest("jpeg", "75"), { qualityPercent: 75 });
+  assert.deepEqual(qualityForExportRequest("webp", "90"), { qualityPercent: 90 });
+  assert.deepEqual(qualityForExportRequest("png", "invalid"), {});
+  assert.deepEqual(qualityForExportRequest("universal-vtt", "invalid"), {});
+  assert.equal(qualityForExportRequest("jpeg", "invalid"), null);
+  for (const value of ["", "-1", "101", "90,5", "90.5", "NaN", "Infinity"])
+    assert.equal(exportQualityPercent(value), null, value);
 });
 
 test("Pixel pro Feld akzeptiert nur sichere positive Ganzzahlen", () => {

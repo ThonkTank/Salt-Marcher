@@ -1604,6 +1604,7 @@ class DungeonView extends FileView {
                 pixelsPerCell: 256,
                 includeGrid: true,
                 includeLighting: true,
+                qualityPercent: 90,
               },
               advanced: {
                 supported: [],
@@ -1648,7 +1649,12 @@ class DungeonView extends FileView {
                     filename: `${file.basename}.dd2vtt`,
                   };
                 }
-                const raster = await encodeRasterFile(canvas, { format: request.format });
+                const raster = await encodeRasterFile(canvas, {
+                  format: request.format,
+                  ...(request.format === "jpeg" || request.format === "webp"
+                    ? { quality: (request.qualityPercent ?? 90) / 100 }
+                    : {}),
+                });
                 return {
                   blob: raster.blob,
                   filename: `${file.basename}.${request.format === "jpeg" ? "jpg" : request.format}`,

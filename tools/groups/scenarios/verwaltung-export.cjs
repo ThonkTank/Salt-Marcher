@@ -146,6 +146,26 @@ async function cancelFromMenu(page, out) {
   assert(same(before, await state(page, mapPath)));
   return { blobs, stateUnchanged: true, screenshot };
 }
+async function inspectQualityControl(page, out) {
+  const dialog = await openExportDialog(page);
+  const formatSelect = dialog.locator(".setting-item").filter({ hasText: "Format" })
+    .locator("select:not(.is-measuring)");
+  const quality = dialog.locator(".setting-item").filter({ hasText: "Quality (%)" });
+  const results = {};
+  for (const format of ["png", "jpeg", "webp", "universal-vtt"]) {
+    await formatSelect.selectOption(format);
+    const visible = await quality.isVisible();
+    const value = visible ? await quality.locator('input[type="number"]').inputValue() : null;
+    assert.equal(visible, format === "jpeg" || format === "webp");
+    if (visible) assert.equal(value, "90");
+    results[format] = { visible, value };
+  }
+  await formatSelect.selectOption("jpeg");
+  const screenshot = path.join(out, "export-quality-default.png");
+  await dialog.screenshot({ path: screenshot });
+  await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+  return { results, screenshot };
+}
 async function exportMeasuredVttShape(page, out, name) {
   const before = await state(page, vttMapPath);
   const exported = await exportFromMenu(page, out, "universal-vtt", 256, false);
@@ -214,6 +234,7 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     assert.equal(uiPngImage.colorType, 6);
     assert.equal(uiPngImage.depth, 8);
     const cancelled = await cancelFromMenu(page, out);
+    const quality = await inspectQualityControl(page, out);
     note("DD-043.01", "Frischstart: Editormenü öffnet erneut den Exportdialog mit vier Formaten.",
       [uiPng.file, resultFile], null, "pass");
     note("DD-043.02", "Frischstart: PNG-Export der 8×8-Karte bei 256 Pixel/Feld erzeugt ein 2048×2048-PNG.",
@@ -222,6 +243,9 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
       [uiPng.file, cancelled.screenshot], null, "pass");
     note("DD-043.23", `Frischstart: sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=${cancelled.stateUnchanged}.`,
       [cancelled.screenshot], null, "pass");
+    note("DD-043.24", "Frischstart: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen.",
+      [quality.screenshot, resultFile],
+      "Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.");
     let vtt = null;
     if (process.env.DUNGEON_QA_EXPORT_VTT === "1") {
       await page.evaluate(async (file) => app.workspace.getLeaf(false)
@@ -234,7 +258,7 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     }
     finish({ phase: "reopen", rasterSame, pngSha256: exported.sha256,
       uiPng: uiPng.filename, cancelled, documentStable: true,
-      diskSha256: saved.diskSha256, vtt });
+      diskSha256: saved.diskSha256, quality, vtt });
     return;
   }
 
@@ -279,6 +303,7 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
   assert.equal(uiWebp.bytes.toString("ascii", 0, 4), "RIFF");
   assert.equal(uiWebp.bytes.toString("ascii", 8, 12), "WEBP");
   const cancelled = await cancelFromMenu(page, out);
+  const quality = await inspectQualityControl(page, out);
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   await page.waitForFunction(() => !app.workspace.getLeavesOfType("dungeon-native-map")[0]
     .view.editor.session.dirty);
@@ -337,11 +362,14 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     [uiPng.file, uiJpeg.file, uiWebp.file],
     "Dateiablage im produktiven Vault-Host und frisches Öffnen der Exportdatei fehlen.");
   note("DD-043.20", "JPEG-Menüexport lieferte JFIF/JPEG-Signatur und Dateiendung .jpg.",
-    [uiJpeg.file], group.originalGaps?.["DD-043.20"]);
+    [uiJpeg.file], "Original-JPEG ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.");
   note("DD-043.21", "WEBP-Menüexport lieferte RIFF/WEBP-Signatur und Dateiendung .webp.",
-    [uiWebp.file], group.originalGaps?.["DD-043.21"]);
+    [uiWebp.file], "Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.");
   note("DD-043.23", `Sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=${cancelled.stateUnchanged}.`,
     [cancelled.screenshot], null, "pass");
+  note("DD-043.24", "Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen; JPEG/WEBP-Dateien erzeugt.",
+    [quality.screenshot, uiJpeg.file, uiWebp.file, resultFile],
+    "Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.");
   finish({ phase: "edit", gridPixels, grid: { width: grid.width, height: grid.height,
     sha256: grid.sha256 }, noGrid: { sha256: noGrid.sha256 },
   high: { width: high.width, height: high.height, sha256: high.sha256 },
@@ -349,6 +377,6 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     sha256: nativePpi.sha256 },
   uiPngPixelsChanged: uiPixelsChanged,
   uiFormats: [uiPng.filename, uiJpeg.filename, uiWebp.filename],
-  cancelled,
+  cancelled, quality,
   documentStable: true, diskSha256, vtt });
 };

@@ -5,6 +5,8 @@ export interface ExportRequest {
   pixelsPerCell: number;
   includeGrid: boolean;
   includeLighting: boolean;
+  /** Active JPEG/WEBP quality in percent; absent for PNG and Universal VTT. */
+  qualityPercent?: number;
   /** Present only for options the export callback declares it can apply. */
   advanced?: Partial<ExportAdvancedOptions>;
 }
@@ -43,6 +45,27 @@ export const exportFormatLabels: Readonly<Record<ExportFormat, string>> = {
   webp: "WEBP",
   "universal-vtt": "Universal VTT",
 };
+
+export const defaultExportQualityPercent = 90;
+
+export function supportsExportQuality(format: ExportFormat): boolean {
+  return format === "jpeg" || format === "webp";
+}
+
+/** The control sends whole percentage points; native endpoint behavior is unmeasured. */
+export function exportQualityPercent(raw: string): number | null {
+  const value = nonNegativePercent(raw, 100);
+  return value !== null && Number.isInteger(value) ? value : null;
+}
+
+export function qualityForExportRequest(
+  format: ExportFormat,
+  raw: string,
+): Pick<ExportRequest, "qualityPercent"> | null {
+  if (!supportsExportQuality(format)) return {};
+  const qualityPercent = exportQualityPercent(raw);
+  return qualityPercent === null ? null : { qualityPercent };
+}
 
 export function positivePixelsPerCell(raw: string): number | null {
   const value = raw.trim();
