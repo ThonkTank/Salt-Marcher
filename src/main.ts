@@ -44,6 +44,7 @@ import { toolSettings, type ToolSettings } from "./properties";
 import { MapRenderer, type ColorableObjectSource } from "./renderer";
 import { type Prefab, validPrefabs } from "./prefabs";
 import { withoutPrefabDefinition } from "./features/objekte/prefab-forget";
+import { NEW_MAP_DEFAULT_SIZE, newMapDialogSize } from "./features/verwaltung/new-map-size";
 import { createReferenceImage, resizeMap, type MapMargins } from "./commands";
 import {
   generateLayout,
@@ -3049,15 +3050,17 @@ class CreateDungeonModal extends Modal {
   onOpen(): void {
     void this.render();
   }
-  private async render(): Promise<void> {
+  private async render(
+    size: { width: number; height: number } = NEW_MAP_DEFAULT_SIZE,
+  ): Promise<void> {
     const generation = ++this.generation,
       catalog = await this.plugin.assets.read();
     if (generation !== this.generation) return;
     this.titleEl.setText("Dungeon anlegen");
     this.contentEl.replaceChildren();
     let name = "",
-      width = 80,
-      height = 60,
+      width = size.width,
+      height = size.height,
       presetName = "",
       selectedPreset = "",
       builtInAssets = catalog.builtIns,
@@ -3123,7 +3126,7 @@ class CreateDungeonModal extends Modal {
         .onClick(async () => {
           if (!selectedPreset) return;
           await this.plugin.removeSizePreset(selectedPreset);
-          void this.render();
+          void this.render({ width, height });
         }),
     );
     new Setting(this.contentEl)
@@ -3138,7 +3141,7 @@ class CreateDungeonModal extends Modal {
           try {
             await this.plugin.saveSizePreset(presetName, width, height);
             new Notice("Größenvorlage gespeichert.");
-            void this.render();
+            void this.render({ width, height });
           } catch (error) {
             new Notice(String(error));
           }
@@ -3219,10 +3222,11 @@ class CreateDungeonModal extends Modal {
         .onClick(async () => {
           b.setDisabled(true);
           try {
+            const size = newMapDialogSize(width, height);
             await this.plugin.create(
               name,
-              width,
-              height,
+              size.width,
+              size.height,
               {
                 assetPacks: [...assetPacks],
                 builtInAssets,

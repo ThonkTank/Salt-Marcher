@@ -1,6 +1,6 @@
 # DD-001/002: Kartenstart und Größenvorlagen
 
-Stand: 05.10.2026. Dieses Paket bereitet ausschließlich den isolierten Hostvergleich vor. Dungeondraft 1.2.0.1 wurde dafür nicht erneut gestartet; Produkt, Nutzervault und Abnahmedatei blieben unverändert.
+Stand: 05.10.2026. Der erste isolierte Hostlauf liegt vor. Der schmale Dialogfix für DD-001.01/.02 ist im Bau-Zweig vorbereitet; Nutzervault und Abnahmedatei blieben unverändert.
 
 ## Pflichtfälle und Originalgrenzen
 
@@ -10,7 +10,7 @@ Die 15 Fälle DD-001.01–.06 und DD-002.01–.09 stehen einzeln in [`CASE-INVEN
 
 `DUNGEON_QA_ONLY_DD001002=1` leitet die bestehende Gruppe `verwaltung-karte-datei` an `tools/groups/scenarios/dd001002-map-start.cjs` weiter. Der gemeinsame Runner legt einen eigenen QA-Vault an. Die Edit-Phase prüft den sichtbaren Neuanlagedialog, Abbruch ohne Datei, Breite null, eine benannte 8×8-Vorlage, deren Auswahl, eine 8×8-Karte und deren tatsächlichen Speicherzeitpunkt. Die Frischstartphase prüft Karten- und Vorlagenzustand, danach das Entfernen der Vorlage bei zuvor angezeigten 12×8 Maßen. Jeder geprüfte Fall landet einzeln mit Bild und JSON in `group-cases.json`; die übrigen Fälle bleiben mit benannter Lücke `open`. Ein Laufabbruch wird zusätzlich als Fehler an den Runner weitergereicht.
 
-Aus aktuellem Quellstand folgen bereits zwei wahrscheinliche Abweichungen, die der Hostlauf bestätigen oder widerlegen muss: `CreateDungeonModal` startet bei 80×60 statt 35×20 und rendert nach `Merken`/Löschen neu, wodurch die zuvor eingegebenen Maße verloren gehen. `DungeonPlugin.create` speichert die Karte sofort, während der native 8×8-Grundfall erst mit Save eine Datei erzeugte. Diese Aussagen sind noch keine neue Hostabnahme.
+Der installierte Ausgangsbuild zeigte im vollständigen zweiten Hostlauf 80×60 statt 35×20 und erzeugte bei Breite 0 keine 8×20-Karte. Nach `Merken` wechselte die Anzeige von 8×8 auf 80×60; nach Entfernen einer Vorlage beim Frischstart von 12×8 auf 80×60. Außerdem existierte die Kartendatei schon vor manuellem Save. Das sind die Fallabweichungen DD-001.01/.02/.04 und DD-002.05/.09 in `qa/dd001002-installed-host2/evidence/1791216622290-verwaltung-karte-datei-edit/group-cases.json` und `1791216639043-verwaltung-karte-datei-reopen/group-cases.json`. Der erste Hostlauf brach nach `.02` ab und wird nur für die dort erreichten Fälle gelesen.
 
 ## Ausführung und Wertungsgrenzen
 
@@ -20,8 +20,8 @@ Der Host benutzt denselben `verwaltung-karte-datei`-Gruppenkatalog wie DD-038/03
 
 ## Isolierter Produktkandidat für DD-001
 
-`src/features/verwaltung/new-map-size.ts` hält die direkt belegte Startgröße 35×20 und eine nur auf die Neuanlage bezogene Breitenanpassung bereit. Breite 0 und 7,5 werden 8; Werte ab 8, negative oder ungültige Eingaben sowie die Höhe passieren unverändert zur bestehenden Dokumentvalidierung. Die Verallgemeinerung für noch ungemessene positive Breiten unter 8 ist eine ausdrücklich gekennzeichnete Mindestwert-Inferenz. Keine Rundung oberhalb 8 und keine Höhenregel werden behauptet. Die Funktion ist noch nicht an `CreateDungeonModal` angeschlossen.
+`src/features/verwaltung/new-map-size.ts` hält die direkt belegte Startgröße 35×20 und eine nur auf die Neuanlage bezogene Breitenanpassung bereit. Breite 0 und 7,5 werden 8; Werte ab 8, negative oder ungültige Eingaben sowie die Höhe passieren unverändert zur bestehenden Dokumentvalidierung. Die Verallgemeinerung für noch ungemessene positive Breiten unter 8 ist eine ausdrücklich gekennzeichnete Mindestwert-Inferenz. Keine Rundung oberhalb 8 und keine Höhenregel werden behauptet. `CreateDungeonModal` verwendet die Startgröße und übergibt erst beim Klick auf `Anlegen` die angepasste Größe an `DungeonPlugin.create`.
 
-Integrationsstelle nach dem Hostvergleich: `src/main.ts` importiert Konstante und Funktion, ersetzt in `CreateDungeonModal.render()` ausschließlich die lokalen Startwerte `80/60` und übergibt beim Klick auf `Anlegen` die beiden Werte aus `newMapDialogSize(width, height)` an `this.plugin.create(...)`. `saveSizePreset(...)` und `newDocument(...)` bleiben dabei unverändert; die Untergrenze der Template-Eingaben ist im Original nicht vermessen.
+Der Produktdiff in `src/main.ts` beschränkt sich auf Import, Startwerte, Größe beim Klick auf `Anlegen` und den Erhalt der angezeigten Maße nach `Merken` und `−`. `saveSizePreset(...)` und `newDocument(...)` bleiben unverändert; die Untergrenze der Template-Eingaben ist im Original nicht vermessen. Der Speicherzeitpunkt der neuen Karte bleibt eine getrennte Architekturabhängigkeit, weil `DungeonPlugin.create` derzeit sofort Datei und Raumstruktur erzeugt.
 
-`Merken` und `−` können die eingegebenen Maße mit einem kleinen Dialogfix erhalten: `render(size?: {width:number;height:number})` initialisiert seine lokalen Breiten-/Höhenwerte aus `size` und beide Erfolgszweige rufen `render({width,height})` auf. Die heutige komplette Neudarstellung setzt zusätzlich Name, Assetauswahl und Startschalter zurück. Eine robuste spätere Korrektur sollte den gesamten Dialogentwurf als Instanzzustand erhalten; für DD-002.05/.09 genügt zur gemessenen Maßwirkung zunächst die Übergabe der beiden Werte. Der Speicherzeitpunkt der neuen Karte ist ein getrenntes Architekturthema.
+`Merken` und `−` erhalten mit `render(size?: {width:number;height:number})` die eingegebenen Maße. Die komplette Neudarstellung setzt weiterhin Name, Assetauswahl und Startschalter zurück; diese Felder sind durch DD-002.05/.09 nicht abgenommen. Eine spätere Korrektur kann den gesamten Dialogentwurf als Instanzzustand erhalten. Die Dateierzeugung vor Save bleibt eine getrennte Architekturfrage; an Dateiabläufen wurde hier nichts geändert.
