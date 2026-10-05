@@ -2780,19 +2780,29 @@ async function prefabForgetWorkflow(view) {
     const forget = page.getByRole("button", { name: "Vorlage vergessen", exact: true });
     assert.equal(await forget.isEnabled(), true);
     await forget.click();
-    fs.writeFileSync(out + "/forget-click-state.json", JSON.stringify(await page.evaluate(() => {
-      const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor;
-      return { selected: editor.prefabChoice.value,
-        catalogIds: app.plugins.getPlugin("dungeon-editor").prefabs().map((item) => item.id),
-        hasHostAction: !!editor.host.forgetPrefab,
-        modalText: [...document.querySelectorAll(".modal-container")].map((node) => node.textContent) };
-    }), null, 2));
-    const dialog = page.locator(".modal-container").last();
+    const dialog = page.locator("dialog.dn-confirm-dialog");
     await dialog.getByText("Bereits platzierte Elemente bleiben", { exact: false }).waitFor();
     await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
     assert.equal((await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").prefabs())).length, 1);
     assert.equal(fs.readFileSync(vault + "/" + mapPath, "utf8"), before);
     checks.push("Cancel keeps the saved prefab and placed pair in this host build");
+    await forget.click();
+    await dialog.waitFor();
+    await page.evaluate(async () => {
+      const note = await app.vault.create("Dungeons/PrefabQA/Dialogwechsel.md", "# Dialogwechsel\n");
+      await app.workspace.getLeavesOfType("dungeon-native-map")[0].openFile(note);
+    });
+    await dialog.waitFor({ state: "detached" });
+    assert.equal((await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").prefabs())).length, 1);
+    assert.equal(fs.readFileSync(vault + "/" + mapPath, "utf8"), before);
+    checks.push("Closing the map while Forget warning is open cancels it and preserves the saved pair");
+    await page.evaluate(async (path) =>
+      app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(path)),
+    mapPath);
+    await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    await chooseTool("Baustein");
+    await page.getByRole("combobox", { name: "Vorlage", exact: true })
+      .selectOption(prefabId);
     await forget.click();
     await dialog.getByRole("button", { name: "Vergessen", exact: true }).click();
     await page.waitForFunction(() =>

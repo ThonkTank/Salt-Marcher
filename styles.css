@@ -628,3 +628,18 @@
     padding-inline: 4px;
   }
 }
+.dn-confirm-dialog {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: 0 12px 36px #0006;
+}
+.dn-confirm-dialog::backdrop { background: #0008; }
+.dn-confirm-dialog h2 { margin: 0 28px 12px 0; font-size: 18px; }
+.dn-confirm-dialog p { margin: 0 0 20px; }
+.dn-confirm-close { position: absolute; top: 12px; right: 12px; }
+.dn-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }

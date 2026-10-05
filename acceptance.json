@@ -24460,7 +24460,8 @@
           "changes": [
             "src/features/objekte/prefab-forget.ts",
             "src/editor.ts",
-            "src/main.ts"
+            "src/main.ts",
+            "styles.css"
           ],
           "evidence": [
             "tests/prefab-forget.test.mjs",
@@ -24469,13 +24470,13 @@
         },
         "hostCheck": {
           "state": "isolated_pass_pending_installed_endstand",
-          "build": "main.js SHA-256 d9b3095ec27b594ac77eedda53186d0b51cef60b1329307c1b5b2a3cd679367d",
+          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179891393-prefab-forget-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179891393-prefab-forget-edit/forget-click-state.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179903852-prefab-forget-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180798934-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180811016-prefab-forget-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-dialog-resolution.md"
           ],
-          "gap": "Freigabe-Build belegt bestätigtes Forget, Karten-/Instanzerhalt, konkurrierendes Speichern und frisches Obsidian-Öffnen. Installierter Endstand offen; Original-Undo/Cancel/X sind getrennte Unterfälle."
+          "gap": "Freigabe-Build belegt Cancel, Kartenwechsel bei offener Warnung, bestätigtes Forget, Karten-/Instanzerhalt, konkurrierendes Speichern und frisches Hostöffnen. Installierter Endstand offen; Original-Undo/Cancel/X sind getrennte Unterfälle."
         }
       },
       {

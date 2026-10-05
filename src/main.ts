@@ -300,38 +300,60 @@ class PrefabNameModal extends Modal {
     this.contentEl.empty();
   }
 }
-class PrefabForgetModal extends Modal {
-  private answer?: (confirmed: boolean) => void;
-  constructor(app: App, private readonly prefab: Prefab) {
-    super(app);
-  }
-  request(): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.answer = resolve;
-      this.open();
-    });
-  }
-  onOpen(): void {
-    this.setTitle("Vorlage vergessen");
-    this.contentEl.empty();
-    this.contentEl.createEl("p", {
-      text: `„${this.prefab.set} / ${this.prefab.name}“ dauerhaft aus der Bibliothek entfernen? Bereits platzierte Elemente bleiben auf der Karte und müssen bei Bedarf einzeln gelöscht werden.`,
-    });
-    new Setting(this.contentEl)
-      .addButton((button) => button.setButtonText("Abbrechen")
-        .onClick(() => this.close()))
-      .addButton((button) => button.setButtonText("Vergessen")
-        .onClick(() => {
-          this.answer?.(true);
-          this.answer = undefined;
-          this.close();
-        }));
-  }
-  onClose(): void {
-    this.answer?.(false);
-    this.answer = undefined;
-    this.contentEl.empty();
-  }
+function requestPrefabForget(
+  doc: Document,
+  prefab: Prefab,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false);
+  const dialog = doc.createElement("dialog");
+  dialog.className = "dn-confirm-dialog";
+  dialog.setAttribute("aria-label", "Vorlage vergessen");
+  const title = doc.createElement("h2");
+  title.textContent = "Vorlage vergessen";
+  const close = doc.createElement("button");
+  close.type = "button";
+  close.className = "dn-confirm-close";
+  close.textContent = "×";
+  close.setAttribute("aria-label", "Schließen");
+  close.addEventListener("click", () => dialog.close());
+  const warning = doc.createElement("p");
+  warning.textContent = `„${prefab.set} / ${prefab.name}“ dauerhaft aus der Bibliothek entfernen? Bereits platzierte Elemente bleiben auf der Karte und müssen bei Bedarf einzeln gelöscht werden.`;
+  const actions = doc.createElement("div");
+  actions.className = "dn-confirm-actions";
+  const cancel = doc.createElement("button");
+  cancel.type = "button";
+  cancel.textContent = "Abbrechen";
+  cancel.addEventListener("click", () => dialog.close());
+  const confirm = doc.createElement("button");
+  confirm.type = "button";
+  confirm.textContent = "Vergessen";
+  confirm.addEventListener("click", () => dialog.close("forget"));
+  actions.append(cancel, confirm);
+  dialog.append(title, close, warning, actions);
+  doc.body.append(dialog);
+  return new Promise((resolve) => {
+    let cancelled = false;
+    const abort = () => {
+      cancelled = true;
+      if (dialog.open) dialog.close();
+      dialog.remove();
+      resolve(false);
+    };
+    dialog.addEventListener("close", () => {
+      signal.removeEventListener("abort", abort);
+      resolve(!cancelled && dialog.returnValue === "forget");
+      dialog.remove();
+    }, { once: true });
+    signal.addEventListener("abort", abort, { once: true });
+    try {
+      dialog.showModal();
+    } catch (error) {
+      signal.removeEventListener("abort", abort);
+      dialog.remove();
+      throw error;
+    }
+  });
 }
 interface CreationAssets {
   readonly assetPacks: readonly string[];
@@ -704,12 +726,17 @@ export default class DungeonPlugin extends Plugin {
       return { ...current, prefabs: [...current.prefabs, prefab] };
     });
   }
-  async forgetPrefab(prefab: Prefab): Promise<boolean> {
+  async forgetPrefab(
+    prefab: Prefab,
+    doc: Document,
+    signal: AbortSignal,
+  ): Promise<boolean> {
     if (!this.pluginData.prefabs.some((existing) => existing.id === prefab.id))
       return false;
-    if (!(await new PrefabForgetModal(this.app, prefab).request())) return false;
+    if (!(await requestPrefabForget(doc, prefab, signal)) || signal.aborted)
+      return false;
     return this.changePluginData((current) =>
-      current.prefabs.some((existing) => existing.id === prefab.id)
+      !signal.aborted && current.prefabs.some((existing) => existing.id === prefab.id)
         ? { ...current,
             prefabs: withoutPrefabDefinition(current.prefabs, prefab.id) }
         : null,
@@ -1407,7 +1434,8 @@ class DungeonView extends FileView {
           persistToolDefaults: () => this.plugin.persistToolDefaults(),
           prefabs: () => this.plugin.prefabs(),
           savePrefab: (prefab) => this.plugin.savePrefab(prefab),
-          forgetPrefab: (prefab) => this.plugin.forgetPrefab(prefab),
+          forgetPrefab: (prefab, doc, signal) =>
+            this.plugin.forgetPrefab(prefab, doc, signal),
           requestPrefabDetails: () => new PrefabNameModal(
             this.app, this.plugin.prefabs().map((prefab) => prefab.set),
           ).request(),

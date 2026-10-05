@@ -146,7 +146,7 @@ export interface EditorHost {
   persistToolDefaults?: () => void;
   prefabs?: () => readonly Prefab[];
   savePrefab?: (prefab: Prefab) => Promise<void>;
-  forgetPrefab?: (prefab: Prefab) => Promise<boolean>;
+  forgetPrefab?: (prefab: Prefab, doc: Document, signal: AbortSignal) => Promise<boolean>;
   requestPrefabDetails?: () => Promise<{ set: string; name: string } | null>;
   exitEditor?: () => void;
 }
@@ -287,6 +287,7 @@ export class DungeonEditor {
   private makePrefabButton: HTMLButtonElement;
   private separatePrefabButton: HTMLButtonElement;
   private forgetPrefabButton: HTMLButtonElement;
+  private forgettingPrefab = false;
   private prefabChoice: HTMLSelectElement;
   private prefabPanel: HTMLDetailsElement;
   private space = false;
@@ -514,7 +515,8 @@ export class DungeonEditor {
     this.prefabChoice = element("select", "dn-floor", prefabControls);
     this.prefabChoice.setAttribute("aria-label", "Vorlage");
     this.prefabChoice.addEventListener("change", () => {
-      this.forgetPrefabButton.disabled = !this.prefabChoice.value;
+      this.forgetPrefabButton.disabled = this.forgettingPrefab ||
+        !this.prefabChoice.value || !this.host.forgetPrefab;
     });
     this.forgetPrefabButton = this.button(
       "Vorlage vergessen",
@@ -1102,17 +1104,25 @@ export class DungeonEditor {
     }
     this.prefabChoice.value = [...this.prefabChoice.options]
       .some((option) => option.value === previous) ? previous : "";
-    this.forgetPrefabButton.disabled = !this.prefabChoice.value || !this.host.forgetPrefab;
+    this.forgetPrefabButton.disabled = this.forgettingPrefab ||
+      !this.prefabChoice.value || !this.host.forgetPrefab;
   }
   private async forgetPrefab(): Promise<void> {
     const prefab = this.host.prefabs?.().find((item) => item.id === this.prefabChoice.value);
-    if (!prefab || !this.host.forgetPrefab) return;
+    if (!prefab || !this.host.forgetPrefab || this.forgettingPrefab) return;
+    this.forgettingPrefab = true;
+    this.forgetPrefabButton.disabled = true;
     try {
-      if (!(await this.host.forgetPrefab(prefab)) || this.closed) return;
+      if (!(await this.host.forgetPrefab(
+        prefab, this.root.ownerDocument, this.abort.signal,
+      )) || this.closed) return;
       this.refreshPrefabs();
       this.renderer.cancelPreview();
     } catch (error) {
       this.host.notice(error instanceof Error ? error.message : String(error));
+    } finally {
+      this.forgettingPrefab = false;
+      if (!this.closed) this.refreshPrefabs();
     }
   }
   private async makePrefab(): Promise<void> {

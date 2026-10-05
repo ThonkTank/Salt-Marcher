@@ -514,7 +514,7 @@
       "DD-042.19"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "release_prefab_passed_pending_install",
+    "hostStatus": "prefab_dialog_release_passed_pending_install",
     "releaseBuild": "a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
     "openOriginalGap": "DD-020.14 Outline: Original-Neustart brach zweimal am Ladebildschirm ab; Produktänderung aus Release entfernt.",
     "installedBuild": "a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
@@ -523,7 +523,7 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
     ],
-    "next": "Prefab Forget nach Sicherung als einzelnes Paket installieren und am installierten Endstand prüfen.",
-    "prefabReleaseBuild": "d9b3095ec27b594ac77eedda53186d0b51cef60b1329307c1b5b2a3cd679367d"
+    "next": "DD-042.19 mit Dialog im Kartenfenster nach Sicherung installieren und am installierten Build prüfen.",
+    "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85"
   }
 }
