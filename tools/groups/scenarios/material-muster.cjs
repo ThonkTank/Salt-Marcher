@@ -16,6 +16,9 @@ const patterns = (state) => state?.document.entities.filter((entity) =>
 
 module.exports = async function materialMuster({ page, out, qa, vault, restart,
   group, record }) {
+  if (process.env.DUNGEON_QA_DD020_COLORS === "1")
+    return require("./material-muster-colors.cjs")({ page, out, qa, vault,
+      restart, group, record });
   assert.equal(group.id, "material-muster");
   const results = new Map();
   const steps = { groupId: group.id, phase: restart ? "reopen" : "edit",
