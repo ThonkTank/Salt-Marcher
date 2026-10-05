@@ -113,18 +113,38 @@ async function edit({ page, qa, vault, out }) {
   await page.screenshot({ path: selectionImage });
 
   await page.getByRole("button", { name: "Vorlage erstellen", exact: true }).last().click();
-  const modal = page.locator(".modal-container:visible").last();
+  let modal = page.locator(".modal-container:visible").last();
   await modal.getByText("Vorlage erstellen", { exact: true }).waitFor();
+  fs.writeFileSync(path.join(out, "mixed-make-dialog.html"),
+    await modal.evaluate((element) => element.outerHTML));
   const dialog = { text: await modal.innerText(),
     set: await modal.locator('select:not([aria-hidden="true"])').inputValue(),
     inputs: await modal.locator("input").count(),
     accept: await modal.getByRole("button", { name: "Erstellen", exact: true }).count(),
     cancel: await modal.getByRole("button", { name: "Abbrechen", exact: true }).count(),
-    close: await modal.locator(".modal-close-button").count() };
+    close: await modal.locator(".modal-header-button").count() };
   const dialogImage = path.join(out, "mixed-make-dialog.png");
   await modal.screenshot({ path: dialogImage });
   assert(dialog.inputs >= 1 && dialog.accept === 1,
     "Sammlung, Name und Bestätigung müssen im Dialog sichtbar sein.");
+  assert.equal(dialog.close, 1, "Der sichtbare X-Abbruch fehlt.");
+  const beforeCancelCatalog = await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").prefabs());
+  const beforeCancelMap = hash(path.join(vault, mapPath));
+  await modal.locator(".modal-header-button").click();
+  await modal.waitFor({ state: "detached" });
+  const afterCancel = await editor(page, mapPath);
+  assert.deepEqual(afterCancel, before,
+    "X-Abbruch änderte Auswahl, Karte oder History.");
+  assert.deepEqual(await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").prefabs()), beforeCancelCatalog,
+  "X-Abbruch änderte den Vorlagenkatalog.");
+  assert.equal(hash(path.join(vault, mapPath)), beforeCancelMap,
+    "X-Abbruch änderte die gespeicherte Karte.");
+  dialog.xCanceledWithoutChange = true;
+  await page.getByRole("button", { name: "Vorlage erstellen", exact: true }).last().click();
+  modal = page.locator(".modal-container:visible").last();
+  await modal.getByText("Vorlage erstellen", { exact: true }).waitFor();
   await modal.locator('select:not([aria-hidden="true"])').selectOption(set);
   await modal.locator("input").fill(name);
   await modal.getByRole("button", { name: "Erstellen", exact: true }).click();
