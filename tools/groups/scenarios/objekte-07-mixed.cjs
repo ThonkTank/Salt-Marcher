@@ -174,6 +174,13 @@ async function edit({ page, qa, vault, out }) {
     .find((leaf) => leaf.view.file?.path === mapPath)?.view.editor?.session.dirty,
   mapPath);
   await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").pluginDataWrites);
+  const draftFile = path.join(vault, `${mapPath}.draft`);
+  const cleanupDeadline = Date.now() + 12000;
+  while (fs.existsSync(draftFile)) {
+    assert(Date.now() < cleanupDeadline,
+      "Der Kartenentwurf wurde nach Save nicht abgeschlossen.");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
   const mapFile = path.join(vault, mapPath), dataFile = path.join(vault, dataPath);
   const evidence = path.join(out, "mixed-prefab-edit.json");
   const saved = { mapPath, set, name, objectId, lightId, prefab,
