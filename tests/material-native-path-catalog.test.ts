@@ -90,6 +90,7 @@ test("DD-021.15 native path catalog maps source names and returns a WebP slice",
     "res://textures/paths/battlements.png",
   );
   assert.deepEqual([battlements.width, battlements.height], [1024, 69]);
+  assert.deepEqual(battlements.asset.pathTexturePixels, { width: 1024, height: 69 });
   assert.match(battlements.asset.id, /^pack:/);
   const image = catalog.image(battlements.asset.id);
   assert.equal(image?.type, "image/webp");

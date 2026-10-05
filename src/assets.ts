@@ -53,6 +53,7 @@ export interface AssetDefinition {
   readonly tintable?: boolean;
   readonly colorableSettings?: ColorableObjectSettings;
   readonly color?: string;
+  readonly pathTexturePixels?: { readonly width: number; readonly height: number };
 }
 
 const decoder = new TextDecoder("utf-8", { fatal: true });

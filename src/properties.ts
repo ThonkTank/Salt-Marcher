@@ -866,6 +866,12 @@ export class Properties {
     }
     if (e?.kind === "path" || tool === "path") {
       const path = e?.kind === "path" ? e : this.defaults.path;
+      const pathAssetId = e?.kind === "path"
+        ? e.material?.assetId : this.defaults.material?.assetId;
+      const pathTexture = this.assets().find((asset) => asset.id === pathAssetId)
+        ?.pathTexturePixels;
+      const nativeWidthUnit = pathTexture?.height
+        ? pathTexture.height / 256 : undefined;
       const update = (patch: Partial<MapPath>) => {
         this.defaults.path = { ...this.defaults.path, ...patch };
         if (e?.kind === "path") this.change(e, patch);
@@ -889,10 +895,25 @@ export class Properties {
         update({ closed: i.checked }),
       );
       this.field(
-        "Pfadbreite in Feldern",
+        nativeWidthUnit ? "Pfadbreite (Originalfaktor)" : "Pfadbreite in Feldern",
         "number",
-        String(path.width),
-        (i) => update({ width: i.valueAsNumber }),
+        String(nativeWidthUnit ? path.width / nativeWidthUnit : path.width),
+        (i) => {
+          if (!nativeWidthUnit || !pathTexture) {
+            update({ width: i.valueAsNumber });
+            return;
+          }
+          const currentMaterial = e?.kind === "path"
+            ? e.material : this.defaults.material;
+          if (!currentMaterial) throw new Error("Pfadmaterial fehlt.");
+          const nextMaterial = {
+            ...currentMaterial,
+            tileSize: pathTexture.width / 256 * i.valueAsNumber,
+          };
+          this.defaults.material = nextMaterial;
+          update({ width: nativeWidthUnit * i.valueAsNumber,
+            material: nextMaterial });
+        },
         ".1",
         undefined,
         ".1",
@@ -1061,6 +1082,16 @@ export class Properties {
         const asset = packageMaterials.find(
             (candidate) => candidate.id === value,
           ),
+          nativePath = asset?.kind === "path" ? asset.pathTexturePixels : undefined,
+          previousPath = material?.assetId
+            ? packageMaterials.find((candidate) => candidate.id === material.assetId)
+              ?.pathTexturePixels
+            : undefined,
+          currentPathWidth = e?.kind === "path" ? e.width : this.defaults.path.width,
+          widthFactor = previousPath
+            ? currentPathWidth / (previousPath.height / 256) : 1,
+          pathWidth = nativePath
+            ? (nativePath.height / 256) * widthFactor : undefined,
           next: Material | undefined = asset
             ? {
                 assetId: asset.id,
@@ -1072,18 +1103,19 @@ export class Properties {
                       : asset.kind === "material"
                         ? "tile"
                         : "image",
-                tileSize: material?.tileSize ?? 4,
+                tileSize: nativePath
+                  ? nativePath.width / 256 * widthFactor : material?.tileSize ?? 4,
                 tint: material?.tint ?? 0xffffff,
                 rotation: material?.rotation ?? 0,
               }
             : undefined;
-        if (
-          e?.kind === "building" ||
-          e?.kind === "surface" ||
-          e?.kind === "path" ||
-          e?.kind === "roof"
-        )
+        if (e?.kind === "path")
+          this.change(e, { material: next, ...(pathWidth && { width: pathWidth }) });
+        else if (e?.kind === "building" || e?.kind === "surface" ||
+          e?.kind === "roof")
           this.change(e, { material: next });
+        if (pathWidth && !e)
+          this.defaults.path = { ...this.defaults.path, width: pathWidth };
         this.defaults.material = next;
         if (!e) this.render(tool, selected, floorId);
       };

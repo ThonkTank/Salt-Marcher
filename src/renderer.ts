@@ -8,6 +8,8 @@ import {
   Texture,
   FillGradient,
   Sprite,
+  Mesh,
+  MeshGeometry,
 } from "pixi.js";
 import {
   type Entity,
@@ -41,6 +43,7 @@ import {
 import { TexturePool } from "./textures";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
+import { buildPathTextureBand } from "./features/material/path-texture-band";
 import { ComputeClient } from "./worker-client";
 import {
   compactObjectVisible,
@@ -61,6 +64,8 @@ interface Visual {
   gradient?: FillGradient;
   request?: number;
   shadow?: Graphics;
+  pathMesh?: Mesh;
+  pathGeometry?: MeshGeometry;
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -317,6 +322,7 @@ export class MapRenderer {
     if (v) {
       v.shadow?.destroy();
       v.container.destroy({ children: true });
+      v.pathGeometry?.destroy();
       v.label?.destroy();
       v.gradient?.destroy();
       for (const asset of v.assets ?? []) this.textures.release(asset);
@@ -898,6 +904,10 @@ export class MapRenderer {
   private drawPath(v: Visual, g: Graphics, texture?: Texture): void {
     const e = v.entity;
     if (e.kind !== "path") return;
+    v.pathMesh?.destroy();
+    v.pathGeometry?.destroy();
+    v.pathMesh = undefined;
+    v.pathGeometry = undefined;
     g.clear();
     const points = pathPoints(e);
     if (points.length < 2) return;
@@ -920,6 +930,32 @@ export class MapRenderer {
         )
           .fill(e.color)
           .stroke({ color: e.outlineColor, width: e.outlineWidth });
+      return;
+    }
+    if (texture && e.style === "road" && e.material) {
+      try {
+        const band = buildPathTextureBand({
+          points,
+          width: e.width,
+          textureWidth: texture.width,
+          textureHeight: texture.height,
+          closed: e.closed,
+          repeatLength: e.material.tileSize,
+        });
+        const geometry = new MeshGeometry({
+          positions: new Float32Array(band.positions),
+          uvs: new Float32Array(band.uvs),
+          indices: new Uint32Array(band.indices),
+        });
+        const mesh = new Mesh({ geometry, texture });
+        mesh.tint = e.material.tint;
+        v.container.addChild(mesh);
+        v.pathMesh = mesh;
+        v.pathGeometry = geometry;
+      } catch {
+        line(g);
+        g.stroke({ texture, color: 0xffffff, width: e.width, join: "round" });
+      }
       return;
     }
     line(g);

@@ -182,6 +182,7 @@ export async function readNativePathCatalog(
         kind: "path",
         name,
         files: { image: sourcePath },
+        pathTexturePixels: { width, height },
       },
       sourcePath,
       width,

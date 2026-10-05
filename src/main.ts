@@ -228,6 +228,18 @@ async function fileSha256(path: string): Promise<string> {
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest("hex");
 }
+function selectedLocalFilePath(file: File): string | undefined {
+  const legacy = (file as File & { path?: string }).path;
+  if (legacy) return legacy;
+  try {
+    const electron = require("electron") as {
+      webUtils?: { getPathForFile(file: File): string };
+    };
+    return electron.webUtils?.getPathForFile(file) || undefined;
+  } catch {
+    return undefined;
+  }
+}
 class PrefabNameModal extends Modal {
   private answer?: (value: { set: string; name: string } | null) => void;
   constructor(app: App, private readonly existingSets: readonly string[]) {
@@ -2734,15 +2746,15 @@ class AssetPackagesModal extends Modal {
           cls: "dn-hidden-input",
         });
         nativeInput.addEventListener("change", () => {
-          const selected = nativeInput.files?.[0] as
-            | (File & { path?: string }) | undefined;
+          const selected = nativeInput.files?.[0];
           nativeInput.value = "";
           if (!selected) return;
-          if (!selected.path) {
+          const sourcePath = selectedLocalFilePath(selected);
+          if (!sourcePath) {
             new Notice("Der Dateipfad konnte nicht gelesen werden.");
             return;
           }
-          void this.nativeArchive!.choose(selected.path)
+          void this.nativeArchive!.choose(sourcePath)
             .then(() => {
               new Notice("Dungeondraft-Pfadassets geladen.");
               return this.render();
