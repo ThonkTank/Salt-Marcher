@@ -145,6 +145,10 @@ async function addUnselectedReference(page, mapPath) {
 
 module.exports = async function mapInformationGroup({ page, out, qa, vault, restart, group, record }) {
   assert.equal(group.id, "verwaltung-karte-datei");
+  if (process.env.DUNGEON_QA_ONLY_DD00104 === "1")
+    return require("./dd00104-first-save.cjs")({
+      page, out, qa, vault, restart, group, record,
+    });
   if (process.env.DUNGEON_QA_ONLY_DD001002 === "1")
     return require("./dd001002-map-start.cjs")({
       page, out, qa, vault, restart, group, record,
