@@ -354,6 +354,18 @@ export default class DungeonPlugin extends Plugin {
     toolDefaults: toolSettings(),
     prefabs: [],
   };
+  private pluginDataWrites: Promise<void> = Promise.resolve();
+  private changePluginData(change: (current: PluginData) => PluginData | null): Promise<boolean> {
+    const operation = this.pluginDataWrites.then(async () => {
+      const next = change(this.pluginData);
+      if (!next) return false;
+      await this.saveData(next);
+      this.pluginData = next;
+      return true;
+    });
+    this.pluginDataWrites = operation.then(() => {}, () => {});
+    return operation;
+  }
   async onload(): Promise<void> {
     const loaded = await this.loadData();
     if (loaded && Array.isArray(loaded.sizePresets)) {
@@ -662,23 +674,20 @@ export default class DungeonPlugin extends Plugin {
     if (!name)
       throw new Error("Bitte einen Namen für die Größenvorlage eingeben.");
     newDocument("Größenvorlage", width, height);
-    const presets = this.pluginData.sizePresets.filter(
-      (preset) => preset.name.toLocaleLowerCase() !== name.toLocaleLowerCase(),
-    );
-    this.pluginData = {
-      ...this.pluginData,
-      sizePresets: [...presets, { name, width, height }],
-    };
-    await this.saveData(this.pluginData);
+    await this.changePluginData((current) => ({
+      ...current,
+      sizePresets: [
+        ...current.sizePresets.filter((preset) =>
+          preset.name.toLocaleLowerCase() !== name.toLocaleLowerCase()),
+        { name, width, height },
+      ],
+    }));
   }
   async removeSizePreset(name: string): Promise<void> {
-    this.pluginData = {
-      ...this.pluginData,
-      sizePresets: this.pluginData.sizePresets.filter(
-        (preset) => preset.name !== name,
-      ),
-    };
-    await this.saveData(this.pluginData);
+    await this.changePluginData((current) => ({
+      ...current,
+      sizePresets: current.sizePresets.filter((preset) => preset.name !== name),
+    }));
   }
   toolDefaults(): ToolSettings {
     return this.pluginData.toolDefaults;
@@ -687,28 +696,27 @@ export default class DungeonPlugin extends Plugin {
     return this.pluginData.prefabs;
   }
   async savePrefab(prefab: Prefab): Promise<void> {
-    if (this.pluginData.prefabs.some((existing) =>
-      existing.set.toLocaleLowerCase() === prefab.set.toLocaleLowerCase() &&
-      existing.name.toLocaleLowerCase() === prefab.name.toLocaleLowerCase()))
-      throw new Error("In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen.");
-    const next = { ...this.pluginData, prefabs: [...this.pluginData.prefabs, prefab] };
-    await this.saveData(next);
-    this.pluginData = next;
+    await this.changePluginData((current) => {
+      if (current.prefabs.some((existing) =>
+        existing.set.toLocaleLowerCase() === prefab.set.toLocaleLowerCase() &&
+        existing.name.toLocaleLowerCase() === prefab.name.toLocaleLowerCase()))
+        throw new Error("In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen.");
+      return { ...current, prefabs: [...current.prefabs, prefab] };
+    });
   }
   async forgetPrefab(prefab: Prefab): Promise<boolean> {
     if (!this.pluginData.prefabs.some((existing) => existing.id === prefab.id))
       return false;
     if (!(await new PrefabForgetModal(this.app, prefab).request())) return false;
-    const next = {
-      ...this.pluginData,
-      prefabs: withoutPrefabDefinition(this.pluginData.prefabs, prefab.id),
-    };
-    await this.saveData(next);
-    this.pluginData = next;
-    return true;
+    return this.changePluginData((current) =>
+      current.prefabs.some((existing) => existing.id === prefab.id)
+        ? { ...current,
+            prefabs: withoutPrefabDefinition(current.prefabs, prefab.id) }
+        : null,
+    );
   }
   persistToolDefaults(): void {
-    void this.saveData(this.pluginData).catch((error) =>
+    void this.changePluginData((current) => ({ ...current })).catch((error) =>
       console.error("Werkzeugvorgaben speichern", error),
     );
   }

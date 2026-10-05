@@ -24441,15 +24441,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "host_verified_pending_install",
+          "changes": [
+            "src/features/objekte/prefab-forget.ts",
+            "src/editor.ts",
+            "src/main.ts"
+          ],
+          "evidence": [
+            "tests/prefab-forget.test.mjs",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-prefab-forget/evidence/1791179165674-prefab-forget-edit/result.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "isolated_pass_pending_installed_endstand",
+          "build": "main.js SHA-256 8e9cbe29029cb332abf4e28acf8ee2c119bdbb2cbf508ef85d0fec5f455d2cea",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-prefab-forget/evidence/1791179165674-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-prefab-forget/evidence/1791179173542-prefab-forget-reopen/result.json"
+          ],
+          "gap": "Bestätigtes Forget entfernt nur die Definition und erhält platzierte Objekt-Licht-Instanzen bytegenau; paralleles Speichern von Werkzeugvorgaben und frisches Hostöffnen bestanden. Endstands-Installation offen. Original-Undo und Original-Frischstart sind getrennte offene Unterfälle."
         }
       },
       {

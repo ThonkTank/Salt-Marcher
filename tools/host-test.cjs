@@ -2752,6 +2752,7 @@ async function prefabForgetWorkflow(view) {
             shadows: false },
         ],
       });
+      window.__qaPrefabForForget = plugin.prefabs()[0];
       app.workspace.getLeavesOfType("dungeon-native-map")[0]
         .view.editor.refreshPrefabs();
     }, prefabId);
@@ -2795,6 +2796,44 @@ async function prefabForgetWorkflow(view) {
     assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
     await page.screenshot({ path: out + "/prefab-forgotten.png" });
     checks.push("Confirmed Forget durably removes only the definition and leaves the saved object-light pair byte-exact");
+    await page.evaluate(async () => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.savePrefab(window.__qaPrefabForForget);
+      app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.refreshPrefabs();
+      const original = plugin.saveData.bind(plugin);
+      let release;
+      const blocked = new Promise((resolve) => { release = resolve; });
+      let entered;
+      const started = new Promise((resolve) => { entered = resolve; });
+      let held = false;
+      plugin.saveData = async (data) => {
+        if (!held && data.prefabs.length === 0) {
+          held = true;
+          entered();
+          await blocked;
+        }
+        return original(data);
+      };
+      window.__qaForgetRace = { plugin, original, started, release };
+    });
+    await page.getByRole("combobox", { name: "Vorlage", exact: true })
+      .selectOption(prefabId);
+    await forget.click();
+    await dialog.getByRole("button", { name: "Vergessen", exact: true }).click();
+    await page.evaluate(() => window.__qaForgetRace.started);
+    await page.evaluate(async () => {
+      const race = window.__qaForgetRace;
+      race.plugin.persistToolDefaults();
+      race.release();
+      await race.plugin.pluginDataWrites;
+      race.plugin.saveData = race.original;
+      delete window.__qaForgetRace;
+    });
+    assert.equal((await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").prefabs())).length, 0);
+    assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
+    assert.equal(fs.readFileSync(vault + "/" + mapPath, "utf8"), before);
+    checks.push("Concurrent tool-default persistence cannot restore a confirmed forgotten prefab");
     return;
   }
   await page.evaluate(async (path) =>
