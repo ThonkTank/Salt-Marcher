@@ -1445,6 +1445,9 @@ export class DungeonEditor {
       ? { x: Math.round(p.x), y: Math.round(p.y) }
       : { x: p.x, y: p.y };
   }
+  private snapDelta(value: number): number {
+    return this.snapEnabled ? Math.round(value) : value;
+  }
   private isBrushTool(tool: Tool): boolean {
     return (
       tool === "cave" ||
@@ -1895,8 +1898,8 @@ export class DungeonEditor {
         g.tool === "room" && g.erase,
       );
     else if (g.tool === "select" && g.entity && !g.entity.locked) {
-      const dx = Math.round(point.x - g.start.x),
-        dy = Math.round(point.y - g.start.y);
+      const dx = this.snapDelta(point.x - g.start.x),
+        dy = this.snapDelta(point.y - g.start.y);
       if (g.entity.kind === "roof" && g.ridge !== undefined) {
         const ridge = g.entity.ridge.map((p, index) =>
           index === g.ridge ? { x: p.x + dx, y: p.y + dy } : p,
@@ -2280,8 +2283,8 @@ export class DungeonEditor {
     } else if (g.tool === "door") void this.placeDoor(point);
     else if (g.tool === "select" && g.entity && g.moved && !g.entity.locked) {
       const original = g.entity,
-        dx = Math.round(point.x - g.start.x),
-        dy = Math.round(point.y - g.start.y);
+        dx = this.snapDelta(point.x - g.start.x),
+        dy = this.snapDelta(point.y - g.start.y);
       if (!dx && !dy) return;
       if (
         this.selection.size > 1 &&
