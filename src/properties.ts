@@ -26,8 +26,10 @@ import { mountLightColorPalette } from "./features/objekte/light-color-palette";
 import {
   mountObjectColorPicker,
   type MountedObjectColorPicker,
+  type ObjectColorPickerHooks,
 } from "./features/objekte/rgba-picker";
 import { type BuildingWallChoice } from "./features/bau/building-wall-choice";
+import { mountScatterColorPicker } from "./features/objekte/scatter-picker-dismiss";
 import {
   createObjectLibraryTilePreview,
   type ObjectLibraryTilePreview,
@@ -1567,11 +1569,7 @@ export class Properties {
             currentColor.alpha ?? 255,
           );
         pickerButton.disabled = true;
-        mountObjectColorPicker(
-          this.root,
-          currentColor.color,
-          currentColor.alpha ?? 255,
-          {
+        const hooks: ObjectColorPickerHooks = {
             onPreview: (color, alpha) => {
               if (selectedId) this.previewObjectColor(selectedId, color, alpha);
               else this.previewObjectLibraryColor(color, alpha);
@@ -1585,8 +1583,15 @@ export class Properties {
               if (selectedId) this.clearObjectColorPreview(selectedId);
               pickerButton.disabled = false;
             },
-          },
-        );
+          };
+        this.objectPicker = tool === "scatter" && !selectedId
+          ? mountScatterColorPicker(
+              this.root, pickerButton, currentColor.color,
+              currentColor.alpha ?? 255, hooks,
+            )
+          : mountObjectColorPicker(
+              this.root, currentColor.color, currentColor.alpha ?? 255, hooks,
+            );
       });
       this.root.append(pickerButton);
       this.field(
