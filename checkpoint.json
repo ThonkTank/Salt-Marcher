@@ -524,13 +524,21 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
     ],
-    "next": "DD-028.06: gemeinsamen RGBA/Hex-Picker mit Vorschau, Annehmen/Abbrechen und Änderungs-Undo im Original messen und angleichen; übrige Pflichtfälle weiter paketweise prüfen.",
+    "next": "DD-028.06: gemeinsamen RGBA/Hex-Picker mit Livevorschau, Accept/Escape und Änderungs-Undo im Original gemessen; Host angleichen. DD-039-Kaltstart-Lücke getrennt klären. Übrige Pflichtfälle paketweise prüfen.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-020.13",
       "DD-042.19",
       "DD-028.11",
       "DD-028.12"
+    ],
+    "deferredPackages": [
+      {
+        "cases": "DD-039.01–.06",
+        "branch": "candidate/dd039-map-info",
+        "reason": "Erster Modalaufruf in frischen isolierten Obsidian-Profilen ohne Dialog; installierter Kandidat zurückgenommen.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+      }
     ]
   }
 }

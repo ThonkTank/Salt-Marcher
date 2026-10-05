@@ -19265,7 +19265,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-color-picker.png",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd028-rgba-20261005/DD-028.06-ORIGINAL.md"
           ]
         },
         "target": "8-Bit-Alpha speichern und rendern.",
@@ -19323,7 +19324,7 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ],
-          "gap": "Gemeinsamer RGBA/Hex-Picker mit Livevorschau, Annehmen/Abbrechen und Undo einer Alpha-Änderung am bestehenden Objekt im Original und Host nicht belegt."
+          "gap": "Gemeinsamer RGBA/Hex-Picker mit synchronen Feldern, Livevorschau, Accept/Escape und Undo/Redo der nachträglichen Alpha-Änderung fehlt im Editor; Originalverhalten ist jetzt direkt belegt."
         }
       },
       {
@@ -26554,7 +26555,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Show Map Info öffnet einen lesenden Dialog mit Kartengröße, Dateipfad und Paketliste.",
@@ -26584,15 +26586,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
@@ -35715,7 +35731,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung offen: „Map Size“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
@@ -35745,15 +35762,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
@@ -35769,7 +35800,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung offen: „Filename“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
@@ -35799,15 +35831,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
@@ -35823,7 +35869,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung offen: „Custom asset packs used“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
@@ -35853,15 +35900,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
@@ -35877,7 +35938,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung offen: „Close“ schließt die lesende Map Information ohne Änderung an Kartengröße, Dateipfad oder Paketen.",
@@ -35907,15 +35969,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
@@ -40853,7 +40929,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung offen: „X / Schließen“ schließt die lesende Map Information ohne Änderung an Kartengröße, Dateipfad oder Paketen.",
@@ -40883,15 +40960,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_uninstalled",
+          "changes": [
+            "candidate/dd039-map-info:src/editor.ts",
+            "candidate/dd039-map-info:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-final-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "candidate main.js SHA-256 5a31edde17ad0eb1a58848f90f0711edd473ea51ad7f6d6fdb363f13bcf9547d; installed main.js remains SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186841898-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information/evidence/1791186855366-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-map-information-cold/evidence/1791186891243-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-click-diagnostic/evidence/1791187088922-map-info-edit/map-info-click-debug.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+          ],
+          "gap": "In frisch angelegtem Obsidian-QA-Profil führt der erste Modalaufruf trotz Callback weder bei Karteninformation noch bei bestehenden Karteneinstellungen zu einem Dialog. Ursache offen; Kandidat zurückgenommen, installierter Endstand unverändert."
         }
       },
       {
