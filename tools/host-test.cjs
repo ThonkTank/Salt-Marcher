@@ -10,6 +10,7 @@ const {
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { PNG } = require("pngjs");
 const { prepareLarge } = require("./large-fixture.cjs");
+const dd041HostNavigation = require("./dd041-host-navigation.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
@@ -23,10 +24,11 @@ const restart = process.argv.includes("--restart"),
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
   pathLibrary = process.argv.includes("--path-library"),
+  dd041Navigation = process.argv.includes("--dd041-navigation"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -485,6 +487,14 @@ async function workflow() {
   }
   if (pathLibrary) {
     await pathLibraryWorkflow(view);
+    return;
+  }
+  if (dd041Navigation) {
+    assert(!restart, "DD-041 uses a fresh isolated map in one host run");
+    const result = await dd041HostNavigation({ page, view, out });
+    checks.push(...result.records.map((entry) =>
+      `${entry.caseId} ${entry.name}: ${entry.passed ? "pass" : "deviation"}`));
+    assert(result.passed, `DD-041 deviations: ${result.failures.join(", ")}`);
     return;
   }
   if (compactSmoke) {
