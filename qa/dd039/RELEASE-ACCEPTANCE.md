@@ -1,0 +1,16 @@
+# DD-039.01–.06: Abnahme des installierten Karteninformationsdialogs
+
+**Stand:** 05.10.2026. Dungeondraft 1.2.0.1, Originalbelege aus `audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md` und [NATIVE-GAP-REPORT.md](NATIVE-GAP-REPORT.md). Installiertes Plugin `main.js` SHA-256 `02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408`.
+
+Der isolierte Releasezweig enthält gegenüber dem zuvor installierten Stand nur die DD-039-Produktänderung in `src/editor.ts` und `src/main.ts`. Typprüfung, 108 Kerntests und Build bestanden. Auf dem **installierten Binärstand** bestanden sechs DD-039-Fälle in [Bearbeitung](../../../qa/dd039-installed-host/evidence/1791211380037-verwaltung-karte-datei-edit/group-cases.json) und [frischem Obsidian-Prozess](../../../qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/group-cases.json), je ohne Fehlschlag oder Abweichung. Beide produktiven V2-Karten öffneten, speicherten auf isolierten Kopien verlustfrei als V3 und öffneten erneut. Nach Installation waren alle 185 geschützten Vault-Dateien einschließlich der beiden Originalkarten bytegleich mit der neuen Ausgangsliste `qa/protected-vault-baseline-after-dd039-install.json`.
+
+| Fall | Gleichwertig belegte Wirkung | Grenze |
+| --- | --- | --- |
+| DD-039.01 | Karteninformation öffnet als lesender Dialog. Direkte Eingabe änderte im Original Größe und Pfad nicht; im Host gibt es dafür keine Eingabefelder. | Paketliste im Original nicht separat auf Texteingabe versucht; sichtbar keine Bearbeitungsschaltfläche. |
+| DD-039.02 | Aktuelle Kartengröße wird für zwei Kartengrößen korrekt angezeigt und bleibt nach frischem Öffnen richtig. | Bei offenem Originaldialog war die Größenänderung über das Menü nicht erreichbar. Externe Änderungen sind kein geprüfter Unterfall. |
+| DD-039.03 | Vollständiger aktueller Dateipfad wird für zwei Karten angezeigt und bleibt nach frischem Öffnen richtig. | Bei offenem Originaldialog war Save As über die geprüften Wege nicht erreichbar; externe Umbenennung ungeprüft. |
+| DD-039.04 | Nur ausgewählte Pakete werden mit Name/Autor aufgeführt. Eine verbliebene Texturreferenz ohne Paketauswahl führt beidseitig nicht zur Behauptung, das Paket sei ausgewählt. | Bei leerem Manifest zeigt das Original eine nummerierte, textleere Zeile; der Host zeigt „keine“. Das ist eine zugelassene Oberflächendifferenz, keine andere Paketaussage. Unbekannte Paket-IDs sind nicht geprüft. |
+| DD-039.05 | Schließen beendet den Dialog ohne Kartendatei- oder History-Verlust. Ein vorher erreichbarer Objekt-Undo-Schritt blieb im Original ausführbar; im Host bleiben Dokument, History, Entwurfsnotizen und Dateien unverändert. | Andere History-Arten wurden im Original nicht eigens wiederholt. |
+| DD-039.06 | X beendet den Dialog mit derselben dokumentierten Wirkung; vorheriger Objekt-Undo bleibt erreichbar. | Andere History-Arten wurden im Original nicht eigens wiederholt. |
+
+Die sechs Fälle gelten für die beschriebenen Bedienfolgen am installierten Endstand als **gleichwertig belegt**. Die genannten Varianten sind keine Behauptung über ungetestete Bedienfolgen. Der sichtbare Unterschied der leeren Paketliste liegt innerhalb des vereinbarten Ziels, bei dem Oberfläche und Pixel abweichen dürfen.
