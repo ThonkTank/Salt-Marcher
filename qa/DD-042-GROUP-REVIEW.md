@@ -8,6 +8,8 @@ Der isolierte Obsidian-Host lud `main.js` mit SHA-256 `13bc76dab1cc64a6c870cfe67
 - [Frischstart](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-host/evidence/1791214363307-objekte-07-reopen/group-cases.json): fünf Pass einschließlich .09, eine Abweichung .12, neun nur im Editlauf anwendbare Fälle, acht andere offen.
 - [Originalprobe](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-native/runs/20261005-173413-3323684): Dungeondraft 1.2.0.1, eigenes XDG-Profil ohne Mods, kopierte Karte und zuvor direkt erstellte Vorlage. Sie ergänzt gezielt .08, .22 und .23. Die beiden Originalprozesse und Xvnc sind beendet.
 
+Ein erster Host-Anlauf auf demselben Build erreichte nach Auswahl des Lichts keinen sichtbaren Make-Prefab-Dialog und endete am Wartezeitlimit ([Fehlerbild](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-host/evidence/1791214168820-objekte-07-edit/failure.png), [Zustand](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-host/evidence/1791214168820-objekte-07-edit/failure-state.json)). Der zweite Anlauf mit 200 ms Zustandsaufnahme nach dem Klick durchlief den Dialog und die gesamte Gruppe. Ob der erste Klick durch Fensterfokus, Host-Timing oder Produktlogik verloren ging, ist nicht belegt; die Wiederholbarkeit der Dialogöffnung bleibt eine gesonderte Zuverlässigkeitslücke.
+
 ## Einzelbewertung
 
 `pass` bezeichnet hier die **genannte** Bedien- und Datenwirkung auf dem installierten Build. Die vollständige DD-042-Gruppe bleibt wegen .12, .13 und der weiteren acht offenen Fälle unvollständig.
