@@ -1422,11 +1422,15 @@ export class Properties {
       pickerButton.setAttribute("aria-label", "Objektfarbe RGBA öffnen");
       pickerButton.addEventListener("click", () => {
         const selectedId = e?.kind === "object" ? e.id : undefined;
+        const selectedEntity = selectedId
+          ? this.session.entities.get(selectedId) : undefined;
+        const currentColor = selectedEntity?.kind === "object"
+          ? selectedEntity : this.defaults.object;
         pickerButton.disabled = true;
         mountObjectColorPicker(
           this.root,
-          object.color,
-          object.alpha ?? 255,
+          currentColor.color,
+          currentColor.alpha ?? 255,
           {
             onPreview: (color, alpha) => {
               if (selectedId) this.previewObjectColor(selectedId, color, alpha);
