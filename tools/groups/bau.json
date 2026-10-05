@@ -60,7 +60,9 @@
         ],
         "DD-011.07": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-commit.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-commit.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-redo.png"
         ],
         "DD-011.08": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
@@ -238,7 +240,8 @@
         "DD-015.01": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-ellipse-edit-points.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-building-ellipse.json"
         ],
         "DD-015.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
@@ -346,6 +349,8 @@
       },
       "originalGaps": {
         "DD-011.16": "Der Reset des Farbknopfs ist im Panel sichtbar; Wirkung auf bestehende und danach gezeichnete Flächen sowie Speicherung fehlt.",
+        "DD-011.17": "Building-Picker und Farbfläche sind sichtbar; ein direkt protokollierter Klick auf die Farbfläche mit Building-Farbwert vor/nach fehlt. Cave-Picker-Beleg ersetzt ihn nicht.",
+        "DD-011.18": "Der Hue-Streifen ist im Cave-Picker sichtbar; ein direkter Building-Picker-Hue-Wechsel mit Vorher-/Nachher-Wert fehlt.",
         "DD-011.19": "Kanalweise RGBA-Eingabe und insbesondere Alphawirkung sind im Original nicht direkt betätigt und gemessen.",
         "DD-011.20": "Die genaue Kanalzuordnung eines achtstelligen Hexwerts und die gespeicherte Alphawirkung sind offen.",
         "DD-011.22": "Das pipettenähnliche Symbol ist sichtbar, seine Betätigung und Wirkung fehlen.",
@@ -364,8 +369,6 @@
         "DD-016.16": "Farbreset im Panel ist sichtbar; Wirkung auf vorhandene Wände und neue gespeicherte Wände fehlt."
       },
       "originalEffects": {
-        "DD-011.17": "Ausgewählte Vorschau-/Randfarbe änderte sich sichtbar.",
-        "DD-011.18": "Hue-Wechsel im offenen Picker sichtbar.",
         "DD-011.21": "Picker schloss und die gewählte UI-Farbe blieb erhalten.",
         "DD-015.01": "QAWall01 wurde auf geschlossener Ellipsenwand gespeichert.",
         "DD-015.02": "Neues Bodenpolygon ohne sichtbaren Wandring; gespeicherte Polygonzahl 3→4, Wandzahl 3→3.",
@@ -412,7 +415,11 @@
         "DD-017.01": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/17-door-hover.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/18-door-placed.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/18-door-placed.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/19-door-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/20-door-redo.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/map/dd017-stage-b-anchored-door.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native-reopen/shots/01-fresh-reopen.png"
         ],
         "DD-017.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
@@ -520,8 +527,10 @@
         "DD-018.04": "Öffnungsklasse ist sichtbar; Wandunterbrechung und gespeicherte Wirkung eines konkret gewählten Motivs fehlen.",
         "DD-018.05": "Das rote X erzeugte frei ein Nulltextur-Portal; die verankerte Wirkung an einer Wand ist offen.",
         "DD-018.06": "Block-Light-Zustand wird gespeichert; tatsächliche Lichtausbreitung mit Schalter an/aus ist nicht verglichen.",
+        "DD-018.08": "Ein älteres Dossier beschreibt erhaltenen Freiwinkel nach Wechsel zu Anchored und zurück; eine reproduzierbare Schrittfolge mit Winkelwerten vor/nach fehlt.",
         "DD-018.09": "Rotate 180 ist sichtbar; ein kontrollierter Vorher-/Nachher-Bildfall mit gespeicherter Portalrichtung fehlt.",
         "DD-018.13": "Beide Übergänge über −180° und +180° sind gemessen; ob ein Radschritt exakt +180° als stabilen Endwert erzeugt, ist offen.",
+        "DD-018.14": "Ein älteres Dossier beschreibt keine Portaldrehung durch Rad im Anchored-Modus; ein protokolliertes negatives Radereignis mit Vorher-/Nachher-Wert fehlt.",
         "DD-018.16": "Überlappungs- und Ausschlussregel für zwei nahe Portale an kurzer Kante ist unbekannt."
       },
       "originalEffects": {
@@ -531,11 +540,9 @@
         "DD-018.01": "Gewählter Stil auf Portal gespeichert.",
         "DD-018.02": "QA Window als freies Paketportal gespeichert.",
         "DD-018.07": "Freies Paketportal mit Position/Winkel gespeichert.",
-        "DD-018.08": "Winkelwert bleibt in früherer direkter UI-Probe.",
         "DD-018.10": "Portal dreht sich am freien Punkt.",
         "DD-018.11": "Ein einzelnes Rad-hoch-Ereignis verringerte den freien Vorschauwinkel von 0° auf −5°; Rad runter stellte 0° wieder her.",
         "DD-018.12": "Ein einzelnes Shift+Rad-hoch-Ereignis verringerte den freien Vorschauwinkel von 0° auf −15°.",
-        "DD-018.14": "In früherer Probe keine Portaldrehung.",
         "DD-018.15": "Unterschiedliche Breiten gespeichert."
       }
     },
@@ -543,6 +550,7 @@
       "id": "bau-04",
       "title": "Höhlenpinsel und Öffnungsmaske",
       "area": "bau",
+      "sizeReason": "Die 16 Cave-Fälle bilden einen gemeinsamen Pinsel- und Maskenablauf; zusätzliche Bau- oder Portalfälle hätten keine gemeinsame Bedienfolge.",
       "caseIds": [
         "DD-019.01",
         "DD-019.02",
@@ -575,11 +583,13 @@
         ],
         "DD-019.03": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-opening.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-opening.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/STATUS.md"
         ],
         "DD-019.04": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-close.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-close.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/STATUS.md"
         ],
         "DD-019.05": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
@@ -637,6 +647,7 @@
       },
       "originalGaps": {
         "DD-019.02": "Alt im Dig-Modus ist belegt, aber der exakte aktuelle Vorher-/Nachher-Unterschied der gespeicherten Dig-Bitmap fehlt.",
+        "DD-019.03": "Blast Open zeigt eine Öffnung; die ältere getrennte Bitmap-Messung ist nur narrativ dokumentiert. Ein prüfbarer frischer Brush-Zug mit Bitmap-Differenz fehlt.",
         "DD-019.05": "Show Blast Opened Area ist sichtbar; Anzeigeumschaltung und unveränderte gespeicherte Masken wurden nicht isoliert geprüft.",
         "DD-019.06": "Von fünf Pinselgrößen ist nur Stufe 2 sichtbar ausgewählt; Radius und Maskenwirkung jeder Stufe in Dig und Blast sind ungemessen.",
         "DD-019.07": "Mausradwechsel der Höhlenpinselgröße steht in der Leiste, wurde aber nicht direkt ausgeführt.",
@@ -649,13 +660,11 @@
       },
       "originalEffects": {
         "DD-019.01": "Kleiner Dig-Pinselzug erzeugte erneut Höhlenboden mit felsigem Rand und nichtleerer bitmap.",
-        "DD-019.03": "Blast Open änderte die gespeicherte entrance_bitmap getrennt von der Dig-Bitmap.",
         "DD-019.04": "Alt im Blast-Modus reduzierte entrance_bitmap von 24 auf 12 Bits; die Dig-Bitmap blieb bei 125 Bits.",
         "DD-019.08": "Gegrabener Höhlenboden eingefärbt.",
         "DD-019.09": "Globale Bodenfarbe bestehender Höhlen geändert; Geometrie unverändert.",
         "DD-019.11": "Gespeicherte globale cave.wall_color ff7f7e71→ffe84f26, cave.ground_color blieb ff7f7e71; beide Randbilder rotorange."
-      },
-      "sizeReason": "Höhlenwerkzeug mit eigenem Dig-/Blast-Maskenablauf, der kein gemeinsames Szenario mit Wänden oder Portalen hat."
+      }
     }
   ]
 }

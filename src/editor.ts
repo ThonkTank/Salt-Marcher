@@ -949,7 +949,16 @@ export class DungeonEditor {
     canvas.addEventListener("contextmenu", (e) => e.preventDefault(), options);
     canvas.addEventListener(
       "dblclick",
-      (e) => this.run(() => this.insertPoint(e)),
+      (e) => this.run(() => {
+        if (this.pathDraft) {
+          e.preventDefault();
+          this.key(new KeyboardEvent("keydown", {
+            key: "Enter",
+            altKey: e.altKey,
+            cancelable: true,
+          }));
+        } else this.insertPoint(e);
+      }),
       options,
     );
     canvas.addEventListener(
@@ -2919,6 +2928,11 @@ export class DungeonEditor {
     if (command && e.key.toLowerCase() === "z") {
       e.preventDefault();
       this.run(() => this.stepHistory(e.shiftKey ? "redo" : "undo"));
+      return;
+    }
+    if (command && e.key.toLowerCase() === "y") {
+      e.preventDefault();
+      this.run(() => this.stepHistory("redo"));
       return;
     }
     if (command && e.key.toLowerCase() === "c") {
