@@ -279,6 +279,9 @@
 .dn-light-color-presets[hidden] {
   display: none;
 }
+.dn-path-library-controls button[hidden] {
+  display: none;
+}
 .dn-light-color-preset {
   width: 30px;
   height: 30px;
