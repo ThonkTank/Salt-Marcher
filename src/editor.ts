@@ -24,7 +24,9 @@ import {
   buildingVertexGrip,
   planBuildingBackspacePoint,
   planBuildingEdgeDrag,
+  planBuildingVertexDrag,
   previewBuildingEdgeDrag,
+  previewBuildingVertexDrag,
   type BuildingEdgeGrip,
   type BuildingVertexGrip,
 } from "./features/bau/building-point-gestures";
@@ -122,6 +124,7 @@ interface Gesture {
   };
   contour?: number;
   corner?: number;
+  buildingVertex?: BuildingVertexGrip;
   buildingEdge?: BuildingEdgeGrip;
   ridge?: number;
   moved: boolean;
@@ -1592,8 +1595,11 @@ export class DungeonEditor {
       activeBuilding = tool === "select" && active?.kind === "building" &&
           !active.locked && !e.shiftKey && !e.altKey
         ? active : undefined,
-      edgeGrip = activeBuilding &&
-          !buildingVertexGrip(activeBuilding, point, 7 / this.renderer.camera.scale)
+      vertexGrip = activeBuilding
+        ? buildingVertexGrip(activeBuilding, point,
+            7 / this.renderer.camera.scale)
+        : null,
+      edgeGrip = activeBuilding && !vertexGrip
         ? buildingEdgeMidpointGrip(activeBuilding, point,
             7 / this.renderer.camera.scale)
         : null,
@@ -1631,7 +1637,7 @@ export class DungeonEditor {
             blank: !entity || !this.selection.has(entity.id),
           }
         : undefined;
-    if (edgeGrip && activeBuilding) entity = activeBuilding;
+    if ((vertexGrip || edgeGrip) && activeBuilding) entity = activeBuilding;
     if (transform) entity = selectedBox;
     if (groupTransform && this.selected) entity = this.session.entities.get(this.selected);
     if (this.isBrushTool(tool)) {
@@ -1754,6 +1760,7 @@ export class DungeonEditor {
       groupTransform,
       contour: buildingContour?.contour,
       corner: corner !== undefined && corner >= 0 ? corner : undefined,
+      buildingVertex: vertexGrip ?? undefined,
       buildingEdge: edgeGrip ?? undefined,
       ridge: ridge !== undefined && ridge >= 0 ? ridge : undefined,
       moved: false,
@@ -1893,6 +1900,16 @@ export class DungeonEditor {
         this.snap(point));
       if (after) this.renderer.previewBuilding(after.polygons,
         g.buildingEdge.contour);
+    }
+    else if (g.tool === "select" && g.buildingVertex &&
+      g.entity?.kind === "building") {
+      const grip = g.buildingVertex,
+        destination = {
+          x: grip.point.x + this.snapDelta(point.x - g.start.x),
+          y: grip.point.y + this.snapDelta(point.y - g.start.y),
+        },
+        after = previewBuildingVertexDrag(g.entity, grip, destination);
+      if (after) this.renderer.previewBuildingShape(after, grip.contour);
     }
     else if (g.tool === "select" && g.groupTransform &&
       g.groupTransform.action.mode !== "move") {
@@ -2051,6 +2068,24 @@ export class DungeonEditor {
           [...this.session.entities.values()], g.entity, g.buildingEdge,
           this.snap(point));
         if (result.status === "command") this.session.execute(result.command);
+      }
+      return;
+    }
+    if (g.tool === "select" && g.buildingVertex &&
+        g.entity?.kind === "building") {
+      if (g.moved) {
+        const grip = g.buildingVertex,
+          destination = {
+            x: grip.point.x + this.snapDelta(point.x - g.start.x),
+            y: grip.point.y + this.snapDelta(point.y - g.start.y),
+          };
+        try {
+          const result = planBuildingVertexDrag(
+            [...this.session.entities.values()], g.entity, grip, destination);
+          if (result.status === "command") this.session.execute(result.command);
+        } catch (error) {
+          this.host.notice(error instanceof Error ? error.message : String(error));
+        }
       }
       return;
     }

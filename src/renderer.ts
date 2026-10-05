@@ -14,6 +14,7 @@ import {
 } from "pixi.js";
 import {
   type Entity,
+  type Building,
   type Id,
   type Point,
   type Polygon,
@@ -68,6 +69,17 @@ interface Visual {
   shadow?: Graphics;
   pathMesh?: Mesh;
   pathGeometry?: MeshGeometry;
+}
+interface BuildingPreview {
+  sourceId: Id;
+  entity: Building;
+  container: Container;
+  graphic: Graphics;
+  wallLayer: Container;
+  shadow?: Graphics;
+  floorTexture?: Texture;
+  wallTexture?: Texture;
+  assets: string[];
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -151,6 +163,7 @@ export class MapRenderer {
   private verticalDimension?: Text;
   private selection = new Graphics();
   private preview = new Graphics();
+  private buildingPreview?: BuildingPreview;
   private objectColorPreview?: { id: Id; color: number; alpha: number };
   private mapMask = new Graphics();
   private textures: TexturePool;
@@ -236,6 +249,9 @@ export class MapRenderer {
         previousGrid = this.appearance.grid,
         previousSelection = this.selection.visible,
         previousPreview = this.preview.visible,
+        buildingPreview = this.buildingPreview,
+        sourceBuilding = buildingPreview
+          ? this.visuals.get(buildingPreview.sourceId) : undefined,
         previousLights = this.lightLayer.visible,
         previousDimensions = this.dimensions.visible,
         previousDimensionLabels = this.dimensionLabels.visible;
@@ -245,6 +261,14 @@ export class MapRenderer {
         this.appearance.grid = options.grid;
         this.selection.visible = false;
         this.preview.visible = false;
+        if (buildingPreview) {
+          buildingPreview.container.visible = false;
+          if (buildingPreview.shadow) buildingPreview.shadow.visible = false;
+          if (sourceBuilding) {
+            sourceBuilding.container.visible = true;
+            if (sourceBuilding.shadow) sourceBuilding.shadow.visible = true;
+          }
+        }
         this.lightLayer.visible = options.lighting !== false;
         this.dimensions.visible = false;
         this.dimensionLabels.visible = false;
@@ -264,6 +288,14 @@ export class MapRenderer {
         this.appearance.grid = previousGrid;
         this.selection.visible = previousSelection;
         this.preview.visible = previousPreview;
+        if (buildingPreview && this.buildingPreview === buildingPreview) {
+          buildingPreview.container.visible = true;
+          if (buildingPreview.shadow) buildingPreview.shadow.visible = true;
+          if (sourceBuilding) {
+            sourceBuilding.container.visible = false;
+            if (sourceBuilding.shadow) sourceBuilding.shadow.visible = false;
+          }
+        }
         this.lightLayer.visible = previousLights;
         this.dimensions.visible = previousDimensions;
         this.dimensionLabels.visible = previousDimensionLabels;
@@ -409,6 +441,7 @@ export class MapRenderer {
     return this.textures.acquire(reference);
   }
   private rebuild(): void {
+    this.clearBuildingPreview();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     for (const e of this.session.entities.values())
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
@@ -480,6 +513,7 @@ export class MapRenderer {
     this.cameraChanged();
   }
   reloadAssets(): void {
+    this.clearBuildingPreview();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     this.textures.destroy();
     this.textures = new TexturePool(this.assetUrl);
@@ -508,6 +542,8 @@ export class MapRenderer {
     this.cameraChanged();
   }
   private sync(id: Id): void {
+    if (this.buildingPreview?.sourceId === id)
+      this.clearBuildingPreview();
     const stored = this.session.entities.get(id),
       e = stored?.kind === "object" && this.objectColorPreview?.id === id
         ? { ...stored, color: this.objectColorPreview.color,
@@ -1751,6 +1787,125 @@ export class MapRenderer {
       }
     this.invalidate();
   }
+  /** Show the edited floor and wall without changing the document visual. */
+  previewBuildingShape(after: Building, activeContour: number): void {
+    const source = this.visuals.get(after.id);
+    if (
+      source?.entity.kind !== "building" ||
+      source.entity !== this.session.entities.get(after.id) ||
+      source.entity.floorId !== this.floorId
+    ) return;
+    if (this.buildingPreview?.sourceId !== after.id)
+      this.clearBuildingPreview();
+    let state = this.buildingPreview;
+    if (!state) {
+      const container = new Container(),
+        graphic = new Graphics(),
+        wallLayer = new Container();
+      container.addChild(graphic, wallLayer);
+      container.zIndex = after.layer;
+      container.alpha = source.container.alpha;
+      container.tint = source.container.tint;
+      this.roomLayer.addChild(container);
+      state = {
+        sourceId: after.id, entity: after, container, graphic, wallLayer,
+        assets: [],
+      };
+      const created = state;
+      this.buildingPreview = created;
+      source.container.visible = false;
+      if (source.shadow) source.shadow.visible = false;
+      if (this.settings.wallShadows) {
+        created.shadow = new Graphics();
+        created.shadow.alpha = container.alpha;
+        created.shadow.tint = container.tint;
+        this.areaShadowLayer.addChild(created.shadow);
+      }
+      if (after.material) {
+        const reference = after.material.assetId
+          ? after.material.assetId + "\0" + (after.material.assetPart ?? "image")
+          : after.material.asset!;
+        created.assets.push(reference);
+        void this.textures.acquire(reference).then((texture) => {
+          if (this.buildingPreview !== created || this.closed) return;
+          created.floorTexture = texture;
+          this.drawBuildingPreview(created);
+        }).catch((error) => {
+          if (this.buildingPreview === created && !this.closed)
+            this.onError(String(error));
+        });
+      }
+      if (after.wallAssetId && buildingHasWall(after)) {
+        const reference = after.wallAssetId + "\0image";
+        created.assets.push(reference);
+        void this.textures.acquire(reference).then((texture) => {
+          if (this.buildingPreview !== created || this.closed) return;
+          created.wallTexture = texture;
+          this.drawBuildingPreview(created);
+        }).catch((error) => {
+          if (this.buildingPreview === created && !this.closed)
+            this.onError(String(error));
+        });
+      }
+    }
+    state.entity = after;
+    this.drawBuildingPreview(state);
+    this.selection.visible = false;
+    this.previewBuilding(after.polygons, activeContour);
+  }
+  private drawBuildingPreview(state: BuildingPreview): void {
+    const after = state.entity;
+    this.drawSurface({
+      entity: after,
+      container: state.container,
+      bounds: entityBounds(after, (id) => this.session.entities.get(id)),
+    }, state.graphic, state.floorTexture);
+    if (state.shadow) {
+      state.shadow.clear();
+      for (const polygon of after.polygons) {
+        state.shadow.poly(polygon.outer.flatMap((point) => [
+          point.x + 0.22, point.y + 0.22,
+        ]), true).fill({ color: 0x17191a, alpha: 0.22 });
+        for (const hole of polygon.holes)
+          state.shadow.poly(hole.flatMap((point) => [
+            point.x + 0.22, point.y + 0.22,
+          ]), true).cut();
+      }
+    }
+    for (const child of state.wallLayer.removeChildren()) child.destroy();
+    if (state.wallTexture && buildingHasWall(after)) {
+      const doors = [...this.session.dependents(after.id)]
+        .map((id) => this.session.entities.get(id))
+        .filter((door): door is Door => door?.kind === "door");
+      for (const segment of wallSegments(after, doors)) {
+        const dx = segment.b.x - segment.a.x,
+          dy = segment.b.y - segment.a.y,
+          length = Math.hypot(dx, dy);
+        if (!length) continue;
+        const sprite = new Sprite(state.wallTexture);
+        sprite.anchor.set(0, 0.5);
+        sprite.position.set(segment.a.x, segment.a.y);
+        sprite.rotation = Math.atan2(dy, dx);
+        sprite.width = length + 0.02;
+        sprite.height = after.wallWidth;
+        state.wallLayer.addChild(sprite);
+      }
+    }
+    this.invalidate();
+  }
+  private clearBuildingPreview(): void {
+    const state = this.buildingPreview;
+    if (!state) return;
+    this.buildingPreview = undefined;
+    state.container.destroy({ children: true });
+    state.shadow?.destroy();
+    for (const reference of state.assets) this.textures.release(reference);
+    const source = this.visuals.get(state.sourceId);
+    if (source) {
+      source.container.visible = true;
+      if (source.shadow) source.shadow.visible = true;
+    }
+  }
   previewRoom(points: readonly Point[] | null, erase = false): void {
     this.preview.clear();
     if (points) {
@@ -1892,6 +2047,7 @@ export class MapRenderer {
     this.invalidate();
   }
   cancelPreview(ids?: Iterable<Id>): void {
+    this.clearBuildingPreview();
     this.preview.clear();
     this.selection.visible = true;
     for (const id of ids ?? []) {
@@ -1938,6 +2094,7 @@ export class MapRenderer {
     if (this.initialized) this.destroyResources();
   }
   private destroyResources(): void {
+    this.clearBuildingPreview();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     this.textures.destroy();
     this.furniture.destroy();

@@ -45,6 +45,9 @@ const onFloor = (entity, point) => entity?.polygons?.some((polygon) =>
   inRing(point, polygon.outer) && !polygon.holes.some((hole) => inRing(point, hole)));
 
 module.exports = async function bau01({ page, out, qa, vault, restart, group, record }) {
+  if (process.env.DUNGEON_QA_ONLY_DD01203 === "1")
+    return require("./bau-01-dd01203.cjs")({ page, out, qa, vault,
+      restart, group, record });
   const savedPath = path.join(qa, savedName);
   const stepsPath = path.join(out, "bau-01-steps.json");
   const screens = path.join(out, "screens");
