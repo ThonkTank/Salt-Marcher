@@ -23,6 +23,7 @@ const restart = process.argv.includes("--restart"),
   groupArgument = process.argv.indexOf("--group"),
   activeGroupId = groupArgument < 0 ? null : process.argv[groupArgument + 1],
   v2Open = process.argv.includes("--v2-open"),
+  installedMapsOpen = process.argv.includes("--installed-maps-open"),
   patternOutline = process.argv.includes("--pattern-outline"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
@@ -225,7 +226,7 @@ function prepare() {
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
     fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
   }
-  if (v2Open && !restart) {
+  if ((v2Open || installedMapsOpen) && !restart) {
     for (const dungeon of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
       fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
       fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
@@ -465,6 +466,71 @@ async function workflow() {
   );
   await page.setViewportSize({ width: 1120, height: 840 });
   await page.bringToFront();
+  if (process.env.DUNGEON_QA_FOCUS_READY === "1") {
+    const focusState = () => page.evaluate(() => {
+      const current = window.electron?.remote?.getCurrentWindow?.();
+      const nativeHandle = current?.getNativeWindowHandle?.();
+      let activeLocation = null;
+      try { activeLocation = activeWindow?.location?.href ?? null; } catch {
+        activeLocation = "unavailable";
+      }
+      return { activeWindowSame: activeWindow === window,
+        activeDocumentSame: activeDocument === document,
+        activeLocation,
+        pageLocation: window.location.href,
+        electronWindowId: current?.id ?? null,
+        electronWindowTitle: current?.getTitle?.() ?? null,
+        mediaSourceId: current?.getMediaSourceId?.() ?? null,
+        nativeHandleHex: nativeHandle?.toString("hex") ?? null,
+        nativeX11Id: nativeHandle?.length >= 4 ? nativeHandle.readUInt32LE(0) : null,
+        documentFocused: document.hasFocus(),
+        electronFocused: current?.isFocused?.() ?? null };
+    });
+    const before = await focusState();
+    const focusLog = { before, cdpPageUrls: browser.contexts().flatMap((context) =>
+      context.pages().map((candidate) => candidate.url())), activation: [] };
+    const writeFocus = () => fs.writeFileSync(out + "/focus-readiness.json",
+      JSON.stringify(focusLog, null, 2) + "\n");
+    writeFocus();
+    assert.equal(process.env.XDG_SESSION_TYPE, "x11", "QA focus activation requires X11");
+    const mediaId = /^window:(\d+):/.exec(before.mediaSourceId ?? "")?.[1];
+    const x11Id = Number(mediaId ?? before.nativeX11Id);
+    assert(Number.isSafeInteger(x11Id) && x11Id > 0,
+      "QA Obsidian window has no valid X11 ID");
+    focusLog.x11Id = x11Id;
+    writeFocus();
+    if (!before.electronFocused || !before.activeWindowSame ||
+        !before.activeDocumentSame) {
+      for (const action of ["windowactivate", "windowfocus"]) {
+        const entry = { action };
+        try {
+          cp.execFileSync("xdotool", [action, "--sync", String(x11Id)],
+            { timeout: 5000, stdio: "pipe" });
+          entry.completed = true;
+        } catch (error) {
+          entry.completed = false;
+          entry.error = String(error);
+        }
+        entry.state = await focusState();
+        focusLog.activation.push(entry);
+        writeFocus();
+        if (entry.state.electronFocused && entry.state.activeWindowSame &&
+          entry.state.activeDocumentSame) break;
+      }
+      const last = focusLog.activation.at(-1)?.state;
+      if (last?.electronFocused &&
+          (!last.activeWindowSame || !last.activeDocumentSame)) {
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        focusLog.afterFocusEvent = await focusState();
+        writeFocus();
+      }
+    }
+    const after = await focusState();
+    focusLog.after = after;
+    writeFocus();
+    assert(after.electronFocused && after.activeWindowSame &&
+      after.activeDocumentSame, "Obsidian active window differs from focused QA page");
+  }
   const view = () =>
     page.evaluate(() => {
       const e =
@@ -504,6 +570,10 @@ async function workflow() {
   }
   if (v2Open) {
     await v2OpenWorkflow(view);
+    return;
+  }
+  if (installedMapsOpen) {
+    await installedMapsOpenWorkflow(view);
     return;
   }
   if (patternAlpha) {
@@ -3377,6 +3447,26 @@ async function v2OpenWorkflow(view) {
     }
   }
   await page.screenshot({ path: out + "/v2-maps-opened.png" });
+}
+async function installedMapsOpenWorkflow(view) {
+  assert(!restart, "Installed map check starts in one fresh process");
+  for (const mapPath of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
+    const source = fs.readFileSync(path.resolve(sourceVault, mapPath));
+    const expected = JSON.parse(source.toString("utf8"));
+    assert.equal(expected.version, 3);
+    await page.evaluate(async (target) => {
+      const file = app.vault.getAbstractFileByPath(target);
+      const leaf = app.workspace.getLeavesOfType("dungeon-native-map")[0] ?? app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+    }, mapPath);
+    await page.locator(".dn-canvas canvas").last().waitFor({ state: "visible", timeout: 30000 });
+    assert.deepEqual((await view()).document, expected);
+    const copy = fs.readFileSync(path.join(vault, mapPath));
+    assert.equal(crypto.createHash("sha256").update(copy).digest("hex"),
+      crypto.createHash("sha256").update(source).digest("hex"));
+    checks.push(`Installed build opens ${mapPath} in fresh Obsidian without map changes`);
+  }
+  await page.screenshot({ path: out + "/installed-maps-opened.png" });
 }
 async function compactWorkflow() {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon";

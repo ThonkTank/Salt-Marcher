@@ -33,7 +33,7 @@ async function openMap(page, mapPath) {
   }, mapPath);
   await page.waitForFunction((mapPath) => app.workspace.getLeavesOfType("dungeon-native-map")
     .some((item) => item.view.file?.path === mapPath && item.view.editor), mapPath);
-  await page.locator(".dungeon-native-editor:visible .dn-canvas canvas").waitFor();
+  await page.locator(".dungeon-native-editor:visible .dn-canvas canvas").last().waitFor();
 }
 
 async function saveMap(page, mapPath) {
