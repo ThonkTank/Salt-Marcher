@@ -685,13 +685,12 @@ export default class DungeonPlugin extends Plugin {
       const id = reference.slice(0, split),
         part = reference.slice(split + 1);
       if (part === "image") {
+        const cached = this.nativePathUrls.get(id);
+        if (cached) return cached;
         const native = this.nativePathCatalog?.image(id);
         if (native) {
-          let url = this.nativePathUrls.get(id);
-          if (!url) {
-            url = URL.createObjectURL(native);
-            this.nativePathUrls.set(id, url);
-          }
+          const url = URL.createObjectURL(native);
+          this.nativePathUrls.set(id, url);
           return url;
         }
       }
