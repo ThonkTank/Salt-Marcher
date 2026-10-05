@@ -1,6 +1,5 @@
 // Supplemental DD-042.01/.07 probe. The caller owns the isolated host and GUI slot.
-// Returns case records instead of adding to group-record: objekte-07 already records
-// these IDs, so the coordinator can replace those two records when integrating.
+// The objekte-07 scenario runs this in its --mixed-prefab mode; importing starts no GUI.
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -120,7 +119,8 @@ async function edit({ page, qa, vault, out }) {
     set: await modal.locator('select:not([aria-hidden="true"])').inputValue(),
     inputs: await modal.locator("input").count(),
     accept: await modal.getByRole("button", { name: "Erstellen", exact: true }).count(),
-    cancel: await modal.getByRole("button", { name: "Abbrechen", exact: true }).count() };
+    cancel: await modal.getByRole("button", { name: "Abbrechen", exact: true }).count(),
+    close: await modal.locator(".modal-close-button").count() };
   const dialogImage = path.join(out, "mixed-make-dialog.png");
   await modal.screenshot({ path: dialogImage });
   assert(dialog.inputs >= 1 && dialog.accept === 1,
@@ -158,10 +158,11 @@ async function edit({ page, qa, vault, out }) {
     source: [objectId, lightId].map((id) => after.document.entities
       .find((item) => item.id === id)), saved });
   return [
-    { caseId: "DD-042.01", state: dialog.cancel ? "pass" : "deviation",
-      observation: `Gemischte Objekt-Licht-Auswahl öffnet Make Prefab mit Sammlung, Name und Erstellen; sichtbares Abbrechen=${dialog.cancel === 1}.`,
+    { caseId: "DD-042.01", state: dialog.cancel || dialog.close ? "pass" : "open",
+      observation: `Gemischte Objekt-Licht-Auswahl öffnet Make Prefab mit Sammlung, Name und Erstellen; Abbruchbedienung: Cancel=${dialog.cancel === 1}, X=${dialog.close === 1}.`,
       evidence: [selectionImage, dialogImage, evidence],
-      gap: dialog.cancel ? null : "Im Make-Prefab-Hauptdialog fehlt die native Cancel-Aktion als sichtbarer Knopf; Schließen per X/Escape ist separat zu bewerten." },
+      gap: dialog.cancel || dialog.close ? null :
+        "Im sichtbaren Make-Prefab-Hauptdialog wurde weder Cancel noch X gefunden; Escape ist separat unter DD-042.08 geprüft." },
     { caseId: "DD-042.07", state: "pass",
       observation: "Accept speichert genau eine benannte Vorlage mit Objekt und Licht, gleichem relativen Versatz und gemeinsamer Bindung; Karte und Katalog gespeichert.",
       evidence: [dialogImage, evidence] },

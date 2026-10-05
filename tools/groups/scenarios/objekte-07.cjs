@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const mixedProbe = require("./objekte-07-mixed.cjs");
 
 const CASE = "DD-042.09";
 const STATE = "objekte-07-dd04209-saved.json";
@@ -447,6 +448,15 @@ async function reopen({ page, out, qa, vault, group, record }) {
 }
 
 module.exports = async function objekte07(context) {
+  if (process.argv.includes("--mixed-prefab")) {
+    const cases = context.restart
+      ? await mixedProbe.reopen(context)
+      : await mixedProbe.edit(context);
+    for (const item of cases)
+      context.record.add(item.caseId, item.state, item.observation,
+        item.evidence, item.gap ?? null);
+    return;
+  }
   if (context.restart) await reopen(context);
   else await edit(context);
 };
