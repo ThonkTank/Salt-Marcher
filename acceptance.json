@@ -21750,13 +21750,14 @@
         "original": {
           "sequence": "Kreisförmige Symboltaste am Farbfeld benutzen",
           "options": null,
-          "effect": "Die kreisförmige Scatter-Farbtaste öffnete den nativen RGBA/Hex-Picker; Außenklick schloss ihn. Im vollständig sichtbaren Wähler endeten die Bedienfelder bei Hex und Accept.",
+          "effect": "Die kreisförmige Scatter-Farbtaste öffnet den RGBA/Hex-Picker. Außenklick schließt ihn auch nach Farbänderung; der gültige Wert bleibt im Werkzeugfeld und beim erneuten Öffnen erhalten.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/32-scatter-round-picker.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/34-scatter-picker-outside.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/18-scatter-picker-tall.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/18-scatter-picker-tall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-16-17-ORIGINAL.md"
           ]
         },
         "target": "Die kreisförmige Taste öffnet denselben RGBA/Hex-Picker; Außenklick schließt ihn.",
@@ -21784,16 +21785,45 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Scatter-RGBA-Außenklick mit Wertübernahme im jeweiligen Editorfenster"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd02816-final-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-16-RELEASE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "e6cccc0cd4c1a22e1db29307437631b20a269324b8444632adb920d2293e30f8",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/dd02816-scatter-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/dd02816-scatter-outside-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-picker-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-picker-outside-closed.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-picker-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-changed-live.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-changed-outside.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/edit-changed-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/dd02816-scatter-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-picker-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-picker-outside-closed.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-picker-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-changed-live.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-changed-outside.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/reopen-changed-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-16-RELEASE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Scatter Tool: Picker öffnen; Innenklick erhält ihn, Außenklick schließt ihn unverändert oder nach gültiger RGB-Änderung und behält den Wert; Werkzeugvorgabe übersteht Neustart, Kartendokument/History/Disk bleiben gleich."
       },
       {
         "id": "DD-028.17",
@@ -21811,7 +21841,7 @@
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/37-light-palette.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/38-light-blue.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/objekte/qa/DD-028.16-17-ORIGINAL.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-16-17-ORIGINAL.md"
           ]
         },
         "target": "Die Light-Palette öffnet und übernimmt die gewählte Vorgabe ins Farbfeld.",
@@ -21850,7 +21880,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "e3fc2028eb756a35a43a6b16b6441b23a65516803957c0d83ce2656f1b9db2ce",
+          "build": "e6cccc0cd4c1a22e1db29307437631b20a269324b8444632adb920d2293e30f8",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/dd02817-light-palette-edit.json",
@@ -21860,7 +21890,15 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/dd02817-light-palette-reopen.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/dd02817-palette-reopened.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-17-RELEASE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-17-RELEASE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/dd02817-light-palette-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/dd02817-light-palette-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/dd02817-palette-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/dd02817-blue-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/dd02817-light-palette-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/dd02817-palette-reopened.png"
           ],
           "gap": null,
           "phaseStates": {
