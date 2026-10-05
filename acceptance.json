@@ -38983,17 +38983,21 @@
         "area": "verwaltung",
         "path": "Kartenansicht > Zoom und Messhilfen",
         "command": "Zoom In",
-        "scope": "required",
+        "scope": "editor_addition",
         "original": {
           "sequence": "Kartenansicht > Zoom und Messhilfen → Zoom In",
           "options": null,
-          "effect": null,
+          "effect": "Kein eigenständiger Zoom-In-Knopf in der geprüften Kartenleiste; Zoom In steht als Shortcut in DD-036.42.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Zoom In“ schaltet oder zeigt die entsprechende Kartenansicht/Messhilfe.",
+        "target": "Kein eigenständiger Pflichtfall; verbindliche Zoomwirkung bleibt in DD-036.42 zu prüfen.",
         "baseline": {
           "editor": {
             "sequence": "Host bietet Zoom +/− und Einpassen",
@@ -39028,7 +39032,18 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Historischer Inventurfehler; kein separater Kartenleisten-Pflichtfall. Kein eigenständiger Zoom-In-Knopf in der geprüften Kartenleiste; Zoom In steht als Shortcut in DD-036.42."
+        },
+        "classification": {
+          "decision": "duplicate_inventory_case",
+          "reason": "Kein eigenständiger Zoom-In-Knopf in der geprüften Kartenleiste; Zoom In steht als Shortcut in DD-036.42.",
+          "canonicalCaseId": "DD-036.42",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+          ]
         }
       },
       {
@@ -39037,17 +39052,21 @@
         "area": "verwaltung",
         "path": "Kartenansicht > Zoom und Messhilfen",
         "command": "Zoom Out",
-        "scope": "required",
+        "scope": "editor_addition",
         "original": {
           "sequence": "Kartenansicht > Zoom und Messhilfen → Zoom Out",
           "options": null,
-          "effect": null,
+          "effect": "Kein eigenständiger Zoom-Out-Knopf in der geprüften Kartenleiste; Zoom Out steht als Shortcut in DD-036.43.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Zoom Out“ schaltet oder zeigt die entsprechende Kartenansicht/Messhilfe.",
+        "target": "Kein eigenständiger Pflichtfall; verbindliche Zoomwirkung bleibt in DD-036.43 zu prüfen.",
         "baseline": {
           "editor": {
             "sequence": "Host bietet Zoom +/− und Einpassen",
@@ -39082,7 +39101,18 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Historischer Inventurfehler; kein separater Kartenleisten-Pflichtfall. Kein eigenständiger Zoom-Out-Knopf in der geprüften Kartenleiste; Zoom Out steht als Shortcut in DD-036.43."
+        },
+        "classification": {
+          "decision": "duplicate_inventory_case",
+          "reason": "Kein eigenständiger Zoom-Out-Knopf in der geprüften Kartenleiste; Zoom Out steht als Shortcut in DD-036.43.",
+          "canonicalCaseId": "DD-036.43",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+          ]
         }
       },
       {
@@ -39091,17 +39121,21 @@
         "area": "verwaltung",
         "path": "Kartenansicht > Zoom und Messhilfen",
         "command": "Fit map",
-        "scope": "required",
+        "scope": "editor_addition",
         "original": {
           "sequence": "Kartenansicht > Zoom und Messhilfen → Fit map",
           "options": null,
-          "effect": null,
+          "effect": "Kein Fit-map-Befehl in der geprüften Kartenleiste, Zoomliste, Menü- und Shortcutinventur.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „Fit map“ schaltet oder zeigt die entsprechende Kartenansicht/Messhilfe.",
+        "target": "Kein eigenständiger Pflichtfall; verbindliche Zoomwirkung bleibt in der nativen Befehlsinventur zu prüfen.",
         "baseline": {
           "editor": {
             "sequence": "Host bietet Zoom +/− und Einpassen",
@@ -39136,7 +39170,17 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Historischer Inventurfehler; kein separater Kartenleisten-Pflichtfall. Kein Fit-map-Befehl in der geprüften Kartenleiste, Zoomliste, Menü- und Shortcutinventur."
+        },
+        "classification": {
+          "decision": "not_native_command",
+          "reason": "Kein Fit-map-Befehl in der geprüften Kartenleiste, Zoomliste, Menü- und Shortcutinventur.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+          ]
         }
       },
       {
@@ -39145,17 +39189,21 @@
         "area": "verwaltung",
         "path": "Kartenansicht > Zoom und Messhilfen",
         "command": "1:1/100%",
-        "scope": "required",
+        "scope": "editor_addition",
         "original": {
           "sequence": "Kartenansicht > Zoom und Messhilfen → 1:1/100%",
           "options": null,
-          "effect": null,
+          "effect": "100 % ist ein Eintrag des Zoom-Dropdowns DD-048.10; kein eigenständiger 1:1-Knopf.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „1:1/100%“ schaltet oder zeigt die entsprechende Kartenansicht/Messhilfe.",
+        "target": "Kein eigenständiger Pflichtfall; verbindliche Zoomwirkung bleibt in DD-048.10 zu prüfen.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -39190,7 +39238,18 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Historischer Inventurfehler; kein separater Kartenleisten-Pflichtfall. 100 % ist ein Eintrag des Zoom-Dropdowns DD-048.10; kein eigenständiger 1:1-Knopf."
+        },
+        "classification": {
+          "decision": "duplicate_inventory_case",
+          "reason": "100 % ist ein Eintrag des Zoom-Dropdowns DD-048.10; kein eigenständiger 1:1-Knopf.",
+          "canonicalCaseId": "DD-048.10",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+          ]
         }
       },
       {
@@ -42138,6 +42197,38 @@
         "requiredBefore": 711,
         "requiredAfter": 710,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-hand-inventory-review/REPORT.md"
+      },
+      {
+        "caseId": "DD-048.12",
+        "from": "required",
+        "to": "editor_addition",
+        "requiredBefore": 710,
+        "requiredAfter": 709,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
+      },
+      {
+        "caseId": "DD-048.13",
+        "from": "required",
+        "to": "editor_addition",
+        "requiredBefore": 709,
+        "requiredAfter": 708,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
+      },
+      {
+        "caseId": "DD-048.14",
+        "from": "required",
+        "to": "editor_addition",
+        "requiredBefore": 708,
+        "requiredAfter": 707,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
+      },
+      {
+        "caseId": "DD-048.15",
+        "from": "required",
+        "to": "editor_addition",
+        "requiredBefore": 707,
+        "requiredAfter": 706,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd048-zoom-inventory-review/REPORT.md"
       }
     ]
   }

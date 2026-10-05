@@ -810,10 +810,6 @@
         "DD-048.09",
         "DD-048.10",
         "DD-048.11",
-        "DD-048.12",
-        "DD-048.13",
-        "DD-048.14",
-        "DD-048.15",
         "DD-048.16",
         "DD-048.17",
         "DD-048.18",
@@ -847,40 +843,48 @@
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
         ],
         "DD-048.05": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/002-grid-off.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/003-grid-on.png"
         ],
         "DD-048.06": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/004-snap-off.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/005-snap-on.png"
         ],
         "DD-048.07": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/006-lighting-off.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/007-lighting-on.png"
         ],
         "DD-048.08": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/13-bottom-icon-1-hover.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/13-bottom-icon-1-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/008-guide-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/010-guide-click.png"
         ],
         "DD-048.09": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/14-bottom-icon-2-hover.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/14-bottom-icon-2-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/009-ruler-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/011-ruler-click.png"
         ],
         "DD-048.10": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/38-zoom-menu.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/38-zoom-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/012-zoom-dropdown-open.png"
         ],
         "DD-048.11": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
-        ],
-        "DD-048.12": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
-        ],
-        "DD-048.13": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
-        ],
-        "DD-048.14": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
-        ],
-        "DD-048.15": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/001-initial.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-ansicht/native/runs/20261005-114211-2835463/evidence/screens/010-guide-click.png"
         ],
         "DD-048.16": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
@@ -948,15 +952,11 @@
         "DD-048.02": "Die Originalwirkung von Grid Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-048.03": "Die Originalwirkung von Kreisförmige Taste neben Grid Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-048.04": "Die Originalwirkung von Camera Filter ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.05": "Die Originalwirkung von Grid ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.06": "Die Originalwirkung von Snap ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.07": "Die Originalwirkung von Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.10": "Die Originalwirkung von Zoom percentage dropdown ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.11": "Die Originalwirkung von Position readout ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.12": "Die Originalwirkung von Zoom In ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.13": "Die Originalwirkung von Zoom Out ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.14": "Die Originalwirkung von Fit map ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-048.15": "Die Originalwirkung von 1:1/100% ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.05": "Speicherung und Geschosswechsel des Rasterschalters im Original noch nicht gemessen.",
+        "DD-048.06": "Neue Punktfolge und Reichweite über alle Zeichenwerkzeuge in dieser Sitzung nicht gemessen.",
+        "DD-048.07": "Speicherung und Geschosswechsel der Lichtvorschau im Original noch nicht gemessen.",
+        "DD-048.10": "Auswahl eines Dropdown-Eintrags und Kamerawirkung in diesem Gruppenlauf nicht gemessen.",
+        "DD-048.11": "Koordinatenkonvention außerhalb der abgebildeten Punkte nicht gemessen.",
         "DD-048.16": "Die Originalwirkung von Toggle Fullscreen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-048.17": "Die Originalwirkung von Toggle Guide ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-048.18": "Die Originalwirkung von Toggle Ruler ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
@@ -970,7 +970,9 @@
         "DD-036.47": "Die Originalwirkung von Toggle Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-036.48": "Die Originalwirkung von Toggle Guide ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-036.49": "Die Originalwirkung von Toggle Ruler ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-036.50": "Die Originalwirkung von Toggle Trace Image ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+        "DD-036.50": "Die Originalwirkung von Toggle Trace Image ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.08": "Guide-Geste, Linienwirkung, Undo und Speicherung noch nicht gemessen.",
+        "DD-048.09": "Ruler-Start/Ende, Längenanzeige, Abbruch, History und Speicherung noch nicht gemessen."
       },
       "historicalCases": [
         {
@@ -978,7 +980,16 @@
           "classification": "editor_addition",
           "decisionEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-hand-inventory-review/REPORT.md"
         }
-      ]
+      ],
+      "originalEffects": {
+        "DD-048.05": "Raster aus blendet gepunktete Linien und die Rasterbegrenzung aus; Raster an stellt die Ansicht wieder her.",
+        "DD-048.06": "Snap wechselt sichtbar aus/an; die bestehende Karte und der Zoom bleiben beim Umschalten gleich.",
+        "DD-048.07": "Lighting aus entfernt die Lichtaufhellung; Lighting an stellt die vorherigen Kartenpixel wieder her.",
+        "DD-048.08": "Hover zeigt (H); Klick aktiviert den Guide-Modus mit blauem Symbol und gelber Koordinatenanzeige.",
+        "DD-048.09": "Hover zeigt (R); Klick aktiviert den Ruler-Modus mit blauem Symbol.",
+        "DD-048.10": "Zoom-Dropdown bietet 10, 12, 15, 25, 33, 50, 75, 100, 125, 150, 200, 250, 300, 400, 600 und 800 Prozent.",
+        "DD-048.11": "Positionsanzeige am unteren rechten Kartenrand aktualisiert Koordinaten bei Zeigerbewegung."
+      }
     },
     {
       "id": "verwaltung-menue",

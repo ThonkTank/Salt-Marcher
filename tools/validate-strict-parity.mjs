@@ -19,8 +19,11 @@ for (const item of parity.cases) {
       throw new Error(`Nicht beschlossene Ausnahme: ${item.id}`);
   } else if (item.scope === "editor_addition") {
     editorAdditions++;
-    if (item.classification?.decision !== "not_native_command" ||
-        !item.classification.evidence?.length)
+    if (!["not_native_command", "duplicate_inventory_case"].includes(
+          item.classification?.decision) ||
+        !item.classification.evidence?.length ||
+        (item.classification.decision === "duplicate_inventory_case" &&
+         !item.classification.canonicalCaseId))
       throw new Error(`Nicht belegte Inventurkorrektur: ${item.id}`);
   } else if (item.scope === "required") required++;
   else throw new Error(`Unbekannter Umfang: ${item.id}`);
