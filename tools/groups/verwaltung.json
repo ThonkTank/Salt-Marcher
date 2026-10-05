@@ -1389,7 +1389,8 @@
         "DD-043.20",
         "DD-043.21",
         "DD-043.22",
-        "DD-043.23"
+        "DD-043.23",
+        "DD-043.24"
       ],
       "sharedFlow": "Ein Szenenstand für alle Exportoptionen und Dateiformate",
       "originalEvidence": {
@@ -1494,12 +1495,18 @@
         "DD-043.20": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
-          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png"
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/exports/wall-portal-light-q90.jpg"
         ],
         "DD-043.21": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
-          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png"
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/exports/wall-portal-light-q90.webp"
         ],
         "DD-043.22": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
@@ -1514,6 +1521,11 @@
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png",
           "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/30-export-dialog-closed-with-x.png"
+        ],
+        "DD-043.24": [
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png"
         ]
       },
       "originalGaps": {
@@ -1530,8 +1542,9 @@
         "DD-043.16": "ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.",
         "DD-043.17": "Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.",
         "DD-043.18": "Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.",
-        "DD-043.20": "JPEG-Dateierzeugung, Auflösung und Bildwirkung wurden nicht gemessen; nur der Menüeintrag ist belegt.",
-        "DD-043.21": "WEBP-Dateierzeugung, Auflösung und Bildwirkung wurden nicht gemessen; nur der Menüeintrag ist belegt."
+        "DD-043.20": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+        "DD-043.21": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+        "DD-043.24": "Wirkung eines geänderten Quality-Werts und exakte zulässige Grenzen im Original nicht gemessen."
       },
       "originalEffects": {
         "DD-043.01": "Hauptleistenaktion Export öffnet den modalen Dialog Export Options; die Karte bleibt dabei sichtbar.",
@@ -1553,10 +1566,11 @@
         "DD-043.17": "Crop ist im Exportdialog als Bedienelement sichtbar.",
         "DD-043.18": "Reset Crop ist im unbeschnittenen Startzustand sichtbar und inaktiv.",
         "DD-043.19": "Export file erzeugt für gewählte QA-Zielpfade drei PNG-Dateien und eine .dd2vtt-Datei.",
-        "DD-043.20": "JPEG ist als Export Mode im Dropdown sichtbar; eine JPEG-Datei wurde nicht erzeugt.",
-        "DD-043.21": "WEBP ist als Export Mode im Dropdown sichtbar; eine WEBP-Datei wurde nicht erzeugt.",
+        "DD-043.20": "JPEG-Export erzeugt aus der belegten 8×8-Karte eine 2048×2048-RGB-Datei mit Boden, Wand, Portal, Licht und Raster.",
+        "DD-043.21": "WEBP-Export erzeugt aus der belegten 8×8-Karte eine 2048×2048-RGB-Datei mit Boden, Wand, Portal, Licht und Raster.",
         "DD-043.22": "Universal VTT erzeugt JSON format 0.3 mit 8×8/256-Auflösung, einer Sichtlinien-Polygonlinie, einem gebundenen Portal, einem Licht und base64-PNG; das Bild ist bytegleich zum PNG mit Grid OFF und Lighting ON.",
-        "DD-043.23": "X schließt den Exportdialog ohne eine weitere Datei zu erzeugen."
+        "DD-043.23": "X schließt den Exportdialog ohne eine weitere Datei zu erzeugen.",
+        "DD-043.24": "Der wählbare Quality-Wert gehört zur JPEG- und WEBP-Ausgabe."
       }
     },
     {

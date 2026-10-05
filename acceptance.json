@@ -3503,7 +3503,8 @@
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-building.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/07-floor-green.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/08-floor-reset.png"
-          ]
+          ],
+          "gap": "Der Reset des Farbknopfs ist im Panel sichtbar; Wirkung auf bestehende und danach gezeichnete Flächen sowie Speicherung fehlt."
         },
         "target": "Floor-Farbwert mit einer Aktion auf den gewählten Stilwert zurücksetzen.",
         "baseline": {
@@ -3539,7 +3540,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3559,7 +3574,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/09-wall-color-picker.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
-          ]
+          ],
+          "gap": "Building-Picker und Farbfläche sind sichtbar; ein direkt protokollierter Klick auf die Farbfläche mit Building-Farbwert vor/nach fehlt. Cave-Picker-Beleg ersetzt ihn nicht."
         },
         "target": "Sättigung und Helligkeit im geöffneten Farbdialog auf denselben Farbwert einstellen.",
         "baseline": {
@@ -3595,7 +3611,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3614,7 +3644,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
-          ]
+          ],
+          "gap": "Der Hue-Streifen ist im Cave-Picker sichtbar; ein direkter Building-Picker-Hue-Wechsel mit Vorher-/Nachher-Wert fehlt."
         },
         "target": "Farbton im Picker vor der Übernahme gleichwertig wechseln.",
         "baseline": {
@@ -3650,7 +3681,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3670,7 +3715,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
-          ]
+          ],
+          "gap": "Kanalweise RGBA-Eingabe und insbesondere Alphawirkung sind im Original nicht direkt betätigt und gemessen."
         },
         "target": "Jeden RGBA-Kanal einschließlich Alpha gezielt und persistent setzen.",
         "baseline": {
@@ -3706,7 +3752,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3726,7 +3786,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/07-floor-green.png"
-          ]
+          ],
+          "gap": "Die genaue Kanalzuordnung eines achtstelligen Hexwerts und die gespeicherte Alphawirkung sind offen."
         },
         "target": "Hex-Farbwert einschließlich gegebenenfalls Alpha zuverlässig übernehmen.",
         "baseline": {
@@ -3762,7 +3823,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3819,7 +3894,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -3839,7 +3928,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
-          ]
+          ],
+          "gap": "Das pipettenähnliche Symbol ist sichtbar, seine Betätigung und Wirkung fehlen."
         },
         "target": "Falls das Symbol eine Farbpipette ist: Farbe aus der Karte aufnehmen und übernehmen.",
         "baseline": {
@@ -3875,7 +3965,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4337,7 +4441,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-ellipse-edit-points.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-building-ellipse.json"
           ]
         },
         "target": "Gewählte Wandtextur samt Anschlüssen speichern.",
@@ -4375,7 +4480,30 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Ellipse 9969aa67-5c8e-4e1a-aa27-cf79d5c677c6: asset=pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall, 32 Punkte, Textursprites=32, Undo/Redo=true/true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; Paketwand pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall; Textursprites=32.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/bau-01-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/qa-wall-pack.dungeondraft_pack",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-package-choice.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-package-preview.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-package-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-package-redo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/bau-01-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/bau-02-wall-choice-saved.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png"
+            ],
+            "gap": null,
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -4435,7 +4563,30 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: None fea8c37d-f83a-47eb-b994-a82eb5236b28: wallWidth=0, Textursprites=0, Zeichenaktionen=fill, vorherige Paketwand erhalten=true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; None wallWidth=0; Sprites=0; Aktionen=fill.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/bau-01-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/qa-wall-pack.dungeondraft_pack",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-none-choice.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-none-preview.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-none-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/screens/wall-none-redo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/bau-01-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/bau-02-wall-choice-saved.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png"
+            ],
+            "gap": "Edit: Schattenwirkung der wandlosen Bodenfläche im Original nicht gepaart vermessen.\nFrischstart: Wandlose Bodenwirkung bleibt wegen des ungepaarten Schattenrands im Original offen.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4454,7 +4605,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
-          ]
+          ],
+          "gap": "Tint-Wirkung der automatischen Wand auf der Karte und in der Datei ist nicht separat gemessen."
         },
         "target": "Native Farblogik an automatischer Wand.",
         "baseline": {
@@ -4490,7 +4642,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4503,7 +4669,7 @@
         "original": {
           "sequence": "Schalter im Building Tool umlegen.",
           "options": "Binär ON/OFF.",
-          "effect": "90°-Wandverbindung ändert sich; Polygonpunkte nicht.",
+          "effect": "Der Bevel-Schalter änderte die sichtbare 90°-Verbindung der automatischen Wand, nicht die Bodenpunkte.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
@@ -4546,7 +4712,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4601,7 +4781,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4620,7 +4814,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
-          ]
+          ],
+          "gap": "Nachträglicher Wandstilwechsel an einem bestehenden Building ist nicht direkt ausgeführt."
         },
         "target": "Falls nativ vorhanden: Stilwechsel gleichwertig.",
         "baseline": {
@@ -4655,7 +4850,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4676,7 +4885,8 @@
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-building.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/10-wall-yellow.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/11-wall-reset.png"
-          ]
+          ],
+          "gap": "Farbreset im Panel ist sichtbar; Wirkung auf vorhandene und anschließend gezeichnete Wände sowie Speicherung fehlt."
         },
         "target": "Automatische Wandfarbe auf den gewählten Stilwert zurücksetzen.",
         "baseline": {
@@ -4712,7 +4922,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4769,7 +4993,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4788,7 +5026,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Enter steht im Original als Abschlussgeste, aber ein kontrollierter neuer Wandzug mit Enter-Abschluss und gespeichertem Ergebnis fehlt."
         },
         "target": "Enter beendet zuverlässig.",
         "baseline": {
@@ -4823,7 +5062,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4842,7 +5095,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Doppelklick wird als Abschlussgeste für den freien Wandzug genannt; ein direkter Originalzug mit beobachtetem Doppelklick-Abschluss und gespeicherter Wirkung fehlt."
         },
         "target": "Nativer Abschlussweg.",
         "baseline": {
@@ -4877,7 +5131,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4896,7 +5164,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Backspace steht als Undo Point in der Leiste; eine direkt gemessene Punktfolge vor/nach Backspace fehlt."
         },
         "target": "Entwurfspunkt und Vorschau wie Original.",
         "baseline": {
@@ -4931,7 +5200,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -4950,7 +5233,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Shift-Kurve ist sichtbar; ob Shift nur das gehaltene Segment oder den ganzen Wandzug krümmt, ist offen."
         },
         "target": "Shift-Kurvenverhalten und Speicherung wie Original.",
         "baseline": {
@@ -4986,7 +5270,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5005,7 +5303,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Ctrl-Fortsetzung ist benannt; die vollständige aktuelle Originalfolge an Anfang und Ende einer vorhandenen Wand fehlt."
         },
         "target": "Ctrl-Fortsetzung mit gleicher Anschlussgeometrie.",
         "baseline": {
@@ -5041,7 +5340,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5060,7 +5373,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Edit Points ist sichtbar; genaue Griffbewegung mit Vorschau, History und Speicherung an einer unabhängigen Wand fehlt."
         },
         "target": "Wandpunkte mit gleicher Geometriewirkung bearbeiten.",
         "baseline": {
@@ -5096,7 +5410,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5115,7 +5443,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Over ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen."
         },
         "target": "Native Over-Reihenfolge.",
         "baseline": {
@@ -5151,7 +5480,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5170,7 +5513,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
-          ]
+          ],
+          "gap": "Under ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen."
         },
         "target": "Native Under-Reihenfolge.",
         "baseline": {
@@ -5206,7 +5550,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5219,7 +5577,7 @@
         "original": {
           "sequence": "Shadow-Schalter umlegen.",
           "options": "Binär.",
-          "effect": "Wandschatten an/aus; gespeichertes shadow-Feld belegt.",
+          "effect": "Die Originaldatei speichert den Schattenzustand einer unabhängigen Wand im Feld shadow.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
@@ -5262,7 +5620,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5318,7 +5690,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5338,7 +5724,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png"
-          ]
+          ],
+          "gap": "Wall-Color färbte die Galerie-Vorschau; Wirkung auf eine vorhandene oder neu gezeichnete Kartenwand ist nicht isoliert."
         },
         "target": "Wandfarbe samt History und Datei steuerbar.",
         "baseline": {
@@ -5374,7 +5761,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5431,7 +5832,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5444,7 +5859,7 @@
         "original": {
           "sequence": "Punktfolge an Anfang schließen.",
           "options": "Datei kennt loop.",
-          "effect": "Geschlossene unabhängige Wand mit optional gebundenem Portal.",
+          "effect": "Die Originaldatei enthält eine geschlossene unabhängige Wand (loop) mit gebundenem Portal.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
@@ -5487,7 +5902,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5542,7 +5971,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -5563,7 +6006,8 @@
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/19-wall-tool-reset.png"
-          ]
+          ],
+          "gap": "Farbreset im Panel ist sichtbar; Wirkung auf vorhandene Wände und neue gespeicherte Wände fehlt."
         },
         "target": "Unabhängige Wandfarbe wählen und auf den gewählten Stilwert zurücksetzen.",
         "baseline": {
@@ -5599,7 +6043,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json"
+            ],
+            "gap": "Edit: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.\nFrischstart: Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt.",
+            "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -27101,11 +27559,12 @@
         "original": {
           "sequence": "Hauptleiste → Export",
           "options": null,
-          "effect": null,
+          "effect": "Hauptleistenaktion Export öffnet den modalen Dialog Export Options; die Karte bleibt dabei sichtbar.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/19-export-options.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/19-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
           ]
         },
         "target": "Export öffnet Export Options mit PNG, JPEG, WEBP und Universal VTT; Ausgabe ist ein eigener Folgefall.",
@@ -27143,7 +27602,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Editormenü öffnet den Exportdialog mit PNG, JPEG, WEBP und Universal VTT.\nFrischstart: Frischstart: Editormenü öffnet erneut den Exportdialog mit vier Formaten.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
+            ],
+            "gap": null,
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -34804,13 +35281,15 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Export Mode: PNG",
           "options": "Geöffnete Liste: PNG, JPEG, WEBP, Universal VTT.",
-          "effect": "PNG-Ausgabe mit Grid und Lighting ON, Grid PPI 256: 2048×2048 RGBA-PNG, 3,7 MiB.",
+          "effect": "PNG-Modus erzeugt bei 8×8 Feldern und 256 PPI ein 2048×2048 großes 8-Bit-RGBA-PNG; drei Raster-/Lichtvarianten wurden erzeugt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png"
           ]
         },
         "target": "PNG-Export erzeugt die eigene 8×8-Karte bei 256 Pixeln je Feld als 2048×2048-PNG.",
@@ -34848,7 +35327,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Menüexport erzeugt für 8×8 Felder bei 256 Pixel/Feld ein dekodierbares 2048×2048-PNG.\nFrischstart: Frischstart: PNG-Export der 8×8-Karte bei 256 Pixel/Feld erzeugt ein 2048×2048-PNG.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
+            ],
+            "gap": "Edit: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.\nFrischstart: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -34861,10 +35358,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Grid",
           "options": null,
-          "effect": null,
+          "effect": "Grid ON fügt im PNG gepunktete Rasterlinien hinzu; bei unverändertem Lighting ON unterscheiden sich ON und OFF an 131.369 Pixeln.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/28-png-grid-off-light-on-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-off-light-on.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Grid“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
@@ -34902,7 +35403,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bildraster an/aus änderte 16128 Pixel; Dokument, History und Kamera blieben unverändert.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-no-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Original-Rasterwirkung und UI-Vorgaben im selben Exportfall sind noch nicht gepaart.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -34915,10 +35434,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Lighting",
           "options": null,
-          "effect": null,
+          "effect": "Das obere Lighting ON backt die Lichtwirkung ins PNG; bei Grid OFF unterscheiden sich ON und OFF an 594.168 Pixeln um die Lichtquelle.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/23-png-grid-light-off-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/28-png-grid-off-light-on-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-off-light-on.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Lighting“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
@@ -34956,7 +35479,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -34969,12 +35508,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Source Level",
           "options": "Source zeigt Ground; Overlay zeigt ---; beide Auswahlpfeile bei der einzigen QA-Ebene ohne weitere Wahl.",
-          "effect": null,
+          "effect": "Source Level zeigt auf der Ein-Ebenen-Karte Ground; ein Ebenenwechsel wurde nicht ausgeführt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt."
         },
         "target": "Nach Originalmessung offen: „Source Level“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35011,7 +35552,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt.\nFrischstart: Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35024,11 +35581,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Source Lighting",
           "options": null,
-          "effect": null,
+          "effect": "Source Lighting steht im gemessenen Startzustand auf ON; bei allen Ausgaben blieb es ON.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt."
         },
         "target": "Nach Originalmessung offen: „Source Lighting“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35065,7 +35624,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt.\nFrischstart: Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35078,11 +35653,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Brightness",
           "options": null,
-          "effect": null,
+          "effect": "Brightness zeigt im gemessenen Startzustand 100 %.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt."
         },
         "target": "Nach Originalmessung offen: „Brightness“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35119,7 +35696,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt.\nFrischstart: Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35132,11 +35725,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Focus",
           "options": null,
-          "effect": null,
+          "effect": "Focus zeigt im gemessenen Startzustand 100 %.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung eines anderen Focus-Werts auf Exportbild fehlt."
         },
         "target": "Nach Originalmessung offen: „Focus“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35173,7 +35768,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung eines anderen Focus-Werts auf Exportbild fehlt.\nFrischstart: Auswirkung eines anderen Focus-Werts auf Exportbild fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35186,12 +35797,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Overlay Level",
           "options": "Source zeigt Ground; Overlay zeigt ---; beide Auswahlpfeile bei der einzigen QA-Ebene ohne weitere Wahl.",
-          "effect": null,
+          "effect": "Overlay Level zeigt auf der Ein-Ebenen-Karte --- an.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground."
         },
         "target": "Nach Originalmessung offen: „Overlay Level“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35228,7 +35841,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground.\nFrischstart: Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35241,11 +35870,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Overlay Lighting",
           "options": null,
-          "effect": null,
+          "effect": "Overlay Lighting zeigt im gemessenen Startzustand ON.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt."
         },
         "target": "Nach Originalmessung offen: „Overlay Lighting“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35282,7 +35913,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt.\nFrischstart: Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35295,11 +35942,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Overlay Opacity",
           "options": null,
-          "effect": null,
+          "effect": "Overlay Opacity zeigt im gemessenen Startzustand 100 %.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt."
         },
         "target": "Nach Originalmessung offen: „Overlay Opacity“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35336,7 +35985,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt.\nFrischstart: Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35349,12 +36014,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Camera Filter",
           "options": "Dropdown vollständig: None, Printer-Friendly, Sepia.",
-          "effect": null,
+          "effect": "Camera Filter zeigt im gemessenen Startzustand None.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/15-camera-filter.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/15-camera-filter.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswahl und Bildwirkung eines anderen Camera Filter fehlen."
         },
         "target": "Nach Originalmessung offen: „Camera Filter“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35391,7 +36058,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswahl und Bildwirkung eines anderen Camera Filter fehlen.\nFrischstart: Auswahl und Bildwirkung eines anderen Camera Filter fehlen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35404,12 +36087,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Grid Presets",
           "options": "Dropdown vollständig: Custom, Best Quality, Optimal Halved, Commercial Print, Roll 20, 40\" TV, 55\" TV.",
-          "effect": null,
+          "effect": "Grid Presets zeigt im gemessenen Startzustand Custom.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Auswahl und Pixelwirkung eines anderen Grid Preset fehlen."
         },
         "target": "Nach Originalmessung offen: „Grid Presets“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35446,7 +36131,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.\nFrischstart: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35459,11 +36160,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Grid PPI",
           "options": null,
-          "effect": null,
+          "effect": "Grid PPI zeigt 256; auf der 8×8-Karte resultieren 2048×2048 Pixel in PNG und VTT-Bild.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png"
+          ],
+          "gap": "Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen."
         },
         "target": "Nach Originalmessung offen: „Grid PPI“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35500,7 +36204,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: 64 und 128 Pixel/Feld lieferten 512×512 und 1024×1024 PNG.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-128-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Original-PPI-Grenzen und Pixelwirkung im gleichen Fall sind noch nicht gepaart.\nFrischstart: Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35513,11 +36235,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Output pixel dimensions",
           "options": null,
-          "effect": "Aus 8×8 und Grid PPI 256 wurden 2048×2048 angezeigt und als PNG/VTT-Bildheader bestätigt.",
+          "effect": "Der Dialog zeigt 2048×2048 Ausgabepixel; PNG und eingebettetes VTT-Bild bestätigen diese Maße.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt"
           ]
         },
         "target": "Nach Originalmessung offen: „Output pixel dimensions“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
@@ -35555,7 +36280,28 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-256-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-dialog-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-dialog-before-x.png"
+            ],
+            "gap": null,
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -35568,11 +36314,14 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Show in Folder on Finish",
           "options": null,
-          "effect": null,
+          "effect": "Show in Folder on Finish ist anfangs ON und wurde für die vier QA-Ausgaben OFF gestellt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png"
+          ],
+          "gap": "ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar."
         },
         "target": "Nach Originalmessung offen: „Show in Folder on Finish“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35609,7 +36358,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.\nFrischstart: ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35622,11 +36387,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Crop",
           "options": null,
-          "effect": null,
+          "effect": "Crop ist im Exportdialog als Bedienelement sichtbar.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen."
         },
         "target": "Nach Originalmessung offen: „Crop“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35663,7 +36430,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.\nFrischstart: Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35676,11 +36459,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Reset Crop",
           "options": null,
-          "effect": null,
+          "effect": "Reset Crop ist im unbeschnittenen Startzustand sichtbar und inaktiv.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+          ],
+          "gap": "Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen."
         },
         "target": "Nach Originalmessung offen: „Reset Crop“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
         "baseline": {
@@ -35717,7 +36502,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.\nFrischstart: Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35730,11 +36531,13 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Export file",
           "options": null,
-          "effect": "Export erzeugte mit getrennten QA-Zielpfaden PNG und Universal VTT.",
+          "effect": "Export file erzeugt für gewählte QA-Zielpfade drei PNG-Dateien und eine .dd2vtt-Datei.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt"
           ]
         },
         "target": "Export schreibt den gewählten Modus an den gewählten QA-Pfad, ohne die native Kartendatei zu überschreiben.",
@@ -35772,7 +36575,26 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Menüexport übergab PNG, JPEG und WEBP als Dateien an den Downloadlink; ein System-Dateidialog ist hier nicht belegt.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Dateiablage im produktiven Vault-Host und frisches Öffnen der Exportdatei fehlen.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35784,15 +36606,20 @@
         "scope": "required",
         "original": {
           "sequence": "Hauptleiste > Export > Export Options > Export Mode → JPEG",
-          "options": null,
-          "effect": "Modus im geöffneten Dropdown der installierten 1.2.0.1 sichtbar; Dateiausgabe nicht gemessen.",
+          "options": "Grid und Lighting ON, 256 Pixel/Feld, zusätzlicher Quality-Regler bei 90 %.",
+          "effect": "JPEG-Export erzeugt aus der belegten 8×8-Karte eine 2048×2048-RGB-Datei mit Boden, Wand, Portal, Licht und Raster.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/exports/wall-portal-light-q90.jpg"
+          ],
+          "gap": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen."
         },
-        "target": "Nach Originalmessung offen: Export Mode JPEG erzeugt die gewählte Karten-Ausgabe im entsprechenden Format.",
+        "target": "JPEG-Export erzeugt eine Karte mit gleichwertiger Szene, 256 Pixel/Feld bei Standardwerten und einem wählbaren Qualitätswert.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -35827,7 +36654,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: JPEG-Menüexport lieferte JFIF/JPEG-Signatur und Dateiendung .jpg.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Original-JPEG ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35839,15 +36683,20 @@
         "scope": "required",
         "original": {
           "sequence": "Hauptleiste > Export > Export Options > Export Mode → WEBP",
-          "options": null,
-          "effect": "Modus im geöffneten Dropdown der installierten 1.2.0.1 sichtbar; Dateiausgabe nicht gemessen.",
+          "options": "Grid und Lighting ON, 256 Pixel/Feld, zusätzlicher Quality-Regler bei 90 %.",
+          "effect": "WEBP-Export erzeugt aus der belegten 8×8-Karte eine 2048×2048-RGB-Datei mit Boden, Wand, Portal, Licht und Raster.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/exports/wall-portal-light-q90.webp"
+          ],
+          "gap": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen."
         },
-        "target": "Nach Originalmessung offen: Export Mode WEBP erzeugt die gewählte Karten-Ausgabe im entsprechenden Format.",
+        "target": "WEBP-Export erzeugt eine Karte mit gleichwertiger Szene, 256 Pixel/Feld bei Standardwerten und einem wählbaren Qualitätswert.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -35882,7 +36731,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: WEBP-Menüexport lieferte RIFF/WEBP-Signatur und Dateiendung .webp.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -35895,13 +36761,16 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options > Export Mode → Universal VTT",
           "options": "Vierter sichtbarer Modus im Export-Mode-Dropdown.",
-          "effect": "5,0-MB-JSON, format 0.3; resolution map_origin 0/0, map_size 8×8, pixels_per_grid 256; environment baked_lighting true und ambient_light ffffffff; leere Listen für line_of_sight, objects_line_of_sight, portals und lights; base64-PNG 2048×2048.",
+          "effect": "Universal VTT erzeugt JSON format 0.3 mit 8×8/256-Auflösung, einer Sichtlinien-Polygonlinie, einem gebundenen Portal, einem Licht und base64-PNG; das Bild ist bytegleich zum PNG mit Grid OFF und Lighting ON.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.dd2vtt"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.dd2vtt",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/26-vtt-options-before-export.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/maps/06-source-wall-portal-light.dungeondraft_map"
           ]
         },
         "target": "Universal VTT schreibt JSON format 0.3 mit Rastermaß 8×8/256 und eingebettetem 2048×2048-PNG.",
@@ -35939,7 +36808,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+            ],
+            "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -41633,11 +42518,12 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → X / Export abbrechen",
           "options": null,
-          "effect": "X schließt den Exportdialog vor einer Dateiausgabe.",
+          "effect": "X schließt den Exportdialog ohne eine weitere Datei zu erzeugen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/30-export-dialog-closed-with-x.png"
           ]
         },
         "target": "Das Exportdialog-X schließt vor Dateiausgabe; eine Exportdatei wird beim Abbruch nicht angelegt.",
@@ -41675,7 +42561,102 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.\nFrischstart: Frischstart: sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-dialog-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-dialog-before-x.png"
+            ],
+            "gap": null,
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
+        }
+      },
+      {
+        "id": "DD-043.24",
+        "parent": "DD-043",
+        "area": "verwaltung",
+        "path": "Hauptleiste > Export > Export Options > JPEG/WEBP",
+        "command": "Quality (%)",
+        "scope": "required",
+        "original": {
+          "sequence": "Export Options → JPEG oder WEBP → Quality (%)",
+          "options": "Regler und Zahlenfeld, angezeigt 90 % bei beiden Formaten; bei PNG nicht angezeigt.",
+          "effect": "Der wählbare Quality-Wert gehört zur JPEG- und WEBP-Ausgabe.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png"
+          ],
+          "gap": "Wirkung eines geänderten Quality-Werts und exakte zulässige Grenzen im Original nicht gemessen."
+        },
+        "target": "JPEG und WEBP zeigen einen Qualitätswert mit Standard 90 % und wenden seine Wahl bei der Kodierung an; PNG blendet ihn aus.",
+        "baseline": {
+          "editor": {
+            "sequence": null,
+            "options": null,
+            "effect": null,
+            "version": "Dungeon-Editor 0.1.0; eingefrorener Build c9febbe3dcafb61ec68637aeb5bccd875b5488d79e32102257dcd9d2ef11c7a0",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/baseline.json",
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-editor/src/editor.ts",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/DD-043-EXPORT.md"
+            ]
+          },
+          "comparison": {
+            "status": "Abweichung",
+            "difference": "Der eingefrorene Editor bot weder Export noch einen Qualitätsregler.",
+            "gap": "Im Baseline-Editor nicht vorhanden.",
+            "target": "JPEG und WEBP zeigen einen Qualitätswert mit Standard 90 % und wenden seine Wahl bei der Kodierung an; PNG blendet ihn aus.",
+            "effort": "klein"
+          },
+          "checks": {
+            "preview_cancel": "offen",
+            "undo_redo": "offen",
+            "save_reopen": "offen"
+          }
+        },
+        "implementation": {
+          "state": "not_started",
+          "changes": [],
+          "evidence": []
+        },
+        "hostCheck": {
+          "state": "open",
+          "build": null,
+          "evidence": [],
+          "gap": "Qualitätsregler und Wirkung am isolierten Host noch nicht geprüft.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen; JPEG/WEBP-Dateien erzeugt.\nFrischstart: Frischstart: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-quality-default.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-quality-default.png"
+            ],
+            "gap": "Edit: Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.\nFrischstart: Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.",
+            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {

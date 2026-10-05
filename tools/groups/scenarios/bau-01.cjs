@@ -137,7 +137,7 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
       if (!visual) return null;
       let sprites = 0;
       const walk = (node) => {
-        if (node.texture) sprites++;
+        if (node.texture && typeof node.texture !== "function") sprites++;
         for (const child of node.children ?? []) walk(child);
       };
       walk(visual.container);
@@ -187,11 +187,14 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
         ]) {
           const edit = saved.editOutcomes[id];
           const renderKnown = id !== "DD-015.02" || noneRender?.actions?.includes("fill");
-          const state = edit?.state !== "pass" || !renderKnown
-            ? "open" : okay ? "pass" : "deviation";
+          const state = id === "DD-015.02" && okay ? "open"
+            : edit?.state !== "pass" || !renderKnown
+              ? "open" : okay ? "pass" : "deviation";
           set(id, state,
             `Frischöffnung: Dokument/Datei bytegleich=${exact}; ${detail}.`,
-            state === "pass" ? null : edit?.state !== "pass"
+            state === "pass" ? null : id === "DD-015.02" && okay
+              ? "Wandlose Bodenwirkung bleibt wegen des ungepaarten Schattenrands im Original offen."
+              : edit?.state !== "pass"
               ? (edit?.state !== "pass"
                 ? `Editphase nicht bestanden: ${edit?.gap ?? edit?.observation ?? "ohne Ergebnis"}`
                 : "Wandloses Rendering im Host nicht eindeutig introspektierbar.")
@@ -304,9 +307,13 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
             ["wall-none-choice", "wall-none-preview", "wall-none-placed", "wall-none-redo"]],
         ]) {
           const renderKnown = id !== "DD-015.02" || noneRender?.actions?.includes("fill");
-          const state = !savedOkay || !renderKnown ? "open" : okay ? "pass" : "deviation";
+          const state = !savedOkay || !renderKnown ? "open"
+            : id === "DD-015.02" && okay ? "open"
+            : okay ? "pass" : "deviation";
           set(id, state, `${detail}; Save=${savedOkay}.`,
-            state === "pass" ? null : !savedOkay
+            state === "pass" ? null : id === "DD-015.02" && okay
+              ? "Schattenwirkung der wandlosen Bodenfläche im Original nicht gepaart vermessen."
+              : !savedOkay
               ? "Karte konnte nicht als exakter QA-Stand gespeichert werden."
               : !renderKnown
                 ? "Wandloses Rendering im Host nicht eindeutig introspektierbar."
