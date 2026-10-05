@@ -131,6 +131,8 @@ async function edit({ page, qa, vault, out }) {
   const beforeCancelCatalog = await page.evaluate(() =>
     app.plugins.getPlugin("dungeon-editor").prefabs());
   const beforeCancelMap = hash(path.join(vault, mapPath));
+  const beforeCancelData = fs.existsSync(path.join(vault, dataPath))
+    ? hash(path.join(vault, dataPath)) : null;
   await modal.locator(".modal-header-button").click();
   await modal.waitFor({ state: "detached" });
   const afterCancel = await editor(page, mapPath);
@@ -141,6 +143,9 @@ async function edit({ page, qa, vault, out }) {
   "X-Abbruch änderte den Vorlagenkatalog.");
   assert.equal(hash(path.join(vault, mapPath)), beforeCancelMap,
     "X-Abbruch änderte die gespeicherte Karte.");
+  assert.equal(fs.existsSync(path.join(vault, dataPath))
+    ? hash(path.join(vault, dataPath)) : null, beforeCancelData,
+  "X-Abbruch änderte die gespeicherte Vorlagenliste.");
   dialog.xCanceledWithoutChange = true;
   await page.getByRole("button", { name: "Vorlage erstellen", exact: true }).last().click();
   modal = page.locator(".modal-container:visible").last();
@@ -174,7 +179,9 @@ async function edit({ page, qa, vault, out }) {
   const saved = { mapPath, set, name, objectId, lightId, prefab,
     sourceOffset, mapSha: hash(mapFile), dataSha: hash(dataFile) };
   write(path.join(qa, stateName), saved);
-  write(evidence, { dialog, selected: before.selected, prefab,
+  write(evidence, { dialog, cancelEvidence: { beforeCancelMap,
+    beforeCancelData, beforeCancelCatalog, afterCancel },
+    selected: before.selected, prefab,
     source: [objectId, lightId].map((id) => after.document.entities
       .find((item) => item.id === id)), saved });
   return [
@@ -183,6 +190,9 @@ async function edit({ page, qa, vault, out }) {
       evidence: [selectionImage, dialogImage, evidence],
       gap: dialog.cancel || dialog.close ? null :
         "Im sichtbaren Make-Prefab-Hauptdialog wurde weder Cancel noch X gefunden; Escape ist separat unter DD-042.08 geprüft." },
+    { caseId: "DD-042.08", state: "pass",
+      observation: "X schließt den Make-Prefab-Dialog mit gemischter Auswahl ohne neue Vorlage und ohne Änderung von Karte, Katalogdatei oder History.",
+      evidence: [dialogImage, evidence] },
     { caseId: "DD-042.07", state: "pass",
       observation: "Accept speichert genau eine benannte Vorlage mit Objekt und Licht, gleichem relativen Versatz und gemeinsamer Bindung; Karte und Katalog gespeichert.",
       evidence: [dialogImage, evidence] },

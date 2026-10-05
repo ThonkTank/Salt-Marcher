@@ -18,6 +18,8 @@ test("isolated mixed prefab mode records each DD case once", async () => {
     mixed.edit = async () => [
       { caseId: "DD-042.01", state: "pass", observation: "mixed dialog",
         evidence: ["selection.png"] },
+      { caseId: "DD-042.08", state: "pass", observation: "mixed cancel",
+        evidence: ["cancel.json"] },
       { caseId: "DD-042.07", state: "pass", observation: "mixed prefab",
         evidence: ["prefab.json"] },
     ];
@@ -28,8 +30,8 @@ test("isolated mixed prefab mode records each DD case once", async () => {
     const editRecord = createGroupRecord(group, out, "test-build", "edit");
     await scenario({ restart: false, record: editRecord });
     const first = editRecord.finish();
-    assert.equal(first.counts.pass, 2);
-    assert.equal(first.counts.open, group.caseIds.length - 2);
+    assert.equal(first.counts.pass, 3);
+    assert.equal(first.counts.open, group.caseIds.length - 3);
     assert.equal(new Set(first.cases.map((item) => item.caseId)).size,
       group.caseIds.length);
 
