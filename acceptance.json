@@ -4026,15 +4026,33 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Ausgewählte Building-Kontur zeigt Griffhover; Ellipsen- und Rechteckpunktzüge verwenden eine Vorschau und einen atomaren Loslass-Command."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-dd012010203-dd02127/qa/DD01203-HELD-GRIPS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd01203/DD-012-01-03-HOST-REVIEW.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229786427-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229796570-bau-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012-rectangle-host/evidence/1791231011714-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012-rectangle-host/evidence/1791231031989-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Ellipsen- und Rechteckwirkung im isolierten Host belegt; fallgleicher Original-Rechteckzug und Original-Frischöffnung fehlen, installierter Endstand offen.",
+          "phaseStates": {
+            "edit": "open",
+            "reopen": "open"
+          },
+          "comparisonBuilds": {
+            "ellipse": "79443d28f495d267acae12d437600e426633a24b87052cbf7c0cde180c11ade3",
+            "rectangle": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518"
+          }
         }
       },
       {
@@ -4083,15 +4101,33 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Ausgewählte Building-Kontur zeigt Griffhover; Ellipsen- und Rechteckpunktzüge verwenden eine Vorschau und einen atomaren Loslass-Command."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-dd012010203-dd02127/qa/DD01203-HELD-GRIPS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd01203/DD-012-01-03-HOST-REVIEW.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229786427-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229796570-bau-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012-rectangle-host/evidence/1791231011714-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012-rectangle-host/evidence/1791231031989-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Ellipsen- und Rechteckwirkung im isolierten Host belegt; fallgleicher Original-Rechteckzug und Original-Frischöffnung fehlen, installierter Endstand offen.",
+          "phaseStates": {
+            "edit": "open",
+            "reopen": "open"
+          },
+          "comparisonBuilds": {
+            "ellipse": "79443d28f495d267acae12d437600e426633a24b87052cbf7c0cde180c11ade3",
+            "rectangle": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518"
+          }
         }
       },
       {
@@ -4137,15 +4173,27 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Gehaltene Building-Punktvorschau zeichnet Boden, Wand und 31 weiße plus einen gelben Griff ohne Kartenmutation."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-dd012010203-dd02127/qa/DD01203-HELD-GRIPS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd01203/DD-012-01-03-HOST-REVIEW.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "79443d28f495d267acae12d437600e426633a24b87052cbf7c0cde180c11ade3",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229786427-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd012010203-grips-host/evidence/1791229796570-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Hostvorschau bildlich mit Original D05 verglichen; native Escape-Grenze unklar, installierter Endstand offen.",
+          "phaseStates": {
+            "edit": "open",
+            "reopen": "open"
+          }
         }
       },
       {
