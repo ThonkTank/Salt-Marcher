@@ -1,7 +1,7 @@
 # DD-042.09: doppelter Vorlagenname im selben Set
 
-**Status:** Host-Szenario vorbereitet, nicht grafisch ausgeführt. Keine
-Produkt-, Vault- oder Acceptance-Änderung.
+**Status:** Dialogvalidierung und Host-Szenario im isolierten Zweig angepasst,
+noch nicht grafisch ausgeführt. Kein Vault- oder Acceptance-Edit.
 
 ## Originalregel
 
@@ -9,7 +9,10 @@ Produkt-, Vault- oder Acceptance-Änderung.
 protokolliert Dungeondraft 1.2.0.1: Licht auswählen, Make Prefab,
 „Codex set probe“ über Set-Plus anlegen, „Codex probe light“ speichern,
 danach im gleichen Set denselben Vorlagennamen erneut bestätigen. Das
-Original lehnte den Duplikatnamen ab. Die erste native Vorlagendatei wurde
+Original lehnte den Duplikatnamen ab. Die
+[`native-prefab-set-delete-ready.png`](/home/aaron/.cache/dungeon-native-qa/evidence/native-prefab-set-delete-ready.png)
+zeigt den Inline-Fehler „Error: Prefab name already exists in this set.“ bei
+offenem Dialog und deaktiviertes „Accept“. Die erste native Vorlagendatei wurde
 als `native-prefab-set-created.dungeondraft_prefab` mit SHA-256
 `022470aaeddf05627dcaa095473b1471fe7399b676f43a94b69314534a735576`
 gesichert. Ein direkter Bytevergleich dieser Datei **nach** dem nativen
@@ -27,12 +30,14 @@ In einem isolierten QA-Vault erstellt der Editlauf eine neue Karte mit einer
 Lichtquelle, wählt sie über das Auswahlwerkzeug und speichert sie per
 sichtbarem „Vorlage erstellen“-Dialog als neue Sammlung/Vorlage. Danach
 werden Katalog und Plugindatei `data.json` sowie Karte und Session-History
-festgehalten. Derselbe Dialog versucht denselben Namen im selben Set
-erneut. Erwartet werden ein Ablehnungshinweis, weiterhin genau eine
-Vorlage, dieselbe Definition und **bytegleiche** Plugin-/Kartendateien;
-auch Dokument, Auswahl und History dürfen sich nicht ändern. Der getrennte
-Reopenlauf prüft genau eine Definition, gleiches Dokument und beide
-Prüfsummen nach einem neuen Obsidian-Prozess.
+festgehalten. Derselbe Dialog trägt denselben Namen im selben Set erneut ein.
+Erwartet werden der Inline-Fehler im offenen Dialog und eine deaktivierte
+Bestätigung. Nach Korrektur des Namens muss die Bestätigung wieder aktiv sein;
+nach Rückkehr zum Duplikat muss sie erneut gesperrt sein. Der Dialog wird ohne
+Speichern geschlossen. Weiterhin genau eine Vorlage, dieselbe Definition,
+**bytegleiche** Plugin-/Kartendateien sowie gleiches Dokument, Auswahl und
+History sind Pflicht. Der getrennte Reopenlauf prüft genau eine Definition,
+gleiches Dokument und beide Prüfsummen nach einem neuen Obsidian-Prozess.
 
 Belege werden im jeweiligen Hostlauf unter `dd04209-edit.json`, den
 Dialog-/Ergebnisscreenshots und `dd04209-reopen.json` geschrieben. Der
@@ -42,10 +47,16 @@ integriert nur diese Szenariodatei und führt Edit/Reopen exklusiv aus.
 
 ## Grenzen
 
-- Die Originalprobe belegt **identische** Namen im selben Set. Ob
+- Die Originalprobe belegt **identische** Namen im selben Set und den sichtbaren
+  Inline-Fehler mit gesperrtem Accept. Ein anschließendes Korrigieren im
+  noch offenen Originaldialog ist aus der Aufnahme nur als Möglichkeit
+  ersichtlich, aber nicht tatsächlich ausgeführt und gemessen. Ob
   Groß-/Kleinschreibung oder Leerzeichenvarianten ebenfalls abgelehnt
   werden, ist originalseitig offen. Der Editor lehnt solche Varianten
   teilweise bereits ab; dieser Hostfall behauptet dafür keine Parität.
+- Der Originalbericht enthält keinen Bytevergleich der Vorlagendatei nach
+  dem abgelehnten Versuch und keinen Frischstart. Diese Teilwirkungen bleiben
+  originalseitig offen, auch wenn der isolierte Host sie messen kann.
 - Eine vom Editor gespeicherte Vorlage liegt in Plugin-`data.json`, keine
   `.dungeondraft_prefab`-Datei. Das eigene Speicherformat ist gemäß
   Produktziel zulässig; geprüft wird die gleiche funktionale

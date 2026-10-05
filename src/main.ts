@@ -246,7 +246,7 @@ function selectedLocalFilePath(file: File): string | undefined {
 }
 class PrefabNameModal extends Modal {
   private answer?: (value: { set: string; name: string } | null) => void;
-  constructor(app: App, private readonly existingSets: readonly string[]) {
+  constructor(app: App, private readonly prefabs: () => readonly Prefab[]) {
     super(app);
   }
   request(): Promise<{ set: string; name: string } | null> {
@@ -256,10 +256,11 @@ class PrefabNameModal extends Modal {
     });
   }
   onOpen(): void {
-    const sets = [...new Set(["Allgemein", ...this.existingSets])],
+    const existingSets = this.prefabs().map((prefab) => prefab.set);
+    const sets = [...new Set(["Allgemein", ...existingSets])],
       temporarySets = new Set<string>(),
       returnSets = new Map<string, string>();
-    let set = this.existingSets.at(-1) ?? "Allgemein", name = "";
+    let set = existingSets.at(-1) ?? "Allgemein", name = "";
     const render = () => {
       this.setTitle("Vorlage erstellen");
       this.contentEl.empty();
@@ -283,16 +284,35 @@ class PrefabNameModal extends Modal {
             set = previous && sets.includes(previous) ? previous : sets[0]!;
             render();
           }));
+      let createButton: ButtonComponent;
+      let error: HTMLParagraphElement;
+      const validate = () => {
+        const duplicate = this.prefabs().some((prefab) =>
+          prefab.set.toLocaleLowerCase() === set.toLocaleLowerCase() &&
+          prefab.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase());
+        error.setText(duplicate
+          ? "In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen."
+          : "");
+        error.hidden = !duplicate;
+        createButton.setDisabled(!name.trim() || duplicate);
+        return !duplicate && !!name.trim();
+      };
       new Setting(this.contentEl).setName("Name").addText((input) =>
         input.setPlaceholder("Vorlagenname").setValue(name)
-          .onChange((value) => { name = value; }));
-      new Setting(this.contentEl).addButton((button) => button
-        .setButtonText("Erstellen").setCta().onClick(() => {
-          if (!name.trim()) return;
+          .onChange((value) => { name = value; validate(); }));
+      error = this.contentEl.createEl("p", { cls: "dn-prefab-name-error" });
+      error.setAttribute("role", "alert");
+      error.style.color = "var(--text-error)";
+      new Setting(this.contentEl).addButton((button) => {
+        createButton = button;
+        button.setButtonText("Erstellen").setCta().onClick(() => {
+          if (!validate()) return;
           this.answer?.({ set, name: name.trim() });
           this.answer = undefined;
           this.close();
-        }));
+        });
+      });
+      validate();
     };
     const renderNewSet = () => {
       this.setTitle("Sammlung hinzufügen");
@@ -1570,7 +1590,7 @@ class DungeonView extends FileView {
           forgetPrefab: (prefab, doc, signal) =>
             this.plugin.forgetPrefab(prefab, doc, signal),
           requestPrefabDetails: () => new PrefabNameModal(
-            this.app, this.plugin.prefabs().map((prefab) => prefab.set),
+            this.app, () => this.plugin.prefabs(),
           ).request(),
           manageAssets: () => this.plugin.openAssets(map.session),
           manageMap: () =>

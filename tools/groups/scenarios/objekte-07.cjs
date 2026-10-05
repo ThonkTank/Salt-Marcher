@@ -133,10 +133,22 @@ async function edit({ page, out, qa, vault, group, record }) {
   await modal.locator('select:not([aria-hidden="true"])').selectOption(set);
   await modal.locator("input").fill(name);
   await modal.screenshot({ path: path.join(out, "duplicate-prefab-dialog.png") });
-  await modal.getByRole("button", { name: "Erstellen", exact: true }).click();
-  await page.locator(".notice").filter({ hasText:
-    "In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen." })
-    .waitFor({ timeout: 5000 });
+  const createButton = modal.getByRole("button", { name: "Erstellen", exact: true });
+  const error = modal.getByRole("alert").filter({ hasText:
+    "In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen." });
+  await error.waitFor({ timeout: 5000 });
+  const duplicateDisabled = await createButton.isDisabled();
+  const duplicateDialogOpen = await modal.isVisible();
+  const duplicateNotice = await page.locator(".notice").filter({ hasText:
+    "In dieser Sammlung gibt es bereits eine Vorlage mit diesem Namen." }).count();
+  await modal.locator("input").fill(`${name} korrigiert`);
+  const correctionEnabled = await createButton.isEnabled();
+  const correctionCleared = !(await error.isVisible());
+  await modal.locator("input").fill(name);
+  const duplicateDisabledAgain = await createButton.isDisabled();
+  await modal.screenshot({ path: path.join(out, "duplicate-rejected-inline.png") });
+  await page.keyboard.press("Escape");
+  const dismissedWithoutSave = !(await modal.isVisible());
   await waitWrites(page);
   const afterDuplicate = await snapshot(page, mapPath);
   const dataUnchanged = digest(dataFile) === dataSha;
@@ -144,7 +156,10 @@ async function edit({ page, out, qa, vault, group, record }) {
   const catalogUnchanged = same(afterDuplicate.prefabs, beforeDuplicate.prefabs);
   const documentUnchanged = same(afterDuplicate.document, beforeDuplicate.document);
   const historyUnchanged = afterDuplicate.historySize === beforeDuplicate.historySize;
-  const unchanged = dataUnchanged && mapUnchanged && catalogUnchanged &&
+  const unchanged = duplicateDisabled && duplicateDialogOpen &&
+    duplicateNotice === 0 && correctionEnabled && correctionCleared &&
+    duplicateDisabledAgain && dismissedWithoutSave &&
+    dataUnchanged && mapUnchanged && catalogUnchanged &&
     documentUnchanged && historyUnchanged && !afterDuplicate.dirty &&
     afterDuplicate.selected === "dd04209-source-light";
   const screen = path.join(out, "duplicate-rejected.png");
@@ -152,16 +167,19 @@ async function edit({ page, out, qa, vault, group, record }) {
   const details = { mapPath, set, name, sourceId: "dd04209-source-light",
     prefab: matches[0], beforeFirst, beforeDuplicate, afterDuplicate,
     dataSha, mapSha, dataUnchanged, mapUnchanged, catalogUnchanged,
-    documentUnchanged, historyUnchanged, unchanged };
+    documentUnchanged, historyUnchanged, duplicateDisabled,
+    duplicateDialogOpen, duplicateNotice, correctionEnabled,
+    correctionCleared, duplicateDisabledAgain, dismissedWithoutSave,
+    unchanged };
   const steps = path.join(out, "dd04209-edit.json");
   write(steps, details);
   write(statePath, { mapPath, set, name, sourceId: details.sourceId,
     prefab: matches[0], dataSha, mapSha,
     document: beforeDuplicate.document });
   record.add(CASE, unchanged ? "pass" : "deviation",
-    `Identischer Vorlagenname im selben Set abgelehnt; Definition, data.json, Karte und History unverändert=${unchanged}.`,
-    [steps, screen, path.join(out, "duplicate-prefab-dialog.png")],
-    unchanged ? null : "Duplikatversuch änderte Katalog, Datei, Karte oder History.");
+    `Duplikat im Dialog gemeldet, Erstellen gesperrt, Name korrigierbar; Definition, data.json, Karte und History unverändert=${unchanged}.`,
+    [steps, screen, path.join(out, "duplicate-rejected-inline.png")],
+    unchanged ? null : "Dialogvalidierung oder Erhalt von Katalog, Datei, Karte und History wich ab.");
 }
 
 async function reopen({ page, out, qa, vault, group, record }) {
