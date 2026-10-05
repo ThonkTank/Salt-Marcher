@@ -98,9 +98,9 @@ module.exports = async function materialMuster({ page, out, qa, vault, restart,
           ? "Original/Host: nur X, RGB und Alpha gepaart; Material, Rotation, Outline und bearbeitete Form fehlen im Frischstartvergleich."
           : "Host: Karte oder Musterparameter nach Neustart verändert.",
         [savedPath, reopened.screen]);
-      set("DD-020.13", sameColor ? "pass" : "deviation",
-        `Frischstart: RGB #3366cc und Alpha 160/255 erhalten=${sameColor}.`,
-        sameColor ? null : "Host: RGB oder 8-Bit-Alpha nach Neustart verändert.",
+      set("DD-020.13", sameColor && equalDocument ? "pass" : "deviation",
+        `Frischstart: gleiches Dokument=${equalDocument}, RGB #3366cc und Alpha 160/255 erhalten=${sameColor}.`,
+        sameColor && equalDocument ? null : "Host: Dokument, RGB oder 8-Bit-Alpha nach Neustart verändert.",
         [savedPath, reopened.screen]);
       set("DD-020.12", "open",
         `Farbfläche ohne Materialreferenz nach frischem Öffnen vorhanden=${!surface?.material}.`,
@@ -135,16 +135,20 @@ module.exports = async function materialMuster({ page, out, qa, vault, restart,
     const afterAccept = await stage("picker-magenta-accepted");
     const defaults = await page.evaluate(() => app.workspace
       .getLeavesOfType("dungeon-native-map")[0].view.editor.settings.surfaces.pattern);
+    const visibleColor = await page.locator('input[aria-label="Flächenfarbe"]').last().inputValue();
+    const pickerClosed = !(await picker.evaluate((element) => element.open));
     const accepted = defaults.color === 0xff00ff &&
       Math.round((defaults.opacity ?? 1) * 255) === 255 &&
       same(beforeAccept.document, afterAccept.value.document);
-    set("DD-020.26", accepted ? "pass" : "deviation",
-      `Hex ff00ff nach Accept im Muster-Farbwert sichtbar und übernommen=${accepted}.`,
-      accepted ? null : "Host: Hex-Eingabe wurde nicht als RGB ff00ff übernommen.",
+    const visibleMagenta = visibleColor.toLowerCase() === "#ff00ff";
+    set("DD-020.26", accepted && visibleMagenta ? "pass" : "deviation",
+      `Hex ff00ff nach Accept im Muster-Farbwert und sichtbaren Farbfeld=${accepted && visibleMagenta}.`,
+      accepted && visibleMagenta ? null : "Host: Hex-Eingabe wurde nicht sichtbar als RGB ff00ff übernommen.",
       [afterAccept.screen]);
-    set("DD-020.27", accepted ? "pass" : "deviation",
-      `Accept übernimmt Hex/Alpha für folgende Zeichnung ohne Dokumentänderung=${accepted}.`,
-      accepted ? null : "Host: Accept übernahm den Farbwert nicht oder veränderte bereits die Karte.",
+    set("DD-020.27", accepted && visibleMagenta && pickerClosed ? "pass" : "deviation",
+      `Accept schließt Picker=${pickerClosed}, zeigt Magenta=${visibleMagenta} und lässt die Karte unverändert=${accepted}.`,
+      accepted && visibleMagenta && pickerClosed ? null
+        : "Host: Picker schloss nicht, zeigte nicht Magenta oder veränderte bereits die Karte.",
       [afterAccept.screen]);
     await picker.locator("summary").click();
     await picker.getByRole("textbox", { name: "Musterfarbe Hex" }).fill("3366cc");
@@ -189,7 +193,8 @@ module.exports = async function materialMuster({ page, out, qa, vault, restart,
       removed ? null : "Host: Undo ließ die Fläche stehen.", [undone.screen]);
     await page.getByRole("button", { name: "Wiederholen", exact: true }).last().click();
     const redone = await stage("rectangle-redone");
-    const restored = patterns(redone.value).length === 1;
+    const restored = patterns(redone.value).length === 1 &&
+      same(patterns(redone.value)[0], surface);
     set("DD-020.29", restored ? "pass" : "deviation",
       `Redo stellt die Musterfläche wieder her=${restored}.`,
       restored ? null : "Host: Redo stellte die Fläche nicht wieder her.", [redone.screen]);
@@ -227,6 +232,7 @@ module.exports = async function materialMuster({ page, out, qa, vault, restart,
       [savedPath, saved.screen]);
   } catch (error) {
     steps.error = String(error?.stack ?? error);
+    throw error;
   } finally {
     finish();
   }
