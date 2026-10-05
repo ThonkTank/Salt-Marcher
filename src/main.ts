@@ -2765,7 +2765,8 @@ class MapSettingsModal extends Modal {
             }),
         );
     update();
-    new Setting(this.contentEl).addButton((button) =>
+    const actions = new Setting(this.contentEl);
+    actions.addButton((button) =>
       button
         .setButtonText("Übernehmen")
         .setCta()
@@ -2783,6 +2784,9 @@ class MapSettingsModal extends Modal {
           }
         }),
     );
+    actions.addButton((button) => button
+      .setButtonText("Abbrechen")
+      .onClick(() => this.close()));
   }
   onClose(): void {
     this.generation++;
