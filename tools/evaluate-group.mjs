@@ -55,7 +55,7 @@ const summary = {
   hostGaps: results.filter((item) => item.edit !== "pass" ||
     !["pass", "not_applicable"].includes(item.reopen)).length,
   readyForIndependentReview: results.filter((item) => item.readyForIndependentReview).length,
-  acceptedAtInstalledBuild: 0,
+  installedAcceptance: "not_checked",
   results,
 };
 if (outputFile) await writeFile(outputFile, JSON.stringify(summary, null, 2) + "\n");

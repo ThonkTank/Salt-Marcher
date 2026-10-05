@@ -21,6 +21,7 @@ import {
 } from "./features/material/pattern-appearance";
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
+import { mountObjectColorPicker } from "./features/objekte/rgba-picker";
 
 export type Tool =
   | "select"
@@ -225,6 +226,8 @@ export class Properties {
     private assetUrl: (reference: string) => string = () => "",
     private defaultsChanged: () => void = () => {},
     private adoptFloor: (id: string) => void = () => {},
+    private previewObjectColor: (id: string, color: number, alpha: number) => void = () => {},
+    private clearObjectColorPreview: (id: string) => void = () => {},
   ) {}
   private field(
     label: string,
@@ -1413,6 +1416,34 @@ export class Properties {
         "#" + object.color.toString(16).padStart(6, "0"),
         (i) => update({ color: parseInt(i.value.slice(1), 16) }),
       );
+      const pickerButton = document.createElement("button");
+      pickerButton.type = "button";
+      pickerButton.textContent = "RGBA-Farbe wählen";
+      pickerButton.setAttribute("aria-label", "Objektfarbe RGBA öffnen");
+      pickerButton.addEventListener("click", () => {
+        const selectedId = e?.kind === "object" ? e.id : undefined;
+        pickerButton.disabled = true;
+        mountObjectColorPicker(
+          this.root,
+          object.color,
+          object.alpha ?? 255,
+          {
+            onPreview: (color, alpha) => {
+              if (selectedId) this.previewObjectColor(selectedId, color, alpha);
+            },
+            onCommit: (color, alpha) => {
+              this.defaults.object = { ...this.defaults.object, color, alpha };
+              this.defaultsChanged();
+              if (selectedId) this.change(e!, { color, alpha });
+            },
+            onClose: () => {
+              if (selectedId) this.clearObjectColorPreview(selectedId);
+              pickerButton.disabled = false;
+            },
+          },
+        );
+      });
+      this.root.append(pickerButton);
       this.field(
         "Objektfarbe Alpha (0–255)",
         "number",

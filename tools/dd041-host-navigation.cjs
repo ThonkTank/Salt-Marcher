@@ -122,8 +122,8 @@ module.exports = async function dd041HostNavigation({ page, out, panOnly = false
     }
   }
 
-  // One physical-wheel-like Chromium event is deltaY=±100 pixels. Capture
-  // the event value so that a device-dependent notch mapping stays explicit.
+  // The native Ctrl+wheel ladder was measured from 50 to 200 percent. One
+  // Chromium wheel event here is deltaY=±100 pixels; retain each event value.
   const wheelEvents = [];
   if (!panOnly) {
     await canvas.evaluate((node) => {
@@ -133,12 +133,18 @@ module.exports = async function dd041HostNavigation({ page, out, panOnly = false
           ctrlKey: event.ctrlKey });
       }, { capture: true });
     });
-    for (const [scale, deltaY, name, expectedScale] of [
-      [64, -100, "up-100", 80],
-      [80, 100, "down-125", 64],
-    ]) {
-      await reset(scale);
+    const ladder = [32, 48, 64, 80, 96, 128];
+    const transitions = [
+      ...ladder.slice(0, -1).map((scale, index) =>
+        [scale, -100, ladder[index + 1]]),
+      ...ladder.slice(1).reverse().map((scale, index) =>
+        [scale, 100, ladder[ladder.length - 2 - index]]),
+    ];
+    await reset(ladder[0]);
+    for (const [scale, deltaY, expectedScale] of transitions) {
+      const name = `${scale / 64 * 100}-to-${expectedScale / 64 * 100}`;
       const before = await snap();
+      assert(close(before.scale, scale), `${name}: starting zoom`);
       const beforeScreen = await shot(`DD-041.04-${name}-before`);
       await page.mouse.move(screen(start).x, screen(start).y);
       await page.keyboard.down("Control");
@@ -160,11 +166,12 @@ module.exports = async function dd041HostNavigation({ page, out, panOnly = false
   }
 
   const result = {
-    reference: "Dungeondraft 1.2.0.1; native DD-041 report in implementation QA",
+    reference: "Dungeondraft 1.2.0.1; native DD-041 navigation and zoom-ladder reports in implementation QA",
     extra: "DD-041.01 is a host Hand-tool addition, not a native required command",
     scope: panOnly ? "DD-041.02–.03 pan-only" : "DD-041.02–.04 navigation",
     mapPath: "Dungeons/NavigationQA/Karte.dungeon",
-    input: { screenDrag: [96, 64], relativeStart: [60, 40], wheelDeltaY: [-100, 100] },
+    input: { screenDrag: [96, 64], relativeStart: [60, 40], wheelDeltaY: [-100, 100],
+      ladderPercent: [50, 75, 100, 125, 150, 200] },
     wheelEvents,
     records,
     failures,

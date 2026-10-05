@@ -144,6 +144,7 @@ export class MapRenderer {
   private verticalDimension?: Text;
   private selection = new Graphics();
   private preview = new Graphics();
+  private objectColorPreview?: { id: Id; color: number; alpha: number };
   private mapMask = new Graphics();
   private textures: TexturePool;
   private compute = new ComputeClient();
@@ -402,6 +403,17 @@ export class MapRenderer {
     this.textures = new TexturePool(this.assetUrl);
     this.rebuild();
   }
+  previewObjectColor(id: Id, color: number, alpha: number): void {
+    this.objectColorPreview = { id, color, alpha };
+    this.sync(id);
+    this.invalidate();
+  }
+  clearObjectColorPreview(id: Id): void {
+    if (this.objectColorPreview?.id !== id) return;
+    this.objectColorPreview = undefined;
+    this.sync(id);
+    this.invalidate();
+  }
   setComparison(
     id: Id | undefined,
     referenceAlpha = 0.2,
@@ -414,7 +426,11 @@ export class MapRenderer {
     this.cameraChanged();
   }
   private sync(id: Id): void {
-    const e = this.session.entities.get(id),
+    const stored = this.session.entities.get(id),
+      e = stored?.kind === "object" && this.objectColorPreview?.id === id
+        ? { ...stored, color: this.objectColorPreview.color,
+          alpha: this.objectColorPreview.alpha }
+        : stored,
       old = this.visuals.get(id);
     if (!e || (e.floorId !== this.floorId && e.floorId !== this.compareFloor)) {
       this.clearVisual(id);

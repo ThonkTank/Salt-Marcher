@@ -427,6 +427,8 @@ export class DungeonEditor {
       host.assetUrl,
       host.persistToolDefaults,
       (id) => this.adoptFloor(id),
+      (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
+      (id) => this.renderer.clearObjectColorPreview(id),
     );
 
     this.selectionPanel = element(
@@ -954,7 +956,7 @@ export class DungeonEditor {
       "wheel",
       (e) => {
         e.preventDefault();
-        const measuredFactor = measuredCtrlWheelNotchFactor(e);
+        const measuredFactor = measuredCtrlWheelNotchFactor(e, this.renderer.camera.scale);
         const navigation = measuredFactor === null
           ? wheelNavigation(e)
           : { kind: "zoom" as const, factor: measuredFactor };
