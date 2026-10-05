@@ -21,6 +21,7 @@ import {
 } from "./features/material/pattern-appearance";
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
+import { mountPatternColorPicker } from "./features/material/pattern-color-picker";
 import { mountObjectColorPicker } from "./features/objekte/rgba-picker";
 import { type BuildingWallChoice } from "./features/bau/building-wall-choice";
 
@@ -843,6 +844,18 @@ export class Properties {
           category === "pattern" ? "255" : "1",
           category === "pattern" ? "1" : ".05",
         );
+        if (category === "pattern")
+          mountPatternColorPicker(this.root, {
+            initial: { color: surface.color, opacity: surface.opacity ?? 1 },
+            onAccept: ({ color, opacity }) => {
+              if (color === surface.color && opacity === (surface.opacity ?? 1))
+                return;
+              const before = JSON.stringify(this.defaults);
+              update({ color, opacity });
+              if (before !== JSON.stringify(this.defaults)) this.defaultsChanged();
+              this.render(tool, selected, floorId);
+            },
+          });
         this.field(
           category === "water" ? "Uferbreite" : "Konturbreite",
           "number",
