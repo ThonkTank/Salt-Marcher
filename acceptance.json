@@ -28710,7 +28710,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -28732,7 +28732,19 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.html"
           ],
           "gap": null,
           "candidate": {
@@ -38467,7 +38479,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38489,7 +38501,19 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.html"
           ],
           "gap": null,
           "candidate": {
@@ -38583,7 +38607,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38605,7 +38629,19 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.html"
           ],
           "gap": null,
           "candidate": {
@@ -38698,7 +38734,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38720,7 +38756,19 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-information.html",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-information.html"
           ],
           "gap": null,
           "candidate": {
@@ -38814,7 +38862,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38836,7 +38884,15 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-after-close.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-after-close.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-after-close.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-after-close.png"
           ],
           "gap": null,
           "candidate": {
@@ -44063,7 +44119,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -44085,7 +44141,15 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/selected-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224041587-verwaltung-karte-datei-edit/unselected-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/dd039-map-information.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/selected-reopened-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-dd039-only/evidence/1791224075199-verwaltung-karte-datei-reopen/unselected-reopened-after-x.png"
           ],
           "gap": null,
           "candidate": {
