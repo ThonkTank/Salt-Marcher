@@ -22,10 +22,11 @@ const restart = process.argv.includes("--restart"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
+  pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -176,7 +177,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
@@ -315,7 +316,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -478,6 +479,10 @@ async function workflow() {
   }
   if (objectAlpha) {
     await objectAlphaWorkflow(view);
+    return;
+  }
+  if (pathLibrary) {
+    await pathLibraryWorkflow(view);
     return;
   }
   if (compactSmoke) {
@@ -2871,6 +2876,92 @@ async function prefabForgetWorkflow(view) {
   assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
   await page.screenshot({ path: out + "/prefab-reopened.png" });
   checks.push("Fresh Obsidian process keeps the definition forgotten while the object-light pair reopens intact");
+}
+async function pathLibraryWorkflow(view) {
+  const mapPath = "Dungeons/PathLibraryQA/Karte.dungeon";
+  const packPath = root + "/../dungeon-auswertung/tests/fixtures/" +
+    "path-texture-probe/own-path.dungeondraft_pack";
+  const packDigest = crypto.createHash("sha256")
+    .update(fs.readFileSync(packPath)).digest("hex");
+  assert.equal(packDigest,
+    "69aeb699a8008ac874b61ba988c9463aa6a569f32c851d8c638a6815936f7c41");
+  if (restart) {
+    await page.evaluate(async (mapPath) =>
+      app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(mapPath)),
+    mapPath);
+    await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    const saved = await view();
+    const path = saved.document.entities.find((entity) => entity.kind === "path");
+    assert(path);
+    assert.equal(path.material.assetPart, "image");
+    assert(saved.document.settings.assetPacks.includes("QAPath01"));
+    await chooseTool("Pfad");
+    assert.equal(await page.locator(".dn-path-library-tiles button").count(), 1);
+    checks.push("Saved package path reopens with its Path Library tile");
+    return;
+  }
+  await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").create("PathLibraryQA", 12, 8));
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  const encoded = fs.readFileSync(packPath).toString("base64");
+  await page.evaluate(async (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    const plugin = app.plugins.getPlugin("dungeon-editor");
+    await plugin.assets.add([new Blob([bytes])]);
+    await plugin.reloadAssets();
+    const session = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.session;
+    const before = session.settings;
+    session.execute({ label: "QA-Paket für Karte aktivieren",
+      settings: { before, after: { ...before, assetPacks: ["QAPath01"] } } });
+  }, encoded);
+  await chooseTool("Pfad");
+  const tiles = page.locator(".dn-path-library-tiles button");
+  await tiles.first().waitFor();
+  assert.equal(await tiles.count(), 1);
+  const input = page.getByRole("searchbox", { name: "Pfadbibliothek durchsuchen" });
+  await input.fill("unbekannter-pfad");
+  await input.press("Enter");
+  assert.equal(await tiles.count(), 0);
+  assert.equal(await input.inputValue(), "unbekannter-pfad");
+  await page.getByRole("button", { name: "Suche zurücksetzen" }).click();
+  assert.equal(await tiles.count(), 1);
+  assert.equal(await input.inputValue(), "unbekannter-pfad");
+  checks.push("Clear Search restores every available path tile while retaining the visible query");
+  const asset = await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").listAssets()
+      .find((asset) => asset.kind === "path" && asset.name === "QA Path"));
+  assert(asset);
+  await tiles.first().click();
+  assert.equal(await page.getByRole("combobox", { name: "Paketmaterial" }).inputValue(), asset.id);
+  const beforePlace = await view();
+  const at = async (point) => page.evaluate((point) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    const box = renderer.canvas.getBoundingClientRect();
+    return { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+      y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
+  }, point);
+  for (const point of [{ x: 2, y: 2 }, { x: 6, y: 2 }]) {
+    const screen = await at(point);
+    await page.mouse.click(screen.x, screen.y);
+  }
+  await page.keyboard.press("Enter");
+  const placed = await view();
+  const path = placed.document.entities.find((entity) => entity.kind === "path");
+  assert(path);
+  assert.equal(path.material.assetId, asset.id);
+  assert.equal(placed.history, beforePlace.history + 1);
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  assert.equal((await view()).document.entities.filter((entity) => entity.kind === "path").length, 0);
+  await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+  assert.equal((await view()).document.entities.find((entity) => entity.kind === "path").material.assetId, asset.id);
+  checks.push("Library tile selects the package path; placement has one Undo step and Redo restores it");
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  await page.waitForFunction(() =>
+    !app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.dirty);
+  await page.screenshot({ path: out + "/path-library.png" });
+  checks.push("Path Library selection and path save cleanly");
 }
 async function objectAlphaWorkflow(view) {
   const mapPath = "Dungeons/ObjectAlphaQA/Karte.dungeon";
