@@ -13,6 +13,7 @@ import {
   uid,
 } from "./model";
 import { wheelNavigation } from "./navigation";
+import { measuredCtrlWheelNotchFactor } from "./features/bau/dd041-wheel-notch";
 import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
 import {
@@ -953,7 +954,10 @@ export class DungeonEditor {
       "wheel",
       (e) => {
         e.preventDefault();
-        const navigation = wheelNavigation(e);
+        const measuredFactor = measuredCtrlWheelNotchFactor(e);
+        const navigation = measuredFactor === null
+          ? wheelNavigation(e)
+          : { kind: "zoom" as const, factor: measuredFactor };
         if (navigation.kind === "zoom")
           this.renderer.zoom(navigation.factor, this.renderer.local(e));
         else this.renderer.pan(navigation.x, navigation.y);
