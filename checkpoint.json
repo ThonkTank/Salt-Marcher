@@ -1,6 +1,6 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: Pfadbibliothek DD-021.24 installiert; weitere Pflichtfälle paketweise in Arbeit",
-  "goal": "711 Pflicht-Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; DD-037 ist beschlossene Ausnahme.",
+  "phase": "Vollständige Dungeondraft-Angleichung: 5 von 707 Pflichtfällen am installierten Endstand belegt; Gruppenpakete parallel in Arbeit",
+  "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
   "verified": [
@@ -508,22 +508,25 @@
   "implementation20261005": {
     "developmentRoot": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main",
     "installed": true,
-    "requiredCases": 711,
+    "requiredCases": 707,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-021.24"
+      "DD-043 Export",
+      "DD-039 Karteninformationen",
+      "DD-038 Kartengröße",
+      "DD-028.06 Objektfarbe"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "path_library_installed_passed",
+    "hostStatus": "Fünf Pflichtfälle am installierten Endstand belegt; neun weitere bestehen nur in isolierten Kandidatenläufen.",
     "releaseBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
-    "openOriginalGap": "DD-020.14 Outline: Original-Neustart-Lücke; DD-039 Kaltstart-Modal-Lücke; DD-021.23 Fuzzy/Exact-Matching noch nicht unterschieden.",
+    "openOriginalGap": "DD-020.14 Outline-Neustart; DD-021.23 Fuzzy/Exact; DD-039 leere Paketzeile; DD-043 Original/Host an identischer Szene; DD-038 Höhlen-Farbzellen und Nicht-Undo-Wirkung.",
     "installedBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
     "installedEvidence": [
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188997360-path-library-reopen/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
     ],
-    "next": "DD-028.06 RGBA/Hex-Picker integrieren und am Host prüfen; DD-041.02–.04 Navigation gegen Originalmessung testen; übrige Pflichtfälle paketweise bearbeiten.",
+    "next": "Exklusiven Export-Grafiklauf abschließen, danach DD-039-Gruppe am isolierten Host prüfen; DD-038-Modell-/History-Anforderungen und DD-028.06-Belege integrieren. Nur bestandene Pakete nach gesicherter Endstandsprüfung installieren.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-020.13",
@@ -536,7 +539,7 @@
       {
         "cases": "DD-039.01–.06",
         "branch": "candidate/dd039-map-info",
-        "reason": "Erster Modalaufruf in frischen isolierten Obsidian-Profilen ohne Dialog; installierter Kandidat zurückgenommen.",
+        "reason": "Früherer erster Modalaufruf im frischen QA-Profil blieb ohne Dialog; Kandidat damals zurückgenommen. Feature jetzt erneut in Entwicklungskopie integriert, Gruppenlauf ausstehend.",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
       }
     ]
