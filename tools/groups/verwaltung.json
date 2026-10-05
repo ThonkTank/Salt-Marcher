@@ -165,12 +165,20 @@
         "DD-038.07": "Die Originalwirkung von OK ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-038.08": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
         "DD-038.09": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.01": "Die Originalwirkung von Show Map Info ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.02": "Die Originalwirkung von Map Size ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.03": "Die Originalwirkung von Filename ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.04": "Die Originalwirkung von Custom asset packs used ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.05": "Die Originalwirkung von Close ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-039.06": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+        "DD-039.01": "Bearbeitbarkeit der angezeigten Felder im Original nicht gezielt geprüft.",
+        "DD-039.02": "Aktualisierung während einer Größenänderung bei offenem Dialog nicht geprüft.",
+        "DD-039.03": "Aktualisierung bei Dateiumbenennung während geöffnetem Dialog nicht geprüft.",
+        "DD-039.04": "Bei abgewähltem Paket bleibt eine nummerierte, textleere Zeile 1 sichtbar; deren Ursache ist offen.",
+        "DD-039.05": "Original-History-Zustand nach Close nicht ausgelesen; Kartenprüfsumme blieb gleich.",
+        "DD-039.06": "Original-History-Zustand nach X nicht ausgelesen; Kartenprüfsumme blieb gleich."
+      },
+      "originalEffects": {
+        "DD-039.01": "Menu → Show Map Info öffnet den modalen Dialog Map Information mit Kartengröße, aktuellem Dateipfad und ausgewählten Assetpaketen.",
+        "DD-039.02": "Map Size zeigt für die geöffnete Originalkarte 8 by 8.",
+        "DD-039.03": "Filename zeigt den aktuellen vollständigen Dateipfad der geöffneten Originalkarte.",
+        "DD-039.04": "Ein ausgewähltes Paket wird mit Name und Autor angezeigt; bei leerem asset_manifest wird ein Paket trotz verbliebener Texturreferenz nicht genannt.",
+        "DD-039.05": "Close schließt Map Information, ohne die Kartendatei zu ändern.",
+        "DD-039.06": "X schließt Map Information, ohne die Kartendatei zu ändern."
       }
     },
     {
