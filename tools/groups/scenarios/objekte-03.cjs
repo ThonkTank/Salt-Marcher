@@ -320,9 +320,67 @@ async function toolPickerPlacement(page, vault, out, baseline) {
   return result;
 }
 
+// One installed-build acceptance probe. The common group recorder leaves every
+// unrelated manifest case open in this run; importing this module starts no GUI.
+async function dd02808Only({ page, out, qa, vault, restart, group, record }) {
+  assert.equal(group.id, "objekte-03");
+  assert(group.caseIds.includes("DD-028.08"));
+  const stateFile = path.join(qa, "objekte-03-dd02808-installed-saved.json");
+  if (!restart) {
+    const baseline = await createFixture(page, vault, out);
+    const placed = await toolPickerPlacement(page, vault, out, baseline);
+    const state = { mapPath, baselineIds: baseline.ids,
+      baselineSamples: baseline.samples, placed,
+      mapSha256: digest(fs.readFileSync(path.join(vault, mapPath))) };
+    writeJson(stateFile, state);
+    record.add("DD-028.08", "pass",
+      "Object-Tool-Picker: RGB 4080c0/A128 und Hex 804080c0 vor Accept; die folgende Colorable-Platzierung speichert den Wert, Undo entfernt sie, Redo stellt sie wieder her.",
+      [path.join(out, "tool-picker-before-accept.png"),
+        path.join(out, "tool-before-placement.png"),
+        path.join(out, "tool-object-placed.png"),
+        path.join(out, "tool-placement.json"), stateFile]);
+    return;
+  }
+
+  const saved = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+  assert.equal(digest(fs.readFileSync(path.join(vault, saved.mapPath))),
+    saved.mapSha256, "DD-028.08: Karte zwischen Edit und Frischstart geändert");
+  await page.evaluate(async (file) => app.workspace.getLeaf(false)
+    .openFile(app.vault.getAbstractFileByPath(file)), saved.mapPath);
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  await setPlainBackground(page);
+  await page.waitForFunction((ids) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    return ids.every((id) => renderer.visuals.get(id)?.container.children
+      .some((child) => !!child.texture));
+  }, [...saved.baselineIds, saved.placed.id]);
+  const reopened = await editorState(page);
+  const object = reopened.document.entities.find((entity) => entity.id === saved.placed.id);
+  const propertiesMatch = object?.kind === "object" &&
+    object.assetId === saved.placed.assetId &&
+    object.color === expectedColor && object.alpha === 128 && !reopened.dirty;
+  const pixels = await waitForPlacedPixels(page,
+    path.join(out, "dd02808-object-reopened.png"), saved.baselineIds[0],
+    saved.placed.id, saved.baselineSamples);
+  const pixelsMatch = channelsNear(pixels.colorable,
+    saved.baselineSamples.colorable[1]) &&
+    channelsNear(pixels.fixed, saved.baselineSamples.fixed[1]);
+  const resultFile = path.join(out, "dd02808-reopen.json");
+  writeJson(resultFile, { object, propertiesMatch, pixels, pixelsMatch,
+    dirty: reopened.dirty, mapSha256: saved.mapSha256 });
+  record.add("DD-028.08", propertiesMatch && pixelsMatch ? "pass" : "deviation",
+    `Frisch geöffnet: platziertes Objekt RGB ${object?.color?.toString(16)}, A=${object?.alpha}; Karte unverändert=${propertiesMatch}, färbbare/feste Pixel erhalten=${pixelsMatch}.`,
+    [resultFile, path.join(out, "dd02808-object-reopened.png")],
+    propertiesMatch && pixelsMatch ? null :
+      "RGBA-Wert, gespeicherte Instanz oder Pixelwirkung nach Frischstart abweichend.");
+}
+
 module.exports = async function objectColorGroup({ page, out, qa, vault, restart, group, record }) {
   assert.equal(group.id, "objekte-03");
   assert.deepEqual([...group.caseIds].sort(), Object.keys(openReasons).sort());
+  if (process.argv.includes("--dd02808-only"))
+    return dd02808Only({ page, out, qa, vault, restart, group, record });
   const covered = new Set();
   const stateFile = path.join(qa, "objekte-03-saved.json");
   const pickerStateFile = path.join(qa, "objekte-03-picker.json");
