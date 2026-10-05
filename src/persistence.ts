@@ -2,6 +2,7 @@ import {
   parseDocument,
   safePath,
   serializeDocument,
+  type MapDocument,
 } from "./model";
 import { Session, type DraftState } from "./session";
 
@@ -36,8 +37,17 @@ interface SavedDraft {
   baseline: string;
   draft: DraftState;
 }
+interface PendingDraft {
+  version: 2;
+  kind: "pending";
+  mapPath: string;
+  initialDocument: MapDocument;
+  draft: DraftState;
+}
 export class MapRepository {
   private baseline: string | null = null;
+  private pendingInitial?: MapDocument;
+  private pendingRaw?: string;
   private busy = false;
   private recoveryRequired = false;
   private queue: Promise<unknown> = Promise.resolve();
@@ -67,6 +77,61 @@ export class MapRepository {
     )
       throw new Error("Unzulässige Datei im Speicherjournal: " + path);
   }
+  private parsePending(raw: string): PendingDraft {
+    const data = JSON.parse(raw) as PendingDraft;
+    if (
+      data.version !== 2 || data.kind !== "pending" ||
+      data.mapPath !== this.mapPath || !data.initialDocument ||
+      !data.draft || !Array.isArray(data.draft.notes)
+    ) throw new Error("Unlesbarer neuer Kartenentwurf; Datei unverändert erhalten.");
+    const initialDocument = parseDocument(JSON.stringify(data.initialDocument));
+    const document = parseDocument(JSON.stringify(data.draft.document));
+    if (initialDocument.id !== document.id)
+      throw new Error("Neuer Kartenentwurf gehört zu einer anderen Karte.");
+    for (const note of data.draft.notes) {
+      this.assertAllowed(note.path);
+      if (
+        ![note.base, note.current].every((value) =>
+          value === null || typeof value === "string")
+      ) throw new Error("Ungültiger Text im neuen Kartenentwurf.");
+    }
+    return { ...data, initialDocument,
+      draft: { ...data.draft, document } };
+  }
+  /** Begin a durable, fileless map. The normal map path remains absent. */
+  beginPending(initialDocument: MapDocument, session: Session): Promise<void> {
+    return this.exclusive(async () => {
+      await this.recover();
+      if (initialDocument.id !== session.id)
+        throw new Error("Neue Karte und Sitzung passen nicht zusammen.");
+      if (await this.store.read(this.mapPath) !== null)
+        throw new FileConflict(this.mapPath);
+      if (await this.store.read(this.draftPath) !== null)
+        throw new FileConflict(this.draftPath);
+      const initial = parseDocument(serializeDocument(initialDocument)),
+        draft = session.draft();
+      for (const note of draft.notes) this.assertAllowed(note.path);
+      const next = JSON.stringify({ version: 2, kind: "pending",
+        mapPath: this.mapPath, initialDocument: initial, draft } satisfies PendingDraft);
+      await this.store.compareAndWrite(this.draftPath, null, next);
+      this.pendingInitial = initial;
+      this.pendingRaw = next;
+    });
+  }
+  async openPending(): Promise<Session> {
+    await this.recover();
+    if (await this.store.read(this.mapPath) !== null)
+      throw new FileConflict(this.mapPath);
+    const raw = await this.store.read(this.draftPath);
+    if (raw === null) throw new Error("Ungespeicherter Kartenentwurf nicht gefunden.");
+    const data = this.parsePending(raw);
+    for (const note of data.draft.notes)
+      if (await this.store.read(note.path) !== note.base)
+        throw new FileConflict(note.path);
+    this.pendingInitial = data.initialDocument;
+    this.pendingRaw = raw;
+    return Session.restore(data.initialDocument, data.draft);
+  }
   async open(): Promise<Session> {
     await this.recover();
     const raw = await this.store.read(this.mapPath);
@@ -74,7 +139,18 @@ export class MapRepository {
     this.baseline = raw;
     const saved = await this.store.read(this.draftPath);
     if (saved === null) return new Session(parseDocument(raw));
-    const data = JSON.parse(saved) as SavedDraft;
+    const pending = JSON.parse(saved) as { version?: number };
+    if (pending.version === 2) {
+      const data = this.parsePending(saved);
+      if (
+        serializeDocument(data.draft.document) !== raw ||
+        !(await Promise.all(data.draft.notes.map(async (note) =>
+          (await this.store.read(note.path)) === note.current))).every(Boolean)
+      ) throw new FileConflict(this.draftPath);
+      await this.store.compareAndWrite(this.draftPath, saved, null);
+      return new Session(parseDocument(raw));
+    }
+    const data = pending as SavedDraft;
     if (
       data.version !== 1 ||
       data.mapPath !== this.mapPath ||
@@ -109,13 +185,37 @@ export class MapRepository {
   persistDraft(session: Session): Promise<void> {
     return this.exclusive(() => this.persistDraftNow(session));
   }
+  private async persistPendingNow(draft: DraftState): Promise<void> {
+    if (!this.pendingInitial || this.pendingRaw === undefined)
+      throw new Error("Neuer Kartenentwurf nicht initialisiert.");
+    if (draft.document.id !== this.pendingInitial.id)
+      throw new Error("Entwurf gehört zu einer anderen Karte.");
+    for (const note of draft.notes) this.assertAllowed(note.path);
+    const next = JSON.stringify({ version: 2, kind: "pending",
+      mapPath: this.mapPath, initialDocument: this.pendingInitial,
+      draft } satisfies PendingDraft);
+    const previous = await this.store.read(this.draftPath);
+    if (previous !== this.pendingRaw) throw new FileConflict(this.draftPath);
+    if (next !== previous) {
+      await this.store.compareAndWrite(this.draftPath, previous, next);
+      this.pendingRaw = next;
+    }
+  }
   private async persistDraftNow(session: Session): Promise<void> {
     if (this.recoveryRequired)
       throw new Error("Speicherjournal muss zuerst wiederhergestellt werden.");
+    if (this.baseline === null && this.pendingInitial) {
+      await this.persistPendingNow(session.draft());
+      return;
+    }
     const previous = await this.store.read(this.draftPath);
+    if (this.pendingRaw !== undefined && previous !== this.pendingRaw)
+      throw new FileConflict(this.draftPath);
     if (!session.dirty) {
       if (previous !== null)
         await this.store.compareAndWrite(this.draftPath, previous, null);
+      this.pendingInitial = undefined;
+      this.pendingRaw = undefined;
       return;
     }
     if (this.baseline === null)
@@ -130,6 +230,8 @@ export class MapRepository {
     } satisfies SavedDraft);
     if (next !== previous)
       await this.store.compareAndWrite(this.draftPath, previous, next);
+    this.pendingInitial = undefined;
+    this.pendingRaw = undefined;
   }
   async recover(): Promise<void> {
     const raw = await this.store.read(this.journalPath);
@@ -185,8 +287,11 @@ export class MapRepository {
     this.busy = true;
     try {
       const snapshot = session.snapshot(),
+        pendingDraft = this.baseline === null && this.pendingInitial
+          ? session.draft() : undefined,
         mapText = serializeDocument(snapshot.document),
         writes: Write[] = [];
+      if (pendingDraft) await this.persistPendingNow(pendingDraft);
       for (const [path, after] of snapshot.notes) {
         this.assertAllowed(path);
         const before = session.noteBaseline(path);

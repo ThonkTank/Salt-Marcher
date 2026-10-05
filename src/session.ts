@@ -135,6 +135,7 @@ export class Session {
   private dirtyIds = new Set<Id>();
   private dirtyOrder = false;
   private dirtyFloors = new Set<Id>();
+  private mutationsHeld = false;
   private savedRecords: Map<Id, Entity>;
   private savedFloors: Map<Id, Floor>;
   private savedSettings: Settings;
@@ -194,6 +195,21 @@ export class Session {
   get historySize(): number {
     return this.past.length;
   }
+  /** Keep the first-save snapshot stable until its pending view is handed off. */
+  holdMutations(): () => void {
+    if (this.mutationsHeld) throw new Error("Kartenänderungen sind bereits gesperrt.");
+    this.mutationsHeld = true;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.mutationsHeld = false;
+    };
+  }
+  private assertMutable(): void {
+    if (this.mutationsHeld)
+      throw new Error("Karte wird gespeichert; Änderungen bitte danach wiederholen.");
+  }
   subscribe(fn: (event: ChangeEvent) => void): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
@@ -221,6 +237,7 @@ export class Session {
     }
   }
   loadNote(path: string, text: string | null): void {
+    this.assertMutable();
     safePath(path);
     const n = this.notes.get(path);
     if (n && n.base !== text)
@@ -239,6 +256,7 @@ export class Session {
     this.setLockedMany([id], locked);
   }
   setLockedMany(ids: Iterable<Id>, locked: boolean): void {
+    this.assertMutable();
     const changes = [...new Set(ids)].map((id) => {
       const current = this.records.get(id);
       if (!current) throw new Error("Kartenobjekt wurde entfernt: " + id);
@@ -272,6 +290,7 @@ export class Session {
     });
   }
   execute(command: Command, history: "record" | "reset" = "record"): void {
+    this.assertMutable();
     if (
       !(
         command.entities?.length ||
@@ -335,6 +354,7 @@ export class Session {
     this.emit(event);
   }
   undo(): void {
+    this.assertMutable();
     const c = this.past.at(-1);
     if (!c) return;
     const event = this.apply(c, true);
@@ -343,6 +363,7 @@ export class Session {
     this.emit(event);
   }
   redo(): void {
+    this.assertMutable();
     const c = this.future.at(-1);
     if (!c) return;
     const event = this.apply(c, false);

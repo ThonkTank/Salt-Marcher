@@ -149,6 +149,7 @@ export interface EditorHost {
   notice: (message: string) => void;
   openNote: (path: string) => void;
   save: () => Promise<void>;
+  pending?: () => boolean;
   assetUrl: (path: string) => string;
   colorableObjectSource?: (id: string) => ColorableObjectSource | undefined;
   manageAssets?: () => void;
@@ -1434,10 +1435,11 @@ export class DungeonEditor {
     this.undo.disabled = !this.session.canUndo;
     this.redo.disabled = !this.session.canRedo;
     this.title.textContent = this.session.settings.name;
-    this.saveState.textContent = this.session.dirty
+    this.saveState.textContent = this.session.dirty || this.host.pending?.()
       ? "Ungespeichert"
       : "Gespeichert";
-    this.saveState.classList.toggle("is-dirty", this.session.dirty);
+    this.saveState.classList.toggle("is-dirty",
+      this.session.dirty || !!this.host.pending?.());
     const hint: Record<Tool, string> = {
       select:
         "Klick: auswählen · Umschalt: ergänzen · Alt-Klick: gesperrtes Element wählen oder Konturpunkt entfernen · Ziehen: Rahmen oder Element verschieben · Ausgewähltes Objekt: außen drehen, am Eckgriff skalieren · A: Objekte spiegeln · Doppelklick: Konturpunkt einfügen",
@@ -3355,10 +3357,13 @@ export class DungeonEditor {
   async save(): Promise<void> {
     if (this.saving) return;
     this.saving = true;
+    const pending = this.host.pending?.() === true;
+    const wasInert = this.root.inert;
     try {
       this.commitNote();
       this.saveButton.disabled = true;
       this.saveButton.textContent = "Speichert …";
+      if (pending) this.root.inert = true;
       await this.paintTask;
       this.cancel();
       await this.host.save();
@@ -3367,6 +3372,7 @@ export class DungeonEditor {
     } catch (error) {
       this.host.notice(error instanceof Error ? error.message : String(error));
     } finally {
+      if (pending) this.root.inert = wasInert;
       this.saving = false;
       this.saveButton.disabled = false;
       this.saveButton.textContent = "Speichern";

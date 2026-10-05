@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import "./dd00104-pending.test";
 import "./material-pattern.test";
 import "./material-native-path-catalog.test";
 import "./material-path-texture-band.test";

@@ -35,7 +35,7 @@ import {
 import { compactWheelNavigation, wheelNavigation } from "./navigation";
 import { Session } from "./session";
 import { FileConflict, MapRepository, type FileStore } from "./persistence";
-import { DungeonEditor } from "./editor";
+import { DungeonEditor, type EditorHost } from "./editor";
 import { ExportDialog } from "./features/verwaltung/export-dialog";
 import { encodeRasterFile } from "./features/verwaltung/raster-files";
 import { serializeUniversalVtt03 } from "./features/verwaltung/universal-vtt";
@@ -80,6 +80,7 @@ import {
 } from "./features/material/native-path-catalog";
 
 const VIEW = "dungeon-native-map";
+const PENDING_VIEW = "dungeon-native-pending";
 const PLAY_VIEW = "dungeon-native-play";
 class VaultStore implements FileStore {
   constructor(private app: App) {}
@@ -213,6 +214,7 @@ class LocalBinarySource implements BinarySource {
 interface OpenMap {
   session: Session;
   repository: MapRepository;
+  pending: boolean;
   views: number;
   stopDrafts: () => void;
   draftTimer?: ReturnType<typeof setTimeout>;
@@ -512,8 +514,10 @@ export default class DungeonPlugin extends Plugin {
       };
     }
     this.registerView(VIEW, (leaf) => new DungeonView(leaf, this));
+    this.registerView(PENDING_VIEW, (leaf) => new PendingDungeonView(leaf, this));
     this.registerView(PLAY_VIEW, (leaf) => new DungeonPlayView(leaf, this));
     this.registerExtensions(["dungeon"], VIEW);
+    this.app.workspace.onLayoutReady(() => void this.restorePendingViews());
     this.addCommand({
       id: "create-dungeon",
       name: "Dungeon anlegen",
@@ -889,33 +893,32 @@ export default class DungeonPlugin extends Plugin {
       console.error("Werkzeugvorgaben speichern", error),
     );
   }
+  private mapRecord(repository: MapRepository, session: Session, pending: boolean): OpenMap {
+    const map: OpenMap = {
+      repository, session, pending, views: 0, stopDrafts: () => {},
+    };
+    map.stopDrafts = session.subscribe(() => {
+      if (map.draftTimer) clearTimeout(map.draftTimer);
+      if (map.pending) {
+        void repository.persistDraft(session).catch((error) =>
+          new Notice("Entwurf konnte nicht gesichert werden: " + String(error)));
+        return;
+      }
+      map.draftTimer = setTimeout(() => {
+        map.draftTimer = undefined;
+        void repository.persistDraft(session).catch((error) =>
+          new Notice("Entwurf konnte nicht gesichert werden: " + String(error)));
+      }, 400);
+    });
+    return map;
+  }
   async acquire(path: string): Promise<OpenMap> {
     let pending = this.maps.get(path);
     if (!pending) {
       pending = (async () => {
         const repository = new MapRepository(new VaultStore(this.app), path),
           session = await repository.open();
-        const map: OpenMap = {
-          repository,
-          session,
-          views: 0,
-          stopDrafts: () => {},
-        };
-        map.stopDrafts = session.subscribe(() => {
-          if (map.draftTimer) clearTimeout(map.draftTimer);
-          map.draftTimer = setTimeout(() => {
-            map.draftTimer = undefined;
-            void repository
-              .persistDraft(session)
-              .catch(
-                (error) =>
-                  new Notice(
-                    "Entwurf konnte nicht gesichert werden: " + String(error),
-                  ),
-              );
-          }, 400);
-        });
-        return map;
+        return this.mapRecord(repository, session, false);
       })();
       this.maps.set(path, pending);
       pending.catch(() => this.maps.delete(path));
@@ -924,9 +927,76 @@ export default class DungeonPlugin extends Plugin {
     map.views++;
     return map;
   }
+  async acquirePending(path: string): Promise<OpenMap> {
+    let pending = this.maps.get(path);
+    if (!pending) {
+      pending = (async () => {
+        const repository = new MapRepository(new VaultStore(this.app), path),
+          session = await repository.openPending();
+        return this.mapRecord(repository, session, true);
+      })();
+      this.maps.set(path, pending);
+      pending.catch(() => this.maps.delete(path));
+    }
+    const map = await pending;
+    map.views++;
+    return map;
+  }
+  async savePending(path: string, map: OpenMap, from: WorkspaceLeaf): Promise<void> {
+    const releaseMutations = map.session.holdMutations();
+    try {
+      await map.repository.save(map.session);
+      map.pending = false;
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile))
+        throw new Error("Gespeicherte Karte ist nicht als Datei verfügbar.");
+      // The extra lease prevents release() from discarding the Session before
+      // DungeonView.acquire() receives it with its pre-save history intact.
+      map.views++;
+      const leaf = this.app.workspace.getLeaf("tab");
+      let loaded = false;
+      try {
+        await leaf.openFile(file);
+        if (!(leaf.view instanceof DungeonView) || leaf.view.session !== map.session)
+          throw new Error("Kartenansicht hat die laufende Sitzung nicht übernommen.");
+        loaded = true;
+        this.app.workspace.revealLeaf(leaf);
+        from.detach();
+      } catch (error) {
+        if (!loaded) leaf.detach();
+        throw error;
+      } finally {
+        this.release(path, map);
+      }
+    } finally {
+      releaseMutations();
+    }
+  }
+  private async restorePendingViews(): Promise<void> {
+    for (const file of this.app.vault.getFiles()) {
+      if (!file.path.endsWith(".dungeon.draft")) continue;
+      const path = file.path.slice(0, -".draft".length);
+      if (this.app.vault.getAbstractFileByPath(path)) continue;
+      try {
+        const raw = JSON.parse(await this.app.vault.read(file)) as {
+          version?: number; kind?: string; mapPath?: string;
+        };
+        if (raw.version !== 2 || raw.kind !== "pending" || raw.mapPath !== path)
+          continue;
+        if (this.app.workspace.getLeavesOfType(PENDING_VIEW).some((leaf) =>
+          (leaf.view as PendingDungeonView).mapPath === path)) continue;
+        const leaf = this.app.workspace.getLeaf("tab");
+        await leaf.setViewState({ type: PENDING_VIEW, active: false,
+          state: { path } });
+      } catch (error) {
+        new Notice("Neuer Kartenentwurf konnte nicht wiederhergestellt werden: " +
+          String(error));
+      }
+    }
+  }
   release(path: string, map: OpenMap): void {
     map.views--;
-    if (map.views === 0 && !map.session.dirty) {
+    if (map.views === 0 && !map.session.dirty && !map.pending) {
       if (map.draftTimer) clearTimeout(map.draftTimer);
       map.stopDrafts();
       this.maps.delete(path);
@@ -971,8 +1041,7 @@ export default class DungeonPlugin extends Plugin {
       },
       path = "Dungeons/" + name + "/Karte.dungeon",
       repository = new MapRepository(new VaultStore(this.app), path),
-      session = new Session(
-        newDocument(
+      initial = newDocument(
           name,
           width,
           height,
@@ -982,12 +1051,15 @@ export default class DungeonPlugin extends Plugin {
           },
           appearance,
         ),
-      );
+      session = new Session(initial);
     if (generator)
       generateLayout(session, session.floors.keys().next().value!, generator);
-    await repository.save(session);
-    const f = this.app.vault.getAbstractFileByPath(path);
-    if (f instanceof TFile) await this.app.workspace.getLeaf("tab").openFile(f);
+    if (this.maps.has(path)) throw new FileConflict(path);
+    await repository.beginPending(initial, session);
+    this.maps.set(path, Promise.resolve(this.mapRecord(repository, session, true)));
+    const leaf = this.app.workspace.getLeaf("tab");
+    await leaf.setViewState({ type: PENDING_VIEW, active: true, state: { path } });
+    this.app.workspace.revealLeaf(leaf);
   }
 }
 class DungeonMapCard {
@@ -1532,11 +1604,242 @@ class DungeonPlayView extends ItemView {
     this.card = undefined;
   }
 }
+function editorHost(
+  plugin: DungeonPlugin,
+  map: OpenMap,
+  mapPath: string,
+  save: () => Promise<void>,
+  exitEditor: () => void,
+  pending = false,
+  exportName?: string,
+): EditorHost {
+  return {
+    notice: (m) => new Notice(m),
+    pending: () => map.pending,
+    openNote: (path) => {
+      void plugin.app.workspace.openLinkText(path, mapPath, "split");
+    },
+    save,
+    assetUrl: (path) => plugin.assetUrl(path),
+    colorableObjectSource: (id) => plugin.colorableObjectSource(
+      id, map.session.settings.assetPacks),
+    assets: () => plugin.listAssets(
+      map.session.settings.assetPacks,
+      map.session.settings.builtInAssets,
+    ),
+    subscribeAssets: (listener) => plugin.subscribeAssets(listener),
+    toolDefaults: () => plugin.toolDefaults(),
+    persistToolDefaults: () => plugin.persistToolDefaults(),
+    prefabs: () => plugin.prefabs(),
+    savePrefab: (prefab) => plugin.savePrefab(prefab),
+    forgetPrefab: (prefab, doc, signal) =>
+      plugin.forgetPrefab(prefab, doc, signal),
+    requestPrefabDetails: () => new PrefabNameModal(
+      plugin.app, () => plugin.prefabs(),
+    ).request(),
+    manageAssets: () => plugin.openAssets(map.session),
+    manageMap: () =>
+      new MapSettingsModal(
+        plugin.app,
+        map.session,
+        mapPath,
+        plugin.assets,
+      ).open(),
+    manageMapInfo: pending ? undefined : () =>
+      new MapInformationModal(
+        plugin.app,
+        map.session,
+        mapPath,
+        plugin.assets,
+      ).open(),
+    manageReferences: (floorId) =>
+      new ReferenceImagesModal(
+        plugin.app,
+        plugin,
+        map.session,
+        floorId,
+      ).open(),
+    manageGenerator: (floorId) =>
+      new GeneratorModal(plugin.app, map.session, floorId).open(),
+    manageContent: (floorId, selectedId) =>
+      new DungeonContentModal(
+        plugin.app,
+        map.session,
+        map.repository,
+        floorId,
+        selectedId,
+      ).open(),
+    exportMap: pending || !exportName ? undefined : (renderer, session) => {
+      new ExportDialog(plugin.app, {
+        initial: {
+          format: "png",
+          pixelsPerCell: 256,
+          includeGrid: true,
+          includeLighting: true,
+          qualityPercent: 90,
+        },
+        advanced: {
+          supported: [],
+          mapSize: {
+            width: session.settings.width,
+            height: session.settings.height,
+          },
+        },
+        onExport: async (request, signal) => {
+          if (signal.aborted) throw new Error("Export abgebrochen.");
+          const revision = session.revision;
+          const floorId = renderer.floorId;
+          const document = session.document();
+          let vttGeometry: ReturnType<typeof universalVttGeometryForFloor> | undefined;
+          if (request.format === "universal-vtt") {
+            const floor = document.floors.find((item) => item.id === floorId);
+            if (document.floors.length !== 1 || renderer.floorId !== floorId ||
+              (floor?.ambient ?? 1) !== 1 || request.includeGrid ||
+              !request.includeLighting || request.pixelsPerCell !== 256)
+              throw new Error("Diese Universal-VTT-Exportoptionen sind im Original noch nicht belegt.");
+            vttGeometry = universalVttGeometryForFloor(document.entities, floorId);
+          }
+          const canvas = await renderer.captureMap({
+            pixelsPerField: request.pixelsPerCell,
+            grid: request.includeGrid,
+            lighting: request.includeLighting,
+          });
+          if (signal.aborted) throw new Error("Export abgebrochen.");
+          if (revision !== session.revision || floorId !== renderer.floorId)
+            throw new Error("Die Karte hat sich während des Exports geändert.");
+          if (request.format === "universal-vtt") {
+            const body = serializeUniversalVtt03({
+              renderedPngDataUrl: canvas.toDataURL("image/png"),
+              mapWidthFields: document.settings.width,
+              mapHeightFields: document.settings.height,
+              pixelsPerGrid: request.pixelsPerCell,
+              ...vttGeometry!,
+              ambientLightHex: "ffffffff",
+            });
+            return {
+              blob: new Blob([body], { type: "application/json" }),
+              filename: `${exportName}.dd2vtt`,
+            };
+          }
+          const raster = await encodeRasterFile(canvas, {
+            format: request.format,
+            ...(request.format === "jpeg" || request.format === "webp"
+              ? { quality: (request.qualityPercent ?? 90) / 100 }
+              : {}),
+          });
+          return {
+            blob: raster.blob,
+            filename: `${exportName}.${request.format === "jpeg" ? "jpg" : request.format}`,
+          };
+        },
+      }).open();
+    },
+    openPlay: pending ? undefined : (roomId) => void plugin.openPlay(mapPath, roomId),
+    exitEditor: () => exitEditor(),
+  };
+}
+class PendingDungeonView extends ItemView {
+  editor?: DungeonEditor;
+  private current?: OpenMap;
+  private generation = 0;
+  mapPath?: string;
+  constructor(leaf: WorkspaceLeaf, private plugin: DungeonPlugin) {
+    super(leaf);
+  }
+  getViewType(): string {
+    return PENDING_VIEW;
+  }
+  getDisplayText(): string {
+    return this.current?.session.settings.name ?? "Ungespeicherte Dungeon-Karte";
+  }
+  getIcon(): string {
+    return "map";
+  }
+  getState(): Record<string, unknown> {
+    return { path: this.mapPath };
+  }
+  async setState(state: Record<string, unknown>): Promise<void> {
+    this.mapPath = typeof state.path === "string" ? state.path : undefined;
+    if (this.contentEl.isConnected) await this.render();
+  }
+  async onOpen(): Promise<void> {
+    await this.render();
+  }
+  private async render(): Promise<void> {
+    const generation = ++this.generation;
+    if (this.editor) await this.closeEditor();
+    const path = this.mapPath;
+    this.contentEl.replaceChildren();
+    if (!path) {
+      this.contentEl.createEl("p", { text: "Kein neuer Kartenentwurf gewählt." });
+      return;
+    }
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) {
+      await this.leaf.openFile(file);
+      return;
+    }
+    this.contentEl.createEl("p", { text: "Neuer Kartenentwurf wird geöffnet …" });
+    let acquired: OpenMap | undefined;
+    try {
+      const map = await this.plugin.acquirePending(path);
+      acquired = map;
+      await this.plugin.ensureAssets();
+      if (generation !== this.generation) {
+        this.plugin.release(path, map);
+        acquired = undefined;
+        return;
+      }
+      this.current = map;
+      this.contentEl.replaceChildren();
+      this.editor = new DungeonEditor(
+        this.contentEl, map.session, map.repository,
+        editorHost(this.plugin, map, path,
+          () => this.plugin.savePending(path, map, this.leaf),
+          () => this.leaf.detach(), true),
+      );
+      await this.editor.init();
+      this.editor.maximize();
+    } catch (error) {
+      this.editor?.destroy();
+      this.editor = undefined;
+      if (acquired) this.plugin.release(path, acquired);
+      this.current = undefined;
+      this.contentEl.replaceChildren();
+      this.contentEl.createEl("p", {
+        text: "Neuer Kartenentwurf konnte nicht geöffnet werden: " + String(error),
+      });
+    }
+  }
+  private async closeEditor(): Promise<void> {
+    if (this.editor) {
+      try {
+        this.editor.commitNote();
+        if (this.current && (this.current.pending || this.current.session.dirty))
+          await this.current.repository.persistDraft(this.current.session);
+      } catch (error) {
+        new Notice("Entwurf konnte nicht gesichert werden: " + String(error), 10000);
+      }
+      this.editor.destroy();
+      this.editor = undefined;
+    }
+    if (this.current && this.mapPath)
+      this.plugin.release(this.mapPath, this.current);
+    this.current = undefined;
+  }
+  async onClose(): Promise<void> {
+    this.generation++;
+    await this.closeEditor();
+  }
+}
 class DungeonView extends FileView {
   private editor?: DungeonEditor;
   private current?: OpenMap;
   private mapPath?: string;
   private generation = 0;
+  get session(): Session | undefined {
+    return this.editor ? this.current?.session : undefined;
+  }
   constructor(
     leaf: WorkspaceLeaf,
     private plugin: DungeonPlugin,
@@ -1570,129 +1873,12 @@ class DungeonView extends FileView {
         this.contentEl,
         map.session,
         map.repository,
-        {
-          notice: (m) => new Notice(m),
-          openNote: (path) => {
-            void this.app.workspace.openLinkText(path, file.path, "split");
-          },
-          save: () => map.repository.save(map.session),
-          assetUrl: (path) => this.plugin.assetUrl(path),
-          colorableObjectSource: (id) => this.plugin.colorableObjectSource(
-            id, map.session.settings.assetPacks),
-          assets: () => this.plugin.listAssets(
-            map.session.settings.assetPacks,
-            map.session.settings.builtInAssets,
-          ),
-          subscribeAssets: (listener) => this.plugin.subscribeAssets(listener),
-          toolDefaults: () => this.plugin.toolDefaults(),
-          persistToolDefaults: () => this.plugin.persistToolDefaults(),
-          prefabs: () => this.plugin.prefabs(),
-          savePrefab: (prefab) => this.plugin.savePrefab(prefab),
-          forgetPrefab: (prefab, doc, signal) =>
-            this.plugin.forgetPrefab(prefab, doc, signal),
-          requestPrefabDetails: () => new PrefabNameModal(
-            this.app, () => this.plugin.prefabs(),
-          ).request(),
-          manageAssets: () => this.plugin.openAssets(map.session),
-          manageMap: () =>
-            new MapSettingsModal(
-              this.app,
-              map.session,
-              file.path,
-              this.plugin.assets,
-            ).open(),
-          manageMapInfo: () =>
-            new MapInformationModal(
-              this.app,
-              map.session,
-              file.path,
-              this.plugin.assets,
-            ).open(),
-          manageReferences: (floorId) =>
-            new ReferenceImagesModal(
-              this.app,
-              this.plugin,
-              map.session,
-              floorId,
-            ).open(),
-          manageGenerator: (floorId) =>
-            new GeneratorModal(this.app, map.session, floorId).open(),
-          manageContent: (floorId, selectedId) =>
-            new DungeonContentModal(
-              this.app,
-              map.session,
-              map.repository,
-              floorId,
-              selectedId,
-            ).open(),
-          exportMap: (renderer, session) => {
-            new ExportDialog(this.app, {
-              initial: {
-                format: "png",
-                pixelsPerCell: 256,
-                includeGrid: true,
-                includeLighting: true,
-                qualityPercent: 90,
-              },
-              advanced: {
-                supported: [],
-                mapSize: {
-                  width: session.settings.width,
-                  height: session.settings.height,
-                },
-              },
-              onExport: async (request, signal) => {
-                if (signal.aborted) throw new Error("Export abgebrochen.");
-                const revision = session.revision;
-                const floorId = renderer.floorId;
-                const document = session.document();
-                let vttGeometry: ReturnType<typeof universalVttGeometryForFloor> | undefined;
-                if (request.format === "universal-vtt") {
-                  const floor = document.floors.find((item) => item.id === floorId);
-                  if (document.floors.length !== 1 || renderer.floorId !== floorId ||
-                    (floor?.ambient ?? 1) !== 1 || request.includeGrid ||
-                    !request.includeLighting || request.pixelsPerCell !== 256)
-                    throw new Error("Diese Universal-VTT-Exportoptionen sind im Original noch nicht belegt.");
-                  vttGeometry = universalVttGeometryForFloor(document.entities, floorId);
-                }
-                const canvas = await renderer.captureMap({
-                  pixelsPerField: request.pixelsPerCell,
-                  grid: request.includeGrid,
-                  lighting: request.includeLighting,
-                });
-                if (signal.aborted) throw new Error("Export abgebrochen.");
-                if (revision !== session.revision || floorId !== renderer.floorId)
-                  throw new Error("Die Karte hat sich während des Exports geändert.");
-                if (request.format === "universal-vtt") {
-                  const body = serializeUniversalVtt03({
-                    renderedPngDataUrl: canvas.toDataURL("image/png"),
-                    mapWidthFields: document.settings.width,
-                    mapHeightFields: document.settings.height,
-                    pixelsPerGrid: request.pixelsPerCell,
-                    ...vttGeometry!,
-                    ambientLightHex: "ffffffff",
-                  });
-                  return {
-                    blob: new Blob([body], { type: "application/json" }),
-                    filename: `${file.basename}.dd2vtt`,
-                  };
-                }
-                const raster = await encodeRasterFile(canvas, {
-                  format: request.format,
-                  ...(request.format === "jpeg" || request.format === "webp"
-                    ? { quality: (request.qualityPercent ?? 90) / 100 }
-                    : {}),
-                });
-                return {
-                  blob: raster.blob,
-                  filename: `${file.basename}.${request.format === "jpeg" ? "jpg" : request.format}`,
-                };
-              },
-            }).open();
-          },
-          openPlay: (roomId) => void this.plugin.openPlay(file.path, roomId),
-          exitEditor: () => this.exitEditor(),
-        },
+editorHost(
+          this.plugin, map, file.path,
+          () => map.repository.save(map.session),
+          () => this.exitEditor(),
+          false, file.basename,
+        )
       );
       await this.editor.init();
       this.editor.maximize();
