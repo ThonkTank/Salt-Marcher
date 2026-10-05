@@ -8812,7 +8812,7 @@
         "original": {
           "sequence": "Path Tool im Terrain-Werkzeugbereich wählen.",
           "options": "Path Tool",
-          "effect": null,
+          "effect": "Nach Wahl des Path Tool sind links Edit Points, Layer 100, Sorting Over/Under, Width 1, Smoothness 1, Block Light OFF und Transition In/Out None sichtbar; rechts steht die Path Library mit ausgewählter Battlements-Kachel.",
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
@@ -8855,7 +8855,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -8868,13 +8884,18 @@
         "original": {
           "sequence": "Klickpunkte erzeugen texturierte Livevorschau; Enter beendet Pfad.",
           "options": "Point placement/Enter",
-          "effect": "Texturierter Pfad nach Enter sichtbar.",
+          "effect": "Auf der 12×8-Originalkarte zeigt Battlements beim Punktzug (2;1,5)→(9;1,5) eine texturierte Livevorschau; nach Abschluss steht ein gerader Pfad mit genau diesen gespeicherten Endpunkten. Im selben Lauf commitete erst ein zweites Enter; beim diagonalen Zug commitete ein Endpunkt-Doppelklick, wiederholtes Enter dagegen nicht.",
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-two-point-preview.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-two-point-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/04-horizontal-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/07-horizontal-second-enter.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
+          ],
+          "gap": "Der einmalige Enter-Abschluss ist im direkten Lauf nicht eindeutig reproduziert: Gerade commitete erst nach zweitem Enter; Diagonale trotz wiederholtem Enter erst nach Endpunkt-Doppelklick. Ursache und allgemeine Abschlussregel bleiben offen; die gespeicherte Punktgeometrie ist nun direkt belegt."
         },
         "target": "Gleiche Kontur und Abschlussgeste bei identischer Punktfolge.",
         "baseline": {
@@ -8903,15 +8924,39 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Nach zwei Klickpunkten commitet schon das erste Enter im Host; in einem Originalzug blieb der Pfad nach dem ersten Enter Vorschau und wurde erst mit dem zweiten Enter erstellt. Ein anderer Originalzug brauchte einen Doppelklick.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-preview.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Die unterschiedlichen Enter-Reaktionen sind nicht erklärt; die Abschlussregel kann noch nicht verbindlich verglichen werden.\nFrischstart: Original: Der einmalige Enter-Abschluss ist im direkten Lauf nicht eindeutig reproduziert: Gerade commitete erst nach zweitem Enter; Diagonale trotz wiederholtem Enter erst nach Endpunkt-Doppelklick. Ursache und allgemeine Abschlussregel bleiben offen; die gespeicherte Punktgeometrie ist nun direkt belegt. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -8929,7 +8974,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/"
-          ]
+          ],
+          "gap": "Punkte eines vorhandenen Pfads hinzufügen, verschieben und löschen: gespeicherte Originalwirkung je Geste fehlt."
         },
         "target": "Pfadkontur ohne Neuzeichnung editieren.",
         "baseline": {
@@ -8965,7 +9011,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Punkte eines vorhandenen Pfads hinzufügen, verschieben und löschen: gespeicherte Originalwirkung je Geste fehlt. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Punkte eines vorhandenen Pfads hinzufügen, verschieben und löschen: gespeicherte Originalwirkung je Geste fehlt. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -8984,7 +9046,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/maps/path-parity.dungeondraft_map"
-          ]
+          ],
+          "gap": "Ebenenwechsel eines Pfads gegenüber einem überlappenden Element im Original nicht direkt gemessen."
         },
         "target": "Gleichwertige Überlagerungsposition des Pfads.",
         "baseline": {
@@ -9021,7 +9084,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ebenenwechsel eines Pfads gegenüber einem überlappenden Element im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ebenenwechsel eines Pfads gegenüber einem überlappenden Element im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9040,7 +9119,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
-          ]
+          ],
+          "gap": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen."
         },
         "target": "Über-/Unterordnung wie im Original.",
         "baseline": {
@@ -9076,7 +9156,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9089,13 +9185,18 @@
         "original": {
           "sequence": "Width stellt Pfadbreite ein, Originalstart 1.",
           "options": "Width",
-          "effect": null,
+          "effect": "Mit derselben eingebauten Battlements-Textur speichert Width 1 exakt 69 und Width 2 exakt 138 Originaleinheiten bei 256 Einheiten pro Feld: 0,26953125 beziehungsweise 0,5390625 Feld sichtbare Streifenbreite. Motiv und Streifen werden bei Width 2 ungefähr doppelt so groß.",
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/12-width2-control.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/14-kink-finish-width2.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
+          ],
+          "gap": "Direkt gemessen sind nur Battlements bei Width 1 und 2. Zwischenwerte, Reglergrenzen und Breitenumrechnung für Texturen anderer Quellhöhe sind im Original noch offen."
         },
         "target": "Gleiche Pfadbreite und vergleichbarer Anfangszustand.",
         "baseline": {
@@ -9124,15 +9225,42 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts",
+            "src/renderer.ts",
+            "src/features/material/path-texture-band.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Battlements Width 1=69/256 Feld und Width 2=138/256 Feld; die Texturlänge skaliert von 4 auf 8 Felder.\nFrischstart: Frischstart bewahrte Width 1=69/256 und Width 2=138/256 Feld samt proportionalem Materialmaß=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/bent-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json"
+            ],
+            "gap": "Edit: Zwischenwerte, Reglergrenzen und andere Texturhöhen sind noch nicht gepaart.\nFrischstart: Weitere Width-Werte und Texturen sind noch nicht gepaart.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9151,7 +9279,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-configured.png"
-          ]
+          ],
+          "gap": "Kartenwirkung der Original-Smoothness bei 0, 0,5 und 1 nicht direkt gemessen."
         },
         "target": "Glättungsgrad stufenlos wirksam.",
         "baseline": {
@@ -9187,7 +9316,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Kartenwirkung der Original-Smoothness bei 0, 0,5 und 1 nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Kartenwirkung der Original-Smoothness bei 0, 0,5 und 1 nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9206,7 +9351,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-configured.png"
-          ]
+          ],
+          "gap": "Lichtabschattung desselben Pfads mit Block Light ON/OFF im Original nicht gepaart."
         },
         "target": "Gleichwertige Lichtblockade.",
         "baseline": {
@@ -9243,7 +9389,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Lichtabschattung desselben Pfads mit Block Light ON/OFF im Original nicht gepaart. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Lichtabschattung desselben Pfads mit Block Light ON/OFF im Original nicht gepaart. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9262,7 +9424,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Unveränderter Pfadanfang wählbar.",
         "baseline": {
@@ -9298,7 +9461,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9317,7 +9496,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Fade am Pfadanfang.",
         "baseline": {
@@ -9353,7 +9533,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9372,7 +9568,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Breitenwachstum wie Original.",
         "baseline": {
@@ -9408,7 +9605,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9427,7 +9640,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Unverändertes Pfadende.",
         "baseline": {
@@ -9463,7 +9677,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9482,7 +9712,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Fade am Pfadende.",
         "baseline": {
@@ -9518,7 +9749,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9537,7 +9784,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
-          ]
+          ],
+          "gap": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst."
         },
         "target": "Gleichwertiges Endverjüngen.",
         "baseline": {
@@ -9573,7 +9821,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9586,7 +9850,7 @@
         "original": {
           "sequence": "Rechts suchbare Path Library wählt integrierte und Pakettexturen.",
           "options": "Path Library",
-          "effect": null,
+          "effect": "Die modfreie Original-Path-Library hat Battlements als ausgewählte eingebaute Kachel. Danach gezeichnete gerade, diagonale und geknickte Pfade verwenden sichtbar dieses Motiv und speichern res://textures/paths/battlements.png.",
           "version": "1.2.0.1 Opulent Kirin; modfreie isolierte GUI-Gegenprobe 04.10.2026",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
@@ -9595,7 +9859,12 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/06-path-panel.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/21-path-top.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/23-path-library-end-clear.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/24-path-library-end-confirm.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/24-path-library-end-confirm.png",
+            "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/03-path-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/14-kink-finish-width2.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
           ]
         },
         "target": "Native Pfadtexturen auswählbar und darstellbar.",
@@ -9626,15 +9895,44 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-path-catalog.ts",
+            "src/main.ts",
+            "src/properties.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad-dialog/evidence/1791197960746-native-path-dialog-edit/result.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Eingebaute Battlements-Kachel gewählt, horizontale Texturreferenz pack:dungeondraft-builtin-1.2.0.1:path:res%3A%2F%2Ftextures%2Fpaths%2Fbattlements.png platziert und decodiert.\nFrischstart: Frischstart: native Kachel=true, zwei Pfade mit nativer ID und unverändertem Dokument=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/library-before.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json"
+            ],
+            "gap": "Edit: Original: gleiche Kachelwahl und Kartenwirkung ungepaart.\nFrischstart: Original: Kachelwahl und Kartenwirkung auf gleicher Geometrie bleiben ungepaart.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9653,7 +9951,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-shift-curve.png"
-          ]
+          ],
+          "gap": "Shift-Kurvenzug mit bestätigtem gespeicherten Originalpfad fehlt; Statushinweis allein belegt keine Geometrie."
         },
         "target": "Kurvengeste mit vergleichbarer Kontrollform.",
         "baseline": {
@@ -9689,7 +9988,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Shift-Kurvenzug mit bestätigtem gespeicherten Originalpfad fehlt; Statushinweis allein belegt keine Geometrie. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Shift-Kurvenzug mit bestätigtem gespeicherten Originalpfad fehlt; Statushinweis allein belegt keine Geometrie. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9708,7 +10023,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
-          ]
+          ],
+          "gap": "Rücktaste während eines Mehrpunktentwurfs nicht direkt auf Punktentfernung und Restentwurf geprüft."
         },
         "target": "Letzten Punkt ohne Abbruch entfernen.",
         "baseline": {
@@ -9744,7 +10060,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Rücktaste während eines Mehrpunktentwurfs nicht direkt auf Punktentfernung und Restentwurf geprüft. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Rücktaste während eines Mehrpunktentwurfs nicht direkt auf Punktentfernung und Restentwurf geprüft. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9763,7 +10095,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-path-study.dungeondraft_map"
-          ]
+          ],
+          "gap": "Schließen eines Loops durch Startpunkt/Enter nicht als gesteuerte Originalfolge gemessen."
         },
         "target": "Geschlossene Pfade wie Original.",
         "baseline": {
@@ -9799,7 +10132,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Schließen eines Loops durch Startpunkt/Enter nicht als gesteuerte Originalfolge gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Schließen eines Loops durch Startpunkt/Enter nicht als gesteuerte Originalfolge gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9817,7 +10166,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/"
-          ]
+          ],
+          "gap": "Escape- und Doppelklick-Folge für denselben Mehrpunktentwurf im Original nicht direkt geprüft."
         },
         "target": "Entwurfssteuerung nach Original.",
         "baseline": {
@@ -9853,7 +10203,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Escape- und Doppelklick-Folge für denselben Mehrpunktentwurf im Original nicht direkt geprüft. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Escape- und Doppelklick-Folge für denselben Mehrpunktentwurf im Original nicht direkt geprüft. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9901,15 +10267,37 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Ein Undo entfernte den fertig gezeichneten Battlements-Pfad=true.\nFrischstart: Undo beziehungsweise Redo wurde in der Bearbeitungsphase gemessen; der frische Prozess prüft die gespeicherte Pfadwirkung unter DD-021.21.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-undo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json"
+            ],
+            "gap": null,
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "not_applicable"
+            }
+          }
         }
       },
       {
@@ -9922,13 +10310,17 @@
         "original": {
           "sequence": "Original-Save und frischer Prozess zeigen denselben Pfad.",
           "options": "Save/Open",
-          "effect": "Pfad im frischen Prozess sichtbar.",
+          "effect": "Die isoliert gespeicherte Originalkarte enthält drei Battlements-Pfade mit Punkten, Width 69/138, Smoothness 1, Layer 100 und Flags. Eine neue Originalinstanz öffnet die unveränderte Karte und zeigt alle drei mit derselben Geometrie und Textur.",
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/native-fresh-open-ready.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/native-fresh-open-ready.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-reopen/evidence/02-fresh-open-ready.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
+          ],
+          "gap": "Frischstart ist für drei Battlements-Pfade mit Default-Übergängen und Block Light OFF belegt; geänderte Übergänge, Lichtblockierung und andere Pfadtexturen wurden nicht als Save/Reopen-Paar geprüft."
         },
         "target": "Alle Pfadparameter dauerhaft erhalten.",
         "baseline": {
@@ -9957,15 +10349,40 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-path-catalog.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Zwei Texturpfade gespeichert; Dokument- und Dateiprüfsumme für Frischstart gesichert (7b7518c7f850354e16c8a0b83ed91e9ce3e68e8ed2ee6ad795d9f68081ced597).\nFrischstart: Frischstart: beide gespeicherten Pfade samt Assetreferenz sichtbar/geladen, Dokument unverändert=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/fresh-open.png"
+            ],
+            "gap": "Edit: Host: Frischstart steht aus. Original: Bildwirkung bei gleicher Geometrie ungepaart.\nFrischstart: Original: Texturwirkung und Übergänge nach Neustart nicht auf gleicher Geometrie gepaart.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -9985,8 +10402,10 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-path-controls.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/06-path-panel.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/08-path-search-battlements-return.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/08-path-search-battlements-return.png",
+            "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck"
+          ],
+          "gap": "Suchwirkung ist direkt nur für Battlements nach Return belegt; weiterer Begriff und Paketquelle für allgemeine Suchregel fehlen."
         },
         "target": "Pfade gezielt nach Assetbezeichnung finden.",
         "baseline": {
@@ -10015,15 +10434,37 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Return-Suche nach Battlements: genau eine native Kachel=true; weitere Suchbegriffe/Pakete nicht geprüft.\nFrischstart: Frischstart: Return-Suche nach Battlements zeigt genau die native Kachel=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/battlements-search.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/fresh-open.png"
+            ],
+            "gap": "Edit: Suchwirkung ist direkt nur für Battlements nach Return belegt; weiterer Begriff und Paketquelle für allgemeine Suchregel fehlen.\nFrischstart: Suchwirkung ist direkt nur für Battlements nach Return belegt; weiterer Begriff und Paketquelle für allgemeine Suchregel fehlen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -10045,7 +10486,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/10-path-fuzzy-singular.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/11-path-exact-singular.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/12-path-fuzzy-singular-settled.png"
-          ]
+          ],
+          "gap": "Fuzzy und Exact zeigten bei Battlement denselben Einzelhit; ein Suchpaar mit unterschiedlicher Trefferliste fehlt."
         },
         "target": "Suchmodus nach Originalwirkung steuern.",
         "baseline": {
@@ -10082,7 +10524,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Fuzzy und Exact zeigten bei Battlement denselben Einzelhit; ein Suchpaar mit unterschiedlicher Trefferliste fehlt. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Fuzzy und Exact zeigten bei Battlement denselben Einzelhit; ein Suchpaar mit unterschiedlicher Trefferliste fehlt. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -10103,7 +10561,8 @@
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-path-controls.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/13-path-trash-after.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/14-path-trash-tooltip.png"
-          ]
+          ],
+          "gap": "Clear Search wurde direkt beobachtet; Auswahlzustand einer zuvor gewählten Pfadtextur und erneuter Fokus fehlen."
         },
         "target": "Clear Search zeigt wieder alle aktuell verfügbaren Pfadkacheln; der sichtbare Suchtext bleibt erhalten.",
         "baseline": {
@@ -10156,7 +10615,24 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-v2-open/evidence/1791189042728-v2-open-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
           ],
-          "gap": null
+          "gap": null,
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Clear Search: Kacheln=44/44, Text erhalten und Wahl erhalten=true.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/clear-search.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Clear Search wurde direkt beobachtet; Auswahlzustand einer zuvor gewählten Pfadtextur und erneuter Fokus fehlen.\nFrischstart: Original: Clear Search wurde direkt beobachtet; Auswahlzustand einer zuvor gewählten Pfadtextur und erneuter Fokus fehlen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -13997,7 +14473,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
-          ]
+          ],
+          "gap": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen."
         },
         "target": "Unterordnung wie im Original erreichen.",
         "baseline": {
@@ -14032,7 +14509,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -15301,15 +15794,37 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Ein Redo stellte dieselbe Pfad-ID und Battlements-Referenz wieder her=true.\nFrischstart: Undo beziehungsweise Redo wurde in der Bearbeitungsphase gemessen; der frische Prozess prüft die gespeicherte Pfadwirkung unter DD-021.21.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-redo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json"
+            ],
+            "gap": null,
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "not_applicable"
+            }
+          }
         }
       },
       {
@@ -15699,7 +16214,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/15-path-field-x.png"
-          ]
+          ],
+          "gap": "Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen."
         },
         "target": "Suchtext im Assetfeld leeren.",
         "baseline": {
@@ -15735,7 +16251,23 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": null,
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
+            ],
+            "gap": "Edit: Original: Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16118,7 +16650,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Original öffnet Platzierungsparameter und All/Used/Tags-Bildbibliothek; die aktuelle Werkzeugfläche ist nicht vollständig gepaart.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Original öffnet Platzierungsparameter und All/Used/Tags-Bildbibliothek; die aktuelle Werkzeugfläche ist nicht vollständig gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Original öffnet Platzierungsparameter und All/Used/Tags-Bildbibliothek; die aktuelle Werkzeugfläche ist nicht vollständig gepaart.\nFrischstart: Original öffnet Platzierungsparameter und All/Used/Tags-Bildbibliothek; die aktuelle Werkzeugfläche ist nicht vollständig gepaart.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16172,7 +16722,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native All-Bildkachelgalerie einschließlich eingebauter Objekte fehlt im geprüften Hostablauf.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native All-Bildkachelgalerie einschließlich eingebauter Objekte fehlt im geprüften Hostablauf.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native All-Bildkachelgalerie einschließlich eingebauter Objekte fehlt im geprüften Hostablauf.\nFrischstart: Native All-Bildkachelgalerie einschließlich eingebauter Objekte fehlt im geprüften Hostablauf.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16189,7 +16757,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/23-used-tab.png"
-          ]
+          ],
+          "gap": "Used-Inhalt bei mehreren Karten und nach Kartenwechsel im Original noch nicht vollständig abgegrenzt."
         },
         "target": "Gleiche verwendungsbezogene Liste.",
         "baseline": {
@@ -16224,7 +16793,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Used muss platzierte statt nur gewählte Assets zeigen; Host-Used und natives Mehrkartenverhalten sind ungeprüft.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Used muss platzierte statt nur gewählte Assets zeigen; Host-Used und natives Mehrkartenverhalten sind ungeprüft.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Used muss platzierte statt nur gewählte Assets zeigen; Host-Used und natives Mehrkartenverhalten sind ungeprüft. Originalgrenze: Used-Inhalt bei mehreren Karten und nach Kartenwechsel im Original noch nicht vollständig abgegrenzt.\nFrischstart: Used muss platzierte statt nur gewählte Assets zeigen; Host-Used und natives Mehrkartenverhalten sind ungeprüft. Originalgrenze: Used-Inhalt bei mehreren Karten und nach Kartenwechsel im Original noch nicht vollständig abgegrenzt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16298,7 +16885,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/11-search-return.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png"
-          ]
+          ],
+          "gap": "Suche zusammen mit Fuzzy/Exact und Tagfilter im Original nicht vollständig geprüft."
         },
         "target": "Die Suche zeigt für denselben Begriff dieselben Treffer und erhält die beabsichtigte Assetwahl.",
         "baseline": {
@@ -16333,7 +16921,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Atlas-/Nichttreffer-Suche und gemeinsame Kachelwirkung sind in dieser Hostfolge nicht paarbar.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Atlas-/Nichttreffer-Suche und gemeinsame Kachelwirkung sind in dieser Hostfolge nicht paarbar.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Atlas-/Nichttreffer-Suche und gemeinsame Kachelwirkung sind in dieser Hostfolge nicht paarbar. Originalgrenze: Suche zusammen mit Fuzzy/Exact und Tagfilter im Original nicht vollständig geprüft.\nFrischstart: Atlas-/Nichttreffer-Suche und gemeinsame Kachelwirkung sind in dieser Hostfolge nicht paarbar. Originalgrenze: Suche zusammen mit Fuzzy/Exact und Tagfilter im Original nicht vollständig geprüft.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16350,7 +16956,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Suchtreffer und Fuzzy-Semantik nicht gemessen."
         },
         "target": "Nach Originalmessung: Fuzzy/Exact verändert die Trefferliste derselben Suchanfrage gemäß nativem Abgleich.",
         "baseline": {
@@ -16385,7 +16992,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Wirkung und Treffergrenzen von Fuzzy/Exact im Original sind nicht gemessen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Wirkung und Treffergrenzen von Fuzzy/Exact im Original sind nicht gemessen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Wirkung und Treffergrenzen von Fuzzy/Exact im Original sind nicht gemessen. Originalgrenze: Suchtreffer und Fuzzy-Semantik nicht gemessen.\nFrischstart: Wirkung und Treffergrenzen von Fuzzy/Exact im Original sind nicht gemessen. Originalgrenze: Suchtreffer und Fuzzy-Semantik nicht gemessen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16405,7 +17030,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/13-trash-search-none.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/10-after-trash-wait.png"
-          ]
+          ],
+          "gap": "Papierkorbwirkung auf Auswahl und Folgeplatzierung nach gefülltem Filter im Original nicht vollständig bestimmt."
         },
         "target": "Die Taste stellt die volle Galerie bei stehenbleibendem Suchtext und aufgehobener Kachelmarkierung wieder her.",
         "baseline": {
@@ -16440,7 +17066,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Der native Papierkorb stellt Galerie und Markierung bei stehendem Suchtext um; gleichartige Hoststeuerung fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Der native Papierkorb stellt Galerie und Markierung bei stehendem Suchtext um; gleichartige Hoststeuerung fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Der native Papierkorb stellt Galerie und Markierung bei stehendem Suchtext um; gleichartige Hoststeuerung fehlt. Originalgrenze: Papierkorbwirkung auf Auswahl und Folgeplatzierung nach gefülltem Filter im Original nicht vollständig bestimmt.\nFrischstart: Der native Papierkorb stellt Galerie und Markierung bei stehendem Suchtext um; gleichartige Hoststeuerung fehlt. Originalgrenze: Papierkorbwirkung auf Auswahl und Folgeplatzierung nach gefülltem Filter im Original nicht vollständig bestimmt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16492,7 +17136,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Die Host-Combobox wählt das QA-Asset, aber die native Bildkachelwahl ist damit nicht abgenommen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Die Host-Combobox wählt das QA-Asset, aber die native Bildkachelwahl ist damit nicht abgenommen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Die Host-Combobox wählt das QA-Asset, aber die native Bildkachelwahl ist damit nicht abgenommen.\nFrischstart: Die Host-Combobox wählt das QA-Asset, aber die native Bildkachelwahl ist damit nicht abgenommen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16509,7 +17171,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-rotated-under.dungeondraft_map"
-          ]
+          ],
+          "gap": "Vollständige Ebenenliste und Stapelwirkung aller Layer am selben Asset im Original offen."
         },
         "target": "Ein neu platziertes Möbel speichert den gewählten Layer und erscheint in dessen nativer Zeichnungsreihenfolge.",
         "baseline": {
@@ -16544,7 +17207,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Layerwert und sichtbare Stapelwirkung derselben überlappenden QA-Objekte sind nicht gepaart.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Layerwert und sichtbare Stapelwirkung derselben überlappenden QA-Objekte sind nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Layerwert und sichtbare Stapelwirkung derselben überlappenden QA-Objekte sind nicht gepaart. Originalgrenze: Vollständige Ebenenliste und Stapelwirkung aller Layer am selben Asset im Original offen.\nFrischstart: Layerwert und sichtbare Stapelwirkung derselben überlappenden QA-Objekte sind nicht gepaart. Originalgrenze: Vollständige Ebenenliste und Stapelwirkung aller Layer am selben Asset im Original offen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16562,7 +17243,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/dungeondraft.log"
-          ]
+          ],
+          "gap": "Exakte Stapelwirkung des fehlerbehafteten Originalklicks offen."
         },
         "target": "Nach Originalmessung: Sorting Over setzt ein neues überlappendes Möbel vor das vorhandene und erhält die Reihenfolge nach Save/Reopen.",
         "baseline": {
@@ -16597,7 +17279,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Exakte Originalwirkung von Sorting Over ist offen; Hoststeuerung fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Exakte Originalwirkung von Sorting Over ist offen; Hoststeuerung fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Exakte Originalwirkung von Sorting Over ist offen; Hoststeuerung fehlt. Originalgrenze: Exakte Stapelwirkung des fehlerbehafteten Originalklicks offen.\nFrischstart: Exakte Originalwirkung von Sorting Over ist offen; Hoststeuerung fehlt. Originalgrenze: Exakte Stapelwirkung des fehlerbehafteten Originalklicks offen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16615,7 +17315,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/dungeondraft.log"
-          ]
+          ],
+          "gap": "Sorting Under ist sichtbar; exakte Stapelwirkung bei überlappenden Objekten im Original nicht isoliert vermessen."
         },
         "target": "Nach Originalmessung: Sorting Under setzt ein neues überlappendes Möbel hinter das vorhandene; den protokollierten Originalfehler gesondert berücksichtigen.",
         "baseline": {
@@ -16650,7 +17351,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Sorting Under ist im Original fehlerbehaftet protokolliert; belastbare Stapelwirkung und Hoststeuerung fehlen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Sorting Under ist im Original fehlerbehaftet protokolliert; belastbare Stapelwirkung und Hoststeuerung fehlen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Sorting Under ist im Original fehlerbehaftet protokolliert; belastbare Stapelwirkung und Hoststeuerung fehlen. Originalgrenze: Sorting Under ist sichtbar; exakte Stapelwirkung bei überlappenden Objekten im Original nicht isoliert vermessen.\nFrischstart: Sorting Under ist im Original fehlerbehaftet protokolliert; belastbare Stapelwirkung und Hoststeuerung fehlen. Originalgrenze: Sorting Under ist sichtbar; exakte Stapelwirkung bei überlappenden Objekten im Original nicht isoliert vermessen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16702,7 +17421,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. 45-Grad-Rotation muss für dasselbe Asset durch UI, sichtbare Wirkung und Karte gepaart werden.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. 45-Grad-Rotation muss für dasselbe Asset durch UI, sichtbare Wirkung und Karte gepaart werden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: 45-Grad-Rotation muss für dasselbe Asset durch UI, sichtbare Wirkung und Karte gepaart werden.\nFrischstart: 45-Grad-Rotation muss für dasselbe Asset durch UI, sichtbare Wirkung und Karte gepaart werden.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16754,7 +17491,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Einheitliche native Scale 1,99 und Host-Breite/Höhe sind ohne gemeinsame Bildmessung nicht gleichwertig.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Einheitliche native Scale 1,99 und Host-Breite/Höhe sind ohne gemeinsame Bildmessung nicht gleichwertig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Einheitliche native Scale 1,99 und Host-Breite/Höhe sind ohne gemeinsame Bildmessung nicht gleichwertig.\nFrischstart: Einheitliche native Scale 1,99 und Host-Breite/Höhe sind ohne gemeinsame Bildmessung nicht gleichwertig.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16806,7 +17561,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Shadow-Schalter ist vorhanden, aber seine Bildwirkung mit demselben Asset ist nicht gepaart.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Shadow-Schalter ist vorhanden, aber seine Bildwirkung mit demselben Asset ist nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Shadow-Schalter ist vorhanden, aber seine Bildwirkung mit demselben Asset ist nicht gepaart.\nFrischstart: Shadow-Schalter ist vorhanden, aber seine Bildwirkung mit demselben Asset ist nicht gepaart.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16823,7 +17596,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Block Light am Objekt: gespeicherter Schalterwert und konkrete Abschattung desselben Lichts im Original nicht isoliert gemessen."
         },
         "target": "Nach Originalmessung: Block Light am Möbel verändert gespeicherten Blockerzustand und Lichtabschattung wie im Original.",
         "baseline": {
@@ -16858,7 +17632,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherung und konkrete Lichtabschattung bei Block Light sind noch offen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherung und konkrete Lichtabschattung bei Block Light sind noch offen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Speicherung und konkrete Lichtabschattung bei Block Light sind noch offen. Originalgrenze: Block Light am Objekt: gespeicherter Schalterwert und konkrete Abschattung desselben Lichts im Original nicht isoliert gemessen.\nFrischstart: Native Speicherung und konkrete Lichtabschattung bei Block Light sind noch offen. Originalgrenze: Block Light am Objekt: gespeicherter Schalterwert und konkrete Abschattung desselben Lichts im Original nicht isoliert gemessen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16875,7 +17667,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-color-picker.png"
-          ]
+          ],
+          "gap": "Farbpicker und Colorable-Wirkung unter DD-028 aufgeteilt."
         },
         "target": "Nach Originalmessung: gewählte Custom Color wird am geeigneten Objekt mit demselben Farbwert gespeichert und sichtbar; Alpha/Colorable siehe DD-028.",
         "baseline": {
@@ -16910,7 +17703,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Custom Color und selektive Colorable-Wirkung werden in DD-028 geprüft; dieser Werkzeugfall bleibt offen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Custom Color und selektive Colorable-Wirkung werden in DD-028 geprüft; dieser Werkzeugfall bleibt offen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Custom Color und selektive Colorable-Wirkung werden in DD-028 geprüft; dieser Werkzeugfall bleibt offen. Originalgrenze: Farbpicker und Colorable-Wirkung unter DD-028 aufgeteilt.\nFrischstart: Custom Color und selektive Colorable-Wirkung werden in DD-028 geprüft; dieser Werkzeugfall bleibt offen. Originalgrenze: Farbpicker und Colorable-Wirkung unter DD-028 aufgeteilt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -16981,7 +17792,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png"
-          ]
+          ],
+          "gap": "Cursorvorschau ist nur für das geprüfte Asset direkt belegt."
         },
         "target": "Konkrete Platzierungsvorschau am Cursor.",
         "baseline": {
@@ -17016,7 +17828,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar. Originalgrenze: Cursorvorschau ist nur für das geprüfte Asset direkt belegt.\nFrischstart: Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar. Originalgrenze: Cursorvorschau ist nur für das geprüfte Asset direkt belegt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17032,8 +17862,11 @@
           "effect": "Ein Objekt mit Position/Layer/Rotation/Scale gespeichert.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/09-place-default.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md"
+          ],
+          "gap": "Ein Basisklick ist im Original mit Atlas Globe 01 belegt. Die vollständige Zielwirkung mit demselben QA-Asset und denselben Layer-, Winkel- und Scale-Einstellungen wie im Host fehlt: Original Layer 100/Scale 1, Host Layer 500/Breite 1,6/Höhe 0,9; Geometrie und Pixelbild sind ungepaart."
         },
         "target": "Ein Kartenklick erzeugt genau ein Möbel an der Klickposition mit gewähltem Layer, Winkel, Scale und Asset.",
         "baseline": {
@@ -17060,15 +17893,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/model.ts",
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Object Tool: Klick erzeugte QA-Paketobjekt ed4fa24e-5199-419e-a48c-94f699f3550f, zweiter Klick a1ab6d4e-0ea6-4d22-b1d3-711bb8600024; beide sind sichtbar und als V3-Entitäten gespeichert.\nFrischstart: Frisch geöffnet: beide platzierten Paketobjekte ed4fa24e-5199-419e-a48c-94f699f3550f/a1ab6d4e-0ea6-4d22-b1d3-711bb8600024 mit exakt gespeicherten Entitätswerten und Texturen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/first-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/two-objects.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopened.png"
+            ],
+            "gap": null,
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -17085,7 +17944,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/08-escape-hover.png"
-          ]
+          ],
+          "gap": "Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt."
         },
         "target": "Escape-Vorschauabbruch ohne Verlassen des Kartenblatts.",
         "baseline": {
@@ -17120,7 +17980,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor. Originalgrenze: Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt.\nFrischstart: Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor. Originalgrenze: Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17137,7 +18015,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-book.dungeondraft_map"
-          ]
+          ],
+          "gap": "Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen."
         },
         "target": "Weitere Kartenklicks erzeugen ohne Werkzeugwechsel je ein zusätzliches Möbel mit den jeweils aktiven Optionen.",
         "baseline": {
@@ -17172,7 +18051,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart. Originalgrenze: Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen.\nFrischstart: Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart. Originalgrenze: Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17189,7 +18086,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: Mausrad verändert den Platzierungswinkel in derselben Schrittfolge und der Klick speichert ihn.",
         "baseline": {
@@ -17224,7 +18122,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17241,7 +18157,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: Alt+Mausrad verändert den einheitlichen Scale des Vorschaubilds und der Klick speichert ihn.",
         "baseline": {
@@ -17276,7 +18193,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17293,7 +18228,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: Umschalt+Mausrad wechselt das konkret gewählte Asset und der nächste Klick platziert genau dieses.",
         "baseline": {
@@ -17328,7 +18264,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17345,7 +18299,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: gehaltenes A spiegelt die Platzierungsvorschau und das neu gespeicherte Möbel in derselben Achse.",
         "baseline": {
@@ -17380,7 +18335,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17397,7 +18370,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: Rechtsklick dreht die Platzierung um 90° und der nächste Klick speichert diese Ausrichtung.",
         "baseline": {
@@ -17432,7 +18406,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17449,7 +18441,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
-          ]
+          ],
+          "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
         "target": "Nach Originalmessung: Z+Mausrad ändert den Winkel in kleineren Schritten als normales Mausrad und speichert ihn.",
         "baseline": {
@@ -17484,7 +18477,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17501,7 +18512,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/after-redo.dungeondraft_map"
-          ]
+          ],
+          "gap": "Undo/Redo nach mehrfacher Platzierung und Optionswechsel im Original offen."
         },
         "target": "Ein Undo entfernt das zuletzt platzierte Möbel vollständig; Redo stellt denselben Objektstand wieder her.",
         "baseline": {
@@ -17528,15 +18540,40 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/session.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Erste Platzierung ed4fa24e-5199-419e-a48c-94f699f3550f: Undo entfernte das einzige Objekt, Redo stellte dieselben Werte wieder her; Speichern erhielt den Redo-Zustand.\nFrischstart: Frisch geöffnet: die durch Undo entfernte und durch Redo wiederhergestellte erste Instanz ed4fa24e-5199-419e-a48c-94f699f3550f blieb exakt gespeichert; Verlauf selbst wurde im Editlauf geprüft.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/first-undone.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/first-redone.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopened.png"
+            ],
+            "gap": null,
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -17553,7 +18590,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md"
-          ]
+          ],
+          "gap": "Frisches Original-Reopen für DD-026 fehlt."
         },
         "target": "Nach Original-Reopen-Messung: platziertes Asset, Position, Layer, Rotation, Scale, Schatten und Lichtblockade bleiben erhalten.",
         "baseline": {
@@ -17588,7 +18626,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt. Originalgrenze: Frisches Original-Reopen für DD-026 fehlt.\nFrischstart: Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt. Originalgrenze: Frisches Original-Reopen für DD-026 fehlt.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17605,7 +18661,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/20-round-after-red.png"
-          ]
+          ],
+          "gap": "X wurde nicht gedrückt; Wirkung auf Suchtext, Galerie, Kachelmarkierung und Karte offen."
         },
         "target": "Nach Originalmessung: Das X verändert Suchtext, Galerie und Auswahl gemäß der getrennt gemessenen Originalwirkung.",
         "baseline": {
@@ -17640,7 +18697,25 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Die Wirkung des nativen Suchfeld-X auf Text, Kacheln und Folgeplatzierung ist offen.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Die Wirkung des nativen Suchfeld-X auf Text, Kacheln und Folgeplatzierung ist offen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+            ],
+            "gap": "Edit: Die Wirkung des nativen Suchfeld-X auf Text, Kacheln und Folgeplatzierung ist offen. Originalgrenze: X wurde nicht gedrückt; Wirkung auf Suchtext, Galerie, Kachelmarkierung und Karte offen.\nFrischstart: Die Wirkung des nativen Suchfeld-X auf Text, Kacheln und Folgeplatzierung ist offen. Originalgrenze: X wurde nicht gedrückt; Wirkung auf Suchtext, Galerie, Kachelmarkierung und Karte offen.",
+            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
