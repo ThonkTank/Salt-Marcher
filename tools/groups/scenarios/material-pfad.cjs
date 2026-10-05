@@ -53,6 +53,9 @@ async function waitTexture(page, entityIds, assetId) {
 }
 
 module.exports = async function materialPath({ page, out, qa, vault, restart, group, record }) {
+  if (process.env.DUNGEON_QA_ONLY_DD02120 === "1")
+    return require("./material-pfad-undo.cjs")({ page, out, qa, vault,
+      restart, group, record });
   assert.equal(group.id, "material-pfad");
   assert.deepEqual(group.caseIds, Array.from({ length: 27 }, (_, index) =>
     `DD-021.${String(index + 1).padStart(2, "0")}`));
