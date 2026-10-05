@@ -28120,14 +28120,15 @@
         "original": {
           "sequence": "Menu bei geöffneter Karte → Show Map Info",
           "options": null,
-          "effect": null,
+          "effect": "Menu → Show Map Info öffnet den modalen Dialog Map Information mit Kartengröße, aktuellem Dateipfad und ausgewählten Assetpaketen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Bearbeitbarkeit der angezeigten Felder im Original nicht gezielt geprüft."
         },
-        "target": "Show Map Info öffnet einen lesenden Dialog mit Kartengröße, Dateipfad und Paketliste.",
+        "target": "Karteninformationen öffnet einen lesenden Dialog für aktuelle Kartengröße, Dateipfad und ausgewählte Assetpakete.",
         "baseline": {
           "editor": {
             "sequence": "Karteneinstellungen zeigen Pfad, Pakete und Größe zusammen mit Änderungsfeldern",
@@ -37703,15 +37704,16 @@
         "original": {
           "sequence": "Menu > Show Map Info → Map Size",
           "options": null,
-          "effect": null,
+          "effect": "Map Size zeigt für die geöffnete Originalkarte 8 by 8.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Aktualisierung während einer Größenänderung bei offenem Dialog nicht geprüft."
         },
-        "target": "Nach Originalmessung offen: „Map Size“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
+        "target": "Kartengröße zeigt Breite und Höhe der aktuell geöffneten Karte in Feldern.",
         "baseline": {
           "editor": {
             "sequence": "Karteneinstellungen zeigen Größe, Dateipfad und Paketnamen zusammen mit veränderbaren Werten",
@@ -37773,14 +37775,15 @@
         "original": {
           "sequence": "Menu > Show Map Info → Filename",
           "options": null,
-          "effect": null,
+          "effect": "Filename zeigt den aktuellen vollständigen Dateipfad der geöffneten Originalkarte.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Aktualisierung bei Dateiumbenennung während geöffnetem Dialog nicht geprüft."
         },
-        "target": "Nach Originalmessung offen: „Filename“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
+        "target": "Dateiname zeigt den vollständigen aktuellen Pfad der geöffneten Kartendatei.",
         "baseline": {
           "editor": {
             "sequence": "Karteneinstellungen zeigen Größe, Dateipfad und Paketnamen zusammen mit veränderbaren Werten",
@@ -37842,14 +37845,15 @@
         "original": {
           "sequence": "Menu > Show Map Info → Custom asset packs used",
           "options": null,
-          "effect": null,
+          "effect": "Ein ausgewähltes Paket wird mit Name und Autor angezeigt; bei leerem asset_manifest wird ein Paket trotz verbliebener Texturreferenz nicht genannt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Bei abgewähltem Paket bleibt eine nummerierte, textleere Zeile 1 sichtbar; deren Ursache ist offen."
         },
-        "target": "Nach Originalmessung offen: „Custom asset packs used“ zeigt Größe, Dateipfad oder genutzte Assetpakete im lesenden Map-Information-Dialog.",
+        "target": "Die Paketliste zeigt nur für diese Karte ausgewählte Assetpakete mit Name und Autor; eine verbliebene Assetreferenz allein zählt nicht als Auswahl.",
         "baseline": {
           "editor": {
             "sequence": "Karteneinstellungen zeigen Größe, Dateipfad und Paketnamen zusammen mit veränderbaren Werten",
@@ -37911,14 +37915,15 @@
         "original": {
           "sequence": "Menu > Show Map Info → Close",
           "options": null,
-          "effect": null,
+          "effect": "Close schließt Map Information, ohne die Kartendatei zu ändern.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Original-History-Zustand nach Close nicht ausgelesen; Kartenprüfsumme blieb gleich."
         },
-        "target": "Nach Originalmessung offen: „Close“ schließt die lesende Map Information ohne Änderung an Kartengröße, Dateipfad oder Paketen.",
+        "target": "Schließen beendet den Informationsdialog ohne Dokument-, History- oder Kartendateiänderung.",
         "baseline": {
           "editor": {
             "sequence": "Karteneinstellungen zeigen Größe, Dateipfad und Paketnamen zusammen mit veränderbaren Werten",
@@ -43109,14 +43114,15 @@
         "original": {
           "sequence": "Menu > Show Map Info → X / Schließen",
           "options": null,
-          "effect": null,
+          "effect": "X schließt Map Information, ohne die Kartendatei zu ändern.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
-          ]
+          ],
+          "gap": "Original-History-Zustand nach X nicht ausgelesen; Kartenprüfsumme blieb gleich."
         },
-        "target": "Nach Originalmessung offen: „X / Schließen“ schließt die lesende Map Information ohne Änderung an Kartengröße, Dateipfad oder Paketen.",
+        "target": "X beendet den Informationsdialog ohne Dokument-, History- oder Kartendateiänderung.",
         "baseline": {
           "editor": {
             "sequence": null,
