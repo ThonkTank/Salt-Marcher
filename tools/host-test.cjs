@@ -431,13 +431,14 @@ async function workflow() {
       2,
     ),
   );
-  if (!(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")))) {
-    await page
-      .getByRole("button", {
-        name: "Dem Ersteller vertrauen und Erweiterungen aktivieren",
-        exact: true,
-      })
-      .click();
+  const trustButton = page.getByRole("button", {
+    name: "Dem Ersteller vertrauen und Erweiterungen aktivieren",
+    exact: true,
+  });
+  if (await trustButton.isVisible() ||
+      !(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")))) {
+    await trustButton.click();
+    await trustButton.waitFor({ state: "detached", timeout: 12000 });
   }
   await page.waitForFunction(
     () => !!app.plugins.getPlugin("dungeon-editor"),
