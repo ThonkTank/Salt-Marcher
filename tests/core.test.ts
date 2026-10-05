@@ -5,6 +5,7 @@ import "./dd00104-pending.test";
 import "./material-pattern.test";
 import "./material-native-path-catalog.test";
 import "./material-path-texture-band.test";
+import "./object-library-tile-preview.test";
 import {
   newDocument,
   parseDocument,

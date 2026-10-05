@@ -22,8 +22,16 @@ import {
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
 import { mountPatternColorPicker } from "./features/material/pattern-color-picker";
-import { mountObjectColorPicker } from "./features/objekte/rgba-picker";
+import {
+  mountObjectColorPicker,
+  type MountedObjectColorPicker,
+} from "./features/objekte/rgba-picker";
 import { type BuildingWallChoice } from "./features/bau/building-wall-choice";
+import {
+  createObjectLibraryTilePreview,
+  type ObjectLibraryTilePreview,
+} from "./features/objekte/library-tile-preview";
+import type { ColorableObjectSource } from "./renderer";
 
 export type Tool =
   | "select"
@@ -219,6 +227,8 @@ export const toolSettings = (): ToolSettings => ({
 /** Small DOM inspector. Values commit through the same history as canvas edits. */
 export class Properties {
   private pathLibrarySearch = newPathLibrarySearchState();
+  private objectPicker?: MountedObjectColorPicker;
+  private objectLibraryPreview?: ObjectLibraryTilePreview;
   constructor(
     private root: HTMLElement,
     private session: Session,
@@ -230,6 +240,7 @@ export class Properties {
     private adoptFloor: (id: string) => void = () => {},
     private previewObjectColor: (id: string, color: number, alpha: number) => void = () => {},
     private clearObjectColorPreview: (id: string) => void = () => {},
+    private colorableObjectSource: (id: string) => ColorableObjectSource | undefined = () => undefined,
   ) {}
   private field(
     label: string,
@@ -284,7 +295,7 @@ export class Properties {
     options: readonly [string, string][],
     change: (value: string) => void,
     preview = false,
-  ): void {
+  ): HTMLImageElement | undefined {
     const row = document.createElement("label");
     row.className = "dn-field";
     const name = document.createElement("span"),
@@ -350,8 +361,14 @@ export class Properties {
       updatePreview();
     }
     this.root.append(row);
+    return image;
   }
   render(tool: Tool, selected: string | undefined, floorId: string): void {
+    const activePicker = this.objectPicker;
+    this.objectPicker = undefined;
+    activePicker?.close("escape");
+    this.objectLibraryPreview?.dispose();
+    this.objectLibraryPreview = undefined;
     this.root.replaceChildren();
     const e = selected ? this.session.entities.get(selected) : undefined;
     const floorTool =
@@ -1387,23 +1404,28 @@ export class Properties {
           ...this.defaults.object,
           assetId: undefined,
         };
-      if (packageObjects.length)
-        this.choice(
-          "Paketobjekt",
-          object.assetId ?? "",
-          [
-            ["", "Grundform"],
-            ...packageObjects.map(
-              (asset) => [asset.id, asset.name] as [string, string],
-            ),
-          ],
-          (assetId) =>
-            update({
-              assetId: assetId || undefined,
-              color: assetId ? 0xffffff : object.color,
-            }),
-          true,
-        );
+      const libraryTile = packageObjects.length
+        ? this.choice(
+            "Paketobjekt",
+            object.assetId ?? "",
+            [
+              ["", "Grundform"],
+              ...packageObjects.map(
+                (asset) => [asset.id, asset.name] as [string, string],
+              ),
+            ],
+            (assetId) => {
+              this.objectPicker?.close("escape");
+              this.objectLibraryPreview?.dispose();
+              this.objectLibraryPreview = undefined;
+              update({
+                assetId: assetId || undefined,
+                color: assetId ? 0xffffff : object.color,
+              });
+            },
+            true,
+          )
+        : undefined;
       if (e?.kind !== "object")
         this.choice(
           "Möbelset",
@@ -1481,6 +1503,27 @@ export class Properties {
           ? this.session.entities.get(selectedId) : undefined;
         const currentColor = selectedEntity?.kind === "object"
           ? selectedEntity : this.defaults.object;
+        this.objectLibraryPreview?.dispose();
+        this.objectLibraryPreview = undefined;
+        if (!selectedId && libraryTile && currentColor.assetId) {
+          const source = this.colorableObjectSource(currentColor.assetId);
+          if (source)
+            this.objectLibraryPreview = createObjectLibraryTilePreview(
+              libraryTile,
+              source.image,
+              source.settings,
+            );
+        }
+        let previewErrorReported = false;
+        const previewTile = (color: number, alpha: number) => {
+          void this.objectLibraryPreview?.set(color, alpha).catch((error) => {
+            if (!previewErrorReported) {
+              previewErrorReported = true;
+              this.notice("Objektvorschau konnte nicht geladen werden: " + String(error));
+            }
+          });
+        };
+        previewTile(currentColor.color, currentColor.alpha ?? 255);
         pickerButton.disabled = true;
         mountObjectColorPicker(
           this.root,
@@ -1489,6 +1532,7 @@ export class Properties {
           {
             onPreview: (color, alpha) => {
               if (selectedId) this.previewObjectColor(selectedId, color, alpha);
+              else previewTile(color, alpha);
             },
             onCommit: (color, alpha) => {
               this.defaults.object = { ...this.defaults.object, color, alpha };

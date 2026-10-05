@@ -453,6 +453,7 @@ export class DungeonEditor {
       (id) => this.adoptFloor(id),
       (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
       (id) => this.renderer.clearObjectColorPreview(id),
+      host.colorableObjectSource,
     );
 
     this.selectionPanel = element(
