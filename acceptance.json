@@ -25545,11 +25545,14 @@
         "original": {
           "sequence": "Gleichen Vorlagennamen im selben Set bestätigen",
           "options": null,
-          "effect": "Original lehnte den getesteten Duplikatnamen ab.",
+          "effect": "Ein identischer Vorlagenname im selben Set zeigt im offenen Dialog einen Inline-Fehler und sperrt Accept; Korrektur aktiviert Accept. Nach Ablehnung bleiben Karte und vorhandene Vorlagendatei bytegleich, auch nach frischem Originalstart.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/evidence/native-prefab-set-management.json"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/evidence/native-prefab-set-management.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-09-native/REPORT.md"
+          ],
+          "verifiedScope": "Exakt identischer Name im selben Set; Originaldatei und Karte in fünf Zuständen bytegleich. Andere Namensvarianten und Sets ungeprüft.",
+          "gap": null
         },
         "target": "Ein identischer Vorlagenname im selben Set wird wie im getesteten Originalfall abgelehnt, ohne die vorhandene Datei zu überschreiben.",
         "baseline": {
@@ -25576,15 +25579,44 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "release/dd04209-inline:src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04209-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "equal",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/dd04209-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/duplicate-rejected-inline.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213235882-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213235882-objekte-07-reopen/dd04209-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-maps/evidence/1791213289540-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-maps/evidence/1791213306352-v2-open-reopen/result.json"
+          ],
+          "gap": null,
+          "verifiedScope": "Exakt identischer Name im selben Set; Inline-Fehler, gesperrtes Erstellen, korrigierbarer Name und unveränderte Definition/Karte/History nach frischem Obsidian-Start.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit und Reopen bestanden auf dem installierten Build; Katalog, data.json und Kartendatei blieben beim Duplikat bytegleich.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213235882-objekte-07-reopen/group-cases.json"
+            ],
+            "gap": null,
+            "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -28216,7 +28248,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -28231,7 +28263,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -28258,7 +28293,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "Lesender Map-Information-Dialog; direkte Texteingabe änderte Originalwerte nicht. Paketliste hat sichtbar keine Bearbeitungsschaltfläche."
+          "verifiedScope": "Lesender Map-Information-Dialog; direkte Texteingabe änderte Originalwerte nicht. Paketliste hat sichtbar keine Bearbeitungsschaltfläche. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {
@@ -37903,7 +37938,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -37918,7 +37953,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -37945,7 +37983,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "Kartengröße bei zwei geöffneten Karten und im Frischstart; Menüänderung bei offenem Originaldialog nicht erreichbar."
+          "verifiedScope": "Kartengröße bei zwei geöffneten Karten und im Frischstart; Menüänderung bei offenem Originaldialog nicht erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {
@@ -38012,7 +38050,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38027,7 +38065,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -38054,7 +38095,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "Vollständiger aktueller Kartendateipfad bei zwei Karten und im Frischstart; In-App-Umbenennung bei offenem Originaldialog nicht erreichbar."
+          "verifiedScope": "Vollständiger aktueller Kartendateipfad bei zwei Karten und im Frischstart; In-App-Umbenennung bei offenem Originaldialog nicht erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {
@@ -38120,7 +38161,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38135,7 +38176,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -38162,7 +38206,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "Ausgewählte Paketnamen mit Autor; verbliebene Texturreferenz ohne Paketauswahl wird nicht als Auswahl gemeldet. Leere nummerierte Originalzeile ist Oberflächendifferenz."
+          "verifiedScope": "Ausgewählte Paketnamen mit Autor; verbliebene Texturreferenz ohne Paketauswahl wird nicht als Auswahl gemeldet. Leere nummerierte Originalzeile ist Oberflächendifferenz. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {
@@ -38229,7 +38273,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38244,7 +38288,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -38267,7 +38314,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "Schließen ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar."
+          "verifiedScope": "Schließen ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {
@@ -43471,7 +43518,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+          "build": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -43486,7 +43533,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/dd039-map-information.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211433689-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd039-installed-maps/evidence/1791211452153-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md"
           ],
           "gap": null,
           "candidate": {
@@ -43509,7 +43559,7 @@
               "reopen": "pass"
             }
           },
-          "verifiedScope": "X ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar."
+          "verifiedScope": "X ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         }
       },
       {

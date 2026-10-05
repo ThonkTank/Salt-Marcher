@@ -1,5 +1,5 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: 11 von 707 Pflichtfällen am installierten Endstand belegt; gebündelte Pakete parallel in Arbeit",
+  "phase": "Vollständige Dungeondraft-Angleichung: 12 von 707 Pflichtfällen am installierten Endstand belegt; gebündelte Pakete parallel in Arbeit",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -517,11 +517,11 @@
       "DD-038 Kartengröße und Smart Tiles"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "Elf Pflichtfälle streng am installierten Endstand belegt. DD-039.01–.06 bestanden am installierten Build in Bearbeitung und frischem Obsidian; Originaldialog, History und Datei-Fresh-Open wurden direkt nachgemessen. DD-042.09-Releasekandidat besteht Host-Bearbeitung und Frischstart; nativer Dateivergleich läuft. DD-038 und Export sind getrennte Kandidatenpakete.",
-    "releaseBuild": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+    "hostStatus": "Zwölf Pflichtfälle streng am installierten Endstand belegt. DD-042.09 wurde im Original mit Datei-/Kartenprüfsummen und im installierten Obsidian mit Bearbeitung/Frischstart gleichwertig belegt. DD-039.01–.06 bestanden auf dem neuen Endstand erneut. Beide produktiven V2-Karten wurden nur auf isolierten Kopien geöffnet, verlustfrei V3-gespeichert und wieder geöffnet.",
+    "releaseBuild": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
     "dd038Candidate": "Originalmessung belegt nach Top +1 sofort deaktiviertes Undo/Redo und gesperrten älteren Objekt-Undo-Schritt; Entwicklungsstand setzt bei Randänderung eine History-Grenze, zeigt Warnung und Abbruchknopf. 119 Kernprüfungen bestanden, ein lizenzabhängiger Test übersprungen; isolierter Host und Installation offen. Smart-Tile-Zellen noch nicht im Dokumentmodell.",
     "openOriginalGap": "DD-020.14 Outline-Neustart und .20–.25 Picker-Einzelwerte; DD-021.23 Fuzzy/Exact; DD-028.06 ausgewähltes Escape/Hex/Außenklick; DD-042.09 native Datei-/Frischstartwirkung; DD-043 Original/Host an identischer Szene; DD-038 neue Aktion nach Resize, zuvor vorhandener Redo-Zweig und rechte/untere Randwirkung.",
-    "installedBuild": "02d92817dc6a83ba4a86c4c826ca39eb4e0b78512ebe848ecc6c268369032408",
+    "installedBuild": "13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b",
     "dd039Installed": "Isolierter Releasezweig deab9f6 + DD-039-Produktcommit 45c5215; 108 Kernprüfungen, Typprüfung und Build bestanden. Installierter Build 02d92817 bestand sechs DD-039-Fälle in Bearbeitung und Frischstart; direkte Originalprüfung schloss die relevanten Dialog-/History-Lücken. Beide produktiven V2-Karten wurden als isolierte Kopien ohne Feldverlust V3-gespeichert und frisch geöffnet. Nach Installation blieben 185 geschützte Vault-Dateien und beide Originalkarten bytegleich. Sechs Pflichtfälle gleichwertig belegt; leere Paketzeile ist reine Oberflächendifferenz.",
     "installedEvidence": [
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
@@ -529,9 +529,14 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/RELEASE-ACCEPTANCE.md",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039-installed-host/evidence/1791211380037-verwaltung-karte-datei-edit/group-cases.json",
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/group-cases.json"
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039-installed-host/evidence/1791211401002-verwaltung-karte-datei-reopen/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213235882-objekte-07-reopen/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213249910-verwaltung-karte-datei-edit/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json"
     ],
-    "next": "DD-042.09 nativen Dateivergleich und Release-Hostbefund zusammenführen; dann minimalen Releasezweig separat installieren. DD-042-Dialog/Bibliothek und DD-020-Mustergrundfälle als gebündelte Pakete prüfen; DD-043-Szene vorbereiten. DD-038-Tile-Schicht bleibt separates Modellpaket.",
+    "next": "DD-042 Vorlagen-Dialog/Bibliothek und DD-020 Muster-Grundbedienung als gebündelte Pakete integrieren und grafisch prüfen. DD-043-Szenenvertrag zeigt fehlende Smart-Tile-/Texturwirkung und VTT-Building-Blocker; bis zur Behebung keine Bildparität behaupten. DD-038-Tile-Schicht bleibt separates Modellpaket.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-020.13",
@@ -544,8 +549,10 @@
       "DD-039.03",
       "DD-039.04",
       "DD-039.05",
-      "DD-039.06"
+      "DD-039.06",
+      "DD-042.09"
     ],
-    "deferredPackages": []
+    "deferredPackages": [],
+    "dd04209Installed": "Minimaler Releasezweig f3fc4e1 + Dialogcommit 645c14f; Build 13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b. Nativer Original-Dateivergleich, korrigierbarer Inline-Fehler, installierter Obsidian Edit/Reopen, DD-039-Regression, Vorlagen-Vergessen-Regression und produktive V2-Karten auf isolierten Kopien bestanden. Plugin und zwei Karten zuvor vollständig gesichert; 185 geschützte Vault-Dateien außer beauftragtem main.js bytegleich."
   }
 }
