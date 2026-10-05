@@ -117,6 +117,15 @@ async function createMap(page, name, width, height, assetPacks) {
     await plugin.create(name, width, height,
       { assetPacks, builtInAssets: catalog.builtIns });
   }, { name, width, height, assetPacks });
+  await page.locator(".dungeon-native-editor:visible").last()
+    .getByRole("button", { name: "Speichern", exact: true }).click();
+  await page.waitForFunction((mapPath) => !!app.vault.getAbstractFileByPath(mapPath),
+    `Dungeons/${name}/Karte.dungeon`);
+  await page.waitForFunction((mapPath) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")
+      .find((leaf) => leaf.view.file?.path === mapPath)?.view.editor;
+    return !!editor && !editor.session.mutationsHeld;
+  }, `Dungeons/${name}/Karte.dungeon`);
   await openMap(page, `Dungeons/${name}/Karte.dungeon`);
 }
 

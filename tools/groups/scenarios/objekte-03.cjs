@@ -184,6 +184,13 @@ async function createFixture(page, vault, out) {
   const bytes = fs.readFileSync(fixture);
   assert.equal(digest(bytes), fixtureSha256);
   await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").create("ObjectColorGroupQA", 12, 8));
+  await page.locator(".dungeon-native-editor:visible").last()
+    .getByRole("button", { name: "Speichern", exact: true }).click();
+  await page.waitForFunction((path) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")
+      .find((leaf) => leaf.view.file?.path === path)?.view.editor;
+    return !!editor && !editor.session.mutationsHeld;
+  }, mapPath);
   await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
   await page.evaluate(async (encoded) => {
     const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
@@ -494,6 +501,9 @@ module.exports = async function objectColorGroup({ page, out, qa, vault, restart
     toolPickerOpened = true;
     add("DD-028.09", "pass", "Object Tool: kreisförmige Taste öffnet den RGBA/Hex-Picker; Escape schließt ihn.",
       [path.join(out, "object-picker-tool-open.png"), path.join(out, "object-color-panels.json")]);
+    const tileResult = await require("./objekte-03-library-tile.cjs")({
+      page, out, assetId: baseline.assetId,
+    });
     toolPlacement = await toolPickerPlacement(page, vault, out, baseline);
     if (pickerFlow) {
       pickerResult = await pickerFlow.runEdit({ page,
@@ -506,9 +516,12 @@ module.exports = async function objectColorGroup({ page, out, qa, vault, restart
     assert.equal(finalDiskObject?.color, expectedColor);
     assert.equal(finalDiskObject?.alpha, 128);
     add("DD-028.06", "pass",
-      `Object-Tool-Picker R/G/B=64/128/192, A=128: neue Instanz ${toolPlacement.id} mit RGB 4080c0/A128 platziert, sichtbar gemessen, durch Undo entfernt, Redo wiederhergestellt und gespeichert.${pickerExecuted ? " Ausgewählte Instanzen zusätzlich geprüft." : ""}`,
+      `Object-Tool-Picker R/G/B=64/128/192, A=128: Bibliothekskachel ändert vor Accept und Escape ihre färbbaren Pixel (${tileResult.pixels.transparentColorable}); neue Instanz ${toolPlacement.id} mit RGB 4080c0/A128 platziert, sichtbar gemessen, durch Undo entfernt, Redo wiederhergestellt und gespeichert.${pickerExecuted ? " Ausgewählte Instanzen zusätzlich geprüft." : ""}`,
       [path.join(out, "tool-placement.json"), path.join(out, "tool-picker-before-accept.png"),
-        path.join(out, "tool-object-placed.png"), ...(pickerExecuted ? [pickerStateFile] : [])]);
+        path.join(out, "tool-object-placed.png"), path.join(out, "object-library-tile-result.json"),
+        path.join(out, "object-library-tile-a128-before-accept.png"),
+        path.join(out, "object-library-tile-a0-before-escape.png"),
+        ...(pickerExecuted ? [pickerStateFile] : [])]);
     add("DD-028.08", "pass",
       `Accept im Object-Tool-Picker schließt mit Hex 804080c0; die folgende neue Instanz ${toolPlacement.id} speichert RGB 4080c0/A128 ohne Rundung, Undo/Redo erhalten sie.`,
       [path.join(out, "tool-placement.json"), path.join(out, "tool-before-placement.png"),
