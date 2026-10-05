@@ -19,6 +19,8 @@ import {
   alphaByteFromOpacity,
   opacityFromAlphaByte,
 } from "./features/material/pattern-appearance";
+import { newPathLibrarySearchState } from "./features/material/path-library-search";
+import { mountPathLibraryView } from "./features/material/path-library-view";
 
 export type Tool =
   | "select"
@@ -213,6 +215,7 @@ export const toolSettings = (): ToolSettings => ({
 
 /** Small DOM inspector. Values commit through the same history as canvas edits. */
 export class Properties {
+  private pathLibrarySearch = newPathLibrarySearchState();
   constructor(
     private root: HTMLElement,
     private session: Session,
@@ -1051,6 +1054,36 @@ export class Properties {
         !packageMaterials.some((asset) => asset.id === materialAssetId)
       )
         material = this.defaults.material = undefined;
+      const choosePackageMaterial = (value: string) => {
+        const asset = packageMaterials.find(
+            (candidate) => candidate.id === value,
+          ),
+          next: Material | undefined = asset
+            ? {
+                assetId: asset.id,
+                assetPart:
+                  asset.kind === "roof"
+                    ? "tiles"
+                    : asset.kind === "cave"
+                      ? "floor"
+                      : asset.kind === "material"
+                        ? "tile"
+                        : "image",
+                tileSize: material?.tileSize ?? 4,
+                tint: material?.tint ?? 0xffffff,
+                rotation: material?.rotation ?? 0,
+              }
+            : undefined;
+        if (
+          e?.kind === "building" ||
+          e?.kind === "surface" ||
+          e?.kind === "path" ||
+          e?.kind === "roof"
+        )
+          this.change(e, { material: next });
+        this.defaults.material = next;
+        if (!e) this.render(tool, selected, floorId);
+      };
       if (packageMaterials.length)
         this.choice(
           "Paketmaterial",
@@ -1061,38 +1094,37 @@ export class Properties {
               (asset) => [asset.id, asset.name] as [string, string],
             ),
           ],
-          (value) => {
-            const asset = packageMaterials.find(
-                (candidate) => candidate.id === value,
-              ),
-              next = asset
-                ? {
-                    assetId: asset.id,
-                    assetPart:
-                      asset.kind === "roof"
-                        ? "tiles"
-                        : asset.kind === "cave"
-                          ? "floor"
-                          : asset.kind === "material"
-                            ? "tile"
-                            : "image",
-                    tileSize: material?.tileSize ?? 4,
-                    tint: material?.tint ?? 0xffffff,
-                    rotation: material?.rotation ?? 0,
-                  }
-                : undefined;
-            if (
-              e?.kind === "building" ||
-              e?.kind === "surface" ||
-              e?.kind === "path" ||
-              e?.kind === "roof"
-            )
-              this.change(e, { material: next });
-            this.defaults.material = next;
-            if (!e) this.render(tool, selected, floorId);
-          },
+          choosePackageMaterial,
           true,
         );
+      if (e?.kind === "path" || (!e && tool === "path"))
+        mountPathLibraryView(this.root, {
+          tiles: packageMaterials.map((asset) => ({
+            id: asset.id,
+            name: asset.name,
+            previewUrl: this.assetUrl(asset.id + "\0image"),
+          })),
+          searchState: this.pathLibrarySearch,
+          selectedId: material?.assetId,
+          matches: (tile, query) =>
+            tile.name
+              .toLocaleLowerCase("de")
+              .includes(query.trim().toLocaleLowerCase("de")),
+          onSearchStateChange: (state) => {
+            this.pathLibrarySearch = state;
+          },
+          onSelect: (id) => {
+            if (id === material?.assetId) return;
+            try {
+              const before = JSON.stringify(this.defaults);
+              choosePackageMaterial(id);
+              if (before !== JSON.stringify(this.defaults))
+                this.defaultsChanged();
+            } catch (error) {
+              this.notice(String(error));
+            }
+          },
+        });
       this.field(
         "Materialbild im Vault",
         "text",
