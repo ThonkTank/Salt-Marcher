@@ -390,6 +390,10 @@ module.exports = async function objectColorGroup({ page, out, qa, vault, restart
     return require("./objekte-03-scatter-outside.cjs")({
       page, out, qa, vault, restart, group, record,
     });
+  if (process.env.DUNGEON_QA_DD02817_ONLY === "1")
+    return require("./objekte-03-light-palette.cjs")({
+      page, out, qa, vault, restart, group, record,
+    });
   if (process.argv.includes("--dd028-picker-lifecycle"))
     return require("./objekte-03-picker-lifecycle.cjs")({
       page, out, qa, vault, restart, group, record,

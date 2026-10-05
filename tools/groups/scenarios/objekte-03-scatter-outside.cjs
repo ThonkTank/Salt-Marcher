@@ -140,6 +140,7 @@ module.exports = async function scatterOutside({
       mapPath,
     );
     assert(fs.existsSync(mapFile), "QA-Karte wurde nicht gespeichert");
+    await chooseScatter(page);
     const diskBefore = digest(fs.readFileSync(mapFile));
     const result = await gesture(page, out, "edit");
     assert.equal(
