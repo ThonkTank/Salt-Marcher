@@ -36,14 +36,17 @@ async function choosePath(page) {
 
 async function mapState(page) {
   return page.evaluate(() => {
-    const leaves = app.workspace.getLeavesOfType("dungeon-native-map");
+    const leaves = [
+      ...app.workspace.getLeavesOfType("dungeon-native-map"),
+      ...app.workspace.getLeavesOfType("dungeon-native-pending"),
+    ];
     const leaf = leaves.find((item) => item === app.workspace.activeLeaf) ??
       leaves.find((item) => item.view?.editor?.root?.offsetParent !== null) ??
       leaves[0];
     const editor = leaf?.view?.editor;
     if (!editor?.session) return null;
     return {
-      path: leaf.view.file?.path ?? null,
+      path: leaf.view.file?.path ?? leaf.view.mapPath ?? null,
       document: editor.session.document(),
       history: editor.session.historySize,
       dirty: editor.session.dirty,
