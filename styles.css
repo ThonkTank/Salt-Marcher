@@ -1,0 +1,630 @@
+.dungeon-native-editor {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 200px;
+  padding: 0 !important;
+  overflow: hidden;
+  color: var(--text-normal);
+  background: var(--background-primary);
+}
+.dungeon-native-editor.dn-maximized {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--layer-modal, 50) - 1);
+  width: 100vw;
+  height: 100vh;
+  background: var(--background-primary);
+}
+.dn-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 11px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+.dn-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.dn-save-state {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.dn-save-state.is-dirty {
+  color: var(--text-accent);
+}
+.dn-toolbar button {
+  height: 34px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.dn-toolbar .dn-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  padding: 5px;
+}
+.dn-icon,
+.dn-navigation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+.dn-icon svg,
+.dn-navigation-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.dn-back-button {
+  margin-left: 2px;
+  background: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
+}
+.dn-options-toggle {
+  display: none;
+}
+.dn-menu {
+  position: relative;
+  height: 34px;
+  font-size: 12px;
+}
+.dn-menu > summary {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--button-radius);
+  background: var(--interactive-normal);
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+.dn-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.dn-menu[open] > summary {
+  background: var(--interactive-hover);
+}
+.dn-popover-menu > .dn-menu-content {
+  position: absolute;
+  z-index: 30;
+  top: 38px;
+  right: 0;
+  display: flex;
+  min-width: 190px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+}
+.dn-popover-menu > .dn-menu-content button {
+  width: 100%;
+}
+.dn-body {
+  display: grid;
+  grid-template-columns: 80px 144px 256px minmax(0, 1fr) 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+.dungeon-native-editor.dn-key-open .dn-body {
+  grid-template-columns: 80px 144px 0 minmax(0, 1fr) 360px;
+}
+.dn-group-rail,
+.dn-tool-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 5px;
+  overflow: auto;
+  background: var(--background-secondary);
+  border-right: 1px solid var(--background-modifier-border);
+}
+.dn-group-rail {
+  grid-column: 1;
+  padding-inline: 3px;
+}
+.dn-tool-rail {
+  grid-column: 2;
+}
+.dn-navigation-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  margin: 0;
+  padding: 8px 5px;
+  flex-shrink: 0;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+.dn-navigation-button[hidden] {
+  display: none !important;
+}
+.dn-group-rail .dn-navigation-button {
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 2px;
+  text-align: center;
+  font-size: 11px;
+}
+.dn-tool-rail .dn-navigation-button {
+  font-size: 13px;
+}
+.dn-navigation-label {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: auto;
+}
+.dn-group-rail .dn-navigation-label {
+  flex: 0 1 auto;
+}
+.dn-navigation-button.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.dungeon-native-editor
+  :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.dn-inspector {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 12px;
+  overflow: auto;
+  background: var(--background-primary);
+  border-right: 1px solid var(--background-modifier-border);
+}
+.dn-inspector h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+.dn-inspector h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.dn-inspector h4 {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.dn-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+.dn-properties[hidden],
+.dn-option-section[hidden],
+.dn-empty-panel[hidden] {
+  display: none !important;
+}
+.dn-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(74px, 44%);
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.dn-field input,
+.dn-field select {
+  min-width: 0;
+  width: 100%;
+}
+.dn-field input[type="checkbox"] {
+  width: auto;
+  justify-self: start;
+}
+.dn-field .dn-choice-search {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.dn-field .dn-choice-search + select {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+.dn-field .dn-asset-preview {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-height: 116px;
+  object-fit: contain;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+}
+.dn-help,
+.dn-empty-panel {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.dn-option-section {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 9px;
+}
+.dn-option-section > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dn-option-section > .dn-menu-content {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dn-option-section > .dn-menu-content button,
+.dn-option-section > .dn-menu-content select {
+  width: 100%;
+  max-width: none;
+}
+.dn-selection-filter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 8px;
+  padding: 7px 0 2px;
+}
+.dn-selection-subfilter > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.dn-filter-kind {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.dn-filter-kind input {
+  margin: 0;
+}
+.dn-compact-field {
+  display: grid;
+  grid-template-columns: 1fr 74px;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.dn-compact-field .dn-opacity {
+  width: 74px;
+}
+.dn-floor {
+  width: 100%;
+  max-width: none;
+}
+.dn-opacity {
+  width: 70px;
+  min-width: 45px;
+}
+.dn-canvas {
+  grid-column: 4;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  background: #222829;
+}
+.dn-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+.dn-canvas canvas:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+.dn-key-dock {
+  grid-column: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+  background: var(--background-primary);
+  border-left: 1px solid var(--background-modifier-border);
+}
+.dn-key-dock[hidden] {
+  display: none !important;
+}
+.dn-key-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dn-key-heading button {
+  font-size: 12px;
+}
+.dn-note {
+  resize: none;
+  flex: 1;
+  min-height: 90px;
+  width: 100%;
+  padding: 10px;
+  font-family: var(--font-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.dn-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 3px 7px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+.dn-status {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.dn-view-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dn-view-controls button {
+  min-width: 30px;
+  height: 28px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.dn-hidden-input {
+  display: none;
+}
+.dn-map-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: min(65vh, 620px);
+  min-height: 260px;
+  max-height: 620px;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: #222829;
+}
+.dn-map-card .dn-map-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.dn-map-card .dn-map-viewport {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  touch-action: none;
+}
+.dn-map-card.is-compact .dn-map-viewport {
+  cursor: grab;
+  background: #fff;
+}
+.dn-map-card.is-compact .dn-map-viewport.is-room-label {
+  cursor: pointer;
+}
+.dn-map-card.is-compact .dn-map-viewport.is-dragging {
+  cursor: grabbing;
+}
+.dn-map-info:not(:empty) {
+  flex: 0 1 auto;
+  padding: 10px;
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+.dn-map-info p {
+  margin: 0.35rem 0;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}
+.dn-map-info-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0;
+}
+.dn-map-info-tools button,
+.dn-map-info > .dn-map-feature-button,
+.dn-map-info > button {
+  font-size: 12px;
+  padding: 3px 6px;
+  height: auto;
+  min-height: 26px;
+}
+.dn-map-feature-button {
+  margin: 3px;
+  white-space: normal;
+}
+.dn-play-view {
+  height: 100%;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.dn-play-view > .dn-map-card {
+  height: 100%;
+  max-height: none;
+}
+.dn-pack-list {
+  max-height: 50vh;
+  overflow: auto;
+  margin-top: 10px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+@container (max-width:800px) {
+  .dungeon-native-editor {
+    grid-template-rows: 44px minmax(0, 1fr) auto;
+  }
+  .dn-toolbar {
+    min-height: 44px;
+    padding: 5px 7px;
+    gap: 4px;
+  }
+  .dn-toolbar button,
+  .dn-menu > summary {
+    height: 32px;
+    padding-inline: 7px;
+  }
+  .dn-title {
+    max-width: 22%;
+    flex: 0 1 auto;
+  }
+  .dn-save-state {
+    display: none;
+  }
+  .dn-options-toggle {
+    display: block;
+  }
+  .dn-body,
+  .dungeon-native-editor.dn-key-open .dn-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 42px 42px minmax(0, 1fr);
+  }
+  .dn-group-rail,
+  .dn-tool-rail {
+    grid-column: 1;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 4px;
+    max-height: none;
+    padding: 4px 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    scrollbar-width: thin;
+  }
+  .dn-group-rail {
+    grid-row: 1;
+  }
+  .dn-tool-rail {
+    grid-row: 2;
+  }
+  .dn-group-rail .dn-navigation-button,
+  .dn-tool-rail .dn-navigation-button {
+    flex-direction: row;
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 32px;
+    padding: 5px 7px;
+    font-size: 12px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .dn-tool-rail .dn-navigation-button {
+    max-width: 185px;
+  }
+  .dn-inspector {
+    display: none;
+    grid-column: 1;
+    grid-row: 3;
+    align-self: start;
+    z-index: 8;
+    width: min(360px, 92%);
+    max-height: 78%;
+    padding: 12px;
+    box-shadow: 5px 6px 20px #0004;
+  }
+  .dungeon-native-editor.dn-options-open .dn-inspector {
+    display: flex;
+  }
+  .dn-canvas {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .dn-key-dock {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: end;
+    align-self: start;
+    z-index: 9;
+    width: min(360px, 95%);
+    height: 78%;
+    box-shadow: -5px 6px 20px #0004;
+  }
+  .dn-footer {
+    padding: 3px 5px;
+    gap: 5px;
+  }
+  .dn-status {
+    font-size: 10px;
+  }
+  .dn-back-button {
+    font-size: 11px !important;
+  }
+}
+@container (max-width:560px) {
+  .dn-title {
+    display: none;
+  }
+  .dn-toolbar {
+    gap: 3px;
+    padding-inline: 5px;
+  }
+  .dn-toolbar button,
+  .dn-menu > summary {
+    padding-inline: 6px;
+  }
+  .dn-toolbar .dn-icon-button {
+    width: 32px;
+    padding-inline: 4px;
+  }
+}

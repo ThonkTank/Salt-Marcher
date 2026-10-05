@@ -1,0 +1,22 @@
+{
+  "name": "dungeon-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "tsc --noEmit",
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs tests/migrate-building-v2.test.mjs"
+  },
+  "dependencies": {
+    "pixi.js": "8.22.0",
+    "polygon-clipping": "^0.15.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.8.7",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.0"
+  }
+}
