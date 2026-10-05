@@ -1,10 +1,10 @@
-// Isolated DD-012.02/.03 host sequence. Run only through host-test --group bau-01
+// Isolated DD-012.01-.03 host sequence. Run only through host-test --group bau-01
 // with DUNGEON_QA_ONLY_DD01203=1 in an isolated QA root and an exclusive GUI slot.
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const caseIds = ["DD-012.02", "DD-012.03"];
+const caseIds = ["DD-012.01", "DD-012.02", "DD-012.03"];
 const stateFile = "dd01203-held-point-state.json";
 const sha = (file) => crypto.createHash("sha256")
   .update(fs.readFileSync(file)).digest("hex");
@@ -34,6 +34,10 @@ function editorState(page, mapPath) {
       history: editor.session.historySize,
       dirty: editor.session.dirty,
       selected: editor.selected,
+      pointHover: r.buildingPointHover ?? null,
+      pointColors: r.selection.context.instructions
+        .filter((instruction) => instruction.action === "fill")
+        .map((instruction) => instruction.data.style.color),
       gesture: editor.gesture?.buildingVertex ?? null,
       building,
       preview: preview ? {
@@ -85,7 +89,7 @@ module.exports = async function dd01203({ page, out, qa, vault,
     },
     write = (file, data) => fs.writeFileSync(file,
       JSON.stringify(data, null, 2) + "\n");
-  let result;
+  let results;
   try {
     if (restart) {
       const saved = JSON.parse(fs.readFileSync(statePath, "utf8")),
@@ -100,15 +104,47 @@ module.exports = async function dd01203({ page, out, qa, vault,
       await page.locator(".dungeon-native-editor:visible .dn-canvas canvas")
         .last().waitFor({ timeout: 30000 });
       const reopened = await stage("fresh-open", saved.mapPath, true);
-      const okay = saved.structuralOkay && !reopened.dirty &&
+      const shapeOkay = saved.shapeOkay && !reopened.dirty &&
         same(reopened.document, saved.document) &&
         sha(disk) === saved.sha256 && !reopened.preview;
-      result = {
-        state: okay ? "open" : "fail",
-        observation: `Frischstart: gespeicherte 32-Punkt-Kontur und Datei unverändert=${okay}.`,
-        gap: okay
-          ? "Original-Frischstart genau des Ellipsenpunktzugs und unabhängiger Bildvergleich der gehaltenen Vorschau fehlen."
-          : "Kontur, Dateiprüfsumme oder transiente Vorschau wich beim Frischstart ab.",
+      const editor = page.locator(".dungeon-native-editor:visible").last();
+      await editor.locator(".dn-group-rail")
+        .getByRole("button", { name: "Auswahl", exact: true }).click();
+      await editor.locator(".dn-tool-rail")
+        .getByRole("button", { name: "Auswahl", exact: true }).click();
+      const center = await at(page, saved.mapPath, { x: 4.5, y: 5.5 });
+      await page.mouse.click(center.x, center.y);
+      const from = await at(page, saved.mapPath, { x: 1, y: 5.5 });
+      await page.mouse.move(from.x, from.y);
+      const selected = await stage("fresh-open-selected-hover", saved.mapPath, true);
+      const activationOkay = shapeOkay && selected.selected === "dd01203-ellipse" &&
+        selected.pointHover?.index === 23 &&
+        same(selected.document, reopened.document) &&
+        selected.history === reopened.history && sha(disk) === saved.sha256 &&
+        selected.pointColors.length === 32 &&
+        selected.pointColors.filter((color) => color === 0x29c85a).length === 1;
+      results = {
+        "DD-012.01": {
+          state: activationOkay ? "open" : "fail",
+          observation: `Frischstart: 32 Griffe und grüner Hover erneut aktivierbar=${activationOkay}.`,
+          gap: activationOkay
+            ? "Original-Griffverhalten weiterer Buildingformen und unabhängiger Bildvergleich fehlen."
+            : "Aktivierung, 32 Griffe oder grüner Hover fehlte nach Frischstart.",
+        },
+        "DD-012.02": {
+          state: shapeOkay ? "open" : "fail",
+          observation: `Frischstart: verformte 32-Punkt-Kontur und Datei unverändert=${shapeOkay}.`,
+          gap: shapeOkay
+            ? "Original-Frischstart genau des Ellipsenpunktzugs sowie Rechteck-Eckzug fehlen."
+            : "Kontur oder Dateiprüfsumme wich beim Frischstart ab.",
+        },
+        "DD-012.03": {
+          state: shapeOkay ? "open" : "fail",
+          observation: `Frischstart: gespeicherte Kontur ohne transiente Vorschau=${shapeOkay}.`,
+          gap: shapeOkay
+            ? "Unabhängiger Bildvergleich der gehaltenen Vorschau mit Original D05 fehlt."
+            : "Kontur, Datei oder transiente Vorschau wich beim Frischstart ab.",
+        },
       };
     } else {
       fs.rmSync(statePath, { force: true });
@@ -160,6 +196,16 @@ module.exports = async function dd01203({ page, out, qa, vault,
         // With Snap ON its stored vertex rounds from x=2 to x=1 field.
         to = await at(page, mapPath, { x: 1.125, y: 5.5 });
       await page.mouse.move(from.x, from.y);
+      const hover = await stage("hover", mapPath, true),
+        activationOkay = before.selected === "dd01203-ellipse" &&
+          before.pointColors.length === 32 &&
+          hover.pointHover?.buildingId === "dd01203-ellipse" &&
+          hover.pointHover.contour === 0 && hover.pointHover.index === 23 &&
+          same(hover.document, before.document) &&
+          hover.history === before.history && sha(disk) === diskBefore &&
+          hover.pointColors.length === 32 &&
+          hover.pointColors.filter((color) => color === 0x29c85a).length === 1 &&
+          hover.pointColors.filter((color) => color === 0x008da8).length === 31;
       await page.mouse.down();
       await page.mouse.move(to.x, to.y, { steps: 8 });
       const held = await stage("held", mapPath, true),
@@ -172,14 +218,15 @@ module.exports = async function dd01203({ page, out, qa, vault,
       const undone = await stage("undo", mapPath);
       await editor.getByRole("button", { name: "Wiederholen", exact: true }).click();
       const redone = await stage("redo", mapPath, true);
-      const okay = held.preview?.sourceId === "dd01203-ellipse" &&
+      const previewOkay = held.preview?.sourceId === "dd01203-ellipse" &&
         held.preview.originalVisible === false &&
         held.gesture?.index === 23 &&
         same(held.preview.point, { x: 1, y: 5.5 }) &&
         held.preview.fillAndWallActions.includes("fill") &&
         held.preview.fillAndWallActions.includes("stroke") &&
         same(held.document, before.document) &&
-        held.history === before.history && heldDiskUnchanged &&
+        held.history === before.history && heldDiskUnchanged,
+        dragOkay = previewOkay &&
         same(after.building.polygons[0].outer, expected) &&
         after.history === before.history + 1 && !after.preview &&
         same(undone.document, before.document) &&
@@ -191,24 +238,43 @@ module.exports = async function dd01203({ page, out, qa, vault,
         return !!e && !e.session.dirty;
       }, mapPath);
       const saved = await stage("saved", mapPath, true);
-      const savedOkay = okay && same(saved.document, redone.document) &&
+      const savedOkay = dragOkay && same(saved.document, redone.document) &&
         saved.preview === null && !saved.dirty;
       write(statePath, { mapPath, document: saved.document, sha256: sha(disk),
-        structuralOkay: savedOkay });
-      result = {
-        state: savedOkay ? "open" : "fail",
-        observation: `Halten: Boden-/Wandvorschau=${!!held.preview}, Dokument/History/Datei unverändert=${same(held.document, before.document) && held.history === before.history && heldDiskUnchanged}; Loslassen/Undo/Redo=${okay}.`,
-        gap: savedOkay
-          ? "Unabhängiger Bildvergleich mit dem Originalbeleg D05 und Original-Frischstart dieses Punktzugs fehlen."
-          : "Gehaltene Vorschau, atomarer Commit oder History/Speicherung wich von der Originalfolge ab.",
+        shapeOkay: savedOkay });
+      results = {
+        "DD-012.01": {
+          state: activationOkay ? "open" : "fail",
+          observation: `Auswahl zeigt 32 Griffe; überfahrener linker Griff allein grün=${activationOkay}.`,
+          gap: activationOkay
+            ? "Original-Griffverhalten weiterer Buildingformen und unabhängiger Bildvergleich fehlen."
+            : "32 Griffe oder grüne Hover-Markierung fehlten.",
+        },
+        "DD-012.02": {
+          state: savedOkay ? "open" : "fail",
+          observation: `Ellipsengriff x=2→1 beim Loslassen, Undo/Redo und Save=${savedOkay}.`,
+          gap: savedOkay
+            ? "Original-Frischstart genau des Ellipsenpunktzugs sowie Rechteck-Eckzug fehlen."
+            : "Punktzug, History oder Speicherung wich von der Originalfolge ab.",
+        },
+        "DD-012.03": {
+          state: previewOkay && savedOkay ? "open" : "fail",
+          observation: `Gehaltene Boden-/Wandvorschau bei unverändertem Dokument/History/Datei=${previewOkay}; Loslassen/Save=${savedOkay}.`,
+          gap: previewOkay && savedOkay
+            ? "Unabhängiger Bildvergleich der gehaltenen Vorschau mit Original D05 fehlt."
+            : "Gehaltene Vorschau, atomarer Commit oder Speicherung wich von der Originalfolge ab.",
+        },
       };
     }
   } catch (error) {
     steps.error = String(error?.stack ?? error);
-    result = { state: "fail", observation: steps.error,
-      gap: "Isolierter DD-012.03-Hostlauf konnte nicht vollständig ausgeführt werden." };
+    results = Object.fromEntries(caseIds.map((id) => [id, {
+      state: "fail", observation: steps.error,
+      gap: "Isolierter DD-012.01-.03-Hostlauf konnte nicht vollständig ausgeführt werden.",
+    }]));
   }
   write(stepsPath, steps);
   for (const id of caseIds)
-    record.add(id, result.state, result.observation, evidence, result.gap);
+    record.add(id, results[id].state, results[id].observation, evidence,
+      results[id].gap);
 };
