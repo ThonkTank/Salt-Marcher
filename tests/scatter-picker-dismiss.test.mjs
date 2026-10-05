@@ -10,9 +10,25 @@ const bundle = await build({
   platform: "node",
   logLevel: "silent",
 });
-const { attachScatterPickerOutsideDismiss } = await import(
+const {
+  attachScatterPickerOutsideDismiss,
+  dismissScatterPickerOnOutside,
+  scatterPointerSource,
+} = await import(
   "data:text/javascript;base64," +
     Buffer.from(bundle.outputFiles[0].contents).toString("base64")
+);
+const pickerBundle = await build({
+  entryPoints: ["src/features/objekte/rgba-picker.ts"],
+  bundle: true,
+  write: false,
+  format: "esm",
+  platform: "node",
+  logLevel: "silent",
+});
+const { ObjectColorPicker } = await import(
+  "data:text/javascript;base64," +
+    Buffer.from(pickerBundle.outputFiles[0].contents).toString("base64")
 );
 
 function fixture() {
@@ -88,7 +104,7 @@ test("DD-028.16 explicit teardown leaves no outside listener", () => {
   assert.equal(dismissals, 0);
 });
 
-test("DD-028.16 unresolved changed value keeps the dismissal listener", () => {
+test("DD-028.16 a failed dismissal keeps the listener", () => {
   const f = fixture();
   let resolved = false;
   const dispose = attachScatterPickerOutsideDismiss(
@@ -103,4 +119,33 @@ test("DD-028.16 unresolved changed value keeps the dismissal listener", () => {
   f.source.press(f.elsewhere);
   assert.equal(f.source.listening, false);
   dispose();
+});
+
+test("DD-028.16 changed color closes on outside press through common commit path", () => {
+  const f = fixture();
+  const commits = [];
+  const closeReasons = [];
+  const controller = new ObjectColorPicker(0x6b3834, 255, {
+    onPreview() {},
+    onCommit(rgb, alpha) { commits.push({ rgb, alpha }); },
+    onClose(reason) { closeReasons.push(reason); },
+  });
+  assert.equal(controller.setHex("7292b2"), true);
+  const mounted = { close(reason) { controller.close(reason); } };
+  attachScatterPickerOutsideDismiss(
+    f.source, f.picker, f.opener,
+    () => dismissScatterPickerOnOutside(mounted),
+  );
+  f.source.press(f.elsewhere);
+  assert.deepEqual(closeReasons, ["escape"]);
+  assert.deepEqual(commits, [{ rgb: 0x7292b2, alpha: 255 }]);
+  assert.equal(f.source.listening, false);
+  f.source.press(f.elsewhere);
+  assert.deepEqual(closeReasons, ["escape"]);
+  assert.deepEqual(commits, [{ rgb: 0x7292b2, alpha: 255 }]);
+});
+
+test("DD-028.16 outside listener uses the host popout document", () => {
+  const f = fixture();
+  assert.equal(scatterPointerSource({ ownerDocument: f.source }), f.source);
 });

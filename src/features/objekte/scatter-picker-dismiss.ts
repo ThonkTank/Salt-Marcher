@@ -19,6 +19,21 @@ export interface PointerDownSource {
 
 type Containment = Pick<HTMLElement, "contains">;
 
+/** Obsidian popouts own a different document from the main editor window. */
+export function scatterPointerSource(
+  host: Pick<HTMLElement, "ownerDocument">,
+): PointerDownSource {
+  return host.ownerDocument;
+}
+
+/** A changed native Scatter color survives outside dismissal. */
+export function dismissScatterPickerOnOutside(
+  mounted: Pick<MountedObjectColorPicker, "close">,
+): boolean {
+  mounted.close("escape");
+  return true;
+}
+
 /** Closes only on a pointer press outside both the picker and its opener. */
 export function attachScatterPickerOutsideDismiss(
   source: PointerDownSource,
@@ -55,7 +70,7 @@ export function mountScatterColorPicker(
   rgb: number,
   alpha: number,
   hooks: ObjectColorPickerHooks,
-  pointerSource: PointerDownSource = document,
+  pointerSource: PointerDownSource = scatterPointerSource(host),
 ): MountedObjectColorPicker {
   let removeOutside = () => {};
   const mounted = mountObjectColorPicker(host, rgb, alpha, {
@@ -65,18 +80,11 @@ export function mountScatterColorPicker(
       hooks.onClose?.(reason);
     },
   });
-  const initialArgb = mounted.controller.argb;
   removeOutside = attachScatterPickerOutsideDismiss(
     pointerSource,
     mounted.element,
     opener,
-    () => {
-      // Outside dismissal was observed only without an intervening color edit.
-      // Keep a changed picker open until the native value rule is measured.
-      if (mounted.controller.argb !== initialArgb) return false;
-      mounted.close("escape");
-      return true;
-    },
+    () => dismissScatterPickerOnOutside(mounted),
   );
   return mounted;
 }
