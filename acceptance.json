@@ -8430,7 +8430,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
+          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179377149-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179386669-pattern-alpha-reopen/result.json",
@@ -8438,19 +8438,22 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179667572-pattern-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179676240-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180973319-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180983638-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791180995047-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791181009173-v2-open-reopen/result.json"
           ],
           "gap": null
         },
         "installedCheck": {
-          "build": "main.js SHA-256 a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
           "state": "passed_on_current_installed_build",
+          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179657599-pattern-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179667572-pattern-alpha-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179676240-v2-open-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180973319-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180983638-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791180995047-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791181009173-v2-open-reopen/result.json"
           ]
         }
       },
@@ -24456,7 +24459,7 @@
           }
         },
         "implementation": {
-          "state": "host_verified_pending_install",
+          "state": "installed_verified",
           "changes": [
             "src/features/objekte/prefab-forget.ts",
             "src/editor.ts",
@@ -24469,14 +24472,26 @@
           ]
         },
         "hostCheck": {
-          "state": "isolated_pass_pending_installed_endstand",
+          "state": "equal",
           "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180798934-prefab-forget-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180811016-prefab-forget-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-dialog-resolution.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-dialog-resolution.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180943780-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180960605-prefab-forget-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-prefab-dialog.json"
           ],
-          "gap": "Freigabe-Build belegt Cancel, Kartenwechsel bei offener Warnung, bestätigtes Forget, Karten-/Instanzerhalt, konkurrierendes Speichern und frisches Hostöffnen. Installierter Endstand offen; Original-Undo/Cancel/X sind getrennte Unterfälle."
+          "gap": null
+        },
+        "installedCheck": {
+          "state": "passed_on_current_installed_build",
+          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180943780-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180960605-prefab-forget-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-prefab-dialog.json"
+          ]
         }
       },
       {
