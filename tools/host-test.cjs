@@ -179,6 +179,8 @@ function prepare() {
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
     if (patternAlpha || prefabForget || objectAlpha || pathLibrary)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
+    if (pathLibrary)
+      fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
   }
   fs.mkdirSync(out, { recursive: true });
   fs.mkdirSync(vault + "/.obsidian/plugins/dungeon-editor", {
@@ -2877,6 +2879,41 @@ async function prefabForgetWorkflow(view) {
   await page.screenshot({ path: out + "/prefab-reopened.png" });
   checks.push("Fresh Obsidian process keeps the definition forgotten while the object-light pair reopens intact");
 }
+function twoPathFixture(bytes) {
+  const input = Buffer.from(bytes);
+  const original = new DataView(input.buffer, input.byteOffset, input.byteLength);
+  assert.equal(original.getUint32(0, true), 0x43504447);
+  const files = [];
+  let cursor = 88;
+  for (let index = 0; index < original.getUint32(84, true); index++) {
+    const length = original.getUint32(cursor, true);
+    cursor += 4;
+    const name = input.subarray(cursor, cursor + length).toString("utf8").replace(/\0+$/, "");
+    cursor += length;
+    const offset = Number(original.getBigUint64(cursor, true));
+    const size = Number(original.getBigUint64(cursor + 8, true));
+    cursor += 32;
+    files.push({ name, bytes: input.subarray(offset, offset + size) });
+  }
+  const image = files.find((file) => file.name.endsWith("/QA Path.png"));
+  assert(image);
+  files.push({ name: "res://packs/QAPath01/textures/paths/Other Path.png", bytes: image.bytes });
+  const header = Buffer.from(input.subarray(0, 88));
+  header.writeUInt32LE(files.length, 84);
+  const tableSize = files.reduce((sum, file) => sum + 4 + Buffer.byteLength(file.name) + 32, 0);
+  let payloadOffset = 88 + tableSize;
+  const table = files.map((file) => {
+    const name = Buffer.from(file.name);
+    const row = Buffer.alloc(4 + name.length + 32);
+    row.writeUInt32LE(name.length, 0);
+    name.copy(row, 4);
+    row.writeBigUInt64LE(BigInt(payloadOffset), 4 + name.length);
+    row.writeBigUInt64LE(BigInt(file.bytes.length), 12 + name.length);
+    payloadOffset += file.bytes.length;
+    return row;
+  });
+  return Buffer.concat([header, ...table, ...files.map((file) => file.bytes)]);
+}
 async function pathLibraryWorkflow(view) {
   const mapPath = "Dungeons/PathLibraryQA/Karte.dungeon";
   const packPath = root + "/../dungeon-auswertung/tests/fixtures/" +
@@ -2885,6 +2922,10 @@ async function pathLibraryWorkflow(view) {
     .update(fs.readFileSync(packPath)).digest("hex");
   assert.equal(packDigest,
     "69aeb699a8008ac874b61ba988c9463aa6a569f32c851d8c638a6815936f7c41");
+  const fixture = twoPathFixture(fs.readFileSync(packPath));
+  fs.writeFileSync(out + "/two-path-fixture.dungeondraft_pack", fixture);
+  fs.writeFileSync(out + "/two-path-fixture.sha256",
+    crypto.createHash("sha256").update(fixture).digest("hex") + "\n");
   if (restart) {
     await page.evaluate(async (mapPath) =>
       app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(mapPath)),
@@ -2893,17 +2934,29 @@ async function pathLibraryWorkflow(view) {
     const saved = await view();
     const path = saved.document.entities.find((entity) => entity.kind === "path");
     assert(path);
+    const asset = await page.evaluate(() =>
+      app.plugins.getPlugin("dungeon-editor").listAssets()
+        .find((asset) => asset.kind === "path" && asset.name === "QA Path"));
+    assert(asset);
+    assert.equal(path.material.assetId, asset.id);
     assert.equal(path.material.assetPart, "image");
     assert(saved.document.settings.assetPacks.includes("QAPath01"));
     await chooseTool("Pfad");
-    assert.equal(await page.locator(".dn-path-library-tiles button").count(), 1);
-    checks.push("Saved package path reopens with its Path Library tile");
+    assert.equal(await page.locator(".dn-path-library-tiles button").count(), 2);
+    const rendered = await page.evaluate((id) => {
+      const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor;
+      const visual = editor.renderer.visuals.get(id);
+      return { present: !!visual, assets: visual?.assets ?? [] };
+    }, path.id);
+    assert(rendered.present);
+    assert(rendered.assets.includes(asset.id + "\0image"));
+    checks.push("Saved path texture reference and rendered visual reopen with both library tiles");
     return;
   }
   await page.evaluate(() =>
     app.plugins.getPlugin("dungeon-editor").create("PathLibraryQA", 12, 8));
   await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
-  const encoded = fs.readFileSync(packPath).toString("base64");
+  const encoded = fixture.toString("base64");
   await page.evaluate(async (encoded) => {
     const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
     const plugin = app.plugins.getPlugin("dungeon-editor");
@@ -2918,21 +2971,21 @@ async function pathLibraryWorkflow(view) {
   await chooseTool("Pfad");
   const tiles = page.locator(".dn-path-library-tiles button");
   await tiles.first().waitFor();
-  assert.equal(await tiles.count(), 1);
+  assert.equal(await tiles.count(), 2);
   const input = page.getByRole("searchbox", { name: "Pfadbibliothek durchsuchen" });
-  await input.fill("unbekannter-pfad");
+  await input.fill("QA Path");
   await input.press("Enter");
-  assert.equal(await tiles.count(), 0);
-  assert.equal(await input.inputValue(), "unbekannter-pfad");
-  await page.getByRole("button", { name: "Suche zurücksetzen" }).click();
   assert.equal(await tiles.count(), 1);
-  assert.equal(await input.inputValue(), "unbekannter-pfad");
+  assert.equal(await input.inputValue(), "QA Path");
+  await page.getByRole("button", { name: "Suche zurücksetzen" }).click();
+  assert.equal(await tiles.count(), 2);
+  assert.equal(await input.inputValue(), "QA Path");
   checks.push("Clear Search restores every available path tile while retaining the visible query");
   const asset = await page.evaluate(() =>
     app.plugins.getPlugin("dungeon-editor").listAssets()
       .find((asset) => asset.kind === "path" && asset.name === "QA Path"));
   assert(asset);
-  await tiles.first().click();
+  await page.locator('.dn-path-library-tiles button[aria-label="QA Path"]').click();
   assert.equal(await page.getByRole("combobox", { name: "Paketmaterial" }).inputValue(), asset.id);
   const beforePlace = await view();
   const at = async (point) => page.evaluate((point) => {
