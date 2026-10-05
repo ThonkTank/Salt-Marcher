@@ -92,7 +92,21 @@ function helpers(page, vault, out) {
         .find((leaf) => leaf.view.file?.path === p)?.view.editor;
       return editor?.hoveredBuildingVertex?.buildingId === id &&
         editor.hoveredBuildingVertex.index === index;
-    }, { p, id, index }, { timeout: 4000 });
+    }, { p, id, index }, { timeout: 4000 }).catch(async (error) => {
+      const diagnostic = await page.evaluate(({ p, pos, id }) => {
+        const editor = app.workspace.getLeavesOfType("dungeon-native-map")
+          .find((leaf) => leaf.view.file?.path === p)?.view.editor;
+        const source = editor?.session.entities.get(id);
+        return { selected: editor?.selected, tool: editor?.tool,
+          gesture: editor?.gesture?.tool ?? null,
+          hover: editor?.hoveredBuildingVertex ?? null,
+          world: editor?.renderer.toWorld(editor.renderer.local({
+            clientX: pos.x, clientY: pos.y })),
+          target: document.elementFromPoint(pos.x, pos.y)?.outerHTML.slice(0, 180),
+          points: source?.polygons?.[0]?.outer };
+      }, { p, pos, id });
+      throw new Error(`${error.message}; Hoverdiagnose=${JSON.stringify(diagnostic)}`);
+    });
   };
   const select = async (p, point, id) => {
     await page.locator(".dn-group-rail").last()
@@ -206,6 +220,9 @@ async function edit({ page, out, qa, vault }) {
     pointsEqual(contour(redo, deletion.id), expectedTriangle) &&
     entity(redo, deletion.id)?.wallAssetId === wallAssetId &&
     (removedRender?.sprites ?? 0) > 0;
+  // The editor clears selection during history traversal. Re-enter point edit
+  // before the separate minimum-point gesture.
+  await h.select(deletePath, { x: 5, y: 4 }, deletion.id);
   await h.hover(deletePath, { x: 1, y: 2 }, deletion.id, 2);
   const minimumBefore = await h.view(deletePath);
   const minScreen = await h.shot("triangle-minimum-hover");

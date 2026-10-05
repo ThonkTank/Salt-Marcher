@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const pointGestures = require("./bau-point-gestures.cjs");
 
 const openReasons = {
   "DD-011.04": "Ein gesonderter schmaler Polygonzug mit Wandwirkung ist in diesem Pilot noch nicht beidseitig gemessen.",
@@ -89,6 +90,24 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
       };
       record.add(id, item.state, item.observation,
         item.state === "open" ? item.evidence : [stepsPath, ...item.evidence], item.gap);
+    }
+  };
+  const runPointGestures = async () => {
+    if (group.id !== "bau-01") return;
+    try {
+      const findings = restart
+        ? await pointGestures.verifyReopen({ page, out, qa, vault })
+        : await pointGestures.runEdit({ page, out, qa, vault });
+      for (const id of pointGestures.caseIds) {
+        const item = findings[id];
+        if (!item) throw new Error(`Punktgesten-Ergebnis fehlt: ${id}`);
+        set(id, item.state, item.observation, item.gap, item.evidence);
+      }
+    } catch (error) {
+      steps.errors.push(String(error?.stack ?? error));
+      for (const id of pointGestures.caseIds)
+        if (!outcomes.has(id)) set(id, "open", null,
+          `Punktgesten-Hostfolge nicht auswertbar: ${error?.message ?? error}`);
     }
   };
   const at = (point) => page.evaluate((point) => {
@@ -331,6 +350,7 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
       steps.errors.push(String(error?.stack ?? error));
       markMissing(`DD-015-Wandwahlfolge nicht auswertbar: ${error?.message ?? error}`);
     }
+    await runPointGestures();
     finish();
     return;
   }
@@ -539,5 +559,6 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
       if (!outcomes.has(id) && !openReasons[id])
         openReasons[id] = `Pilotablauf vor diesem Fall abgebrochen: ${error?.message ?? error}`;
   }
+  await runPointGestures();
   finish();
 };

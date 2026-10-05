@@ -53,3 +53,7 @@ eigenständige Teilfolge angelegt und startet selbst keinen Host.
 - DD-013.01 (Delete-Taste) ist ausdrücklich nicht eingeschlossen; der Originalbefund ist widersprüchlich.
 
 **Statische Prüfung:** `node --check` und Export-/Falllistenprüfung bestanden. Ein Lauf und Hostbeleg stehen aus; daher keine Fallabnahme.
+
+## Hostversuche 05.10.2026
+
+Die isolierten Edit-/Reopen-Läufe `1791205645062`/`1791205656860` und `1791205747790`/`1791205759541` unter `/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/evidence/` blieben für alle vier Punktfälle **open**. Der erste Lauf stoppte beim Hover der zweiten Backspace-Geste. Im zweiten Lauf zeigte die Diagnose am Dreipunkt-Building `tool=select`, `selected=undefined`, `hover=null` und den korrekt auf `(1,2)` abgebildeten Zeiger. Die erste 4→3-Geste und Undo/Redo waren bereits durchlaufen, aber der Teilablauf schrieb vor dem Abbruch noch keinen auswertbaren Fallbericht. Die Auswahl wird nach dem History-Schritt nun vor der Dreipunkt-Geste neu gesetzt; dieser reine Prüfskript-Fix wurde wegen der Zwei-Versuche-Grenze nicht erneut grafisch ausgeführt. Die Editorparität der vier Fälle bleibt unbelegt. Der grafische Testplatz ist frei.
