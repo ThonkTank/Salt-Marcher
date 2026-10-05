@@ -1,18 +1,46 @@
+import type { Light } from "../../model";
+
+/** Coordinates in exported grid fields, not PNG pixels. */
+export interface UniversalVttPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface UniversalVttPortal {
+  readonly position: UniversalVttPoint;
+  readonly bounds: readonly [UniversalVttPoint, UniversalVttPoint];
+  readonly rotation: number;
+  readonly closed: boolean;
+  readonly freestanding: boolean;
+}
+
+export interface UniversalVttLight {
+  readonly position: UniversalVttPoint;
+  readonly range: number;
+  readonly intensity: number;
+  /** Eight native ARGB hexadecimal digits. */
+  readonly color: string;
+  readonly shadows: boolean;
+}
+
 /**
- * The measured Dungeondraft 1.2.0.1 export contains only empty geometry arrays.
- * Keep these inputs explicit, but reject nonempty arrays until their native shape
- * and coordinate units have been observed. This avoids producing plausible JSON
- * that a VTT may interpret incorrectly.
+ * The 1.2.0.1 fixture proves LOS paths, wall-bound portals and light records.
+ * Object LOS remains empty in both measured exports and is rejected if nonempty.
+ * The measured wall path is split around one portal; the rule for converting
+ * arbitrary editor walls and doors into these paths/bounds remains unmeasured.
+ * Callers must therefore supply already computed grid-coordinate paths and
+ * portal records. Freestanding portals and other baked-lighting values are
+ * also outside the measured cases.
  */
 export interface UniversalVtt03Input {
   readonly renderedPngDataUrl: string;
   readonly mapWidthFields: number;
   readonly mapHeightFields: number;
   readonly pixelsPerGrid: number;
-  readonly lineOfSightSegments: readonly unknown[];
+  readonly lineOfSightSegments: readonly (readonly UniversalVttPoint[])[];
   readonly objectLineOfSightSegments: readonly unknown[];
-  readonly portals: readonly unknown[];
-  readonly lights: readonly unknown[];
+  readonly portals: readonly UniversalVttPortal[];
+  readonly lights: readonly UniversalVttLight[];
   /** Eight hexadecimal digits, preserved as a value without assuming channel order. */
   readonly ambientLightHex: string;
 }
@@ -29,6 +57,95 @@ function emptyNativeArray(value: readonly unknown[], name: string): void {
   if (!Array.isArray(value)) throw new TypeError(`${name} muss ein Array sein.`);
   if (value.length !== 0)
     throw new Error(`${name}: Die native Datenform ist noch nicht belegt.`);
+}
+
+function finiteNumber(value: number, name: string): void {
+  if (typeof value !== "number" || !Number.isFinite(value))
+    throw new TypeError(`${name} muss endlich sein.`);
+}
+
+function nativePoint(value: UniversalVttPoint, name: string): UniversalVttPoint {
+  if (value === null || typeof value !== "object")
+    throw new TypeError(`${name} muss ein Punkt sein.`);
+  finiteNumber(value.x, `${name}.x`);
+  finiteNumber(value.y, `${name}.y`);
+  return { x: value.x, y: value.y };
+}
+
+function nativeLineOfSight(paths: UniversalVtt03Input["lineOfSightSegments"]): UniversalVttPoint[][] {
+  if (!Array.isArray(paths)) throw new TypeError("line_of_sight muss ein Array sein.");
+  return paths.map((path, pathIndex) => {
+    if (!Array.isArray(path) || path.length < 2)
+      throw new TypeError(`line_of_sight[${pathIndex}] braucht mindestens zwei Punkte.`);
+    return path.map((point, pointIndex) =>
+      nativePoint(point, `line_of_sight[${pathIndex}][${pointIndex}]`));
+  });
+}
+
+function nativePortals(portals: UniversalVtt03Input["portals"]): UniversalVttPortal[] {
+  if (!Array.isArray(portals)) throw new TypeError("portals muss ein Array sein.");
+  return portals.map((portal, index) => {
+    if (portal === null || typeof portal !== "object")
+      throw new TypeError(`portals[${index}] muss ein Portal sein.`);
+    if (!Array.isArray(portal.bounds) || portal.bounds.length !== 2)
+      throw new TypeError(`portals[${index}].bounds braucht zwei Punkte.`);
+    finiteNumber(portal.rotation, `portals[${index}].rotation`);
+    if (typeof portal.closed !== "boolean" || typeof portal.freestanding !== "boolean")
+      throw new TypeError(`portals[${index}] braucht zwei boolesche Zustände.`);
+    return {
+      position: nativePoint(portal.position, `portals[${index}].position`),
+      bounds: [
+        nativePoint(portal.bounds[0]!, `portals[${index}].bounds[0]`),
+        nativePoint(portal.bounds[1]!, `portals[${index}].bounds[1]`),
+      ],
+      rotation: portal.rotation,
+      closed: portal.closed,
+      freestanding: portal.freestanding,
+    };
+  });
+}
+
+function nativeLights(lights: UniversalVtt03Input["lights"]): UniversalVttLight[] {
+  if (!Array.isArray(lights)) throw new TypeError("lights muss ein Array sein.");
+  return lights.map((light, index) => {
+    if (light === null || typeof light !== "object")
+      throw new TypeError(`lights[${index}] muss ein Licht sein.`);
+    finiteNumber(light.range, `lights[${index}].range`);
+    finiteNumber(light.intensity, `lights[${index}].intensity`);
+    if (light.range <= 0 || light.intensity < 0)
+      throw new RangeError(`lights[${index}] hat ungültige Reichweite oder Stärke.`);
+    if (typeof light.color !== "string" || !/^[0-9a-f]{8}$/i.test(light.color))
+      throw new TypeError(`lights[${index}].color muss acht Hexadezimalstellen haben.`);
+    if (typeof light.shadows !== "boolean")
+      throw new TypeError(`lights[${index}].shadows muss boolesch sein.`);
+    return {
+      position: nativePoint(light.position, `lights[${index}].position`),
+      range: light.range,
+      intensity: light.intensity,
+      color: light.color.toLowerCase(),
+      shadows: light.shadows,
+    };
+  });
+}
+
+/**
+ * Direct mapping supported by the native light fixture: its source position
+ * 1024,728 at 256 px/grid becomes VTT 4,2.84375; all other shown values are
+ * copied unchanged, with an opaque prefix for the editor's RGB-only color.
+ */
+export function universalVttLightFromMapLight(
+  light: Pick<Light, "x" | "y" | "radius" | "intensity" | "color" | "shadows">,
+): UniversalVttLight {
+  if (!Number.isInteger(light.color) || light.color < 0 || light.color > 0xffffff)
+    throw new RangeError("Kartenlichtfarbe muss 24-Bit-RGB sein.");
+  const mapped: UniversalVttLight = {
+    position: { x: light.x, y: light.y },
+    range: light.radius,
+    intensity: light.intensity,
+    color: `ff${light.color.toString(16).padStart(6, "0")}`,
+    shadows: light.shadows,
+  };
+  return nativeLights([mapped])[0]!;
 }
 
 function pngDimensions(dataUrl: string): { width: number; height: number; base64: string } {
@@ -66,7 +183,7 @@ function pngDimensions(dataUrl: string): { width: number; height: number; base64
   return { width: uint32(16), height: uint32(20), base64 };
 }
 
-/** Serialize only the directly measured, empty-geometry Universal VTT 0.3 case. */
+/** Serialize the directly measured Universal VTT 0.3 envelope and record shapes. */
 export function serializeUniversalVtt03(input: UniversalVtt03Input): string {
   positiveInteger(input.mapWidthFields, "Kartenbreite");
   positiveInteger(input.mapHeightFields, "Kartenhöhe");
@@ -77,10 +194,10 @@ export function serializeUniversalVtt03(input: UniversalVtt03Input): string {
     !Number.isSafeInteger(widthPixels) || !Number.isSafeInteger(heightPixels) ||
     widthPixels > 0xffffffff || heightPixels > 0xffffffff
   ) throw new RangeError("Die berechnete PNG-Größe ist ungültig.");
-  emptyNativeArray(input.lineOfSightSegments, "line_of_sight");
+  const lineOfSight = nativeLineOfSight(input.lineOfSightSegments);
   emptyNativeArray(input.objectLineOfSightSegments, "objects_line_of_sight");
-  emptyNativeArray(input.portals, "portals");
-  emptyNativeArray(input.lights, "lights");
+  const portals = nativePortals(input.portals);
+  const lights = nativeLights(input.lights);
   if (typeof input.ambientLightHex !== "string" || !/^[0-9a-f]{8}$/i.test(input.ambientLightHex))
     throw new TypeError("Umgebungswert muss acht Hexadezimalstellen haben.");
   const png = pngDimensions(input.renderedPngDataUrl);
@@ -94,14 +211,14 @@ export function serializeUniversalVtt03(input: UniversalVtt03Input): string {
       map_size: { x: input.mapWidthFields, y: input.mapHeightFields },
       pixels_per_grid: input.pixelsPerGrid,
     },
-    line_of_sight: [],
+    line_of_sight: lineOfSight,
     objects_line_of_sight: [],
-    portals: [],
+    portals,
     environment: {
       baked_lighting: true,
       ambient_light: input.ambientLightHex.toLowerCase(),
     },
-    lights: [],
+    lights,
     image: png.base64,
   }, null, 2) + "\n";
 }
