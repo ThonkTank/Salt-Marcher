@@ -35373,9 +35373,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-png-256-grid-Karte.png",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Edit: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.\nFrischstart: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.",
+            "gap": "Edit: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.\nFrischstart: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
@@ -35449,9 +35450,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-grid.png",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-no-grid.png",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Edit: Original-Rasterwirkung und UI-Vorgaben im selben Exportfall sind noch nicht gepaart.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "gap": "Edit: Original-Rasterwirkung und UI-Vorgaben im selben Exportfall sind noch nicht gepaart.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
@@ -35523,9 +35525,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
+            "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
@@ -36699,9 +36702,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-jpeg-64-no-grid-q90-Karte.jpg",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Edit: Original-JPEG ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+            "gap": "Edit: Original-JPEG ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
@@ -36776,9 +36780,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q90-Karte.webp",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Edit: Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
+            "gap": "Edit: Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
@@ -42695,9 +42700,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q50-Karte.webp",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-quality-default.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-quality-default.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export-pair/REPORT.md"
             ],
-            "gap": "Original und Host belegen Quality 50/90 mit geänderten JPEG-/WEBP-Dateien. Gleichwertige Bildwirkung an derselben 2048×2048-Kartenszene und Formatwechsel nach abweichendem Wert fehlen; der Frischstart belegt bisher den Vorgabewert.",
+            "gap": "Original und Host belegen Quality 50/90 mit geänderten JPEG-/WEBP-Dateien. Gleichwertige Bildwirkung an derselben 2048×2048-Kartenszene und Formatwechsel nach abweichendem Wert fehlen; der Frischstart belegt bisher den Vorgabewert.\nDer direkte Bildpaarlauf ist durch eine fehlende Standard-Modalanzeige im frischen Obsidian-Testprofil blockiert; kein gepaarter Hostexport entstand.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",
