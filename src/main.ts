@@ -1580,6 +1580,13 @@ class DungeonView extends FileView {
               file.path,
               this.plugin.assets,
             ).open(),
+          manageMapInfo: () =>
+            new MapInformationModal(
+              this.app,
+              map.session,
+              file.path,
+              this.plugin.assets,
+            ).open(),
           manageReferences: (floorId) =>
             new ReferenceImagesModal(
               this.app,
@@ -2602,6 +2609,57 @@ class ReferenceImagesModal extends Modal {
     }
   }
   onClose(): void {
+    this.contentEl.replaceChildren();
+  }
+}
+class MapInformationModal extends Modal {
+  private generation = 0;
+  constructor(
+    app: App,
+    private session: Session,
+    private path: string,
+    private catalog: AssetCatalog,
+  ) {
+    super(app);
+  }
+  onOpen(): void {
+    void this.render();
+  }
+  private async render(): Promise<void> {
+    const generation = ++this.generation;
+    this.titleEl.setText("Karteninformationen");
+    this.contentEl.replaceChildren();
+    const { width, height, assetPacks = [] } = this.session.settings;
+    new Setting(this.contentEl)
+      .setName("Kartengröße")
+      .setDesc(`${width} × ${height} Felder`);
+    const adapter = this.app.vault.adapter;
+    new Setting(this.contentEl)
+      .setName("Dateiname")
+      .setDesc(adapter instanceof FileSystemAdapter
+        ? adapter.getFullPath(this.path) : this.path);
+    const packages = new Setting(this.contentEl)
+      .setName("Für diese Karte ausgewählte Assetpakete")
+      .setDesc("Wird gelesen …");
+    new Setting(this.contentEl).addButton((button) =>
+      button.setButtonText("Schließen").onClick(() => this.close()));
+    try {
+      const catalog = await this.catalog.read();
+      if (generation !== this.generation) return;
+      const names = assetPacks.map((id, index) => {
+        const metadata = catalog.packs.find((record) =>
+          record.metadata.id === id)?.metadata;
+        return `${index + 1}. ${metadata?.name ?? id}` +
+          (metadata?.author ? ` · ${metadata.author}` : "");
+      });
+      packages.setDesc(names.length ? names.join(", ") : "keine");
+    } catch (error) {
+      if (generation !== this.generation) return;
+      packages.setDesc("Paketliste konnte nicht gelesen werden: " + String(error));
+    }
+  }
+  onClose(): void {
+    this.generation++;
     this.contentEl.replaceChildren();
   }
 }

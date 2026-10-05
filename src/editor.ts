@@ -153,6 +153,7 @@ export interface EditorHost {
   colorableObjectSource?: (id: string) => ColorableObjectSource | undefined;
   manageAssets?: () => void;
   manageMap?: () => void;
+  manageMapInfo?: () => void;
   manageReferences?: (floorId: string) => void;
   manageGenerator?: (floorId: string) => void;
   manageContent?: (floorId: string, selectedId?: string) => void;
@@ -824,6 +825,11 @@ export class DungeonEditor {
       panelButton("dungeon", "map", "Einstellungen", "settings", () => {
         this.showGroup("dungeon");
         this.host.manageMap!();
+      });
+    if (this.host.manageMapInfo)
+      panelButton("dungeon", "map-info", "Karteninformationen", "info", () => {
+        this.showGroup("dungeon");
+        this.host.manageMapInfo!();
       });
     if (this.host.manageGenerator)
       panelButton("dungeon", "generator", "Assistent", "wand-sparkles", () => {
