@@ -8444,10 +8444,13 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/polygon-preview.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -8513,10 +8516,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/polygon-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/polygon-canceled.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -8914,7 +8921,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179377149-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179386669-pattern-alpha-reopen/result.json",
@@ -8931,7 +8938,11 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-pattern/evidence/1791184085825-pattern-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184128512-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184139603-v2-open-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219291160-material-muster-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219291160-material-muster-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222872363-material-muster-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222872363-material-muster-reopen/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/material-muster-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222872363-material-muster-reopen/fresh-open.png"
           ],
           "gap": null
         },
@@ -9123,10 +9134,13 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/rectangle-undone.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -9422,21 +9436,29 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/editor.ts",
-            "src/renderer.ts"
+            "src/renderer.ts",
+            "Pfadplatzierung und native Textur erst nach Abschluss"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "deviation",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/horizontal-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/04-horizontal-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Das Original zeigt bereits im Entwurf das Battlements-Motiv; der installierte Editor zeigt nur eine einfarbige Pfadlinie. Die allgemeine Enter-Abschlussregel bleibt originalseitig offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Nach zwei Klickpunkten commitet schon das erste Enter im Host; in einem Originalzug blieb der Pfad nach dem ersten Enter Vorschau und wurde erst mit dem zweiten Enter erstellt. Ein anderer Originalzug brauchte einen Doppelklick.",
@@ -10393,24 +10415,33 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/features/material/native-path-catalog.ts",
             "src/main.ts",
             "src/properties.ts",
-            "src/renderer.ts"
+            "src/renderer.ts",
+            "verifizierte Original-PCK, native Pfadbibliothek und gerichteter Texturstreifen installiert"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad-dialog/evidence/1791197960746-native-path-dialog-edit/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad-dialog/evidence/1791197960746-native-path-dialog-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-final-dialog84/evidence/1791222304206-native-path-dialog-edit/material-pfad-dialog-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-final-dialog84/evidence/1791222345871-native-path-dialog-reopen/material-pfad-dialog-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original-/Host-Bildwirkung für alle drei Geometrien, UV-Umschlag, Knickradius und weitere Texturen/Optionen nicht vollständig gepaart; Livevorschau weicht ab.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Eingebaute Battlements-Kachel gewählt, horizontale Texturreferenz pack:dungeondraft-builtin-1.2.0.1:path:res%3A%2F%2Ftextures%2Fpaths%2Fbattlements.png platziert und decodiert.\nFrischstart: Frischstart: native Kachel=true, zwei Pfade mit nativer ID und unverändertem Dokument=true.",
@@ -10765,22 +10796,37 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_verified",
           "changes": [
-            "src/editor.ts"
+            "src/editor.ts",
+            "eingebaute Battlements-Quelle und Pfad-History im installierten Plugin"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
-          "state": "deviation",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "state": "equal",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02120-installed-regression/evidence/1791220006150-material-pfad-edit/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02120-installed-regression/evidence/1791220006150-material-pfad-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/horizontal-undo.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/material-pfad-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ],
-          "gap": "Die Anbindung des eingebauten Assetarchivs fehlt im installierten Plugin; der Battlements-Pfad ist für diese Undo-Folge nicht erreichbar."
-        }
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Ein Undo entfernt einen fertig platzierten Battlements-Pfad einschließlich Dokument- und Historyrückkehr."
       },
       {
         "id": "DD-021.21",
@@ -10831,21 +10877,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/features/material/native-path-catalog.ts",
-            "src/renderer.ts"
+            "src/renderer.ts",
+            "verifizierte Original-PCK, native Pfadbibliothek und gerichteter Texturstreifen installiert"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/DD021-BATTLEMENTS-IMAGE-REVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-final-dialog84/evidence/1791222304206-native-path-dialog-edit/material-pfad-dialog-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-final-dialog84/evidence/1791222345871-native-path-dialog-reopen/material-pfad-dialog-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original hat drei Battlements-Geometrien frisch geöffnet; der Host hat nur Gerade und Knick gepaart. Diagonale, exakte Texturwirkung und weitere Parameter fehlen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Zwei Texturpfade gespeichert; Dokument- und Dateiprüfsumme für Frischstart gesichert (7b7518c7f850354e16c8a0b83ed91e9ce3e68e8ed2ee6ad795d9f68081ced597).\nFrischstart: Frischstart: beide gespeicherten Pfade samt Assetreferenz sichtbar/geladen, Dokument unverändert=true.",
@@ -10916,19 +10971,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_verified",
           "changes": [
-            "src/properties.ts"
+            "src/properties.ts",
+            "eingebaute Pfadbibliothek und Return-Suche im installierten Plugin"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "equal",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/battlements-search.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/fresh-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
           "candidate": {
             "state": "pass",
             "observation": "Edit: Return-Suche nach Battlements: genau eine native Kachel=true; weitere Suchbegriffe/Pakete nicht geprüft.\nFrischstart: Frischstart: Return-Suche nach Battlements zeigt genau die native Kachel=true.",
@@ -10946,8 +11012,13 @@
               "edit": "pass",
               "reopen": "pass"
             }
+          },
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
           }
-        }
+        },
+        "verifiedScope": "Suchbegriff Battlements mit Return reduziert die native Pfadbibliothek auf genau eine Kachel, auch nach Neustart."
       },
       {
         "id": "DD-021.23",
@@ -14884,10 +14955,13 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/picker-magenta-accepted.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -14952,10 +15026,13 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/picker-magenta-accepted.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -16314,10 +16391,13 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/material-muster-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-dd020/evidence/1791222851267-material-muster-edit/rectangle-redone.png"
           ],
           "gap": null,
           "phaseStates": {
@@ -16370,19 +16450,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_verified",
           "changes": [
-            "src/editor.ts"
+            "src/editor.ts",
+            "eingebaute Battlements-Quelle und Pfad-History im installierten Plugin"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evaluation-current.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "equal",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/horizontal-redo.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/material-pfad-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/material-pfad-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
           "candidate": {
             "state": "pass",
             "observation": "Edit: Ein Redo stellte dieselbe Pfad-ID und Battlements-Referenz wieder her=true.\nFrischstart: Undo beziehungsweise Redo wurde in der Bearbeitungsphase gemessen; der frische Prozess prüft die gespeicherte Pfadwirkung unter DD-021.21.",
@@ -16400,8 +16491,13 @@
               "edit": "pass",
               "reopen": "not_applicable"
             }
+          },
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
           }
-        }
+        },
+        "verifiedScope": "Ein Redo stellt dieselbe zuvor entfernte Battlements-Pfad-ID und Assetreferenz wieder her."
       },
       {
         "id": "DD-022.19",
@@ -20971,40 +21067,35 @@
             "src/textures.ts",
             "src/features/objekte/color-alpha.ts",
             "src/features/objekte/colorable-tags.ts",
-            "src/features/objekte/colorable-pixels.ts"
+            "src/features/objekte/colorable-pixels.ts",
+            "RGBA/Hex-Wähler und ausgewählte Livevorschau installiert"
           ],
           "evidence": [
             "tests/object-color-alpha.test.mjs",
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
-          ],
-          "candidate": {
-            "state": "isolated_partial",
-            "changes": [
-              "src/features/objekte/rgba-picker.ts",
-              "src/properties.ts",
-              "src/editor.ts",
-              "src/renderer.ts"
-            ],
-            "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/object-rgba-session-history.test.mjs",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-06-selected-object-implementation.md"
-            ]
-          }
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-picker-lifecycle84/evidence/1791222214601-objekte-03-edit/picker-lifecycle-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-picker-lifecycle84/evidence/1791222250508-objekte-03-reopen/picker-lifecycle-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ],
-          "gap": "Der installierte Endstand enthält die ältere Alpha-Speicherung; RGBA/Hex-Dialog und ausgewählte Liveänderung sind nur im nicht installierten Kandidaten geprüft. Original-Lücken bleiben offen.",
+          "gap": "Die im Original beobachtete Liveänderung der Bibliothekskachel vor Accept ist im installierten Host nicht belegt; Escape am ausgewählten Objekt, sechsstellige Hex-Eingabe bei A<255 und Außenklick bleiben im Original offen.",
           "candidate": {
             "state": "open",
             "observation": "Isolierter Host: Werkzeug-Picker platziert RGB 4080c0/A128 mit Undo/Redo und Speichern; ausgewähltes Objekt zeigt A128→A0/Escape und A0→A128/Accept mit Livevorschau, je einem History-Schritt sowie frischem Öffnen.",
@@ -21026,7 +21117,8 @@
               "edit": "pass",
               "reopen": "pass"
             }
-          }
+          },
+          "observedScope": "A0/A128, färbbare Pixel, ausgewählte Vorschau, History und frisches Öffnen funktionieren im Host."
         }
       },
       {
@@ -21123,19 +21215,37 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "RGBA/Hex-Farbwähler und Objektplatzierung im installierten Plugin"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "deviation",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "state": "equal",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02808-installed-probe/evidence/1791219912923-objekte-03-edit/failure.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02808-installed-probe/evidence/1791219912923-objekte-03-edit/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02808-installed-probe/evidence/1791219912923-objekte-03-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/tool-placement.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/tool-before-placement.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/tool-object-placed.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/tool-placement-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/tool-object-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
           ],
-          "gap": "Der RGBA-Picker-Öffner fehlt im installierten Object Tool; der Hostlauf stoppte vor Accept."
-        }
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Object Tool: Accept übernimmt RGB #4080c0/A128 als 804080c0 in die nächste Colorable-Instanz; Undo/Redo und Frischstart erhalten den Wert."
       },
       {
         "id": "DD-028.09",
@@ -21182,16 +21292,34 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Öffner des RGBA/Hex-Farbwählers im installierten Plugin"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd028-dd021-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/object-picker-tool-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/object-color-panels.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/object-color-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/object-picker-reopen-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Object Tool: Farbknopf öffnet den RGBA/Hex-Wähler; Escape schließt ihn. Die Knopfform ist eine zulässige Oberflächenabweichung."
       },
       {
         "id": "DD-028.10",
@@ -21315,13 +21443,18 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/colorable-a255-a128-a0.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/object-color-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/colorable-reopened.png"
           ],
           "gap": null
         }
@@ -21391,13 +21524,18 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "build": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222555542-objekte-03-edit/colorable-a255-a128-a0.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/objekte-03-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/object-color-reopen.json"
           ],
           "gap": null
         }
