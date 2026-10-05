@@ -100,6 +100,7 @@ module.exports = async function navigationGroup({ page, out, qa, restart, group,
     const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.renderer;
     renderer.fit();
     renderer.zoom(64 / renderer.camera.scale);
+    renderer.canvas.blur();
   });
   const gridBefore = await snap();
   const gridBeforePressed = await gridButton.getAttribute("aria-pressed");
@@ -163,14 +164,14 @@ module.exports = async function navigationGroup({ page, out, qa, restart, group,
   const offPressed = await snapButton.getAttribute("aria-pressed");
   await page.locator(".dn-group-rail").getByRole("button", { name: "Bauwerk", exact: true }).click();
   await page.locator(".dn-tool-rail").getByRole("button", { name: "Rechteck", exact: true }).click();
-  const off = await draw("off", { x: 1.2, y: 1.2 }, { x: 3.7, y: 2.8 },
-    { minX: 1.2, maxX: 3.7, minY: 1.2, maxY: 2.8 });
+  const off = await draw("off", { x: 2.2, y: 1.2 }, { x: 4.7, y: 2.8 },
+    { minX: 2.2, maxX: 4.7, minY: 1.2, maxY: 2.8 });
   const beforeSnapOn = await snap();
   await snapButton.click();
   const snapOn = await snap();
   const onPressed = await snapButton.getAttribute("aria-pressed");
-  const on = await draw("on", { x: 8.2, y: 4.2 }, { x: 10.7, y: 6.8 },
-    { minX: 8, maxX: 11, minY: 4, maxY: 7 });
+  const on = await draw("on", { x: 7.2, y: 4.2 }, { x: 9.7, y: 6.8 },
+    { minX: 7, maxX: 10, minY: 4, maxY: 7 });
   const snapResult = { off, on, states: [snapBeforePressed, offPressed, onPressed],
     switchStable: stable(snapBefore, snapOff) && stable(beforeSnapOn, snapOn),
     historyPassed: off.historyPassed && on.historyPassed };
