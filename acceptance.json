@@ -2637,7 +2637,7 @@
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
-  "updated": "2026-10-04",
+  "updated": "2026-10-05",
   "strictParity": {
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
@@ -10105,7 +10105,7 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/14-path-trash-tooltip.png"
           ]
         },
-        "target": "Symbolaktion nach gemessener Originalwirkung anbieten.",
+        "target": "Clear Search zeigt wieder alle aktuell verfügbaren Pfadkacheln; der sichtbare Suchtext bleibt erhalten.",
         "baseline": {
           "editor": {
             "sequence": "Host hat keine Path Library und keinen entsprechenden Clear-Search-Knopf.",
@@ -10132,15 +10132,31 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "src/features/material/path-library-search.ts",
+            "src/features/material/path-library-view.ts",
+            "src/properties.ts",
+            "tools/host-test.cjs"
+          ],
+          "evidence": [
+            "tests/material-path-library-search.test.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-two-tiles/evidence/1791188842524-path-library-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-two-tiles/evidence/1791188854777-path-library-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "equal",
+          "build": "main.js SHA-256 b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188997360-path-library-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-v2-open/evidence/1791189022442-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-v2-open/evidence/1791189042728-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
+          ],
+          "gap": null
         }
       },
       {

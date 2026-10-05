@@ -1,5 +1,5 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: Entwicklungskopie, erste Materialintegration wartet auf exklusive Hostabnahme",
+  "phase": "Vollständige Dungeondraft-Angleichung: Pfadbibliothek DD-021.24 installiert; weitere Pflichtfälle paketweise in Arbeit",
   "goal": "711 Pflicht-Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; DD-037 ist beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -511,26 +511,26 @@
     "requiredCases": 711,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-028.11",
-      "DD-028.12"
+      "DD-021.24"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "colorable_object_installed_passed",
-    "releaseBuild": "8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
-    "openOriginalGap": "DD-020.14 Outline: Original-Neustart zweimal am Ladebildschirm abgebrochen; DD-028.06 Farbpicker-Vorschau/Abbruch und nachträgliches Alpha-Undo noch nicht gemessen.",
-    "installedBuild": "8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+    "hostStatus": "path_library_installed_passed",
+    "releaseBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
+    "openOriginalGap": "DD-020.14 Outline: Original-Neustart-Lücke; DD-039 Kaltstart-Modal-Lücke; DD-021.23 Fuzzy/Exact-Matching noch nicht unterschieden.",
+    "installedBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
     "installedEvidence": [
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188997360-path-library-reopen/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
     ],
-    "next": "DD-028.06: gemeinsamen RGBA/Hex-Picker mit Livevorschau, Accept/Escape und Änderungs-Undo im Original gemessen; Host angleichen. DD-039-Kaltstart-Lücke getrennt klären. Übrige Pflichtfälle paketweise prüfen.",
+    "next": "DD-028.06 RGBA/Hex-Picker integrieren und am Host prüfen; DD-041.02–.04 Navigation gegen Originalmessung testen; übrige Pflichtfälle paketweise bearbeiten.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-020.13",
       "DD-042.19",
       "DD-028.11",
-      "DD-028.12"
+      "DD-028.12",
+      "DD-021.24"
     ],
     "deferredPackages": [
       {
