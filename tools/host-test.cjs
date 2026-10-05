@@ -10,15 +10,17 @@ const {
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { prepareLarge } = require("./large-fixture.cjs");
 const root = path.resolve(__dirname, ".."),
+  sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
   qa = process.env.DUNGEON_QA_ROOT || "/home/aaron/.cache/dungeon-native-qa",
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
+  v2Open = process.argv.includes("--v2-open"),
   patternAlpha = process.argv.includes("--pattern-alpha"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (patternAlpha ? "-pattern-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -169,6 +171,8 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
+    if (patternAlpha)
+      fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
   fs.mkdirSync(vault + "/.obsidian/plugins/dungeon-editor", {
@@ -199,7 +203,13 @@ function prepare() {
   if (compactSmoke) {
     const dungeon = "Dungeons/Drachenhöhle/Karte.dungeon";
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
-    fs.copyFileSync(path.resolve(root, "../../..", dungeon), vault + "/" + dungeon);
+    fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
+  }
+  if (v2Open && !restart) {
+    for (const dungeon of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
+      fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
+      fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
+    }
   }
   if (selectionSmoke && !restart) {
     fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", {force:true});
@@ -300,7 +310,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(root + "/main.js"))
         .digest("hex"),
-      mode: (patternAlpha ? "pattern-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -449,6 +459,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (v2Open) {
+    await v2OpenWorkflow(view);
+    return;
+  }
   if (patternAlpha) {
     await patternAlphaWorkflow(view);
     return;
@@ -2715,16 +2729,9 @@ async function selectionReopenWorkflow() {
 async function patternAlphaWorkflow(view) {
   const mapPath = "Dungeons/PatternQA/Karte.dungeon";
   if (!restart) {
-    assert.equal(
-      await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:create-dungeon")),
-      true,
+    await page.evaluate(() =>
+      app.plugins.getPlugin("dungeon-editor").create("PatternQA", 12, 8),
     );
-    const modal = page.locator(".modal:visible").last();
-    const inputs = modal.locator("input");
-    await inputs.nth(0).fill("PatternQA");
-    await inputs.nth(1).fill("12");
-    await inputs.nth(2).fill("8");
-    await modal.getByRole("button", { name: "Anlegen", exact: true }).click();
     await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
     await chooseTool("Muster");
     const patternDefaults = await page.evaluate(() =>
@@ -2770,7 +2777,33 @@ async function patternAlphaWorkflow(view) {
     await page.keyboard.press("Control+Shift+z");
     assert.equal((await view()).document.entities.some((entity) => entity.id === pattern.id), true);
     checks.push("Pattern alpha and outline survive undo and redo");
+    await page.evaluate(async (id) =>
+      app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.select(id),
+    pattern.id);
+    const outline = page.locator('input[aria-label="Konturbreite"]');
+    await outline.fill("0.08");
+    await outline.press("Tab");
+    const wallWidth = async () => (await view()).document.entities.find(
+      (entity) => entity.id === pattern.id,
+    ).wallWidth;
+    assert.equal(await wallWidth(), 0.08);
+    await canvas.screenshot({ path: out + "/pattern-outline-on.png" });
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    assert.equal(await wallWidth(), 0);
+    await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    assert.equal(await wallWidth(), 0.08);
+    await page.evaluate(async (id) =>
+      app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.select(id),
+    pattern.id);
+    await outline.fill("0");
+    await outline.press("Tab");
+    assert.equal(await wallWidth(), 0);
+    checks.push("Pattern outline enabled with undo and redo, then disabled and saved");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.session.dirty,
+    );
     const disk = JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8"));
     assert.equal(disk.version, 3);
     const saved = disk.entities.find((entity) => entity.id === pattern.id);
@@ -2792,6 +2825,39 @@ async function patternAlphaWorkflow(view) {
   assert.equal(pattern.wallWidth, 0);
   await page.locator(".dn-canvas canvas").screenshot({ path: out + "/pattern-alpha-reopened.png" });
   checks.push("Fresh Obsidian process reopens exact pattern alpha and outline state");
+}
+async function v2OpenWorkflow(view) {
+  for (const mapPath of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
+    const expected = JSON.parse(fs.readFileSync(path.resolve(sourceVault, mapPath), "utf8"));
+    assert.equal(expected.version, 2);
+    await page.evaluate(async (path) => {
+      const file = app.vault.getAbstractFileByPath(path);
+      const leaf = app.workspace.getLeavesOfType("dungeon-native-map")[0] ?? app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+    }, mapPath);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible", timeout: 30000 });
+    const opened = (await view()).document;
+    assert.deepEqual(opened, { ...expected, version: 3 });
+    checks.push(`V2 map ${mapPath} opens as V3 in the real Obsidian editor with exact fields`);
+    if (!restart) {
+      assert.equal(JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8")).version, 2);
+      await page.getByRole("button", { name: "Speichern", exact: true }).click();
+      let saved;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        try { saved = JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8")); }
+        catch { saved = undefined; }
+        if (saved?.version === 3) break;
+        await sleep(50);
+      }
+      assert.deepEqual(saved, { ...expected, version: 3 });
+      checks.push(`Isolated copy of ${mapPath} saves without changing any map field except version`);
+    } else {
+      const saved = JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8"));
+      assert.deepEqual(saved, { ...expected, version: 3 });
+      checks.push(`Fresh Obsidian process reopens saved V3 copy of ${mapPath}`);
+    }
+  }
+  await page.screenshot({ path: out + "/v2-maps-opened.png" });
 }
 async function compactWorkflow() {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon";

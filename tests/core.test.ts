@@ -2131,6 +2131,12 @@ test("V2 map and pending draft migrate to V3 without changing linked content or 
   await reopened.save(restored);
   assert.equal(parseDocument((await store.read(mapPath))!).version, 3);
   assert.equal(await store.read(room.note.path), s.note(room.note.path));
+  // An interrupted draft cleanup after a committed V3 save must not turn a
+  // completed V2 migration into a false external-edit conflict on next open.
+  store.files.set(repo.draftPath, v2Draft);
+  const afterInterruptedCleanup = await new MapRepository(store, mapPath).open();
+  assert.equal(afterInterruptedCleanup.dirty, false);
+  assert.equal(await store.read(repo.draftPath), null);
 });
 
 test("locking has no undo step and survives geometry undo, redo and deletion", async () => {

@@ -91,7 +91,8 @@ export class MapRepository {
     // A crash after commit may leave the already-saved draft behind. Retire it
     // only when every value, including all Markdown bytes, is actually on disk.
     if (
-      serializeDocument(data.draft.document) === raw &&
+      (serializeDocument(data.draft.document) === raw ||
+        serializeDocument(draftDocument) === raw) &&
       data.draft.notes.every((n) => currentNotes.get(n.path) === n.current)
     ) {
       await this.store.compareAndWrite(this.draftPath, saved, null);

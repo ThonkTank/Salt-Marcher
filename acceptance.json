@@ -8418,7 +8418,7 @@
           }
         },
         "implementation": {
-          "state": "integrated_pending_host",
+          "state": "host_verified_pending_install",
           "changes": [
             "src/features/material/pattern-appearance.ts",
             "src/properties.ts"
@@ -8429,10 +8429,13 @@
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "isolated_pass_pending_installed_endstand",
+          "build": "main.js SHA-256 877b349e7c2f625b3e1acbf9d259b16020c73841bf24320aa7bd3756a90e37c8",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178244703-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178254703-pattern-alpha-reopen/result.json"
+          ],
+          "gap": "8-Bit-Alpha 160/255, Undo/Redo, Speichern und frischer Obsidian-Prozess belegt; Nachweis am installierten Endstand sowie übrige Farbwahl-Unterfälle offen."
         }
       },
       {
@@ -8493,10 +8496,14 @@
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial_host_original_gap",
+          "build": "main.js SHA-256 877b349e7c2f625b3e1acbf9d259b16020c73841bf24320aa7bd3756a90e37c8",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178244703-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178254703-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-pattern-outline/RESULT.md"
+          ],
+          "gap": "Host belegt Start ohne Kontur, ON-Umschalten mit Undo/Redo, OFF-Speicherung und frisches Öffnen. Native ON/OFF-Verlaufs- und Kartenwirkungsgegenprobe fehlt; Original startete in zwei isolierten Versuchen nur bis zum Ladebildschirm. Keine Paketabnahme."
         }
       },
       {
