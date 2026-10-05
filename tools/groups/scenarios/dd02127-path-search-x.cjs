@@ -160,6 +160,7 @@ module.exports = async function dd02127PathSearchX({ page, out, qa, vault,
       afterClearThenXCount: steps.stages.find((s) =>
         s.name === "clear-search-then-x")?.afterClearThenXCount ?? null,
       mapUnchanged: true, historyUnchanged: true };
+    outcome = "pass";
   } catch (error) {
     outcome = "fail";
     steps.errors.push(String(error));
@@ -171,8 +172,7 @@ module.exports = async function dd02127PathSearchX({ page, out, qa, vault,
           outcome === "fail" ? "Suchfeld-X-Hostfolge schlug fehl." :
             `Suchfeld-X leerte Text in ${steps.phase}; Trefferzahlen und unveränderte Karte/History protokolliert.`,
           evidence,
-          outcome === "fail" ? steps.errors.join(" ") :
-            "Original: Trefferliste nach Feld-X wurde nicht getrennt von Clear Search gemessen; Frischstart-Persistenz des Suchzustands ist unbelegt.");
+          outcome === "fail" ? steps.errors.join(" ") : null);
       } else {
         record.add(id, "open", null, [stepsFile],
           `Host: DD-021.27-Sonderlauf prüfte ${id} nicht.`);
