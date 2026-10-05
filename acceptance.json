@@ -20861,7 +20861,20 @@
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
-          ]
+          ],
+          "candidate": {
+            "state": "isolated_partial",
+            "changes": [
+              "src/features/objekte/rgba-picker.ts",
+              "src/properties.ts",
+              "src/editor.ts",
+              "src/renderer.ts"
+            ],
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/object-rgba-session-history.test.mjs",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-06-selected-object-implementation.md"
+            ]
+          }
         },
         "hostCheck": {
           "state": "partial",
@@ -20873,7 +20886,29 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ],
-          "gap": "Gemeinsamer RGBA/Hex-Picker mit synchronen Feldern, Livevorschau, Accept/Escape und Undo/Redo der nachträglichen Alpha-Änderung fehlt im Editor; Originalverhalten ist jetzt direkt belegt."
+          "gap": "Der installierte Endstand enthält die ältere Alpha-Speicherung; RGBA/Hex-Dialog und ausgewählte Liveänderung sind nur im nicht installierten Kandidaten geprüft. Original-Lücken bleiben offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Isolierter Host: Werkzeug-Picker platziert RGB 4080c0/A128 mit Undo/Redo und Speichern; ausgewähltes Objekt zeigt A128→A0/Escape und A0→A128/Accept mit Livevorschau, je einem History-Schritt sowie frischem Öffnen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197089265-objekte-03-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197089265-objekte-03-edit/object-color-panels.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197089265-objekte-03-edit/02-live-a0.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197089265-objekte-03-edit/04-live-a128.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197089265-objekte-03-edit/05-after-redo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197099319-objekte-03-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197099319-objekte-03-reopen/object-color-reopen.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-03/evidence/1791197099319-objekte-03-reopen/06-fresh-reopen.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/object-rgba-session-history.test.mjs",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-06-selected-object-implementation.md"
+            ],
+            "gap": "Im Original bleiben Escape am ausgewählten Objekt, sechsstellige Hex-Eingabe bei A<255 und Außenklick offen; der getestete Hostbuild ist noch nicht installiert.",
+            "build": "c45980d7eb6586fca79e7e136cb2bedb29d4b38838e5c78c15cc65c6d7099c2d",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
