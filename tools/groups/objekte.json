@@ -94,7 +94,9 @@
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png"
         ],
         "DD-026.19": [
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/09-place-default.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md"
         ],
         "DD-026.20": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/08-escape-hover.png"
@@ -141,6 +143,7 @@
         "DD-026.15": "Block Light am Objekt: gespeicherter Schalterwert und konkrete Abschattung desselben Lichts im Original nicht isoliert gemessen.",
         "DD-026.16": "Farbpicker und Colorable-Wirkung unter DD-028 aufgeteilt.",
         "DD-026.18": "Cursorvorschau ist nur für das geprüfte Asset direkt belegt.",
+        "DD-026.19": "Ein Basisklick ist im Original mit Atlas Globe 01 belegt. Die vollständige Zielwirkung mit demselben QA-Asset und denselben Layer-, Winkel- und Scale-Einstellungen wie im Host fehlt: Original Layer 100/Scale 1, Host Layer 500/Breite 1,6/Höhe 0,9; Geometrie und Pixelbild sind ungepaart.",
         "DD-026.20": "Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt.",
         "DD-026.21": "Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen.",
         "DD-026.22": "Native Speicherwirkung dieses Modifiers bzw.",
