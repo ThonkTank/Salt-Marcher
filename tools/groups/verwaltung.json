@@ -1395,107 +1395,168 @@
       "originalEvidence": {
         "DD-043.01": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/19-export-options.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/19-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.02": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png"
         ],
         "DD-043.03": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/28-png-grid-off-light-on-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-off-light-on.png"
         ],
         "DD-043.04": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/23-png-grid-light-off-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/28-png-grid-off-light-on-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-off.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-off-light-on.png"
         ],
         "DD-043.05": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.06": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.07": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.08": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.09": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.10": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.11": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.12": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/15-camera-filter.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/15-camera-filter.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.13": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.14": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png"
         ],
         "DD-043.15": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt"
         ],
         "DD-043.16": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/21-png-on-before-export.png"
         ],
         "DD-043.17": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.18": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
         ],
         "DD-043.19": [
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt"
         ],
         "DD-043.20": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png"
         ],
         "DD-043.21": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/08-export-format-menu.png"
         ],
         "DD-043.22": [
           "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.dd2vtt"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.dd2vtt",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/26-vtt-options-before-export.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/maps/06-source-wall-portal-light.dungeondraft_map"
         ],
         "DD-043.23": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/screens/30-export-dialog-closed-with-x.png"
         ]
       },
       "originalGaps": {
-        "DD-043.01": "Die Originalwirkung von Export ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.03": "Die Originalwirkung von Grid ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.04": "Die Originalwirkung von Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.05": "Die Originalwirkung von Source Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.06": "Die Originalwirkung von Source Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.07": "Die Originalwirkung von Brightness ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.08": "Die Originalwirkung von Focus ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.09": "Die Originalwirkung von Overlay Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.10": "Die Originalwirkung von Overlay Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.11": "Die Originalwirkung von Overlay Opacity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.12": "Die Originalwirkung von Camera Filter ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.13": "Die Originalwirkung von Grid Presets ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.14": "Die Originalwirkung von Grid PPI ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.16": "Die Originalwirkung von Show in Folder on Finish ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.17": "Die Originalwirkung von Crop ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
-        "DD-043.18": "Die Originalwirkung von Reset Crop ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+        "DD-043.05": "Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt.",
+        "DD-043.06": "Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt.",
+        "DD-043.07": "Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt.",
+        "DD-043.08": "Auswirkung eines anderen Focus-Werts auf Exportbild fehlt.",
+        "DD-043.09": "Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground.",
+        "DD-043.10": "Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt.",
+        "DD-043.11": "Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt.",
+        "DD-043.12": "Auswahl und Bildwirkung eines anderen Camera Filter fehlen.",
+        "DD-043.13": "Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.",
+        "DD-043.14": "Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen.",
+        "DD-043.16": "ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.",
+        "DD-043.17": "Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.",
+        "DD-043.18": "Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.",
+        "DD-043.20": "JPEG-Dateierzeugung, Auflösung und Bildwirkung wurden nicht gemessen; nur der Menüeintrag ist belegt.",
+        "DD-043.21": "WEBP-Dateierzeugung, Auflösung und Bildwirkung wurden nicht gemessen; nur der Menüeintrag ist belegt."
+      },
+      "originalEffects": {
+        "DD-043.01": "Hauptleistenaktion Export öffnet den modalen Dialog Export Options; die Karte bleibt dabei sichtbar.",
+        "DD-043.02": "PNG-Modus erzeugt bei 8×8 Feldern und 256 PPI ein 2048×2048 großes 8-Bit-RGBA-PNG; drei Raster-/Lichtvarianten wurden erzeugt.",
+        "DD-043.03": "Grid ON fügt im PNG gepunktete Rasterlinien hinzu; bei unverändertem Lighting ON unterscheiden sich ON und OFF an 131.369 Pixeln.",
+        "DD-043.04": "Das obere Lighting ON backt die Lichtwirkung ins PNG; bei Grid OFF unterscheiden sich ON und OFF an 594.168 Pixeln um die Lichtquelle.",
+        "DD-043.05": "Source Level zeigt auf der Ein-Ebenen-Karte Ground; ein Ebenenwechsel wurde nicht ausgeführt.",
+        "DD-043.06": "Source Lighting steht im gemessenen Startzustand auf ON; bei allen Ausgaben blieb es ON.",
+        "DD-043.07": "Brightness zeigt im gemessenen Startzustand 100 %.",
+        "DD-043.08": "Focus zeigt im gemessenen Startzustand 100 %.",
+        "DD-043.09": "Overlay Level zeigt auf der Ein-Ebenen-Karte --- an.",
+        "DD-043.10": "Overlay Lighting zeigt im gemessenen Startzustand ON.",
+        "DD-043.11": "Overlay Opacity zeigt im gemessenen Startzustand 100 %.",
+        "DD-043.12": "Camera Filter zeigt im gemessenen Startzustand None.",
+        "DD-043.13": "Grid Presets zeigt im gemessenen Startzustand Custom.",
+        "DD-043.14": "Grid PPI zeigt 256; auf der 8×8-Karte resultieren 2048×2048 Pixel in PNG und VTT-Bild.",
+        "DD-043.15": "Der Dialog zeigt 2048×2048 Ausgabepixel; PNG und eingebettetes VTT-Bild bestätigen diese Maße.",
+        "DD-043.16": "Show in Folder on Finish ist anfangs ON und wurde für die vier QA-Ausgaben OFF gestellt.",
+        "DD-043.17": "Crop ist im Exportdialog als Bedienelement sichtbar.",
+        "DD-043.18": "Reset Crop ist im unbeschnittenen Startzustand sichtbar und inaktiv.",
+        "DD-043.19": "Export file erzeugt für gewählte QA-Zielpfade drei PNG-Dateien und eine .dd2vtt-Datei.",
+        "DD-043.20": "JPEG ist als Export Mode im Dropdown sichtbar; eine JPEG-Datei wurde nicht erzeugt.",
+        "DD-043.21": "WEBP ist als Export Mode im Dropdown sichtbar; eine WEBP-Datei wurde nicht erzeugt.",
+        "DD-043.22": "Universal VTT erzeugt JSON format 0.3 mit 8×8/256-Auflösung, einer Sichtlinien-Polygonlinie, einem gebundenen Portal, einem Licht und base64-PNG; das Bild ist bytegleich zum PNG mit Grid OFF und Lighting ON.",
+        "DD-043.23": "X schließt den Exportdialog ohne eine weitere Datei zu erzeugen."
       }
     },
     {
