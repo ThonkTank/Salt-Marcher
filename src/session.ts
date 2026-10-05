@@ -554,7 +554,7 @@ export class Session {
   document(): MapDocument {
     return {
       format: "dungeon-map",
-      version: 2,
+      version: 3,
       id: this.id,
       settings: this.stateSettings,
       floors: [...this.levels.values()],

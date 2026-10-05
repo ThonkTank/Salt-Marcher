@@ -952,7 +952,7 @@ test("floor erase state follows the persistent mode and transient Alt modifier",
   assert.equal(floorEraseActive("erase", true), true);
 });
 
-test("version 2 building keeps multiple parts, holes and the same id when assigned a room key", () => {
+test("building keeps multiple parts, holes and the same id when assigned a room key", () => {
   const document = newDocument("Gebäudeaggregat", 40, 40),
     session = new Session(document),
     floorId = document.floors[0]!.id,
@@ -979,7 +979,7 @@ test("version 2 building keeps multiple parts, holes and the same id when assign
       {},
       "QA/Gebäudeaggregat.dungeon",
     );
-  assert.equal(session.document().version, 2);
+  assert.equal(session.document().version, 3);
   assert.equal(room.id, building.id);
   assert.deepEqual(room.polygons, polygons);
   assert.equal(isRoom(room), true);
@@ -2095,6 +2095,42 @@ function fixture() {
   );
   return { s, floor, room };
 }
+
+test("V2 map and pending draft migrate to V3 without changing linked content or Markdown", async () => {
+  const store = new MemoryStore(),
+    repo = new MapRepository(store, mapPath),
+    { s, room } = fixture();
+  await repo.save(s);
+  const noteBefore = await store.read(room.note.path);
+  const door = createDoor(s, room, 0, 0.5);
+  await repo.persistDraft(s);
+  const v3Map = JSON.parse((await store.read(mapPath))!);
+  const v2Map = JSON.stringify({ ...v3Map, version: 2 }, null, 2) + "\n";
+  const v3Draft = JSON.parse((await store.read(repo.draftPath))!);
+  const v2Draft = JSON.stringify({
+    ...v3Draft,
+    baseline: v2Map,
+    draft: {
+      ...v3Draft.draft,
+      document: { ...v3Draft.draft.document, version: 2 },
+    },
+  });
+  store.files.set(mapPath, v2Map);
+  store.files.set(repo.draftPath, v2Draft);
+
+  const reopened = new MapRepository(store, mapPath);
+  const restored = await reopened.open();
+  assert.equal(restored.document().version, 3);
+  assert.deepEqual(restored.document().entities, s.document().entities);
+  assert.deepEqual(restored.document().content, s.document().content);
+  assert.ok(restored.entities.has(door.id));
+  assert.equal(await store.read(mapPath), v2Map);
+  assert.equal(await store.read(room.note.path), noteBefore);
+  assert.equal(restored.note(room.note.path), s.note(room.note.path));
+  await reopened.save(restored);
+  assert.equal(parseDocument((await store.read(mapPath))!).version, 3);
+  assert.equal(await store.read(room.note.path), s.note(room.note.path));
+});
 
 test("locking has no undo step and survives geometry undo, redo and deletion", async () => {
   const store = new MemoryStore(),

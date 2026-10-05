@@ -79,6 +79,14 @@ Aktuelle Detailreduktion: Verlinkte Marker erscheinen ab zwölf, unverlinkte Mö
 
 Die produktive kompakte Karte wurde anschließend isoliert im Obsidian-Host geprüft: Bei 260 Pixel Kartenhöhe und 2,15 Pixel/Feld entstanden 16 statt 479 Objektgrafiken, alle 15 Raumnummern blieben sichtbar und kein Featuremarker überlud den Überblick. Raumfokus stellte drei Marker und die Raumausstattung wieder her. Im Leerlauf gab es keine weiteren Renderbilder. Unter vier Pixel/Feld zeigt das Raster jede zehnte statt jede fünfte Feldlinie; ab acht Pixel/Feld bleibt jede Feldlinie sichtbar. Die vollständige Spielansicht mit ihrem Layout und physische Eingabe bleiben eigenständige Prüfungen.
 
+## Vollständige Angleichung ab 5. Oktober 2026
+
+Die neuere Nutzerentscheidung ersetzt ältere Umfangsgrenzen dieses Dokuments: Export und sämtliche Asset-/Tileset-Funktionen von Dungeondraft 1.2.0.1 sind Pflicht. Die zwölf ausführbaren Mod-Fälle `DD-037` entfallen ausdrücklich für das private Projekt. Das eigene `.dungeon`-Format bleibt; Dungeondraft-Dateiaustausch ist nicht verlangt. Die 711 Pflicht-Unterfälle in `acceptance.json` sind die verbindliche Abnahmeliste; alte Wurzelstatus sind historische Nachweise.
+
+Kartendokument V3 behält alle V2-Felder und Kennungen bei. Beim Öffnen wird eine gültige V2-Karte ausschließlich im Speicher auf V3 gehoben; der erste normale Speichervorgang schreibt V3 über den konfliktgeschützten Repository-Weg. Ein noch offener V2-Entwurf wird ebenso im Speicher migriert. Für die beiden produktiven Karten ist die vollständige Feldgleichheit nach Versionswechsel einschließlich Session-Aufbau und frischer Serialisierung außerhalb des Vaults nachgewiesen. Die produktiven Originaldateien werden durch diese Entwicklungsschritte nicht verändert.
+
+Bereichsarbeit erfolgt in getrennten Zweigen und eigenen Feature-Modulen. Gemeinsame Daten-, History-, Speicher-, Zeichen- und UI-Einstiegspunkte werden nur im Integrationszweig geändert. Ein isolierter Helfer gilt erst nach Einbindung, direkter Originalprüfung, isoliertem Hostlauf und Endstandsprüfung als abgenommen.
+
 Der Originalabgleich verwendet Dungeondraft 1.2.0.1, dessen Originaldateien und direkte Screenshots sowie die offiziellen Seiten zu Custom Assets, Level, MaterialBrush, CaveBrush und LightTool. Materialebene, Lichtparameter, Geschossvergleich, Paketaktivierung und Grundassets bleiben getrennte Begriffe im eigenen Modell. Smart-/Double-Tileset-Autotiling, ausführbare Dungeondraft-Mods und SVG-A-Bögen werden nicht nachgebaut. Rechteck, Ellipse, Polygon, Gang und boolesches Radieren teilen stattdessen dieselbe kleine Bodenflächenlogik; Pakettexturen, Konturbearbeitung und verlustfreies Archiv bleiben gewöhnliche Modellfunktionen.
 
 ## Werkzeugparität

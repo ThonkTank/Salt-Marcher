@@ -270,13 +270,16 @@ export interface DungeonContent {
 }
 export interface MapDocument {
   readonly format: "dungeon-map";
-  readonly version: 2;
+  readonly version: 3;
   readonly id: Id;
   readonly settings: Settings;
   readonly floors: readonly Floor[];
   readonly entities: readonly Entity[];
   readonly content: DungeonContent;
 }
+export type MapDocumentV2 = Omit<MapDocument, "version"> & {
+  readonly version: 2;
+};
 export const uid = (): Id => crypto.randomUUID();
 export function newDocument(
   name: string,
@@ -290,7 +293,7 @@ export function newDocument(
 ): MapDocument {
   const result: MapDocument = {
     format: "dungeon-map",
-    version: 2,
+    version: 3,
     id: uid(),
     settings: {
       name,
@@ -596,7 +599,7 @@ export function validateDocument(doc: MapDocument): void {
   if (
     !doc ||
     doc.format !== "dungeon-map" ||
-    doc.version !== 2 ||
+    doc.version !== 3 ||
     typeof doc.id !== "string" ||
     !doc.id
   )
@@ -774,7 +777,10 @@ export function validateFloor(f: Floor): void {
     throw new Error("Ungültiges Geschoss.");
 }
 export function parseDocument(raw: string): MapDocument {
-  const doc = JSON.parse(raw) as MapDocument;
+  const source = JSON.parse(raw) as MapDocument | MapDocumentV2;
+  const doc: MapDocument = source.version === 2
+    ? { ...source, version: 3 }
+    : source as MapDocument;
   validateDocument(doc);
   return doc;
 }

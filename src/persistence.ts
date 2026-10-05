@@ -2,7 +2,6 @@ import {
   parseDocument,
   safePath,
   serializeDocument,
-  validateDocument,
 } from "./model";
 import { Session, type DraftState } from "./session";
 
@@ -83,7 +82,7 @@ export class MapRepository {
       !Array.isArray(data.draft.notes)
     )
       throw new Error("Unlesbarer Entwurf; Datei unverändert erhalten.");
-    validateDocument(data.draft.document);
+    const draftDocument = parseDocument(JSON.stringify(data.draft.document));
     const currentNotes = new Map<string, string | null>();
     for (const n of data.draft.notes) {
       this.assertAllowed(n.path);
@@ -101,7 +100,10 @@ export class MapRepository {
     if (data.baseline !== raw) throw new FileConflict(this.draftPath);
     for (const n of data.draft.notes)
       if (currentNotes.get(n.path) !== n.base) throw new FileConflict(n.path);
-    return Session.restore(parseDocument(raw), data.draft);
+    return Session.restore(parseDocument(raw), {
+      ...data.draft,
+      document: draftDocument,
+    });
   }
   persistDraft(session: Session): Promise<void> {
     return this.exclusive(() => this.persistDraftNow(session));
