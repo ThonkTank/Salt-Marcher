@@ -8433,16 +8433,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehendes Musterwerkzeug, direkt auf installiertem Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Polygonlinie zwischen erstem Punkt und Zeiger sichtbar; weiterer Werkzeugumfang offen."
       },
       {
         "id": "DD-020.06",
@@ -8489,16 +8502,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehendes Musterwerkzeug, direkt auf installiertem Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Escape entfernt einen begonnenen Polygonentwurf ohne neuen Karteneintrag oder Historyschritt."
       },
       {
         "id": "DD-020.07",
@@ -8888,7 +8914,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179377149-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179386669-pattern-alpha-reopen/result.json",
@@ -8904,7 +8930,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-pattern/evidence/1791184075624-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-pattern/evidence/1791184085825-pattern-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184128512-v2-open-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184139603-v2-open-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184139603-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219291160-material-muster-reopen/group-cases.json"
           ],
           "gap": null
         },
@@ -9085,16 +9112,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehendes Musterwerkzeug, direkt auf installiertem Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Undo entfernt genau eine platzierte Musterfläche im Grundfall."
       },
       {
         "id": "DD-020.17",
@@ -10734,28 +10774,12 @@
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
-          "candidate": {
-            "state": "pass",
-            "observation": "Edit: Ein Undo entfernte den fertig gezeichneten Battlements-Pfad=true.\nFrischstart: Undo beziehungsweise Redo wurde in der Bearbeitungsphase gemessen; der frische Prozess prüft die gespeicherte Pfadwirkung unter DD-021.21.",
-            "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/horizontal-undo.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/material-pfad-saved.json"
-            ],
-            "gap": null,
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "pass",
-              "reopen": "not_applicable"
-            }
-          }
+          "state": "deviation",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02120-installed-regression/evidence/1791220006150-material-pfad-edit/result.json"
+          ],
+          "gap": "Die Anbindung des eingebauten Assetarchivs fehlt im installierten Plugin; der Battlements-Pfad ist für diese Undo-Folge nicht erreichbar."
         }
       },
       {
@@ -14494,11 +14518,12 @@
         "original": {
           "sequence": "Farbfeld im geöffneten Pattern-Picker bedienen.",
           "options": "Color Picker: Farbfeld/Sättigung",
-          "effect": null,
+          "effect": "Farbfeld ergab RGB #424958, A255; im Original als ff424958 gespeichert.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-color-native/RESULT.md"
           ]
         },
         "target": "Wirkung nach Originalmessung erreichen.",
@@ -14526,15 +14551,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_unverified",
+          "changes": [
+            "Farbsteuerung im installierten Musterfarbwähler vorhanden"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219718678-material-muster-edit/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219750932-material-muster-reopen/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original: überlappende Flächen verhinderten den Pixelvergleich und Original-Frischstart.",
+          "observedScope": "Host: #424958/A255, Vorschau, Undo/Redo und Frischstart belegt."
         }
       },
       {
@@ -14547,11 +14582,12 @@
         "original": {
           "sequence": "Farbtonleiste im Pattern-Picker bedienen.",
           "options": "Color Picker: Farbtonleiste",
-          "effect": null,
+          "effect": "Hue-Leiste ergab RGB #7ccc33, A255; im Original als ff7ccc33 gespeichert.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-color-native/RESULT.md"
           ]
         },
         "target": "Wirkung nach Originalmessung erreichen.",
@@ -14579,15 +14615,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_unverified",
+          "changes": [
+            "Farbsteuerung im installierten Musterfarbwähler vorhanden"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219718678-material-muster-edit/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219750932-material-muster-reopen/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original: überlappende Flächen verhinderten den Pixelvergleich und Original-Frischstart; Pointerzuordnung der Hue-Leiste offen.",
+          "observedScope": "Host: #7ccc33/A255, Vorschau, Undo/Redo und Frischstart belegt."
         }
       },
       {
@@ -14600,11 +14646,12 @@
         "original": {
           "sequence": "R-Zahlenwert im Pattern-Picker eingeben.",
           "options": "Color Picker: R-Wert",
-          "effect": null,
+          "effect": "R=100 ergab RGB #6466cc, A255; im Original als ff6466cc gespeichert.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-color-native/RESULT.md"
           ]
         },
         "target": "Wirkung nach Originalmessung erreichen.",
@@ -14632,15 +14679,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_unverified",
+          "changes": [
+            "Farbsteuerung im installierten Musterfarbwähler vorhanden"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219718678-material-muster-edit/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219750932-material-muster-reopen/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original: überlappende Flächen verhinderten den Pixelvergleich und Original-Frischstart.",
+          "observedScope": "Host: #6466cc/A255, Vorschau, Undo/Redo und Frischstart belegt."
         }
       },
       {
@@ -14653,11 +14710,12 @@
         "original": {
           "sequence": "G-Zahlenwert im Pattern-Picker eingeben.",
           "options": "Color Picker: G-Wert",
-          "effect": null,
+          "effect": "G=150 ergab RGB #3396cc, A255; im Original als ff3396cc gespeichert.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-color-native/RESULT.md"
           ]
         },
         "target": "Wirkung nach Originalmessung erreichen.",
@@ -14685,15 +14743,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_unverified",
+          "changes": [
+            "Farbsteuerung im installierten Musterfarbwähler vorhanden"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219718678-material-muster-edit/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219750932-material-muster-reopen/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original: überlappende Flächen verhinderten den Pixelvergleich und Original-Frischstart.",
+          "observedScope": "Host: #3396cc/A255, Vorschau, Undo/Redo und Frischstart belegt."
         }
       },
       {
@@ -14706,11 +14774,12 @@
         "original": {
           "sequence": "B-Zahlenwert im Pattern-Picker eingeben.",
           "options": "Color Picker: B-Wert",
-          "effect": null,
+          "effect": "B=50 ergab RGB #336632, A255; im Original als ff336632 gespeichert.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-color-native/RESULT.md"
           ]
         },
         "target": "Wirkung nach Originalmessung erreichen.",
@@ -14738,15 +14807,25 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_unverified",
+          "changes": [
+            "Farbsteuerung im installierten Musterfarbwähler vorhanden"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219718678-material-muster-edit/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-colors-installed-host/evidence/1791219750932-material-muster-reopen/material-muster-colors-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": "Original: überlappende Flächen verhinderten den Pixelvergleich und Original-Frischstart.",
+          "observedScope": "Host: #336632/A255, Vorschau, Undo/Redo und Frischstart belegt."
         }
       },
       {
@@ -14794,16 +14873,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Musterfarbwähler im installierten Plugin"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Hex ff00ff wird nach Accept als sichtbares Magenta übernommen."
       },
       {
         "id": "DD-020.27",
@@ -14849,16 +14941,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Musterfarbwähler im installierten Plugin"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Accept schließt den Picker und zeigt ff00ff als Magenta; die Karte bleibt bis zur Zeichnung unverändert."
       },
       {
         "id": "DD-020.28",
@@ -16198,16 +16303,29 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehendes Musterwerkzeug, direkt auf installiertem Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-host/evidence/1791219256136-material-muster-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Redo stellt dieselbe zuvor entfernte Musterfläche im Grundfall wieder her."
       },
       {
         "id": "DD-021.26",
@@ -20973,10 +21091,11 @@
         "original": {
           "sequence": "Custom Color öffnen und Accept bedienen",
           "options": "Sichtbarer gemeinsamer RGBA/Hex-Wähler in Object, Scatter und Light; die Bedienwirkung dieses Feldes ist nur im angegebenen Kontext gemessen.",
-          "effect": null,
+          "effect": "Accept schließt den Object-Tool-Picker; die folgende Colorable-Instanz übernimmt RGB #4080c0 und A128 als 804080c0.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-color-picker.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-color-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd028-rgba-20261005/DD-028.06-ORIGINAL.md"
           ]
         },
         "target": "Nach Originalmessung: Accept übernimmt den gewählten Pickerwert in die Objektplatzierung, ohne ihn anders zu runden.",
@@ -21009,10 +21128,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "deviation",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02808-installed-probe/evidence/1791219912923-objekte-03-edit/failure.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02808-installed-probe/evidence/1791219912923-objekte-03-edit/result.json"
+          ],
+          "gap": "Der RGBA-Picker-Öffner fehlt im installierten Object Tool; der Hostlauf stoppte vor Accept."
         }
       },
       {
@@ -25111,7 +25233,9 @@
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-make-prefab-dialog.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/15-box-selected.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/16-make-prefab-dialog.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/16-make-prefab-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/native-mixed-prefab.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/native-mixed-prefab-dialog.png"
           ]
         },
         "target": "Make Prefab öffnet für die aktuelle Auswahl den Dialog mit Set, Name, Accept und Cancel.",
@@ -25139,16 +25263,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehender Vorlagendialog, unabhängig und erneut auf installiertem Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd020-rgb-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-mixed-regression/evidence/1791219537469-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-mixed-regression/evidence/1791219586448-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd020-rgb/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Gemischte Objekt-Licht-Auswahl öffnet Make Prefab mit Set, Name und Bestätigung; X erfüllt die gemessene Abbruchwirkung."
       },
       {
         "id": "DD-042.02",
@@ -25205,13 +25343,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25277,13 +25416,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25401,13 +25541,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25473,13 +25614,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25547,13 +25689,15 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217532908-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217544895-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217532908-objekte-07-edit/mixed-prefab-edit.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217544895-objekte-07-reopen/mixed-prefab-reopen.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-mixed-regression/evidence/1791219537469-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-mixed-regression/evidence/1791219586448-objekte-07-reopen/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25620,11 +25764,12 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217532908-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-mixed2/evidence/1791217532908-objekte-07-edit/mixed-prefab-edit.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-mixed-regression/evidence/1791219537469-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25689,7 +25834,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-host/evidence/1791213223946-objekte-07-edit/dd04209-edit.json",
@@ -25700,7 +25845,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-maps/evidence/1791213289540-v2-open-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-maps/evidence/1791213306352-v2-open-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219356752-objekte-07-reopen/group-cases.json"
           ],
           "gap": null,
           "verifiedScope": "Exakt identischer Name im selben Set; Inline-Fehler, gesperrtes Erstellen, korrigierbarer Name und unveränderte Definition/Karte/History nach frischem Obsidian-Start.",
@@ -25830,13 +25977,15 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219356752-objekte-07-reopen/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -25900,13 +26049,15 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219356752-objekte-07-reopen/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -26482,13 +26633,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -26554,13 +26706,14 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217366569-objekte-07-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd042-regression/evidence/1791217381988-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd042-regression/evidence/1791219318246-objekte-07-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -28419,7 +28572,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -28439,7 +28592,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -29397,13 +29552,14 @@
         "original": {
           "sequence": "Hauptleiste > New > New Map → OK",
           "options": null,
-          "effect": null,
+          "effect": "Neue 8×8-Karte bleibt bis zum ersten Save ohne Kartendatei bearbeitbar. Undo/Redo vor und nach dem ersten Save erhalten denselben History-Schritt; Undo/Redo ändern die gespeicherte Datei nicht automatisch.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-NATIVE-RESULT.md"
           ]
         },
-        "target": "Nach Originalmessung offen: „OK“ übernimmt die im aktuellen Dialog gesetzten Werte in die Karte bzw. Programmeinstellungen.",
+        "target": "Neue Karte ohne Kartendatei bearbeiten; Datei erst bei manuellem Save erzeugen und History beim Übergang erhalten.",
         "baseline": {
           "editor": {
             "sequence": "Anlegen",
@@ -29435,10 +29591,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "deviation",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd001002-regression/evidence/1791219665084-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-NATIVE-RESULT.md"
+          ],
+          "gap": "Der installierte Editor erzeugt die .dungeon-Datei bereits vor dem ersten Save; Pending-View und Session-Handoff fehlen."
         }
       },
       {
@@ -29499,10 +29658,11 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-release-host/evidence/1791217316529-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd001002-regression/evidence/1791219665084-verwaltung-karte-datei-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -29731,10 +29891,11 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-release-host/evidence/1791217316529-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd001002-regression/evidence/1791219665084-verwaltung-karte-datei-edit/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
@@ -38144,7 +38305,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38164,7 +38325,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -38258,7 +38421,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38278,7 +38441,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -38371,7 +38536,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38391,7 +38556,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -38485,7 +38652,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -38505,7 +38672,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -43732,7 +43901,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186597811-map-info-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-info-isolated/evidence/1791186636313-map-info-reopen/result.json",
@@ -43752,7 +43921,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04209-installed-dd039/evidence/1791213263658-verwaltung-karte-datei-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04209/RELEASE-ACCEPTANCE.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217393610-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-dd039-regression/evidence/1791217407416-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219616184-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd039-regression/evidence/1791219641896-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "candidate": {
@@ -44376,10 +44547,11 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "acb1329e54bd46a47fc1d1577b048ea36fe9333764c313852eb8b5043a094689",
+          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd001002-installed-release-host/evidence/1791217329577-verwaltung-karte-datei-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd001002-regression/evidence/1791219690674-verwaltung-karte-datei-reopen/group-cases.json"
           ],
           "gap": null,
           "phaseStates": {
