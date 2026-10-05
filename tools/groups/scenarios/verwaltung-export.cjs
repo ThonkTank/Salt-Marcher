@@ -66,15 +66,21 @@ async function openExportDialog(page) {
     .locator(".checkbox-container").evaluate((element) => element.classList.contains("is-enabled")), true);
   return dialog;
 }
-async function exportFromMenu(page, out, format, pixelsPerCell, includeGrid) {
+async function exportFromMenu(page, out, format, pixelsPerCell, includeGrid,
+  qualityPercent = 90) {
   // The Electron CDP connection does not keep Playwright's download artifact.
   // Capture the Blob handed to the real anchor, while leaving its click intact.
   await page.evaluate(() => {
     const create = URL.createObjectURL;
     const click = HTMLAnchorElement.prototype.click;
-    window.__exportProbe = null;
+    const encode = HTMLCanvasElement.prototype.toBlob;
+    window.__exportProbe = { encoderQuality: null };
+    HTMLCanvasElement.prototype.toBlob = function (callback, mimeType, quality) {
+      window.__exportProbe.encoderQuality = quality ?? null;
+      return encode.call(this, callback, mimeType, quality);
+    };
     URL.createObjectURL = function (blob) {
-      window.__exportProbe = { blob };
+      window.__exportProbe.blob = blob;
       return create.call(URL, blob);
     };
     HTMLAnchorElement.prototype.click = function () {
@@ -84,12 +90,16 @@ async function exportFromMenu(page, out, format, pixelsPerCell, includeGrid) {
     window.__restoreExportProbe = () => {
       URL.createObjectURL = create;
       HTMLAnchorElement.prototype.click = click;
+      HTMLCanvasElement.prototype.toBlob = encode;
     };
   });
   const dialog = await openExportDialog(page);
   const formatSelect = dialog.locator(".setting-item").filter({ hasText: "Format" })
     .locator("select:not(.is-measuring)");
   await formatSelect.selectOption(format);
+  if (format === "jpeg" || format === "webp")
+    await dialog.locator(".setting-item").filter({ hasText: "Quality (%)" })
+      .locator('input[type="number"]').fill(String(qualityPercent));
   await dialog.locator(".setting-item").filter({ hasText: "Pixel pro Feld" })
     .locator('input[type="number"]').fill(String(pixelsPerCell));
   const grid = dialog.locator(".setting-item").filter({ hasText: "Raster exportieren" })
@@ -107,13 +117,15 @@ async function exportFromMenu(page, out, format, pixelsPerCell, includeGrid) {
       reader.readAsDataURL(probe.blob);
     });
     window.__restoreExportProbe();
-    return { filename: probe.filename, base64: dataUrl.split(",", 2)[1] };
+    return { filename: probe.filename, base64: dataUrl.split(",", 2)[1],
+      encoderQuality: probe.encoderQuality };
   });
   const filename = result.filename;
-  const saved = path.join(out, `ui-${format}-${pixelsPerCell}-${includeGrid ? "grid" : "no-grid"}-${filename}`);
+  const suffix = format === "jpeg" || format === "webp" ? `-q${qualityPercent}` : "";
+  const saved = path.join(out, `ui-${format}-${pixelsPerCell}-${includeGrid ? "grid" : "no-grid"}${suffix}-${filename}`);
   const bytes = Buffer.from(result.base64, "base64");
   fs.writeFileSync(saved, bytes);
-  return { file: saved, filename, bytes };
+  return { file: saved, filename, bytes, encoderQuality: result.encoderQuality };
 }
 async function cancelFromMenu(page, out) {
   const before = await state(page, mapPath);
@@ -245,7 +257,7 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
       [cancelled.screenshot], null, "pass");
     note("DD-043.24", "Frischstart: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen.",
       [quality.screenshot, resultFile],
-      "Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.");
+      "Original- und Hostdateien bei Quality 50/90 sind noch nicht an derselben Kartenszene verglichen.");
     let vtt = null;
     if (process.env.DUNGEON_QA_EXPORT_VTT === "1") {
       await page.evaluate(async (file) => app.workspace.getLeaf(false)
@@ -298,10 +310,18 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
   const uiJpeg = await exportFromMenu(page, out, "jpeg", 64, false);
   assert.equal(uiJpeg.filename, "Karte.jpg");
   assert(uiJpeg.bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])));
+  assert.equal(uiJpeg.encoderQuality, 0.9);
+  const uiJpeg50 = await exportFromMenu(page, out, "jpeg", 64, false, 50);
+  assert.equal(uiJpeg50.encoderQuality, 0.5);
+  assert.notEqual(sha256(uiJpeg50.bytes), sha256(uiJpeg.bytes));
   const uiWebp = await exportFromMenu(page, out, "webp", 64, false);
   assert.equal(uiWebp.filename, "Karte.webp");
   assert.equal(uiWebp.bytes.toString("ascii", 0, 4), "RIFF");
   assert.equal(uiWebp.bytes.toString("ascii", 8, 12), "WEBP");
+  assert.equal(uiWebp.encoderQuality, 0.9);
+  const uiWebp50 = await exportFromMenu(page, out, "webp", 64, false, 50);
+  assert.equal(uiWebp50.encoderQuality, 0.5);
+  assert.notEqual(sha256(uiWebp50.bytes), sha256(uiWebp.bytes));
   const cancelled = await cancelFromMenu(page, out);
   const quality = await inspectQualityControl(page, out);
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
@@ -367,9 +387,9 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     [uiWebp.file], "Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.");
   note("DD-043.23", `Sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=${cancelled.stateUnchanged}.`,
     [cancelled.screenshot], null, "pass");
-  note("DD-043.24", "Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen; JPEG/WEBP-Dateien erzeugt.",
-    [quality.screenshot, uiJpeg.file, uiWebp.file, resultFile],
-    "Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.");
+  note("DD-043.24", "Quality 90/50 % bei JPEG/WEBP steuert den Host-Encoder mit 0,9/0,5 und ändert beide Dateien; PNG/VTT blenden den Regler aus.",
+    [quality.screenshot, uiJpeg.file, uiJpeg50.file, uiWebp.file, uiWebp50.file, resultFile],
+    "Original- und Hostdateien bei Quality 50/90 sind noch nicht an derselben Kartenszene verglichen.");
   finish({ phase: "edit", gridPixels, grid: { width: grid.width, height: grid.height,
     sha256: grid.sha256 }, noGrid: { sha256: noGrid.sha256 },
   high: { width: high.width, height: high.height, sha256: high.sha256 },
@@ -377,6 +397,16 @@ module.exports = async function exportGroup({ page, out, qa, vault, restart, gro
     sha256: nativePpi.sha256 },
   uiPngPixelsChanged: uiPixelsChanged,
   uiFormats: [uiPng.filename, uiJpeg.filename, uiWebp.filename],
+  qualityEncoding: {
+    jpeg90: { bytes: uiJpeg.bytes.length, sha256: sha256(uiJpeg.bytes),
+      encoderQuality: uiJpeg.encoderQuality },
+    jpeg50: { bytes: uiJpeg50.bytes.length, sha256: sha256(uiJpeg50.bytes),
+      encoderQuality: uiJpeg50.encoderQuality },
+    webp90: { bytes: uiWebp.bytes.length, sha256: sha256(uiWebp.bytes),
+      encoderQuality: uiWebp.encoderQuality },
+    webp50: { bytes: uiWebp50.bytes.length, sha256: sha256(uiWebp50.bytes),
+      encoderQuality: uiWebp50.encoderQuality },
+  },
   cancelled, quality,
   documentStable: true, diskSha256, vtt });
 };

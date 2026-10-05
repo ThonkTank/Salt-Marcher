@@ -27607,12 +27607,12 @@
             "state": "pass",
             "observation": "Edit: Editormenü öffnet den Exportdialog mit PNG, JPEG, WEBP und Universal VTT.\nFrischstart: Frischstart: Editormenü öffnet erneut den Exportdialog mit vier Formaten.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
             ],
             "gap": null,
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35332,12 +35332,12 @@
             "state": "open",
             "observation": "Edit: Menüexport erzeugt für 8×8 Felder bei 256 Pixel/Feld ein dekodierbares 2048×2048-PNG.\nFrischstart: Frischstart: PNG-Export der 8×8-Karte bei 256 Pixel/Feld erzeugt ein 2048×2048-PNG.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png"
             ],
             "gap": "Edit: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.\nFrischstart: Die identische Original-Wand-/Portal-/Licht-Szene ist noch nicht als PNG verglichen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35408,12 +35408,12 @@
             "state": "open",
             "observation": "Edit: Bildraster an/aus änderte 16128 Pixel; Dokument, History und Kamera blieben unverändert.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-grid.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-no-grid.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-no-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Original-Rasterwirkung und UI-Vorgaben im selben Exportfall sind noch nicht gepaart.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35484,10 +35484,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35557,10 +35557,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt.\nFrischstart: Auswirkung von Source Level bei mindestens zwei Kartenebenen fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35629,10 +35629,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt.\nFrischstart: Auswirkung von Source Lighting OFF getrennt vom oberen Lighting-Schalter fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35701,10 +35701,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt.\nFrischstart: Auswirkung eines anderen Brightness-Werts auf Exportbild fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35773,10 +35773,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung eines anderen Focus-Werts auf Exportbild fehlt.\nFrischstart: Auswirkung eines anderen Focus-Werts auf Exportbild fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35846,10 +35846,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground.\nFrischstart: Auswahl einer Overlay-Ebene und deren Kartenwirkung fehlen; die QA-Karte hat nur Ground.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35918,10 +35918,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt.\nFrischstart: Auswirkung von Overlay Lighting OFF bei ausgewählter Overlay-Ebene fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -35990,10 +35990,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt.\nFrischstart: Auswirkung eines anderen Overlay-Opacity-Werts bei ausgewählter Overlay-Ebene fehlt.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36063,10 +36063,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswahl und Bildwirkung eines anderen Camera Filter fehlen.\nFrischstart: Auswahl und Bildwirkung eines anderen Camera Filter fehlen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36136,10 +36136,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.\nFrischstart: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36209,12 +36209,12 @@
             "state": "open",
             "observation": "Edit: 64 und 128 Pixel/Feld lieferten 512×512 und 1024×1024 PNG.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-64-grid.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-128-grid.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-128-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Original-PPI-Grenzen und Pixelwirkung im gleichen Fall sind noch nicht gepaart.\nFrischstart: Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36285,15 +36285,15 @@
             "state": "pass",
             "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/png-256-grid.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-dialog-before-x.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-dialog-before-x.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-256-grid.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/export-dialog-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-dialog-before-x.png"
             ],
             "gap": null,
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36363,10 +36363,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.\nFrischstart: ON-Folge und Öffnen des Zielordners nicht gemessen; im isolierten Lauf war der grafische Zenity-Dateidialog unbrauchbar.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36435,10 +36435,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.\nFrischstart: Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36507,10 +36507,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.\nFrischstart: Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36580,13 +36580,13 @@
             "state": "open",
             "observation": "Edit: Menüexport übergab PNG, JPEG und WEBP als Dateien an den Downloadlink; ein System-Dateidialog ist hier nicht belegt.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-png-256-grid-Karte.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-jpeg-64-no-grid-q90-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q90-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Dateiablage im produktiven Vault-Host und frisches Öffnen der Exportdatei fehlen.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36659,11 +36659,11 @@
             "state": "open",
             "observation": "Edit: JPEG-Menüexport lieferte JFIF/JPEG-Signatur und Dateiendung .jpg.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-jpeg-64-no-grid-q90-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Original-JPEG ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36736,11 +36736,11 @@
             "state": "open",
             "observation": "Edit: WEBP-Menüexport lieferte RIFF/WEBP-Signatur und Dateiendung .webp.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q90-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Original-WEBP ist direkt belegt; gleichwertige Host-Szene bei 256 Pixel/Feld noch nicht gepaart.\nFrischstart: Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -36813,10 +36813,10 @@
             "state": "open",
             "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
             ],
             "gap": "Edit: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.\nFrischstart: Originalwirkung und Hostbedienung noch nicht gemeinsam geprüft.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -42566,12 +42566,12 @@
             "state": "pass",
             "observation": "Edit: Sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.\nFrischstart: Frischstart: sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-dialog-before-x.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-dialog-before-x.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/export-dialog-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-dialog-before-x.png"
             ],
             "gap": null,
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
@@ -42591,17 +42591,22 @@
         "scope": "required",
         "original": {
           "sequence": "Export Options → JPEG oder WEBP → Quality (%)",
-          "options": "Regler und Zahlenfeld, angezeigt 90 % bei beiden Formaten; bei PNG nicht angezeigt.",
-          "effect": "Der wählbare Quality-Wert gehört zur JPEG- und WEBP-Ausgabe.",
+          "options": "JPEG/WEBP: Regler und Zahlenfeld gekoppelt; 90 % Vorgabe, 50 % als Zahlen- und Reglerwahl; sichtbare Reglerenden 0/100 %.",
+          "effect": "Auf derselben 8×8-Karte erzeugen JPEG und WEBP bei Quality 50 % gegenüber 90 % jeweils kleinere 2048×2048-RGB-Dateien mit geänderten Bildpixeln; 90 % liegt näher am PNG.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/REPORT-QUALITY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-jpeg-q50.jpg",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-jpeg-q90.jpg",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-webp-q50.webp",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-webp-q90.webp"
           ],
-          "gap": "Wirkung eines geänderten Quality-Werts und exakte zulässige Grenzen im Original nicht gemessen."
+          "gap": "Dateiwirkung bei 0/100 %, ungültige Eingaben, Zwischenwert-Rundung und Formatwechsel nach abweichendem Wert offen."
         },
-        "target": "JPEG und WEBP zeigen einen Qualitätswert mit Standard 90 % und wenden seine Wahl bei der Kodierung an; PNG blendet ihn aus.",
+        "target": "JPEG und WEBP zeigen den gekoppelten Qualitätsregler 0–100 % mit Vorgabe 90 %; 50/90 % verändern die ausgegebene Bilddatei wie im Original. PNG/VTT blenden ihn aus.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -42639,18 +42644,20 @@
           "gap": "Qualitätsregler und Wirkung am isolierten Host noch nicht geprüft.",
           "candidate": {
             "state": "open",
-            "observation": "Edit: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen; JPEG/WEBP-Dateien erzeugt.\nFrischstart: Frischstart: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen.",
+            "observation": "Edit: Quality 90/50 % bei JPEG/WEBP steuert den Host-Encoder mit 0,9/0,5 und ändert beide Dateien; PNG/VTT blenden den Regler aus.\nFrischstart: Frischstart: Quality 90 % bei JPEG/WEBP sichtbar, bei PNG/VTT verborgen.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/edit-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/export-quality-default.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-jpeg-64-no-grid-Karte.jpg",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205291145-verwaltung-export-edit/ui-webp-64-no-grid-Karte.webp",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/reopen-export.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791205327775-verwaltung-export-reopen/export-quality-default.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/export-quality-default.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-jpeg-64-no-grid-q90-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-jpeg-64-no-grid-q50-Karte.jpg",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q90-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/ui-webp-64-no-grid-q50-Karte.webp",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-quality-default.png"
             ],
-            "gap": "Edit: Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.\nFrischstart: Originalwirkung geänderter Quality-Werte und gleichwertige Host-Bildkodierung noch nicht gepaart.",
+            "gap": "Original und Host belegen Quality 50/90 mit geänderten JPEG-/WEBP-Dateien. Gleichwertige Bildwirkung an derselben 2048×2048-Kartenszene und Formatwechsel nach abweichendem Wert fehlen; der Frischstart belegt bisher den Vorgabewert.",
             "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
             "phaseStates": {
               "edit": "open",

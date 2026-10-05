@@ -1525,7 +1525,12 @@
         "DD-043.24": [
           "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/REPORT-JPEG-WEBP.md",
           "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/03-jpeg-options.png",
-          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png"
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-144213-3116119/evidence/screens/07-webp-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/REPORT-QUALITY.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-jpeg-q50.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-jpeg-q90.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-webp-q50.webp",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-151127-3147208/evidence/exports/map-webp-q90.webp"
         ]
       },
       "originalGaps": {
@@ -1544,7 +1549,7 @@
         "DD-043.18": "Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen.",
         "DD-043.20": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
         "DD-043.21": "Andere Qualitätswerte, Codec-Parameter, Metadaten und System-Dateidialog im Original nicht gemessen.",
-        "DD-043.24": "Wirkung eines geänderten Quality-Werts und exakte zulässige Grenzen im Original nicht gemessen."
+        "DD-043.24": "Dateiwirkung bei 0/100 %, ungültige Eingaben, Zwischenwert-Rundung und Formatwechsel nach abweichendem Wert offen."
       },
       "originalEffects": {
         "DD-043.01": "Hauptleistenaktion Export öffnet den modalen Dialog Export Options; die Karte bleibt dabei sichtbar.",
@@ -1570,7 +1575,7 @@
         "DD-043.21": "WEBP-Export erzeugt aus der belegten 8×8-Karte eine 2048×2048-RGB-Datei mit Boden, Wand, Portal, Licht und Raster.",
         "DD-043.22": "Universal VTT erzeugt JSON format 0.3 mit 8×8/256-Auflösung, einer Sichtlinien-Polygonlinie, einem gebundenen Portal, einem Licht und base64-PNG; das Bild ist bytegleich zum PNG mit Grid OFF und Lighting ON.",
         "DD-043.23": "X schließt den Exportdialog ohne eine weitere Datei zu erzeugen.",
-        "DD-043.24": "Der wählbare Quality-Wert gehört zur JPEG- und WEBP-Ausgabe."
+        "DD-043.24": "Auf derselben 8×8-Karte erzeugen JPEG und WEBP bei Quality 50 % gegenüber 90 % jeweils kleinere 2048×2048-RGB-Dateien mit geänderten Bildpixeln; 90 % liegt näher am PNG."
       }
     },
     {
