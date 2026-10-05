@@ -90,7 +90,8 @@
     "DD-011 V2: Rein CPU-basierte 4.292-Entitäten-Großkartenprobe auf finalem Build: Session 20,60/25,45 ms, Marquee 0,76/1,21 ms, normaler Building-Commit 2,52/3,96 ms Median/P95. Ein synthetischer 1.000-Punkt-Edit kostete 53,60/70,93 ms und Repository-Save 73,28/101,29 ms; Renderer und Obsidian-Host sind dadurch nicht abgenommen.",
     "DD-028.06: Original und installierter Obsidian-Host zeigen A128/A0 der Colorable-Bibliothekskachel vor Accept/Escape; Farbwirkung bleibt nach Panel-Neuaufbau erhalten. Platzierung, Auswahl, Undo/Redo, Save und Frischstart bestanden. 39/707 Pflichtfälle belegt.",
     "DD-028.17: Alle fünf Light-Farbvorgaben nach direkter Originalmessung am installierten Obsidian-Host gewählt; Tool-Feld und persistente Vorgabe stimmen. Karte und History unverändert, frischer Start bestanden. 40/707 Pflichtfälle belegt.",
-    "DD-028.16: Scatter-RGBA-Wähler schließt auch nach geänderter Farbe per Außenklick und behält den Wert. Direktes Original, installierter Host, Frischstart sowie DD-028.17-Regression bestanden. 41/707 Pflichtfälle belegt."
+    "DD-028.16: Scatter-RGBA-Wähler schließt auch nach geänderter Farbe per Außenklick und behält den Wert. Direktes Original, installierter Host, Frischstart sowie DD-028.17-Regression bestanden. 41/707 Pflichtfälle belegt.",
+    "DD-013.02/.03 auf DD-021.27-Releasebasis mit Backspace/Minimumgrenze umgesetzt; isolierter Host Edit und Frischstart je 2 pass. Wegen offener DD-012-Basis noch nicht installiert oder zur 42/707-Abnahme gezählt."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -146,7 +147,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "DD-012.01–.03 im Original-Frischstart und isolierten Host grafisch vergleichen; DD-024-Slotmodell und DD-026/027-Objektkatalog parallel vorbereiten.",
+  "next": "DD-012-Rechteck-Eckzug und native Frischöffnung mit robustem Lade-Gate paaren; danach DD-013-Baupaket nur nach bestandener Gesamtprüfung installieren. DD-024-Renderer und DD-026/027-Fuzzy-Suche parallel fortführen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -501,7 +502,10 @@
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/group-cases.json",
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/group-cases.json",
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/group-cases.json",
-    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json"
+    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json",
+    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md",
+    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230504625-bau-01-edit/group-cases.json",
+    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230513850-bau-01-reopen/group-cases.json"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",
@@ -582,7 +586,7 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/group-cases.json"
     ],
-    "next": "DD-012.01–.03 im Original-Frischstart und isolierten Host grafisch vergleichen; DD-024-Slotmodell und DD-026/027-Objektkatalog parallel vorbereiten.",
+    "next": "DD-012-Rechteck-Eckzug und native Frischöffnung mit robustem Lade-Gate paaren; danach DD-013-Baupaket nur nach bestandener Gesamtprüfung installieren. DD-024-Renderer und DD-026/027-Fuzzy-Suche parallel fortführen.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-001.04",
