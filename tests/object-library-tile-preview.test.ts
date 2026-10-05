@@ -96,3 +96,32 @@ test("DD-028.06 Escape retains A0 tile/default; old requests cannot replace it",
   assert.equal(await tile.set(0xff0000, 255), false);
   assert.equal(image.src, "preview-1");
 });
+
+test("DD-028.06 a rebuilt tile keeps the chosen color and rejects the old result", async () => {
+  let resolve!: (value: LibraryTilePixels) => void;
+  const delayed = new Promise<LibraryTilePixels>((done) => { resolve = done; });
+  const oldImage = { src: "raw-old" };
+  const newImage = { src: "raw-new" };
+  const encoded: Uint8Array[] = [];
+  const encode = (_width: number, _height: number, rgba: Uint8Array) => {
+    encoded.push(rgba);
+    return `preview-${encoded.length}`;
+  };
+  const oldTile = new ObjectLibraryTilePreview(
+    oldImage, delayed, DEFAULT_COLORABLE_OBJECT_SETTINGS, encode,
+  );
+  const oldRequest = oldTile.set(0xff0000, 255);
+  oldTile.dispose();
+  const rebuilt = new ObjectLibraryTilePreview(
+    newImage, delayed, DEFAULT_COLORABLE_OBJECT_SETTINGS, encode,
+  );
+  const newRequest = rebuilt.set(0x4080c0, 128);
+  resolve(source);
+  assert.equal(await oldRequest, false);
+  assert.equal(await newRequest, true);
+  assert.equal(oldImage.src, "raw-old");
+  assert.equal(newImage.src, "preview-1");
+  assert.equal(encoded.length, 1);
+  assert.equal(encoded[0]![3], 128);
+  assert.deepEqual([...encoded[0]!.subarray(4)], [200, 176, 176, 255]);
+});

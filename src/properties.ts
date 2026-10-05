@@ -295,6 +295,7 @@ export class Properties {
     options: readonly [string, string][],
     change: (value: string) => void,
     preview = false,
+    previewUpdated?: (image: HTMLImageElement, value: string) => void,
   ): HTMLImageElement | undefined {
     const row = document.createElement("label");
     row.className = "dn-field";
@@ -323,6 +324,7 @@ export class Properties {
           url = asset && part ? this.assetUrl(asset.id + "\0" + part) : "";
         image.src = url;
         image.hidden = !url;
+        previewUpdated?.(image, select.value);
       };
     if (image) {
       image.className = "dn-asset-preview";
@@ -333,7 +335,9 @@ export class Properties {
       try {
         const before = JSON.stringify(this.defaults);
         change(select.value);
-        updatePreview();
+        // A selected map object can synchronously rebuild the panel in change().
+        // Do not bind a late preview to the detached previous row.
+        if (row.parentElement === this.root) updatePreview();
         if (before !== JSON.stringify(this.defaults)) this.defaultsChanged();
       } catch (error) {
         this.notice(String(error));
@@ -362,6 +366,33 @@ export class Properties {
     }
     this.root.append(row);
     return image;
+  }
+  private bindObjectLibraryPreview(
+    image: HTMLImageElement,
+    assetId: string,
+    color: number,
+    alpha: number,
+  ): void {
+    this.objectLibraryPreview?.dispose();
+    this.objectLibraryPreview = undefined;
+    if (!assetId) return;
+    const source = this.colorableObjectSource(assetId);
+    if (!source) return;
+    const preview = createObjectLibraryTilePreview(
+      image,
+      source.image,
+      source.settings,
+    );
+    this.objectLibraryPreview = preview;
+    this.previewObjectLibraryColor(color, alpha);
+  }
+  private previewObjectLibraryColor(color: number, alpha: number): void {
+    const preview = this.objectLibraryPreview;
+    if (!preview) return;
+    void preview.set(color, alpha).catch((error) => {
+      if (this.objectLibraryPreview === preview)
+        this.notice("Objektvorschau konnte nicht geladen werden: " + String(error));
+    });
   }
   render(tool: Tool, selected: string | undefined, floorId: string): void {
     const activePicker = this.objectPicker;
@@ -1391,6 +1422,12 @@ export class Properties {
       const update = (patch: Partial<MapObject>) => {
         this.defaults.object = { ...this.defaults.object, ...patch };
         if (e?.kind === "object") this.change(e, patch);
+        else if (patch.assetId === undefined &&
+                 (patch.color !== undefined || patch.alpha !== undefined))
+          this.previewObjectLibraryColor(
+            this.defaults.object.color,
+            this.defaults.object.alpha ?? 255,
+          );
       };
       const packageObjects = this.assets().filter(
         (asset) => asset.kind === "object",
@@ -1424,6 +1461,18 @@ export class Properties {
               });
             },
             true,
+            (image, assetId) => {
+              const current = e?.kind === "object"
+                ? this.session.entities.get(e.id)
+                : undefined;
+              this.bindObjectLibraryPreview(
+                image,
+                assetId,
+                current?.kind === "object" ? current.color : this.defaults.object.color,
+                current?.kind === "object"
+                  ? current.alpha ?? 255 : this.defaults.object.alpha ?? 255,
+              );
+            },
           )
         : undefined;
       if (e?.kind !== "object")
@@ -1503,27 +1552,11 @@ export class Properties {
           ? this.session.entities.get(selectedId) : undefined;
         const currentColor = selectedEntity?.kind === "object"
           ? selectedEntity : this.defaults.object;
-        this.objectLibraryPreview?.dispose();
-        this.objectLibraryPreview = undefined;
-        if (!selectedId && libraryTile && currentColor.assetId) {
-          const source = this.colorableObjectSource(currentColor.assetId);
-          if (source)
-            this.objectLibraryPreview = createObjectLibraryTilePreview(
-              libraryTile,
-              source.image,
-              source.settings,
-            );
-        }
-        let previewErrorReported = false;
-        const previewTile = (color: number, alpha: number) => {
-          void this.objectLibraryPreview?.set(color, alpha).catch((error) => {
-            if (!previewErrorReported) {
-              previewErrorReported = true;
-              this.notice("Objektvorschau konnte nicht geladen werden: " + String(error));
-            }
-          });
-        };
-        previewTile(currentColor.color, currentColor.alpha ?? 255);
+        if (!selectedId && libraryTile)
+          this.previewObjectLibraryColor(
+            currentColor.color,
+            currentColor.alpha ?? 255,
+          );
         pickerButton.disabled = true;
         mountObjectColorPicker(
           this.root,
@@ -1532,7 +1565,7 @@ export class Properties {
           {
             onPreview: (color, alpha) => {
               if (selectedId) this.previewObjectColor(selectedId, color, alpha);
-              else previewTile(color, alpha);
+              else this.previewObjectLibraryColor(color, alpha);
             },
             onCommit: (color, alpha) => {
               this.defaults.object = { ...this.defaults.object, color, alpha };
