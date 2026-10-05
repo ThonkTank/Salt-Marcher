@@ -4216,12 +4216,14 @@
         "original": {
           "sequence": "Griff überfahren und Backspace drücken.",
           "options": "Panel nennt BKSP.",
-          "effect": "Aktuelle native 1.2.0.1-Wiederholung ohne sichtbaren Effekt; kein erfolgreicher Original-Backspace-Beleg.",
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
+          "effect": "Backspace am grün markierten Viereckgriff entfernt einen Punkt; Boden und Paketwand folgen, Undo/Redo und frisches Öffnen erhalten die Wirkung.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Original-Lauf R5/R6 vom 05.10.2026",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/09d-backspace-focused.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/09d-backspace-focused.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F21-backspace-after.png"
           ]
         },
         "target": "Backspace-Wirkung bei aktivem Griff wie bestätigtes Original.",
@@ -4249,15 +4251,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Backspace am ausgewählten Building-Griff entfernt einen Konturpunkt atomar mit Boden-/Wandbindung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230504625-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230513850-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Isolierter Host in Bearbeitung und nach Frischstart bestanden; installierter Endstand und Bau-Basispaket DD-012 noch offen.",
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
         }
       },
       {
@@ -4270,12 +4283,14 @@
         "original": {
           "sequence": "Punkt an Dreieck oder geschlossenem Mehrteilbau entfernen.",
           "options": "Panel nennt nur Remove Point.",
-          "effect": "Grenzverhalten nicht belegt.",
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
+          "effect": "Backspace am grün markierten Dreipunktgriff lässt Kontur, Paketwand und Datei unverändert.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Original-Lauf R5/R6 vom 05.10.2026",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F28-triangle-backspace-after.png"
           ]
         },
         "target": "Originalgrenze und Reaktion übernehmen.",
@@ -4303,15 +4318,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Backspace am ausgewählten Dreipunktgriff erzeugt keinen Command und archiviert das Building nicht."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "7545e89438150893073711eb62f9b28db24b8dafa5ee12b6dc831f9a5848e518",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230504625-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230513850-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Isolierter Host in Bearbeitung und nach Frischstart bestanden; installierter Endstand und Bau-Basispaket DD-012 noch offen.",
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
         }
       },
       {
