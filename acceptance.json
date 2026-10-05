@@ -29724,19 +29724,43 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Ungespeicherte Pending-Kartenansicht mit erstem Save und Session-Übergabe installiert"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd00104-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-RELEASE.md"
+          ]
         },
         "hostCheck": {
-          "state": "deviation",
-          "build": "d9f6549d081a9d22fd93fb901a0c2eef66e2c6ee139d50b41c50bff5953d53cf",
+          "state": "equal",
+          "build": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd020-installed-dd001002-regression/evidence/1791219665084-verwaltung-karte-datei-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-NATIVE-RESULT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-first-save-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-created-unsaved.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-drawn-unsaved.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-undo-before-save.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-redo-before-save.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-first-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-undo-after-save.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/dd00104-redo-after-save.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/dd00104-first-save-state.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223571925-verwaltung-karte-datei-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223571925-verwaltung-karte-datei-reopen/dd00104-first-save-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223571925-verwaltung-karte-datei-reopen/dd00104-fresh-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-RELEASE.md"
           ],
-          "gap": "Der installierte Editor erzeugt die .dungeon-Datei bereits vor dem ersten Save; Pending-View und Session-Handoff fehlen."
-        }
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Neue 8×8-Karte bis zum ersten Save ohne Kartendatei; Licht und derselbe Undo/Redo-Schritt vor und nach Save, bytegleich gespeicherte Datei bei History-Aktionen und korrektes frisches Öffnen."
       },
       {
         "id": "DD-001.05",

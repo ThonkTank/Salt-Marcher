@@ -1,5 +1,5 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: 37 von 707 Pflichtfällen am installierten Endstand fallbezogen belegt; weitere Pakete in Arbeit",
+  "phase": "Vollständige Dungeondraft-Angleichung: 38 von 707 Pflichtfällen am installierten Endstand fallbezogen belegt; weitere Pakete in Arbeit",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -143,7 +143,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Nach Freigabe des Grafikslots DD-020.13/.14 im isolierten Obsidian-Host mit 160/255 Alpha, Kontur OFF, Undo/Redo, Save und frischem Öffnen prüfen; danach erst Fallstatus und Paketübernahme entscheiden.",
+  "next": "DD-021.02 texturierte Pfadvorschau und DD-028.06 Objektbibliotheks-Vorschau im isolierten Host fallgleich prüfen; offene Wirkungen nicht ohne Originalbeleg abnehmen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -511,16 +511,15 @@
     "requiredCases": 707,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-001.04 ungespeicherte neue Karte",
       "DD-021.02/.15/.21 Pfadvorschau und Bildwirkung",
       "DD-028.06 Objektfarb-Vorschau"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "37 Pflichtfälle am installierten Build fallbezogen gleichwertig. Objektfarbe DD-028.08/.09 und Pfad-Undo/Suche/Redo DD-021.20/.22/.26 neu; DD-028.06 teilweise, DD-021.02 abweichend, DD-021.15/.21 offen. Beide produktiven V2-Karten nur auf isolierten Kopien verlustfrei V3-gespeichert und frisch geöffnet; 183 andere geschützte Vault-Dateien unverändert.",
-    "releaseBuild": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+    "hostStatus": "38 Pflichtfälle am installierten Build fallbezogen gleichwertig. DD-001.04 neu: dateilose neue Karte bis Save, History-Übergabe und frisches Öffnen. DD-028.06 teilweise, DD-021.02 abweichend, DD-021.15/.21 offen. Beide produktiven V2-Karten nur auf isolierten Kopien verlustfrei V3-gespeichert und frisch geöffnet.",
+    "releaseBuild": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
     "dd038Candidate": "Originalmessung belegt nach Top +1 sofort deaktiviertes Undo/Redo und gesperrten älteren Objekt-Undo-Schritt; Entwicklungsstand setzt bei Randänderung eine History-Grenze, zeigt Warnung und Abbruchknopf. 119 Kernprüfungen bestanden, ein lizenzabhängiger Test übersprungen; isolierter Host und Installation offen. Smart-Tile-Zellen noch nicht im Dokumentmodell.",
     "openOriginalGap": "DD-028.06 Bibliothekskachel-Livevorschau; DD-021.02 Enter-Abschlussregel; DD-021.15/.21 Pixel-/Knick-/UV-Paarung und weitere Texturen; ältere offene Fälle bleiben in acceptance.json fallgenau erhalten.",
-    "installedBuild": "84d19bbde22160e5d4cabe651cc7f873a60d5d9bb11e025af68d65a58d08b0d4",
+    "installedBuild": "a12f3fcfaa64b4c8fbb2e14c7441e5521f1a0edd552d17bb29e5bdb739f25635",
     "dd039Installed": "Isolierter Releasezweig deab9f6 + DD-039-Produktcommit 45c5215; 108 Kernprüfungen, Typprüfung und Build bestanden. Installierter Build 02d92817 bestand sechs DD-039-Fälle in Bearbeitung und Frischstart; direkte Originalprüfung schloss die relevanten Dialog-/History-Lücken. Beide produktiven V2-Karten wurden als isolierte Kopien ohne Feldverlust V3-gespeichert und frisch geöffnet. Nach Installation blieben 185 geschützte Vault-Dateien und beide Originalkarten bytegleich. Sechs Pflichtfälle gleichwertig belegt; leere Paketzeile ist reine Oberflächendifferenz.",
     "installedEvidence": [
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
@@ -539,11 +538,16 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-object/evidence/1791222581701-objekte-03-reopen/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222617432-material-pfad-edit/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-path/evidence/1791222662059-material-pfad-reopen/group-cases.json",
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-v2/evidence/1791222813687-v2-open-reopen/result.json"
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd028-dd021-installed-v2/evidence/1791222813687-v2-open-reopen/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd001002/DD-001-04-RELEASE.md",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223562045-verwaltung-karte-datei-edit/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-host/evidence/1791223571925-verwaltung-karte-datei-reopen/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd00104-installed-v2/evidence/1791223620334-v2-open-reopen/result.json"
     ],
-    "next": "DD-001.04 Pending-Session-Commit 07929b8 in aktuellen Integrationsstand übernehmen und isoliert grafisch prüfen. Danach Pfadvorschau/Bildwirkung und Objektfarb-Bibliotheksvorschau fallgenau schließen; übrige Pflichtfälle paketweise bearbeiten.",
+    "next": "DD-021.02 und DD-028.06 aus getrennten Zweigen integrieren, im isolierten Host originalgleich prüfen und nur bestandene Fälle installieren; weitere Pflichtfälle paketweise bearbeiten.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
+      "DD-001.04",
       "DD-001.05",
       "DD-002.05",
       "DD-002.09",
