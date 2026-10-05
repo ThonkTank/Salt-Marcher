@@ -41,7 +41,11 @@
         ],
         "DD-021.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-two-point-preview.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-two-point-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/04-horizontal-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/07-horizontal-second-enter.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
         ],
         "DD-021.03": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md"
@@ -56,7 +60,11 @@
         ],
         "DD-021.06": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/12-width2-control.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/14-kink-finish-width2.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
         ],
         "DD-021.07": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
@@ -97,7 +105,11 @@
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/21-path-top.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/23-path-library-end-clear.png",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/24-path-library-end-confirm.png",
-          "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck"
+          "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/03-path-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-run1/evidence/14-kink-finish-width2.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
         ],
         "DD-021.16": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
@@ -120,7 +132,10 @@
         ],
         "DD-021.21": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/native-fresh-open-ready.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/native-fresh-open-ready.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/native-reopen/evidence/02-fresh-open-ready.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-band-native/saved-three-paths.dungeondraft_map"
         ],
         "DD-021.22": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
@@ -156,14 +171,18 @@
         ]
       },
       "originalEffects": {
-        "DD-021.01": "Nach Wahl des Path Tool sind links Edit Points, Layer 100, Sorting Over/Under, Width 1, Smoothness 1, Block Light OFF und Transition In/Out None sichtbar; rechts steht die Path Library mit ausgewählter Battlements-Kachel."
+        "DD-021.01": "Nach Wahl des Path Tool sind links Edit Points, Layer 100, Sorting Over/Under, Width 1, Smoothness 1, Block Light OFF und Transition In/Out None sichtbar; rechts steht die Path Library mit ausgewählter Battlements-Kachel.",
+        "DD-021.02": "Auf der 12×8-Originalkarte zeigt Battlements beim Punktzug (2;1,5)→(9;1,5) eine texturierte Livevorschau; nach Abschluss steht ein gerader Pfad mit genau diesen gespeicherten Endpunkten. Im selben Lauf commitete erst ein zweites Enter; beim diagonalen Zug commitete ein Endpunkt-Doppelklick, wiederholtes Enter dagegen nicht.",
+        "DD-021.06": "Mit derselben eingebauten Battlements-Textur speichert Width 1 exakt 69 und Width 2 exakt 138 Originaleinheiten bei 256 Einheiten pro Feld: 0,26953125 beziehungsweise 0,5390625 Feld sichtbare Streifenbreite. Motiv und Streifen werden bei Width 2 ungefähr doppelt so groß.",
+        "DD-021.15": "Die modfreie Original-Path-Library hat Battlements als ausgewählte eingebaute Kachel. Danach gezeichnete gerade, diagonale und geknickte Pfade verwenden sichtbar dieses Motiv und speichern res://textures/paths/battlements.png.",
+        "DD-021.21": "Die isoliert gespeicherte Originalkarte enthält drei Battlements-Pfade mit Punkten, Width 69/138, Smoothness 1, Layer 100 und Flags. Eine neue Originalinstanz öffnet die unveränderte Karte und zeigt alle drei mit derselben Geometrie und Textur."
       },
       "originalGaps": {
-        "DD-021.02": "Original-Punktzug war durch Zeigertiming verzerrt; punktgleiche Enter-Abschlussgeometrie fehlt.",
+        "DD-021.02": "Der einmalige Enter-Abschluss ist im direkten Lauf nicht eindeutig reproduziert: Gerade commitete erst nach zweitem Enter; Diagonale trotz wiederholtem Enter erst nach Endpunkt-Doppelklick. Ursache und allgemeine Abschlussregel bleiben offen; die gespeicherte Punktgeometrie ist nun direkt belegt.",
         "DD-021.03": "Punkte eines vorhandenen Pfads hinzufügen, verschieben und löschen: gespeicherte Originalwirkung je Geste fehlt.",
         "DD-021.04": "Ebenenwechsel eines Pfads gegenüber einem überlappenden Element im Original nicht direkt gemessen.",
         "DD-021.05": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen.",
-        "DD-021.06": "Pfadbreite bei mehreren numerischen Werten und gleicher Textur im Original nicht maßlich gemessen.",
+        "DD-021.06": "Direkt gemessen sind nur Battlements bei Width 1 und 2. Zwischenwerte, Reglergrenzen und Breitenumrechnung für Texturen anderer Quellhöhe sind im Original noch offen.",
         "DD-021.07": "Kartenwirkung der Original-Smoothness bei 0, 0,5 und 1 nicht direkt gemessen.",
         "DD-021.08": "Lichtabschattung desselben Pfads mit Block Light ON/OFF im Original nicht gepaart.",
         "DD-021.09": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
@@ -172,7 +191,6 @@
         "DD-021.12": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
         "DD-021.13": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
         "DD-021.14": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
-        "DD-021.15": "Auswahl einer eingebauten Kachel und Wirkung auf den danach gezeichneten Originalpfad nicht als Zustandsfolge erfasst.",
         "DD-021.16": "Shift-Kurvenzug mit bestätigtem gespeicherten Originalpfad fehlt; Statushinweis allein belegt keine Geometrie.",
         "DD-021.17": "Rücktaste während eines Mehrpunktentwurfs nicht direkt auf Punktentfernung und Restentwurf geprüft.",
         "DD-021.18": "Schließen eines Loops durch Startpunkt/Enter nicht als gesteuerte Originalfolge gemessen.",
@@ -181,7 +199,8 @@
         "DD-021.23": "Fuzzy und Exact zeigten bei Battlement denselben Einzelhit; ein Suchpaar mit unterschiedlicher Trefferliste fehlt.",
         "DD-021.24": "Clear Search wurde direkt beobachtet; Auswahlzustand einer zuvor gewählten Pfadtextur und erneuter Fokus fehlen.",
         "DD-021.25": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen.",
-        "DD-021.27": "Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen."
+        "DD-021.27": "Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen.",
+        "DD-021.21": "Frischstart ist für drei Battlements-Pfade mit Default-Übergängen und Block Light OFF belegt; geänderte Übergänge, Lichtblockierung und andere Pfadtexturen wurden nicht als Save/Reopen-Paar geprüft."
       }
     },
     {

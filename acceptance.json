@@ -1,7 +1,7 @@
 {
   "source": ".obsidian/plugins/dungeon-auswertung/reference/FEATURE-CATALOG.json",
   "inventoryComplete": true,
-  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Die strikte Dungeondraft-Bedienparität wird seit 2026-10-05 in Funktionsgruppen mit einzeln belegten Unterfällen geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 710 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
+  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Die strikte Dungeondraft-Bedienparität wird seit 2026-10-05 in Funktionsgruppen mit einzeln belegten Unterfällen geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 706 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
   "requirements": [
     {
       "id": "DD-001",
