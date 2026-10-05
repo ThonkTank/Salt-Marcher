@@ -28,12 +28,13 @@ const restart = process.argv.includes("--restart"),
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
   pathLibrary = process.argv.includes("--path-library"),
+  nativePathDialog = process.argv.includes("--native-path-dialog"),
   dd041Navigation = process.argv.includes("--dd041-navigation"),
   dd041PanOnly = process.argv.includes("--pan-only"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (activeGroupId ? `-${activeGroupId}` : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (activeGroupId ? `-${activeGroupId}` : nativePathDialog ? "-native-path-dialog" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -50,7 +51,8 @@ let browser,
   scope,
   stopping = false,
   guardFailure,
-  groupResult;
+  groupResult,
+  nativePathDialogResult;
 if (activeGroupId && !/^[a-z0-9-]+$/.test(activeGroupId))
   throw new Error(`Ungültige Gruppenkennung: ${activeGroupId}`);
 const checks = [],
@@ -187,7 +189,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha || pathLibrary)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || nativePathDialog)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
@@ -328,7 +330,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (activeGroupId ? `group-${activeGroupId}-` : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (activeGroupId ? `group-${activeGroupId}-` : nativePathDialog ? "native-path-dialog-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -490,6 +492,13 @@ async function workflow() {
     }
     checks.push(`${activeGroupId}: ${groupResult.counts.pass} pass, ${groupResult.counts.fail} fail, ${groupResult.counts.open} open`);
     assert.equal(groupResult.counts.fail, 0, `Group ${activeGroupId} has failing cases`);
+    return;
+  }
+  if (nativePathDialog) {
+    const scenario = require("./groups/scenarios/material-pfad-dialog.cjs");
+    nativePathDialogResult = await scenario({ page, out, qa, vault, restart });
+    checks.push(`DD-021.15 PCK dialog substep: ${nativePathDialogResult.state}`);
+    assert.notEqual(nativePathDialogResult.state, "fail", "Native path dialog substep failed");
     return;
   }
   if (v2Open) {
@@ -3709,6 +3718,12 @@ async function largeWorkflow() {
       peakBytes: peak,
       group: groupResult ? { id: groupResult.groupId, phase: groupResult.phase,
         complete: groupResult.complete, counts: groupResult.counts } : null,
+      nativePathDialog: nativePathDialogResult ? {
+        caseId: nativePathDialogResult.caseId,
+        phase: nativePathDialogResult.phase,
+        state: nativePathDialogResult.state,
+        gap: nativePathDialogResult.gap,
+      } : null,
       passed: !failure && !errors.length && !guardFailure,
     };
     fs.mkdirSync(out, { recursive: true });
