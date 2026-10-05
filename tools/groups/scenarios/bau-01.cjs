@@ -23,6 +23,10 @@ const openReasons = {
 };
 const mapName = "BauGroupQA";
 const savedName = "bau-01-saved.json";
+const wallFixture = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/" +
+  "DD015-017-fixtures/qa-wall-pack.dungeondraft_pack";
+const wallFixtureSha256 = "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9";
+const wallSavedName = "bau-02-wall-choice-saved.json";
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const buildings = (snap) => snap.document.entities.filter((entity) => entity.kind === "building");
 const digest = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
@@ -78,7 +82,9 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
     for (const id of group.caseIds) {
       const item = outcomes.get(id) ?? {
         state: "open", observation: null,
-        gap: openReasons[id] ?? "Diese Bedienfolge wurde im begrenzten Bau-Pilot noch nicht ausgeführt.",
+        gap: openReasons[id] ?? (group.id === "bau-02"
+          ? "Dieser Fall wurde im auf DD-015.01/.02 begrenzten Wandwahllauf noch nicht ausgeführt."
+          : "Diese Bedienfolge wurde im begrenzten Bau-Pilot noch nicht ausgeführt."),
         evidence: [],
       };
       record.add(id, item.state, item.observation,
@@ -120,6 +126,207 @@ module.exports = async function bau01({ page, out, qa, vault, restart, group, re
     return !!editor && !editor.paintWorker &&
       editor.session.document().entities.filter((entity) => entity.kind === "building").length >= count;
   }, count, { timeout: 12000 });
+
+  // DD-015 is catalogued in bau-02. The bau-02 entrypoint delegates here so
+  // this pilot can reuse the established snapshot, gesture and record helpers.
+  if (group.id === "bau-02") {
+    const wallSavedPath = path.join(qa, wallSavedName);
+    const wallRender = (id) => page.evaluate((id) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor?.renderer;
+      const visual = renderer?.visuals.get(id);
+      if (!visual) return null;
+      let sprites = 0;
+      const walk = (node) => {
+        if (node.texture) sprites++;
+        for (const child of node.children ?? []) walk(child);
+      };
+      walk(visual.container);
+      const graphics = visual.container.children.find((child) => child.context);
+      const actions = graphics?.context?.instructions?.map((item) => item.action) ?? [];
+      return { sprites, actions, shadow: !!visual.shadow };
+    }, id);
+    const markMissing = (reason) => {
+      for (const id of ["DD-015.01", "DD-015.02"])
+        if (!outcomes.has(id)) set(id, "open", null, reason, [stepsPath]);
+    };
+    try {
+      if (restart) {
+        const saved = JSON.parse(fs.readFileSync(wallSavedPath, "utf8"));
+        steps.mapPath = saved.mapPath;
+        await page.evaluate(async (mapPath) => {
+          const file = app.vault.getAbstractFileByPath(mapPath);
+          if (!file) throw new Error(`QA-Karte fehlt: ${mapPath}`);
+          await app.workspace.getLeaf(false).openFile(file);
+        }, saved.mapPath);
+        await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
+        const reopened = await stage("wall-choice-fresh-open", true);
+        const disk = path.join(vault, saved.mapPath);
+        const exact = !!reopened && !reopened.dirty &&
+          equal(reopened.document, saved.document) && digest(disk) === saved.sha256;
+        await page.waitForFunction((id) => {
+          const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor?.renderer;
+          const visual = renderer?.visuals.get(id);
+          return !!visual && visual.container.children.some((child) =>
+            child.children?.some((grandchild) => !!grandchild.texture));
+        }, saved.packageId, { timeout: 12000 }).catch(() => {});
+        const packageRender = await wallRender(saved.packageId);
+        const noneRender = await wallRender(saved.noneId);
+        const packageEntity = buildings(reopened).find((entity) => entity.id === saved.packageId);
+        const noneEntity = buildings(reopened).find((entity) => entity.id === saved.noneId);
+        const packageOkay = exact && packageEntity?.wallAssetId === saved.assetId &&
+          packageEntity.wallWidth > 0 && packageRender?.sprites > 0;
+        const noneOkay = exact && noneEntity?.wallWidth === 0 &&
+          !noneEntity.wallAssetId && noneRender?.sprites === 0 &&
+          noneRender?.actions?.includes("fill") &&
+          !noneRender.actions.includes("stroke");
+        steps.wallChoice = { saved, exact, packageRender, noneRender,
+          packageEntity, noneEntity };
+        for (const [id, okay, detail] of [
+          ["DD-015.01", packageOkay, `Paketwand ${saved.assetId}; Textursprites=${packageRender?.sprites}`],
+          ["DD-015.02", noneOkay, `None wallWidth=${noneEntity?.wallWidth}; Sprites=${noneRender?.sprites}; Aktionen=${noneRender?.actions}`],
+        ]) {
+          const edit = saved.editOutcomes[id];
+          const renderKnown = id !== "DD-015.02" || noneRender?.actions?.includes("fill");
+          const state = edit?.state !== "pass" || !renderKnown
+            ? "open" : okay ? "pass" : "deviation";
+          set(id, state,
+            `Frischöffnung: Dokument/Datei bytegleich=${exact}; ${detail}.`,
+            state === "pass" ? null : edit?.state !== "pass"
+              ? (edit?.state !== "pass"
+                ? `Editphase nicht bestanden: ${edit?.gap ?? edit?.observation ?? "ohne Ergebnis"}`
+                : "Wandloses Rendering im Host nicht eindeutig introspektierbar.")
+              : "Paketwand oder wandlose Kartenwirkung wich nach frischem Öffnen vom gespeicherten Zustand ab.",
+            [stepsPath, wallSavedPath, path.join(screens, "wall-choice-fresh-open.png")]);
+        }
+      } else {
+        const bytes = fs.readFileSync(wallFixture);
+        if (crypto.createHash("sha256").update(bytes).digest("hex") !== wallFixtureSha256)
+          throw new Error("QA-Wandpaket hat eine andere Prüfsumme.");
+        fs.writeFileSync(path.join(out, "qa-wall-pack.dungeondraft_pack"), bytes);
+        await page.evaluate(async () =>
+          app.plugins.getPlugin("dungeon-editor").create("BauWallChoiceGroupQA", 18, 12));
+        await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
+        if (!(await page.locator(".dungeon-native-editor.dn-maximized").count())) {
+          await page.getByRole("button", { name: "Maximieren", exact: true }).click();
+          await page.locator(".dungeon-native-editor.dn-maximized").waitFor();
+        }
+        steps.mapPath = await page.evaluate(() =>
+          app.workspace.getLeavesOfType("dungeon-native-map")[0].view.file.path);
+        await page.evaluate(() => {
+          const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.renderer;
+          renderer.fit();
+          renderer.zoom(40 / renderer.camera.scale);
+        });
+        await page.evaluate(async (encoded) => {
+          const payload = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+          const plugin = app.plugins.getPlugin("dungeon-editor");
+          await plugin.assets.add([new Blob([payload])]);
+          await plugin.reloadAssets();
+          const session = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session;
+          const before = session.settings;
+          session.execute({ label: "QA-Paket für Baukarte aktivieren",
+            settings: { before, after: { ...before, assetPacks: ["QAWall01"] } } });
+        }, bytes.toString("base64"));
+        const asset = await page.evaluate(() =>
+          app.plugins.getPlugin("dungeon-editor").listAssets()
+            .find((item) => item.packId === "QAWall01" && item.kind === "wall"));
+        if (!asset) throw new Error("QAWall01 wurde im isolierten Host nicht als Wand geladen.");
+        await choose("Ellipse");
+        const choice = page.getByRole("combobox", { name: "Wand für Grundriss", exact: true });
+        const choices = await choice.locator("option").evaluateAll((options) =>
+          options.map((option) => ({ value: option.value, label: option.textContent?.trim() })));
+        await choice.selectOption(asset.id);
+        const packageValue = await choice.inputValue();
+        const selectedPackage = await stage("wall-package-choice", true);
+        const packagePreview = await drag({ x: 2, y: 2 }, { x: 7, y: 5 }, "wall-package-preview");
+        await waitBuildings(1);
+        const placedPackage = await stage("wall-package-placed", true);
+        const packageEntity = buildings(placedPackage)[0];
+        await page.waitForFunction((id) => {
+          const visual = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+            ?.view?.editor?.renderer?.visuals.get(id);
+          return !!visual && visual.container.children.some((child) =>
+            child.children?.some((grandchild) => !!grandchild.texture));
+        }, packageEntity?.id, { timeout: 12000 }).catch(() => {});
+        const packageRender = packageEntity && await wallRender(packageEntity.id);
+        await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+        const packageUndo = await stage("wall-package-undo", true);
+        await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+        const packageRedo = await stage("wall-package-redo", true);
+        const packageOkay = packageValue === asset.id &&
+          choices.some((item) => item.value === asset.id) &&
+          packageEntity?.wallAssetId === asset.id &&
+          packageEntity.wallWidth > 0 && packageEntity.polygons?.[0]?.outer?.length === 32 &&
+          packageRender?.sprites > 0 && packagePreview.previewInstructions > 0 &&
+          equal(packagePreview.document, selectedPackage.document) &&
+          equal(packageUndo.document, selectedPackage.document) &&
+          equal(packageRedo.document, placedPackage.document);
+
+        await choose("Rechteck"); // Tool choice clears the placed Building selection.
+        const noneChoice = page.getByRole("combobox", { name: "Wand für Grundriss", exact: true });
+        await noneChoice.selectOption("__no_wall__");
+        const noneValue = await noneChoice.inputValue();
+        const selectedNone = await stage("wall-none-choice", true);
+        const nonePreview = await drag({ x: 10, y: 2 }, { x: 14, y: 5 }, "wall-none-preview");
+        await waitBuildings(2);
+        const placedNone = await stage("wall-none-placed", true);
+        const noneEntity = buildings(placedNone).find((entity) => entity.id !== packageEntity?.id);
+        const noneRender = noneEntity && await wallRender(noneEntity.id);
+        await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+        const noneUndo = await stage("wall-none-undo", true);
+        await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+        const noneRedo = await stage("wall-none-redo", true);
+        const noneOkay = noneValue === "__no_wall__" &&
+          choices.some((item) => item.value === "__no_wall__") &&
+          noneEntity?.wallWidth === 0 && !noneEntity.wallAssetId &&
+          noneRender?.sprites === 0 && noneRender?.actions?.includes("fill") &&
+          !noneRender.actions.includes("stroke") &&
+          nonePreview.previewInstructions > 0 &&
+          equal(nonePreview.document, selectedNone.document) &&
+          equal(noneUndo.document, selectedNone.document) &&
+          equal(noneRedo.document, placedNone.document) &&
+          buildings(placedNone).find((entity) => entity.id === packageEntity?.id)?.wallAssetId === asset.id;
+        await page.getByRole("button", { name: "Speichern", exact: true }).click();
+        await page.waitForFunction(() =>
+          !app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor?.session?.dirty);
+        const saved = await stage("wall-choice-saved", true);
+        const disk = path.join(vault, steps.mapPath);
+        const savedOkay = fs.existsSync(disk) && !saved.dirty &&
+          equal(JSON.parse(fs.readFileSync(disk, "utf8")), saved.document);
+        steps.wallChoice = { asset, fixtureSha256: wallFixtureSha256, choices,
+          packageValue, noneValue,
+          selectedPackage, packageEntity, packageRender, packageOkay,
+          selectedNone, noneEntity, noneRender, noneOkay, savedOkay };
+        for (const [id, okay, detail, images] of [
+          ["DD-015.01", packageOkay, `Ellipse ${packageEntity?.id}: asset=${packageEntity?.wallAssetId}, 32 Punkte, Textursprites=${packageRender?.sprites}, Undo/Redo=${equal(packageUndo.document, selectedPackage.document)}/${equal(packageRedo.document, placedPackage.document)}`,
+            ["wall-package-choice", "wall-package-preview", "wall-package-placed", "wall-package-redo"]],
+          ["DD-015.02", noneOkay, `None ${noneEntity?.id}: wallWidth=${noneEntity?.wallWidth}, Textursprites=${noneRender?.sprites}, Zeichenaktionen=${noneRender?.actions}, vorherige Paketwand erhalten=${buildings(placedNone).find((entity) => entity.id === packageEntity?.id)?.wallAssetId === asset.id}`,
+            ["wall-none-choice", "wall-none-preview", "wall-none-placed", "wall-none-redo"]],
+        ]) {
+          const renderKnown = id !== "DD-015.02" || noneRender?.actions?.includes("fill");
+          const state = !savedOkay || !renderKnown ? "open" : okay ? "pass" : "deviation";
+          set(id, state, `${detail}; Save=${savedOkay}.`,
+            state === "pass" ? null : !savedOkay
+              ? "Karte konnte nicht als exakter QA-Stand gespeichert werden."
+              : !renderKnown
+                ? "Wandloses Rendering im Host nicht eindeutig introspektierbar."
+              : "Paketwand oder wandlose Bodenwirkung weicht im isolierten Host vom Originalfall ab.",
+            [stepsPath, path.join(out, "qa-wall-pack.dungeondraft_pack"),
+              ...images.map((name) => path.join(screens, `${name}.png`))]);
+        }
+        if (savedOkay) fs.writeFileSync(wallSavedPath, JSON.stringify({
+          mapPath: steps.mapPath, document: saved.document, sha256: digest(disk),
+          assetId: asset.id, packageId: packageEntity.id, noneId: noneEntity.id,
+          fixtureSha256: wallFixtureSha256, editOutcomes: Object.fromEntries(outcomes),
+        }, null, 2) + "\n");
+      }
+    } catch (error) {
+      steps.errors.push(String(error?.stack ?? error));
+      markMissing(`DD-015-Wandwahlfolge nicht auswertbar: ${error?.message ?? error}`);
+    }
+    finish();
+    return;
+  }
 
   if (restart) {
     try {
