@@ -12,3 +12,15 @@ Geprüft am isolierten Host-Build `a6abf6b4ed645142b4e31b8f6fa4d6843f554ad0da9ee
 Zusatzbefunde: Die selbst geöffneten Host-PNGs aus Edit und Frischstart sind je 2048 × 2048 RGBA bei 92.188 Bytes; das native PNG derselben Auflösung hat 3.682.063 Bytes. Die Byteabweichung ist wegen der unterschiedlichen Karten **kein Pixel-Fehlernachweis**. Der Hosttest hat das Dateibild am Download-Blob abgefangen; produktiver Dateidialog und Installation sind hier nicht belegt. `acceptance.json` im Main-Zweig führt die vier Kandidaten weiterhin als `hostCheck.state: open`; die `pass`-Angaben stammen allein aus den zwei Gruppenläufen.
 
 Nächste enge Belege: DD-043.02 auf gleicher Wand-Portal-Licht-Szene mit Originaloptionen und Raster-/Lichtvarianten prüfen; DD-043.15 die Maße im Dialog sichtbar machen und vor Export ablesen; DD-043.23 direkt X anklicken und Dateizahl/Kartenstand prüfen. Den Grid-Standard separat für DD-043.03 korrigieren und prüfen.
+
+## Nachprüfung auf Build `c8343926abee6120674fd4e8b3a8753682bf2339875f3d444e50524e1fa8189a`
+
+Die neueren Hostläufe `qa/groups/verwaltung-export/evidence/1791203317898-verwaltung-export-edit` und `1791203323521-verwaltung-export-reopen` ersetzen für DD-043.01/.15/.23 die obigen Empfehlungen. DD-043.02 bleibt in beiden neuen `group-cases.json` zu Recht `open`.
+
+| Fall | Neue Empfehlung | Beleg und Grenze |
+| --- | --- | --- |
+| DD-043.01 | **Pass für den Öffnungsfall behalten.** | Beide `export-dialog-before-x.png` zeigen den modalen Dialog vor der weiterhin sichtbaren Karte. `openExportDialog` öffnet ihn über das Editormenü und prüft die vier Formatoptionen. |
+| DD-043.15 | **Pass für die gemessenen 8 × 8 Felder bei 256 Pixel/Feld.** | `openExportDialog` liest und behauptet in beiden Läufen exakt `Ausgabe: 2048 × 2048 Pixel` aus `.dn-export-dimensions`; die Menü-PNG-Dateien sind tatsächlich 2048 × 2048 RGBA. `export-dialog.ts` erzeugt die Anzeige aus Kartengröße und Feldpixeln. Die Screenshots zeigen wegen des scrollbaren Dialogs nur den oberen Bereich, nicht die Maßzeile selbst; die DOM-Assertion ist hier der direkte Hostbeleg. Andere PPI- und Crop-Werte bleiben eigene offene Fälle. |
+| DD-043.23 | **Pass für X vor Dateiausgabe.** | `cancelFromMenu` speichert den Vorzustand, fotografiert das sichtbare X, klickt dessen Koordinaten im Modalfenster und wartet, bis es verborgen ist. `edit-export.json` und `reopen-export.json` protokollieren je null Export-Blobs und unveränderten Kartenstand. Die beiden Screenshots zeigen das X unmittelbar vor der Geste. Ein X-Abbruch während eines bereits laufenden Exports wurde damit nicht geprüft und ist kein Teil dieses engen Vor-Export-Falls. |
+
+Der Dialog startet jetzt außerdem mit Grid ON, passend zum gemessenen Originalstandard. Alle drei Pass-Aussagen betreffen den isolierten Kandidatenbuild; die Installation im Nutzervault wird dadurch nicht vorweggenommen.
