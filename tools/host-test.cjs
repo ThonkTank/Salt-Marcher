@@ -17,10 +17,11 @@ const root = path.resolve(__dirname, ".."),
 const restart = process.argv.includes("--restart"),
   v2Open = process.argv.includes("--v2-open"),
   patternAlpha = process.argv.includes("--pattern-alpha"),
+  prefabForget = process.argv.includes("--prefab-forget"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -171,7 +172,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha)
+    if (patternAlpha || prefabForget)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
@@ -310,7 +311,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(root + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -465,6 +466,10 @@ async function workflow() {
   }
   if (patternAlpha) {
     await patternAlphaWorkflow(view);
+    return;
+  }
+  if (prefabForget) {
+    await prefabForgetWorkflow(view);
     return;
   }
   if (compactSmoke) {
@@ -2725,6 +2730,83 @@ async function selectionReopenWorkflow() {
   await page.waitForFunction(() => !app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.dirty);
   assert.equal(JSON.parse(fs.readFileSync(vault+"/"+otherPath,"utf8")).entities.filter((e)=>e.kind==="light").length,1);
   checks.push("The same global prefab places a saved light on a second dungeon map");
+}
+async function prefabForgetWorkflow(view) {
+  const mapPath = "Dungeons/PrefabQA/Karte.dungeon";
+  const prefabId = "prefab-forget-qa";
+  if (!restart) {
+    await page.evaluate(() =>
+      app.plugins.getPlugin("dungeon-editor").create("PrefabQA", 12, 8),
+    );
+    await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    await page.evaluate(async (id) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.savePrefab({
+        id, set: "QA", name: "Tisch mit Licht", center: { x: 3.5, y: 3 },
+        entities: [
+          { id: "source-object", kind: "object", floorId: "floor-1",
+            x: 3, y: 3, rotation: 0, width: 1, height: 1,
+            color: 0x886644, label: "", layer: 100, flip: false },
+          { id: "source-light", kind: "light", floorId: "floor-1",
+            x: 4, y: 3, radius: 2, intensity: 1, color: 0xeccd8b,
+            shadows: false },
+        ],
+      });
+      app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.refreshPrefabs();
+    }, prefabId);
+    await chooseTool("Baustein");
+    await page.getByRole("combobox", { name: "Vorlage", exact: true })
+      .selectOption(prefabId);
+    const at = await page.evaluate(() => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      const box = renderer.canvas.getBoundingClientRect();
+      return { x: box.x + renderer.camera.x + 6 * renderer.camera.scale,
+        y: box.y + renderer.camera.y + 4 * renderer.camera.scale };
+    });
+    await page.mouse.click(at.x, at.y);
+    const placed = (await view()).document.entities.filter((entity) =>
+      entity.prefabId === prefabId);
+    assert.deepEqual(placed.map((entity) => entity.kind).sort(),
+      ["light", "object"]);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.dirty);
+    const before = fs.readFileSync(vault + "/" + mapPath, "utf8");
+    const forget = page.getByRole("button", { name: "Vorlage vergessen", exact: true });
+    assert.equal(await forget.isEnabled(), true);
+    await forget.click();
+    const dialog = page.locator(".modal-container").last();
+    await dialog.getByText("Bereits platzierte Elemente bleiben", { exact: false }).waitFor();
+    await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    assert.equal((await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").prefabs())).length, 1);
+    assert.equal(fs.readFileSync(vault + "/" + mapPath, "utf8"), before);
+    checks.push("Cancel keeps the saved prefab and placed pair in this host build");
+    await forget.click();
+    await dialog.getByRole("button", { name: "Vergessen", exact: true }).click();
+    await page.waitForFunction(() =>
+      app.plugins.getPlugin("dungeon-editor").prefabs().length === 0);
+    assert.equal(await page.getByRole("combobox", { name: "Vorlage", exact: true }).inputValue(), "");
+    assert.equal(await forget.isEnabled(), false);
+    assert.equal((await view()).document.entities.filter((entity) =>
+      entity.prefabId === prefabId).length, 2);
+    assert.equal(fs.readFileSync(vault + "/" + mapPath, "utf8"), before);
+    assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
+    await page.screenshot({ path: out + "/prefab-forgotten.png" });
+    checks.push("Confirmed Forget durably removes only the definition and leaves the saved object-light pair byte-exact");
+    return;
+  }
+  await page.evaluate(async (path) =>
+    app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(path)),
+  mapPath);
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  assert.equal((await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").prefabs())).length, 0);
+  const pair = (await view()).document.entities.filter((entity) => entity.prefabId === prefabId);
+  assert.deepEqual(pair.map((entity) => entity.kind).sort(), ["light", "object"]);
+  assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
+  await page.screenshot({ path: out + "/prefab-reopened.png" });
+  checks.push("Fresh Obsidian process keeps the definition forgotten while the object-light pair reopens intact");
 }
 async function patternAlphaWorkflow(view) {
   const mapPath = "Dungeons/PatternQA/Karte.dungeon";

@@ -38,6 +38,7 @@ import { DungeonEditor } from "./editor";
 import { toolSettings, type ToolSettings } from "./properties";
 import { MapRenderer } from "./renderer";
 import { type Prefab, validPrefabs } from "./prefabs";
+import { withoutPrefabDefinition } from "./features/objekte/prefab-forget";
 import { createReferenceImage, resizeMap, type MapMargins } from "./commands";
 import {
   generateLayout,
@@ -295,6 +296,39 @@ class PrefabNameModal extends Modal {
   }
   onClose(): void {
     this.answer?.(null);
+    this.answer = undefined;
+    this.contentEl.empty();
+  }
+}
+class PrefabForgetModal extends Modal {
+  private answer?: (confirmed: boolean) => void;
+  constructor(app: App, private readonly prefab: Prefab) {
+    super(app);
+  }
+  request(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.answer = resolve;
+      this.open();
+    });
+  }
+  onOpen(): void {
+    this.setTitle("Vorlage vergessen");
+    this.contentEl.empty();
+    this.contentEl.createEl("p", {
+      text: `„${this.prefab.set} / ${this.prefab.name}“ dauerhaft aus der Bibliothek entfernen? Bereits platzierte Elemente bleiben auf der Karte und müssen bei Bedarf einzeln gelöscht werden.`,
+    });
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Abbrechen")
+        .onClick(() => this.close()))
+      .addButton((button) => button.setButtonText("Vergessen")
+        .onClick(() => {
+          this.answer?.(true);
+          this.answer = undefined;
+          this.close();
+        }));
+  }
+  onClose(): void {
+    this.answer?.(false);
     this.answer = undefined;
     this.contentEl.empty();
   }
@@ -660,6 +694,18 @@ export default class DungeonPlugin extends Plugin {
     const next = { ...this.pluginData, prefabs: [...this.pluginData.prefabs, prefab] };
     await this.saveData(next);
     this.pluginData = next;
+  }
+  async forgetPrefab(prefab: Prefab): Promise<boolean> {
+    if (!this.pluginData.prefabs.some((existing) => existing.id === prefab.id))
+      return false;
+    if (!(await new PrefabForgetModal(this.app, prefab).request())) return false;
+    const next = {
+      ...this.pluginData,
+      prefabs: withoutPrefabDefinition(this.pluginData.prefabs, prefab.id),
+    };
+    await this.saveData(next);
+    this.pluginData = next;
+    return true;
   }
   persistToolDefaults(): void {
     void this.saveData(this.pluginData).catch((error) =>
@@ -1353,6 +1399,7 @@ class DungeonView extends FileView {
           persistToolDefaults: () => this.plugin.persistToolDefaults(),
           prefabs: () => this.plugin.prefabs(),
           savePrefab: (prefab) => this.plugin.savePrefab(prefab),
+          forgetPrefab: (prefab) => this.plugin.forgetPrefab(prefab),
           requestPrefabDetails: () => new PrefabNameModal(
             this.app, this.plugin.prefabs().map((prefab) => prefab.set),
           ).request(),

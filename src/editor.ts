@@ -146,6 +146,7 @@ export interface EditorHost {
   persistToolDefaults?: () => void;
   prefabs?: () => readonly Prefab[];
   savePrefab?: (prefab: Prefab) => Promise<void>;
+  forgetPrefab?: (prefab: Prefab) => Promise<boolean>;
   requestPrefabDetails?: () => Promise<{ set: string; name: string } | null>;
   exitEditor?: () => void;
 }
@@ -285,6 +286,7 @@ export class DungeonEditor {
   private sendToBackButton: HTMLButtonElement;
   private makePrefabButton: HTMLButtonElement;
   private separatePrefabButton: HTMLButtonElement;
+  private forgetPrefabButton: HTMLButtonElement;
   private prefabChoice: HTMLSelectElement;
   private prefabPanel: HTMLDetailsElement;
   private space = false;
@@ -511,6 +513,14 @@ export class DungeonEditor {
     const prefabControls = element("div", "dn-menu-content", this.prefabPanel);
     this.prefabChoice = element("select", "dn-floor", prefabControls);
     this.prefabChoice.setAttribute("aria-label", "Vorlage");
+    this.prefabChoice.addEventListener("change", () => {
+      this.forgetPrefabButton.disabled = !this.prefabChoice.value;
+    });
+    this.forgetPrefabButton = this.button(
+      "Vorlage vergessen",
+      () => void this.forgetPrefab(),
+      prefabControls,
+    );
     element("p", "dn-help", prefabControls, "Vorlage wählen und auf die Karte klicken.");
     this.refreshPrefabs();
     this.floorPanel = element("details", "dn-option-section", this.inspector);
@@ -1092,6 +1102,18 @@ export class DungeonEditor {
     }
     this.prefabChoice.value = [...this.prefabChoice.options]
       .some((option) => option.value === previous) ? previous : "";
+    this.forgetPrefabButton.disabled = !this.prefabChoice.value || !this.host.forgetPrefab;
+  }
+  private async forgetPrefab(): Promise<void> {
+    const prefab = this.host.prefabs?.().find((item) => item.id === this.prefabChoice.value);
+    if (!prefab || !this.host.forgetPrefab) return;
+    try {
+      if (!(await this.host.forgetPrefab(prefab)) || this.closed) return;
+      this.refreshPrefabs();
+      this.renderer.cancelPreview();
+    } catch (error) {
+      this.host.notice(error instanceof Error ? error.message : String(error));
+    }
   }
   private async makePrefab(): Promise<void> {
     try {
