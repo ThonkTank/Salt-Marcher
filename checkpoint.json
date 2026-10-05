@@ -517,16 +517,16 @@
       "DD-028.06 Objektfarbe"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "Fünf Pflichtfälle am installierten Endstand belegt; neun weitere bestehen nur in isolierten Kandidatenläufen.",
+    "hostStatus": "Fünf Pflichtfälle am installierten Endstand belegt; neun Kandidatenfälle bestanden isoliert. Neue frische QA-Profile zeigen derzeit keinen Standard-Modalcontainer, selbst nach bestätigtem Vault-Vertrauen; grafische Modalgruppen blockiert.",
     "releaseBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
-    "openOriginalGap": "DD-020.14 Outline-Neustart; DD-021.23 Fuzzy/Exact; DD-039 leere Paketzeile; DD-043 Original/Host an identischer Szene; DD-038 Höhlen-Farbzellen und Nicht-Undo-Wirkung.",
+    "openOriginalGap": "DD-020.14 Outline-Neustart; DD-021.23 Fuzzy/Exact; DD-028.06 ausgewähltes Escape/Hex/Außenklick; DD-039 leere Paketzeile; DD-043 Original/Host an identischer Szene; DD-038 ältere Undo-Einträge und rechte/untere Randwirkung.",
     "installedBuild": "b926bc63db172593757f5fae43cbae7f1198a9dda1e1de29eabe5d389836fcdc",
     "installedEvidence": [
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188997360-path-library-reopen/result.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-release.md"
     ],
-    "next": "Exklusiven Export-Grafiklauf abschließen, danach DD-039-Gruppe am isolierten Host prüfen; DD-038-Modell-/History-Anforderungen und DD-028.06-Belege integrieren. Nur bestandene Pakete nach gesicherter Endstandsprüfung installieren.",
+    "next": "DD-038-Original-History-Messung auswerten und gemeinsame Tile-/History-Anbindung ableiten. QA-Modalblockade statisch klären, bevor DD-039 oder Export erneut grafisch laufen. Nur bestandene Pakete nach gesicherter Endstandsprüfung installieren.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-020.13",
