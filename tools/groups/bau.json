@@ -47,7 +47,12 @@
         ],
         "DD-011.04": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-finish.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-finish.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A05-thin-draft-four.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/A06-thin-four-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A07-thin-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A08-thin-redo.png"
         ],
         "DD-011.05": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
@@ -56,7 +61,12 @@
         "DD-011.06": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/shift-draft.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/shift-finish.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/shift-finish.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A10-shift-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/A13-shift-commit.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A14-shift-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/A15-shift-redo.png"
         ],
         "DD-011.07": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
@@ -66,11 +76,22 @@
         ],
         "DD-011.08": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B02-rect-base.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B03-alt-ellipse-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B04-alt-ellipse-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B05-alt-ellipse-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B06-alt-ellipse-redo.png"
         ],
         "DD-011.09": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B08-alt-poly-draft.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B09-alt-poly-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B10-alt-poly-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/B11-alt-poly-redo.png"
         ],
         "DD-011.10": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
@@ -78,16 +99,29 @@
         ],
         "DD-011.11": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/screens/C04-floor2-after.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/C10-floor1-after.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/C10-floor1-after.dungeondraft_map"
         ],
         "DD-011.12": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/C11-tint-picker-open.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/C14-tint-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/C15-tint-after.dungeondraft_map"
         ],
         "DD-011.13": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/snap-off.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/building-test.dungeondraft_map"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/building-test.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/C17-snap-on-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/C19-snap-off-toggle.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/C22-snap-off-quarter-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/C23-snap-off-quarter-after.dungeondraft_map"
         ],
         "DD-011.14": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
@@ -100,67 +134,124 @@
         ],
         "DD-012.01": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/10-edit-hover.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/10-edit-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D03-ellipse-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/D04-edit-points-hover.png"
         ],
         "DD-012.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/11-point-preview.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/12-point-commit.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/12-point-commit.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/D05-point-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D03-ellipse-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D06-point-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/D07-point-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D08-point-redo.dungeondraft_map"
         ],
         "DD-012.03": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/11-point-preview.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/11-point-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D03-ellipse-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/D05-point-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D06-point-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/screens/D09-escape-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/D11-escape-committed.dungeondraft_map"
         ],
         "DD-013.01": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-hover.png",
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-delete.png",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/11-pacing-delete.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/11-pacing-delete.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F14-qa-wall-selected.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F19-actual-top-right-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F16-rect-before-delete.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F20-delete-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F25-delete-xtest-after.dungeondraft_map"
         ],
         "DD-013.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/09d-backspace-focused.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/09d-backspace-focused.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F19-actual-top-right-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F21-backspace-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F22-backspace-undo.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F23-backspace-redo.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-124333-2959170/evidence/maps/F30-triangle-fresh-reopen-saved.dungeondraft_map"
         ],
         "DD-013.03": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
-          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png"
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F26-triangle-before-min.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F27-triangle-corner-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/maps/F28-triangle-backspace-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-124333-2959170/evidence/maps/F30-triangle-fresh-reopen-saved.dungeondraft_map"
         ],
         "DD-014.01": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
           "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-midpoint.png",
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E11-triangle-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/screens/E13-insert-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E14-insert-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/screens/E15-insert-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E16-insert-redo.dungeondraft_map"
         ],
         "DD-014.02": [
           "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E19-portal-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/screens/E21-portal-insert-held.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E22-portal-insert-after.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/screens/E23-portal-insert-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-122416-2900021/evidence/maps/E24-portal-insert-redo.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123029-2917265/evidence/screens/E25-portal-fresh-reopen.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123029-2917265/evidence/maps/E26-portal-fresh-reopen-saved.dungeondraft_map"
         ]
       },
       "originalGaps": {
-        "DD-011.08": "Alt-Ellipsenschnitt ist im Original nur als Option sichtbar; ein direkter Schnitt mit Boden- und Wandwirkung fehlt.",
-        "DD-011.09": "Alt-Polygonschnitt ist im Original nicht direkt ausgeführt oder gespeichert.",
-        "DD-011.11": "Die Wirkung eines vor dem Zeichnen gewechselten Bodenmotivs ist nicht isoliert gemessen.",
-        "DD-011.12": "Die tatsächliche Tint-Wirkung auf eine gezeichnete Bodenfläche ist nicht einzeln gemessen.",
-        "DD-012.02": "Der direkt gezogene Ellipsenpunkt wurde wegen eines nicht sichtbaren Save-Dialogs nicht gespeichert und in einem frischen Originalprozess geprüft.",
-        "DD-013.01": "Ein älterer Bildbeleg zeigt Delete als Punktlöschung; zwei neue modfreie Hover-Delete-Versuche bewirkten nichts. Die nötige Vorbedingung und gespeicherte Wirkung sind ungeklärt.",
-        "DD-013.02": "Für Backspace am Konturgriff fehlt ein erfolgreicher Originalfall; die neue modfreie Wiederholung blieb ohne sichtbare Wirkung.",
-        "DD-013.03": "Mindestpunktzahl und Verhalten beim Entfernen eines Dreiecks- oder Mehrteilkonturpunkts sind nicht gemessen.",
-        "DD-014.01": "Die sichtbare Kantenzieh-Einfügung hat keine gemessenen gespeicherten Koordinaten, Undo/Redo oder frischen Originalstart.",
-        "DD-014.02": "Wandfolge ist sichtbar, aber die Bindung vorhandener Portale nach eingefügtem Punkt und die gespeicherte Einzelzugwirkung sind nicht geprüft."
+        "DD-011.08": "Alt-Ellipsenschnitt ist mit Karte und Undo/Redo belegt; frisches Öffnen genau dieses Schnittstands fehlt.",
+        "DD-011.09": "Alt-Polygonschnitt ist mit Karte und Undo/Redo belegt; frisches Öffnen genau dieses Schnittstands fehlt.",
+        "DD-011.11": "Zwei eingebaute Motive sind direkt verglichen und gespeichert; frisches Öffnen genau des Stilwechselstands fehlt. Einzelmotiv-Vollständigkeit wird separat geprüft.",
+        "DD-011.12": "Tint-Wirkung ist direkt gespeichert; frisches Öffnen genau dieses Farbstands und Picker-Grenzwerte fehlen.",
+        "DD-012.02": "Punktzug ist gespeichert und Undo/Redo sichtbar; frisches Öffnen genau der verformten Ellipse fehlt. Späterer zweiter Esc-Zug zeigte eine ungeklärte gemeinsame History-Wirkung.",
+        "DD-013.01": "Älterer Originalbildbeleg zeigt Delete als Punktlöschung. Im neuen QAWall01-Lauf blieb das Vierpunktpolygon trotz grünem Griff mit RFB-Delete und langsamem XTest-Delete unverändert; neuer Zug war 9×3 statt früher 5×3 Felder. Exakte Erfolgsbedingung und verbindliche Delete-Wirkung bleiben widersprüchlich.",
+        "DD-014.01": "Kanteneinfügung ist mit gespeichertem Vierpunktzustand und Undo/Redo belegt; frisches Öffnen genau dieses einfachen Einfügestands und Escape-Abbruch fehlen.",
+        "DD-011.04": "Die schmale Vierpunktform wurde gespeichert und per Undo/Redo geprüft, aber nicht genau dieser Kartenstand in einem frischen Originalprozess geöffnet.",
+        "DD-011.06": "Nur eine nicht selbstschneidende Shift-Kurve gemessen; weitere Zugrichtungen/Endpunktregeln und frisches Öffnen genau dieses Stands fehlen.",
+        "DD-011.13": "Snap an/aus ist an Raster- und Viertelfeldzügen gespeichert; Einrasttoleranz nahe der Rasterlinie und frisches Öffnen genau dieses Stands fehlen.",
+        "DD-012.01": "Griffe sind an einer 32-Punkt-Ellipse direkt sichtbar; Edit-Points-Verfügbarkeit an anderen Buildingformen wurde in diesem Lauf nicht erneut geprüft.",
+        "DD-012.03": "Gehaltene Vorschau ist direkt belegt; Escape brach einen zweiten gehaltenen Punktzug nicht ab, nach Loslassen wurde eine weitere Koordinate gespeichert. Allgemeine Abbruchregel offen."
       },
       "originalEffects": {
         "DD-011.01": "Bodenfläche und automatische geschlossene Wand; gelbe Maßvorschau.",
         "DD-011.02": "Bodenellipse und umlaufende Wand; 5×3-Zug direkt sichtbar.",
         "DD-011.03": "Bodenpolygon mit geschlossener Wand.",
-        "DD-011.04": "Boden und umlaufende Wand einer schmalen Form.",
+        "DD-011.04": "Vier Polygonpunkte mit Doppelklick abgeschlossen: ein Feld breite Bodenfläche und umlaufende Wand; vier gespeicherte Punkte, Undo/Redo sichtbar.",
         "DD-011.05": "Letzter Vorschaupunkt verschwindet.",
-        "DD-011.06": "Gekrümmte Building-Kontur mit Boden und Wand.",
+        "DD-011.06": "Ein während des Segments gehaltenes Shift zeigt eine gebogene Vorschau; nicht selbstschneidende Kurve wird als 20-Punkt-Boden-/Wandkontur gespeichert, Undo/Redo sichtbar.",
         "DD-011.07": "Bodenstück und zugehörige Wand werden entfernt; Undo/Redo belegt.",
         "DD-011.10": "Escape während eines Rechteckzugs hinterließ kein zweites Building.",
-        "DD-011.13": "Gespeicherte Building-Punkte liegen zwischen Feldgrenzen.",
+        "DD-011.13": "Snap an speichert Vergleichspunkte auf 256er Feldraster; Snap aus speichert bei einem Viertelfeld-Abstand Koordinaten wie (344,344) und (832,824).",
         "DD-011.14": "Strg+Z entfernte das Rechteck; Strg+Y stellte es im Original wieder her.",
         "DD-011.15": "Drei Bodenpolygone mit Wänden erhalten.",
-        "DD-012.01": "Im Building Tool zeigte Edit Points Griffe an einer gezeichneten Ellipse.",
-        "DD-012.03": "Boden und Wand folgen schon vor Loslassen."
+        "DD-012.01": "Eine 5×3-Ellipse wird als 32-Punkt-Kontur gespeichert; Edit Points im Building Tool zeigt die Punktgriffe und markiert den überfahrenen Griff grün.",
+        "DD-012.03": "Beim Ziehen eines Ellipsengriffs folgen Boden und Wand schon während gedrückter Maustaste; gespeichert wird die Änderung erst nach Loslassen.",
+        "DD-011.08": "Alt+Ellipsenzug innerhalb einer vorhandenen Fläche schneidet ein rundes Innenloch mit eigener Wandkontur; Vorschau, Undo/Redo und zwei gespeicherte Polygone/Wände belegt.",
+        "DD-011.09": "Durchgehend gehaltenes Alt bei geschlossener Polygonfolge schneidet ein eckiges Innenloch samt Wandkontur; Vorschau, Undo/Redo und gespeicherte Form belegt.",
+        "DD-011.11": "Zwei eingebaute Bodeneinträge ergeben getrennte Stein- und Holzflächen; der erste Stil bleibt nach Wechsel erhalten, beide Tile-Lookups sind gespeichert.",
+        "DD-011.12": "Tint-Wahl vor dem Holzflächenzug ändert nur die neue Fläche: bestehendes Holz ffb28f6f, neues Holz ffe87917; beide Farben sind gespeichert.",
+        "DD-012.02": "Ziehen eines Ellipsengriffs ändert genau eine gespeicherte Koordinate von 512 auf 256; Boden und Wand folgen, Undo/Redo und Save sind belegt.",
+        "DD-013.02": "Backspace am grün markierten Gebäudeeckgriff entfernt einen von vier Punkten; Fläche und QAWall01-Wand bleiben dreipunktig, Undo/Redo, Save und frisches Öffnen belegt.",
+        "DD-013.03": "Backspace am grün markierten Eckgriff eines dreipunktigen Buildings entfernt keinen weiteren Punkt; Boden, QAWall01-Wand und frisches Öffnen erhalten drei Punkte.",
+        "DD-014.01": "Ziehen an der Dreieckskantenmitte fügt einen vierten Eckpunkt ein; Boden und Wand folgen während des Zugs und im gespeicherten Stand, Undo/Redo 3↔4.",
+        "DD-014.02": "Nach Einfügen eines weiteren Konturpunkts bleibt ein gebundenes Portal an Position Vector2(1536,768); Bindung wandert von point_index 2/wall_id 7 zu point_index 3/wall_id a und bleibt nach Undo/Redo sowie frischem Öffnen erhalten."
       }
     },
     {
