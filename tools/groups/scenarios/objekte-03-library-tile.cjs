@@ -84,6 +84,27 @@ async function waitForTileTransition(
   );
 }
 
+async function waitForTileHash(page, expectedHash) {
+  const deadline = Date.now() + 5000;
+  do {
+    try {
+      const result = await tilePixels(page);
+      if (result.hash === expectedHash) return result;
+    } catch (error) {
+      if (!String(error).includes("keine gerenderte PNG-Vorschau")) throw error;
+    }
+    await page.waitForTimeout(50);
+  } while (Date.now() < deadline);
+  throw new Error("Bibliothekskachel verlor ihre Farbe nach Panel-Neuaufbau.");
+}
+
+async function refreshPanel(page) {
+  await page.evaluate(() => {
+    app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.refreshProperties();
+  });
+}
+
 function compareAlpha(a128, a0) {
   assert.equal(a128.width, a0.width);
   assert.equal(a128.height, a0.height);
@@ -163,6 +184,11 @@ module.exports = async function objectLibraryTileFlow({ page, out, assetId }) {
   assert.equal(accepted.defaults.alpha, 128);
   assert.deepEqual(accepted.document, before.document);
   assert.equal(accepted.historySize, before.historySize);
+  await refreshPanel(page);
+  await waitForTileHash(page, half.hash);
+  await tile.screenshot({
+    path: path.join(out, "object-library-tile-a128-after-refresh.png"),
+  });
 
   await opener.click();
   await dialog.waitFor();
@@ -184,6 +210,11 @@ module.exports = async function objectLibraryTileFlow({ page, out, assetId }) {
   assert.equal(escaped.historySize, before.historySize);
   assert.equal(escaped.dirty, before.dirty);
   assert.equal((await tilePixels(page)).hash, zero.hash);
+  await refreshPanel(page);
+  await waitForTileHash(page, zero.hash);
+  await tile.screenshot({
+    path: path.join(out, "object-library-tile-a0-after-refresh.png"),
+  });
   const pixels = compareAlpha(half.png, zero.png);
   const result = {
     caseId: "DD-028.06",
@@ -194,6 +225,8 @@ module.exports = async function objectLibraryTileFlow({ page, out, assetId }) {
     },
     a128BeforeAccept: { hash: half.hash, bytes: half.byteCount },
     a0BeforeEscape: { hash: zero.hash, bytes: zero.byteCount },
+    a128AfterRefresh: half.hash,
+    a0AfterRefresh: zero.hash,
     pixels,
     afterEscape: {
       historySize: escaped.historySize,
@@ -207,4 +240,15 @@ module.exports = async function objectLibraryTileFlow({ page, out, assetId }) {
     JSON.stringify(result, null, 2) + "\n",
   );
   return result;
+};
+
+// Call after objekte-03's real tool placement. The editor selects that new
+// instance and rebuilds Properties, so the tile must retain its tool color.
+module.exports.verifyAfterPlacement = async function verifyAfterPlacement({
+  page, out, expectedHash,
+}) {
+  await waitForTileHash(page, expectedHash);
+  await page.locator(tileSelector).screenshot({
+    path: path.join(out, "object-library-tile-after-placement.png"),
+  });
 };

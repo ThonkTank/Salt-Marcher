@@ -505,6 +505,9 @@ module.exports = async function objectColorGroup({ page, out, qa, vault, restart
       page, out, assetId: baseline.assetId,
     });
     toolPlacement = await toolPickerPlacement(page, vault, out, baseline);
+    await require("./objekte-03-library-tile.cjs").verifyAfterPlacement({
+      page, out, expectedHash: tileResult.a128BeforeAccept.hash,
+    });
     if (pickerFlow) {
       pickerResult = await pickerFlow.runEdit({ page,
         chooseTool: (label) => chooseByOldName(page, label),
@@ -521,6 +524,9 @@ module.exports = async function objectColorGroup({ page, out, qa, vault, restart
         path.join(out, "tool-object-placed.png"), path.join(out, "object-library-tile-result.json"),
         path.join(out, "object-library-tile-a128-before-accept.png"),
         path.join(out, "object-library-tile-a0-before-escape.png"),
+        path.join(out, "object-library-tile-a128-after-refresh.png"),
+        path.join(out, "object-library-tile-a0-after-refresh.png"),
+        path.join(out, "object-library-tile-after-placement.png"),
         ...(pickerExecuted ? [pickerStateFile] : [])]);
     add("DD-028.08", "pass",
       `Accept im Object-Tool-Picker schließt mit Hex 804080c0; die folgende neue Instanz ${toolPlacement.id} speichert RGB 4080c0/A128 ohne Rundung, Undo/Redo erhalten sie.`,

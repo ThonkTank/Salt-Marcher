@@ -51,6 +51,17 @@ async function mapState(page, mapPath) {
   }, mapPath);
 }
 
+async function pendingState(page, mapPath) {
+  return page.evaluate((mapPath) => {
+    const leaf = app.workspace.getLeavesOfType("dungeon-native-pending")
+      .find((item) => item.view.mapPath === mapPath);
+    const editor = leaf?.view.editor;
+    if (!editor) return null;
+    return { document: editor.session.document(), dirty: editor.session.dirty,
+      historySize: editor.session.historySize };
+  }, mapPath);
+}
+
 async function openMap(page, mapPath) {
   await page.evaluate(async (mapPath) => {
     const file = app.vault.getAbstractFileByPath(mapPath);
@@ -193,7 +204,8 @@ module.exports = async function mapStart({ page, out, qa, vault, restart,
       await createZero.click();
       try {
         await page.waitForFunction((mapPath) =>
-          !!app.vault.getAbstractFileByPath(mapPath),
+          app.workspace.getLeavesOfType("dungeon-native-pending")
+            .some((leaf) => leaf.view.mapPath === mapPath && leaf.view.editor),
         `Dungeons/${name}Zero/Karte.dungeon`, { timeout: 2000 });
       } catch {
         // A rejected value leaves the dialog open; record that outcome below.
@@ -201,14 +213,15 @@ module.exports = async function mapStart({ page, out, qa, vault, restart,
     }
     const zeroPath = path.join(vault, `Dungeons/${name}Zero/Karte.dungeon`);
     const zeroCreated = fs.existsSync(zeroPath);
-    const zeroDimensions = zeroCreated
-      ? JSON.parse(fs.readFileSync(zeroPath, "utf8")).settings : null;
+    const zeroPending = await pendingState(page,
+      `Dungeons/${name}Zero/Karte.dungeon`);
+    const zeroDimensions = zeroPending?.document.settings ?? null;
     const zeroMatches = zeroDimensions?.width === 8 &&
       zeroDimensions?.height === 20;
     const zeroImage = await stage("zero-width", { zeroDisabled,
-      zeroCreated, zeroDimensions });
+      zeroCreated, zeroDimensions, pending: !!zeroPending });
     set("DD-001.02", zeroMatches ? "open" : "deviation",
-      `Breite 0/ Höhe 20: Anlegen gesperrt=${zeroDisabled}, Hostdatei angelegt=${zeroCreated}, tatsächliche Größe=${zeroDimensions?.width ?? "—"}×${zeroDimensions?.height ?? "—"}.`,
+      `Breite 0/ Höhe 20: Anlegen gesperrt=${zeroDisabled}, dateiloser Hostentwurf=${!!zeroPending}, tatsächliche Größe=${zeroDimensions?.width ?? "—"}×${zeroDimensions?.height ?? "—"}.`,
       zeroMatches
         ? "Original/Host: Wirkung von Breite 7.5 noch nicht gepaart."
         : "Original: Eingabe 0 ergab eine 8×20-Karte; Host erreichte diesen Zustand nicht.",
@@ -259,23 +272,25 @@ module.exports = async function mapStart({ page, out, qa, vault, restart,
     await modal.getByPlaceholder("Name des Dungeons").fill(name);
     await modal.getByRole("button", { name: "Anlegen", exact: true }).click();
     await page.waitForFunction((mapPath) => app.workspace.getLeavesOfType(
-      "dungeon-native-map").some((leaf) => leaf.view.file?.path === mapPath &&
+      "dungeon-native-pending").some((leaf) => leaf.view.mapPath === mapPath &&
       leaf.view.editor), mapPath);
     const disk = path.join(vault, mapPath);
     const existsBeforeSave = fs.existsSync(disk);
-    const created = await mapState(page, mapPath);
+    const created = await pendingState(page, mapPath);
     const createImage = await stage("created", { selected, created,
       existsBeforeSave });
-    set("DD-001.04", existsBeforeSave ? "deviation" : "pass",
-      `8×8-Karte sichtbar; Kartendatei vor manuellem Speichern vorhanden=${existsBeforeSave}.`,
+    set("DD-001.04", existsBeforeSave ? "deviation" : "open",
+      `8×8-Karte sichtbar; Kartendatei vor manuellem Speichern vorhanden=${existsBeforeSave}. Der Verlauf über den ersten Save ist in diesem Nebenlauf nicht geprüft.`,
       existsBeforeSave ?
         "Original: Karte war nach OK ungespeichert; erst Save schrieb die Datei."
-        : null, [createImage]);
+        : "Host: vollständiger Verlauf steht im eigenständigen DD-001.04-Prüflauf.", [createImage]);
     const editor = page.locator(".dungeon-native-editor:visible").last();
     await editor.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForFunction((mapPath) => app.workspace.getLeavesOfType(
       "dungeon-native-map").find((leaf) =>
-      leaf.view.file?.path === mapPath)?.view.editor?.session.dirty === false,
+      leaf.view.file?.path === mapPath)?.view.editor?.session.dirty === false &&
+      !app.workspace.getLeavesOfType("dungeon-native-map").find((leaf) =>
+        leaf.view.file?.path === mapPath)?.view.editor?.session.mutationsHeld,
     mapPath);
     const saved = await mapState(page, mapPath);
     assert.equal(saved?.document.settings.width, 8);
