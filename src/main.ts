@@ -36,6 +36,10 @@ import { compactWheelNavigation, wheelNavigation } from "./navigation";
 import { Session } from "./session";
 import { FileConflict, MapRepository, type FileStore } from "./persistence";
 import { DungeonEditor } from "./editor";
+import { ExportDialog } from "./features/verwaltung/export-dialog";
+import { encodeRasterFile } from "./features/verwaltung/raster-files";
+import { serializeUniversalVtt03 } from "./features/verwaltung/universal-vtt";
+import { universalVttGeometryForFloor } from "./features/verwaltung/vtt-map-geometry";
 import { toolSettings, type ToolSettings } from "./properties";
 import { MapRenderer, type ColorableObjectSource } from "./renderer";
 import { type Prefab, validPrefabs } from "./prefabs";
@@ -1593,6 +1597,65 @@ class DungeonView extends FileView {
               floorId,
               selectedId,
             ).open(),
+          exportMap: (renderer, session) => {
+            new ExportDialog(this.app, {
+              initial: {
+                format: "png",
+                pixelsPerCell: 256,
+                includeGrid: true,
+                includeLighting: true,
+              },
+              advanced: {
+                supported: [],
+                mapSize: {
+                  width: session.settings.width,
+                  height: session.settings.height,
+                },
+              },
+              onExport: async (request, signal) => {
+                if (signal.aborted) throw new Error("Export abgebrochen.");
+                const revision = session.revision;
+                const floorId = renderer.floorId;
+                const document = session.document();
+                let vttGeometry: ReturnType<typeof universalVttGeometryForFloor> | undefined;
+                if (request.format === "universal-vtt") {
+                  const floor = document.floors.find((item) => item.id === floorId);
+                  if (document.floors.length !== 1 || renderer.floorId !== floorId ||
+                    (floor?.ambient ?? 1) !== 1 || request.includeGrid ||
+                    !request.includeLighting || request.pixelsPerCell !== 256)
+                    throw new Error("Diese Universal-VTT-Exportoptionen sind im Original noch nicht belegt.");
+                  vttGeometry = universalVttGeometryForFloor(document.entities, floorId);
+                }
+                const canvas = await renderer.captureMap({
+                  pixelsPerField: request.pixelsPerCell,
+                  grid: request.includeGrid,
+                  lighting: request.includeLighting,
+                });
+                if (signal.aborted) throw new Error("Export abgebrochen.");
+                if (revision !== session.revision || floorId !== renderer.floorId)
+                  throw new Error("Die Karte hat sich während des Exports geändert.");
+                if (request.format === "universal-vtt") {
+                  const body = serializeUniversalVtt03({
+                    renderedPngDataUrl: canvas.toDataURL("image/png"),
+                    mapWidthFields: document.settings.width,
+                    mapHeightFields: document.settings.height,
+                    pixelsPerGrid: request.pixelsPerCell,
+                    ...vttGeometry!,
+                    ambientLightHex: "ffffffff",
+                  });
+                  return {
+                    blob: new Blob([body], { type: "application/json" }),
+                    filename: `${file.basename}.dd2vtt`,
+                  };
+                }
+                const raster = await encodeRasterFile(canvas, { format: request.format });
+                return {
+                  blob: raster.blob,
+                  filename: `${file.basename}.${request.format === "jpeg" ? "jpg" : request.format}`,
+                };
+              },
+            }).open();
+          },
           openPlay: (roomId) => void this.plugin.openPlay(file.path, roomId),
           exitEditor: () => this.exitEditor(),
         },

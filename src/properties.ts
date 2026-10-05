@@ -22,6 +22,7 @@ import {
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
 import { mountObjectColorPicker } from "./features/objekte/rgba-picker";
+import { type BuildingWallChoice } from "./features/bau/building-wall-choice";
 
 export type Tool =
   | "select"
@@ -50,7 +51,7 @@ export interface ToolSettings {
   material?: Material;
   layer: number;
   light: Pick<Light, "radius" | "intensity" | "color" | "shadows" | "assetId">;
-  room: Pick<import("./model").Room, "wallAssetId">;
+  room: Pick<import("./model").Room, "wallAssetId"> & { noWall?: boolean };
   wall: {
     smooth: boolean;
     width: number;
@@ -408,22 +409,31 @@ export class Properties {
       this.root.append(button);
     }
     const packageWalls = this.assets().filter((asset) => asset.kind === "wall");
-    if (packageWalls.length && (e?.kind === "building" || floorTool))
+    if (e?.kind === "building" || floorTool)
       this.choice(
-        "Paketwand für Räume",
+        "Wand für Grundriss",
         e?.kind === "building"
-          ? (e.wallAssetId ?? "")
-          : (this.defaults.room.wallAssetId ?? ""),
+          ? (e.wallWidth === 0 ? "__no_wall__" : e.wallAssetId ?? "")
+          : (this.defaults.room.noWall ? "__no_wall__" : this.defaults.room.wallAssetId ?? ""),
         [
           ["", "Lesbare Grundwand"],
+          ["__no_wall__", "None (ohne Wand)"],
           ...packageWalls.map(
             (asset) => [asset.id, asset.name] as [string, string],
           ),
         ],
         (assetId) => {
-          this.defaults.room = { wallAssetId: assetId || undefined };
-          if (e?.kind === "building")
-            this.change(e, { wallAssetId: assetId || undefined });
+          const choice: BuildingWallChoice = assetId === "__no_wall__"
+            ? { kind: "none" }
+            : assetId ? { kind: "asset", assetId } : { kind: "basic" };
+          this.defaults.room = choice.kind === "asset"
+            ? { wallAssetId: choice.assetId }
+            : { noWall: choice.kind === "none" };
+          if (e?.kind === "building") this.change(e, {
+            wallAssetId: choice.kind === "asset" ? choice.assetId : undefined,
+            wallWidth: choice.kind === "none" ? 0 :
+              e.wallWidth || this.defaults.surfaces.floor.wallWidth,
+          });
         },
         true,
       );

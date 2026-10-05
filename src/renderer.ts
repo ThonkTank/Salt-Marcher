@@ -10,6 +10,7 @@ import {
   Sprite,
   Mesh,
   MeshGeometry,
+  Rectangle,
 } from "pixi.js";
 import {
   type Entity,
@@ -44,6 +45,7 @@ import { TexturePool } from "./textures";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
 import { buildPathTextureBand } from "./features/material/path-texture-band";
+import { buildingHasWall } from "./features/bau/building-wall-choice";
 import { ComputeClient } from "./worker-client";
 import {
   compactObjectVisible,
@@ -155,6 +157,7 @@ export class MapRenderer {
   private compute = new ComputeClient();
   private furniture = new GraphicsContext();
   private lightRequests = 0;
+  private pendingLights = new Set<Promise<void>>();
   private compareFloor?: Id;
   private compareAlpha = 0.2;
   private currentAlpha = 1;
@@ -163,8 +166,11 @@ export class MapRenderer {
   private unsub?: () => void;
   private frame = 0;
   private closed = false;
+  private exporting = false;
+  private capturing = false;
   private initialized = false;
   private selected = new Set<Id>();
+  private buildingPointHover?: { buildingId: string; contour: number; index: number };
   private groupFrame?: SelectionFrame;
   private lightFrame?: SelectionFrame;
   private focusedRoom?: Id;
@@ -199,6 +205,75 @@ export class MapRenderer {
   }
   get canvas(): HTMLCanvasElement {
     return this.app.canvas;
+  }
+  async captureMap(options: {
+    pixelsPerField: number;
+    grid: boolean;
+    lighting?: boolean;
+  }): Promise<HTMLCanvasElement> {
+    if (!this.initialized || this.closed || this.capturing)
+      throw new Error("Kartenexport ist gerade nicht verfügbar.");
+    const pixelsPerField = options.pixelsPerField;
+    if (!Number.isInteger(pixelsPerField) || pixelsPerField < 1)
+      throw new RangeError("Exportauflösung muss eine positive Ganzzahl sein.");
+    const width = this.settings.width * pixelsPerField,
+      height = this.settings.height * pixelsPerField;
+    if (width > 16384 || height > 16384 || width * height > 64_000_000)
+      throw new RangeError("Exportbild überschreitet das aktuelle Bildlimit.");
+    const revision = this.session.revision,
+      floorId = this.floorId;
+    this.capturing = true;
+    try {
+      // Warm assets for objects normally omitted by interactive culling.
+      this.exporting = true;
+      this.reconcileObjects();
+      this.exporting = false;
+      await this.textures.ready();
+      await Promise.all([...this.pendingLights]);
+      if (this.closed || revision !== this.session.revision || floorId !== this.floorId)
+        throw new Error("Die Kartenansicht hat sich während des Exports geändert.");
+      const previousCamera = { ...this.camera },
+        previousGrid = this.appearance.grid,
+        previousSelection = this.selection.visible,
+        previousPreview = this.preview.visible,
+        previousLights = this.lightLayer.visible,
+        previousDimensions = this.dimensions.visible,
+        previousDimensionLabels = this.dimensionLabels.visible;
+      this.exporting = true;
+      try {
+        this.camera = { x: 0, y: 0, scale: pixelsPerField };
+        this.appearance.grid = options.grid;
+        this.selection.visible = false;
+        this.preview.visible = false;
+        this.lightLayer.visible = options.lighting !== false;
+        this.dimensions.visible = false;
+        this.dimensionLabels.visible = false;
+        this.cameraChanged();
+        const canvas = this.app.renderer.extract.canvas({
+          target: this.app.stage,
+          frame: new Rectangle(0, 0, width, height),
+          resolution: 1,
+          antialias: true,
+        });
+        if (!(canvas instanceof HTMLCanvasElement))
+          throw new Error("Kartenexport lieferte keine Bildfläche.");
+        return canvas;
+      } finally {
+        this.exporting = false;
+        this.camera = previousCamera;
+        this.appearance.grid = previousGrid;
+        this.selection.visible = previousSelection;
+        this.preview.visible = previousPreview;
+        this.lightLayer.visible = previousLights;
+        this.dimensions.visible = previousDimensions;
+        this.dimensionLabels.visible = previousDimensionLabels;
+        this.cameraChanged();
+      }
+    } finally {
+      this.exporting = false;
+      this.capturing = false;
+      if (!this.closed) this.reconcileObjects();
+    }
   }
   async init(): Promise<void> {
     await this.app.init({
@@ -362,6 +437,7 @@ export class MapRenderer {
   }
   private shouldBuildObject(object: MapObject): boolean {
     return (
+      this.exporting ||
       !this.appearance.compactDetails ||
       ((this.selected.has(object.id) ||
         compactObjectVisible(object, this.camera.scale)) &&
@@ -529,7 +605,7 @@ export class MapRenderer {
           );
         this.addLabel(visual, e.number, p);
       }
-      if (e.wallAssetId) {
+      if (e.wallAssetId && buildingHasWall(e)) {
         const doors = [...this.session.dependents(e.id)]
           .map((dependent) => this.session.entities.get(dependent))
           .filter((door): door is Door => door?.kind === "door");
@@ -844,20 +920,22 @@ export class MapRenderer {
             });
         }
       }
-      const doors = [...this.session.dependents(e.id)]
-        .map((id) => this.session.entities.get(id))
-        .filter(
-          (d): d is Door =>
-            d?.kind === "door" && d.anchor?.boundaryId === e.id,
-        );
-      for (const s of wallSegments(e, doors))
-        g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
-      g.stroke({
-        color: e.wall,
-        width: e.wallWidth,
-        cap: "round",
-        join: "round",
-      });
+      if (buildingHasWall(e)) {
+        const doors = [...this.session.dependents(e.id)]
+          .map((id) => this.session.entities.get(id))
+          .filter(
+            (d): d is Door =>
+              d?.kind === "door" && d.anchor?.boundaryId === e.id,
+          );
+        for (const s of wallSegments(e, doors))
+          g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
+        g.stroke({
+          color: e.wall,
+          width: e.wallWidth,
+          cap: "round",
+          join: "round",
+        });
+      }
     } else if (e.wallWidth > 0) {
       for (const s of polygonSegments(e.polygons))
         g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
@@ -1103,7 +1181,7 @@ export class MapRenderer {
           if (source.kind === "object" && source.blocksLight)
             segments.push(...lineSegments(objectPoints(source), true));
         }
-    void this.compute
+    const pending = this.compute
       .request<Point[]>({ kind: "visibility", light: e, segments })
       .then((points) => {
         if (this.closed || this.visuals.get(e.id) !== v || v.request !== token)
@@ -1136,6 +1214,8 @@ export class MapRenderer {
       .catch((error) => {
         if (!this.closed) this.onError(String(error));
       });
+    this.pendingLights.add(pending);
+    void pending.finally(() => this.pendingLights.delete(pending));
   }
   private addLabel(visual: Visual, label: string, p: Point): void {
     if (this.appearance.labels === false) return;
@@ -1160,13 +1240,16 @@ export class MapRenderer {
     const view = {
       x: -this.camera.x / this.camera.scale,
       y: -this.camera.y / this.camera.scale,
-      width: this.host.clientWidth / this.camera.scale,
-      height: this.host.clientHeight / this.camera.scale,
+      width: this.exporting
+        ? this.settings.width : this.host.clientWidth / this.camera.scale,
+      height: this.exporting
+        ? this.settings.height : this.host.clientHeight / this.camera.scale,
     };
     v.container.visible =
       overlaps(v.bounds, view) &&
       (v.entity.kind !== "reference" || v.entity.visible) &&
       (!this.appearance.compactDetails ||
+        this.exporting ||
         v.entity.kind !== "object" ||
         this.selected.has(v.entity.id) ||
         compactObjectVisible(v.entity, this.camera.scale));
@@ -1190,8 +1273,10 @@ export class MapRenderer {
         v.entity.floorId === this.floorId &&
         v.label.x >= -30 &&
         v.label.y >= -30 &&
-        v.label.x <= this.host.clientWidth + 30 &&
-        v.label.y <= this.host.clientHeight + 30;
+        v.label.x <= (this.exporting
+          ? this.settings.width * this.camera.scale : this.host.clientWidth) + 30 &&
+        v.label.y <= (this.exporting
+          ? this.settings.height * this.camera.scale : this.host.clientHeight) + 30;
     }
   }
   private dimensionText(): Text {
@@ -1272,10 +1357,14 @@ export class MapRenderer {
     g.clear();
     if (this.appearance.grid === false) return;
     const step = gridStep(c.scale);
-    const left = Math.max(0, Math.floor(-c.x / c.scale / step) * step),
-      right = Math.min(width, (this.host.clientWidth - c.x) / c.scale);
-    const top = Math.max(0, Math.floor(-c.y / c.scale / step) * step),
-      bottom = Math.min(height, (this.host.clientHeight - c.y) / c.scale);
+    const left = this.exporting ? 0
+        : Math.max(0, Math.floor(-c.x / c.scale / step) * step),
+      right = this.exporting ? width
+        : Math.min(width, (this.host.clientWidth - c.x) / c.scale),
+      top = this.exporting ? 0
+        : Math.max(0, Math.floor(-c.y / c.scale / step) * step),
+      bottom = this.exporting ? height
+        : Math.min(height, (this.host.clientHeight - c.y) / c.scale);
     for (let x = left; x <= right; x += step)
       g.moveTo(x, Math.max(0, top)).lineTo(x, Math.min(height, bottom));
     for (let y = top; y <= bottom; y += step)
@@ -1477,6 +1566,14 @@ export class MapRenderer {
     this.drawSelection();
     this.invalidate();
   }
+  setBuildingPointHover(grip: { buildingId: string; contour: number; index: number } | null): void {
+    const previous = this.buildingPointHover;
+    if (previous?.buildingId === grip?.buildingId &&
+        previous?.contour === grip?.contour && previous?.index === grip?.index) return;
+    this.buildingPointHover = grip ?? undefined;
+    this.drawSelection();
+    this.invalidate();
+  }
   get selectionGroupFrame(): SelectionFrame | undefined {
     return this.groupFrame;
   }
@@ -1534,14 +1631,19 @@ export class MapRenderer {
   }
   private drawEntitySelection(g: Graphics, e: Entity, frame?: SelectionFrame): void {
     if (e.kind === "building") {
+      let contour = 0;
       for (const polygon of e.polygons)
         for (const ring of [polygon.outer, ...polygon.holes]) {
           g.poly(
             ring.flatMap((point) => [point.x, point.y]),
             true,
           ).stroke({ color: 0x008da8, width: 2 / this.camera.scale });
-          for (const point of ring)
-            g.circle(point.x, point.y, 4 / this.camera.scale).fill(0x008da8);
+          for (const [index, point] of ring.entries())
+            g.circle(point.x, point.y, 4 / this.camera.scale).fill(
+              this.buildingPointHover?.buildingId === e.id &&
+              this.buildingPointHover.contour === contour &&
+              this.buildingPointHover.index === index ? 0x29c85a : 0x008da8);
+          contour++;
         }
     } else if (e.kind === "object" || e.kind === "reference") {
       const c = Math.cos(e.rotation),

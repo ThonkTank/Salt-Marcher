@@ -124,6 +124,9 @@ export class TexturePool {
     }
     this.evict();
   }
+  async ready(): Promise<void> {
+    await Promise.all([...this.entries.values()].map((entry) => entry.promise));
+  }
   get bytes(): number {
     return [...this.entries.values()].reduce((n, e) => n + e.bytes, 0);
   }

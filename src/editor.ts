@@ -14,6 +14,20 @@ import {
 } from "./model";
 import { wheelNavigation } from "./navigation";
 import { measuredCtrlWheelNotchFactor } from "./features/bau/dd041-wheel-notch";
+import {
+  buildingDrawStyle,
+  buildingStyleKey,
+  type BuildingWallChoice,
+} from "./features/bau/building-wall-choice";
+import {
+  buildingEdgeMidpointGrip,
+  buildingVertexGrip,
+  planBuildingBackspacePoint,
+  planBuildingEdgeDrag,
+  previewBuildingEdgeDrag,
+  type BuildingEdgeGrip,
+  type BuildingVertexGrip,
+} from "./features/bau/building-point-gestures";
 import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
 import {
@@ -108,6 +122,7 @@ interface Gesture {
   };
   contour?: number;
   corner?: number;
+  buildingEdge?: BuildingEdgeGrip;
   ridge?: number;
   moved: boolean;
   points: Point[];
@@ -141,6 +156,7 @@ export interface EditorHost {
   manageReferences?: (floorId: string) => void;
   manageGenerator?: (floorId: string) => void;
   manageContent?: (floorId: string, selectedId?: string) => void;
+  exportMap?: (renderer: MapRenderer, session: Session) => void;
   openPlay?: (roomId?: string) => void;
   assets?: () => readonly AssetDefinition[];
   subscribeAssets?: (listener: () => void) => () => void;
@@ -294,6 +310,7 @@ export class DungeonEditor {
   private prefabPanel: HTMLDetailsElement;
   private space = false;
   private selected?: string;
+  private hoveredBuildingVertex?: BuildingVertexGrip;
   private selection = new Set<string>();
   private clipboard?: SelectionClipboard;
   private closed = false;
@@ -383,6 +400,8 @@ export class DungeonEditor {
     const menu = element("details", "dn-menu dn-popover-menu", this.toolbar);
     element("summary", "", menu, "▶ Menü");
     const menuContent = element("div", "dn-menu-content", menu);
+    if (host.exportMap)
+      this.button("Exportieren", () => host.exportMap!(this.renderer, this.session), menuContent);
     if (host.openPlay)
       this.button(
         "Spielansicht",
@@ -919,6 +938,10 @@ export class DungeonEditor {
     canvas.addEventListener("pointercancel", () => this.cancel(), options);
     canvas.addEventListener("pointerleave", () => {
       if (!this.gesture && this.tool === "prefab") this.renderer.cancelPreview();
+      if (!this.gesture && this.hoveredBuildingVertex) {
+        this.hoveredBuildingVertex = undefined;
+        this.renderer.setBuildingPointHover(null);
+      }
     }, options);
     canvas.addEventListener(
       "lostpointercapture",
@@ -1356,6 +1379,8 @@ export class DungeonEditor {
     this.cancel();
     if (tool !== this.tool) this.previousTool = this.tool;
     this.tool = tool;
+    this.hoveredBuildingVertex = undefined;
+    this.renderer.setBuildingPointHover(null);
     this.previousToolButton.disabled =
       !this.previousTool || this.previousTool === "select";
     const group = this.toolGroups.get(tool);
@@ -1505,6 +1530,8 @@ export class DungeonEditor {
     if (this.gesture || (e.button !== 0 && e.button !== 1))
       return;
     this.commitNote();
+    this.hoveredBuildingVertex = undefined;
+    this.renderer.setBuildingPointHover(null);
     e.preventDefault();
     this.renderer.canvas.focus();
     const local = this.renderer.local(e),
@@ -1529,6 +1556,14 @@ export class DungeonEditor {
     const active = this.selection.size === 1 && this.selected
         ? this.session.entities.get(this.selected)
         : undefined,
+      activeBuilding = tool === "select" && active?.kind === "building" &&
+          !active.locked && !e.shiftKey && !e.altKey
+        ? active : undefined,
+      edgeGrip = activeBuilding &&
+          !buildingVertexGrip(activeBuilding, point, 7 / this.renderer.camera.scale)
+        ? buildingEdgeMidpointGrip(activeBuilding, point,
+            7 / this.renderer.camera.scale)
+        : null,
       selectedBox = active && !active.locked &&
           (active.kind === "object" || active.kind === "reference" || active.kind === "light")
         ? active
@@ -1563,6 +1598,7 @@ export class DungeonEditor {
             blank: !entity || !this.selection.has(entity.id),
           }
         : undefined;
+    if (edgeGrip && activeBuilding) entity = activeBuilding;
     if (transform) entity = selectedBox;
     if (groupTransform && this.selected) entity = this.session.entities.get(this.selected);
     if (this.isBrushTool(tool)) {
@@ -1685,6 +1721,7 @@ export class DungeonEditor {
       groupTransform,
       contour: buildingContour?.contour,
       corner: corner !== undefined && corner >= 0 ? corner : undefined,
+      buildingEdge: edgeGrip ?? undefined,
       ridge: ridge !== undefined && ridge >= 0 ? ridge : undefined,
       moved: false,
       points: [point],
@@ -1759,6 +1796,15 @@ export class DungeonEditor {
   private update(e: PointerEvent): void {
     const g = this.gesture;
     if (!g) {
+      const selected = this.selection.size === 1 && this.selected
+          ? this.session.entities.get(this.selected) : undefined;
+      this.hoveredBuildingVertex = this.tool === "select" &&
+          selected?.kind === "building" && !selected.locked
+        ? buildingVertexGrip(selected,
+            this.renderer.toWorld(this.renderer.local(e)),
+            7 / this.renderer.camera.scale) ?? undefined
+        : undefined;
+      this.renderer.setBuildingPointHover(this.hoveredBuildingVertex ?? null);
       if (this.tool === "prefab") {
         this.renderer.previewBrush(
           [this.snap(this.renderer.toWorld(this.renderer.local(e)))],
@@ -1807,6 +1853,13 @@ export class DungeonEditor {
     if (g.tool === "pan") {
       if (!g.temporaryPan || this.space)
         this.renderer.pan(local.x - g.last.x, local.y - g.last.y);
+    }
+    else if (g.tool === "select" && g.buildingEdge &&
+      g.entity?.kind === "building") {
+      const after = previewBuildingEdgeDrag(g.entity, g.buildingEdge,
+        this.snap(point));
+      if (after) this.renderer.previewBuilding(after.polygons,
+        g.buildingEdge.contour);
     }
     else if (g.tool === "select" && g.groupTransform &&
       g.groupTransform.action.mode !== "move") {
@@ -1958,6 +2011,16 @@ export class DungeonEditor {
     );
     if (this.renderer.canvas.hasPointerCapture(e.pointerId))
       this.renderer.canvas.releasePointerCapture(e.pointerId);
+    if (g.tool === "select" && g.buildingEdge &&
+        g.entity?.kind === "building") {
+      if (g.moved) {
+        const result = planBuildingEdgeDrag(
+          [...this.session.entities.values()], g.entity, g.buildingEdge,
+          this.snap(point));
+        if (result.status === "command") this.session.execute(result.command);
+      }
+      return;
+    }
     if (g.tool === "select" && g.groupTransform) {
       const { sources, frame, action, blank } = g.groupTransform;
       if (!g.moved) {
@@ -2517,17 +2580,15 @@ export class DungeonEditor {
     const floorId = this.renderer.floorId,
       defaults = this.settings.surfaces[category],
       material = this.settings.material,
+      wallChoice: BuildingWallChoice = this.settings.room.noWall
+        ? { kind: "none" }
+        : this.settings.room.wallAssetId
+          ? { kind: "asset", assetId: this.settings.room.wallAssetId }
+          : { kind: "basic" },
+      floorStyle = buildingDrawStyle(defaults, material, wallChoice),
       styleKey = (source: Surface | Building) =>
         source.kind === "building"
-          ? JSON.stringify([
-              source.layer,
-              source.fill,
-              source.wall,
-              source.wallWidth,
-              1,
-              "none",
-              source.material ?? null,
-            ])
+          ? buildingStyleKey(source)
           : JSON.stringify([
               source.layer,
               source.color,
@@ -2537,15 +2598,17 @@ export class DungeonEditor {
               source.effect ?? "none",
               source.material ?? null,
             ]),
-      desiredStyle = JSON.stringify([
-        defaults.layer,
-        defaults.color,
-        defaults.wallColor,
-        defaults.wallWidth,
-        defaults.opacity ?? 1,
-        defaults.effect ?? "none",
-        material ?? null,
-      ]),
+      desiredStyle = category === "floor"
+        ? buildingStyleKey(floorStyle)
+        : JSON.stringify([
+            defaults.layer,
+            defaults.color,
+            defaults.wallColor,
+            defaults.wallWidth,
+            defaults.opacity ?? 1,
+            defaults.effect ?? "none",
+            material ?? null,
+          ]),
       sources = [...this.session.entities.values()].filter(
         (entity): entity is Surface | Building => {
           const source =
@@ -2607,11 +2670,7 @@ export class DungeonEditor {
                   kind: "building",
                   floorId,
                   polygons: result.polygons,
-                  layer: defaults.layer,
-                  fill: defaults.color,
-                  wall: defaults.wallColor,
-                  wallWidth: defaults.wallWidth,
-                  ...(material ? { material } : {}),
+                  ...floorStyle,
                 }
               : undefined,
           plan = planBuildingMutation({
@@ -2879,6 +2938,8 @@ export class DungeonEditor {
       primary && this.selection.has(primary)
         ? primary
         : [...this.selection].at(-1);
+    this.hoveredBuildingVertex = undefined;
+    this.renderer.setBuildingPointHover(null);
     this.renderer.select(this.selection);
     this.refreshProperties();
     const e = this.selected
@@ -3147,6 +3208,22 @@ export class DungeonEditor {
             this.pathDraft.erase,
         );
       return;
+    }
+    if (e.key === "Backspace" && this.tool === "select" &&
+        this.hoveredBuildingVertex && this.selection.size === 1) {
+      const building = this.session.entities.get(this.hoveredBuildingVertex.buildingId);
+      if (building?.kind === "building" && this.selection.has(building.id)) {
+        e.preventDefault();
+        const result = planBuildingBackspacePoint(
+          [...this.session.entities.values()], building,
+          this.hoveredBuildingVertex);
+        if (result.status === "command") this.session.execute(result.command);
+        if (result.status === "minimum")
+          this.host.notice("Die Kontur braucht mindestens 3 Punkte.");
+        this.hoveredBuildingVertex = undefined;
+        this.renderer.setBuildingPointHover(null);
+        return;
+      }
     }
     if ((e.key === "Delete" || e.key === "Backspace") && this.selection.size) {
       e.preventDefault();
