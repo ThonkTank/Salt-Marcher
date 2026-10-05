@@ -28101,13 +28101,15 @@
         "original": {
           "sequence": "Menu bei geöffneter Karte → Change Map Size",
           "options": null,
-          "effect": null,
+          "effect": "Menu → Change Map Size öffnet vier Randfelder in Feldern sowie OK, Cancel, X und die Warnung vor fehlendem Undo.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Vollständige Kartenwirkung weiterer Entity-Arten und allgemeine Größenlimits nicht gemessen."
         },
-        "target": "Change Map Size öffnet vier Randfelder, eine Nicht-Undo-Warnung sowie OK/Cancel.",
+        "target": "Change Map Size öffnet vier Randfelder in Feldern, Warnung vor fehlendem Undo sowie OK, Cancel und X.",
         "baseline": {
           "editor": {
             "sequence": "Dungeon → Einstellungen → Kartengröße ändern",
@@ -37365,14 +37367,16 @@
         "original": {
           "sequence": "Menu > Change Map Size → Top in tiles",
           "options": null,
-          "effect": null,
+          "effect": "Top +2 zusammen mit Left +1 vergrößert die gemessene 8×8-Karte auf 9×10 und verschiebt die Polygonpunkte um die Randwerte.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Obere Beschnittwirkung auf Tile-Zellen und andere Entity-Arten nicht direkt gemessen."
         },
-        "target": "Nach Originalmessung offen: „Top in tiles“ trägt zur Kartenvergrößerung oder zum Zuschnitt an den vier Rändern bei, einschließlich der nativen Warnung.",
+        "target": "Top verändert die Kartengrenze; bei der gemessenen Erweiterung verschieben sich bestehende Polygonpunkte um den oberen Randwert.",
         "baseline": {
           "editor": {
             "sequence": "Kartengröße ändern mit vier Rändern; Änderung als Historienbefehl",
@@ -37420,11 +37424,13 @@
         "original": {
           "sequence": "Menu > Change Map Size → Right in tiles",
           "options": null,
-          "effect": null,
+          "effect": "Ein eigenes Right-in-tiles-Feld ist im Originaldialog sichtbar und nimmt Randwerte auf.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Rechte Erweiterung/Beschnittwirkung auf gespeicherte Zellen und Polygone nicht direkt gemessen."
         },
         "target": "Nach Originalmessung offen: „Right in tiles“ trägt zur Kartenvergrößerung oder zum Zuschnitt an den vier Rändern bei, einschließlich der nativen Warnung.",
         "baseline": {
@@ -37474,11 +37480,13 @@
         "original": {
           "sequence": "Menu > Change Map Size → Bottom in tiles",
           "options": null,
-          "effect": null,
+          "effect": "Ein eigenes Bottom-in-tiles-Feld ist im Originaldialog sichtbar und nimmt Randwerte auf.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Untere Erweiterung/Beschnittwirkung auf gespeicherte Zellen und Polygone nicht direkt gemessen."
         },
         "target": "Nach Originalmessung offen: „Bottom in tiles“ trägt zur Kartenvergrößerung oder zum Zuschnitt an den vier Rändern bei, einschließlich der nativen Warnung.",
         "baseline": {
@@ -37528,13 +37536,15 @@
         "original": {
           "sequence": "Menu > Change Map Size → Left in tiles",
           "options": null,
-          "effect": null,
+          "effect": "Left −3 verkleinert die gemessene 12×8-Karte auf 9×8; vier von zehn belegten Smart-Tile-Zellen gehen verloren, während die 16 Shape-Polygonpunkte versetzt erhalten bleiben. Nach Left +3 bleiben nur sechs Tile-Zellen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Linker Beschnitt für andere Entity-Arten und globale Eingabegrenzen nicht gemessen."
         },
-        "target": "Nach Originalmessung offen: „Left in tiles“ trägt zur Kartenvergrößerung oder zum Zuschnitt an den vier Rändern bei, einschließlich der nativen Warnung.",
+        "target": "Left verändert die Kartengrenze; beim gemessenen Beschnitt verschwinden abgeschnittene Smart-Tile-Zellen dauerhaft, während Shape-Polygone erhalten und verschoben bleiben.",
         "baseline": {
           "editor": {
             "sequence": "Kartengröße ändern mit vier Rändern; Änderung als Historienbefehl",
@@ -37582,13 +37592,16 @@
         "original": {
           "sequence": "Menu > Change Map Size → Cannot undo warning",
           "options": null,
-          "effect": null,
+          "effect": "Der Dialog zeigt You cannot undo a map size change. Nach Top +1 auf einer 8×8-Karte waren Undo und Redo sofort deaktiviert; auch der zuvor erreichbare Objekt-Undo-Schritt ließ sich nicht mehr ausführen. Die 8×9-Karte mit verschobenem Objekt blieb nach Save und frischem Öffnen erhalten.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "gap": "Ob neu nach Resize erzeugte Aktionen rückgängig gemacht werden können, was mit einer zuvor vorhandenen Redo-Verzweigung geschieht und ob ältere History intern gelöscht oder nur gesperrt wird, wurde nicht geprüft."
         },
-        "target": "Nach Originalmessung offen: „Cannot undo warning“ trägt zur Kartenvergrößerung oder zum Zuschnitt an den vier Rändern bei, einschließlich der nativen Warnung.",
+        "target": "Die bestätigte Größenänderung zeigt die Nicht-Undo-Warnung; unmittelbar danach sind Undo und Redo nicht verfügbar, auch ein zuvor erreichbarer Undo-Schritt ist gesperrt. Die neue Größe bleibt speicherbar und nach frischem Öffnen erhalten.",
         "baseline": {
           "editor": {
             "sequence": "Kartengröße ändern mit vier Rändern; Änderung als Historienbefehl",
@@ -37615,15 +37628,22 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Bestätigte Randänderung räumt ältere Undo-/Redo-Schritte ab und bleibt als geänderter Kartenzustand speicherbar; der Dialog zeigt die Nicht-Undo-Warnung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/session.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/commands.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/main.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/core.test.ts"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Warnung, History-Grenze, Dirty-Zustand, Save und frisches Öffnen im isolierten Obsidian-Host noch nicht belegt."
         }
       },
       {
@@ -37636,13 +37656,16 @@
         "original": {
           "sequence": "Menu > Change Map Size → OK",
           "options": null,
-          "effect": null,
+          "effect": "OK übernimmt die gemessenen Left-/Top-Randwerte in Kartengröße und gespeicherte Geometrie. Eine 8×8-Karte wurde mit Top +1 zu 8×9; ihr Objekt verschob sich um 256 native Einheiten und blieb nach Speichern und frischem Prozess erhalten.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "gap": "Speichern und frisches Öffnen weiterer Randrichtungen und Entity-Arten fehlen."
         },
-        "target": "Nach Originalmessung offen: „OK“ übernimmt die im aktuellen Dialog gesetzten Werte in die Karte bzw. Programmeinstellungen.",
+        "target": "OK übernimmt die gewählten Randwerte samt belegter Karten- und Geometriewirkung.",
         "baseline": {
           "editor": {
             "sequence": "Kartengröße ändern mit vier Rändern; Änderung als Historienbefehl",
@@ -37693,8 +37716,10 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "Cancel-Wirkung auf Kartendatei und History nicht direkt gemessen."
         },
         "target": "Nach Originalmessung offen: „Cancel“ schließt den aktuellen Dialog ohne die noch unbestätigte Änderung zu übernehmen.",
         "baseline": {
@@ -43104,8 +43129,10 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "gap": "X-Wirkung auf Kartendatei und History nicht direkt gemessen."
         },
         "target": "Nach Originalmessung offen: „X / Schließen“ schließt den aktuellen Dialog ohne die noch unbestätigte Änderung zu übernehmen.",
         "baseline": {

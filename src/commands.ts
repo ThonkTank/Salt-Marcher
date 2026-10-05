@@ -847,7 +847,7 @@ export function resizeMap(
     label: "Karteneinstellungen ändern",
     settings: { before, after },
     entities: changes,
-  });
+  }, values.some((value) => value !== 0) ? "reset" : "record");
 }
 export function createReferenceImage(
   session: Session,

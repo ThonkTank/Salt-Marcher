@@ -3389,7 +3389,7 @@ test("floor duplication remaps topology and copies protected room text in one un
   assert.ok(s.entities.has(object.id));
 });
 
-test("map margins translate all geometry together and restore exactly with undo", () => {
+test("map margins translate geometry and block earlier undo entries", () => {
   const { s, floor, room } = fixture(),
     door = createDoor(s, room, 0, 0.5),
     object = createObject(s, floor, { x: 5, y: 5 }),
@@ -3403,14 +3403,16 @@ test("map margins translate all geometry together and restore exactly with undo"
       false,
     ),
     storedDoor = s.entities.get(door.id),
-    before = s.document(),
     history = s.historySize;
+  assert.ok(history > 0);
   resizeMap(
     s,
     { left: 3, right: -5, top: 2, bottom: 4 },
     { wallShadows: false, objectShadows: false, buildingWear: 0.55 },
   );
-  assert.equal(s.historySize, history + 1);
+  assert.equal(s.historySize, 0);
+  assert.equal(s.canUndo, false);
+  assert.equal(s.canRedo, false);
   assert.equal(s.settings.width, 78);
   assert.equal(s.settings.height, 66);
   assert.equal(s.settings.wallShadows, false);
@@ -3435,11 +3437,12 @@ test("map margins translate all geometry together and restore exactly with undo"
     y: 22,
   });
   assert.equal(s.entities.get(door.id), storedDoor);
+  const resized = s.document();
   s.undo();
-  assert.deepEqual(s.document(), before);
   s.redo();
-  assert.equal(s.settings.width, 78);
-  assert.equal(s.settings.buildingWear, 0.55);
+  assert.deepEqual(s.document(), resized);
+  assert.deepEqual(new Session(resized).document(), resized);
+  assert.equal(s.dirty, true);
   assert.throws(
     () => resizeMap(s, { left: 0.5, right: 0, top: 0, bottom: 0 }),
     /ganzen Feldern/,
@@ -3450,7 +3453,7 @@ test("map margins translate all geometry together and restore exactly with undo"
   );
 });
 
-test("reference images align per floor and participate in ordinary history", () => {
+test("reference images align on resize while ordinary image actions remain undoable", () => {
   const { s, floor } = fixture(),
     image = createReferenceImage(
       s,
@@ -3466,6 +3469,10 @@ test("reference images align per floor and participate in ordinary history", () 
   assert.equal(image.width, 64);
   assert.equal(image.height, 36);
   assert.equal(image.opacity, 0.45);
+  s.undo();
+  assert.equal(s.entities.has(image.id), false);
+  s.redo();
+  assert.deepEqual(s.entities.get(image.id), image);
   resizeMap(s, { left: 2, right: 0, top: 3, bottom: 0 });
   const moved = s.entities.get(image.id);
   assert.equal(moved?.kind, "reference");
@@ -3473,10 +3480,32 @@ test("reference images align per floor and participate in ordinary history", () 
     assert.equal(moved.x, 42);
     assert.equal(moved.y, 33);
   }
+  assert.equal(s.canUndo, false);
   s.undo();
-  assert.deepEqual(s.entities.get(image.id), image);
+  assert.deepEqual(s.entities.get(image.id), moved);
+});
+
+test("appearance-only map settings keep ordinary undo", () => {
+  const { s } = fixture(), before = s.settings;
+  resizeMap(s, { left: 0, right: 0, top: 0, bottom: 0 }, {
+    wallShadows: !before.wallShadows,
+  });
+  assert.equal(s.canUndo, true);
   s.undo();
-  assert.equal(s.entities.has(image.id), false);
+  assert.deepEqual(s.settings, before);
+});
+
+test("map resize removes a redo branch from earlier actions", () => {
+  const { s, floor } = fixture();
+  const object = createObject(s, floor, { x: 5, y: 5 });
+  s.undo();
+  assert.equal(s.canRedo, true);
+  resizeMap(s, { left: 0, right: 0, top: 1, bottom: 0 });
+  assert.equal(s.canUndo, false);
+  assert.equal(s.canRedo, false);
+  s.redo();
+  assert.equal(s.entities.has(object.id), false);
+  assert.equal(s.settings.height, 61);
 });
 
 test("dungeon and cave generation are deterministic replaceable proposals", () => {

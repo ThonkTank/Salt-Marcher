@@ -271,7 +271,7 @@ export class Session {
       label: locked ? "Element sperren" : "Element entsperren",
     });
   }
-  execute(command: Command): void {
+  execute(command: Command, history: "record" | "reset" = "record"): void {
     if (
       !(
         command.entities?.length ||
@@ -320,13 +320,18 @@ export class Session {
         }),
       ),
       event = this.apply(owned, false);
-    this.past.push(owned);
-    this.future = [];
-    if (
-      Number.isFinite(this.historyLimit) &&
-      this.past.length > this.historyLimit
-    )
-      this.past.shift();
+    if (history === "reset") {
+      this.past = [];
+      this.future = [];
+    } else {
+      this.past.push(owned);
+      this.future = [];
+      if (
+        Number.isFinite(this.historyLimit) &&
+        this.past.length > this.historyLimit
+      )
+        this.past.shift();
+    }
     this.emit(event);
   }
   undo(): void {

@@ -2740,6 +2740,9 @@ class MapSettingsModal extends Modal {
         current.height.toLocaleString("de-DE") +
         " Felder. Positive Werte erweitern, negative schneiden den sichtbaren Rand ab.",
     });
+    this.contentEl.createEl("p", {
+      text: "Eine Änderung der Kartengröße kann nicht rückgängig gemacht werden.",
+    });
     const result = this.contentEl.createEl("p");
     const update = () => {
       const width = current.width + margins.left + margins.right,
