@@ -10,6 +10,7 @@ const {
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { prepareLarge } = require("./large-fixture.cjs");
 const root = path.resolve(__dirname, ".."),
+  pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
   qa = process.env.DUNGEON_QA_ROOT || "/home/aaron/.cache/dungeon-native-qa",
   vault = qa + "/vault",
@@ -183,7 +184,7 @@ function prepare() {
   fs.mkdirSync(qa + "/config/obsidian", { recursive: true });
   for (const f of ["main.js", "manifest.json", "styles.css"])
     fs.copyFileSync(
-      root + "/" + f,
+      pluginRoot + "/" + f,
       vault + "/.obsidian/plugins/dungeon-editor/" + f,
     );
   fs.writeFileSync(
@@ -310,7 +311,7 @@ async function main() {
     JSON.stringify({
       sha256: crypto
         .createHash("sha256")
-        .update(fs.readFileSync(root + "/main.js"))
+        .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
       mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",

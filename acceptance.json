@@ -8418,7 +8418,7 @@
           }
         },
         "implementation": {
-          "state": "host_verified_pending_install",
+          "state": "installed_verified",
           "changes": [
             "src/features/material/pattern-appearance.ts",
             "src/properties.ts"
@@ -8429,13 +8429,29 @@
           ]
         },
         "hostCheck": {
-          "state": "isolated_pass_pending_installed_endstand",
-          "build": "main.js SHA-256 d9b3095ec27b594ac77eedda53186d0b51cef60b1329307c1b5b2a3cd679367d",
+          "state": "equal",
+          "build": "main.js SHA-256 a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern-alpha-only/evidence/1791179300869-pattern-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern-alpha-only/evidence/1791179307702-pattern-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179377149-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179386669-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179657599-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179667572-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179676240-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
           ],
-          "gap": "Exakter Wert 160/255, Erstellungs-Undo/Redo, Speicherung und frischer Hostprozess belegt; produktiver Endstand noch nicht installiert. Andere Color-Picker-Unterfälle bleiben separat offen."
+          "gap": null
+        },
+        "installedCheck": {
+          "build": "main.js SHA-256 a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
+          "state": "passed_on_current_installed_build",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179657599-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179667572-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179676240-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
+          ]
         }
       },
       {

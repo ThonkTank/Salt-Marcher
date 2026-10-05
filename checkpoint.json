@@ -507,14 +507,22 @@
   },
   "implementation20261005": {
     "developmentRoot": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main",
-    "installed": false,
+    "installed": true,
     "requiredCases": 711,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-020.13",
-      "DD-020.14"
+      "DD-042.19"
     ],
-    "foundation": "V3-In-Memory-Migration auf zwei produktiven V2-Karten verlustfrei geprüft; 108 Kerntests bestanden.",
-    "hostStatus": "pending_graphics_slot"
+    "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
+    "hostStatus": "prefab_release_preparation",
+    "releaseBuild": "a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
+    "openOriginalGap": "DD-020.14 Outline: Original-Neustart brach zweimal am Ladebildschirm ab; Produktänderung aus Release entfernt.",
+    "installedBuild": "a549b92c5fc474fe0248f690c7c7c8354bcc8fe7e87f7a703104d84c9042e724",
+    "installedEvidence": [
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-host/evidence/1791179667572-pattern-alpha-reopen/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-alpha-v2/evidence/1791179684741-v2-open-reopen/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-alpha-v3.json"
+    ],
+    "next": "Prefab Forget im isolierten Stand bestanden; Paket zur Installation und Endstandsprüfung vorbereiten."
   }
 }
