@@ -80,6 +80,7 @@ export interface ToolSettings {
     | "width"
     | "height"
     | "color"
+    | "alpha"
     | "label"
     | "assetId"
     | "layer"
@@ -180,6 +181,7 @@ export const toolSettings = (): ToolSettings => ({
     width: 1.6,
     height: 0.9,
     color: 0x795438,
+    alpha: 255,
     label: "",
     layer: 500,
     shadow: true,
@@ -1378,6 +1380,20 @@ export class Properties {
         "color",
         "#" + object.color.toString(16).padStart(6, "0"),
         (i) => update({ color: parseInt(i.value.slice(1), 16) }),
+      );
+      this.field(
+        "Objektfarbe Alpha (0–255)",
+        "number",
+        String(object.alpha ?? 255),
+        (i) => {
+          const alpha = i.valueAsNumber;
+          if (!Number.isInteger(alpha) || alpha < 0 || alpha > 255)
+            throw new Error("Objektfarbe Alpha muss zwischen 0 und 255 liegen.");
+          update({ alpha });
+        },
+        "0",
+        "255",
+        "1",
       );
       this.field("Schatten", "checkbox", String(object.shadow ?? true), (i) =>
         update({ shadow: i.checked }),

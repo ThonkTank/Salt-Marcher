@@ -46,7 +46,7 @@ import {
   nearestBuildingSegment,
   replaceBuildingContour,
 } from "./geometry";
-import { MapRenderer } from "./renderer";
+import { MapRenderer, type ColorableObjectSource } from "./renderer";
 import { createPrefab as createPrefabDefinition, placePrefab, type Prefab } from "./prefabs";
 import { ComputeClient } from "./worker-client";
 import { type ComposeBuildingResult } from "./compute";
@@ -134,6 +134,7 @@ export interface EditorHost {
   openNote: (path: string) => void;
   save: () => Promise<void>;
   assetUrl: (path: string) => string;
+  colorableObjectSource?: (id: string) => ColorableObjectSource | undefined;
   manageAssets?: () => void;
   manageMap?: () => void;
   manageReferences?: (floorId: string) => void;
@@ -586,6 +587,7 @@ export class DungeonEditor {
       host.assetUrl,
       host.notice,
       { compactDetails: true, preserveViewOnResize: true, preserveZoomOnResize: true },
+      host.colorableObjectSource,
     );
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();

@@ -7,7 +7,7 @@ await build({
   format: "cjs",
   platform: test ? "node" : "browser",
   target: "es2022",
-  external: ["obsidian", "electron", "node:*"],
+  external: ["obsidian", "electron", "node:*", "util", "stream", "zlib", "assert", "buffer"],
   sourcemap: true,
   logLevel: "info",
   minify: !test,

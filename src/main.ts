@@ -36,7 +36,7 @@ import { Session } from "./session";
 import { FileConflict, MapRepository, type FileStore } from "./persistence";
 import { DungeonEditor } from "./editor";
 import { toolSettings, type ToolSettings } from "./properties";
-import { MapRenderer } from "./renderer";
+import { MapRenderer, type ColorableObjectSource } from "./renderer";
 import { type Prefab, validPrefabs } from "./prefabs";
 import { withoutPrefabDefinition } from "./features/objekte/prefab-forget";
 import { createReferenceImage, resizeMap, type MapMargins } from "./commands";
@@ -635,6 +635,16 @@ export default class DungeonPlugin extends Plugin {
     const selected = new Set(packIds);
     return assets.filter((asset) => selected.has(asset.packId));
   }
+  colorableObjectSource(
+    id: string,
+    packIds?: readonly string[],
+  ): ColorableObjectSource | undefined {
+    const asset = this.listAssets(packIds).find((candidate) => candidate.id === id);
+    if (!asset?.tintable || !asset.colorableSettings ||
+        asset.kind !== "object" || !this.assetLibrary.has(id))
+      return undefined;
+    return { image: this.assetLibrary.blob(id), settings: asset.colorableSettings };
+  }
   subscribeAssets(listener: () => void): () => void {
     this.assetListeners.add(listener);
     return () => this.assetListeners.delete(listener);
@@ -861,6 +871,7 @@ class DungeonMapCard {
   private closed = false;
   private abort = new AbortController();
   private resize?: ResizeObserver;
+  private assetUnsub?: () => void;
   private sized = false;
   constructor(
     private plugin: DungeonPlugin,
@@ -1260,9 +1271,12 @@ class DungeonMapCard {
               preserveViewOnResize: true,
             }
           : { compactDetails: true },
+        (id) => this.plugin.colorableObjectSource(
+          id, map.session.settings.assetPacks),
       );
       await this.renderer.init();
       if (this.closed) return;
+      this.assetUnsub = this.plugin.subscribeAssets(() => this.renderer?.reloadAssets());
       if (this.focusId && this.focusRoom(this.focusId))
         floor.value = this.renderer.floorId;
       else this.fit();
@@ -1304,6 +1318,7 @@ class DungeonMapCard {
     if (this.closed) return;
     this.closed = true;
     this.abort.abort();
+    this.assetUnsub?.();
     this.resize?.disconnect();
     this.renderer?.destroy();
     if (this.map) this.plugin.release(this.path, this.map);
@@ -1428,6 +1443,8 @@ class DungeonView extends FileView {
           },
           save: () => map.repository.save(map.session),
           assetUrl: (path) => this.plugin.assetUrl(path),
+          colorableObjectSource: (id) => this.plugin.colorableObjectSource(
+            id, map.session.settings.assetPacks),
           assets: () => this.plugin.listAssets(map.session.settings.assetPacks),
           subscribeAssets: (listener) => this.plugin.subscribeAssets(listener),
           toolDefaults: () => this.plugin.toolDefaults(),

@@ -8,6 +8,7 @@ const fs = require("node:fs"),
 const {
   chromium,
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
+const { PNG } = require("pngjs");
 const { prepareLarge } = require("./large-fixture.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
@@ -20,10 +21,11 @@ const restart = process.argv.includes("--restart"),
   patternOutline = process.argv.includes("--pattern-outline"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
+  objectAlpha = process.argv.includes("--object-alpha"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -174,7 +176,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget)
+    if (patternAlpha || prefabForget || objectAlpha)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
@@ -313,7 +315,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -472,6 +474,10 @@ async function workflow() {
   }
   if (prefabForget) {
     await prefabForgetWorkflow(view);
+    return;
+  }
+  if (objectAlpha) {
+    await objectAlphaWorkflow(view);
     return;
   }
   if (compactSmoke) {
@@ -2865,6 +2871,190 @@ async function prefabForgetWorkflow(view) {
   assert.equal(JSON.parse(fs.readFileSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", "utf8")).prefabs.length, 0);
   await page.screenshot({ path: out + "/prefab-reopened.png" });
   checks.push("Fresh Obsidian process keeps the definition forgotten while the object-light pair reopens intact");
+}
+async function objectAlphaWorkflow(view) {
+  const mapPath = "Dungeons/ObjectAlphaQA/Karte.dungeon";
+  const packPath = root + "/../dungeon-auswertung/tests/fixtures/" +
+    "colorable-object-alpha-solid-probe/own-object-color.dungeondraft_pack";
+  const packDigest = crypto.createHash("sha256")
+    .update(fs.readFileSync(packPath)).digest("hex");
+  assert.equal(packDigest,
+    "df920080409feda5d15194cd8c998553f18a80292762da2f30735ea6b5649088");
+  if (!restart) {
+    await page.evaluate(() =>
+      app.plugins.getPlugin("dungeon-editor").create("ObjectAlphaQA", 12, 8));
+    await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    const encoded = fs.readFileSync(packPath).toString("base64");
+    await page.evaluate(async (encoded) => {
+      const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.assets.add([new Blob([bytes])]);
+      await plugin.reloadAssets();
+      const session = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.session;
+      const before = session.settings;
+      session.execute({ label: "QA-Paket für Karte aktivieren",
+        settings: { before, after: { ...before, assetPacks: ["QAObjASl"] } } });
+    }, encoded);
+    await page.waitForFunction(() =>
+      app.plugins.getPlugin("dungeon-editor").listAssets()
+        .some((asset) => asset.name === "QA Object Color" && asset.tintable));
+    const asset = await page.evaluate(() =>
+      app.plugins.getPlugin("dungeon-editor").listAssets()
+        .find((asset) => asset.name === "QA Object Color"));
+    assert.equal(asset.kind, "object");
+    assert.equal(asset.tintable, true);
+    assert((await view()).document.settings.assetPacks.includes("QAObjASl"));
+    checks.push("Hash-checked Colorable object pack loads with its native tag");
+    await chooseTool("Möbel");
+    await page.getByRole("combobox", { name: "Paketobjekt", exact: true })
+      .selectOption(asset.id);
+    const color = page.locator('input[aria-label="Objektfarbe"]');
+    await color.fill("#4080c0");
+    await color.press("Tab");
+    for (const [name, value] of [["Breite in Feldern", "2.8"], ["Höhe in Feldern", "2.8"]]) {
+      const input = page.locator(`input[aria-label="${name}"]`);
+      await input.fill(value);
+      await input.press("Tab");
+    }
+    await page.locator('input[aria-label="Schatten"]').uncheck();
+    await page.evaluate(() => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      renderer.appearance.mapFill = 0x252525;
+      renderer.appearance.grid = false;
+      renderer.drawGrid();
+      renderer.invalidate();
+    });
+    const at = (x, y) => page.evaluate(({ x, y }) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      const box = renderer.canvas.getBoundingClientRect();
+      return { x: box.x + renderer.camera.x + x * renderer.camera.scale,
+        y: box.y + renderer.camera.y + y * renderer.camera.scale };
+    }, { x, y });
+    const ids = [];
+    for (const [index, alpha] of [255, 128, 0].entries()) {
+      await chooseTool("Möbel");
+      const input = page.locator('input[aria-label="Objektfarbe Alpha (0–255)"]');
+      await input.fill(String(alpha));
+      await input.press("Tab");
+      const before = (await view()).document.entities.length;
+      const point = await at(2 + index * 3, 4);
+      await page.mouse.click(point.x, point.y);
+      await page.waitForFunction((length) =>
+        app.workspace.getLeavesOfType("dungeon-native-map")[0]
+          .view.editor.session.document().entities.length === length + 1,
+      before);
+      const placed = (await view()).document.entities.at(-1);
+      assert.equal(placed.kind, "object");
+      assert.equal(placed.assetId, asset.id);
+      assert.equal(placed.color, 0x4080c0);
+      assert.equal(placed.alpha, alpha);
+      assert.equal(placed.shadow, false);
+      ids.push(placed.id);
+    }
+    await page.waitForFunction((ids) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      return ids.every((id) => renderer.visuals.get(id)?.container.children
+        .some((child) => !!child.texture));
+    }, ids);
+    const visualAlpha = await page.evaluate((ids) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      return ids.map((id) => {
+        const visual = renderer.visuals.get(id);
+        const sprite = visual.container.children.find((child) =>
+          !!child.texture);
+        return { id, spriteAlpha: sprite.alpha,
+          shadowAlpha: visual.container.children[0]?.alpha };
+      });
+    }, ids);
+    assert.deepEqual(visualAlpha.map((item) => item.spriteAlpha), [1, 1, 1]);
+    const screenshot = await page.locator(".dn-canvas canvas")
+      .screenshot({ path: out + "/object-alpha-before-save.png" });
+    const pixels = PNG.sync.read(screenshot),
+      sample = (x, y) => [...pixels.data.subarray(
+        (y * pixels.width + x) * 4, (y * pixels.width + x) * 4 + 3)];
+    const colorablePixels = [60, 204, 348].map((x) => sample(x, 500));
+    const fixedPixels = [100, 244, 388].map((x) => sample(x, 500));
+    assert.deepEqual(colorablePixels[2], [37, 37, 37]);
+    for (let channel = 0; channel < 3; channel++) {
+      const expected = 37 + (colorablePixels[0][channel] - 37) * 128 / 255;
+      assert(Math.abs(colorablePixels[1][channel] - expected) <= 2);
+      assert(Math.abs(fixedPixels[1][channel] - fixedPixels[0][channel]) <= 1);
+      assert(Math.abs(fixedPixels[2][channel] - fixedPixels[0][channel]) <= 1);
+    }
+    checks.push("Colorable object keeps fixed pixels while A=128 halves and A=0 hides only tinted pixels");
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    assert.equal((await view()).document.entities.some((e) => e.id === ids[2]), false);
+    await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    assert.equal((await view()).document.entities.some((e) => e.id === ids[2]), true);
+    checks.push("Object alpha remains attached to its creation through host undo and redo");
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.session.dirty);
+    const disk = JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8"));
+    assert.equal(disk.version, 3);
+    assert.deepEqual(ids.map((id) => disk.entities.find((e) => e.id === id).alpha),
+      [255, 128, 0]);
+    fs.writeFileSync(qa + "/object-alpha-saved.json",
+      JSON.stringify({ mapPath, ids, assetId: asset.id }));
+    checks.push("V3 save preserves all three 8-bit alpha bytes and object instances");
+    return;
+  }
+  const { ids, assetId } = JSON.parse(
+    fs.readFileSync(qa + "/object-alpha-saved.json", "utf8"));
+  await page.evaluate(async (path) =>
+    app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(path)),
+  mapPath);
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  await page.evaluate(() => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    renderer.appearance.mapFill = 0x252525;
+    renderer.appearance.grid = false;
+    renderer.drawGrid();
+    renderer.invalidate();
+  });
+  const saved = (await view()).document;
+  assert.equal(saved.version, 3);
+  assert.deepEqual(ids.map((id) => saved.entities.find((e) => e.id === id).alpha),
+    [255, 128, 0]);
+  assert(ids.every((id) => saved.entities.find((e) => e.id === id).assetId === assetId));
+  await page.waitForFunction((ids) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    return ids.every((id) => renderer.visuals.get(id)?.container.children
+      .some((child) => !!child.texture));
+  }, ids);
+  const alpha = await page.evaluate((ids) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    return ids.map((id) => renderer.visuals.get(id).container.children
+      .find((child) => !!child.texture).alpha);
+  }, ids);
+  assert.deepEqual(alpha, [1, 1, 1]);
+  const reopenedImage = await page.locator(".dn-canvas canvas")
+    .screenshot({ path: out + "/object-alpha-reopened.png" });
+  const reopenedPixels = PNG.sync.read(reopenedImage);
+  const reopenedSample = (x, y) => [...reopenedPixels.data.subarray(
+    (y * reopenedPixels.width + x) * 4,
+    (y * reopenedPixels.width + x) * 4 + 3)];
+  const reopenedColorable = [60, 204, 348]
+    .map((x) => reopenedSample(x, 500));
+  const reopenedFixed = [100, 244, 388]
+    .map((x) => reopenedSample(x, 500));
+  assert.deepEqual(reopenedColorable[2], [37, 37, 37]);
+  for (let channel = 0; channel < 3; channel++) {
+    const expected = 37 + (reopenedColorable[0][channel] - 37) * 128 / 255;
+    assert(Math.abs(reopenedColorable[1][channel] - expected) <= 2);
+    assert(Math.abs(reopenedFixed[1][channel] - reopenedFixed[0][channel]) <= 1);
+    assert(Math.abs(reopenedFixed[2][channel] - reopenedFixed[0][channel]) <= 1);
+  }
+  checks.push("Fresh Obsidian process preserves alpha bytes, selective pixels and fixed pixels");
 }
 async function patternAlphaWorkflow(view) {
   const mapPath = "Dungeons/PatternQA/Karte.dungeon";

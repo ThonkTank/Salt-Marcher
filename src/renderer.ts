@@ -39,6 +39,8 @@ import {
   type Bounds,
 } from "./geometry";
 import { TexturePool } from "./textures";
+import { objectAlphaOpacity } from "./features/objekte/color-alpha";
+import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
 import { ComputeClient } from "./worker-client";
 import {
   compactObjectVisible,
@@ -59,6 +61,10 @@ interface Visual {
   gradient?: FillGradient;
   request?: number;
   shadow?: Graphics;
+}
+export interface ColorableObjectSource {
+  readonly image: Blob;
+  readonly settings: ColorableObjectSettings;
 }
 function samplePolyline(
   points: readonly Point[],
@@ -164,7 +170,7 @@ export class MapRenderer {
   constructor(
     readonly host: HTMLElement,
     readonly session: Session,
-    assetUrl: (path: string) => string = (path) => path,
+    private assetUrl: (path: string) => string = (path) => path,
     private onError: (message: string) => void = console.error,
     private appearance: {
       background?: number;
@@ -175,10 +181,11 @@ export class MapRenderer {
       preserveViewOnResize?: boolean;
       preserveZoomOnResize?: boolean;
     } = {},
+    private colorableObject?: (id: Id) => ColorableObjectSource | undefined,
   ) {
     this.settings = session.settings;
     this.floorId = session.floors.keys().next().value!;
-    this.textures = new TexturePool(assetUrl);
+    this.textures = new TexturePool(this.assetUrl);
     this.furniture
       .roundRect(-0.5, -0.5, 1, 1, 0.07)
       .fill(0xffffff)
@@ -390,6 +397,9 @@ export class MapRenderer {
     this.cameraChanged();
   }
   reloadAssets(): void {
+    for (const id of this.visuals.keys()) this.clearVisual(id);
+    this.textures.destroy();
+    this.textures = new TexturePool(this.assetUrl);
     this.rebuild();
   }
   setComparison(
@@ -421,6 +431,7 @@ export class MapRenderer {
       e.width === old.entity.width &&
       e.height === old.entity.height &&
       e.color === old.entity.color &&
+      e.alpha === old.entity.alpha &&
       e.label === old.entity.label &&
       e.assetId === old.entity.assetId &&
       e.layer === old.entity.layer &&
@@ -654,21 +665,32 @@ export class MapRenderer {
             Math.min(e.width, e.height) * 0.08,
           )
           .fill({ color: 0x111314, alpha: 0.26 });
+        shadow.alpha = objectAlphaOpacity(e.alpha ?? 255);
         container.addChildAt(shadow, 0);
       }
       g.scale.set(e.width, e.height);
       g.tint = e.color;
+      g.alpha = objectAlphaOpacity(e.alpha ?? 255);
       if (e.label) this.addLabel(visual, e.label, { x: e.x, y: e.y });
       if (e.assetId) {
         const reference = e.assetId + "\0image";
-        void this.acquireAsset(visual, reference)
+        const colorable = this.colorableObject?.(e.assetId);
+        const variant = colorable
+          ? this.textures.acquireColorableObject(
+              reference, colorable.image, e.color, e.alpha ?? 255,
+              colorable.settings,
+            )
+          : undefined;
+        if (variant) (visual.assets ??= []).push(variant.key);
+        void (variant?.texture ?? this.acquireAsset(visual, reference))
           .then((texture) => {
             if (this.visuals.get(id) !== visual || this.closed) return;
             const sprite = new Sprite(texture);
             sprite.anchor.set(0.5);
             sprite.width = e.width;
             sprite.height = e.height;
-            sprite.tint = e.color;
+            sprite.tint = variant ? 0xffffff : e.color;
+            sprite.alpha = variant ? 1 : objectAlphaOpacity(e.alpha ?? 255);
             g.visible = false;
             container.addChildAt(sprite, 0);
             this.invalidate();

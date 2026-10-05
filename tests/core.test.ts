@@ -18,6 +18,7 @@ import {
   isRoom,
 } from "../src/model";
 import { Session, textPatch } from "../src/session";
+import { readObjectArgb, writeObjectArgb } from "../src/features/objekte/color-alpha";
 import { createPrefab, placePrefab } from "../src/prefabs";
 import {
   createRoom,
@@ -63,6 +64,33 @@ import {
   copyAtViewportCenter,
   type SelectionType,
 } from "../src/selection";
+
+test("DD-028 object alpha survives property history and a fresh document parse", () => {
+  const document = newDocument("Objektfarbe", 8, 8);
+  const session = new Session(document);
+  const native = readObjectArgb("804080c0");
+  const object = createObject(session, document.floors[0]!.id, { x: 3, y: 3 }, {
+    rotation: 0,
+    width: 1,
+    height: 1,
+    color: native.rgb,
+    alpha: native.alphaByte,
+    label: "",
+    assetId: "pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png",
+  });
+  session.execute({
+    label: "Objektfarbe ändern",
+    entities: [{ id: object.id, before: object, after: { ...object, alpha: 0 } }],
+  });
+  assert.equal((session.entities.get(object.id) as MapObject).alpha, 0);
+  session.undo();
+  assert.equal((session.entities.get(object.id) as MapObject).alpha, 128);
+  session.redo();
+  const saved = parseDocument(JSON.stringify(session.document()));
+  const reopened = saved.entities.find((entity) => entity.id === object.id) as MapObject;
+  assert.equal(writeObjectArgb({ rgb: reopened.color, alphaByte: reopened.alpha! }), "004080c0");
+  assert.throws(() => new Session({ ...saved, entities: [{ ...reopened, alpha: 256 }] }), /Kartenobjekt/);
+});
 
 test("selected box gives the measured corner grip priority over its interior at two zooms", () => {
   const box = {

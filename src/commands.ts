@@ -179,7 +179,7 @@ export function createObject(
   point: Point,
   settings: Pick<
     MapObject,
-    "rotation" | "width" | "height" | "color" | "label" | "assetId"
+    "rotation" | "width" | "height" | "color" | "alpha" | "label" | "assetId"
   > = {
     rotation: 0,
     width: 1.6,
@@ -216,7 +216,7 @@ export function createObject(
 export interface ScatterSettings {
   object: Pick<
     MapObject,
-    "rotation" | "width" | "height" | "color" | "label" | "assetId"
+    "rotation" | "width" | "height" | "color" | "alpha" | "label" | "assetId"
   >;
   spacing: number;
   spread: number;

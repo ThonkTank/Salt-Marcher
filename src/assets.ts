@@ -1,3 +1,9 @@
+import { discoverColorableObjectPaths } from "./features/objekte/colorable-tags";
+import {
+  colorableSettingsFromMetadata,
+  type ColorableObjectSettings,
+} from "./features/objekte/colorable-pixels";
+
 export interface BinarySource {
   readonly size: number;
   slice(start?: number, end?: number): Blob;
@@ -45,6 +51,7 @@ export interface AssetDefinition {
   readonly name: string;
   readonly files: Readonly<Record<string, string>>;
   readonly tintable?: boolean;
+  readonly colorableSettings?: ColorableObjectSettings;
   readonly color?: string;
 }
 
@@ -217,7 +224,11 @@ export async function discoverPackAssets(
     relativeEntries = pack.entries
       .filter((entry) => entry.path.startsWith(prefix))
       .map((entry) => ({ ...entry, relative: entry.path.slice(prefix.length) })),
-    result: AssetDefinition[] = [];
+    result: AssetDefinition[] = [],
+    colorableObjectPaths = await discoverColorableObjectPaths(pack),
+    colorableSettings = colorableObjectPaths.size
+      ? colorableSettingsFromMetadata(pack.metadata.custom_color_overrides)
+      : undefined;
   const simple: readonly [AssetKind, RegExp][] = [
     ["object", /^textures\/objects\/.+\.png$/i],
     ["pattern", /^textures\/patterns\/(?:normal|colorable)\/.+\.png$/i],
@@ -237,6 +248,9 @@ export async function discoverPackAssets(
           files: { image: entry.relative },
           ...(kind === "pattern"
             ? { tintable: entry.relative.includes("/colorable/") }
+            : {}),
+          ...(kind === "object" && colorableObjectPaths.has(entry.relative)
+            ? { tintable: true, colorableSettings }
             : {}),
         });
         break;

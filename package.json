@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "pixi.js": "8.22.0",
+    "pngjs": "^7.0.0",
     "polygon-clipping": "^0.15.7"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/pngjs": "^6.0.5",
     "esbuild": "^0.25.0",
     "obsidian": "^1.8.7",
     "prettier": "^3.6.2",

@@ -118,6 +118,7 @@ export interface MapObject extends BaseEntity {
   readonly width: number;
   readonly height: number;
   readonly color: number;
+  readonly alpha?: number;
   readonly label: string;
   readonly layer?: number;
   readonly shadow?: boolean;
@@ -460,6 +461,8 @@ export function validateEntity(
       e.height <= 0 ||
       typeof e.label !== "string" ||
       !Number.isInteger(e.color) ||
+      (e.alpha !== undefined &&
+        (!Number.isInteger(e.alpha) || e.alpha < 0 || e.alpha > 255)) ||
       (e.layer !== undefined && !Number.isFinite(e.layer)) ||
       (e.shadow !== undefined && typeof e.shadow !== "boolean") ||
       (e.blocksLight !== undefined && typeof e.blocksLight !== "boolean") ||
