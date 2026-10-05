@@ -38,6 +38,14 @@ function editorState(page, mapPath) {
       pointColors: r.selection.context.instructions
         .filter((instruction) => instruction.action === "fill")
         .map((instruction) => instruction.data.style.color),
+      heldGrips: r.preview.context.instructions
+        .filter((instruction) => instruction.action === "fill" &&
+          instruction.data.path?.shapePath?.shapePrimitives?.[0]?.shape?.type === "circle")
+        .map((instruction) => ({
+          color: instruction.data.style.color,
+          x: instruction.data.path.shapePath.shapePrimitives[0]?.shape.x,
+          y: instruction.data.path.shapePath.shapePrimitives[0]?.shape.y,
+        })),
       gesture: editor.gesture?.buildingVertex ?? null,
       building,
       preview: preview ? {
@@ -222,6 +230,10 @@ module.exports = async function dd01203({ page, out, qa, vault,
         held.preview.originalVisible === false &&
         held.gesture?.index === 23 &&
         same(held.preview.point, { x: 1, y: 5.5 }) &&
+        held.heldGrips.length === 32 &&
+        held.heldGrips.filter((grip) => grip.color === 0xf5f5f5).length === 31 &&
+        held.heldGrips.filter((grip) => grip.color === 0xffdc00 &&
+          grip.x === 1 && grip.y === 5.5).length === 1 &&
         held.preview.fillAndWallActions.includes("fill") &&
         held.preview.fillAndWallActions.includes("stroke") &&
         same(held.document, before.document) &&

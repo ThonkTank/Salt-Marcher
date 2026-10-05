@@ -5,7 +5,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const CASES = ["DD-013.02", "DD-013.03", "DD-014.01", "DD-014.02"];
+const ONLY_BACKSPACE = process.env.DUNGEON_QA_ONLY_DD013 === "1";
+const CASES = ONLY_BACKSPACE
+  ? ["DD-013.02", "DD-013.03"]
+  : ["DD-013.02", "DD-013.03", "DD-014.01", "DD-014.02"];
 const PACK = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/" +
   "DD015-017-fixtures/qa-wall-pack.dungeondraft_pack";
 const PACK_SHA = "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9";
@@ -242,6 +245,14 @@ async function edit({ page, out, qa, vault }) {
     `Erneutes Backspace am markierten Dreipunkt-Griff erhält Kontur/History: ${minimumOkay}.`,
     minimumOkay ? null : "Dreipunkt-Minimum oder History wich vom Original ab.",
     [minScreen]);
+
+  if (ONLY_BACKSPACE) {
+    const steps = output(out, "bau-point-gestures-edit.json", details);
+    for (const id of CASES) cases[id].evidence.unshift(steps);
+    output(qa, STATE, { scenes: { deletion: deletionSaved },
+      editCases: cases, wallAssetId });
+    return cases;
+  }
 
   const triangle = { id: "qa-building-insert", kind: "building",
     polygons: [{ outer: [{ x: 4, y: 5 }, { x: 2, y: 2 },
