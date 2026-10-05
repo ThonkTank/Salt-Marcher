@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   alphaByteFromOpacity,
-  initialPatternAppearance,
   opacityFromAlphaByte,
 } from "../src/features/material/pattern-appearance";
 
@@ -17,8 +16,4 @@ test("DD-020.13 rejects alpha values that cannot be stored as an 8-bit value", (
     assert.throws(() => opacityFromAlphaByte(value), RangeError);
   for (const value of [-0.01, 1.01, NaN, Infinity])
     assert.throws(() => alphaByteFromOpacity(value), RangeError);
-});
-
-test("DD-020.14 starts a new pattern without an outline", () => {
-  assert.deepEqual(initialPatternAppearance, { opacity: 1, wallWidth: 0 });
 });

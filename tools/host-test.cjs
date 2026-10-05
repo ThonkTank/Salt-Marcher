@@ -16,7 +16,8 @@ const root = path.resolve(__dirname, ".."),
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
   v2Open = process.argv.includes("--v2-open"),
-  patternAlpha = process.argv.includes("--pattern-alpha"),
+  patternOutline = process.argv.includes("--pattern-outline"),
+  patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
@@ -2859,7 +2860,7 @@ async function patternAlphaWorkflow(view) {
       app.workspace.getLeavesOfType("dungeon-native-map")[0]
         .view.editor.settings.surfaces.pattern,
     );
-    assert.equal(patternDefaults.wallWidth, 0);
+    assert.equal(patternDefaults.wallWidth, patternOutline ? 0 : 0.08);
     const alpha = page.locator('input[aria-label="Alpha (0–255)"]');
     assert.equal(await alpha.inputValue(), "255");
     await alpha.fill("160");
@@ -2889,15 +2890,16 @@ async function patternAlphaWorkflow(view) {
       (entity) => entity.kind === "surface" && entity.category === "pattern",
     );
     assert.equal(pattern.opacity, 160 / 255);
-    assert.equal(pattern.wallWidth, 0);
+    assert.equal(pattern.wallWidth, patternOutline ? 0 : 0.08);
     assert.equal(pattern.layer, 100);
-    checks.push("Pattern starts without outline and stores exact 8-bit alpha 160/255");
+    checks.push("Pattern stores exact 8-bit alpha 160/255 with the current outline setting");
     await canvas.screenshot({ path: out + "/pattern-alpha-160.png" });
     await page.keyboard.press("Control+z");
     assert.equal((await view()).document.entities.some((entity) => entity.id === pattern.id), false);
     await page.keyboard.press("Control+Shift+z");
     assert.equal((await view()).document.entities.some((entity) => entity.id === pattern.id), true);
-    checks.push("Pattern alpha and outline survive undo and redo");
+    checks.push("Pattern alpha survives creation undo and redo");
+    if (patternOutline) {
     await page.evaluate(async (id) =>
       app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.select(id),
     pattern.id);
@@ -2920,6 +2922,7 @@ async function patternAlphaWorkflow(view) {
     await outline.press("Tab");
     assert.equal(await wallWidth(), 0);
     checks.push("Pattern outline enabled with undo and redo, then disabled and saved");
+    }
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForFunction(() =>
       !app.workspace.getLeavesOfType("dungeon-native-map")[0]
@@ -2929,9 +2932,9 @@ async function patternAlphaWorkflow(view) {
     assert.equal(disk.version, 3);
     const saved = disk.entities.find((entity) => entity.id === pattern.id);
     assert.equal(saved.opacity, 160 / 255);
-    assert.equal(saved.wallWidth, 0);
+    assert.equal(saved.wallWidth, patternOutline ? 0 : 0.08);
     fs.writeFileSync(qa + "/pattern-alpha-saved.json", JSON.stringify({ mapPath, id: pattern.id }));
-    checks.push("Pattern map saves as V3 with exact alpha and no outline");
+    checks.push("Pattern map saves as V3 with exact alpha and outline setting");
     return;
   }
   const { id } = JSON.parse(fs.readFileSync(qa + "/pattern-alpha-saved.json", "utf8"));
@@ -2943,9 +2946,9 @@ async function patternAlphaWorkflow(view) {
   const pattern = opened.entities.find((entity) => entity.id === id);
   assert.equal(opened.version, 3);
   assert.equal(pattern.opacity, 160 / 255);
-  assert.equal(pattern.wallWidth, 0);
+  assert.equal(pattern.wallWidth, patternOutline ? 0 : 0.08);
   await page.locator(".dn-canvas canvas").screenshot({ path: out + "/pattern-alpha-reopened.png" });
-  checks.push("Fresh Obsidian process reopens exact pattern alpha and outline state");
+  checks.push("Fresh Obsidian process reopens exact pattern alpha and outline setting");
 }
 async function v2OpenWorkflow(view) {
   for (const mapPath of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {

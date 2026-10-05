@@ -17,7 +17,6 @@ import { type AssetDefinition, type AssetKind } from "./assets";
 import { updatePassage } from "./commands";
 import {
   alphaByteFromOpacity,
-  initialPatternAppearance,
   opacityFromAlphaByte,
 } from "./features/material/pattern-appearance";
 
@@ -135,7 +134,8 @@ export const toolSettings = (): ToolSettings => ({
       layer: 100,
       color: 0xb4976c,
       wallColor: 0x5d4a35,
-      ...initialPatternAppearance,
+      wallWidth: 0.08,
+      opacity: 1,
       effect: "none",
     },
     water: {

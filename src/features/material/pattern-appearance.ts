@@ -1,11 +1,3 @@
-import type { Surface } from "../../model";
-
-// Dungeondraft 1.2.0.1 starts the Pattern Shape Tool with Outline OFF.
-export const initialPatternAppearance: Pick<Surface, "opacity" | "wallWidth"> = {
-  opacity: 1,
-  wallWidth: 0,
-};
-
 export function opacityFromAlphaByte(alpha: number): number {
   if (!Number.isInteger(alpha) || alpha < 0 || alpha > 255)
     throw new RangeError("Alpha must be an integer from 0 to 255.");

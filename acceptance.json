@@ -8430,12 +8430,12 @@
         },
         "hostCheck": {
           "state": "isolated_pass_pending_installed_endstand",
-          "build": "main.js SHA-256 877b349e7c2f625b3e1acbf9d259b16020c73841bf24320aa7bd3756a90e37c8",
+          "build": "main.js SHA-256 d9b3095ec27b594ac77eedda53186d0b51cef60b1329307c1b5b2a3cd679367d",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178244703-pattern-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178254703-pattern-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern-alpha-only/evidence/1791179300869-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern-alpha-only/evidence/1791179307702-pattern-alpha-reopen/result.json"
           ],
-          "gap": "8-Bit-Alpha 160/255, Undo/Redo, Speichern und frischer Obsidian-Prozess belegt; Nachweis am installierten Endstand sowie übrige Farbwahl-Unterfälle offen."
+          "gap": "Exakter Wert 160/255, Erstellungs-Undo/Redo, Speicherung und frischer Hostprozess belegt; produktiver Endstand noch nicht installiert. Andere Color-Picker-Unterfälle bleiben separat offen."
         }
       },
       {
@@ -8485,10 +8485,9 @@
           }
         },
         "implementation": {
-          "state": "integrated_pending_host",
+          "state": "prepared_in_area_branch_not_integrated",
           "changes": [
-            "src/features/material/pattern-appearance.ts",
-            "src/properties.ts"
+            "area/material: src/features/material/pattern-appearance.ts"
           ],
           "evidence": [
             "tests/material-pattern.test.ts",
@@ -8496,14 +8495,14 @@
           ]
         },
         "hostCheck": {
-          "state": "partial_host_original_gap",
+          "state": "prototype_partial_original_gap",
           "build": "main.js SHA-256 877b349e7c2f625b3e1acbf9d259b16020c73841bf24320aa7bd3756a90e37c8",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178244703-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-pattern/evidence/1791178254703-pattern-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-pattern-outline/RESULT.md"
           ],
-          "gap": "Host belegt Start ohne Kontur, ON-Umschalten mit Undo/Redo, OFF-Speicherung und frisches Öffnen. Native ON/OFF-Verlaufs- und Kartenwirkungsgegenprobe fehlt; Original startete in zwei isolierten Versuchen nur bis zum Ladebildschirm. Keine Paketabnahme."
+          "gap": "Früherer isolierter Prototypentest belegte Hoststart OFF und Umstellen. Diese Änderung ist wegen fehlender genauer Original-Gegenprobe aus dem zur Installation vorgesehenen Stand entfernt. Zwei Originalstarts blieben im Ladebildschirm; Karteffekt und gepaarter Vergleich offen."
         }
       },
       {
