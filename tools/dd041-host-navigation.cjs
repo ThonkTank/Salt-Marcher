@@ -7,7 +7,7 @@ const path = require("node:path");
 const close = (actual, expected, tolerance = 1e-5) =>
   Math.abs(actual - expected) <= tolerance;
 
-module.exports = async function dd041HostNavigation({ page, out }) {
+module.exports = async function dd041HostNavigation({ page, out, panOnly = false }) {
   const screens = path.join(out, "dd041-screens");
   fs.mkdirSync(screens, { recursive: true });
   const records = [];
@@ -125,41 +125,44 @@ module.exports = async function dd041HostNavigation({ page, out }) {
   // One physical-wheel-like Chromium event is deltaY=±100 pixels. Capture
   // the event value so that a device-dependent notch mapping stays explicit.
   const wheelEvents = [];
-  await canvas.evaluate((node) => {
-    node.addEventListener("wheel", (event) => {
-      window.__dd041Wheel ??= [];
-      window.__dd041Wheel.push({ deltaY: event.deltaY, deltaMode: event.deltaMode,
-        ctrlKey: event.ctrlKey });
-    }, { capture: true });
-  });
-  for (const [scale, deltaY, name, expectedScale] of [
-    [64, -100, "up-100", 80],
-    [80, 100, "down-125", 64],
-  ]) {
-    await reset(scale);
-    const before = await snap();
-    const beforeScreen = await shot(`DD-041.04-${name}-before`);
-    await page.mouse.move(screen(start).x, screen(start).y);
-    await page.keyboard.down("Control");
-    await page.mouse.wheel(0, deltaY);
-    await page.keyboard.up("Control");
-    const after = await snap();
-    const events = await page.evaluate(() => {
-      const result = window.__dd041Wheel ?? [];
-      window.__dd041Wheel = [];
-      return result;
+  if (!panOnly) {
+    await canvas.evaluate((node) => {
+      node.addEventListener("wheel", (event) => {
+        window.__dd041Wheel ??= [];
+        window.__dd041Wheel.push({ deltaY: event.deltaY, deltaMode: event.deltaMode,
+          ctrlKey: event.ctrlKey });
+      }, { capture: true });
     });
-    wheelEvents.push({ name, events });
-    record("DD-041.04", name, before, after, {
-      scale: expectedScale,
-      pointerWorldX: 0, pointerWorldY: 0,
-      documentSame: true, notesSame: true, dirtySame: true, historySame: true,
-    }, [beforeScreen, await shot(`DD-041.04-${name}-after`)]);
+    for (const [scale, deltaY, name, expectedScale] of [
+      [64, -100, "up-100", 80],
+      [80, 100, "down-125", 64],
+    ]) {
+      await reset(scale);
+      const before = await snap();
+      const beforeScreen = await shot(`DD-041.04-${name}-before`);
+      await page.mouse.move(screen(start).x, screen(start).y);
+      await page.keyboard.down("Control");
+      await page.mouse.wheel(0, deltaY);
+      await page.keyboard.up("Control");
+      const after = await snap();
+      const events = await page.evaluate(() => {
+        const result = window.__dd041Wheel ?? [];
+        window.__dd041Wheel = [];
+        return result;
+      });
+      wheelEvents.push({ name, events });
+      record("DD-041.04", name, before, after, {
+        scale: expectedScale,
+        pointerWorldX: 0, pointerWorldY: 0,
+        documentSame: true, notesSame: true, dirtySame: true, historySame: true,
+      }, [beforeScreen, await shot(`DD-041.04-${name}-after`)]);
+    }
   }
 
   const result = {
     reference: "Dungeondraft 1.2.0.1; native DD-041 report in implementation QA",
     extra: "DD-041.01 is a host Hand-tool addition, not a native required command",
+    scope: panOnly ? "DD-041.02–.03 pan-only" : "DD-041.02–.04 navigation",
     mapPath: "Dungeons/NavigationQA/Karte.dungeon",
     input: { screenDrag: [96, 64], relativeStart: [60, 40], wheelDeltaY: [-100, 100] },
     wheelEvents,

@@ -25,10 +25,11 @@ const restart = process.argv.includes("--restart"),
   objectAlpha = process.argv.includes("--object-alpha"),
   pathLibrary = process.argv.includes("--path-library"),
   dd041Navigation = process.argv.includes("--dd041-navigation"),
+  dd041PanOnly = process.argv.includes("--pan-only"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -320,7 +321,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -491,7 +492,7 @@ async function workflow() {
   }
   if (dd041Navigation) {
     assert(!restart, "DD-041 uses a fresh isolated map in one host run");
-    const result = await dd041HostNavigation({ page, view, out });
+    const result = await dd041HostNavigation({ page, out, panOnly: dd041PanOnly });
     checks.push(...result.records.map((entry) =>
       `${entry.caseId} ${entry.name}: ${entry.passed ? "pass" : "deviation"}`));
     assert(result.passed, `DD-041 deviations: ${result.failures.join(", ")}`);
