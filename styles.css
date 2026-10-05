@@ -410,16 +410,22 @@
   font-size: 11px;
   line-height: 1.4;
 }
-.dn-view-controls {
+.dn-view-controls,
+.dn-view-toggles {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.dn-view-controls button {
+.dn-view-controls button,
+.dn-view-toggles button {
   min-width: 30px;
   height: 28px;
   padding: 3px 8px;
   font-size: 11px;
+}
+.dn-view-toggles button[aria-pressed="true"] {
+  color: var(--text-accent);
+  border-color: var(--interactive-accent);
 }
 .dn-hidden-input {
   display: none;

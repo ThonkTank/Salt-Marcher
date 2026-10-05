@@ -1247,6 +1247,11 @@ export class MapRenderer {
     g.stroke({ color: 0x5b5a51, width: 1 / c.scale, alpha: 0.15 });
     g.rect(0, 0, width, height).stroke({ color: 0x777565, width: 1 / c.scale });
   }
+  setGridVisible(visible: boolean): void {
+    this.appearance.grid = visible;
+    this.drawGrid();
+    this.invalidate();
+  }
   private cameraChanged(): void {
     this.world.position.set(this.camera.x, this.camera.y);
     this.world.scale.set(this.camera.scale);

@@ -342,6 +342,8 @@ export class DungeonEditor {
   );
   private referenceAlpha = 0.2;
   private currentAlpha = 1;
+  private gridVisible = true;
+  private snapEnabled = true;
   private paintWorker?: ComputeClient;
   private paintTask?: Promise<void>;
   private paintGeneration = 0;
@@ -617,6 +619,18 @@ export class DungeonEditor {
     const footer = element("footer", "dn-footer", root);
     this.status = element("div", "dn-status", footer);
     this.status.setAttribute("role", "status");
+    const mapSwitches = element("div", "dn-view-toggles", footer);
+    const gridButton = this.button("Raster", () => {
+      this.gridVisible = !this.gridVisible;
+      this.renderer.setGridVisible(this.gridVisible);
+      gridButton.setAttribute("aria-pressed", String(this.gridVisible));
+    }, mapSwitches);
+    gridButton.setAttribute("aria-pressed", "true");
+    const snapButton = this.button("Snap", () => {
+      this.snapEnabled = !this.snapEnabled;
+      snapButton.setAttribute("aria-pressed", String(this.snapEnabled));
+    }, mapSwitches);
+    snapButton.setAttribute("aria-pressed", "true");
     const viewControls = element("div", "dn-view-controls", footer);
     this.button("−", () => this.renderer.zoom(1 / 1.2), viewControls);
     this.button("+", () => this.renderer.zoom(1.2), viewControls);
@@ -1427,7 +1441,9 @@ export class DungeonEditor {
     void this.select(undefined);
   }
   private snap(p: Point): Point {
-    return { x: Math.round(p.x), y: Math.round(p.y) };
+    return this.snapEnabled
+      ? { x: Math.round(p.x), y: Math.round(p.y) }
+      : { x: p.x, y: p.y };
   }
   private isBrushTool(tool: Tool): boolean {
     return (
