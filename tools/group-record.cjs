@@ -7,10 +7,12 @@ function createGroupRecord(group, out, build, phase) {
   const add = (caseId, state, observation, evidence = [], gap = null) => {
     if (!allowed.has(caseId)) throw new Error(`${group.id}: unknown case ${caseId}`);
     if (records.has(caseId)) throw new Error(`${group.id}: duplicate result ${caseId}`);
-    if (!["pass", "fail", "open", "not_applicable"].includes(state))
+    if (!["pass", "fail", "deviation", "open", "not_applicable"].includes(state))
       throw new Error(`${group.id}: invalid state ${state}`);
     if (state === "open" && !gap)
       throw new Error(`${group.id}: open case ${caseId} needs a gap`);
+    if (state === "deviation" && (!observation || !evidence.length || !gap))
+      throw new Error(`${group.id}: deviation ${caseId} needs observation, evidence and gap`);
     if (state === "pass" && (!observation || !evidence.length))
       throw new Error(`${group.id}: passed case ${caseId} needs observation and evidence`);
     records.set(caseId, { caseId, state, observation, evidence, gap });
@@ -20,7 +22,7 @@ function createGroupRecord(group, out, build, phase) {
       if (!records.has(caseId))
         add(caseId, "open", null, [], "Für diesen Pflichtfall wurde in dieser Gruppensitzung noch kein Hostvergleich durchgeführt.");
     const cases = group.caseIds.map((caseId) => records.get(caseId));
-    const counts = Object.fromEntries(["pass", "fail", "open", "not_applicable"].map((state) =>
+    const counts = Object.fromEntries(["pass", "fail", "deviation", "open", "not_applicable"].map((state) =>
       [state, cases.filter((item) => item.state === state).length]));
     const result = {
       schemaVersion: 1,
@@ -28,7 +30,7 @@ function createGroupRecord(group, out, build, phase) {
       title: group.title,
       phase,
       build,
-      complete: counts.fail === 0 && counts.open === 0,
+      complete: counts.fail === 0 && counts.deviation === 0 && counts.open === 0,
       counts,
       cases,
     };

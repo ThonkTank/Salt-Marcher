@@ -5,9 +5,12 @@
   "assetName": "Battlements",
   "assetPackId": "dungeondraft-builtin-1.2.0.1",
   "assetSourcePath": "res://textures/paths/battlements.png",
+  "sourcePixels": [1024, 69],
+  "nativePixelsPerField": 256,
+  "widthFactor": 1,
   "mapName": "MaterialPathGroupQA",
   "mapPath": "Dungeons/MaterialPathGroupQA/Karte.dungeon",
-  "mapSize": [16, 12],
-  "horizontal": [{ "x": 2, "y": 3 }, { "x": 10, "y": 3 }],
-  "bent": [{ "x": 2, "y": 8 }, { "x": 6, "y": 8 }, { "x": 6, "y": 10 }]
+  "mapSize": [12, 8],
+  "horizontal": [{ "x": 2, "y": 1.5 }, { "x": 9, "y": 1.5 }],
+  "bent": [{ "x": 2, "y": 6 }, { "x": 5, "y": 6 }, { "x": 5, "y": 7.5 }]
 }

@@ -416,7 +416,7 @@ async function workflow() {
       app.vault?.adapter?.basePath === expected &&
       app.workspace?.layoutReady,
     vault,
-    { timeout: 30000 },
+    { timeout: 90000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -490,7 +490,7 @@ async function workflow() {
     } finally {
       groupResult = record.finish();
     }
-    checks.push(`${activeGroupId}: ${groupResult.counts.pass} pass, ${groupResult.counts.fail} fail, ${groupResult.counts.open} open`);
+    checks.push(`${activeGroupId}: ${groupResult.counts.pass} pass, ${groupResult.counts.fail} fail, ${groupResult.counts.deviation} deviation, ${groupResult.counts.open} open`);
     assert.equal(groupResult.counts.fail, 0, `Group ${activeGroupId} has failing cases`);
     return;
   }

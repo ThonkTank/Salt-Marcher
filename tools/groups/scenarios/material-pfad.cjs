@@ -20,6 +20,9 @@ const fileSha256 = (file) => new Promise((resolve, reject) => {
 async function choosePath(page) {
   if (!(await page.locator(".dungeon-native-editor.dn-maximized").count()))
     await page.getByRole("button", { name: "Maximieren", exact: true }).click();
+  const active = await page.evaluate(() =>
+    app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor?.tool === "path");
+  if (active) return;
   await page.locator(".dn-group-rail").getByRole("button", { name: "Gelände", exact: true }).click();
   await page.locator(".dn-tool-rail").getByRole("button", { name: "Pfade", exact: true }).click();
 }
@@ -39,8 +42,13 @@ async function screenPoint(page, point) {
 async function waitTexture(page, entityIds, assetId) {
   await page.waitForFunction(({ entityIds, assetId }) => {
     const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor?.renderer;
-    if (!renderer?.textures.entries.get(assetId + "\0image")?.texture) return false;
-    return entityIds.every((id) => renderer.visuals.get(id)?.assets?.includes(assetId + "\0image"));
+    const texture = renderer?.textures.entries.get(assetId + "\0image")?.texture;
+    if (!texture) return false;
+    return entityIds.every((id) => {
+      const visual = renderer.visuals.get(id);
+      return visual?.assets?.includes(assetId + "\0image") &&
+        visual.pathMesh?.texture === texture && visual.pathGeometry?.indices.length >= 6;
+    });
   }, { entityIds, assetId }, { timeout: 30000 });
 }
 
@@ -117,8 +125,12 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
       const reopened = await stage("fresh-open", true);
       const persistence = !!reopened && !reopened.dirty &&
         same(reopened.document, saved.document) &&
-        saved.entityIds.every((id) => paths(reopened).some((entity) =>
-          entity.id === id && entity.material?.assetId === saved.assetId));
+        saved.entityIds.every((id, index) => paths(reopened).some((entity) =>
+          entity.id === id && entity.material?.assetId === saved.assetId &&
+          Math.abs(entity.width - fixture.sourcePixels[1] /
+            fixture.nativePixelsPerField * (index + 1)) < 1e-8 &&
+          entity.material?.tileSize === fixture.sourcePixels[0] /
+            fixture.nativePixelsPerField * (index + 1)));
       steps.persistence = { documentAndIds: persistence, diskSha256 };
       const tiles = page.locator(".dn-path-library-tiles button");
       const nativeTile = page.locator(`.dn-path-library-tiles button[aria-label="${fixture.assetName}"]`);
@@ -133,6 +145,23 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
         `Frischstart: beide gespeicherten Pfade samt Assetreferenz sichtbar/geladen, Dokument unverändert=${persistence}.`,
         [path.join(out, "fresh-open.png"), savedPath],
         persistence ? "Original: Texturwirkung und Übergänge nach Neustart nicht auf gleicher Geometrie gepaart." : null);
+      set("DD-021.06", persistence ? "open" : "fail",
+        `Frischstart bewahrte Width 1=69/256 und Width 2=138/256 Feld samt proportionalem Materialmaß=${persistence}.`,
+        [path.join(out, "fresh-open.png"), savedPath],
+        persistence ? "Weitere Width-Werte und Texturen sind noch nicht gepaart." : null);
+      const search = page.getByRole("searchbox", { name: "Pfadbibliothek durchsuchen" });
+      await search.fill(fixture.assetName);
+      await search.press("Enter");
+      const searchedAgain = await tiles.count() === 1 &&
+        await nativeTile.count() === 1;
+      set("DD-021.22", searchedAgain ? "pass" : "fail",
+        `Frischstart: Return-Suche nach ${fixture.assetName} zeigt genau die native Kachel=${searchedAgain}.`,
+        [path.join(out, "fresh-open.png")],
+        group.originalGaps?.["DD-021.22"] ?? null);
+      for (const id of ["DD-021.20", "DD-021.26"])
+        set(id, "not_applicable",
+          "Undo beziehungsweise Redo wurde in der Bearbeitungsphase gemessen; der frische Prozess prüft die gespeicherte Pfadwirkung unter DD-021.21.",
+          [savedPath]);
       finish();
       return;
     }
@@ -146,6 +175,9 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
     { name: fixture.mapName, size: fixture.mapSize });
     await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
     await choosePath(page);
+    await page.getByRole("button", { name: "Snap", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Snap", exact: true })
+      .getAttribute("aria-pressed"), "false");
     await page.evaluate(() => {
       const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.renderer;
       renderer.fit();
@@ -168,6 +200,8 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
         [path.join(out, "library-before.png")]);
       throw new Error("Eingebaute Pfadbibliothek fehlt oder ist nicht angebunden");
     }
+    assert.deepEqual(asset.pathTexturePixels,
+      { width: fixture.sourcePixels[0], height: fixture.sourcePixels[1] });
     const preview = nativeTile.locator("img");
     await preview.evaluate((image) => image.decode());
     assert(await preview.evaluate((image) => image.naturalWidth > 0),
@@ -199,7 +233,7 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
         "Original: Auswahlzustand nach Clear Search noch nicht gepaart." : null);
     if (!clearPass) throw new Error("Clear Search beschädigte Kachelwahl oder Text");
 
-    const draw = async (points, label) => {
+    const draw = async (points, label, widthFactor) => {
       await choosePath(page);
       for (let index = 0; index < points.length; index++) {
         const at = await screenPoint(page, points[index]);
@@ -217,18 +251,28 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
       const placed = paths(after).at(-1);
       assert.equal(placed?.material?.assetId, asset.id);
       assert.equal(placed?.material?.assetPart, "image");
+      assert(Math.abs(placed.width - fixture.sourcePixels[1] /
+        fixture.nativePixelsPerField * widthFactor) < 1e-8,
+      `Battlements Width=${widthFactor} entspricht nativer Bildhöhe × Faktor in 256-Pixel-Feldern`);
+      assert.equal(placed.material.tileSize,
+        fixture.sourcePixels[0] / fixture.nativePixelsPerField * widthFactor);
+      assert(placed.points.length === points.length &&
+        placed.points.every((point, index) =>
+          Math.abs(point.x - points[index].x) < 1e-6 &&
+          Math.abs(point.y - points[index].y) < 1e-6),
+      "Der Hostpfad muss die Originalpunkte ohne Snap-Verformung speichern");
       await waitTexture(page, [placed.id], asset.id);
       return { after, placed };
     };
-    const horizontal = await draw(fixture.horizontal, "horizontal");
+    const horizontal = await draw(fixture.horizontal, "horizontal", 1);
     set("DD-021.15", "open",
       `Eingebaute Battlements-Kachel gewählt, horizontale Texturreferenz ${asset.id} platziert und decodiert.`,
       [path.join(out, "library-before.png"), path.join(out, "horizontal-placed.png")],
       group.originalGaps?.["DD-021.15"] ?? "Original: gleiche Kachelwahl und Kartenwirkung ungepaart.");
     set("DD-021.02", "open",
-      `Enter erstellte einen horizontalen Texturpfad; Vorschau und Karte wurden gesichert.`,
+      `Nach zwei Klickpunkten commitet schon das erste Enter im Host; in einem Originalzug blieb der Pfad nach dem ersten Enter Vorschau und wurde erst mit dem zweiten Enter erstellt. Ein anderer Originalzug brauchte einen Doppelklick.`,
       [path.join(out, "horizontal-preview.png"), path.join(out, "horizontal-placed.png")],
-      group.originalGaps?.["DD-021.02"] ?? "Original: gleiche Punktfolge ungepaart.");
+      "Original: Die unterschiedlichen Enter-Reaktionen sind nicht erklärt; die Abschlussregel kann noch nicht verbindlich verglichen werden.");
 
     await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
     const undone = await stage("horizontal-undo", true);
@@ -249,11 +293,20 @@ module.exports = async function materialPath({ page, out, qa, vault, restart, gr
       group.originalGaps?.["DD-021.26"] ?? null);
     if (!redoPass) throw new Error("Pfad-Redo fehlgeschlagen");
 
-    const bent = await draw(fixture.bent, "bent");
+    const widthInput = page.getByRole("spinbutton", { name: "Pfadbreite (Originalfaktor)" });
+    await widthInput.fill("2");
+    await widthInput.press("Tab");
+    assert.equal(await widthInput.inputValue(), "2");
+    const bent = await draw(fixture.bent, "bent", 2);
     assert.equal(bent.placed.points.length, 3,
       "Geknickter QA-Pfad hat keine drei gespeicherten Punkte");
+    set("DD-021.06", "open",
+      `Battlements Width 1=69/256 Feld und Width 2=138/256 Feld; die Texturlänge skaliert von 4 auf 8 Felder.`,
+      [path.join(out, "horizontal-placed.png"), path.join(out, "bent-placed.png")],
+      "Zwischenwerte, Reglergrenzen und andere Texturhöhen sind noch nicht gepaart.");
     steps.bent = { points: bent.placed.points,
-      originalGap: "Gleiche Geometrie und Längs-/Querskalierung im Original noch nicht gemessen." };
+      nativeWidth: 138, nativePixelsPerField: 256,
+      originalCommit: "Doppelklick auf den Endpunkt; die genaue Enter-Regel blieb uneindeutig." };
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForFunction(() => !app.workspace.getLeavesOfType("dungeon-native-map")[0]
       .view.editor.session.dirty, null, { timeout: 12000 });

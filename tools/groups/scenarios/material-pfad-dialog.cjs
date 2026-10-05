@@ -35,12 +35,19 @@ async function openMap(page) {
   await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
 }
 
-async function openDialog(page) {
+async function openDialog(page, out) {
   await choosePathTool(page);
   await page.locator(".dn-group-rail")
     .getByRole("button", { name: "Dungeon", exact: true }).click();
   await page.locator(".dn-tool-rail")
     .getByRole("button", { name: "Bibliothek", exact: true }).click();
+  const diagnostic = await page.evaluate(() => ({
+    modals: [...document.querySelectorAll(".modal, .modal-container")]
+      .map((node) => ({ className: node.className, text: node.textContent?.slice(0, 300) })),
+    pageText: document.body.innerText.slice(-500),
+  }));
+  writeJson(path.join(out, "dialog-after-click.json"), diagnostic);
+  await page.screenshot({ path: path.join(out, "dialog-after-click.png") });
   await page.getByRole("button", { name: "Originaldatei wählen", exact: true })
     .waitFor({ timeout: 15000 });
 }
@@ -99,7 +106,7 @@ module.exports = async function materialPathDialog({ page, out, qa, vault, resta
       assert.equal(saved.path, fixture.pckPath);
       result.dataSha256 = await sha256(dataFile);
       await openMap(page);
-      await openDialog(page);
+      await openDialog(page, out);
       const status = page.getByText(/44 Pfadtexturen verfügbar\./);
       await status.waitFor({ timeout: 30000 });
       await capture("reopen-status");
@@ -127,7 +134,7 @@ module.exports = async function materialPathDialog({ page, out, qa, vault, resta
       app.plugins.getPlugin("dungeon-editor").create(name, 16, 12,
         { assetPacks: [], builtInAssets: true }), fixture.mapName);
     await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
-    await openDialog(page);
+    await openDialog(page, out);
     await capture("before-choice");
     await page.evaluate(() => {
       const input = document.querySelector(
@@ -136,9 +143,19 @@ module.exports = async function materialPathDialog({ page, out, qa, vault, resta
       window.__nativePathDialogFile = null;
       input.addEventListener("change", () => {
         const selected = input.files?.[0];
+        let electronPath = null;
+        let electronError = null;
+        try {
+          const electron = require("electron");
+          electronPath = selected && electron.webUtils?.getPathForFile(selected);
+        } catch (error) {
+          electronError = String(error);
+        }
         window.__nativePathDialogFile = {
           name: selected?.name ?? null,
           path: selected?.path ?? null,
+          electronPath,
+          electronError,
         };
       }, { capture: true, once: true });
     });
@@ -146,12 +163,35 @@ module.exports = async function materialPathDialog({ page, out, qa, vault, resta
     const chooserPromise = page.waitForEvent("filechooser", { timeout: 15000 });
     await page.getByRole("button", { name: "Originaldatei wählen", exact: true }).click();
     const chooser = await chooserPromise;
-    await chooser.setFiles(fixture.pckPath);
+    try {
+      await chooser.setFiles(fixture.pckPath);
+      result.fileTransfer = "playwright-filechooser";
+    } catch (error) {
+      if (!String(error).includes("Cannot transfer files larger than 50Mb"))
+        throw error;
+      const client = await page.context().newCDPSession(page);
+      try {
+        const { root } = await client.send("DOM.getDocument", { depth: -1 });
+        const { nodeId } = await client.send("DOM.querySelector", {
+          nodeId: root.nodeId,
+          selector: '.modal input[type="file"][accept=".pck"]',
+        });
+        assert(nodeId, "Sichtbarer Assetdialog hat keinen PCK-Dateiinput");
+        await client.send("DOM.setFileInputFiles", {
+          nodeId,
+          files: [fixture.pckPath],
+        });
+        result.fileTransfer = "cdp-local-file-path";
+      } finally {
+        await client.detach();
+      }
+    }
     result.file = await page.evaluate(() => window.__nativePathDialogFile ?? null);
     chooserStage = false;
-    if (!result.file?.path) {
+    if (result.file?.path !== fixture.pckPath &&
+        result.file?.electronPath !== fixture.pckPath) {
       await capture("missing-file-path");
-      result.gap = "Host: Playwright-Dateiauswahl lieferte im Obsidian/Electron-File kein `.path`; Produktdialog meldet deshalb fehlenden Dateipfad. Ein echter OS-Dateidialog bleibt als Gegenprobe offen.";
+      result.gap = "Host: Weder File.path noch Electron webUtils lieferten den Originaldateipfad; ein echter OS-Dateidialog bleibt als Gegenprobe offen.";
       result.observation = `File-Objekt nach Playwright-Auswahl: ${JSON.stringify(result.file)}.`;
       return result;
     }
