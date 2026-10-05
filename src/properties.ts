@@ -22,6 +22,7 @@ import {
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
 import { mountPatternColorPicker } from "./features/material/pattern-color-picker";
+import { mountLightColorPalette } from "./features/objekte/light-color-palette";
 import {
   mountObjectColorPicker,
   type MountedObjectColorPicker,
@@ -250,7 +251,7 @@ export class Properties {
     min?: string,
     max?: string,
     step?: string,
-  ): void {
+  ): HTMLInputElement {
     const row = document.createElement("label");
     row.className = "dn-field";
     const name = document.createElement("span");
@@ -274,6 +275,7 @@ export class Properties {
     });
     row.append(name, input);
     this.root.append(row);
+    return input;
   }
   private change(e: Entity, patch: Partial<Entity>): void {
     const current = this.session.entities.get(e.id);
@@ -1358,12 +1360,19 @@ export class Properties {
         "4",
         ".1",
       );
-      this.field(
+      const lightColorInput = this.field(
         "Lichtfarbe",
         "color",
         "#" + light.color.toString(16).padStart(6, "0"),
         (i) => update({ color: parseInt(i.value.slice(1), 16) }),
       );
+      if (tool === "light" && !e)
+        mountLightColorPalette(this.root, (color) => {
+          if (this.defaults.light.color === color) return;
+          update({ color });
+          lightColorInput.value = "#" + color.toString(16).padStart(6, "0");
+          this.defaultsChanged();
+        });
       this.field("Schatten", "checkbox", String(light.shadows), (i) =>
         update({ shadows: i.checked }),
       );

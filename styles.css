@@ -266,6 +266,26 @@
   border-radius: 6px;
   background: var(--background-primary);
 }
+.dn-light-color-palette > button {
+  align-self: end;
+  width: 44%;
+  margin-left: auto;
+}
+.dn-light-color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dn-light-color-presets[hidden] {
+  display: none;
+}
+.dn-light-color-preset {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 50%;
+}
 .dn-help,
 .dn-empty-panel {
   margin: 0;
