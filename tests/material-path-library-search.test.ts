@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   applyPathLibrarySearch,
   clearPathLibrarySearch,
+  clearPathLibrarySearchText,
   newPathLibrarySearchState,
   setPathLibrarySearchText,
 } from "../src/features/material/path-library-search";
@@ -43,4 +44,26 @@ test("DD-021.24 tile view restores all entries without changing search text", ()
     ["b", "c"],
   );
   assert.equal(cleared.text, "Battlement");
+});
+
+test("DD-021.27 field X clears visible text without claiming an unmeasured filter result", () => {
+  const initial = newPathLibrarySearchState();
+  const filtered = applyPathLibrarySearch(
+    setPathLibrarySearchText(initial, "Battlements"),
+  );
+  const clearedText = clearPathLibrarySearchText(filtered);
+  assert.deepEqual(clearedText, { text: "", appliedQuery: "Battlements" });
+  assert.deepEqual(filtered, { text: "Battlements", appliedQuery: "Battlements" });
+  const tiles: PathLibraryTile[] = [
+    { id: "b", name: "Battlements", previewUrl: "b.png" },
+    { id: "c", name: "Chains", previewUrl: "c.png" },
+  ];
+  assert.deepEqual(
+    visiblePathLibraryTiles(tiles, clearedText, (tile, query) =>
+      tile.name.includes(query)).map((tile) => tile.id),
+    ["b"],
+  );
+  assert.deepEqual(clearPathLibrarySearch(clearedText), {
+    text: "", appliedQuery: null,
+  });
 });

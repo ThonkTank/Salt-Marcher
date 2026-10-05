@@ -16,6 +16,13 @@ export function setPathLibrarySearchText(
   return { ...state, text };
 }
 
+/** DD-021.27: the field X clears visible text; its effect on applied results is unmeasured. */
+export function clearPathLibrarySearchText(
+  state: PathLibrarySearchState,
+): PathLibrarySearchState {
+  return { ...state, text: "" };
+}
+
 /** The directly observed search was applied when Return was pressed. */
 export function applyPathLibrarySearch(state: PathLibrarySearchState): PathLibrarySearchState {
   return { ...state, appliedQuery: state.text };

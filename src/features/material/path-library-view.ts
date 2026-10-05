@@ -1,6 +1,7 @@
 import {
   applyPathLibrarySearch,
   clearPathLibrarySearch,
+  clearPathLibrarySearchText,
   setPathLibrarySearchText,
   type PathLibrarySearchState,
 } from "./path-library-search";
@@ -48,11 +49,21 @@ export function mountPathLibraryView(
   controls.className = "dn-path-library-controls";
   const label = document.createElement("label");
   label.textContent = "Suche";
+  const searchField = document.createElement("span");
+  searchField.style.display = "inline-flex";
+  searchField.style.alignItems = "center";
   const input = document.createElement("input");
-  input.type = "search";
+  input.type = "text";
   input.value = state.text;
   input.setAttribute("aria-label", "Pfadbibliothek durchsuchen");
-  label.append(input);
+  const fieldX = document.createElement("button");
+  fieldX.type = "button";
+  fieldX.textContent = "×";
+  fieldX.title = "Suchfeld leeren";
+  fieldX.setAttribute("aria-label", "Pfadbibliothek Suchfeld leeren");
+  fieldX.hidden = !state.text;
+  searchField.append(input, fieldX);
+  label.append(searchField);
   const clear = document.createElement("button");
   clear.type = "button";
   clear.textContent = "Suche zurücksetzen";
@@ -85,7 +96,15 @@ export function mountPathLibraryView(
 
   input.addEventListener("input", () => {
     state = setPathLibrarySearchText(state, input.value);
+    fieldX.hidden = !state.text;
     options.onSearchStateChange(state);
+  });
+  fieldX.addEventListener("click", () => {
+    state = clearPathLibrarySearchText(state);
+    input.value = "";
+    fieldX.hidden = true;
+    options.onSearchStateChange(state);
+    input.focus();
   });
   input.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
