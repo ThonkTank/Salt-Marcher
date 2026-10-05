@@ -156,7 +156,9 @@ module.exports = async function dd01203({ page, out, qa, vault,
       const before = await stage("before-drag", mapPath, true),
         diskBefore = sha(disk),
         from = await at(page, mapPath, { x: 2, y: 5.5 }),
-        to = await at(page, mapPath, { x: 1, y: 5.5 });
+        // D05 native hold uses screen (456,456), i.e. pointer (1.125,5.5).
+        // With Snap ON its stored vertex rounds from x=2 to x=1 field.
+        to = await at(page, mapPath, { x: 1.125, y: 5.5 });
       await page.mouse.move(from.x, from.y);
       await page.mouse.down();
       await page.mouse.move(to.x, to.y, { steps: 8 });
