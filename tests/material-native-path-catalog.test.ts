@@ -121,6 +121,23 @@ test("DD-021.15 rejects missing or unsupported texture remaps", async () => {
   );
 });
 
+test("DD-021.15 keeps texture bytes after the external source becomes unavailable", async () => {
+  let available = true;
+  const original = fixture();
+  const source = {
+    size: original.size,
+    slice(start?: number, end?: number): Blob {
+      if (!available) throw new Error("Originalarchiv nicht mehr verfügbar");
+      return original.slice(start, end);
+    },
+  };
+  const catalog = await readNativePathCatalog(source);
+  available = false;
+  const battlements = catalog.textures.find((item) => item.asset.name === "Battlements")!;
+  assert.equal(await catalog.image(battlements.asset.id)?.text(),
+    "RIFF\u0004\u0000\u0000\u0000WEBP");
+});
+
 test("DD-021.15 local Dungeondraft 1.2.0.1 archive has usable path sources", async (context) => {
   const archive = process.env.DUNGEONDRAFT_1201_PCK;
   if (!archive)

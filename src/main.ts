@@ -383,6 +383,7 @@ export default class DungeonPlugin extends Plugin {
   private nativePathCatalog?: NativePathCatalog;
   private nativePathAttempted?: string;
   private nativePathError?: string;
+  private nativePathLoading?: Promise<void>;
   private nativePathUrls = new Map<string, string>();
   private catalogBuiltIns = true;
   private assetLoading?: Promise<void>;
@@ -634,32 +635,50 @@ export default class DungeonPlugin extends Plugin {
     );
   }
   ensureAssets(): Promise<void> {
-    if (this.assetLoaded) return Promise.resolve();
+    if (this.assetLoaded) {
+      if (!this.nativePathError) return Promise.resolve();
+      return this.loadNativePathCatalog().then(() => {
+        if (!this.nativePathError)
+          for (const listener of this.assetListeners) listener();
+      });
+    }
     return (this.assetLoading ??= this.reloadAssets().finally(() => {
       this.assetLoading = undefined;
     }));
   }
-  private async loadNativePathCatalog(): Promise<void> {
+  private loadNativePathCatalog(): Promise<void> {
     const path = this.pluginData.nativePckPath;
-    if (!path || this.nativePathAttempted === path) return;
-    this.nativePathAttempted = path;
-    try {
-      if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
-        throw new Error("Die Originaldatei passt nicht zu Dungeondraft 1.2.0.1 Linux64.");
-      this.nativePathCatalog = await readNativePathCatalog(
-        new LocalBinarySource(path),
-      );
-      this.nativePathError = undefined;
-    } catch (error) {
-      this.nativePathError = String(error);
-      new Notice("Dungeondraft-Originalassets konnten nicht geladen werden: " +
-        this.nativePathError, 10000);
-    }
+    if (!path || this.nativePathAttempted === path) return Promise.resolve();
+    if (this.nativePathLoading) return this.nativePathLoading;
+    const loading = (async () => {
+      try {
+        if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
+          throw new Error("Die Originaldatei passt nicht zu Dungeondraft 1.2.0.1 Linux64.");
+        const next = await readNativePathCatalog(
+          new LocalBinarySource(path),
+        );
+        if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
+          throw new Error("Die Originaldatei wurde während des Ladens verändert.");
+        this.nativePathCatalog = next;
+        this.nativePathAttempted = path;
+        this.nativePathError = undefined;
+      } catch (error) {
+        const detail = String(error);
+        if (detail !== this.nativePathError)
+          new Notice("Dungeondraft-Originalassets konnten nicht geladen werden: " +
+            detail, 10000);
+        this.nativePathError = detail;
+      }
+    })();
+    this.nativePathLoading = loading;
+    return loading.finally(() => { this.nativePathLoading = undefined; });
   }
   async useNativeAssetArchive(path: string): Promise<void> {
     if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
       throw new Error("Bitte die Originaldatei von Dungeondraft 1.2.0.1 Linux64 wählen.");
     const next = await readNativePathCatalog(new LocalBinarySource(path));
+    if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
+      throw new Error("Die Originaldatei wurde während des Ladens verändert.");
     await this.changePluginData((current) => ({ ...current, nativePckPath: path }));
     this.nativePathCatalog = next;
     this.nativePathAttempted = path;
