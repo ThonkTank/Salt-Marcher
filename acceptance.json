@@ -8430,7 +8430,7 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
+          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179377149-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-alpha-host/evidence/1791179386669-pattern-alpha-reopen/result.json",
@@ -8442,7 +8442,11 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180973319-pattern-alpha-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-alpha-regression/evidence/1791180983638-pattern-alpha-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791180995047-v2-open-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791181009173-v2-open-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-v2-regression/evidence/1791181009173-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-pattern/evidence/1791184075624-pattern-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-pattern/evidence/1791184085825-pattern-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184128512-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-v2/evidence/1791184139603-v2-open-reopen/result.json"
           ],
           "gap": null
         },
@@ -19289,7 +19293,7 @@
           }
         },
         "implementation": {
-          "state": "isolated_verified_partial",
+          "state": "installed_partial",
           "changes": [
             "src/model.ts",
             "src/properties.ts",
@@ -19314,7 +19318,10 @@
           "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ],
           "gap": "Gemeinsamer RGBA/Hex-Picker mit Livevorschau, Annehmen/Abbrechen und Undo einer Alpha-Änderung am bestehenden Objekt im Original und Host nicht belegt."
         }
@@ -19578,7 +19585,7 @@
           }
         },
         "implementation": {
-          "state": "isolated_verified",
+          "state": "installed_verified",
           "changes": [
             "src/model.ts",
             "src/properties.ts",
@@ -19595,17 +19602,21 @@
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ]
         },
         "hostCheck": {
-          "state": "isolated_passed",
+          "state": "equal",
           "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ],
-          "gap": "Abnahme am installierten Endstand ausstehend."
+          "gap": null
         }
       },
       {
@@ -19650,7 +19661,7 @@
           }
         },
         "implementation": {
-          "state": "isolated_verified",
+          "state": "installed_verified",
           "changes": [
             "src/model.ts",
             "src/properties.ts",
@@ -19667,17 +19678,21 @@
             "tests/object-colorable-tags.test.mjs",
             "tests/object-colorable-pixels.test.mjs",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ]
         },
         "hostCheck": {
-          "state": "isolated_passed",
+          "state": "equal",
           "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183820309-object-alpha-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/object-colorable-final/evidence/1791183895932-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184049556-object-alpha-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-object/evidence/1791184062198-object-alpha-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/colorable-object-release.md"
           ],
-          "gap": "Abnahme am installierten Endstand ausstehend."
+          "gap": null
         }
       },
       {
@@ -24532,14 +24547,16 @@
         },
         "hostCheck": {
           "state": "equal",
-          "build": "main.js SHA-256 bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
+          "build": "main.js SHA-256 8dc718b706e2230cf0e2d2b59bb8e3f451fabdeb172fb9293f8963b308cbfe48",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180798934-prefab-forget-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-abort-a/evidence/1791180811016-prefab-forget-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/prefab-dialog-resolution.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180943780-prefab-forget-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-prefab-dialog/evidence/1791180960605-prefab-forget-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-prefab-dialog.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/deploy-prefab-dialog.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-prefab/evidence/1791184099144-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/installed-colorable-prefab/evidence/1791184115324-prefab-forget-reopen/result.json"
           ],
           "gap": null
         },
