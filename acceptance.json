@@ -1,7 +1,7 @@
 {
   "source": ".obsidian/plugins/dungeon-auswertung/reference/FEATURE-CATALOG.json",
   "inventoryComplete": true,
-  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Die strikte Dungeondraft-Bedienparität wird seit 2026-10-05 in Funktionsgruppen mit einzeln belegten Unterfällen geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 706 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
+  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Die strikte Dungeondraft-Bedienparität wird seit 2026-10-05 in Funktionsgruppen mit einzeln belegten Unterfällen geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 707 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
   "requirements": [
     {
       "id": "DD-001",
@@ -16879,17 +16879,19 @@
         "command": "Path Library: Suchfeld-X",
         "scope": "required",
         "original": {
-          "sequence": "Bei befülltem Search-Feld das kleine X im Feld anklicken.",
+          "sequence": "Path Library: Battlements eingeben, mit Return filtern, dann das X im Suchfeld anklicken.",
           "options": "Path Library: Suchfeld-X",
-          "effect": "Das kleine X leerte den sichtbaren Suchtext.",
-          "version": "1.2.0.1 Opulent Kirin; modfreie isolierte GUI-Gegenprobe 04.10.2026",
+          "effect": "Das X leert den sichtbaren Suchtext; die eine gefilterte Battlements-Kachel bleibt sichtbar.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter modfreier Gegenversuch 05.10.2026",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/15-path-field-x.png"
-          ],
-          "gap": "Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen."
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/15-path-field-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-path-search-x/evidence/07-after-return-filtered.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-path-search-x/evidence/08-after-field-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material/qa/DD-024-TERRAIN-NATIVE-RESULT.md"
+          ]
         },
-        "target": "Suchtext im Assetfeld leeren.",
+        "target": "Suchtext im Assetfeld leeren und den angewandten Kachelfilter unverändert lassen.",
         "baseline": {
           "editor": {
             "sequence": "Keine Path Library und kein entsprechendes Asset-Suchfeld im Host.",
@@ -16915,30 +16917,31 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Pfadbibliothek-Suchfeld-X leert Text ohne angewandten Filter zurückzusetzen; Knopf bei leerem Feld verborgen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd02127-current-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd02127/DD-021-27-RELEASE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
-          "candidate": {
-            "state": "open",
-            "observation": null,
-            "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
-            ],
-            "gap": "Edit: Original: Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Original: Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen. Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
+          "state": "equal",
+          "build": "071a8f1a84662ff9110464afbc4ef72463e1f7e782e4649e5258b57f2fcb789a",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/dd02127-path-search-x-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/dd02127-filtered.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/dd02127-field-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/dd02127-path-search-x-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/dd02127-field-x.png"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
           }
         }
       },

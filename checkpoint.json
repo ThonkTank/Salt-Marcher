@@ -1,5 +1,5 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: 41 von 707 Pflichtfällen am installierten Endstand fallbezogen belegt; weitere Pakete in Arbeit",
+  "phase": "Vollständige Dungeondraft-Angleichung: 42 von 707 Pflichtfällen am installierten Endstand fallbezogen belegt; weitere Pakete in Arbeit",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -146,7 +146,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "DD-012.03 Baupunkt-Vorschau, DD-024 Terrain-Auswahl und DD-021.27 Pfadsuche-X als getrennte Pakete mit exklusiven Original-/Hostprüfungen fortsetzen.",
+  "next": "DD-012.01–.03 im Original-Frischstart und isolierten Host grafisch vergleichen; DD-024-Slotmodell und DD-026/027-Objektkatalog parallel vorbereiten.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -529,16 +529,16 @@
     "requiredCases": 707,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-012.03 Baupunkt-Vorschau",
-      "DD-024 Terrain-Auswahldialog",
-      "DD-021.27 Pfadsuche-X"
+      "DD-012.01–.03 Baupunkt-Aktivierung und Vorschau",
+      "DD-024 Terrain-Slotmodell",
+      "DD-026/027 native Objektbibliothek"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "41 Pflichtfälle am installierten Build fallbezogen gleichwertig. DD-028.16: unveränderter und geänderter Scatter-Picker schließt per Außenklick, übernimmt Wert und erhält Werkzeugvorgabe nach Neustart; DD-028.17 auf neuem Build regressionsgeprüft.",
-    "releaseBuild": "e6cccc0cd4c1a22e1db29307437631b20a269324b8444632adb920d2293e30f8",
+    "hostStatus": "42 Pflichtfälle am installierten Build fallbezogen gleichwertig. DD-021.27: Suchfeld-X leert Text bei unverändert gefilterter Battlements-Kachel in Bearbeitung und Frischstart; Karte/History bleiben unverändert.",
+    "releaseBuild": "071a8f1a84662ff9110464afbc4ef72463e1f7e782e4649e5258b57f2fcb789a",
     "dd038Candidate": "Originalmessung belegt nach Top +1 sofort deaktiviertes Undo/Redo und gesperrten älteren Objekt-Undo-Schritt; Entwicklungsstand setzt bei Randänderung eine History-Grenze, zeigt Warnung und Abbruchknopf. 119 Kernprüfungen bestanden, ein lizenzabhängiger Test übersprungen; isolierter Host und Installation offen. Smart-Tile-Zellen noch nicht im Dokumentmodell.",
-    "openOriginalGap": "DD-021.02 Enter-Abschlussregel; DD-021.15/.21 Pixel-/Knick-/UV-Paarung und weitere Texturen; DD-024 Terrain-Kachelwahl/Default-Semantik; ältere offene Fälle bleiben in acceptance.json fallgenau erhalten.",
-    "installedBuild": "e6cccc0cd4c1a22e1db29307437631b20a269324b8444632adb920d2293e30f8",
+    "openOriginalGap": "DD-021.02 Enter-Abschlussregel; DD-021.15/.21 Pixel-/Knick-/UV-Paarung und weitere Texturen; DD-024 Default mit Zusatzpaket; ältere offene Fälle bleiben in acceptance.json fallgenau erhalten.",
+    "installedBuild": "071a8f1a84662ff9110464afbc4ef72463e1f7e782e4649e5258b57f2fcb789a",
     "dd039Installed": "Isolierter Releasezweig deab9f6 + DD-039-Produktcommit 45c5215; 108 Kernprüfungen, Typprüfung und Build bestanden. Installierter Build 02d92817 bestand sechs DD-039-Fälle in Bearbeitung und Frischstart; direkte Originalprüfung schloss die relevanten Dialog-/History-Lücken. Beide produktiven V2-Karten wurden als isolierte Kopien ohne Feldverlust V3-gespeichert und frisch geöffnet. Nach Installation blieben 185 geschützte Vault-Dateien und beide Originalkarten bytegleich. Sechs Pflichtfälle gleichwertig belegt; leere Paketzeile ist reine Oberflächendifferenz.",
     "installedEvidence": [
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/path-library-installed/evidence/1791188982699-path-library-edit/result.json",
@@ -576,9 +576,13 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227422428-objekte-03-edit/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/group-cases.json",
-      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json"
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd02127/DD-021-27-RELEASE.md",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd02127-current-20261005/installation-manifest.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/group-cases.json",
+      "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/group-cases.json"
     ],
-    "next": "DD-012.03 Baupunkt-Vorschau, DD-024 Terrain-Auswahl und DD-021.27 Pfadsuche-X als getrennte Pakete mit exklusiven Original-/Hostprüfungen fortsetzen.",
+    "next": "DD-012.01–.03 im Original-Frischstart und isolierten Host grafisch vergleichen; DD-024-Slotmodell und DD-026/027-Objektkatalog parallel vorbereiten.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-001.04",
@@ -621,9 +625,17 @@
       "DD-042.12",
       "DD-042.19",
       "DD-042.22",
-      "DD-042.23"
+      "DD-042.23",
+      "DD-021.27"
     ],
-    "deferredPackages": [],
+    "deferredPackages": [
+      {
+        "cases": "DD-039.01–.06",
+        "branch": "candidate/dd039-map-info",
+        "reason": "Erster Modalaufruf in frischen isolierten Obsidian-Profilen ohne Dialog; installierter Kandidat zurückgenommen.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/map-information-release.md"
+      }
+    ],
     "dd04209Installed": "Minimaler Releasezweig f3fc4e1 + Dialogcommit 645c14f; Build 13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b. Nativer Original-Dateivergleich, korrigierbarer Inline-Fehler, installierter Obsidian Edit/Reopen, DD-039-Regression, Vorlagen-Vergessen-Regression und produktive V2-Karten auf isolierten Kopien bestanden. Plugin und zwei Karten zuvor vollständig gesichert; 185 geschützte Vault-Dateien außer beauftragtem main.js bytegleich."
   }
 }
