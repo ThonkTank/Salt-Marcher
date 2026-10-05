@@ -97,7 +97,7 @@ module.exports = async function dd02127PathSearchX({ page, out, qa, vault,
       { name: fixture.mapName, size: fixture.mapSize });
     }
     const editor = await choosePath(page);
-    const search = editor.getByRole("searchbox", {
+    const search = editor.getByRole("textbox", {
       name: "Pfadbibliothek durchsuchen", exact: true,
     });
     const fieldX = editor.getByRole("button", {
