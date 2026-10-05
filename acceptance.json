@@ -21805,12 +21805,13 @@
         "original": {
           "sequence": "Farbpalette öffnen am Farbfeld benutzen",
           "options": null,
-          "effect": "Die Light-Palette öffnete sich; Blau färbte das Werkzeugfeld blau.",
+          "effect": "Fünf Light-Vorgaben schließen nach jeweiligem Klick die Palette und setzen das Werkzeugfeld auf ECCD8B, EAEFCA, 80BEFF, FFAD58 oder 4DD569; der erneut geöffnete Picker zeigt denselben RGB/Hex-Wert bei A255.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/37-light-palette.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/38-light-blue.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/38-light-blue.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/objekte/qa/DD-028.16-17-ORIGINAL.md"
           ]
         },
         "target": "Die Light-Palette öffnet und übernimmt die gewählte Vorgabe ins Farbfeld.",
@@ -21838,16 +21839,36 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Fünf native Light-Farbvorgaben und persistente Werkzeugfarbe"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd02817-20261005/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-17-RELEASE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "e3fc2028eb756a35a43a6b16b6441b23a65516803957c0d83ce2656f1b9db2ce",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/dd02817-light-palette-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/dd02817-light-palette-saved.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/dd02817-palette-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226922542-objekte-03-edit/dd02817-blue-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/dd02817-light-palette-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02817-installed/evidence/1791226942162-objekte-03-reopen/dd02817-palette-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd028-dd021/DD-028-17-RELEASE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Light Tool ohne ausgewählte Instanz: Palette mit fünf Werten; jede Wahl übernimmt RGB ins Werkzeugfeld und schließt, Blau bleibt als Werkzeugvorgabe nach frischem Start; Karte und History unverändert."
       },
       {
         "id": "DD-028.18",

@@ -106,6 +106,23 @@ module.exports = async function lightPalette({
       assert.equal(await swatches.nth(index).isVisible(), true);
     const openImage = path.join(out, "dd02817-palette-open.png");
     await page.screenshot({ path: openImage });
+    const measured = [
+      ["Warm", 0xeccd8b],
+      ["Blass", 0xeaefca],
+      ["Orange", 0xffad58],
+      ["Grün", 0x4dd569],
+    ];
+    for (const [label, color] of measured) {
+      await page.getByRole("button", {
+        name: `Lichtfarbe ${label}`, exact: true,
+      }).click();
+      assert.equal(await opener.getAttribute("aria-expanded"), "false");
+      assert.equal(await field.inputValue(),
+        "#" + color.toString(16).padStart(6, "0"));
+      assert.equal((await state(page)).toolColor, color);
+      await opener.click();
+      assert.equal(await opener.getAttribute("aria-expanded"), "true");
+    }
     const blueSwatch = page.getByRole("button", {
       name: "Lichtfarbe Blau", exact: true,
     });
@@ -130,13 +147,14 @@ module.exports = async function lightPalette({
     await page.screenshot({ path: selectedImage });
     const saved = {
       mapPath, diskSha256, before, after,
+      measuredPresets: [...measured, ["Blau", blue]],
       pluginLightColor: persisted.toolDefaults.light.color,
     };
     writeJson(savedFile, saved);
     const resultFile = path.join(out, "dd02817-light-palette-edit.json");
     writeJson(resultFile, saved);
     record.add("DD-028.17", "pass",
-      "Light Tool: fünf sichtbare Palettenfelder; Blau RGB 128/190/255 schließt die Palette und setzt nur die gespeicherte Werkzeugvorgabe, ohne Karten- oder Historyänderung.",
+      "Light Tool: fünf sichtbare Palettenfelder; alle fünf Original-RGB-Werte schließen die Palette und setzen nur die Werkzeugvorgabe. Blau RGB 128/190/255 bleibt gespeichert, ohne Karten- oder Historyänderung.",
       [resultFile, savedFile, openImage, selectedImage]);
     return;
   }
