@@ -223,7 +223,7 @@ module.exports = async function mapStart({ page, out, qa, vault, restart,
     await page.waitForFunction((name) => app.plugins.getPlugin("dungeon-editor")
       .sizePresets().some((item) => item.name === name), presetName);
     await modal.getByRole("combobox").first()
-      .locator("option", { hasText: presetName }).waitFor();
+      .locator("option", { hasText: presetName }).waitFor({ state: "attached" });
     const afterAccept = await dialogState(modal);
     const preset = (await catalog(page)).find((item) => item.name === presetName);
     const presetImage = await stage("preset-accepted", { preset, afterAccept });
