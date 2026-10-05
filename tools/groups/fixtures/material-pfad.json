@@ -1,0 +1,13 @@
+{
+  "originalVersion": "1.2.0.1",
+  "pckPath": "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck",
+  "pckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
+  "assetName": "Battlements",
+  "assetPackId": "dungeondraft-builtin-1.2.0.1",
+  "assetSourcePath": "res://textures/paths/battlements.png",
+  "mapName": "MaterialPathGroupQA",
+  "mapPath": "Dungeons/MaterialPathGroupQA/Karte.dungeon",
+  "mapSize": [16, 12],
+  "horizontal": [{ "x": 2, "y": 3 }, { "x": 10, "y": 3 }],
+  "bent": [{ "x": 2, "y": 8 }, { "x": 6, "y": 8 }, { "x": 6, "y": 10 }]
+}

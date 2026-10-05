@@ -14,7 +14,8 @@ import {
   type ToggleComponent,
   type WorkspaceLeaf,
 } from "obsidian";
-import { closeSync, openSync, readSync, statSync } from "node:fs";
+import { closeSync, createReadStream, openSync, readSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import {
   newDocument,
   safePath,
@@ -67,6 +68,11 @@ import {
   type AssetCatalogStore,
   type BinarySource,
 } from "./assets";
+import {
+  NATIVE_PATH_PCK_SHA256,
+  readNativePathCatalog,
+  type NativePathCatalog,
+} from "./features/material/native-path-catalog";
 
 const VIEW = "dungeon-native-map";
 const PLAY_VIEW = "dungeon-native-play";
@@ -215,6 +221,12 @@ interface PluginData {
   readonly sizePresets: readonly SizePreset[];
   readonly toolDefaults: ToolSettings;
   readonly prefabs: readonly Prefab[];
+  readonly nativePckPath?: string;
+}
+async function fileSha256(path: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  return hash.digest("hex");
 }
 class PrefabNameModal extends Modal {
   private answer?: (value: { set: string; name: string } | null) => void;
@@ -368,6 +380,11 @@ export default class DungeonPlugin extends Plugin {
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   private assetLibrary = new PackAssetLibrary();
+  private nativePathCatalog?: NativePathCatalog;
+  private nativePathAttempted?: string;
+  private nativePathError?: string;
+  private nativePathUrls = new Map<string, string>();
+  private catalogBuiltIns = true;
   private assetLoading?: Promise<void>;
   private assetLoaded = false;
   private assetListeners = new Set<() => void>();
@@ -398,6 +415,8 @@ export default class DungeonPlugin extends Plugin {
             : {};
       this.pluginData = {
         prefabs: validPrefabs(loaded.prefabs),
+        nativePckPath: typeof loaded.nativePckPath === "string" &&
+          loaded.nativePckPath.trim() ? loaded.nativePckPath : undefined,
         sizePresets: loaded.sizePresets.filter(
           (preset: unknown): preset is SizePreset =>
             !!preset &&
@@ -535,6 +554,14 @@ export default class DungeonPlugin extends Plugin {
       this.assets,
       () => this.reloadAssets(),
       session,
+      {
+        status: () => ({
+          path: this.pluginData.nativePckPath,
+          count: this.nativePathCatalog?.textures.length ?? 0,
+          error: this.nativePathError,
+        }),
+        choose: (path) => this.useNativeAssetArchive(path),
+      },
     ).open();
   }
   private roomId(path: string): string | undefined {
@@ -612,9 +639,41 @@ export default class DungeonPlugin extends Plugin {
       this.assetLoading = undefined;
     }));
   }
+  private async loadNativePathCatalog(): Promise<void> {
+    const path = this.pluginData.nativePckPath;
+    if (!path || this.nativePathAttempted === path) return;
+    this.nativePathAttempted = path;
+    try {
+      if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
+        throw new Error("Die Originaldatei passt nicht zu Dungeondraft 1.2.0.1 Linux64.");
+      this.nativePathCatalog = await readNativePathCatalog(
+        new LocalBinarySource(path),
+      );
+      this.nativePathError = undefined;
+    } catch (error) {
+      this.nativePathError = String(error);
+      new Notice("Dungeondraft-Originalassets konnten nicht geladen werden: " +
+        this.nativePathError, 10000);
+    }
+  }
+  async useNativeAssetArchive(path: string): Promise<void> {
+    if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
+      throw new Error("Bitte die Originaldatei von Dungeondraft 1.2.0.1 Linux64 wählen.");
+    const next = await readNativePathCatalog(new LocalBinarySource(path));
+    await this.changePluginData((current) => ({ ...current, nativePckPath: path }));
+    this.nativePathCatalog = next;
+    this.nativePathAttempted = path;
+    this.nativePathError = undefined;
+    for (const listener of this.assetListeners) listener();
+  }
   private async reloadAssets(): Promise<void> {
-    const next = await this.assets.loadAll(),
+    const [next, catalog] = await Promise.all([
+      this.assets.loadAll(), this.assets.read(),
+    ]);
+    await this.loadNativePathCatalog();
+    const builtIns = catalog.builtIns,
       previous = this.assetLibrary;
+    this.catalogBuiltIns = builtIns;
     this.assetLibrary = next;
     this.assetLoaded = true;
     for (const listener of this.assetListeners) listener();
@@ -625,15 +684,33 @@ export default class DungeonPlugin extends Plugin {
     if (split >= 0) {
       const id = reference.slice(0, split),
         part = reference.slice(split + 1);
+      if (part === "image") {
+        const native = this.nativePathCatalog?.image(id);
+        if (native) {
+          let url = this.nativePathUrls.get(id);
+          if (!url) {
+            url = URL.createObjectURL(native);
+            this.nativePathUrls.set(id, url);
+          }
+          return url;
+        }
+      }
       return this.assetLibrary.has(id) ? this.assetLibrary.url(id, part) : "";
     }
     return this.app.vault.adapter.getResourcePath(reference);
   }
-  listAssets(packIds?: readonly string[]): readonly AssetDefinition[] {
+  listAssets(
+    packIds?: readonly string[],
+    builtInAssets = this.catalogBuiltIns,
+  ): readonly AssetDefinition[] {
     const assets = this.assetLibrary.list();
-    if (!packIds) return assets;
-    const selected = new Set(packIds);
-    return assets.filter((asset) => selected.has(asset.packId));
+    const selected = packIds ? new Set(packIds) : null;
+    const packed = selected
+      ? assets.filter((asset) => selected.has(asset.packId))
+      : assets;
+    return builtInAssets && this.nativePathCatalog
+      ? [...packed, ...this.nativePathCatalog.textures.map((item) => item.asset)]
+      : packed;
   }
   colorableObjectSource(
     id: string,
@@ -810,6 +887,8 @@ export default class DungeonPlugin extends Plugin {
         })
         .catch((error) => console.error("Dungeon-Entwurf sichern", error));
     this.assetLibrary.close();
+    for (const url of this.nativePathUrls.values()) URL.revokeObjectURL(url);
+    this.nativePathUrls.clear();
     this.assetListeners.clear();
   }
   async create(
@@ -1445,7 +1524,10 @@ class DungeonView extends FileView {
           assetUrl: (path) => this.plugin.assetUrl(path),
           colorableObjectSource: (id) => this.plugin.colorableObjectSource(
             id, map.session.settings.assetPacks),
-          assets: () => this.plugin.listAssets(map.session.settings.assetPacks),
+          assets: () => this.plugin.listAssets(
+            map.session.settings.assetPacks,
+            map.session.settings.builtInAssets,
+          ),
           subscribeAssets: (listener) => this.plugin.subscribeAssets(listener),
           toolDefaults: () => this.plugin.toolDefaults(),
           persistToolDefaults: () => this.plugin.persistToolDefaults(),
@@ -2557,6 +2639,10 @@ class AssetPackagesModal extends Modal {
     private catalog: AssetCatalog,
     private changed: () => Promise<void>,
     private session?: Session,
+    private nativeArchive?: {
+      status(): { path?: string; count: number; error?: string };
+      choose(path: string): Promise<void>;
+    },
   ) {
     super(app);
   }
@@ -2623,6 +2709,38 @@ class AssetPackagesModal extends Modal {
             }
           }),
         );
+      if (this.nativeArchive) {
+        const status = this.nativeArchive.status();
+        const nativeInput = this.contentEl.createEl("input", {
+          attr: { type: "file", accept: ".pck" },
+          cls: "dn-hidden-input",
+        });
+        nativeInput.addEventListener("change", () => {
+          const selected = nativeInput.files?.[0] as
+            | (File & { path?: string }) | undefined;
+          nativeInput.value = "";
+          if (!selected) return;
+          if (!selected.path) {
+            new Notice("Der Dateipfad konnte nicht gelesen werden.");
+            return;
+          }
+          void this.nativeArchive!.choose(selected.path)
+            .then(() => {
+              new Notice("Dungeondraft-Pfadassets geladen.");
+              return this.render();
+            })
+            .catch((error) => new Notice(String(error), 10000));
+        });
+        const sourceName = status.path?.split(/[\\/]/).at(-1);
+        new Setting(this.contentEl)
+          .setName("Dungeondraft-Originalassets")
+          .setDesc(status.error ?? (sourceName
+            ? `${sourceName}: ${status.count} Pfadtexturen verfügbar.`
+            : "Originaldatei von Dungeondraft 1.2.0.1 auswählen; sie bleibt an ihrem Ort."))
+          .addButton((button) => button
+            .setButtonText("Originaldatei wählen")
+            .onClick(() => nativeInput.click()));
+      }
       const input = this.contentEl.createEl("input", {
         attr: { type: "file", accept: ".dungeondraft_pack", multiple: "" },
         cls: "dn-hidden-input",
