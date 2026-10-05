@@ -36,7 +36,8 @@ async function state(page) {
     const surface = editor.session.entities.get("qa-dd038-original-polygons");
     return { settings: editor.session.settings, polygons: surface?.polygons,
       document: editor.session.document(), dirty: editor.session.dirty,
-      history: editor.session.historySize,
+      history: editor.session.historySize, canUndo: editor.session.canUndo,
+      canRedo: editor.session.canRedo,
       notes: editor.session.draft().notes.map((item) => [item.path, item.current]) };
   }, mapPath);
 }
@@ -141,6 +142,14 @@ module.exports = async function resizeMapGroup({ page, out, vault, restart, grou
     assert.equal(digest(mapFile), diskBeforeCancel);
     report.observations.cancelled = { controls, preview, unchanged: true };
 
+    const cancelButton = await openResize(page);
+    await setMargin(cancelButton, "Links", -1);
+    await cancelButton.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await cancelButton.waitFor({ state: "detached" });
+    assert(equal(await state(page), beforeCancel));
+    assert.equal(digest(mapFile), diskBeforeCancel);
+    report.observations.cancelButtonUnchanged = true;
+
     const crop = await openResize(page);
     await setMargin(crop, "Links", -3);
     await crop.getByText("Neue Größe: 9 × 8 Felder", { exact: true }).waitFor();
@@ -151,6 +160,8 @@ module.exports = async function resizeMapGroup({ page, out, vault, restart, grou
     assert.equal(afterCrop.settings.width, 9);
     assert.equal(afterCrop.settings.height, 8);
     assert.deepEqual(afterCrop.polygons, shifted(nativePolygons, -3, 0));
+    assert.equal(afterCrop.canUndo, false);
+    assert.equal(afterCrop.canRedo, false);
     report.observations.crop = { size: [9, 8], preview: cropPreview,
       polygons: afterCrop.polygons, historyDelta: afterCrop.history - beforeCancel.history };
     await save(page);
@@ -180,6 +191,8 @@ module.exports = async function resizeMapGroup({ page, out, vault, restart, grou
     assert.equal(expanded.settings.width, 12);
     assert.equal(expanded.settings.height, 8);
     assert.deepEqual(expanded.polygons, nativePolygons);
+    assert.equal(expanded.canUndo, false);
+    assert.equal(expanded.canRedo, false);
     report.observations.reexpanded = { size: [12, 8],
       polygonsRestored: true, historyDelta: expanded.history - cropped.history };
     await page.evaluate((mapPath) => {
@@ -215,7 +228,7 @@ module.exports = async function resizeMapGroup({ page, out, vault, restart, grou
   const evidence = [resultFile];
   record.add("DD-038.01", "open",
     "Dungeon → Einstellungen öffnet vier getrennte Randfelder und die berechnete neue Größe.", evidence,
-    "Die native Nicht-Undo-Warnung und ein eigener Cancel-Befehl sind im aktuellen Dialog nicht vollständig abgedeckt.");
+    "Vollständige Kartenwirkung weiterer Elementarten und globale Eingabegrenzen bleiben offen.");
   record.add("DD-038.02", "open",
     restart ? "Im Frischstartlauf verschiebt Oben +2 alle 16 Polygonpunkte um zwei Felder."
       : "Oben +2 wurde zunächst nur in der Vorschau und per X-Abbruch geprüft.", evidence,
@@ -231,20 +244,24 @@ module.exports = async function resizeMapGroup({ page, out, vault, restart, grou
     "Links -3 schneidet die Kartengröße 12×8 auf 9×8 und verschiebt vier Polygone um -3; +3 stellt sie wieder her.", evidence,
     "Das Original verwirft dabei 4 von 10 Tile-Zellen dauerhaft; dem Editor fehlt ein getrenntes Tile-Zellmodell für den Hostvergleich.");
   const undoEquivalent = report.observations.warningVisible &&
-    (restart ? !report.observations.undoPossible : report.observations.crop.historyDelta === 0);
-  record.add("DD-038.06", undoEquivalent ? "pass" : "deviation",
+    (restart ? !report.observations.undoPossible : report.observations.crop.historyDelta < 0);
+  record.add("DD-038.06", undoEquivalent ? "open" : "deviation",
     `Nicht-Undo-Warnung sichtbar=${report.observations.warningVisible}; ` +
       (restart ? `Resize per Undo umkehrbar=${report.observations.undoPossible}.`
         : `History-Zuwachs nach Resize=${report.observations.crop.historyDelta}.`), evidence,
-    undoEquivalent ? null : "Das Original warnt ausdrücklich, dass eine Größenänderung nicht rückgängig gemacht werden kann.");
-  record.add("DD-038.07", restart ? "pass" : "open",
+    undoEquivalent ? "Eine neue Aktion nach Resize und deren Undo wurde im Original noch nicht geprüft."
+      : "Das Original sperrt nach Resize auch vorherige Undo-Schritte.");
+  record.add("DD-038.07", "open",
     restart ? "Übernehmen schreibt die angezeigte Größe und verschiebt Polygonkoordinaten; der gespeicherte linke Beschnitt überstand die Frischöffnung."
       : "Übernehmen schreibt die angezeigte Größe und verschiebt Polygonkoordinaten; Speichern wurde ausgeführt.", evidence,
-    restart ? null : "Frisches Öffnen des gespeicherten Ergebnisses folgt im zweiten Lauf.");
+    restart ? "Weitere Randrichtungen und Elementarten sind noch nicht gleichwertig verglichen."
+      : "Frisches Öffnen des gespeicherten Ergebnisses folgt im zweiten Lauf.");
   record.add("DD-038.08", "open",
-    "Es gibt keinen eigenen Cancel-Knopf; X verwirft unbestätigte Werte ohne Datei- oder Sessionänderung.", evidence,
-    "Ob ein eigener Cancel-Befehl trotz funktional gleichem X benötigt wird, bleibt zur Einordnung offen.");
-  record.add("DD-038.09", "pass",
+    restart ? "Der Abbruchknopf wurde im Bearbeitungslauf geprüft."
+      : "Abbrechen und X verwerfen unbestätigte Randwerte ohne Datei- oder Sessionänderung.", evidence,
+    "Die Cancel-Wirkung auf Karte und History im Original ist noch nicht direkt gemessen.");
+  record.add("DD-038.09", "open",
     restart ? "X verwirft auch nach Frischöffnung die Eingabe Rechts +1 ohne Änderung von Dokument, History oder Datei."
-      : "X verwirft alle vier eingegebenen Randwerte ohne Änderung von Dokument, History oder Datei.", evidence);
+      : "X verwirft alle vier eingegebenen Randwerte ohne Änderung von Dokument, History oder Datei.", evidence,
+    "Die X-Wirkung auf Karte und History im Original ist noch nicht direkt gemessen.");
 };
