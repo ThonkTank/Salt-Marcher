@@ -158,15 +158,23 @@ function helpers(page, vault, out) {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.create(name, width, height,
         { assetPacks: assets ? ["QAWall01"] : [], builtInAssets: true });
+    }, { name, width, height, additions, assets });
+    const visible = page.locator(".dungeon-native-editor:visible").last();
+    await visible.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    await visible.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction((p) => app.workspace
+      .getLeavesOfType("dungeon-native-map")
+      .some((leaf) => leaf.view.file?.path === p), p, { timeout: 30000 });
+    await page.evaluate(({ p, additions }) => {
       const editor = app.workspace.getLeavesOfType("dungeon-native-map")
-        .find((leaf) => leaf.view.file?.path === `Dungeons/${name}/Karte.dungeon`)?.view.editor;
-      if (!editor) throw new Error("QA-Karte wurde nicht geöffnet.");
+        .find((leaf) => leaf.view.file?.path === p)?.view.editor;
+      if (!editor) throw new Error("Gespeicherte QA-Karte wurde nicht geöffnet.");
       const floorId = editor.session.document().floors[0].id;
       const entities = additions.map((item) => ({ ...item, floorId }));
       editor.session.execute({ label: "QA-Ausgangsgeometrie",
         entities: entities.map((item) => ({ id: item.id, before: null, after: item })) });
       editor.renderer.fit();
-    }, { name, width, height, additions, assets });
+    }, { p, additions });
     await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
     if (!(await page.locator(".dungeon-native-editor.dn-maximized").count()))
       await page.getByRole("button", { name: "Maximieren", exact: true }).last().click();
