@@ -1,0 +1,973 @@
+{
+  "groups": [
+    {
+      "id": "material-pfad",
+      "title": "Pfadwerkzeug und Pfadbibliothek",
+      "area": "material",
+      "caseIds": [
+        "DD-021.01",
+        "DD-021.02",
+        "DD-021.03",
+        "DD-021.04",
+        "DD-021.05",
+        "DD-021.06",
+        "DD-021.07",
+        "DD-021.08",
+        "DD-021.09",
+        "DD-021.10",
+        "DD-021.11",
+        "DD-021.12",
+        "DD-021.13",
+        "DD-021.14",
+        "DD-021.15",
+        "DD-021.16",
+        "DD-021.17",
+        "DD-021.18",
+        "DD-021.19",
+        "DD-021.20",
+        "DD-021.21",
+        "DD-021.22",
+        "DD-021.23",
+        "DD-021.24",
+        "DD-021.25",
+        "DD-021.26",
+        "DD-021.27"
+      ],
+      "sharedFlow": "Pfadasset aus eingebauter oder Paketbibliothek finden und wählen; Punktfolge, Optionen, Übergänge und Sortierung am selben Pfad prüfen; Undo/Redo und frisches Öffnen.",
+      "originalEvidence": {
+        "DD-021.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+        ],
+        "DD-021.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-two-point-preview.png"
+        ],
+        "DD-021.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md"
+        ],
+        "DD-021.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/maps/path-parity.dungeondraft_map"
+        ],
+        "DD-021.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+        ],
+        "DD-021.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+        ],
+        "DD-021.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-configured.png"
+        ],
+        "DD-021.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-configured.png"
+        ],
+        "DD-021.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
+        ],
+        "DD-021.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
+        ],
+        "DD-021.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-options.png"
+        ],
+        "DD-021.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
+        ],
+        "DD-021.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
+        ],
+        "DD-021.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/transition-out-options.png"
+        ],
+        "DD-021.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/06-path-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/21-path-top.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/23-path-library-end-clear.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/24-path-library-end-confirm.png",
+          "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck"
+        ],
+        "DD-021.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-shift-curve.png"
+        ],
+        "DD-021.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+        ],
+        "DD-021.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-path-study.dungeondraft_map"
+        ],
+        "DD-021.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md"
+        ],
+        "DD-021.20": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-redo.png"
+        ],
+        "DD-021.21": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/native-fresh-open-ready.png"
+        ],
+        "DD-021.22": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-path-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/06-path-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/08-path-search-battlements-return.png",
+          "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck"
+        ],
+        "DD-021.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-path-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/10-path-fuzzy-singular.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/11-path-exact-singular.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/12-path-fuzzy-singular-settled.png"
+        ],
+        "DD-021.24": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-path-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/13-path-trash-after.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/14-path-trash-tooltip.png"
+        ],
+        "DD-021.25": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+        ],
+        "DD-021.26": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-redo.png"
+        ],
+        "DD-021.27": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/15-path-field-x.png"
+        ]
+      },
+      "originalEffects": {
+        "DD-021.01": "Nach Wahl des Path Tool sind links Edit Points, Layer 100, Sorting Over/Under, Width 1, Smoothness 1, Block Light OFF und Transition In/Out None sichtbar; rechts steht die Path Library mit ausgewählter Battlements-Kachel."
+      },
+      "originalGaps": {
+        "DD-021.02": "Original-Punktzug war durch Zeigertiming verzerrt; punktgleiche Enter-Abschlussgeometrie fehlt.",
+        "DD-021.03": "Punkte eines vorhandenen Pfads hinzufügen, verschieben und löschen: gespeicherte Originalwirkung je Geste fehlt.",
+        "DD-021.04": "Ebenenwechsel eines Pfads gegenüber einem überlappenden Element im Original nicht direkt gemessen.",
+        "DD-021.05": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen.",
+        "DD-021.06": "Pfadbreite bei mehreren numerischen Werten und gleicher Textur im Original nicht maßlich gemessen.",
+        "DD-021.07": "Kartenwirkung der Original-Smoothness bei 0, 0,5 und 1 nicht direkt gemessen.",
+        "DD-021.08": "Lichtabschattung desselben Pfads mit Block Light ON/OFF im Original nicht gepaart.",
+        "DD-021.09": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.10": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.11": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.12": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.13": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.14": "Ein-/Auslaufprofil dieser Option mit derselben Originaltextur und Geometrie nicht maßlich erfasst.",
+        "DD-021.15": "Auswahl einer eingebauten Kachel und Wirkung auf den danach gezeichneten Originalpfad nicht als Zustandsfolge erfasst.",
+        "DD-021.16": "Shift-Kurvenzug mit bestätigtem gespeicherten Originalpfad fehlt; Statushinweis allein belegt keine Geometrie.",
+        "DD-021.17": "Rücktaste während eines Mehrpunktentwurfs nicht direkt auf Punktentfernung und Restentwurf geprüft.",
+        "DD-021.18": "Schließen eines Loops durch Startpunkt/Enter nicht als gesteuerte Originalfolge gemessen.",
+        "DD-021.19": "Escape- und Doppelklick-Folge für denselben Mehrpunktentwurf im Original nicht direkt geprüft.",
+        "DD-021.22": "Suchwirkung ist direkt nur für Battlements nach Return belegt; weiterer Begriff und Paketquelle für allgemeine Suchregel fehlen.",
+        "DD-021.23": "Fuzzy und Exact zeigten bei Battlement denselben Einzelhit; ein Suchpaar mit unterschiedlicher Trefferliste fehlt.",
+        "DD-021.24": "Clear Search wurde direkt beobachtet; Auswahlzustand einer zuvor gewählten Pfadtextur und erneuter Fokus fehlen.",
+        "DD-021.25": "Over/Under-Wirkung für zwei kreuzende Pfade auf derselben Ebene im Original nicht direkt gemessen.",
+        "DD-021.27": "Nach Klick auf das Suchfeld-X wurde die Trefferliste nicht getrennt vom Clear-Search-Zustand gemessen."
+      }
+    },
+    {
+      "id": "material-muster",
+      "title": "Musterflächen und Farbwahl",
+      "area": "material",
+      "caseIds": [
+        "DD-020.01",
+        "DD-020.02",
+        "DD-020.03",
+        "DD-020.04",
+        "DD-020.05",
+        "DD-020.06",
+        "DD-020.07",
+        "DD-020.08",
+        "DD-020.09",
+        "DD-020.10",
+        "DD-020.11",
+        "DD-020.12",
+        "DD-020.13",
+        "DD-020.14",
+        "DD-020.15",
+        "DD-020.16",
+        "DD-020.17",
+        "DD-020.18",
+        "DD-020.19",
+        "DD-020.20",
+        "DD-020.21",
+        "DD-020.22",
+        "DD-020.23",
+        "DD-020.24",
+        "DD-020.25",
+        "DD-020.26",
+        "DD-020.27",
+        "DD-020.28",
+        "DD-020.29"
+      ],
+      "sharedFlow": "Form und Muster wählen, Picker und Ebene einstellen, Kontur und Transformation am selben Muster prüfen; Vorschau/Abbruch, Undo/Redo und frisches Öffnen.",
+      "originalEvidence": {
+        "DD-020.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/pattern-controls.png"
+        ],
+        "DD-020.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/rectangle-created.png"
+        ],
+        "DD-020.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/circle-created.png"
+        ],
+        "DD-020.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/polygon-after-double.png"
+        ],
+        "DD-020.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/polygon-preview.png"
+        ],
+        "DD-020.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/polygon-cancel.png"
+        ],
+        "DD-020.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/pattern-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/15-pattern-top.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/18-pattern-gallery-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/19-pattern-gallery-end-confirm.png"
+        ],
+        "DD-020.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/solid-rectangle.png"
+        ],
+        "DD-020.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/pattern-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/16-pattern-outline-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/17-pattern-main-end.png"
+        ],
+        "DD-020.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/undo-rectangle.png"
+        ],
+        "DD-020.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/fresh-open-native.png"
+        ],
+        "DD-020.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md"
+        ],
+        "DD-020.20": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/pattern-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/40-pattern-magenta.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/41-pattern-reset-color.png"
+        ],
+        "DD-020.21": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.22": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.24": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.25": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png"
+        ],
+        "DD-020.26": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/36-pattern-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/40-pattern-magenta.png"
+        ],
+        "DD-020.27": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/36-pattern-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/40-pattern-magenta.png"
+        ],
+        "DD-020.28": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/37-pattern-picker-symbol-tooltip.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/39-pattern-picker-symbol-map-click.png"
+        ],
+        "DD-020.29": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-020/native/shots/redo-rectangle.png"
+        ]
+      },
+      "originalEffects": {
+        "DD-020.01": "Nach Öffnen des Pattern Shape Tool sind Rectangle, Circle und Polygon, Edit Points, Rotation 0, Layer 100, Pattern-Kacheln, Color und Outline OFF sichtbar."
+      },
+      "originalGaps": {
+        "DD-020.03": "Zeigerkoordinaten des Original-Kreisversuchs waren verzögert; punktgenaue Kreisgeometrie fehlt.",
+        "DD-020.04": "Gleiche Original-Polygonpunktfolge mit Doppelklick und Startpunktabschluss nicht kontrolliert gemessen.",
+        "DD-020.07": "Shift/invertAction stammt nur aus der allgemeinen ShapeTool-API; Geltung und Wirkung im Pattern Shape Tool 1.2.0.1 nicht direkt geprüft.",
+        "DD-020.08": "Hinzufügen, Verschieben und Löschen von Punkten einer bestehenden Original-Musterfläche nicht direkt gemessen.",
+        "DD-020.09": "Muster-Texturdrehung und Formdrehung bei asymmetrischer Textur und gleichen Winkeln nicht getrennt gemessen.",
+        "DD-020.10": "Zwei überlappende Muster auf verschiedenen Originalebenen nicht als Ebenenwirkung verglichen.",
+        "DD-020.11": "Wahl eines eingebauten Mustermotivs und resultierende Kartenwirkung nicht als direkte Zustandsfolge erfasst.",
+        "DD-020.14": "Konturbreite und Farbmischung einer Outline-ON/OFF-Fläche im Original nicht maßlich/pixelgleich geklärt.",
+        "DD-020.15": "Transformationsgriffe einer Musterfläche im Original nicht mit bestätigter gespeicherter Geometrie vermessen.",
+        "DD-020.18": "Wirkung dieses Select-Tool-Reihenfolgebefehls auf zwei überlappende Musterflächen im Original nicht gemessen.",
+        "DD-020.19": "Wirkung dieses Select-Tool-Reihenfolgebefehls auf zwei überlappende Musterflächen im Original nicht gemessen.",
+        "DD-020.20": "Rückkehrregel der kreisförmigen Pattern-Farbtaste ist nur für den beobachteten Zustand belegt; andere Motive/Farbfolgen fehlen.",
+        "DD-020.21": "RGB-Endwert nach Bedienung des Sättigungs-/Farbfelds im Original nicht direkt gemessen.",
+        "DD-020.22": "RGB-Endwert nach Bedienung der Farbtonleiste im Original nicht direkt gemessen.",
+        "DD-020.23": "Wirkung des einzelnen numerischen RGB-Kanals auf Vorschau und übernommene Originalfarbe nicht getrennt gemessen.",
+        "DD-020.24": "Wirkung des einzelnen numerischen RGB-Kanals auf Vorschau und übernommene Originalfarbe nicht getrennt gemessen.",
+        "DD-020.25": "Wirkung des einzelnen numerischen RGB-Kanals auf Vorschau und übernommene Originalfarbe nicht getrennt gemessen."
+      }
+    },
+    {
+      "id": "material-wasser",
+      "title": "Wasserformen, Pinsel und Paletten",
+      "area": "material",
+      "caseIds": [
+        "DD-023.01",
+        "DD-023.02",
+        "DD-023.03",
+        "DD-023.04",
+        "DD-023.05",
+        "DD-023.06",
+        "DD-023.07",
+        "DD-023.08",
+        "DD-023.09",
+        "DD-023.10",
+        "DD-023.11",
+        "DD-023.12",
+        "DD-023.13",
+        "DD-023.14",
+        "DD-023.15",
+        "DD-023.16",
+        "DD-023.17",
+        "DD-023.18",
+        "DD-023.19",
+        "DD-023.20",
+        "DD-023.21",
+        "DD-023.22",
+        "DD-023.23",
+        "DD-023.24",
+        "DD-023.25",
+        "DD-023.26",
+        "DD-023.27",
+        "DD-023.28"
+      ],
+      "sharedFlow": "Gleiche Wasserfläche per Form oder Pinsel zeichnen, Deep/Shallow-Farben, Palette, Rand und Mischung prüfen; Undo/Redo und frisches Öffnen.",
+      "originalEvidence": {
+        "DD-023.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md"
+        ],
+        "DD-023.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-water-resize-before.dungeondraft_map"
+        ],
+        "DD-023.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/19-deep-override-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/22-water-custom-two-colors.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/material-dd023-water-palette-handoff.md"
+        ],
+        "DD-023.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/20-shallow-override-on.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/21-shallow-hex-accept.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/material-dd023-water-palette-handoff.md"
+        ],
+        "DD-023.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.20": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.21": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.22": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+        ],
+        "DD-023.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/25-water-palette-plus.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/24-deep-dropdown.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/26-water-palette-added.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/material-dd023-water-palette-handoff.md"
+        ],
+        "DD-023.24": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/24-deep-dropdown.png"
+        ],
+        "DD-023.25": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/24-deep-dropdown.png"
+        ],
+        "DD-023.26": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/16-water-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/26-water-shallow-dropdown.png"
+        ],
+        "DD-023.27": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/27-water-shallow-plus.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/28-water-shallow-fifth.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/material-dd023-water-palette-handoff.md"
+        ],
+        "DD-023.28": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/26-water-shallow-dropdown.png"
+        ]
+      },
+      "originalEffects": {
+        "DD-023.01": "Die Originalansicht zeigt das geöffnete Water Brush-Panel mit fünf Pinselgrößen, Rectangle/Circle/Polygon sowie Deep Color, Shallow Color, Blend Distance 1,5 und Disable Border OFF."
+      },
+      "originalGaps": {
+        "DD-023.02": "Wasserpinselzug mit definiertem Radius und Vorher-/Nachher-Fläche im Original nicht gemessen.",
+        "DD-023.03": "Rasterreichweite dieser einzeln gewählten Wasserpinselstufe im Original nicht gemessen.",
+        "DD-023.04": "Gleiche Originalgeometrie in diesem Wasser-Formmodus mit Abschluss und gespeicherter Fläche nicht gemessen.",
+        "DD-023.05": "Gleiche Originalgeometrie in diesem Wasser-Formmodus mit Abschluss und gespeicherter Fläche nicht gemessen.",
+        "DD-023.06": "Gleiche Originalgeometrie in diesem Wasser-Formmodus mit Abschluss und gespeicherter Fläche nicht gemessen.",
+        "DD-023.07": "Shift/invertAction stammt aus der allgemeinen ShapeTool-API; Wirkung im Wasser-Formmodus 1.2.0.1 nicht direkt geprüft.",
+        "DD-023.08": "Kartenwirkung dieses Wasser-Farbkanals mit gleichem RGBA-Wert und gleicher Fläche nicht getrennt gemessen.",
+        "DD-023.09": "Kartenwirkung dieses Wasser-Farbkanals mit gleichem RGBA-Wert und gleicher Fläche nicht getrennt gemessen.",
+        "DD-023.10": "Deep/Shallow-Farbverlauf für Blend Distance 0, 1,5 und Maximum im Original nicht direkt verglichen.",
+        "DD-023.11": "Disable Border ON/OFF an derselben Originalwasserfläche nicht direkt auf Kartenwirkung geprüft.",
+        "DD-023.12": "Alt-Radierung einer vorhandenen Originalwasserfläche nicht direkt gemessen; Statushinweis ist nur Bedienhinweis.",
+        "DD-023.13": "Formvorschau und Escape-Abbruch am selben Wasserentwurf im Original nicht direkt geprüft.",
+        "DD-023.14": "Gespeicherter Originalwasserfall liegt vor; frisches Öffnen nach neuer Deep-/Shallow-Palettenänderung fehlt.",
+        "DD-023.15": "Alpha und Kartenwirkung der bestätigten Deep-/Shallow-Override-Farbe im Original nicht abgelesen; Balkenwert allein reicht nicht.",
+        "DD-023.16": "Alpha und Kartenwirkung der bestätigten Deep-/Shallow-Override-Farbe im Original nicht abgelesen; Balkenwert allein reicht nicht.",
+        "DD-023.17": "Rasterreichweite dieser einzeln gewählten Wasserpinselstufe im Original nicht gemessen.",
+        "DD-023.18": "Rasterreichweite dieser einzeln gewählten Wasserpinselstufe im Original nicht gemessen.",
+        "DD-023.19": "Rasterreichweite dieser einzeln gewählten Wasserpinselstufe im Original nicht gemessen.",
+        "DD-023.20": "Rasterreichweite dieser einzeln gewählten Wasserpinselstufe im Original nicht gemessen.",
+        "DD-023.21": "Undo-/Redo-Zustände einer definierten Originalwasserfläche nicht direkt als Paar erfasst.",
+        "DD-023.22": "Undo-/Redo-Zustände einer definierten Originalwasserfläche nicht direkt als Paar erfasst.",
+        "DD-023.23": "Geltungsbereich, Wiederwahl und Persistenz eines per Palette-Plus hinzugefügten Farbkreises im Original nicht geprüft.",
+        "DD-023.24": "Erneutes Öffnen und Wahl einer vorhandenen Farbvorlage samt Balken-/Kartenwirkung im Original nicht geprüft.",
+        "DD-023.25": "Wahl einer der vier ursprünglichen Farbvorgaben samt exaktem RGBA-Wert und Kartenwirkung im Original nicht gemessen.",
+        "DD-023.26": "Erneutes Öffnen und Wahl einer vorhandenen Farbvorlage samt Balken-/Kartenwirkung im Original nicht geprüft.",
+        "DD-023.27": "Geltungsbereich, Wiederwahl und Persistenz eines per Palette-Plus hinzugefügten Farbkreises im Original nicht geprüft.",
+        "DD-023.28": "Wahl einer der vier ursprünglichen Farbvorgaben samt exaktem RGBA-Wert und Kartenwirkung im Original nicht gemessen."
+      }
+    },
+    {
+      "id": "material-terrain",
+      "title": "Terrainpinsel, Biome und Slots",
+      "area": "material",
+      "caseIds": [
+        "DD-024.01",
+        "DD-024.02",
+        "DD-024.03",
+        "DD-024.04",
+        "DD-024.05",
+        "DD-024.06",
+        "DD-024.07",
+        "DD-024.08",
+        "DD-024.09",
+        "DD-024.10",
+        "DD-024.11",
+        "DD-024.12",
+        "DD-024.13",
+        "DD-024.14",
+        "DD-024.15",
+        "DD-024.16",
+        "DD-024.17",
+        "DD-024.18",
+        "DD-024.19",
+        "DD-024.20",
+        "DD-024.21",
+        "DD-024.22",
+        "DD-024.23",
+        "DD-024.24",
+        "DD-024.25",
+        "DD-024.26",
+        "DD-024.27",
+        "DD-024.28",
+        "DD-024.29",
+        "DD-024.30"
+      ],
+      "sharedFlow": "Terraintexturen und Biome den Slots zuordnen, einzelne und überlappende Striche sowie Fill/Mischung prüfen; Undo/Redo und frisches Öffnen.",
+      "originalEvidence": {
+        "DD-024.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/07-terrain-eight-top.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/08-terrain-eight-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/09-terrain-eight-end-confirm.png"
+        ],
+        "DD-024.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/44-terrain-selection.png"
+        ],
+        "DD-024.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md"
+        ],
+        "DD-024.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-terrain-brush-probe.dungeondraft_map"
+        ],
+        "DD-024.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-chooser.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/44-terrain-selection.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/45-terrain-default-search-snow.png"
+        ],
+        "DD-024.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.20": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.21": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
+        ],
+        "DD-024.22": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.24": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.25": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.26": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.27": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-ranges-slots.png"
+        ],
+        "DD-024.28": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-chooser.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/44-terrain-selection.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/gui-run/evidence/46-terrain-selection-x-closed.png"
+        ],
+        "DD-024.29": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-chooser.png"
+        ],
+        "DD-024.30": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-chooser.png"
+        ]
+      },
+      "originalEffects": {},
+      "originalGaps": {
+        "DD-024.01": "Enabled OFF nach bestehendem Terrainauftrag im Original nicht auf Strich- und Kartenwirkung geprüft.",
+        "DD-024.02": "Definierter Terrain-Pinselzug mit gleicher Textur im Original nicht als Vorher-/Nachher-Splatwirkung gemessen.",
+        "DD-024.03": "Kleinste und größte Terrain-Brush-Size mit gleichem Zug im Original nicht maßlich gemessen.",
+        "DD-024.04": "Intensitätsreihe und wiederholter Strich am gleichen Original-Terrain nicht gemessen.",
+        "DD-024.05": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.06": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.07": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.08": "Wirkung des Entsperrens von Slots 5–8 auf bereits bemaltes und neu gespeichertes Terrain im Original nicht geprüft.",
+        "DD-024.09": "Auswahl einer Original-Terrainbibliothekskachel und Wirkung eines damit gemalten Strichs nicht direkt gepaart.",
+        "DD-024.10": "Geltungsbereich und Undo-Wirkung von Fill im Original nicht direkt gemessen.",
+        "DD-024.11": "Übergang zweier Original-Terrainslots bei Smooth Blending ON/OFF nicht direkt gemessen.",
+        "DD-024.12": "Terrain-Radiergeste nur Kandidat aus Vorbelegen; Originalbedienung und Wirkung nicht identifiziert.",
+        "DD-024.13": "Terrain-Pinselvorschau vor Klick und Abbruch ohne Kartenänderung im Original nicht direkt geprüft.",
+        "DD-024.14": "Gespeicherter Original-Terrainfall liegt vor; frisches Öffnen nach Belegung mehrerer Slots fehlt.",
+        "DD-024.15": "Bedeutung des Default-Felds bei zusätzlichen Paketen/Kategorien im Original nicht geklärt.",
+        "DD-024.16": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.17": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.18": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.19": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.20": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.21": "Konkrete Slotbelegung und Kartenwirkung dieses Biome-Presets im Original nicht einzeln gemessen.",
+        "DD-024.22": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.23": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.24": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.25": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.26": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.27": "Belegung, Strichwirkung und Speicherbindung dieses Terrain-Slots im Original nicht als eigene Folge gemessen.",
+        "DD-024.28": "Ob X eine unbestätigte Terrain-Slotwahl verwirft, im Original nicht gemessen.",
+        "DD-024.29": "Undo-/Redo-Zustände eines definierten Original-Terrainstrichs nicht direkt als Paar erfasst.",
+        "DD-024.30": "Undo-/Redo-Zustände eines definierten Original-Terrainstrichs nicht direkt als Paar erfasst."
+      }
+    },
+    {
+      "id": "material-dach-material",
+      "title": "Dachflächen und Materialpinsel",
+      "area": "material",
+      "caseIds": [
+        "DD-022.01",
+        "DD-022.02",
+        "DD-022.03",
+        "DD-022.04",
+        "DD-022.05",
+        "DD-022.06",
+        "DD-022.07",
+        "DD-022.08",
+        "DD-022.09",
+        "DD-022.10",
+        "DD-022.11",
+        "DD-022.12",
+        "DD-022.13",
+        "DD-022.14",
+        "DD-022.15",
+        "DD-022.16",
+        "DD-022.17",
+        "DD-022.18",
+        "DD-022.19",
+        "DD-025.01",
+        "DD-025.02",
+        "DD-025.03",
+        "DD-025.04",
+        "DD-025.05",
+        "DD-025.06",
+        "DD-025.07",
+        "DD-025.08",
+        "DD-025.09",
+        "DD-025.10",
+        "DD-025.11",
+        "DD-025.12",
+        "DD-025.13",
+        "DD-025.14",
+        "DD-025.15",
+        "DD-025.16",
+        "DD-025.17",
+        "DD-025.18"
+      ],
+      "sharedFlow": "Zwei getrennte Abnahmefolgen auf gemeinsamer Textur-/Ebenengrundlage: Dachkontur, Typ und Stil; Materialauftrag, Sortierung und Glättung. Jeweils eigener Vorschau-, History- und Speichervergleich.",
+      "originalEvidence": {
+        "DD-022.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-controls-resized.png"
+        ],
+        "DD-022.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-created.png"
+        ],
+        "DD-022.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-roof-manual.png"
+        ],
+        "DD-022.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-controls-resized.png"
+        ],
+        "DD-022.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-created.png"
+        ],
+        "DD-022.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-controls-resized.png"
+        ],
+        "DD-022.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-controls-resized.png"
+        ],
+        "DD-022.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-roof-manual.png"
+        ],
+        "DD-022.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-created.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/11-roof-quickbox-top.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/13-roof-manual-top.png"
+        ],
+        "DD-022.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-shade-off.png"
+        ],
+        "DD-022.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135.png"
+        ],
+        "DD-022.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135-contrast-08.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/12-roof-quickbox-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/14-roof-manual-end-confirm.png"
+        ],
+        "DD-022.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-preview.png"
+        ],
+        "DD-022.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md"
+        ],
+        "DD-022.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md"
+        ],
+        "DD-022.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-redo-confirmed.png"
+        ],
+        "DD-022.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/native-reopen-ready.png"
+        ],
+        "DD-022.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-controls-resized.png"
+        ],
+        "DD-022.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-redo-confirmed.png"
+        ],
+        "DD-025.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md"
+        ],
+        "DD-025.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md"
+        ],
+        "DD-025.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md"
+        ],
+        "DD-025.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/29-material-top.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/30-material-end-confirm.png"
+        ],
+        "DD-025.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-smooth.png"
+        ],
+        "DD-025.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md"
+        ],
+        "DD-025.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md"
+        ],
+        "DD-025.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/native-material-direct-click.json"
+        ],
+        "DD-025.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-surface-material-smooth.dungeondraft_map"
+        ],
+        "DD-025.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ],
+        "DD-025.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-current.png"
+        ]
+      },
+      "originalEffects": {
+        "DD-022.01": "Nach Öffnen des Roof Tool sind Quickbox und Manual, Sorting Over/Under, Gable/Hip/Dormer, die Style-Galerie und die Regler Shade, Sun Direction und Shade Contrast sichtbar.",
+        "DD-025.01": "Die Originalansicht zeigt das geöffnete Material Brush-Panel mit fünf Brush-Size-Stufen, Layer −400, Smooth OFF, Move To Front OFF und Materialkacheln."
+      },
+      "originalGaps": {
+        "DD-022.02": "Quickbox-Originalzug hat verzögerte Zeigerstartkoordinate; punktgleiche Dachkontur fehlt.",
+        "DD-022.03": "Manual-Dach mit kontrollierter Eckpunktfolge und Abschluss im Original nicht direkt gemessen.",
+        "DD-022.04": "Over/Under-Wirkung zweier Originaldächer auf derselben Ebene nicht direkt gemessen.",
+        "DD-022.06": "Hip-Wirkung auf demselben definierten Rechteck wie Gable im Original nicht direkt gemessen.",
+        "DD-022.07": "Dormer-Wirkung auf einem vorhandenen Originaldach nicht direkt gemessen.",
+        "DD-022.08": "Breitenwirkung des Manual-Dachs bei gleichen Punkten und zwei Width-Werten im Original nicht gemessen.",
+        "DD-022.09": "Original-Stilwechsel an derselben Dachkontur und resultierende Texturwirkung nicht direkt gepaart.",
+        "DD-022.10": "Shade-Kartenwirkung ist nur für das beobachtete Gable-Dach erfasst; andere Dachtypen fehlen.",
+        "DD-022.11": "Sun-Direction-Kartenwirkung ist nur für das beobachtete Gable-Dach erfasst; Winkelreihe und andere Typen fehlen.",
+        "DD-022.12": "Shade-Contrast-Kartenwirkung ist nur für das beobachtete Gable-Dach erfasst; Wertebereich und andere Stile fehlen.",
+        "DD-022.13": "Quickbox-Vorschau während eines langsamen Original-Zeigerzugs nicht eindeutig erfasst.",
+        "DD-022.14": "Manual-Abschluss und Escape-Abbruch derselben Originalpunktfolge nicht direkt geprüft.",
+        "DD-022.15": "Verschieben einzelner Dach-Eckpunkte und der Firstachse im Original nur teilweise bekannt; gespeicherte Wirkung fehlt.",
+        "DD-022.18": "Over/Under-Wirkung zweier Originaldächer auf derselben Ebene nicht direkt gemessen.",
+        "DD-025.02": "Definierter Materialstrich mit gewählter Pakettextur im Original nicht als Vorher-/Nachher-Maske gemessen.",
+        "DD-025.03": "Rasterreichweite dieser einzeln gewählten Materialpinselstufe im Original nicht gemessen.",
+        "DD-025.04": "Mausradänderung der Material-Brush-Size mit anschließendem Kontrollstrich im Original nicht direkt geprüft.",
+        "DD-025.05": "Überlagerung zweier Materialien auf gleicher und verschiedener Ebene im Original nicht gemessen.",
+        "DD-025.06": "Wahl einer Original-Materialkachel und resultierende Strichwirkung nicht direkt gepaart.",
+        "DD-025.07": "Smooth ON/OFF an einem spitzen Original-Materialstrich nicht direkt verglichen.",
+        "DD-025.08": "Move To Front beim nächsten Strich mit zwei überlappenden Originaltexturen nicht direkt gemessen.",
+        "DD-025.09": "Alt-Radierung eines vorhandenen Original-Materialstrichs nicht direkt gemessen; Statushinweis ist nur Bedienhinweis.",
+        "DD-025.10": "Materialpinsel-Vorschau und Escape-Abbruch ohne Kartenmutation im Original nicht direkt geprüft.",
+        "DD-025.11": "Nichtwahl durch SelectTool ist direkt nur für ein Originalmaterial auf Ebene −400 belegt; andere Ebenen/Materialien fehlen.",
+        "DD-025.12": "Gespeicherter Originalmaterialfall liegt vor; frisches Öffnen nach neuem Materialstrich mit Smooth/Layerwechsel fehlt.",
+        "DD-025.13": "Rasterreichweite dieser einzeln gewählten Materialpinselstufe im Original nicht gemessen.",
+        "DD-025.14": "Rasterreichweite dieser einzeln gewählten Materialpinselstufe im Original nicht gemessen.",
+        "DD-025.15": "Rasterreichweite dieser einzeln gewählten Materialpinselstufe im Original nicht gemessen.",
+        "DD-025.16": "Rasterreichweite dieser einzeln gewählten Materialpinselstufe im Original nicht gemessen.",
+        "DD-025.17": "Undo-/Redo-Zustände eines definierten Original-Materialstrichs nicht direkt als Paar erfasst.",
+        "DD-025.18": "Undo-/Redo-Zustände eines definierten Original-Materialstrichs nicht direkt als Paar erfasst."
+      }
+    }
+  ]
+}

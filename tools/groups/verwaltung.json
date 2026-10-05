@@ -1,0 +1,1595 @@
+{
+  "groups": [
+    {
+      "id": "verwaltung-karte-datei",
+      "title": "Kartenstart und Dateiabläufe",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-001.01",
+        "DD-001.02",
+        "DD-001.03",
+        "DD-001.04",
+        "DD-001.05",
+        "DD-001.06",
+        "DD-002.01",
+        "DD-002.02",
+        "DD-002.03",
+        "DD-002.04",
+        "DD-002.05",
+        "DD-002.06",
+        "DD-002.07",
+        "DD-002.08",
+        "DD-002.09",
+        "DD-038.01",
+        "DD-038.02",
+        "DD-038.03",
+        "DD-038.04",
+        "DD-038.05",
+        "DD-038.06",
+        "DD-038.07",
+        "DD-038.08",
+        "DD-038.09",
+        "DD-039.01",
+        "DD-039.02",
+        "DD-039.03",
+        "DD-039.04",
+        "DD-039.05",
+        "DD-039.06"
+      ],
+      "sharedFlow": "New/Open/Save, Größe und Karteninformation in einer Sitzung",
+      "originalEvidence": {
+        "DD-001.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/11-new-wizard.png"
+        ],
+        "DD-001.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-001.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-001.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-001.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-001.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/11-new-wizard.png"
+        ],
+        "DD-002.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-template-qa.png"
+        ],
+        "DD-002.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/11-new-wizard.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-template-qa.png"
+        ],
+        "DD-002.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-size-template.png"
+        ],
+        "DD-002.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-template-qa.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-template-removed.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/NATIVE-WIZARD.md"
+        ],
+        "DD-038.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-038.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png"
+        ],
+        "DD-038.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png"
+        ],
+        "DD-038.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png"
+        ],
+        "DD-039.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ],
+        "DD-039.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ],
+        "DD-039.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ],
+        "DD-039.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ],
+        "DD-039.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ],
+        "DD-039.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/18-map-info.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+        ]
+      },
+      "originalGaps": {
+        "DD-001.01": "Die Originalwirkung von New ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-001.02": "Die Originalwirkung von Width in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-001.03": "Die Originalwirkung von Height in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-001.04": "Die Originalwirkung von OK ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-001.05": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-001.06": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.01": "Die Originalwirkung von Template auswählen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.02": "Die Originalwirkung von Name ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.03": "Die Originalwirkung von Width in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.04": "Die Originalwirkung von Height in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.05": "Die Originalwirkung von Accept ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.06": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-002.08": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.01": "Die Originalwirkung von Change Map Size ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.02": "Die Originalwirkung von Top in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.03": "Die Originalwirkung von Right in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.04": "Die Originalwirkung von Bottom in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.05": "Die Originalwirkung von Left in tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.06": "Die Originalwirkung von Cannot undo warning ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.07": "Die Originalwirkung von OK ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.08": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-038.09": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.01": "Die Originalwirkung von Show Map Info ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.02": "Die Originalwirkung von Map Size ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.03": "Die Originalwirkung von Filename ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.04": "Die Originalwirkung von Custom asset packs used ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.05": "Die Originalwirkung von Close ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-039.06": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-wizard",
+      "title": "Kartenassistent und neue Karteneinstellungen",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-003.01",
+        "DD-003.02",
+        "DD-004.01",
+        "DD-004.02",
+        "DD-004.03",
+        "DD-004.04",
+        "DD-004.05",
+        "DD-004.06",
+        "DD-004.07",
+        "DD-005.01",
+        "DD-005.02",
+        "DD-005.03",
+        "DD-005.04",
+        "DD-005.05",
+        "DD-006.01",
+        "DD-006.02",
+        "DD-006.03",
+        "DD-006.04",
+        "DD-007.01",
+        "DD-007.02",
+        "DD-008.01",
+        "DD-008.02",
+        "DD-008.03",
+        "DD-008.04",
+        "DD-008.05"
+      ],
+      "sharedFlow": "Wizard, Vorgaben und Einstellungen bei neu angelegter Karte",
+      "originalEvidence": {
+        "DD-003.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-003.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-004.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-004.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-004.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-004.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/31-wizard-floor-drag-bottom.png"
+        ],
+        "DD-004.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/32-wizard-wall-bottom.png"
+        ],
+        "DD-004.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-004.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-dungeon-controls.png"
+        ],
+        "DD-005.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-cave-controls.png"
+        ],
+        "DD-005.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-cave-controls.png"
+        ],
+        "DD-005.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-cave-controls.png"
+        ],
+        "DD-005.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-cave-controls.png"
+        ],
+        "DD-005.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wizard-cave-controls.png"
+        ],
+        "DD-006.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-006.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-006.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-006.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-007.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-007.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-008.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-008.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-008.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-008.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-008.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/35-map-settings-wear.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-003.01": "Die Originalwirkung von Start With Map Wizard ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-003.02": "Die Originalwirkung von DUNGEON/CAVE wählen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.01": "Die Originalwirkung von Boundary ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.02": "Die Originalwirkung von Complexity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.03": "Die Originalwirkung von Density ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.04": "Die Originalwirkung von Floor style ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.05": "Die Originalwirkung von Wall style ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.06": "Die Originalwirkung von Generate dungeon ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-004.07": "Die Originalwirkung von Finish dungeon ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-005.01": "Die Originalwirkung von Boundary ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-005.02": "Die Originalwirkung von Complexity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-005.03": "Die Originalwirkung von Density ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-005.04": "Die Originalwirkung von Generate cave ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-005.05": "Die Originalwirkung von Finish cave ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-006.01": "Die Originalwirkung von Disable Wall Shadow ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-006.02": "Die Originalwirkung von Disable Object Shadow ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-007.01": "Die Originalwirkung von Disable Building Wear ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-007.02": "Die Originalwirkung von Gebäudeabnutzung beim Start deaktivieren ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-008.01": "Die Originalwirkung von Building Wear: NONE ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-008.02": "Die Originalwirkung von Building Wear: DUST ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-008.03": "Die Originalwirkung von Building Wear: GRIME ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-008.04": "Die Originalwirkung von Building Wear: NOISE ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-008.05": "Die Originalwirkung von Building Wear: SCRATCHED ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-assetwahl",
+      "title": "Assetauswahl und Katalog",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-009.01",
+        "DD-009.02",
+        "DD-009.03",
+        "DD-009.04",
+        "DD-010.01",
+        "DD-010.02",
+        "DD-010.03",
+        "DD-010.04",
+        "DD-010.05",
+        "DD-010.06",
+        "DD-010.07",
+        "DD-010.08",
+        "DD-010.09",
+        "DD-010.10",
+        "DD-010.11",
+        "DD-010.12",
+        "DD-010.13",
+        "DD-010.14",
+        "DD-010.15",
+        "DD-010.23",
+        "DD-010.24",
+        "DD-010.25",
+        "DD-010.26",
+        "DD-010.27",
+        "DD-033.01",
+        "DD-033.02",
+        "DD-033.03",
+        "DD-034.01",
+        "DD-034.02",
+        "DD-034.03",
+        "DD-034.04"
+      ],
+      "sharedFlow": "Paketwahl, Suche, Sortierung und Katalog in einer Sitzung",
+      "originalEvidence": {
+        "DD-009.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-009.02": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-009.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-009.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-default-assets-restart.png"
+        ],
+        "DD-010.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/05-assets-empty.png"
+        ],
+        "DD-010.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-010.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/06-assets-sort.png"
+        ],
+        "DD-010.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/07-assets-sort-headers-check.png"
+        ],
+        "DD-010.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-dialog.png"
+        ],
+        "DD-010.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-new-assets-selected.png"
+        ],
+        "DD-010.15": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-disabled-pack-selection.png"
+        ],
+        "DD-010.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/06-assets-sort.png"
+        ],
+        "DD-010.24": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/07-assets-sort-headers-check.png"
+        ],
+        "DD-010.25": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/07-assets-sort-headers-check.png"
+        ],
+        "DD-010.26": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/07-assets-sort-headers-check.png"
+        ],
+        "DD-010.27": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/05-assets-empty.png"
+        ],
+        "DD-033.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-tileset-color-brown.png",
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-033.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-tileset-color-brown.png"
+        ],
+        "DD-033.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-tileset-color-brown.png"
+        ],
+        "DD-034.01": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-034.02": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-034.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-smart_double-neighbors.png"
+        ],
+        "DD-034.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-smart_double-neighbors.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-009.01": "Die Originalwirkung von Disable Default Assets ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-009.02": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Terrain ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-009.03": "Die Originalwirkung von Standardassets abschalten ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.01": "Die Originalwirkung von Assets ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.02": "Die Originalwirkung von Edit Asset Pack Selection ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.03": "Die Originalwirkung von Assets Folder ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.04": "Die Originalwirkung von Browse ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.05": "Die Originalwirkung von Pack/Version/Author list ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.06": "Die Originalwirkung von Sort Assets by Pack ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.07": "Die Originalwirkung von Pack-Checkbox ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.08": "Die Originalwirkung von Keywords ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.09": "Die Originalwirkung von Clear Keywords ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.11": "Die Originalwirkung von Search ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.12": "Die Originalwirkung von Accept ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.13": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.14": "Die Originalwirkung von Kartenspezifische Auswahl ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.15": "Die Originalwirkung von Paket aus/an ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-033.01": "Die Originalwirkung von Simple Tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-034.01": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Smart Tiles ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-034.02": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Smart Tiles Double ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-034.03": "Die Originalwirkung von Smart Tile Übergänge ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-034.04": "Die Originalwirkung von Smart Tile Double Innen-/Außenkanten ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-assetpaket",
+      "title": "Assetarten und Paketbau",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-010.16",
+        "DD-010.17",
+        "DD-010.18",
+        "DD-010.19",
+        "DD-010.20",
+        "DD-010.21",
+        "DD-010.22",
+        "DD-035.01",
+        "DD-035.02",
+        "DD-035.03",
+        "DD-035.04",
+        "DD-035.05",
+        "DD-035.06",
+        "DD-046.01",
+        "DD-046.02",
+        "DD-046.03",
+        "DD-046.04",
+        "DD-046.05",
+        "DD-046.06",
+        "DD-046.07",
+        "DD-046.08",
+        "DD-046.09",
+        "DD-046.10",
+        "DD-046.11",
+        "DD-046.12",
+        "DD-046.13",
+        "DD-046.14",
+        "DD-046.15"
+      ],
+      "sharedFlow": "Assetarten, Paketstruktur und Paketexport mit einer Fixture",
+      "originalEvidence": {
+        "DD-010.16": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.17": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.18": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.19": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.20": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.21": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-010.22": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-035.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-gallery-cave-package.png",
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-035.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-roof-gallery-chosen.png",
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-035.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-gallery-material-package.png",
+          "https://megasploot.github.io/DungeondraftModdingAPI/AssetCategories/"
+        ],
+        "DD-035.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-roof-gallery-chosen.png"
+        ],
+        "DD-035.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-gallery-cave-package.png"
+        ],
+        "DD-035.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-gallery-material-package.png"
+        ],
+        "DD-046.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-046.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
+        ],
+        "DD-046.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/10-package-empty.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-010.16": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Patterns ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.17": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Patterns Colorable ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.18": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Objects ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.19": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Walls ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.20": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Portals ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.21": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Paths ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-010.22": "Direkter versionsgebundener Originalbeleg fehlt; bisher nur Hersteller-API. Die Originalwirkung von Lights ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-035.01": "Die Originalwirkung von Caves ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-035.02": "Die Originalwirkung von Roofs ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-035.03": "Die Originalwirkung von Materials ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-035.04": "Die Originalwirkung von Roof-Pakettextur ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-035.06": "Die Originalwirkung von Material-Pakettextur ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.01": "Die Originalwirkung von Package Custom Assets ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.02": "Die Originalwirkung von Step-by-Step Guide ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.03": "Die Originalwirkung von Example Template ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.04": "Die Originalwirkung von Base Folder ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.05": "Die Originalwirkung von Browse ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.06": "Die Originalwirkung von Name ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.07": "Die Originalwirkung von Version ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.08": "Die Originalwirkung von Author ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.09": "Die Originalwirkung von Keywords ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.10": "Die Originalwirkung von Allow 3rd party mapping software to use this pack ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.11": "Die Originalwirkung von Embed thumbnails ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.12": "Die Originalwirkung von Override custom color settings ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.13": "Die Originalwirkung von Package ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.14": "Die Originalwirkung von Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-046.15": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-ebenen",
+      "title": "Ebenen und Vorlagenbild",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-032.01",
+        "DD-032.02",
+        "DD-032.03",
+        "DD-032.04",
+        "DD-032.05",
+        "DD-032.06",
+        "DD-032.07",
+        "DD-032.08",
+        "DD-032.09",
+        "DD-032.10",
+        "DD-032.11",
+        "DD-032.12",
+        "DD-032.13",
+        "DD-032.14",
+        "DD-032.15",
+        "DD-032.16",
+        "DD-032.17",
+        "DD-032.18",
+        "DD-032.19",
+        "DD-032.20",
+        "DD-032.21",
+        "DD-040.01",
+        "DD-040.02",
+        "DD-040.03",
+        "DD-040.04",
+        "DD-040.05",
+        "DD-040.06",
+        "DD-040.07",
+        "DD-040.08",
+        "DD-040.09",
+        "DD-040.10"
+      ],
+      "sharedFlow": "Ebenenwechsel und Trace Image auf einer Karte",
+      "originalEvidence": {
+        "DD-032.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-delete-selected.png"
+        ],
+        "DD-032.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-order-and-name.png"
+        ],
+        "DD-032.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-order-and-name.png"
+        ],
+        "DD-032.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-reordered.png"
+        ],
+        "DD-032.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-compare.png"
+        ],
+        "DD-032.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-compare.png"
+        ],
+        "DD-032.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-compare.png"
+        ],
+        "DD-032.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-compare.png"
+        ],
+        "DD-032.15": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-032.16": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-032.17": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-032.18": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-032.19": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.20": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-create.png"
+        ],
+        "DD-032.21": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-level-compare.png"
+        ],
+        "DD-040.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ],
+        "DD-040.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-trace-image.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-032.01": "Die Originalwirkung von Create ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.02": "Die Originalwirkung von New Level Label ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.03": "Die Originalwirkung von Clone Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.04": "Die Originalwirkung von Switch to Level on Creation ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.05": "Die Originalwirkung von New Level Accept ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.06": "Die Originalwirkung von New Level Cancel ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.07": "Die Originalwirkung von Delete ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.08": "Die Originalwirkung von Level list ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.09": "Die Originalwirkung von Rename Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.10": "Die Originalwirkung von Reorder Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.11": "Die Originalwirkung von Reference Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.12": "Die Originalwirkung von Reference Opacity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.13": "Die Originalwirkung von Current Opacity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.14": "Die Originalwirkung von Compare Levels OK ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.15": "Die Originalwirkung von Level selector ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.16": "Die Originalwirkung von Level down arrow ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.17": "Die Originalwirkung von Level up arrow ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.18": "Die Originalwirkung von Compare Levels ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.19": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.20": "Die Originalwirkung von Label-Feld X ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-032.21": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.01": "Die Originalwirkung von Image File browse/import ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.02": "Die Originalwirkung von Reset image ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.03": "Die Originalwirkung von Center ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.04": "Die Originalwirkung von Scale ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.05": "Die Originalwirkung von Opacity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.06": "Die Originalwirkung von Drag position ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.07": "Die Originalwirkung von Toggle visibility with T ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.08": "Die Originalwirkung von Shared across levels ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.09": "Die Originalwirkung von Undo/Redo position ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-040.10": "Die Originalwirkung von Save/Reopen image ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-ansicht",
+      "title": "Kartennavigation und Ansicht",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-048.01",
+        "DD-048.02",
+        "DD-048.03",
+        "DD-048.04",
+        "DD-048.05",
+        "DD-048.06",
+        "DD-048.07",
+        "DD-048.08",
+        "DD-048.09",
+        "DD-048.10",
+        "DD-048.11",
+        "DD-048.12",
+        "DD-048.13",
+        "DD-048.14",
+        "DD-048.15",
+        "DD-048.16",
+        "DD-048.17",
+        "DD-048.18",
+        "DD-048.19",
+        "DD-041.02",
+        "DD-041.03",
+        "DD-041.04",
+        "DD-036.40",
+        "DD-036.42",
+        "DD-036.43",
+        "DD-036.44",
+        "DD-036.45",
+        "DD-036.46",
+        "DD-036.47",
+        "DD-036.48",
+        "DD-036.49",
+        "DD-036.50"
+      ],
+      "sharedFlow": "Kartenansicht, Pan, Zoom, Raster und Hilfen auf einer Karte",
+      "originalEvidence": {
+        "DD-048.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-048.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-048.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-048.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-map-settings-wear.png"
+        ],
+        "DD-048.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/13-bottom-icon-1-hover.png"
+        ],
+        "DD-048.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/14-bottom-icon-2-hover.png"
+        ],
+        "DD-048.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/38-zoom-menu.png"
+        ],
+        "DD-048.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.15": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-048.16": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-048.17": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-048.18": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-048.19": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png"
+        ],
+        "DD-041.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/DD-041-HAND-PAN.md"
+        ],
+        "DD-041.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/DD-041-HAND-PAN.md"
+        ],
+        "DD-041.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-settings-tools.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md"
+        ],
+        "DD-036.40": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.42": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.43": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.44": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.45": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.46": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.47": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.48": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.49": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.50": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-048.01": "Die Originalwirkung von Grid Style ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.02": "Die Originalwirkung von Grid Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.03": "Die Originalwirkung von Kreisförmige Taste neben Grid Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.04": "Die Originalwirkung von Camera Filter ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.05": "Die Originalwirkung von Grid ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.06": "Die Originalwirkung von Snap ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.07": "Die Originalwirkung von Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.10": "Die Originalwirkung von Zoom percentage dropdown ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.11": "Die Originalwirkung von Position readout ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.12": "Die Originalwirkung von Zoom In ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.13": "Die Originalwirkung von Zoom Out ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.14": "Die Originalwirkung von Fit map ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.15": "Die Originalwirkung von 1:1/100% ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.16": "Die Originalwirkung von Toggle Fullscreen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.17": "Die Originalwirkung von Toggle Guide ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.18": "Die Originalwirkung von Toggle Ruler ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-048.19": "Die Originalwirkung von Back ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.40": "Die Originalwirkung von Pan ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.42": "Die Originalwirkung von Zoom In ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.43": "Die Originalwirkung von Zoom Out ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.44": "Die Originalwirkung von Toggle Fullscreen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.45": "Die Originalwirkung von Toggle Grid ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.46": "Die Originalwirkung von Toggle Snap ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.47": "Die Originalwirkung von Toggle Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.48": "Die Originalwirkung von Toggle Guide ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.49": "Die Originalwirkung von Toggle Ruler ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.50": "Die Originalwirkung von Toggle Trace Image ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      },
+      "historicalCases": [
+        {
+          "caseId": "DD-041.01",
+          "classification": "editor_addition",
+          "decisionEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-hand-inventory-review/REPORT.md"
+        }
+      ]
+    },
+    {
+      "id": "verwaltung-menue",
+      "title": "Menü, Verlauf und Tastatur",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-036.01",
+        "DD-036.02",
+        "DD-036.03",
+        "DD-036.04",
+        "DD-036.05",
+        "DD-036.06",
+        "DD-036.07",
+        "DD-036.08",
+        "DD-036.09",
+        "DD-036.10",
+        "DD-036.11",
+        "DD-036.12",
+        "DD-036.13",
+        "DD-036.14",
+        "DD-036.15",
+        "DD-036.16",
+        "DD-036.34",
+        "DD-036.35",
+        "DD-036.36",
+        "DD-036.37",
+        "DD-036.38",
+        "DD-036.39",
+        "DD-036.41",
+        "DD-036.51",
+        "DD-036.52",
+        "DD-036.53",
+        "DD-036.54",
+        "DD-036.55",
+        "DD-036.56",
+        "DD-036.57",
+        "DD-036.58",
+        "DD-036.59",
+        "DD-036.60",
+        "DD-036.61",
+        "DD-036.62"
+      ],
+      "sharedFlow": "Menübefehle, Undo/Redo und zugehörige Tastaturbedienung",
+      "originalEvidence": {
+        "DD-036.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/09-empty-menu.png"
+        ],
+        "DD-036.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+        ],
+        "DD-036.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/12-loaded-map.png"
+        ],
+        "DD-036.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+        ],
+        "DD-036.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+        ],
+        "DD-036.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+        ],
+        "DD-036.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/09-empty-menu.png"
+        ],
+        "DD-036.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/17-open-recent.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/17-open-recent.png"
+        ],
+        "DD-036.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.15": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.16": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
+        ],
+        "DD-036.34": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.35": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.36": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.37": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.38": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.39": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.41": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.51": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.52": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.53": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.54": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-middle.png"
+        ],
+        "DD-036.55": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/04-shortcuts-end.png"
+        ],
+        "DD-036.56": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/04-shortcuts-end.png"
+        ],
+        "DD-036.57": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/04-shortcuts-end.png"
+        ],
+        "DD-036.58": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts-bottom.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/04-shortcuts-end.png"
+        ],
+        "DD-036.59": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png"
+        ],
+        "DD-036.60": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png"
+        ],
+        "DD-036.61": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.62": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-shortcuts.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-036.01": "Die Originalwirkung von Menu ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.02": "Die Originalwirkung von Open ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.03": "Die Originalwirkung von Save ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.04": "Die Originalwirkung von Undo ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.05": "Die Originalwirkung von Redo ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.06": "Die Originalwirkung von About ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.07": "Die Originalwirkung von Open Recent ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.08": "Die Originalwirkung von Save As ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.09": "Die Originalwirkung von Preferences ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.10": "Die Originalwirkung von Open User Folder ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.11": "Die Originalwirkung von Exit ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.14": "Die Originalwirkung von Warnung bei ungespeicherten Änderungen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.15": "Die Originalwirkung von Kopie und neuer Dateipfad ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.16": "Die Originalwirkung von Eigene gespeicherte Karte öffnen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.34": "Die Originalwirkung von New ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.35": "Die Originalwirkung von Open ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.36": "Die Originalwirkung von Save ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.37": "Die Originalwirkung von Export ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.38": "Die Originalwirkung von Undo ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.39": "Die Originalwirkung von Redo ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.41": "Die Originalwirkung von Invert Tool ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.51": "Die Originalwirkung von Brush Size Down ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.52": "Die Originalwirkung von Brush Size Up ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.53": "Die Originalwirkung von Delete ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.54": "Die Originalwirkung von Mirror ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.55": "Die Originalwirkung von Toggle Compare Levels ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.56": "Die Originalwirkung von Level Up ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.57": "Die Originalwirkung von Level Down ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.58": "Die Originalwirkung von Select Tool ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.59": "Die Originalwirkung von Shortcut-Zeile anklicken/neu belegen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.60": "Die Originalwirkung von Shortcut löschen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.61": "Die Originalwirkung von Apply ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.62": "Die Originalwirkung von Close ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-vorgaben",
+      "title": "Globale Vorgaben",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-036.17",
+        "DD-036.18",
+        "DD-036.19",
+        "DD-036.20",
+        "DD-036.21",
+        "DD-036.22",
+        "DD-036.23",
+        "DD-036.24",
+        "DD-036.25",
+        "DD-036.26",
+        "DD-036.27",
+        "DD-036.28",
+        "DD-036.29",
+        "DD-036.30",
+        "DD-036.31",
+        "DD-036.32",
+        "DD-036.33",
+        "DD-036.63",
+        "DD-036.64",
+        "DD-036.65",
+        "DD-036.66",
+        "DD-036.67",
+        "DD-036.68",
+        "DD-036.69",
+        "DD-036.70",
+        "DD-036.71",
+        "DD-036.72",
+        "DD-036.73",
+        "DD-036.74",
+        "DD-036.75",
+        "DD-036.76"
+      ],
+      "sharedFlow": "General- und Interface-Vorgaben in einem Preferences-Lauf",
+      "originalEvidence": {
+        "DD-036.17": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.18": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.19": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.20": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.21": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.22": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.23": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.24": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.25": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.26": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences.png"
+        ],
+        "DD-036.27": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.28": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.29": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.30": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.31": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.32": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png"
+        ],
+        "DD-036.33": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-preferences-interface.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/24-prefs-interface.png"
+        ],
+        "DD-036.63": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/02-shortcuts-top.png"
+        ],
+        "DD-036.64": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.65": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/02-shortcuts-top.png"
+        ],
+        "DD-036.66": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/02-shortcuts-top.png"
+        ],
+        "DD-036.67": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/03-shortcuts-top.png"
+        ],
+        "DD-036.68": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/24-prefs-interface.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.69": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.70": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.71": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.72": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.73": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.74": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.75": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ],
+        "DD-036.76": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/25-prefs-third-picker.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-036.17": "Die Originalwirkung von Language ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.18": "Die Originalwirkung von Maximum levels of undos ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.19": "Die Originalwirkung von Automatic backups ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.20": "Die Originalwirkung von Backup every minutes ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.21": "Die Originalwirkung von Maximum number of backups kept ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.22": "Die Originalwirkung von Log errors ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.23": "Die Originalwirkung von Snaps at every half grid unit ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.24": "Die Originalwirkung von Search using regular expressions ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.25": "Die Originalwirkung von Mute JSON warnings and errors ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.26": "Die Originalwirkung von Custom fonts directory ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.27": "Die Originalwirkung von Enlarge UI ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.28": "Die Originalwirkung von Load full preview after hovering seconds ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.29": "Die Originalwirkung von Hotbar ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.30": "Die Originalwirkung von Hotbar buttons per row ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.31": "Die Originalwirkung von Menu BG tint ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.32": "Die Originalwirkung von Tool BG tint ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.33": "Die Originalwirkung von Reset tint ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.63": "Die Originalwirkung von Custom fonts directory Browse ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.64": "Die Originalwirkung von X / Schließen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.65": "Die Originalwirkung von General tab ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.66": "Die Originalwirkung von Interface tab ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.67": "Die Originalwirkung von Shortcuts tab ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.69": "Die Originalwirkung von Farbfläche im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.70": "Die Originalwirkung von Farbtonstreifen im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.71": "Die Originalwirkung von RGBA-Kanäle im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.72": "Die Originalwirkung von HSV im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.73": "Die Originalwirkung von Raw im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.74": "Die Originalwirkung von Hex-Feld im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.75": "Die Originalwirkung von Pipettensymbol im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-036.76": "Die Originalwirkung von Plus im dritten Interface-Feld ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-export",
+      "title": "Kartenexport",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-043.01",
+        "DD-043.02",
+        "DD-043.03",
+        "DD-043.04",
+        "DD-043.05",
+        "DD-043.06",
+        "DD-043.07",
+        "DD-043.08",
+        "DD-043.09",
+        "DD-043.10",
+        "DD-043.11",
+        "DD-043.12",
+        "DD-043.13",
+        "DD-043.14",
+        "DD-043.15",
+        "DD-043.16",
+        "DD-043.17",
+        "DD-043.18",
+        "DD-043.19",
+        "DD-043.20",
+        "DD-043.21",
+        "DD-043.22",
+        "DD-043.23"
+      ],
+      "sharedFlow": "Ein Szenenstand für alle Exportoptionen und Dateiformate",
+      "originalEvidence": {
+        "DD-043.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/19-export-options.png"
+        ],
+        "DD-043.02": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.png"
+        ],
+        "DD-043.03": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.04": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.05": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+        ],
+        "DD-043.06": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.07": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.08": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.09": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+        ],
+        "DD-043.10": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.11": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.12": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/15-camera-filter.png"
+        ],
+        "DD-043.13": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png"
+        ],
+        "DD-043.14": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.15": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png"
+        ],
+        "DD-043.16": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.17": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.18": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png"
+        ],
+        "DD-043.19": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png"
+        ],
+        "DD-043.20": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
+        ],
+        "DD-043.21": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png"
+        ],
+        "DD-043.22": [
+          "https://megasploot.github.io/DungeondraftModdingAPI/reference/Exporter/",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/20-vtt-selected.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-export.dd2vtt"
+        ],
+        "DD-043.23": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/20-export-modes.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/21-export-x.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-043.01": "Die Originalwirkung von Export ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.03": "Die Originalwirkung von Grid ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.04": "Die Originalwirkung von Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.05": "Die Originalwirkung von Source Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.06": "Die Originalwirkung von Source Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.07": "Die Originalwirkung von Brightness ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.08": "Die Originalwirkung von Focus ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.09": "Die Originalwirkung von Overlay Level ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.10": "Die Originalwirkung von Overlay Lighting ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.11": "Die Originalwirkung von Overlay Opacity ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.12": "Die Originalwirkung von Camera Filter ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.13": "Die Originalwirkung von Grid Presets ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.14": "Die Originalwirkung von Grid PPI ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.16": "Die Originalwirkung von Show in Folder on Finish ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.17": "Die Originalwirkung von Crop ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-043.18": "Die Originalwirkung von Reset Crop ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      }
+    },
+    {
+      "id": "verwaltung-text",
+      "title": "Freier Kartentext",
+      "area": "verwaltung",
+      "caseIds": [
+        "DD-044.01",
+        "DD-044.02",
+        "DD-044.03",
+        "DD-044.04",
+        "DD-044.05",
+        "DD-044.06",
+        "DD-044.07",
+        "DD-044.08",
+        "DD-044.09",
+        "DD-044.10",
+        "DD-044.11",
+        "DD-044.12",
+        "DD-044.13",
+        "DD-044.14",
+        "DD-044.15",
+        "DD-044.16",
+        "DD-044.17",
+        "DD-044.18"
+      ],
+      "sharedFlow": "Textwerkzeug mit Vorschau, Bearbeitung, Verlauf und Wiederöffnung",
+      "originalEvidence": {
+        "DD-044.01": [
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/11-text-move.png"
+        ],
+        "DD-044.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/04-font-list.png"
+        ],
+        "DD-044.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/08-text-typed.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/09-text-commit.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/dd044-created.dungeondraft_map"
+        ],
+        "DD-044.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/07-text-click.png"
+        ],
+        "DD-044.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/03-text-box-on.png"
+        ],
+        "DD-044.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/02-text-entry.png"
+        ],
+        "DD-044.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/07-text-click.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-044.02": "Die Originalwirkung von Edit/Move mode ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.03": "Die Originalwirkung von Font family ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.04": "Die Originalwirkung von Font size ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.05": "Die Originalwirkung von Font color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.06": "Die Originalwirkung von Sharpen Fonts ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.07": "Die Originalwirkung von Text Box ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.08": "Die Originalwirkung von Box shape ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.09": "Die Originalwirkung von Border width ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.10": "Die Originalwirkung von Box background color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.11": "Die Originalwirkung von Box border color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.12": "Die Originalwirkung von Text visibility ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.14": "Die Originalwirkung von Kreisförmige Taste neben Font Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.15": "Die Originalwirkung von Kreisförmige Taste neben Background Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.16": "Die Originalwirkung von Kreisförmige Taste neben Border Color ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.17": "Die Originalwirkung von Text bearbeiten ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben.",
+        "DD-044.18": "Die Originalwirkung von Ausgewählten Text löschen ist in der Fallmatrix noch nicht aus den vorhandenen Belegen beschrieben."
+      },
+      "sizeReason": "Eigenes Textwerkzeug mit abweichendem Daten- und Prüfablauf."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "source": ".obsidian/plugins/dungeon-auswertung/reference/FEATURE-CATALOG.json",
   "inventoryComplete": true,
-  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Seit 2026-10-03 wird jedes Werkzeug einzeln auf strikte Dungeondraft-Bedienparität neu geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 711 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
+  "notes": "Frühere Nachweise belegen Ergebnisgleichwertigkeit und Regressionen. Die strikte Dungeondraft-Bedienparität wird seit 2026-10-05 in Funktionsgruppen mit einzeln belegten Unterfällen geprüft; unabhängige Pakete können parallel vorbereitet werden. Die alten Wurzelstatus sind historisch; die 710 Pflicht-Unterfälle stehen unter strictParity und gelten bis zur neuen Host- und Endstandsabnahme als offen.",
   "requirements": [
     {
       "id": "DD-001",
@@ -38722,7 +38722,7 @@
         "area": "verwaltung",
         "path": "Kartenansicht > Navigation",
         "command": "Hand tool",
-        "scope": "required",
+        "scope": "editor_addition",
         "original": {
           "sequence": "Kartenansicht > Navigation → Hand tool",
           "options": null,
@@ -38768,7 +38768,15 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Inventareintrag Hand tool hat keinen bestätigten Originalbefehl. Host-Knopf ist eine Zugabe; Fallklassifikation noch offen, nicht als native Pflichtfunktion abgenommen."
+          "gap": "Historischer Inventurfehler: kein eigener Originalbefehl und kein Pflichtfall. Die Pan-Gesten bleiben als DD-041.02–.04 gefordert."
+        },
+        "classification": {
+          "decision": "not_native_command",
+          "reason": "Kein dauerhaft auswählbarer Hand-Befehl in der geprüften Originaloberfläche 1.2.0.1; Pan liegt in DD-041.02 und DD-041.03.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-hand-inventory-review/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md"
+          ]
         }
       },
       {
@@ -42120,6 +42128,16 @@
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
         }
+      }
+    ],
+    "inventoryCorrections": [
+      {
+        "caseId": "DD-041.01",
+        "from": "required",
+        "to": "editor_addition",
+        "requiredBefore": 711,
+        "requiredAfter": 710,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-hand-inventory-review/REPORT.md"
       }
     ]
   }

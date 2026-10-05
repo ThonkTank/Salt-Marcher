@@ -1,0 +1,661 @@
+{
+  "groups": [
+    {
+      "id": "bau-01",
+      "title": "Building-Formen und Konturpunkte",
+      "area": "bau",
+      "caseIds": [
+        "DD-011.01",
+        "DD-011.02",
+        "DD-011.03",
+        "DD-011.04",
+        "DD-011.05",
+        "DD-011.06",
+        "DD-011.07",
+        "DD-011.08",
+        "DD-011.09",
+        "DD-011.10",
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.13",
+        "DD-011.14",
+        "DD-011.15",
+        "DD-012.01",
+        "DD-012.02",
+        "DD-012.03",
+        "DD-013.01",
+        "DD-013.02",
+        "DD-013.03",
+        "DD-014.01",
+        "DD-014.02"
+      ],
+      "sharedFlow": "Bodenform als Rechteck, Ellipse oder Polygon beginnen; Vorschau, Modifier und Abbruch prüfen; Konturpunkte ziehen, entfernen und einfügen; Kartenwirkung, History und frisches Öffnen vergleichen.",
+      "originalEvidence": {
+        "DD-011.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-commit.png"
+        ],
+        "DD-011.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/07-ellipse-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/08-ellipse-commit.png"
+        ],
+        "DD-011.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-finish.png"
+        ],
+        "DD-011.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-finish.png"
+        ],
+        "DD-011.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-backspace.png"
+        ],
+        "DD-011.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/shift-draft.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/shift-finish.png"
+        ],
+        "DD-011.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-commit.png"
+        ],
+        "DD-011.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png"
+        ],
+        "DD-011.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png"
+        ],
+        "DD-011.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-escape.png"
+        ],
+        "DD-011.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+        ],
+        "DD-011.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+        ],
+        "DD-011.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/snap-off.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/building-test.dungeondraft_map"
+        ],
+        "DD-011.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-undo.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-redo.png"
+        ],
+        "DD-011.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/reopened3.png"
+        ],
+        "DD-012.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/10-edit-hover.png"
+        ],
+        "DD-012.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/11-point-preview.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/12-point-commit.png"
+        ],
+        "DD-012.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-012-Building-Ellipse.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/11-point-preview.png"
+        ],
+        "DD-013.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-hover.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-delete.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/11-pacing-delete.png"
+        ],
+        "DD-013.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/09d-backspace-focused.png"
+        ],
+        "DD-013.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png"
+        ],
+        "DD-014.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-midpoint.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+        ],
+        "DD-014.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-011.08": "Alt-Ellipsenschnitt ist im Original nur als Option sichtbar; ein direkter Schnitt mit Boden- und Wandwirkung fehlt.",
+        "DD-011.09": "Alt-Polygonschnitt ist im Original nicht direkt ausgeführt oder gespeichert.",
+        "DD-011.11": "Die Wirkung eines vor dem Zeichnen gewechselten Bodenmotivs ist nicht isoliert gemessen.",
+        "DD-011.12": "Die tatsächliche Tint-Wirkung auf eine gezeichnete Bodenfläche ist nicht einzeln gemessen.",
+        "DD-012.02": "Der direkt gezogene Ellipsenpunkt wurde wegen eines nicht sichtbaren Save-Dialogs nicht gespeichert und in einem frischen Originalprozess geprüft.",
+        "DD-013.01": "Ein älterer Bildbeleg zeigt Delete als Punktlöschung; zwei neue modfreie Hover-Delete-Versuche bewirkten nichts. Die nötige Vorbedingung und gespeicherte Wirkung sind ungeklärt.",
+        "DD-013.02": "Für Backspace am Konturgriff fehlt ein erfolgreicher Originalfall; die neue modfreie Wiederholung blieb ohne sichtbare Wirkung.",
+        "DD-013.03": "Mindestpunktzahl und Verhalten beim Entfernen eines Dreiecks- oder Mehrteilkonturpunkts sind nicht gemessen.",
+        "DD-014.01": "Die sichtbare Kantenzieh-Einfügung hat keine gemessenen gespeicherten Koordinaten, Undo/Redo oder frischen Originalstart.",
+        "DD-014.02": "Wandfolge ist sichtbar, aber die Bindung vorhandener Portale nach eingefügtem Punkt und die gespeicherte Einzelzugwirkung sind nicht geprüft."
+      },
+      "originalEffects": {
+        "DD-011.01": "Bodenfläche und automatische geschlossene Wand; gelbe Maßvorschau.",
+        "DD-011.02": "Bodenellipse und umlaufende Wand; 5×3-Zug direkt sichtbar.",
+        "DD-011.03": "Bodenpolygon mit geschlossener Wand.",
+        "DD-011.04": "Boden und umlaufende Wand einer schmalen Form.",
+        "DD-011.05": "Letzter Vorschaupunkt verschwindet.",
+        "DD-011.06": "Gekrümmte Building-Kontur mit Boden und Wand.",
+        "DD-011.07": "Bodenstück und zugehörige Wand werden entfernt; Undo/Redo belegt.",
+        "DD-011.10": "Escape während eines Rechteckzugs hinterließ kein zweites Building.",
+        "DD-011.13": "Gespeicherte Building-Punkte liegen zwischen Feldgrenzen.",
+        "DD-011.14": "Strg+Z entfernte das Rechteck; Strg+Y stellte es im Original wieder her.",
+        "DD-011.15": "Drei Bodenpolygone mit Wänden erhalten.",
+        "DD-012.01": "Im Building Tool zeigte Edit Points Griffe an einer gezeichneten Ellipse.",
+        "DD-012.03": "Boden und Wand folgen schon vor Loslassen."
+      }
+    },
+    {
+      "id": "bau-02",
+      "title": "Farben, automatische Wände und freie Wandzüge",
+      "area": "bau",
+      "caseIds": [
+        "DD-011.16",
+        "DD-011.17",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.02",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05",
+        "DD-015.06",
+        "DD-015.07",
+        "DD-016.01",
+        "DD-016.02",
+        "DD-016.03",
+        "DD-016.04",
+        "DD-016.05",
+        "DD-016.06",
+        "DD-016.07",
+        "DD-016.08",
+        "DD-016.09",
+        "DD-016.10",
+        "DD-016.11",
+        "DD-016.12",
+        "DD-016.13",
+        "DD-016.14",
+        "DD-016.15",
+        "DD-016.16"
+      ],
+      "sharedFlow": "Farbpicker und Wandstil vor und nach dem Zeichnen wählen; automatische und freie Wand samt Kurve, Sortierung, Schatten und Eckverbindung prüfen; Ergebnis, History und frisches Öffnen vergleichen.",
+      "originalEvidence": {
+        "DD-011.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-building.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/07-floor-green.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/08-floor-reset.png"
+        ],
+        "DD-011.17": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/09-wall-color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
+        ],
+        "DD-011.18": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
+        ],
+        "DD-011.19": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
+        ],
+        "DD-011.20": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/07-floor-green.png"
+        ],
+        "DD-011.21": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/10-wall-yellow.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/32-cave-wall-override-red.png"
+        ],
+        "DD-011.22": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/06-floor-color-picker.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/31-cave-red-picker.png"
+        ],
+        "DD-015.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-ellipse-edit-points.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+        ],
+        "DD-015.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/16-building-drag-result.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/map/bau-gui-working.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/gui-summary.json"
+        ],
+        "DD-015.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+        ],
+        "DD-015.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-bevel-comparison.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-bevel-merge.png"
+        ],
+        "DD-015.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-ellipse-point-moved.png"
+        ],
+        "DD-015.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+        ],
+        "DD-015.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-building.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/10-wall-yellow.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/11-wall-reset.png"
+        ],
+        "DD-016.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+        ],
+        "DD-016.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+        ],
+        "DD-016.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+        ],
+        "DD-016.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png"
+        ],
+        "DD-016.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-joint-ui.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-joint-right.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+        ],
+        "DD-016.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-loops.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+        ],
+        "DD-016.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-loops.png"
+        ],
+        "DD-016.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/19-wall-tool-reset.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-011.16": "Der Reset des Farbknopfs ist im Panel sichtbar; Wirkung auf bestehende und danach gezeichnete Flächen sowie Speicherung fehlt.",
+        "DD-011.19": "Kanalweise RGBA-Eingabe und insbesondere Alphawirkung sind im Original nicht direkt betätigt und gemessen.",
+        "DD-011.20": "Die genaue Kanalzuordnung eines achtstelligen Hexwerts und die gespeicherte Alphawirkung sind offen.",
+        "DD-011.22": "Das pipettenähnliche Symbol ist sichtbar, seine Betätigung und Wirkung fehlen.",
+        "DD-015.03": "Tint-Wirkung der automatischen Wand auf der Karte und in der Datei ist nicht separat gemessen.",
+        "DD-015.06": "Nachträglicher Wandstilwechsel an einem bestehenden Building ist nicht direkt ausgeführt.",
+        "DD-015.07": "Farbreset im Panel ist sichtbar; Wirkung auf vorhandene und anschließend gezeichnete Wände sowie Speicherung fehlt.",
+        "DD-016.02": "Enter steht im Original als Abschlussgeste, aber ein kontrollierter neuer Wandzug mit Enter-Abschluss und gespeichertem Ergebnis fehlt.",
+        "DD-016.03": "Doppelklick wird als Abschlussgeste für den freien Wandzug genannt; ein direkter Originalzug mit beobachtetem Doppelklick-Abschluss und gespeicherter Wirkung fehlt.",
+        "DD-016.04": "Backspace steht als Undo Point in der Leiste; eine direkt gemessene Punktfolge vor/nach Backspace fehlt.",
+        "DD-016.05": "Shift-Kurve ist sichtbar; ob Shift nur das gehaltene Segment oder den ganzen Wandzug krümmt, ist offen.",
+        "DD-016.06": "Ctrl-Fortsetzung ist benannt; die vollständige aktuelle Originalfolge an Anfang und Ende einer vorhandenen Wand fehlt.",
+        "DD-016.07": "Edit Points ist sichtbar; genaue Griffbewegung mit Vorschau, History und Speicherung an einer unabhängigen Wand fehlt.",
+        "DD-016.08": "Over ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen.",
+        "DD-016.09": "Under ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen.",
+        "DD-016.12": "Wall-Color färbte die Galerie-Vorschau; Wirkung auf eine vorhandene oder neu gezeichnete Kartenwand ist nicht isoliert.",
+        "DD-016.16": "Farbreset im Panel ist sichtbar; Wirkung auf vorhandene Wände und neue gespeicherte Wände fehlt."
+      },
+      "originalEffects": {
+        "DD-011.17": "Ausgewählte Vorschau-/Randfarbe änderte sich sichtbar.",
+        "DD-011.18": "Hue-Wechsel im offenen Picker sichtbar.",
+        "DD-011.21": "Picker schloss und die gewählte UI-Farbe blieb erhalten.",
+        "DD-015.01": "QAWall01 wurde auf geschlossener Ellipsenwand gespeichert.",
+        "DD-015.02": "Neues Bodenpolygon ohne sichtbaren Wandring; gespeicherte Polygonzahl 3→4, Wandzahl 3→3.",
+        "DD-015.04": "Der Bevel-Schalter änderte die sichtbare 90°-Verbindung der automatischen Wand, nicht die Bodenpunkte.",
+        "DD-015.05": "Boden- und Wandpunkte bleiben deckungsgleich.",
+        "DD-016.01": "Unabhängiger Wandzug als type:1 gespeichert.",
+        "DD-016.10": "Die Originaldatei speichert den Schattenzustand einer unabhängigen Wand im Feld shadow.",
+        "DD-016.11": "Textur auf unabhängiger Wand gespeichert.",
+        "DD-016.13": "90°-Eckverbindung ändert sich sichtbar.",
+        "DD-016.14": "Die Originaldatei enthält eine geschlossene unabhängige Wand (loop) mit gebundenem Portal.",
+        "DD-016.15": "Wand und Tür gemeinsam wiederhergestellt."
+      }
+    },
+    {
+      "id": "bau-03",
+      "title": "Gebundene und freie Portale",
+      "area": "bau",
+      "caseIds": [
+        "DD-017.01",
+        "DD-017.02",
+        "DD-017.03",
+        "DD-017.04",
+        "DD-017.05",
+        "DD-017.06",
+        "DD-018.01",
+        "DD-018.02",
+        "DD-018.03",
+        "DD-018.04",
+        "DD-018.05",
+        "DD-018.06",
+        "DD-018.07",
+        "DD-018.08",
+        "DD-018.09",
+        "DD-018.10",
+        "DD-018.11",
+        "DD-018.12",
+        "DD-018.13",
+        "DD-018.14",
+        "DD-018.15",
+        "DD-018.16"
+      ],
+      "sharedFlow": "Portalstil und Bindungsmodus wählen; Vorschau, Snap, Platzierung, Rotation und Lichtwirkung an derselben Wand oder freier Stelle prüfen; Änderungen an Wand und Portal, History und frisches Öffnen vergleichen.",
+      "originalEvidence": {
+        "DD-017.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/17-door-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/18-door-placed.png"
+        ],
+        "DD-017.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/17-door-hover.png"
+        ],
+        "DD-017.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/portal-study.dungeondraft_map"
+        ],
+        "DD-017.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-floor-cut-before.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-floor-cut-after.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-floor-cut-undo.png"
+        ],
+        "DD-017.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/portal-study.dungeondraft_map"
+        ],
+        "DD-017.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/17-door-hover.png"
+        ],
+        "DD-018.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map"
+        ],
+        "DD-018.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map"
+        ],
+        "DD-018.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png"
+        ],
+        "DD-018.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png"
+        ],
+        "DD-018.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/22-portal-x-selected.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/23-portal-x-click.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/map/bau-gui-working.dungeondraft_map"
+        ],
+        "DD-018.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png"
+        ],
+        "DD-018.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map"
+        ],
+        "DD-018.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
+        ],
+        "DD-018.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/15-portal-panel.png"
+        ],
+        "DD-018.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
+        ],
+        "DD-018.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/evidence.json"
+        ],
+        "DD-018.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/evidence.json"
+        ],
+        "DD-018.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/REPORT.md",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd018-portal-wheel/evidence.json"
+        ],
+        "DD-018.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal.png"
+        ],
+        "DD-018.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map"
+        ],
+        "DD-018.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/portal-study.dungeondraft_map"
+        ]
+      },
+      "originalGaps": {
+        "DD-017.02": "Einrastvorschau ist belegt, ihre Grenze in Bildschirm- oder Weltkoordinaten ist nicht gemessen.",
+        "DD-017.05": "Portalbindung nach Verschieben, Einfügen und Entfernen von Wandpunkten ist nicht systematisch am Original gemessen.",
+        "DD-017.06": "Escape aus einer aktiven Portal-Einrastvorschau ist im Original nicht direkt ausgeführt.",
+        "DD-018.03": "Gitteroption ist sichtbar; konkrete Platzierung und gespeicherte Kartenwirkung dieser Klasse fehlen.",
+        "DD-018.04": "Öffnungsklasse ist sichtbar; Wandunterbrechung und gespeicherte Wirkung eines konkret gewählten Motivs fehlen.",
+        "DD-018.05": "Das rote X erzeugte frei ein Nulltextur-Portal; die verankerte Wirkung an einer Wand ist offen.",
+        "DD-018.06": "Block-Light-Zustand wird gespeichert; tatsächliche Lichtausbreitung mit Schalter an/aus ist nicht verglichen.",
+        "DD-018.09": "Rotate 180 ist sichtbar; ein kontrollierter Vorher-/Nachher-Bildfall mit gespeicherter Portalrichtung fehlt.",
+        "DD-018.13": "Beide Übergänge über −180° und +180° sind gemessen; ob ein Radschritt exakt +180° als stabilen Endwert erzeugt, ist offen.",
+        "DD-018.16": "Überlappungs- und Ausschlussregel für zwei nahe Portale an kurzer Kante ist unbekannt."
+      },
+      "originalEffects": {
+        "DD-017.01": "Wandöffnung, Undo/Redo, gespeicherte Wandbindung, frischer Neustart.",
+        "DD-017.03": "Wandunterbrechung in älteren Beispielen sichtbar.",
+        "DD-017.04": "Betroffene Tür verschwindet, andere bleibt; Undo bringt beide zurück.",
+        "DD-018.01": "Gewählter Stil auf Portal gespeichert.",
+        "DD-018.02": "QA Window als freies Paketportal gespeichert.",
+        "DD-018.07": "Freies Paketportal mit Position/Winkel gespeichert.",
+        "DD-018.08": "Winkelwert bleibt in früherer direkter UI-Probe.",
+        "DD-018.10": "Portal dreht sich am freien Punkt.",
+        "DD-018.11": "Ein einzelnes Rad-hoch-Ereignis verringerte den freien Vorschauwinkel von 0° auf −5°; Rad runter stellte 0° wieder her.",
+        "DD-018.12": "Ein einzelnes Shift+Rad-hoch-Ereignis verringerte den freien Vorschauwinkel von 0° auf −15°.",
+        "DD-018.14": "In früherer Probe keine Portaldrehung.",
+        "DD-018.15": "Unterschiedliche Breiten gespeichert."
+      }
+    },
+    {
+      "id": "bau-04",
+      "title": "Höhlenpinsel und Öffnungsmaske",
+      "area": "bau",
+      "caseIds": [
+        "DD-019.01",
+        "DD-019.02",
+        "DD-019.03",
+        "DD-019.04",
+        "DD-019.05",
+        "DD-019.06",
+        "DD-019.07",
+        "DD-019.08",
+        "DD-019.09",
+        "DD-019.10",
+        "DD-019.11",
+        "DD-019.12",
+        "DD-019.13",
+        "DD-019.14",
+        "DD-019.15",
+        "DD-019.16"
+      ],
+      "sharedFlow": "Dig Cave und Blast Open getrennt zeichnen, radieren, anzeigen und umfärben; fünf Pinselgrößen und beide Stile sowie Vorschau, History und die getrennten gespeicherten Masken prüfen.",
+      "originalEvidence": {
+        "DD-019.01": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-dig.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/30-cave-one.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/map/bau-gui-working.dungeondraft_map"
+        ],
+        "DD-019.02": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.03": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-opening.png"
+        ],
+        "DD-019.04": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-close.png"
+        ],
+        "DD-019.05": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-color.png"
+        ],
+        "DD-019.06": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/26-cave-brush.png"
+        ],
+        "DD-019.07": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.08": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-color.png"
+        ],
+        "DD-019.09": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave-color.png"
+        ],
+        "DD-019.10": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.11": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/30-cave-one.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/32-cave-wall-override-red.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/gui-summary.json"
+        ],
+        "DD-019.12": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.13": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.14": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-cave-openings-resize-loaded.dungeondraft_map",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-cave-openings-resize-restored.png"
+        ],
+        "DD-019.15": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-019-Cave-Brush.md",
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-cave.png"
+        ],
+        "DD-019.16": [
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/27-cave-wall-dropdown.png",
+          "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/26-cave-brush.png"
+        ]
+      },
+      "originalGaps": {
+        "DD-019.02": "Alt im Dig-Modus ist belegt, aber der exakte aktuelle Vorher-/Nachher-Unterschied der gespeicherten Dig-Bitmap fehlt.",
+        "DD-019.05": "Show Blast Opened Area ist sichtbar; Anzeigeumschaltung und unveränderte gespeicherte Masken wurden nicht isoliert geprüft.",
+        "DD-019.06": "Von fünf Pinselgrößen ist nur Stufe 2 sichtbar ausgewählt; Radius und Maskenwirkung jeder Stufe in Dig und Blast sind ungemessen.",
+        "DD-019.07": "Mausradwechsel der Höhlenpinselgröße steht in der Leiste, wurde aber nicht direkt ausgeführt.",
+        "DD-019.10": "Wall-Color-Auswahl ist sichtbar; isolierte Wirkung auf einen konkreten Felsrand vor/nach Zeichnen fehlt.",
+        "DD-019.12": "Erste Stilkachel ist sichtbar; isolierte Rand-/Bodenwirkung auf dieselbe Höhlenform fehlt.",
+        "DD-019.13": "Zweite Stilkachel ist sichtbar; isolierte Rand-/Bodenwirkung auf dieselbe Höhlenform fehlt.",
+        "DD-019.14": "Getrennte gespeicherte Masken sind belegt; ein frischer abwechselnder Dig/Blast-Pinselzug mit Save/Reopen fehlt.",
+        "DD-019.15": "Pinselvorschau und Escape-Abbruch im Dig- und Blast-Modus sind nicht vollständig direkt dokumentiert.",
+        "DD-019.16": "Der Plusknopf im Wall-Color-Dropdown ist sichtbar; seine Betätigung und Wirkung fehlen."
+      },
+      "originalEffects": {
+        "DD-019.01": "Kleiner Dig-Pinselzug erzeugte erneut Höhlenboden mit felsigem Rand und nichtleerer bitmap.",
+        "DD-019.03": "Blast Open änderte die gespeicherte entrance_bitmap getrennt von der Dig-Bitmap.",
+        "DD-019.04": "Alt im Blast-Modus reduzierte entrance_bitmap von 24 auf 12 Bits; die Dig-Bitmap blieb bei 125 Bits.",
+        "DD-019.08": "Gegrabener Höhlenboden eingefärbt.",
+        "DD-019.09": "Globale Bodenfarbe bestehender Höhlen geändert; Geometrie unverändert.",
+        "DD-019.11": "Gespeicherte globale cave.wall_color ff7f7e71→ffe84f26, cave.ground_color blieb ff7f7e71; beide Randbilder rotorange."
+      },
+      "sizeReason": "Höhlenwerkzeug mit eigenem Dig-/Blast-Maskenablauf, der kein gemeinsames Szenario mit Wänden oder Portalen hat."
+    }
+  ]
+}

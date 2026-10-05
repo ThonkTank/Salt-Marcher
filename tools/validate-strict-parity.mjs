@@ -7,6 +7,7 @@ if (!parity || !Array.isArray(parity.cases))
 const ids = new Set();
 let required = 0;
 let excluded = 0;
+let editorAdditions = 0;
 for (const item of parity.cases) {
   if (ids.has(item.id)) throw new Error(`Doppelter Fall: ${item.id}`);
   ids.add(item.id);
@@ -16,6 +17,11 @@ for (const item of parity.cases) {
     excluded++;
     if (item.parent !== "DD-037")
       throw new Error(`Nicht beschlossene Ausnahme: ${item.id}`);
+  } else if (item.scope === "editor_addition") {
+    editorAdditions++;
+    if (item.classification?.decision !== "not_native_command" ||
+        !item.classification.evidence?.length)
+      throw new Error(`Nicht belegte Inventurkorrektur: ${item.id}`);
   } else if (item.scope === "required") required++;
   else throw new Error(`Unbekannter Umfang: ${item.id}`);
   if (!item.implementation?.state || !Array.isArray(item.implementation.evidence))
@@ -27,6 +33,13 @@ for (const item of parity.cases) {
        !item.hostCheck.evidence.length || item.hostCheck.gap))
     throw new Error(`Nicht belegte Abnahme: ${item.id}`);
 }
-if (required < 711 || excluded !== 12)
-  throw new Error(`Umfang verändert: ${required} Pflicht, ${excluded} Ausnahme.`);
-console.log(JSON.stringify({ cases: ids.size, required, excluded }));
+const corrections = parity.inventoryCorrections ?? [];
+if (corrections.length !== editorAdditions ||
+    corrections.some((entry) =>
+      !ids.has(entry.caseId) ||
+      !entry.evidence ||
+      parity.cases.find((item) => item.id === entry.caseId)?.scope !== "editor_addition"))
+  throw new Error("Inventurkorrektur ohne Fall oder Beleg.");
+if (required !== 711 + (ids.size - 723) - editorAdditions || excluded !== 12)
+  throw new Error(`Umfang verändert: ${required} Pflicht, ${excluded} Ausnahme, ${editorAdditions} Inventurfehler.`);
+console.log(JSON.stringify({ cases: ids.size, required, excluded, editorAdditions }));

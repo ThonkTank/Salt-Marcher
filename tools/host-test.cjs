@@ -11,6 +11,8 @@ const {
 const { PNG } = require("pngjs");
 const { prepareLarge } = require("./large-fixture.cjs");
 const dd041HostNavigation = require("./dd041-host-navigation.cjs");
+const { createGroupRecord } = require("./group-record.cjs");
+const { loadGroups } = require("./group-catalog.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
@@ -18,6 +20,8 @@ const root = path.resolve(__dirname, ".."),
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
+  groupArgument = process.argv.indexOf("--group"),
+  activeGroupId = groupArgument < 0 ? null : process.argv[groupArgument + 1],
   v2Open = process.argv.includes("--v2-open"),
   patternOutline = process.argv.includes("--pattern-outline"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
@@ -29,7 +33,7 @@ const restart = process.argv.includes("--restart"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (activeGroupId ? `-${activeGroupId}` : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -45,7 +49,10 @@ let browser,
   timer,
   scope,
   stopping = false,
-  guardFailure;
+  guardFailure,
+  groupResult;
+if (activeGroupId && !/^[a-z0-9-]+$/.test(activeGroupId))
+  throw new Error(`Ungültige Gruppenkennung: ${activeGroupId}`);
 const checks = [],
   errors = [];
 let peak = 0;
@@ -321,7 +328,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (activeGroupId ? `group-${activeGroupId}-` : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -470,6 +477,21 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (activeGroupId) {
+    const group = loadGroups(root).find((item) => item.id === activeGroupId);
+    assert(group, `Unknown group: ${activeGroupId}`);
+    const scenario = require(`./groups/scenarios/${activeGroupId}.cjs`);
+    const build = crypto.createHash("sha256").update(fs.readFileSync(pluginRoot + "/main.js")).digest("hex");
+    const record = createGroupRecord(group, out, build, restart ? "reopen" : "edit");
+    try {
+      await scenario({ page, out, qa, vault, restart, group, record });
+    } finally {
+      groupResult = record.finish();
+    }
+    checks.push(`${activeGroupId}: ${groupResult.counts.pass} pass, ${groupResult.counts.fail} fail, ${groupResult.counts.open} open`);
+    assert.equal(groupResult.counts.fail, 0, `Group ${activeGroupId} has failing cases`);
+    return;
+  }
   if (v2Open) {
     await v2OpenWorkflow(view);
     return;
@@ -3685,6 +3707,8 @@ async function largeWorkflow() {
       errors,
       guardFailure,
       peakBytes: peak,
+      group: groupResult ? { id: groupResult.groupId, phase: groupResult.phase,
+        complete: groupResult.complete, counts: groupResult.counts } : null,
       passed: !failure && !errors.length && !guardFailure,
     };
     fs.mkdirSync(out, { recursive: true });
