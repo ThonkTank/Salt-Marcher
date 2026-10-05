@@ -95,7 +95,7 @@ async function edit({ page, out, qa, vault, group, record }) {
   await page.evaluate((mapName) =>
     app.plugins.getPlugin("dungeon-editor").create(mapName, 8, 8), mapName);
   await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
-  await page.evaluate((mapPath) => {
+  await page.evaluate(async (mapPath) => {
     const editor = app.workspace.getLeavesOfType("dungeon-native-map")
       .find((leaf) => leaf.view.file?.path === mapPath)?.view.editor;
     if (!editor) throw new Error("DD-042.09 QA-Editor fehlt.");
@@ -105,6 +105,10 @@ async function edit({ page, out, qa, vault, group, record }) {
     editor.session.execute({ label: "DD-042.09 QA-Licht",
       entities: [{ id: light.id, before: null, after: light }] });
     editor.renderer.fit();
+    await app.plugins.getPlugin("dungeon-editor").savePrefab({
+      id: "dd04212-control", set: "Allgemein", name: "Kontrolllicht",
+      center: { x: 4, y: 4 }, entities: [light],
+    });
   }, mapPath);
   await chooseSelection(page);
   await clickWorld(page, mapPath, 4, 4);
@@ -277,12 +281,31 @@ async function edit({ page, out, qa, vault, group, record }) {
   record.add("DD-042.11", toolOpened ? "pass" : "deviation",
     `Zeichenvorlagen-Werkzeug geöffnet; Werkzeug=${toolState.tool}, Einträge=${toolState.options.length}.`,
     [toolScreen], toolOpened ? null : "Vorlagen-Werkzeug oder Liste fehlt.");
-  const setSelectorCount = await page.getByRole("combobox", { name: "Sammlung", exact: true }).count();
-  record.add("DD-042.12", setSelectorCount ? "pass" : "deviation",
-    `Im Werkzeug gibt es ${setSelectorCount} eigenständige Sammlungsauswahl; vorhandene Vorlagen stehen nur in einem gemeinsamen Dropdown.`,
-    [toolScreen], setSelectorCount ? null :
+  const setChoice = page.getByRole("combobox", { name: "Sammlung", exact: true });
+  const setSelectorCount = await setChoice.count();
+  let setFilterWorks = false;
+  if (setSelectorCount) {
+    await setChoice.selectOption(set);
+    const targetOptions = await choice.locator("option").evaluateAll((items) =>
+      items.map((item) => item.value));
+    await setChoice.selectOption("Allgemein");
+    const controlOptions = await choice.locator("option").evaluateAll((items) =>
+      items.map((item) => item.value));
+    setFilterWorks = targetOptions.includes(matches[0].id) &&
+      !targetOptions.includes("dd04212-control") &&
+      controlOptions.includes("dd04212-control") &&
+      !controlOptions.includes(matches[0].id);
+    await setChoice.selectOption(set);
+  }
+  const setFilterScreen = path.join(out, "prefab-set-filter.png");
+  await page.screenshot({ path: setFilterScreen });
+  record.add("DD-042.12", setFilterWorks ? "pass" : "deviation",
+    `Eigenständige Sammlungsauswahl=${setSelectorCount}; die Liste trennt Allgemein und ${set}=${setFilterWorks}.`,
+    [toolScreen, setFilterScreen], setFilterWorks ? null :
     "Die native Setwahl mit auf die Sammlung beschränkter Vorlagenliste fehlt.");
-  const listed = toolState.options.some((option) =>
+  const visibleOptions = await choice.locator("option").evaluateAll((items) =>
+    items.map((item) => ({ value: item.value, text: item.textContent })));
+  const listed = visibleOptions.some((option) =>
     option.value === matches[0].id && option.text === `${set} / ${name}`);
   record.add("DD-042.13", listed ? "pass" : "deviation",
     `Vorlage ${set} / ${name} im kombinierten Auswahlfeld sichtbar=${listed}.`,
@@ -375,6 +398,9 @@ async function reopen({ page, out, qa, vault, group, record }) {
     .getByRole("button", { name: "Zeichenvorlagen", exact: true }).click();
   const choice = page.getByRole("combobox", { name: "Vorlage", exact: true });
   await choice.waitFor();
+  const setChoice = page.getByRole("combobox", { name: "Sammlung", exact: true });
+  const setSelectorCount = await setChoice.count();
+  if (setSelectorCount) await setChoice.selectOption(saved.set);
   const screenshot = path.join(out, "prefab-reopened-tool.png");
   await page.screenshot({ path: screenshot });
   const options = await choice.locator("option").evaluateAll((items) =>
@@ -384,10 +410,11 @@ async function reopen({ page, out, qa, vault, group, record }) {
   record.add("DD-042.11", listed ? "pass" : "deviation",
     `Vorlagen-Werkzeug nach Frischstart geöffnet; gespeicherte Vorlage vorhanden=${listed}.`,
     [screenshot], listed ? null : "Gespeicherte Vorlage nach Frischstart nicht im Werkzeug.");
-  const setSelectorCount = await page.getByRole("combobox", { name: "Sammlung", exact: true }).count();
-  record.add("DD-042.12", setSelectorCount ? "pass" : "deviation",
-    `Auch nach Frischstart fehlt die eigenständige Sammlungsauswahl=${setSelectorCount === 0}.`,
-    [screenshot], setSelectorCount ? null :
+  const controlHidden = !options.some((option) => option.value === "dd04212-control");
+  const setFilterWorks = !!setSelectorCount && listed && controlHidden;
+  record.add("DD-042.12", setFilterWorks ? "pass" : "deviation",
+    `Nach Frischstart Sammlung=${setSelectorCount ? await setChoice.inputValue() : "fehlt"}; Zielvorlage sichtbar=${listed}, andere Sammlung ausgeblendet=${controlHidden}.`,
+    [screenshot], setFilterWorks ? null :
     "Native Setwahl mit gefilterter Liste fehlt weiterhin.");
   record.add("DD-042.13", listed ? "pass" : "deviation",
     `Gespeicherte Vorlage in kombinierter Liste vorhanden=${listed}.`,

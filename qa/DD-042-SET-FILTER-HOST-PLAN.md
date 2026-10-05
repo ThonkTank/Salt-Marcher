@@ -1,0 +1,9 @@
+# DD-042.12 – Zwei-Sammlungen-Gegenprobe für den Kandidaten
+
+**Status:** Nur Szenario vorbereitet; kein grafischer Lauf mit dem Fix-Build.
+
+Das bereits dokumentierte Host-Edit/Frischstart-Ergebnis auf dem installierten Build `13bc76…` bleibt unverändert unter `qa/DD-042-GROUP-REVIEW.md`. Es belegt die fehlende eigenständige Sammlungsauswahl als Abweichung. Der neue Prüfpfad in `tools/groups/scenarios/objekte-07.cjs` erweitert denselben isolierten Gruppenlauf um eine zweite, vorab gültig gespeicherte Kontrollvorlage in `Allgemein`. Die per sichtbarem Dialog erstellte Zielvorlage liegt in einer anderen Sammlung. Das ist QA-Fixture-Aufbau; die gespeicherte Kontrollvorlage wird nicht als neuer DD-Pass ausgegeben.
+
+Für DD-042.12 wird nach Öffnen des Zeichenvorlagen-Werkzeugs die Sammlungsauswahl benutzt: Zielset zeigt die Zielvorlage und **nicht** die Kontrollvorlage; `Allgemein` zeigt die Kontrollvorlage und **nicht** die Zielvorlage. Nach Rückwahl des Zielsets bleiben Zielvorlagenwahl und Forget-Bedienung verfügbar. Der getrennte Frischstart muss den Setfilter erneut herstellen; Plugin-Katalog, Karte und bisherige DD-042.09-Duplikatprobe bleiben erhalten.
+
+Originalbeleg für die Setwirkung: [`23-prefab-sets-expanded.png`](/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/23-prefab-sets-expanded.png) und [`24-prefab-custom-set.png`](/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/24-prefab-custom-set.png). Die genaue Setreihenfolge nach frischem Originalstart bleibt offen; der Kandidat wird dafür nicht freigegeben. Kandidatenquellstand: Commit `4ab87012891342e28af5f47269e31d04fd4e49c7`, Build-SHA-256 `6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c`.
