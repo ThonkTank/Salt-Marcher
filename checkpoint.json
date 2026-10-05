@@ -1,6 +1,6 @@
 {
-  "phase": "strict tool parity in progress; installed Building V2; selection tool next",
-  "goal": "Jedes Werkzeug strikt gegen Dungeondraft 1.2.0.1 vermessen, angleichen und einzeln abnehmen; unabhängige Pakete in getrennten Chats parallel bearbeiten, grafische QA exklusiv halten",
+  "phase": "Vollständige Dungeondraft-Angleichung: Entwicklungskopie, erste Materialintegration wartet auf exklusive Hostabnahme",
+  "goal": "711 Pflicht-Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; DD-037 ist beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
   "verified": [
@@ -143,7 +143,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "DD-030: Pristine U1 (+40,+20) ist nach vollständiger Original-Marquee mit exakt gemessenem Referenzrahmen uniform und entspricht dem Produkt. U2 (+20,+40) sowie weitere Ecken/Richtungen aus frischer Auswahl einzeln vermessen; keine Formeländerung ohne Beleg. DD-011: installierter V2-Build und beide Karten sind hostgeprüft. Die CPU-Großkarte mit 4.292 Entitäten ist beim gewöhnlichen Edit schnell; 1.000-Punkt-Topologie und journalisiertes Speichern bleiben messbare Engpässe. Als Nächstes exklusiver Obsidian-Großkarten-Hostlauf, danach native Portalbreite-an-Kante-Probe. DD-041 Canvasrand-Fallback, Fokusverlust und physische Eingabe bleiben offen. Grafik-QA nur nacheinander.",
+  "next": "Nach Freigabe des Grafikslots DD-020.13/.14 im isolierten Obsidian-Host mit 160/255 Alpha, Kontur OFF, Undo/Redo, Save und frischem Öffnen prüfen; danach erst Fallstatus und Paketübernahme entscheiden.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -237,7 +237,7 @@
     "selectionAllCornersEvidence": "/home/aaron/.cache/dungeon-native-qa/evidence/native-all-corners-original.json"
   },
   "memoryPolicy": "Keine feste Prozess-, Karten-, Paket-, Cache- oder Historiengrenze. Lazy Bilddekodierung und verlustfrei neu ladbare Ressourcen; nur akute systemweite Speichernot stoppt Tests.",
-  "updated": "2026-10-04",
+  "updated": "2026-10-05",
   "objectiveFile": "/home/aaron/.codex/attachments/3e185053-f776-4250-b83f-81ef08edd8ed/pasted-text-1.txt",
   "evidence": [
     "/home/aaron/.cache/dungeon-native-qa/evidence/core-verification.json",
@@ -504,5 +504,17 @@
     "compactNarrowObjects": 16,
     "compactTotalObjects": 479,
     "compactNarrowLabels": 15
+  },
+  "implementation20261005": {
+    "developmentRoot": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main",
+    "installed": false,
+    "requiredCases": 711,
+    "excludedCases": 12,
+    "currentPackage": [
+      "DD-020.13",
+      "DD-020.14"
+    ],
+    "foundation": "V3-In-Memory-Migration auf zwei produktiven V2-Karten verlustfrei geprüft; 108 Kerntests bestanden.",
+    "hostStatus": "pending_graphics_slot"
   }
 }

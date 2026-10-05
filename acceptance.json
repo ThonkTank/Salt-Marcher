@@ -8418,9 +8418,15 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "integrated_pending_host",
+          "changes": [
+            "src/features/material/pattern-appearance.ts",
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "tests/material-pattern.test.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/baseline/material-integration-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -8476,9 +8482,15 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "integrated_pending_host",
+          "changes": [
+            "src/features/material/pattern-appearance.ts",
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "tests/material-pattern.test.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/baseline/material-integration-tests.log"
+          ]
         },
         "hostCheck": {
           "state": "open",

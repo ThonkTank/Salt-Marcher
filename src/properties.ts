@@ -15,6 +15,11 @@ import {
 import { Session } from "./session";
 import { type AssetDefinition, type AssetKind } from "./assets";
 import { updatePassage } from "./commands";
+import {
+  alphaByteFromOpacity,
+  initialPatternAppearance,
+  opacityFromAlphaByte,
+} from "./features/material/pattern-appearance";
 
 export type Tool =
   | "select"
@@ -130,8 +135,7 @@ export const toolSettings = (): ToolSettings => ({
       layer: 100,
       color: 0xb4976c,
       wallColor: 0x5d4a35,
-      wallWidth: 0.08,
-      opacity: 1,
+      ...initialPatternAppearance,
       effect: "none",
     },
     water: {
@@ -807,13 +811,19 @@ export class Properties {
           (i) => update({ color: parseInt(i.value.slice(1), 16) }),
         );
         this.field(
-          "Deckkraft",
-          "range",
-          String(surface.opacity ?? 1),
-          (i) => update({ opacity: i.valueAsNumber }),
-          "0.1",
-          "1",
-          ".05",
+          category === "pattern" ? "Alpha (0–255)" : "Deckkraft",
+          category === "pattern" ? "number" : "range",
+          String(category === "pattern"
+            ? alphaByteFromOpacity(surface.opacity ?? 1)
+            : surface.opacity ?? 1),
+          (i) => update({
+            opacity: category === "pattern"
+              ? opacityFromAlphaByte(i.valueAsNumber)
+              : i.valueAsNumber,
+          }),
+          category === "pattern" ? "0" : "0.1",
+          category === "pattern" ? "255" : "1",
+          category === "pattern" ? "1" : ".05",
         );
         this.field(
           category === "water" ? "Uferbreite" : "Konturbreite",

@@ -10,14 +10,15 @@ const {
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { prepareLarge } = require("./large-fixture.cjs");
 const root = path.resolve(__dirname, ".."),
-  qa = "/home/aaron/.cache/dungeon-native-qa",
+  qa = process.env.DUNGEON_QA_ROOT || "/home/aaron/.cache/dungeon-native-qa",
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
+  patternAlpha = process.argv.includes("--pattern-alpha"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (patternAlpha ? "-pattern-alpha" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -299,7 +300,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(root + "/main.js"))
         .digest("hex"),
-      mode: (selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (patternAlpha ? "pattern-alpha-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -448,6 +449,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (patternAlpha) {
+    await patternAlphaWorkflow(view);
+    return;
+  }
   if (compactSmoke) {
     await compactWorkflow();
     return;
@@ -2706,6 +2711,87 @@ async function selectionReopenWorkflow() {
   await page.waitForFunction(() => !app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.dirty);
   assert.equal(JSON.parse(fs.readFileSync(vault+"/"+otherPath,"utf8")).entities.filter((e)=>e.kind==="light").length,1);
   checks.push("The same global prefab places a saved light on a second dungeon map");
+}
+async function patternAlphaWorkflow(view) {
+  const mapPath = "Dungeons/PatternQA/Karte.dungeon";
+  if (!restart) {
+    assert.equal(
+      await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:create-dungeon")),
+      true,
+    );
+    const modal = page.locator(".modal:visible").last();
+    const inputs = modal.locator("input");
+    await inputs.nth(0).fill("PatternQA");
+    await inputs.nth(1).fill("12");
+    await inputs.nth(2).fill("8");
+    await modal.getByRole("button", { name: "Anlegen", exact: true }).click();
+    await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+    await chooseTool("Muster");
+    const patternDefaults = await page.evaluate(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.settings.surfaces.pattern,
+    );
+    assert.equal(patternDefaults.wallWidth, 0);
+    const alpha = page.locator('input[aria-label="Alpha (0–255)"]');
+    assert.equal(await alpha.inputValue(), "255");
+    await alpha.fill("160");
+    await alpha.press("Tab");
+    const canvas = page.locator(".dn-canvas canvas");
+    const at = (point) => page.evaluate((point) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor.renderer;
+      const box = renderer.canvas.getBoundingClientRect();
+      return {
+        x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+        y: box.y + renderer.camera.y + point.y * renderer.camera.scale,
+      };
+    }, point);
+    const a = await at({ x: 2, y: 2 });
+    const b = await at({ x: 6, y: 5 });
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        ?.view.editor.session.document().entities.some(
+          (entity) => entity.kind === "surface" && entity.category === "pattern"),
+    );
+    const pattern = (await view()).document.entities.find(
+      (entity) => entity.kind === "surface" && entity.category === "pattern",
+    );
+    assert.equal(pattern.opacity, 160 / 255);
+    assert.equal(pattern.wallWidth, 0);
+    assert.equal(pattern.layer, 100);
+    checks.push("Pattern starts without outline and stores exact 8-bit alpha 160/255");
+    await canvas.screenshot({ path: out + "/pattern-alpha-160.png" });
+    await page.keyboard.press("Control+z");
+    assert.equal((await view()).document.entities.some((entity) => entity.id === pattern.id), false);
+    await page.keyboard.press("Control+Shift+z");
+    assert.equal((await view()).document.entities.some((entity) => entity.id === pattern.id), true);
+    checks.push("Pattern alpha and outline survive undo and redo");
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    const disk = JSON.parse(fs.readFileSync(vault + "/" + mapPath, "utf8"));
+    assert.equal(disk.version, 3);
+    const saved = disk.entities.find((entity) => entity.id === pattern.id);
+    assert.equal(saved.opacity, 160 / 255);
+    assert.equal(saved.wallWidth, 0);
+    fs.writeFileSync(qa + "/pattern-alpha-saved.json", JSON.stringify({ mapPath, id: pattern.id }));
+    checks.push("Pattern map saves as V3 with exact alpha and no outline");
+    return;
+  }
+  const { id } = JSON.parse(fs.readFileSync(qa + "/pattern-alpha-saved.json", "utf8"));
+  await page.evaluate(async (path) =>
+    app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(path)),
+  mapPath);
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  const opened = (await view()).document;
+  const pattern = opened.entities.find((entity) => entity.id === id);
+  assert.equal(opened.version, 3);
+  assert.equal(pattern.opacity, 160 / 255);
+  assert.equal(pattern.wallWidth, 0);
+  await page.locator(".dn-canvas canvas").screenshot({ path: out + "/pattern-alpha-reopened.png" });
+  checks.push("Fresh Obsidian process reopens exact pattern alpha and outline state");
 }
 async function compactWorkflow() {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon";
