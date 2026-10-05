@@ -25194,16 +25194,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Sammlung im Erstellen-Dialog gewechselt; benannte Lichtvorlage im gewählten Set gespeichert und nach Frischstart erhalten."
       },
       {
         "id": "DD-042.03",
@@ -25250,16 +25264,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Plus benennt und wählt eine neue Sammlung; die anschließend darin gespeicherte Lichtvorlage bleibt nach Frischstart verfügbar."
       },
       {
         "id": "DD-042.04",
@@ -25358,16 +25386,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Minus bei einer mit der Testlichtvorlage befüllten Sammlung gesperrt; Definition und Katalog bleiben bestehen."
       },
       {
         "id": "DD-042.06",
@@ -25414,16 +25456,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Name der getesteten Lichtvorlage vor Bestätigung und nach Speichern/Frischstart identisch."
       },
       {
         "id": "DD-042.07",
@@ -25718,16 +25774,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Zeichenvorlagen-Werkzeug mit eigener Sammlungsauswahl, auf das Set beschränkter Liste und Forget-Aktion; zwei Sammlungen und Frischstart geprüft."
       },
       {
         "id": "DD-042.12",
@@ -25772,16 +25842,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
+          }
+        },
+        "verifiedScope": "Bidirektionaler Filter zwischen Zielset und Allgemein; jeweils fremde Vorlagen-ID verborgen, nach Frischstart Zielset erneut geprüft. Sortierreihenfolge gehört zu .13."
       },
       {
         "id": "DD-042.13",
@@ -26301,15 +26385,18 @@
         "command": "Cancel",
         "scope": "required",
         "original": {
-          "sequence": null,
+          "sequence": "Forget-Warnung öffnen und per Cancel schließen; Datei/Karte vor und nach erneut vergleichen und Original frisch öffnen.",
           "options": null,
-          "effect": null,
+          "effect": "Warnung schließt ohne Löschung der gespeicherten Vorlage oder Änderung der Karte; auch mit zweiter platzierter Lichtinstanz bleiben Karte und Vorlagendatei bytegleich.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/30-prefab-forget-dialog.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/30-prefab-forget-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-native/runs/20261005-173413-3323684/evidence/before-forget-with-instance.sha256",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-native/runs/20261005-173413-3323684/evidence/after-reopen.sha256"
+          ],
+          "verifiedScope": "Originalabbruch mit zwei Lichtern, Vorlagendatei und Karte bytegleich; frischer Originalprozess."
         },
-        "target": "Nach Originalmessung: Cancel schließt oder erhält die Warnung und lässt Vorlagendatei und Karte gemäß Originalwirkung bestehen.",
+        "target": "Forget-Warnung schließt ohne Änderung von Vorlage und Karte; bestehende Instanzen bleiben erhalten.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -26335,16 +26422,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Forget-Warnung per Cancel geschlossen; Vorlage, Karte, Katalogdatei und Verlauf unverändert. Original auch mit zweiter platzierter Lichtinstanz, Host mit gebundenem Quelllicht."
       },
       {
         "id": "DD-042.23",
@@ -26354,15 +26455,18 @@
         "command": "X",
         "scope": "required",
         "original": {
-          "sequence": null,
+          "sequence": "Forget-Warnung öffnen und per X schließen; Datei/Karte vor und nach erneut vergleichen und Original frisch öffnen.",
           "options": null,
-          "effect": null,
+          "effect": "Warnung schließt ohne Löschung der gespeicherten Vorlage oder Änderung der Karte; auch mit zweiter platzierter Lichtinstanz bleiben Karte und Vorlagendatei bytegleich.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/30-prefab-forget-dialog.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-prefab/evidence/30-prefab-forget-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-native/runs/20261005-173413-3323684/evidence/before-forget-with-instance.sha256",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd042-group-native/runs/20261005-173413-3323684/evidence/after-reopen.sha256"
+          ],
+          "verifiedScope": "Originalabbruch mit zwei Lichtern, Vorlagendatei und Karte bytegleich; frischer Originalprozess."
         },
-        "target": "Nach Originalmessung: X schließt oder erhält die Warnung und lässt Vorlagendatei und Karte gemäß Originalwirkung bestehen.",
+        "target": "Forget-Warnung schließt ohne Änderung von Vorlage und Karte; bestehende Instanzen bleiben erhalten.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -26388,16 +26492,30 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "bestehende Vorlagenfunktion, auf installiertem DD-042.12-Build geprüft"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd04212-20261005/backup-manifest.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "state": "equal",
+          "build": "6d7b0d309ef92f629d9d4d4935d577151c4b5ac01f26123bab640a2ba307fa1c",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216254661-objekte-07-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd04212-installed-host/evidence/1791216268789-objekte-07-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd04212/RELEASE-ACCEPTANCE.md"
+          ],
+          "gap": null,
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "not_applicable"
+          }
+        },
+        "verifiedScope": "Forget-Warnung per X geschlossen; Vorlage, Karte, Katalogdatei und Verlauf unverändert. Original auch mit zweiter platzierter Lichtinstanz und frischem Originalprozess, Host mit gebundenem Quelllicht."
       },
       {
         "id": "DD-047.01",
