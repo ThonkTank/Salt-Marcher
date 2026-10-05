@@ -379,6 +379,12 @@ async function dd02808Only({ page, out, qa, vault, restart, group, record }) {
 module.exports = async function objectColorGroup({ page, out, qa, vault, restart, group, record }) {
   assert.equal(group.id, "objekte-03");
   assert.deepEqual([...group.caseIds].sort(), Object.keys(openReasons).sort());
+  if (process.argv.includes("--dd028-picker-lifecycle"))
+    return require("./objekte-03-picker-lifecycle.cjs")({
+      page, out, qa, vault, restart, group, record,
+      helpers: { createFixture, chooseTool, editorState, screenshotSamples,
+        setPlainBackground, writeJson, digest, mapPath },
+    });
   if (process.argv.includes("--dd02808-only"))
     return dd02808Only({ page, out, qa, vault, restart, group, record });
   const covered = new Set();
