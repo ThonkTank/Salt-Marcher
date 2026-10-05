@@ -122,9 +122,9 @@ async function edit({ page, out, qa, vault, group, record }) {
   let modal = await makeDialog(page, out);
   const firstOpen = path.join(out, "prefab-create-open.png");
   await modal.screenshot({ path: firstOpen });
-  record.add("DD-042.01", "pass",
+  record.add("DD-042.01", "open",
     "Ausgewähltes Licht öffnet den Dialog mit Sammlung, Name und Bestätigung.",
-    [firstOpen]);
+    [firstOpen], "Gemischte Objekt-Licht-Auswahl und Zuverlässigkeit der Dialogöffnung sind noch nicht gepaart.");
   await modal.getByRole("button", { name: "Sammlung hinzufügen", exact: true }).click();
   await modal.locator("input").fill(temporarySet);
   await modal.getByRole("button", { name: "Hinzufügen", exact: true }).click();
@@ -138,9 +138,10 @@ async function edit({ page, out, qa, vault, group, record }) {
   }), temporarySet);
   const emptyRemoved = path.join(out, "empty-set-removed.png");
   await modal.screenshot({ path: emptyRemoved });
-  record.add("DD-042.04", temporarySelected && !afterEmpty.removedPresent ? "pass" : "deviation",
+  record.add("DD-042.04", temporarySelected && !afterEmpty.removedPresent ? "open" : "deviation",
     `Leere temporäre Sammlung entfernt=${temporarySelected && !afterEmpty.removedPresent}; Rückwahl=${afterEmpty.selected}.`,
-    [emptyAdded, emptyRemoved], temporarySelected && !afterEmpty.removedPresent ? null :
+    [emptyAdded, emptyRemoved], temporarySelected && !afterEmpty.removedPresent ?
+    "Dauerhaften Katalogzustand nach Minus und Frischstart noch prüfen." :
     "Temporäre Sammlung blieb nach Minus im Dialog.");
   await modal.getByRole("button", { name: "Sammlung hinzufügen", exact: true }).click();
   await modal.locator("input").fill(set);
@@ -176,9 +177,9 @@ async function edit({ page, out, qa, vault, group, record }) {
   const stored = path.join(out, "prefab-created.json");
   write(stored, { prefab: matches[0], source: first.document.entities.find((entity) =>
     entity.id === "dd04209-source-light"), prefabs: first.prefabs });
-  record.add("DD-042.07", "pass",
+  record.add("DD-042.07", "open",
     "Bestätigung speichert genau eine benannte Lichtvorlage und bindet das Quelllicht daran.",
-    [named, stored]);
+    [named, stored], "Gemischte Objekt-Licht-Vorlage und relative Lage im Host noch nicht gepaart.");
   await page.getByRole("button", { name: "Speichern", exact: true }).last().click();
   await page.waitForFunction((mapPath) => !app.workspace
     .getLeavesOfType("dungeon-native-map")
@@ -207,9 +208,11 @@ async function edit({ page, out, qa, vault, group, record }) {
   const cancelEvidence = path.join(out, "prefab-create-cancel.json");
   write(cancelEvidence, { cancelUnchanged, beforeDuplicate, afterCancel,
     dataSha, mapSha });
-  record.add("DD-042.08", cancelUnchanged ? "pass" : "deviation",
+  record.add("DD-042.08", cancelUnchanged ? "open" : "deviation",
     `Dialogschließen per Escape erzeugt keine neue Vorlage und ändert weder Karte noch Verlauf=${cancelUnchanged}; Original-Cancel gesondert zu prüfen.`,
-    [cancelEvidence], cancelUnchanged ? null : "Dialogabbruch veränderte Vorlage, Karte oder Verlauf.");
+    [cancelEvidence], cancelUnchanged ?
+    "Sichtbares X als Entsprechung des Original-Cancel noch im Host prüfen." :
+    "Dialogabbruch veränderte Vorlage, Karte oder Verlauf.");
 
   modal = await makeDialog(page);
   await modal.locator('select:not([aria-hidden="true"])').selectOption(set);
@@ -278,11 +281,15 @@ async function edit({ page, out, qa, vault, group, record }) {
       ({ value: o.value, text: o.textContent })) : [] };
   });
   const toolOpened = toolState.tool === "prefab" && toolState.options.length > 1;
-  record.add("DD-042.11", toolOpened ? "pass" : "deviation",
-    `Zeichenvorlagen-Werkzeug geöffnet; Werkzeug=${toolState.tool}, Einträge=${toolState.options.length}.`,
-    [toolScreen], toolOpened ? null : "Vorlagen-Werkzeug oder Liste fehlt.");
   const setChoice = page.getByRole("combobox", { name: "Sammlung", exact: true });
   const setSelectorCount = await setChoice.count();
+  const forgetExists = await page.getByRole("button", {
+    name: "Vorlage vergessen", exact: true,
+  }).count();
+  const toolComplete = toolOpened && !!setSelectorCount && !!forgetExists;
+  record.add("DD-042.11", toolComplete ? "pass" : "deviation",
+    `Zeichenvorlagen-Werkzeug=${toolState.tool}, Einträge=${toolState.options.length}, Sammlungsauswahl=${setSelectorCount}, Vergessen=${forgetExists}.`,
+    [toolScreen], toolComplete ? null : "Werkzeug, Setwahl, Liste oder Forget fehlt.");
   let setFilterWorks = false;
   if (setSelectorCount) {
     await setChoice.selectOption(set);
@@ -307,9 +314,10 @@ async function edit({ page, out, qa, vault, group, record }) {
     items.map((item) => ({ value: item.value, text: item.textContent })));
   const listed = visibleOptions.some((option) =>
     option.value === matches[0].id && option.text === `${set} / ${name}`);
-  record.add("DD-042.13", listed ? "pass" : "deviation",
+  record.add("DD-042.13", listed ? "open" : "deviation",
     `Vorlage ${set} / ${name} im kombinierten Auswahlfeld sichtbar=${listed}.`,
-    [toolScreen], listed ? null : "Gespeicherte Vorlage fehlt in der Werkzeugliste.");
+    [toolScreen], listed ? "Reihenfolge mehrerer Vorlagen im Original und Host noch nicht gepaart." :
+    "Gespeicherte Vorlage fehlt in der Werkzeugliste.");
   await choice.selectOption(matches[0].id);
   const forget = page.getByRole("button", { name: "Vorlage vergessen", exact: true });
   const selectedChoice = await choice.inputValue();
@@ -317,9 +325,10 @@ async function edit({ page, out, qa, vault, group, record }) {
   const chosenScreen = path.join(out, "prefab-selected.png");
   await page.screenshot({ path: chosenScreen });
   const chosen = selectedChoice === matches[0].id && forgetEnabled;
-  record.add("DD-042.14", chosen ? "pass" : "deviation",
+  record.add("DD-042.14", chosen ? "open" : "deviation",
     `Vorlage gewählt=${selectedChoice === matches[0].id}; Vergessen aktiv=${forgetEnabled}.`,
-    [chosenScreen], chosen ? null : "Vorlagenwahl oder darauf folgende Aktion nicht aktiv.");
+    [chosenScreen], chosen ? "Gewählte Vorschau und nächste Platzierung noch nicht geprüft." :
+    "Vorlagenwahl oder darauf folgende Aktion nicht aktiv.");
 
   const beforeForget = await snapshot(page, mapPath);
   const beforeForgetSha = { data: digest(dataFile), map: digest(mapFile) };
@@ -384,9 +393,10 @@ async function reopen({ page, out, qa, vault, group, record }) {
     digest(dataFile) === saved.dataSha && digest(mapFile) === saved.mapSha;
   const steps = path.join(out, "dd04209-reopen.json");
   write(steps, { saved, current, unchanged });
-  record.add("DD-042.07", unchanged ? "pass" : "deviation",
+  record.add("DD-042.07", unchanged ? "open" : "deviation",
     `Benannte Vorlage und Quellkarte nach frischem Obsidian-Prozess unverändert=${unchanged}.`,
-    [steps], unchanged ? null : "Vorlagendefinition oder Karte änderte sich beim Frischstart.");
+    [steps], unchanged ? "Gemischte Objekt-Licht-Vorlage im Host noch nicht gepaart." :
+    "Vorlagendefinition oder Karte änderte sich beim Frischstart.");
   record.add(CASE, unchanged ? "pass" : "deviation",
     `Frischstart enthält genau eine gleichnamige Vorlage; gespeicherte Definition und Karte unverändert=${unchanged}.`,
     [steps], unchanged ? null : "Duplikat oder Änderung der Definition beim Frischstart.");
@@ -407,26 +417,29 @@ async function reopen({ page, out, qa, vault, group, record }) {
     items.map((item) => ({ value: item.value, text: item.textContent })));
   const listed = options.some((option) => option.value === saved.prefab.id &&
     option.text === `${saved.set} / ${saved.name}`);
-  record.add("DD-042.11", listed ? "pass" : "deviation",
-    `Vorlagen-Werkzeug nach Frischstart geöffnet; gespeicherte Vorlage vorhanden=${listed}.`,
-    [screenshot], listed ? null : "Gespeicherte Vorlage nach Frischstart nicht im Werkzeug.");
+  record.add("DD-042.11", listed && !!setSelectorCount ? "pass" : "deviation",
+    `Vorlagen-Werkzeug nach Frischstart geöffnet; gespeicherte Vorlage vorhanden=${listed}; Sammlungsauswahl=${setSelectorCount}.`,
+    [screenshot], listed && !!setSelectorCount ? null :
+    "Gespeicherte Vorlage oder Sammlungsauswahl fehlt nach Frischstart.");
   const controlHidden = !options.some((option) => option.value === "dd04212-control");
   const setFilterWorks = !!setSelectorCount && listed && controlHidden;
   record.add("DD-042.12", setFilterWorks ? "pass" : "deviation",
     `Nach Frischstart Sammlung=${setSelectorCount ? await setChoice.inputValue() : "fehlt"}; Zielvorlage sichtbar=${listed}, andere Sammlung ausgeblendet=${controlHidden}.`,
     [screenshot], setFilterWorks ? null :
     "Native Setwahl mit gefilterter Liste fehlt weiterhin.");
-  record.add("DD-042.13", listed ? "pass" : "deviation",
+  record.add("DD-042.13", listed ? "open" : "deviation",
     `Gespeicherte Vorlage in kombinierter Liste vorhanden=${listed}.`,
-    [screenshot], listed ? null : "Gespeicherte Vorlage fehlt nach Frischstart in der Liste.");
+    [screenshot], listed ? "Reihenfolge mehrerer Vorlagen im Original und Host noch nicht gepaart." :
+    "Gespeicherte Vorlage fehlt nach Frischstart in der Liste.");
   await choice.selectOption(saved.prefab.id);
   const selected = await choice.inputValue() === saved.prefab.id;
   const forgetEnabled = await page.getByRole("button", {
     name: "Vorlage vergessen", exact: true,
   }).isEnabled();
-  record.add("DD-042.14", selected && forgetEnabled ? "pass" : "deviation",
+  record.add("DD-042.14", selected && forgetEnabled ? "open" : "deviation",
     `Vorlage nach Frischstart wählbar=${selected}, Vergessen aktiv=${forgetEnabled}.`,
-    [screenshot], selected && forgetEnabled ? null :
+    [screenshot], selected && forgetEnabled ?
+    "Gewählte Vorschau und nächste Platzierung noch nicht geprüft." :
     "Vorlagenwahl oder Folgeaktion nach Frischstart nicht verfügbar.");
   for (const id of ["DD-042.01", "DD-042.02", "DD-042.03", "DD-042.04",
     "DD-042.05", "DD-042.06", "DD-042.08", "DD-042.22", "DD-042.23"])
