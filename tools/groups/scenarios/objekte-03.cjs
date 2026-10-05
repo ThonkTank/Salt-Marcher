@@ -386,6 +386,10 @@ async function dd02808Only({ page, out, qa, vault, restart, group, record }) {
 module.exports = async function objectColorGroup({ page, out, qa, vault, restart, group, record }) {
   assert.equal(group.id, "objekte-03");
   assert.deepEqual([...group.caseIds].sort(), Object.keys(openReasons).sort());
+  if (process.env.DUNGEON_QA_DD02816_ONLY === "1")
+    return require("./objekte-03-scatter-outside.cjs")({
+      page, out, qa, vault, restart, group, record,
+    });
   if (process.argv.includes("--dd028-picker-lifecycle"))
     return require("./objekte-03-picker-lifecycle.cjs")({
       page, out, qa, vault, restart, group, record,

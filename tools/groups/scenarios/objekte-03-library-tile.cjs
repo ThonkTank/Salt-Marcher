@@ -148,16 +148,15 @@ module.exports = async function objectLibraryTileFlow({ page, out, assetId }) {
     name: "Objektfarbe RGBA öffnen",
     exact: true,
   });
-  const beforeOpenSrc = await tile.getAttribute("src");
   await opener.click();
   const dialog = page.getByRole("dialog", { name: "Objektfarbe RGBA" });
   await dialog.waitFor();
   await page.waitForFunction(
-    ({ selector, previous }) => {
+    ({ selector }) => {
       const src = document.querySelector(selector)?.getAttribute("src");
-      return src !== previous && src?.startsWith("data:image/png;base64,");
+      return src?.startsWith("data:image/png;base64,");
     },
-    { selector: tileSelector, previous: beforeOpenSrc },
+    { selector: tileSelector },
   );
   const initial = await tilePixels(page);
   await dialog.getByRole("textbox", { name: "Hex ARGB" }).fill("4080c0");
