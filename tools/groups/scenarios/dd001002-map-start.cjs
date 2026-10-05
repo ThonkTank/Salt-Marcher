@@ -187,20 +187,31 @@ module.exports = async function mapStart({ page, out, qa, vault, restart,
 
     await modal.getByPlaceholder("Name des Dungeons").fill(`${name}Zero`);
     await setSize(modal, 0, 20);
-    await modal.getByRole("button", { name: "Anlegen", exact: true }).click();
-    await page.waitForFunction((mapPath) => {
-      const button = [...document.querySelectorAll(".modal-container button")]
-        .find((item) => item.textContent?.trim() === "Anlegen");
-      return !!app.vault.getAbstractFileByPath(mapPath) || button?.disabled === false;
-    }, `Dungeons/${name}Zero/Karte.dungeon`);
+    const createZero = modal.getByRole("button", { name: "Anlegen", exact: true });
+    const zeroDisabled = await createZero.isDisabled();
+    if (!zeroDisabled) {
+      await createZero.click();
+      try {
+        await page.waitForFunction((mapPath) =>
+          !!app.vault.getAbstractFileByPath(mapPath),
+        `Dungeons/${name}Zero/Karte.dungeon`, { timeout: 2000 });
+      } catch {
+        // A rejected value leaves the dialog open; record that outcome below.
+      }
+    }
     const zeroPath = path.join(vault, `Dungeons/${name}Zero/Karte.dungeon`);
     const zeroCreated = fs.existsSync(zeroPath);
-    const zeroImage = await stage("zero-width", { zeroCreated });
-    set("DD-001.02", zeroCreated ? "open" : "deviation",
-      `Breite 0/ Höhe 20: Hostdatei angelegt=${zeroCreated}.`,
-      zeroCreated
-        ? "Host: Dateimaße noch nicht gegen Original 8×20 geprüft."
-        : "Original: Eingabe 0 ergab eine 8×20-Karte; Host verwirft sie.",
+    const zeroDimensions = zeroCreated
+      ? JSON.parse(fs.readFileSync(zeroPath, "utf8")).settings : null;
+    const zeroMatches = zeroDimensions?.width === 8 &&
+      zeroDimensions?.height === 20;
+    const zeroImage = await stage("zero-width", { zeroDisabled,
+      zeroCreated, zeroDimensions });
+    set("DD-001.02", zeroMatches ? "open" : "deviation",
+      `Breite 0/ Höhe 20: Anlegen gesperrt=${zeroDisabled}, Hostdatei angelegt=${zeroCreated}, tatsächliche Größe=${zeroDimensions?.width ?? "—"}×${zeroDimensions?.height ?? "—"}.`,
+      zeroMatches
+        ? "Original/Host: Wirkung von Breite 7.5 noch nicht gepaart."
+        : "Original: Eingabe 0 ergab eine 8×20-Karte; Host erreichte diesen Zustand nicht.",
       [zeroImage]);
     await page.keyboard.press("Escape");
     await modal.waitFor({ state: "detached" });
