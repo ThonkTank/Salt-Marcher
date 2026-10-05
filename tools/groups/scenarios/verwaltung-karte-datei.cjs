@@ -145,6 +145,9 @@ async function addUnselectedReference(page, mapPath) {
 
 module.exports = async function mapInformationGroup({ page, out, qa, vault, restart, group, record }) {
   assert.equal(group.id, "verwaltung-karte-datei");
+  const resize = require("./dd038-map-size.cjs");
+  if (process.env.DUNGEON_QA_ONLY_DD038 === "1")
+    return resize({ page, out, qa, vault, restart, group, record });
   const results = [];
   if (!restart) {
     await addFixturePackage(page);
@@ -187,4 +190,6 @@ module.exports = async function mapInformationGroup({ page, out, qa, vault, rest
   record.add("DD-039.06", "pass",
     "X lässt beide Dokumente, Dirty-Flags, History, Notizen und Kartendateien unverändert.",
     [resultFile, ...results.map((item) => item.screenshots.x)]);
+  if (process.env.DUNGEON_QA_ONLY_DD039 !== "1")
+    await resize({ page, out, qa, vault, restart, group, record });
 };
