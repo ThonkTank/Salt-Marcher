@@ -24469,12 +24469,13 @@
         },
         "hostCheck": {
           "state": "isolated_pass_pending_installed_endstand",
-          "build": "main.js SHA-256 8e9cbe29029cb332abf4e28acf8ee2c119bdbb2cbf508ef85d0fec5f455d2cea",
+          "build": "main.js SHA-256 d9b3095ec27b594ac77eedda53186d0b51cef60b1329307c1b5b2a3cd679367d",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-prefab-forget/evidence/1791179165674-prefab-forget-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/host-prefab-forget/evidence/1791179173542-prefab-forget-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179891393-prefab-forget-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179891393-prefab-forget-edit/forget-click-state.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/release-prefab-host/evidence/1791179903852-prefab-forget-reopen/result.json"
           ],
-          "gap": "Bestätigtes Forget entfernt nur die Definition und erhält platzierte Objekt-Licht-Instanzen bytegenau; paralleles Speichern von Werkzeugvorgaben und frisches Hostöffnen bestanden. Endstands-Installation offen. Original-Undo und Original-Frischstart sind getrennte offene Unterfälle."
+          "gap": "Freigabe-Build belegt bestätigtes Forget, Karten-/Instanzerhalt, konkurrierendes Speichern und frisches Obsidian-Öffnen. Installierter Endstand offen; Original-Undo/Cancel/X sind getrennte Unterfälle."
         }
       },
       {
