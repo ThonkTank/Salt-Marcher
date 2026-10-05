@@ -53,6 +53,9 @@ async function waitTexture(page, entityIds, assetId) {
 }
 
 module.exports = async function materialPath({ page, out, qa, vault, restart, group, record }) {
+  if (process.env.DUNGEON_QA_ONLY_DD02102 === "1")
+    return require("./dd02102-path-preview.cjs")({ page, out, qa, vault,
+      restart, group, record });
   if (process.env.DUNGEON_QA_ONLY_DD02120 === "1")
     return require("./material-pfad-undo.cjs")({ page, out, qa, vault,
       restart, group, record });
