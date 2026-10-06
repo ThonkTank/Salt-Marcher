@@ -12832,14 +12832,17 @@
         "command": "Deep Color",
         "scope": "required",
         "original": {
-          "sequence": "Deep Color setzt tiefe RGBA-Wasserfarbe.",
+          "sequence": "Deep-Farbe #cc3366 bei Alpha 255 wählen, vorhandenes und danach neu gezeichnetes Wasser vergleichen.",
           "options": "Deep Color",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "Der Panelwert und die Farbpalette ändern sich; das bestehende Polygon behält ff3aa19a und seine sichtbare Füllung. Das neue Polygon speichert ffcc3366.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/01-deep-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
           ]
         },
         "target": "Tiefe Farbe samt Alpha gleichwertig.",
@@ -12876,7 +12879,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -12887,14 +12890,17 @@
         "command": "Shallow Color",
         "scope": "required",
         "original": {
-          "sequence": "Shallow Color setzt flache RGBA-Wasserfarbe.",
+          "sequence": "Shallow-Farbe #3366cc bei Alpha 255 wählen, vorhandenes und danach neu gezeichnetes Wasser vergleichen.",
           "options": "Shallow Color",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "Der Panelwert und die Farbpalette ändern sich; das bestehende Polygon behält ff8bceb0. Das neue Polygon speichert ff3366cc und erscheint blau.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/02-shallow-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
           ]
         },
         "target": "Flachwasserfarbe im Wasserverlauf.",
@@ -12931,7 +12937,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -12942,14 +12948,18 @@
         "command": "Blend Distance",
         "scope": "required",
         "original": {
-          "sequence": "Blend Distance bestimmt Abstand zwischen Deep und Shallow Color.",
+          "sequence": "Blend Distance von 1,5 auf 0,5 und 4,0 ändern; anschließend ein zweites Wasserpolygon zeichnen.",
           "options": "Blend Distance",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "Das bestehende Polygon behält 1,5 und sein Bild. Das neue Polygon speichert Blend Distance 4,0; die genaue Farbverlaufsformel bleibt offen.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/03-blend-05.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/04-blend-40.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
           ]
         },
         "target": "Kontinuierlicher nativ vergleichbarer Farbverlauf.",
@@ -12986,7 +12996,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -12997,15 +13007,19 @@
         "command": "Disable Border",
         "scope": "required",
         "original": {
-          "sequence": "Disable Border blendet Wasserrand aus.",
+          "sequence": "Disable Border am bestehenden Wasser OFF→ON→OFF→ON schalten und speichern.",
           "options": "Disable Border",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "ON entfernt den Rand sofort, OFF stellt ihn wieder her; das Geschoss speichert disable_border false→true→false→true, Polygonwerte bleiben bytegleich.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-DISABLE-BORDER-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/05-border-off-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/06-border-on-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/07-border-off-water.json"
           ]
         },
         "target": "Rand ausblenden ohne übrige Wasseränderung.",
@@ -13042,7 +13056,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -13161,14 +13175,17 @@
         "command": "Save Wasser",
         "scope": "required",
         "original": {
-          "sequence": "Wasserkarte mit Polygon, Farben, Blend Distance und Randflag speichern.",
+          "sequence": "Zwei Wasserpolygone mit verschiedenen Farben/Blendwerten und ausgeschaltetem Rand speichern und in frischem Originalprozess öffnen.",
           "options": "Save Wasser",
-          "effect": "Karte enthält Wasserpolygon und Farbparameter.",
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "Beide Polygonwerte und disable_border=true überdauern den Frischstart bei identischem Kartenhash; das neue Werkzeugpanel startet dennoch wieder mit Standardfarben, Blend 1,5 und Disable Border OFF.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-water-resize-before.dungeondraft_map"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-water-resize-before.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-132228-353755/evidence/12-fresh-open.png"
           ]
         },
         "target": "Wasserparameter vollständig speichern.",
@@ -13205,7 +13222,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -17382,13 +17399,15 @@
         "command": "Undo Wasserfläche",
         "scope": "required",
         "original": {
-          "sequence": "Undo nach einem Wasserfläche auslösen.",
+          "sequence": "Nach dem kontrollierten zweiten Wasserrechteck einmal Undo auslösen.",
           "options": "Undo Wasserfläche",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "effect": "Undo entfernt genau das neue Rechteck; das ursprüngliche Wasser bleibt sichtbar. Die Options-History wurde nicht geprüft.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/09-undo.png"
           ]
         },
         "target": "Wasserfläche im Verlauf mit Undo behandeln.",
@@ -17424,7 +17443,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
@@ -17435,13 +17454,16 @@
         "command": "Redo Wasserfläche",
         "scope": "required",
         "original": {
-          "sequence": "Redo nach einem Wasserfläche auslösen.",
+          "sequence": "Nach diesem Undo einmal Redo auslösen und die Karte speichern.",
           "options": "Redo Wasserfläche",
-          "effect": null,
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "effect": "Redo stellt genau das neue Rechteck wieder her; der gespeicherte Kartenhash entspricht der Fassung vor Undo.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter isolierter GUI-, Karten- und Frischstartbeleg 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-water-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/10-redo.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water.dungeondraft_map"
           ]
         },
         "target": "Wasserfläche im Verlauf mit Redo behandeln.",
@@ -17477,7 +17499,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
         }
       },
       {
