@@ -1,6 +1,6 @@
 # Roadmap: Räume und Objekte mit Raum-Keys verbinden
 
-Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platzieren und die benötigten Beschreibungen sowie Features im passenden Raum-Key finden. Jede Phase folgt demselben Ablauf: aktuellen Editor am entsprechenden Dungeondraft-Werkzeug und am Raum-Key-Schema prüfen, Lücken angleichen oder gezielt ergänzen, dann auf einer isolierten Drachenhöhlenkopie mit Speichern und frischem Obsidian-Start verifizieren. Produktive Karten und Bestandstexte bleiben geschützt.
+Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platzieren und die benötigten Beschreibungen sowie Features im passenden Raum-Key finden. Die Phasen 1–3 sind abgeschlossen. Danach folgen zuerst die strukturierte Key-Technik und die Verbindung von Features mit Objekten auf eigenen Testdaten; die Drachenhöhle wird erst in Phase 6 migriert und vollständig abgenommen. Produktive Karten und Bestandstexte bleiben bis dahin geschützt.
 
 ## Phase 1 – Grundrisse und Raum-Key
 
@@ -34,20 +34,20 @@ Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platz
 
 **Nachweis:** Im installierten Build wurden zwei `qa_chest`-Objekte nacheinander in Raum 16 gesetzt. Eines wurde in den angrenzenden QA-Raum 17 gezogen; Auswahl, beide Raumkennungen, Key-Anzeige, Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden. Die vorhandenen Texte der isolierten Drachenhöhlenkopie blieben bytegleich. Typprüfung, 109 Tests und Build bestanden. Physische Eingabe, weitere Objektoptionen und vollständige Dungeondraft-Parität bleiben offen.
 
-## Phase 4 – Feature im Raum-Key anlegen
+## Phase 4 – Strukturierte Raum-Keys
 
-- **Abgleichen:** Vorhandenen Feature-Dialog und Key-Ausgabe mit `room-keys.md` und `karten.md` prüfen; Dungeondraft liefert hierfür keinen Raum-Key.
-- **Angleichen/ergänzen:** Neue Beschreibung am Feature im richtigen Raum ergänzen, mit nächstem freien Buchstaben und stabilem Überschriftenanker; Bestandstext erhalten.
-- **Prüfen:** Featuretitel, Beschreibung, Buchstabe und Anker im neuen Test-Key sowie Undo/Redo und Frischöffnung kontrollieren.
+- **Abgleichen:** Vorhandene Raum-Key-Ausgabe, Feature-Dialog und Spielansicht mit `room-keys.md` und `karten.md` prüfen; Dungeondraft liefert hierfür keinen Raum-Key.
+- **Umsetzen:** Raum- und Featuretext im versionierten Kartenmodell als einzige bearbeitbare Quelle halten. Eine eigene Obsidian-Ansicht setzt den Key daraus zusammen und bietet abschnittweise Markdown-Bearbeitung mit formatierter Vorschau. Neue Räume benötigen keine Raum-`.md`-Datei. Stabile Raum- und Abschnittskennungen ersetzen Dateipfade als interne Linkziele. Übersicht, Kreaturen, Items und Handouts bleiben Markdown-Dateien.
+- **Prüfen:** Anlage, Anzeige, Bearbeitung, Undo/Redo, Speichern und Frischöffnung an eigenen Testdaten prüfen. Bestehende Karten und Raumdateien bleiben in dieser Phase unverändert lesbar; ihre Migration folgt erst in Phase 6.
 
-## Phase 5 – Objekt und Feature verbinden
+## Phase 5 – Features und Objekte verbinden
 
-- **Abgleichen:** Auswahl → Feature-Vorkommen → Kartenobjekt, `roomId` und Key-Anker im installierten Editor verfolgen.
-- **Angleichen/ergänzen:** Das ausgewählte Objekt mit genau einem passenden Feature im Raum-Key verbinden und dessen Beschreibung direkt erreichbar machen.
-- **Prüfen:** Klick auf das Objekt öffnet den richtigen Key-Abschnitt; Link, Buchstabe, Text und Zuordnung bleiben nach Speichern und Frischöffnung erhalten.
+- **Umsetzen:** Der Feature-Dialog übernimmt den eingegebenen Beschreibungstext wortgleich in den richtigen Key-Abschnitt. Neue ortsgebundene Features erhalten den nächsten Buchstaben nach dem höchsten vorhandenen; bestehende Zuordnungen und Lücken bleiben erhalten. Ein ausgewähltes Kartenobjekt wird mit genau einem Feature-Vorkommen und dessen stabilem Abschnittsziel verbunden.
+- **Raumwechsel:** Beim Verschieben eines verknüpften Objekts in einen anderen Raum wandert sein Feature-Abschnitt mit. Ist die Beschreibung Teil eines gemeinsam genutzten Abschnitts, bleibt dieser im Ursprungsraum und die Beschreibung wird für das bewegte Feature im Zielraum kopiert. Kennzeichnung und Raumzuordnung werden gemeinsam geändert. Ohne Zielraum wird der Zug ohne Änderung angehalten.
+- **Prüfen:** Featuretext, Buchstabe, Linkziel und direkter Sprung vom Kartenobjekt zum Abschnitt; außerdem Einzel- und Sammelabschnitt, Raumwechsel, Undo/Redo, Speichern und Frischöffnung auf eigenen Testdaten. Die Drachenhöhle bleibt unverändert.
 
-## Phase 6 – Gesamtabnahme
+## Phase 6 – Drachenhöhle migrieren und Gesamtabnahme
 
-- **Abgleichen:** Einen Raum zeichnen, nummerieren, Objekte setzen, ein Feature beschreiben und vom Kartenobjekt zum Key wechseln; Brüche im Ablauf erfassen.
-- **Angleichen/ergänzen:** Gefundene Brüche im selben Ablauf beheben.
-- **Prüfen:** Den vollständigen Ablauf auf einer isolierten Drachenhöhlenkopie einschließlich Undo/Redo, Speichern, frischem Obsidian-Start und physischer Bedienung wiederholen. Weitere Dungeondraft-Optionen bleiben als eigene Fälle in `acceptance.json`.
+- **Vorbereiten:** Bestehende Raum-Keys, Abschnittsgrenzen, Anker und Verweise vollständig erfassen. Die 15 Raumdateien zunächst auf einer isolierten Drachenhöhlenkopie verlustfrei in raum- und featuregebundene Texte übertragen. Verweise im Vault auf stabile Plugin-Ziele umstellen, sichtbare Linktexte und übrigen Wortlaut erhalten; native Obsidian-Dateirücklinks zu den entfallenden Raumdateien werden dadurch ersetzt.
+- **Abnehmen:** Raum zeichnen und nummerieren, Objekte setzen, Feature beschreiben und verknüpfen, Raumwechsel sowie den Sprung vom Kartenobjekt zum richtigen Key-Abschnitt als zusammenhängenden Ablauf prüfen. Die Spielansicht einschließlich Key-Liste, rechter Detailansicht, Gliederung und Linknavigation auf der Kopie kontrollieren; Undo/Redo, Speichern, frischen Obsidian-Start und physische Maus-/Touchpad-Bedienung einschließen.
+- **Übertragen:** Erst nach bestandenem Kopielauf Produktstand und Originaldateien sichern, Editor und Spielansicht installieren und die produktive Drachenhöhle konfliktgeschützt migrieren. Die Raum-`.md`-Dateien erst nach vollständigem Inhalts- und Linkabgleich entfernen; Sicherungen liegen außerhalb des Vaults. Übersicht, Kreaturen, Items und Handouts bleiben erhalten. Weitere Dungeondraft-Optionen bleiben als eigene Fälle in `acceptance.json`.
