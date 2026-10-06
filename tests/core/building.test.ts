@@ -3,10 +3,26 @@ import assert from "node:assert/strict";
 import { parseDocument, type Door, type Building, type Polygon, isRoom } from "../../src/model";
 import { Session } from "../../src/session";
 import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation } from "../../src/commands";
-import { boundarySegments, alignedPortalAt, portalPose, rectangle, reanchorPortal, buildingContourEntries, buildingPolygonPoints, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
+import { boundarySegments, alignedPortalAt, portalPose, rectangle, buildingEllipse, reanchorPortal, buildingContourEntries, buildingPolygonPoints, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
 import { composeBuilding } from "../../src/compute";
 import { floorEraseActive } from "../../src/drawing";
 import { newDocument } from "./fixtures";
+
+test("Building ellipse sampling follows measured native sizes", () => {
+  for (const [a, b, count, sample] of [
+    [{ x: 2, y: 2 }, { x: 3, y: 3 }, 28, [668, 515]],
+    [{ x: 1, y: 1 }, { x: 4, y: 3 }, 28, [725, 262]],
+    [{ x: 2, y: 2 }, { x: 6, y: 6 }, 32, [1123, 521]],
+    [{ x: 1, y: 2 }, { x: 7, y: 5 }, 36, [1157, 517]],
+    [{ x: 1, y: 1 }, { x: 7, y: 7 }, 48, [1124, 262]],
+  ] as const) {
+    const contour = buildingEllipse(a, b);
+    assert.equal(contour.length, count);
+    assert.ok(contour.some(point =>
+      Math.abs(point.x * 256 - sample[0]) <= 1.5 &&
+      Math.abs(point.y * 256 - sample[1]) <= 1.5));
+  }
+});
 
 test("Building Shift curve follows the next polygon point and survives sampled contour storage", () => {
   const base = [{ x: 1, y: 2 }, { x: 6, y: 2 }, { x: 6, y: 5 }],

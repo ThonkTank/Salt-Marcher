@@ -28,11 +28,12 @@ const restart = process.argv.includes("--restart"),
   phase5Feature = process.argv.includes("--phase5-feature"),
   phase6Migration = process.argv.includes("--phase6-migration"),
   parityPhase1 = process.argv.includes("--parity-phase1"),
+  parityPhase1Shapes = process.argv.includes("--parity-phase1-shapes"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -275,7 +276,7 @@ function prepare() {
       content: {definitions: [],occurrences: [],routes: [],archive: []},
     }, null, 2));
   }
-  if (parityPhase1 && !restart) {
+  if ((parityPhase1 || parityPhase1Shapes) && !restart) {
     const dungeon = "Dungeons/Parity/Karte.dungeon";
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
     fs.writeFileSync(vault + "/" + dungeon, JSON.stringify({
@@ -318,6 +319,16 @@ function prepare() {
       entities: [],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     }, null, 2));
+    for (const name of ["Form-Rechteck", "Form-Ellipse", "Form-Gang"]) {
+      fs.writeFileSync(vault + "/Dungeons/Parity/" + name + ".dungeon", JSON.stringify({
+        format: "dungeon-map", version: 3, id: "parity-phase1-" + name,
+        settings: { name, width: 8, height: 8, feetPerField: 5,
+          wallShadows: false, objectShadows: false, buildingWear: 0 },
+        floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+        entities: [],
+        content: { definitions: [], occurrences: [], routes: [], archive: [] },
+      }, null, 2));
+    }
   }
 }
 async function shutdown() {
@@ -399,7 +410,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -556,6 +567,12 @@ async function workflow() {
   const layoutScenarios = require("./host/layout.cjs")(scenarioContext);
   if (parityPhase1) {
     const scenario = require("./host/parity-phase1.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityPhase1Shapes) {
+    const scenario = require("./host/parity-phase1-shapes.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

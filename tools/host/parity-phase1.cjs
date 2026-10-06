@@ -2,7 +2,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
   chooseTool, waitForFileAbsent }) => {
   const mapPath = "Dungeons/Parity/Karte.dungeon";
   const state = () => page.evaluate(() => {
-    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+    const editor = app.workspace.activeLeaf?.view?.editor;
     return editor && { document: editor.session.document(),
       tool: editor.tool,
       draft: editor.pathDraft?.points ?? null,
@@ -11,13 +11,13 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
       paintActive: !!editor.paintWorker };
   });
   const world = (point) => page.evaluate((point) => {
-    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.renderer;
+    const renderer = app.workspace.activeLeaf.view.editor.renderer;
     const box = renderer.canvas.getBoundingClientRect();
     return { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
       y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
   }, point);
   const count = async (expected, timeout = 15000) => page.waitForFunction((expected) => {
-    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+    const editor = app.workspace.activeLeaf?.view?.editor;
     return !!editor && !editor.paintWorker &&
       editor.session.document().entities.filter(e => e.kind === "building").length === expected;
   }, expected, { timeout });
@@ -63,33 +63,33 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     checks.push("Rectangle, wall and Ctrl+Y redo match one complete history step");
     await drag({ x: 4, y: 4 }, { x: 7, y: 7 }, "Alt");
     await page.waitForFunction(() => {
-      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      const e = app.workspace.activeLeaf?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities.find(x => x.kind === "building")
         ?.polygons[0]?.holes.length === 1;
     });
     await page.screenshot({ path: path.join(out, "rectangle-alt-hole.png") });
     await page.locator(".dn-canvas canvas").focus();
     await page.keyboard.press("Control+z");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.find(e => e.kind === "building")
       ?.polygons[0]?.holes.length === 0);
     await page.keyboard.press("Control+y");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.find(e => e.kind === "building")
       ?.polygons[0]?.holes.length === 1);
     checks.push("Alt rectangle erases an inner hole with reversible wall contour");
     await chooseTool("Ellipsenraum");
     await drag({ x: 12, y: 2 }, { x: 18, y: 8 });
     await count(2);
-    assert.equal((await buildings())[1].polygons[0].outer.length, 32);
+    assert.equal((await buildings())[1].polygons[0].outer.length, 48);
     await drag({ x: 14, y: 4 }, { x: 16, y: 6 }, "Alt");
     await page.waitForFunction(() => {
-      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      const e = app.workspace.activeLeaf?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities.filter(x => x.kind === "building")[1]
         ?.polygons[0]?.holes.length === 1;
     });
     await page.screenshot({ path: path.join(out, "ellipse-alt-hole.png") });
-    checks.push("Ellipse has 32 contour points and Alt ellipse creates an inner hole");
+    checks.push("Ellipse has 48 contour points and Alt ellipse creates an inner hole");
     await chooseTool("Polygonraum");
     for (const point of [{ x: 2, y: 12 }, { x: 9, y: 12 },
       { x: 9, y: 13 }, { x: 2, y: 13 }]) await click(point);
@@ -128,18 +128,18 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await double({ x: 13, y: 14 });
     await page.keyboard.up("Alt");
     await page.waitForFunction(() => {
-      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      const e = app.workspace.activeLeaf?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities
         .filter(x => x.kind === "building")[3]?.polygons[0]?.holes.length === 1;
     });
     await page.screenshot({ path: path.join(out, "polygon-alt-hole.png") });
     await page.locator(".dn-canvas canvas").focus();
     await page.keyboard.press("Control+z");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.filter(e => e.kind === "building")[3]
       ?.polygons[0]?.holes.length === 0);
     await page.keyboard.press("Control+y");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.filter(e => e.kind === "building")[3]
       ?.polygons[0]?.holes.length === 1);
     checks.push("Alt polygon cuts a walled inner hole with Undo and Ctrl+Y");
@@ -222,7 +222,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     assert.equal((await state()).tool, "select");
     checks.push("Escape cancels a held Alt erase and returns to idle mode");
     await page.evaluate(async () => {
-      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+      await app.workspace.activeLeaf.view.editor.save();
     });
     await waitForFileAbsent(path.join(vault, mapPath + ".draft"));
     assert.equal((await state()).dirty, false);
@@ -234,7 +234,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await chooseTool("Raum");
     await drag({ x: 3.5, y: 1.5 }, { x: 4.5, y: 3 }, "Alt");
     await page.waitForFunction(() => {
-      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      const e = app.workspace.activeLeaf?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities
         .filter(x => x.kind === "building")[0]?.polygons[0]?.outer.length === 8;
     });
@@ -243,7 +243,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     checks.push("First native matching Alt cut retains the portal on the remaining wall");
     await drag({ x: 3, y: 1.5 }, { x: 5, y: 3 }, "Alt");
     await page.waitForFunction(() => {
-      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      const e = app.workspace.activeLeaf?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities
         .filter(x => x.kind === "door").length === 0;
     });
@@ -251,13 +251,13 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "portal-wall-erased.png") });
     await page.locator(".dn-canvas canvas").focus();
     await page.keyboard.press("Control+z");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.filter(e => e.kind === "door").length === 1);
     await page.keyboard.press("Control+y");
-    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
+    await page.waitForFunction(() => app.workspace.activeLeaf
       ?.view?.editor?.session.document().entities.filter(e => e.kind === "door").length === 0);
     await page.evaluate(async () => {
-      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+      await app.workspace.activeLeaf.view.editor.save();
     });
     await waitForFileAbsent(path.join(vault, "Dungeons/Parity/Portal.dungeon.draft"));
     fs.writeFileSync(path.join(qa, "parity-phase1-portal-saved.json"),
@@ -283,7 +283,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await page.keyboard.press("Control+y");
     await count(1);
     await page.evaluate(async () => {
-      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+      await app.workspace.activeLeaf.view.editor.save();
     });
     await waitForFileAbsent(path.join(vault, "Dungeons/Parity/Kurve.dungeon.draft"));
     fs.writeFileSync(path.join(qa, "parity-phase1-curve-saved.json"),
@@ -314,7 +314,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await page.keyboard.press("Control+y");
     await count(1);
     await page.evaluate(async () => {
-      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+      await app.workspace.activeLeaf.view.editor.save();
     });
     await waitForFileAbsent(path.join(vault, "Dungeons/Parity/Mehrkurve.dungeon.draft"));
     fs.writeFileSync(path.join(qa, "parity-phase1-multi-curve-saved.json"),

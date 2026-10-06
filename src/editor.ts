@@ -37,6 +37,7 @@ import {
 } from "./commands";
 import {
   ellipse,
+  buildingEllipse,
   alignedPortalAt,
   nearestBoundary,
   rectangle,
@@ -1987,11 +1988,16 @@ export class DungeonEditor {
       g.tool === "ellipse" ||
       (g.tool === "water" && this.settings.waterShape === "ellipse") ||
       (g.tool === "pattern" && this.settings.surfaceShape === "ellipse")
-    )
+    ) {
+      const a = this.snap(g.start), b = this.snap(point);
       this.renderer.previewRoom(
-        ellipse(this.snap(g.start), this.snap(point)),
+        g.tool === "ellipse" ? buildingEllipse(a, b) : ellipse(a, b),
         g.tool === "ellipse" && g.erase,
+        g.tool === "ellipse"
+          ? { width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y), at: b }
+          : undefined,
       );
+    }
     else if (this.isBrushTool(g.tool)) {
       for (const sample of e.getCoalescedEvents?.().length
         ? e.getCoalescedEvents()
@@ -2013,11 +2019,16 @@ export class DungeonEditor {
       (g.tool === "roof" && this.settings.roofShape === "rectangle") ||
       (g.tool === "water" && this.settings.waterShape === "rectangle") ||
       (g.tool === "pattern" && this.settings.surfaceShape === "rectangle")
-    )
+    ) {
+      const a = this.snap(g.start), b = this.snap(point);
       this.renderer.previewRoom(
-        rectangle(this.snap(g.start), this.snap(point)),
+        rectangle(a, b),
         g.tool === "room" && g.erase,
+        g.tool === "room"
+          ? { width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y), at: b }
+          : undefined,
       );
+    }
     else if (g.tool === "select" && g.entity && !g.entity.locked) {
       const dx = Math.round(point.x - g.start.x),
         dy = Math.round(point.y - g.start.y);
@@ -2160,7 +2171,7 @@ export class DungeonEditor {
         b = this.snap(point);
       if (Math.abs(a.x - b.x) < 1 || Math.abs(a.y - b.y) < 1) return;
       this.paintTask = this.composeFloor(
-        [{ outer: ellipse(a, b), holes: [] }],
+        [{ outer: buildingEllipse(a, b), holes: [] }],
         g.erase,
       );
     } else if (

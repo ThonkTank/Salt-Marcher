@@ -101,6 +101,8 @@ export class MapRenderer {
   private dimensionLabels = new Container();
   private horizontalDimension?: Text;
   private verticalDimension?: Text;
+  private previewSize?: Text;
+  private previewSizePoint?: Point;
   private selection = new Graphics();
   private preview = new Graphics();
   private objectPreview = new Container();
@@ -1239,6 +1241,7 @@ export class MapRenderer {
     this.reconcileObjects();
     for (const v of this.visuals.values()) this.positionLabel(v);
     this.drawDimensions();
+    this.positionPreviewSize();
     this.drawSelection();
     this.invalidate();
   }
@@ -1589,17 +1592,49 @@ export class MapRenderer {
       }
     this.invalidate();
   }
-  previewRoom(points: readonly Point[] | null, erase = false): void {
+  private positionPreviewSize(): void {
+    if (!this.previewSize || !this.previewSizePoint) return;
+    this.previewSize.position.set(
+      this.previewSizePoint.x * this.camera.scale + this.camera.x + 4,
+      this.previewSizePoint.y * this.camera.scale + this.camera.y + 18,
+    );
+  }
+  previewRoom(
+    points: readonly Point[] | null,
+    erase = false,
+    size?: { width: number; height: number; at: Point },
+  ): void {
     this.preview.clear();
+    if (size) {
+      const label = (this.previewSize ??= new Text({
+        text: "",
+        style: {
+          fontFamily: "sans-serif",
+          fontSize: 14,
+          fontWeight: "700",
+          fill: 0xffd347,
+          stroke: { color: 0x1a1710, width: 3 },
+        },
+        resolution: 2,
+      }));
+      if (!label.parent) this.dimensionLabels.addChild(label);
+      const display = (value: number) => Number(value.toFixed(2));
+      label.text = `(${display(size.width)}, ${display(size.height)})`;
+      this.previewSizePoint = size.at;
+      this.positionPreviewSize();
+      label.visible = true;
+    } else {
+      this.previewSizePoint = undefined;
+      if (this.previewSize) this.previewSize.visible = false;
+    }
     if (points) {
-      const color = erase ? 0xc93c3c : 0x008da8;
-      this.preview
-        .poly(
-          points.flatMap((p) => [p.x, p.y]),
-          true,
-        )
-        .fill({ color, alpha: 0.15 })
-        .stroke({ color, width: 2 / this.camera.scale });
+      const color = erase ? 0xc93c3c : size ? 0xffdc00 : 0x008da8;
+      const shape = this.preview.poly(points.flatMap((p) => [p.x, p.y]), true);
+      if (!size) shape.fill({ color, alpha: 0.15 });
+      shape.stroke({ color, width: (size ? 1.5 : 2) / this.camera.scale });
+      if (size && !erase) this.preview
+        .circle(size.at.x, size.at.y, 2.5 / this.camera.scale)
+        .fill(color);
     }
     this.invalidate();
   }
@@ -1816,6 +1851,8 @@ export class MapRenderer {
   }
   cancelPreview(ids?: Iterable<Id>): void {
     this.preview.clear();
+    this.previewSizePoint = undefined;
+    if (this.previewSize) this.previewSize.visible = false;
     this.selection.visible = true;
     for (const id of ids ?? []) {
       const v = this.visuals.get(id);

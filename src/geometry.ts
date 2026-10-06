@@ -45,6 +45,13 @@ export function ellipse(a: Point, b: Point, count = 32): Point[] {
     return { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry };
   });
 }
+export function buildingEllipse(a: Point, b: Point): Point[] {
+  const count = 4 * Math.max(
+    7,
+    Math.round(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)),
+  );
+  return ellipse(a, b, count);
+}
 export interface BuildingCurve {
   readonly index: number;
   readonly handle: Point;
