@@ -1,5 +1,5 @@
-// Isolated native Obsidian test. No fixed CPU, RAM, swap or admission limits.
-// User authorization 2026-10-02 supersedes the old launch guard.
+// Isolated native Obsidian test. Keep system memory headroom after the
+// 2026-10-05 global OOM during a Dungeondraft graphics run.
 const fs = require("node:fs"),
   path = require("node:path"),
   assert = require("node:assert/strict"),
@@ -13,6 +13,8 @@ const { prepareLarge } = require("./large-fixture.cjs");
 const dd041HostNavigation = require("./dd041-host-navigation.cjs");
 const { createGroupRecord } = require("./group-record.cjs");
 const { loadGroups } = require("./group-catalog.cjs");
+const { snapshot: memorySnapshot, assess: assessMemory } =
+  require("./gui-memory-guard.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
@@ -155,10 +157,9 @@ function processes() {
     });
 }
 function telemetry() {
-  const mem = fs.readFileSync("/proc/meminfo", "utf8"),
+  const memory = memorySnapshot(),
     psi = fs.readFileSync("/proc/pressure/memory", "utf8");
-  const available = Number(mem.match(/^MemAvailable:\s+(\d+)/m)[1]) * 1024,
-    total = Number(psi.match(/^full .*total=(\d+)/m)[1]);
+  const total = Number(psi.match(/^full .*total=(\d+)/m)[1]);
   const app = processes().find(
     (p) =>
       p.args[0]?.startsWith("/app/obsidian") &&
@@ -184,7 +185,9 @@ function telemetry() {
       );
     } catch {}
   peak = Math.max(peak, current);
-  return { time: Date.now(), available, total, current, ...details };
+  return { time: Date.now(), available: memory.available,
+    memTotal: memory.total, swapTotal: memory.swapTotal,
+    swapFree: memory.swapFree, total, current, ...details };
 }
 function prepare() {
   if (!restart) {
@@ -315,6 +318,10 @@ process.on("SIGTERM", () => {
   void shutdown().finally(() => process.exit(1));
 });
 async function main() {
+  const launchMemory = assessMemory(memorySnapshot(), "launch");
+  if (!launchMemory.allowed)
+    throw new Error("Grafiktest wegen Speicherreserve nicht gestartet: " +
+      JSON.stringify(launchMemory));
   assert(
     !processes().some(
       (p) =>
@@ -332,7 +339,7 @@ async function main() {
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
       mode: (activeGroupId ? `group-${activeGroupId}-` : nativePathDialog ? "native-path-dialog-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
-      memoryPolicy: "normal OS management; only emergency global pressure stop",
+      memoryPolicy: "preflight reserve and runtime memory/swap guard",
     }),
   );
   let baseline = telemetry();
@@ -344,11 +351,15 @@ async function main() {
       const row = telemetry();
       fs.appendFileSync(out + "/memory.jsonl", JSON.stringify(row) + "\n");
       const elapsed = row.time - baseline.time;
+      const memory = assessMemory({ total: row.memTotal,
+        available: row.available, swapTotal: row.swapTotal,
+        swapFree: row.swapFree }, "runtime");
       if (
-        row.available < 256 * 1048576 ||
+        !memory.allowed ||
         (elapsed >= 2000 && row.total - baseline.total > elapsed * 1000 * 0.5)
       ) {
-        guardFailure = "Acute system-wide memory shortage";
+        guardFailure = "System memory reserve exhausted: " +
+          memory.reasons.join(", ");
         rejectGuard(new Error(guardFailure));
       }
       if (elapsed >= 2000) baseline = row;
