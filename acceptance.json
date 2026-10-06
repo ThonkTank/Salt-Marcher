@@ -8135,15 +8135,38 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/bau/cave-wall-override.ts",
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "aef448c2a1774f47bfee087481b376ef78c2000494c15aa146ed6f970590d76f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01911-wall-override-20261006/evidence/1791277108807-bau-04-edit/dd01911-cave-override-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01911-wall-override-20261006/evidence/1791277125301-bau-04-reopen/dd01911-cave-override-steps.json"
+          ],
+          "gap": "Original-Reichweite über Geschosse, Original-History/Frischöffnung und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Zwei bestehende Höhlenränder derselben Ebene wurden gemeinsam umgefärbt; drittes Geschoss unverändert. Ein History-Schritt, Undo/Redo und Save/Frischöffnung technisch bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01911-wall-override-20261006/evidence/1791277108807-bau-04-edit/dd01911-cave-override-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01911-wall-override-20261006/evidence/1791277125301-bau-04-reopen/dd01911-cave-override-steps.json"
+            ],
+            "gap": "Original-Reichweite über Geschosse, Original-History/Frischöffnung und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -13763,15 +13786,40 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/terrain.ts",
+            "src/features/material/terrain-slot-choice.ts",
+            "src/properties.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "aef448c2a1774f47bfee087481b376ef78c2000494c15aa146ed6f970590d76f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
+          ],
+          "gap": "Direkter Original-Freischalt-/Speicherfall, Rückschalten/erneutes Freischalten, exakte Mischwirkung und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "4→8 Slots, native Texturbezeichnungen für Slots 5–8, zweite leere RGBA-Maske, ein History-Schritt und Frischöffnung technisch bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
+            ],
+            "gap": "Direkter Original-Freischalt-/Speicherfall, Rückschalten/erneutes Freischalten, exakte Mischwirkung und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -13912,34 +13960,39 @@
           "changes": [
             "src/properties.ts",
             "src/features/material/terrain-fill.ts",
-            "src/features/material/terrain-fill-command.ts"
+            "src/features/material/terrain-fill-command.ts",
+            "src/terrain.ts",
+            "src/features/material/terrain-composite.ts",
+            "src/renderer.ts"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "build": "aef448c2a1774f47bfee087481b376ef78c2000494c15aa146ed6f970590d76f",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/dd02410-terrain-fill-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/dd02410-terrain-fill-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/dd02410-terrain-fill-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
-          "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall, acht Slots und installierter Endstand offen.",
+          "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall und installierter Endstand offen.",
           "candidate": {
             "state": "open",
-            "observation": "Slot 2/Moss füllte jedes RGBA-Splatbyte im zweiten Kanal; ein Fill-History-Schritt, Undo/Redo, Save und Frischstart bestanden.",
+            "observation": "Zusätzlich zum früheren Vier-Slot-Fill füllte Slot 5 ausschließlich den ersten Kanal der zweiten Maske. Livebild nach neuer Terrain-Sprite, Undo/Redo und Frischöffnung technisch bestanden.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/dd02410-terrain-fill-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/dd02410-terrain-fill-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall, acht Slots und installierter Endstand offen.",
+            "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall und installierter Endstand offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
@@ -16536,15 +16589,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/terrain.ts",
+            "src/features/material/terrain-slot-choice.ts",
+            "src/features/material/terrain-composite.ts",
+            "src/properties.ts",
+            "src/renderer.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "aef448c2a1774f47bfee087481b376ef78c2000494c15aa146ed6f970590d76f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
+          ],
+          "gap": "Gepaarter Original-/Host-Zeichenstrich mit Slot 5 und installierter Endstand offen; Fill allein schließt den Malfall nicht.",
+          "candidate": {
+            "state": "open",
+            "observation": "Slot 5 ist separat wählbar, sein Fill erzeugt die zweite Maskenebene und Moss-Kartenbild, acht Belegungen nach Frischöffnung erhalten.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json"
+            ],
+            "gap": "Gepaarter Original-/Host-Zeichenstrich mit Slot 5 und installierter Endstand offen; Fill allein schließt den Malfall nicht.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
