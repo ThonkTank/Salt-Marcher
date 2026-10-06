@@ -18,6 +18,7 @@ import {
   type CompassDirection,
   type PassageDetails,
   isRoom,
+  isStructuredRoom,
   safePath,
   uid,
   validatePolygons,
@@ -67,12 +68,18 @@ export function createRoom(
     layer: 200,
     number: String(number),
     name,
-    note: { path },
+    ...(session.version === 4
+      ? { key: { sections: [{ id: uid(), kind: "markdown" as const, markdown: "" }] } }
+      : { note: { path } }),
     fill: 0xbfb09a,
     wall: 0x403e39,
     wallWidth: 0.2,
     ...style,
   };
+  if (session.version === 4) {
+    session.execute({ label: "Raum anlegen", entities: [{ id, before: null, after: room }], affectsRules: true });
+    return room;
+  }
   session.loadNote(path, null);
   if (mapPath) safePath(mapPath);
   const text =
@@ -109,10 +116,43 @@ export function adoptFloorAsRoom(
   );
   let number = 1;
   while (used.has(String(number))) number++;
+  if (session.version === 4) {
+    const { note: _unusedNote, ...base } = current;
+    const room: Room = {
+      ...base,
+      number: String(number),
+      name: "Raum " + number,
+      key: { sections: [] },
+      ...style,
+    };
+    const portalChanges: RecordChange<Entity>[] = [];
+    const sections: import("./model").KeySection[] = [];
+    for (const entity of session.entities.values()) {
+      if (entity.kind !== "door" || entity.anchor?.boundaryId !== current.id) continue;
+      if (entity.note) throw new Error("Der Durchgang besitzt bereits einen anderen Key-Verweis.");
+      const after: Door = {
+        ...entity,
+        passage: {
+          ...(entity.passage ?? { description: "", state: entity.variant === "opening" ? "open" as const : "closed" as const, hidden: false }),
+          direction: entity.passage?.direction ?? inferredDirection(room, entity, session),
+        },
+      };
+      portalChanges.push({ id: entity.id, before: entity, after });
+      sections.push({ id: uid(), kind: "passage", doorId: entity.id });
+    }
+    const afterRoom: Room = { ...room, key: { sections: [...sections, { id: uid(), kind: "markdown", markdown: "" }] } };
+    session.execute({
+      label: "Bodenfläche als Raum anlegen",
+      entities: [{ id: current.id, before: current, after: afterRoom }, ...portalChanges],
+      affectsRules: true,
+    });
+    return afterRoom;
+  }
+  const { key: _unusedKey, ...base } = current;
   const name = "Raum " + number,
     path = noteFolder + "/" + current.id + ".md",
     room: Room = {
-      ...current,
+      ...base,
       number: String(number),
       name,
       note: { path },
@@ -741,6 +781,7 @@ export function addFloor(session: Session): Floor {
 }
 
 export function duplicateFloor(session: Session, sourceId: string): Floor {
+  if (session.version === 4) return duplicateStructuredFloor(session, sourceId);
   const source = session.floors.get(sourceId);
   if (!source) throw new Error("Ausgangsgeschoss fehlt.");
   const entities = [...session.entities.values()].filter(
@@ -761,7 +802,7 @@ export function duplicateFloor(session: Session, sourceId: string): Floor {
           ...[...session.floors.values()].map((item) => item.elevation),
         ) + 1,
     },
-    rooms = entities.filter(isRoom),
+    rooms = entities.filter((entity): entity is import("./model").RoomV3 => isRoom(entity) && !!entity.note),
     noteMap = new Map(
       rooms.map((room) => [
         room.note.path,
@@ -775,7 +816,7 @@ export function duplicateFloor(session: Session, sourceId: string): Floor {
         groupId: entity.groupId ? groupMap.get(entity.groupId) : undefined,
         roomId: entity.roomId ? idMap.get(entity.roomId) : undefined,
       };
-      if (isRoom(entity))
+      if (isRoom(entity) && entity.note)
         return {
           ...entity,
           ...common,
@@ -829,6 +870,43 @@ export function duplicateFloor(session: Session, sourceId: string): Floor {
       after: entity,
     })),
     texts,
+    affectsRules: true,
+  });
+  return floor;
+}
+function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
+  const source = session.floors.get(sourceId);
+  if (!source) throw new Error("Ausgangsgeschoss fehlt.");
+  const entities = [...session.entities.values()].filter((entity) => entity.floorId === sourceId);
+  const ids = new Map(entities.map((entity) => [entity.id, uid()]));
+  const groups = new Map(entities.flatMap((entity) => entity.groupId ? [entity.groupId] : []).map((id) => [id, uid()]));
+  const floor: Floor = {
+    ...source, id: uid(), name: source.name + " Kopie",
+    elevation: Math.max(...[...session.floors.values()].map((item) => item.elevation)) + 1,
+  };
+  const copies: Entity[] = entities.map((entity) => {
+    const common = {
+      id: ids.get(entity.id)!, floorId: floor.id,
+      ...(entity.groupId ? { groupId: groups.get(entity.groupId)! } : {}),
+      ...(entity.roomId ? { roomId: ids.get(entity.roomId) ?? entity.roomId } : {}),
+    };
+    if (isStructuredRoom(entity)) return {
+      ...entity, ...common,
+      key: { sections: entity.key.sections.map((section) =>
+        section.kind === "passage"
+          ? { ...section, id: uid(), doorId: ids.get(section.doorId)! }
+          : { ...section, id: uid() }) },
+    };
+    if (entity.kind === "door") return {
+      ...entity, ...common,
+      ...(entity.anchor ? { anchor: { ...entity.anchor, boundaryId: ids.get(entity.anchor.boundaryId)! } } : {}),
+    };
+    return { ...entity, ...common };
+  });
+  session.execute({
+    label: "Geschoss kopieren",
+    floors: [{ id: floor.id, before: null, after: floor }],
+    entities: copies.map((entity) => ({ id: entity.id, before: null, after: entity })),
     affectsRules: true,
   });
   return floor;
@@ -977,7 +1055,7 @@ function inferredDirection(
     ] as const
   )[(octant + 8) % 8]!;
 }
-function passageText(door: Door): string {
+export function passageText(door: Door): string {
   const passage = door.passage ?? {
       description: "",
       state: door.variant === "opening" ? "open" : "closed",
@@ -1084,7 +1162,7 @@ export function createPortal(
       id,
       kind: "door",
       floorId,
-      ...(room
+      ...(room?.note
         ? { note: { path: room.note.path, anchor: "durchgang-" + id } }
         : {}),
       ...("boundary" in anchor
@@ -1124,10 +1202,29 @@ export function createPortal(
     bars: "Gitter",
     opening: "Offener Durchgang",
   };
-  const before = room ? session.note(room.note.path) : undefined;
-  if (room && (before === undefined || before === null))
+  if (room && isStructuredRoom(room)) {
+    const afterRoom: Room = {
+      ...room,
+      key: { sections: [
+        ...room.key.sections.filter((section) => section.kind === "passage"),
+        { id: uid(), kind: "passage", doorId: id },
+        ...room.key.sections.filter((section) => section.kind !== "passage"),
+      ] },
+    };
+    session.execute({
+      label: names[settings.variant] + " anlegen",
+      entities: [
+        { id, before: null, after: door },
+        { id: room.id, before: room, after: afterRoom },
+      ],
+      affectsRules: true,
+    });
+    return door;
+  }
+  const before = room?.note ? session.note(room.note.path) : undefined;
+  if (room?.note && (before === undefined || before === null))
     throw new Error("Raum-Key zuerst laden.");
-  const after = room
+  const after = room?.note
     ? before! +
       (before!.endsWith("\n") ? "" : "\n") +
       "## " +
@@ -1141,7 +1238,7 @@ export function createPortal(
   session.execute({
     label: names[settings.variant] + " anlegen",
     entities: [{ id, before: null, after: door }],
-    ...(room ? { texts: [textPatch(room.note.path, before!, after!)] } : {}),
+    ...(room?.note ? { texts: [textPatch(room.note.path, before!, after!)] } : {}),
     affectsRules: true,
   });
   return door;

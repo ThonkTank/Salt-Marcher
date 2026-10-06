@@ -1663,7 +1663,17 @@
         "directEvidence": []
       },
       "verifiedScope": "Editor, Raum-Key-Einbettung und Spielansicht lesen dieselbe Session und denselben Renderer.",
-      "verifiedAt": "2026-10-03"
+      "verifiedAt": "2026-10-03",
+      "phase4": {
+        "status": "verified_on_isolated_v4_test_data",
+        "scope": "V4-Raum und abschnittweiser Key aus derselben Karte im Editor und in der rechten Ansicht.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-core-test.log",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791303555106-phase4-key-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791303573796-phase4-key-reopen/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-protected-result.json"
+        ]
+      }
     },
     {
       "id": "EB-004",
@@ -1802,7 +1812,17 @@
         "directEvidence": []
       },
       "verifiedScope": "Transaktionale Text-Patches, Konfliktprüfung, Journal und Entwurf schützen Wortlaut, Links und IDs; 179 Ausgangsdateien sind bytegleich.",
-      "verifiedAt": "2026-10-03"
+      "verifiedAt": "2026-10-03",
+      "phase4": {
+        "status": "verified_on_isolated_v4_test_data",
+        "scope": "Exakter V4-Markdown-Wortlaut, stabile Abschnitts-ID, Entwurf, Undo/Redo, Speicherung und frischer Start; 89 produktive Dungeondateien bytegleich.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-core-test.log",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791303555106-phase4-key-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791303573796-phase4-key-reopen/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-protected-result.json"
+        ]
+      }
     },
     {
       "id": "EB-009",

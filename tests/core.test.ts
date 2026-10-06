@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import "./material-pattern.test";
 import {
-  newDocument,
+  newDocument as createDocument,
   parseDocument,
   type Entity,
   type MapObject,
@@ -16,8 +16,20 @@ import {
   type Building,
   type Polygon,
   isRoom,
+  isStructuredRoom,
 } from "../src/model";
+import {
+  addMarkdownSection,
+  editMarkdownSection,
+  keySectionUrl,
+  moveKeySection,
+  removeMarkdownSection,
+  sectionMarkdown,
+  structuredRoom,
+} from "../src/room-key";
 import { Session, textPatch } from "../src/session";
+const newDocument: typeof createDocument = (name, width, height, assets, appearance, version = 3) =>
+  createDocument(name, width, height, assets, appearance, version);
 import { readObjectArgb, writeObjectArgb } from "../src/features/objekte/color-alpha";
 import { createPrefab, placePrefab } from "../src/prefabs";
 import {
@@ -1058,7 +1070,7 @@ test("building keeps multiple parts, holes and the same id when assigned a room 
   assert.equal(isRoom(restored), false);
   if (restored?.kind !== "building") throw new Error("Gebäude fehlt.");
   assert.deepEqual(restored.polygons, polygons);
-  assert.equal(session.note(room.note.path), null);
+  assert.equal(session.note(room.note!.path), null);
 });
 
 test("room assignment binds existing building portals and creates their key blocks atomically", () => {
@@ -1085,7 +1097,7 @@ test("room assignment binds existing building portals and creates their key bloc
       { variant: "opening", width: 1, blocksLight: false },
     ),
     room = adoptFloorAsRoom(session, building.id, "QA/Räume"),
-    key = session.note(room.note.path)!;
+    key = session.note(room.note!.path)!;
   assert.equal(northDoor.note, undefined);
   assert.equal(westOpening.note, undefined);
   assert.match(key, new RegExp(`\\^durchgang-${northDoor.id}`));
@@ -1095,17 +1107,17 @@ test("room assignment binds existing building portals and creates their key bloc
     const door = session.entities.get(id);
     assert.equal(door?.kind, "door");
     if (door?.kind !== "door") continue;
-    assert.equal(door.note?.path, room.note.path);
+    assert.equal(door.note?.path, room.note!.path);
     assert.ok(door.passage?.direction);
   }
   const finalDocument = session.document();
   session.undo();
-  assert.equal(session.note(room.note.path), null);
+  assert.equal(session.note(room.note!.path), null);
   assert.deepEqual(session.entities.get(northDoor.id), northDoor);
   assert.deepEqual(session.entities.get(westOpening.id), westOpening);
   assert.equal(isRoom(session.entities.get(building.id)), false);
   session.redo();
-  assert.equal(session.note(room.note.path), key);
+  assert.equal(session.note(room.note!.path), key);
   assert.deepEqual(session.document(), finalDocument);
   assert.deepEqual(parseDocument(JSON.stringify(finalDocument)), finalDocument);
 });
@@ -2170,7 +2182,7 @@ test("V2 map and pending draft migrate to V3 without changing linked content or 
     repo = new MapRepository(store, mapPath),
     { s, room } = fixture();
   await repo.save(s);
-  const noteBefore = await store.read(room.note.path);
+  const noteBefore = await store.read(room.note!.path);
   const door = createDoor(s, room, 0, 0.5);
   await repo.persistDraft(s);
   const v3Map = JSON.parse((await store.read(mapPath))!);
@@ -2194,11 +2206,11 @@ test("V2 map and pending draft migrate to V3 without changing linked content or 
   assert.deepEqual(restored.document().content, s.document().content);
   assert.ok(restored.entities.has(door.id));
   assert.equal(await store.read(mapPath), v2Map);
-  assert.equal(await store.read(room.note.path), noteBefore);
-  assert.equal(restored.note(room.note.path), s.note(room.note.path));
+  assert.equal(await store.read(room.note!.path), noteBefore);
+  assert.equal(restored.note(room.note!.path), s.note(room.note!.path));
   await reopened.save(restored);
   assert.equal(parseDocument((await store.read(mapPath))!).version, 3);
-  assert.equal(await store.read(room.note.path), s.note(room.note.path));
+  assert.equal(await store.read(room.note!.path), s.note(room.note!.path));
   // An interrupted draft cleanup after a committed V3 save must not turn a
   // completed V2 migration into a false external-edit conflict on next open.
   store.files.set(repo.draftPath, v2Draft);
@@ -2310,15 +2322,15 @@ test("room, wall-bound door, object and exact text share undo; save and fresh re
   const store = new MemoryStore(),
     repo = new MapRepository(store, mapPath),
     { s, room, floor } = fixture();
-  const original = s.note(room.note.path)!;
+  const original = s.note(room.note!.path)!;
   const door = createDoor(s, room, 0, 0.5),
-    doorText = s.note(room.note.path)!;
+    doorText = s.note(room.note!.path)!;
   assert.match(doorText, /## Tür/);
   s.undo();
-  assert.equal(s.note(room.note.path), original);
+  assert.equal(s.note(room.note!.path), original);
   assert.equal(s.entities.has(door.id), false);
   s.redo();
-  assert.equal(s.note(room.note.path), doorText);
+  assert.equal(s.note(room.note!.path), doorText);
   assert.equal(s.entities.has(door.id), true);
   const obj = createObject(s, floor, { x: 7, y: 7 });
   const moved = { ...obj, x: 9 };
@@ -2328,18 +2340,18 @@ test("room, wall-bound door, object and exact text share undo; save and fresh re
   });
   const preserved =
     doorText + "**Absichtlich  doppelt.** [[Anders#Titel|Wortlaut]]\r\n";
-  editNote(s, room.note.path, doorText, preserved);
+  editNote(s, room.note!.path, doorText, preserved);
   s.undo();
-  assert.equal(s.note(room.note.path), doorText);
+  assert.equal(s.note(room.note!.path), doorText);
   s.redo();
   await repo.save(s);
   assert.equal(s.dirty, false);
   assert.equal(await store.read(repo.journalPath), null);
   const freshRepo = new MapRepository(store, mapPath),
     fresh = await freshRepo.open();
-  await freshRepo.loadNote(fresh, room.note.path);
+  await freshRepo.loadNote(fresh, room.note!.path);
   assert.deepEqual(fresh.document(), s.document());
-  assert.equal(fresh.note(room.note.path), preserved);
+  assert.equal(fresh.note(room.note!.path), preserved);
   assert.equal((fresh.entities.get(obj.id) as MapObject).x, 9);
   assert.equal(fresh.dirty, false);
 });
@@ -2357,14 +2369,14 @@ test("structured passages and encounters render readable key prose and undo atom
     ac: 16,
     key: "[[Messingschlüssel]]",
   });
-  const passageText = s.note(room.note.path)!;
+  const passageText = s.note(room.note!.path)!;
   assert.match(
     passageText,
     /Norden: Massive Eichentür\. Verschlossen\. Versteckt \(SG 15\)\. 18 HP, RK 16\. Schlüssel: \[\[Messingschlüssel\]\]\./,
   );
   assert.equal((s.entities.get(door.id) as typeof door).passage?.hiddenDC, 15);
   s.undo();
-  assert.doesNotMatch(s.note(room.note.path)!, /Massive Eichentür/);
+  assert.doesNotMatch(s.note(room.note!.path)!, /Massive Eichentür/);
   s.redo();
 
   const definition = createFeatureDefinition(s, {
@@ -2387,7 +2399,7 @@ test("structured passages and encounters render readable key prose and undo atom
         reaction: "greift bei Alarm an",
       },
     );
-  let key = s.note(room.note.path)!;
+  let key = s.note(room.note!.path)!;
   assert.match(
     key,
     /Bewacht den Nordausgang\. Besetzung: 2× Schattenwache\. Auswertung: 900 XP\. Aktuelle Situation: wartet reglos\. Reaktion: greift bei Alarm an\. Regeln: \[\[Schattenwache\]\]\. Encounter: Torwachen \(\[\[Encounter Torwachen\]\]\)\./,
@@ -2402,7 +2414,7 @@ test("structured passages and encounters render readable key prose and undo atom
     name: "Schattenwächter",
     description: "Bewacht den Nordausgang",
   });
-  key = s.note(room.note.path)!;
+  key = s.note(room.note!.path)!;
   assert.match(key, /## SC · Schattenwächter/);
   assert.match(
     key,
@@ -2415,9 +2427,9 @@ test("structured passages and encounters render readable key prose and undo atom
 });
 test("an imported heading anchor gains managed prose without rewriting existing key text", () => {
   const { s, room } = fixture(),
-    before = s.note(room.note.path)!,
+    before = s.note(room.note!.path)!,
     protectedText = before + "## A · Säulen:\n\nAbsichtlich  unverändert.\n";
-  editNote(s, room.note.path, before, protectedText);
+  editNote(s, room.note!.path, before, protectedText);
   const definition = createFeatureDefinition(s, {
       name: "Säulen",
       kind: "feature",
@@ -2429,7 +2441,7 @@ test("an imported heading anchor gains managed prose without rewriting existing 
       roomId: room.id,
       marker: "A",
       quantity: 6,
-      note: { path: room.note.path, anchor: "A · Säulen:" },
+      note: { path: room.note!.path, anchor: "A · Säulen:" },
     },
     current = s.content;
   s.execute({
@@ -2443,7 +2455,7 @@ test("an imported heading anchor gains managed prose without rewriting existing 
     quantity: 6,
     situation: "steht unverändert",
   });
-  const after = s.note(room.note.path)!;
+  const after = s.note(room.note!.path)!;
   assert.match(after, /^## A · Säulen:$/m);
   assert.match(after, /Absichtlich  unverändert\./);
   assert.match(after, /Menge: 6\. Aktuelle Situation: steht unverändert\./);
@@ -2470,7 +2482,7 @@ test("rooms stay numbered while features use letters and creatures use named cod
     first = createFeatureOccurrence(s, column.id, room.id),
     creature = createFeatureOccurrence(s, guardian.id, room.id),
     second = createFeatureOccurrence(s, trap.id, room.id),
-    key = s.note(room.note.path)!;
+    key = s.note(room.note!.path)!;
   assert.equal(first.marker, "A");
   assert.equal(creature.marker, "SC");
   assert.equal(second.marker, "B");
@@ -2488,7 +2500,7 @@ test("failure at each write rolls back; committed cleanup failure retains comple
     await assert.rejects(repo.save(s));
     if (failAt < 5) {
       assert.equal(await store.read(mapPath), null);
-      assert.equal(await store.read(room.note.path), null);
+      assert.equal(await store.read(room.note!.path), null);
       assert.equal(s.dirty, true);
     } else {
       assert.ok(await store.read(mapPath));
@@ -2503,12 +2515,12 @@ test("concurrent note modification is preserved and map is not partially saved",
     repo = new MapRepository(store, mapPath);
   await repo.save(s);
   const savedMap = await store.read(mapPath),
-    before = s.note(room.note.path)!;
-  editNote(s, room.note.path, before, before + "Unser Entwurf\n");
-  store.files.set(room.note.path, before + "Fremde Änderung\n");
+    before = s.note(room.note!.path)!;
+  editNote(s, room.note!.path, before, before + "Unser Entwurf\n");
+  store.files.set(room.note!.path, before + "Fremde Änderung\n");
   await assert.rejects(repo.save(s), FileConflict);
   assert.equal(await store.read(mapPath), savedMap);
-  assert.equal(await store.read(room.note.path), before + "Fremde Änderung\n");
+  assert.equal(await store.read(room.note!.path), before + "Fremde Änderung\n");
   assert.equal(s.dirty, true);
 });
 test("external edit during partial save is not overwritten by rollback; journal survives fresh recovery", async () => {
@@ -2517,16 +2529,16 @@ test("external edit during partial save is not overwritten by rollback; journal 
     repo = new MapRepository(store, mapPath);
   store.hook = (path) => {
     if (path === mapPath) {
-      store.files.set(room.note.path, "Extern!");
+      store.files.set(room.note!.path, "Extern!");
       throw new Error("interruption");
     }
   };
   await assert.rejects(repo.save(s), AggregateError);
-  assert.equal(await store.read(room.note.path), "Extern!");
+  assert.equal(await store.read(room.note!.path), "Extern!");
   assert.ok(await store.read(repo.journalPath));
   store.hook = undefined;
   await assert.rejects(new MapRepository(store, mapPath).open(), FileConflict);
-  assert.equal(await store.read(room.note.path), "Extern!");
+  assert.equal(await store.read(room.note!.path), "Extern!");
 });
 test("prepared transaction recovers in fresh process after a partial write", async () => {
   const store = new MemoryStore();
@@ -2567,7 +2579,7 @@ test("joint validation prevents partial changes and broken bindings", () => {
       label: "Veralteter Text",
       entities: [{ id: room.id, before: room, after: changed }],
       texts: [
-        { path: room.note.path, offset: 0, before: "falsch", after: "kaputt" },
+        { path: room.note!.path, offset: 0, before: "falsch", after: "kaputt" },
       ],
     }),
   );
@@ -2623,17 +2635,17 @@ test("save captures a revision while subsequent edits remain dirty and undo is p
   const { s, room } = fixture(),
     store = new MemoryStore(),
     repo = new MapRepository(store, mapPath);
-  const base = s.note(room.note.path)!;
+  const base = s.note(room.note!.path)!;
   let changed = false;
   store.hook = (path) => {
     if (path === mapPath && !changed) {
       changed = true;
-      editNote(s, room.note.path, base, base + "Später\n");
+      editNote(s, room.note!.path, base, base + "Später\n");
     }
   };
   await repo.save(s);
   assert.equal(s.dirty, true);
-  assert.equal(await store.read(room.note.path), base);
+  assert.equal(await store.read(room.note!.path), base);
   s.undo();
   assert.equal(s.dirty, false);
 });
@@ -2649,9 +2661,9 @@ test("text patch keeps unrelated bytes and undoing a saved new room removes its 
     repo = new MapRepository(store, mapPath);
   await repo.save(s);
   s.undo();
-  assert.equal(s.note(room.note.path), null);
+  assert.equal(s.note(room.note!.path), null);
   await repo.save(s);
-  assert.equal(await store.read(room.note.path), null);
+  assert.equal(await store.read(room.note!.path), null);
   assert.equal(parseDocument((await store.read(mapPath))!).entities.length, 0);
 });
 test("rejects malformed and legacy maps and escaping note paths", () => {
@@ -2679,16 +2691,16 @@ test("unsaved joint draft survives repository recreation without modifying saved
     { s, room } = fixture();
   await repo.save(s);
   const originalMap = await store.read(mapPath),
-    originalNote = await store.read(room.note.path),
+    originalNote = await store.read(room.note!.path),
     door = createDoor(s, room, 0, 0.5);
   await repo.persistDraft(s);
   assert.equal(await store.read(mapPath), originalMap);
-  assert.equal(await store.read(room.note.path), originalNote);
+  assert.equal(await store.read(room.note!.path), originalNote);
   const reopened = new MapRepository(store, mapPath),
     restored = await reopened.open();
   assert.equal(restored.dirty, true);
   assert.ok(restored.entities.has(door.id));
-  assert.equal(restored.note(room.note.path), s.note(room.note.path));
+  assert.equal(restored.note(room.note!.path), s.note(room.note!.path));
   await reopened.save(restored);
   assert.equal(restored.dirty, false);
   assert.equal(await store.read(reopened.draftPath), null);
@@ -2705,9 +2717,9 @@ test("draft recovery rejects changed map or text; preserves both external work a
   createDoor(s, room, 0, 0.5);
   await repo.persistDraft(s);
   const draft = await store.read(repo.draftPath);
-  store.files.set(room.note.path, "Andere Person");
+  store.files.set(room.note!.path, "Andere Person");
   await assert.rejects(new MapRepository(store, mapPath).open(), FileConflict);
-  assert.equal(await store.read(room.note.path), "Andere Person");
+  assert.equal(await store.read(room.note!.path), "Andere Person");
   assert.equal(await store.read(repo.draftPath), draft);
 });
 test("undo listeners observe the updated history and door changes invalidate their wall", () => {
@@ -2731,8 +2743,8 @@ test("crash after commit but before draft cleanup reopens the completed save exa
       { s, room } = fixture();
     await repo.save(s);
     if (textOnly) {
-      const before = s.note(room.note.path)!;
-      editNote(s, room.note.path, before, before + "Nur Text\n");
+      const before = s.note(room.note!.path)!;
+      editNote(s, room.note!.path, before, before + "Nur Text\n");
     } else createDoor(s, room, 0, 0.5);
     await repo.persistDraft(s);
     store.hook = (path) => {
@@ -2745,7 +2757,7 @@ test("crash after commit but before draft cleanup reopens the completed save exa
     const fresh = await new MapRepository(store, mapPath).open();
     assert.equal(fresh.dirty, false);
     assert.deepEqual(fresh.document(), s.document());
-    assert.equal(await store.read(room.note.path), s.note(room.note.path));
+    assert.equal(await store.read(room.note!.path), s.note(room.note!.path));
     assert.equal(await store.read(repo.draftPath), null);
   }
 });
@@ -2914,11 +2926,11 @@ test("a drawn floor becomes a numbered room with the same id and one undo restor
   assert.equal(room.id, surface.id);
   assert.equal(room.number, "1");
   assert.equal(room.polygons[0]!.outer.length, 4);
-  assert.match(session.note(room.note.path)!, /^---\nroom_id:/);
+  assert.match(session.note(room.note!.path)!, /^---\nroom_id:/);
   session.undo();
   assert.equal(session.entities.get(surface.id)?.kind, "building");
   assert.equal(isRoom(session.entities.get(surface.id)), false);
-  assert.equal(session.note(room.note.path), null);
+  assert.equal(session.note(room.note!.path), null);
 });
 
 test("light visibility stops at walls but remains open through a portal gap", () => {
@@ -3395,8 +3407,8 @@ test("map-specific asset selection is validated and follows ordinary undo", () =
 
 test("floor duplication remaps topology and copies protected room text in one undo", () => {
   const { s, floor, room } = fixture(),
-    beforeText = s.note(room.note.path)! + "**Unveränderter  Wortlaut.**\n";
-  editNote(s, room.note.path, s.note(room.note.path)!, beforeText);
+    beforeText = s.note(room.note!.path)! + "**Unveränderter  Wortlaut.**\n";
+  editNote(s, room.note!.path, s.note(room.note!.path)!, beforeText);
   const door = createDoor(s, room, 0, 0.5),
     object = createObject(s, floor, { x: 5, y: 5 });
   const history = s.historySize,
@@ -3412,10 +3424,10 @@ test("floor duplication remaps topology and copies protected room text in one un
   assert.notEqual(copiedRoom.id, room.id);
   assert.equal(copiedDoor.kind, "door");
   assert.equal(copiedDoor.anchor?.boundaryId, copiedRoom.id);
-  assert.equal(copiedDoor.note?.path, copiedRoom.note.path);
+  assert.equal(copiedDoor.note?.path, copiedRoom.note!.path);
   assert.equal(copiedObject.kind, "object");
   assert.equal(copiedObject.roomId, copiedRoom.id);
-  const copiedText = s.note(copiedRoom.note.path)!;
+  const copiedText = s.note(copiedRoom.note!.path)!;
   assert.match(copiedText, /\*\*Unveränderter  Wortlaut\.\*\*/);
   assert.match(copiedText, new RegExp('room_id: "' + copiedRoom.id + '"'));
   assert.match(copiedText, new RegExp("\\^durchgang-" + copiedDoor.id));
@@ -3423,7 +3435,7 @@ test("floor duplication remaps topology and copies protected room text in one un
   s.undo();
   assert.ok(!s.floors.has(copiedFloor.id));
   assert.ok(copies.every((entity) => !s.entities.has(entity.id)));
-  assert.equal(s.note(copiedRoom.note.path), null);
+  assert.equal(s.note(copiedRoom.note!.path), null);
   assert.ok(s.entities.has(object.id));
 });
 
@@ -3658,9 +3670,9 @@ test("shared dungeon content, analysis and archive share ordinary exact history"
       prerequisites: ["Siegelstein"],
       bossGoalOrder: 1,
     });
-  assert.match(s.note(room.note.path)!, new RegExp(`\\^feature-${first.id}`));
+  assert.match(s.note(room.note!.path)!, new RegExp(`\\^feature-${first.id}`));
   assert.match(
-    s.note(second.note.path)!,
+    s.note(second.note!.path)!,
     new RegExp(`\\^feature-${secondOccurrence.id}`),
   );
   updateFeatureQuantity(s, first.id, 3);
@@ -3673,12 +3685,12 @@ test("shared dungeon content, analysis and archive share ordinary exact history"
     encounters: [{ name: "Torwachen", quantity: 4, xp: 1800 }],
     bossGoals: [route],
   });
-  const preservedText = s.note(room.note.path)!,
+  const preservedText = s.note(room.note!.path)!,
     markerId = first.entityId!,
     archivedOccurrence = archiveOccurrence(s, first.id);
   assert.equal(s.entities.has(markerId), false);
   assert.equal(s.content.definitions.length, 1);
-  assert.equal(s.note(room.note.path), preservedText);
+  assert.equal(s.note(room.note!.path), preservedText);
   s.undo();
   assert.ok(s.entities.has(markerId));
   assert.equal(s.content.archive.length, 0);
@@ -3720,12 +3732,12 @@ test("new room keys can embed the native map without duplicating map state", () 
       "Dungeons/Eingebettet/Karte.dungeon",
     );
   assert.equal(
-    session.note(room.note.path),
+    session.note(room.note!.path),
     `---\nroom_id: "${room.id}"\n---\n# 1 Raum 1\n\n![[Dungeons/Eingebettet/Karte.dungeon]]\n\n`,
   );
   assert.equal(session.document().content.definitions.length, 0);
   session.undo();
-  assert.equal(session.note(room.note.path), null);
+  assert.equal(session.note(room.note!.path), null);
 });
 
 test("archiving a selected room keeps its text and restores dependent map content", () => {
@@ -3750,7 +3762,7 @@ test("archiving a selected room keeps its text and restores dependent map conten
       toRoomId: room.id,
       prerequisites: [],
     }),
-    protectedText = s.note(room.note.path),
+    protectedText = s.note(room.note!.path),
     beforeArchive = s.document(),
     bundle = archiveEntities(s, [room.id]);
   assert.deepEqual(
@@ -3766,14 +3778,14 @@ test("archiving a selected room keeps its text and restores dependent map conten
     s.content.routes.some((value) => value.id === route.id),
     false,
   );
-  assert.equal(s.note(room.note.path), protectedText);
+  assert.equal(s.note(room.note!.path), protectedText);
   restoreArchive(s, bundle.id);
   assert.ok(s.entities.has(room.id));
   assert.ok(s.entities.has(door.id));
   assert.ok(s.entities.has(object.id));
   assert.equal(s.content.occurrences[0]?.id, occurrence.id);
   assert.equal(s.content.routes[0]?.id, route.id);
-  assert.equal(s.note(room.note.path), protectedText);
+  assert.equal(s.note(room.note!.path), protectedText);
   assert.deepEqual(s.document(), beforeArchive);
 });
 
@@ -3798,19 +3810,115 @@ test("archiving a floor preserves its keys and restores exact layer order", () =
       { id: object.id, before: object, after: { ...object, locked: true } },
     ],
   });
-  const text = s.note(room.note.path),
+  const text = s.note(room.note!.path),
     before = s.document(),
     bundle = archiveFloor(s, upper.id);
   assert.equal(s.floors.has(upper.id), false);
   assert.equal(s.entities.has(room.id), false);
   assert.equal(s.entities.has(object.id), false);
-  assert.equal(s.note(room.note.path), text);
+  assert.equal(s.note(room.note!.path), text);
   assert.deepEqual(bundle.floors, [upper]);
   restoreArchive(s, bundle.id);
   assert.deepEqual(s.document(), before);
-  assert.equal(s.note(room.note.path), text);
+  assert.equal(s.note(room.note!.path), text);
   assert.throws(
     () => archiveFloor(new Session(newDocument("Nur eins", 10, 10)), "missing"),
     /nicht gefunden/,
   );
+});
+
+test("V4 rooms keep exact Markdown, passage sections and stable targets without room files", () => {
+  const document = newDocument("Strukturierter Key", 20, 20, undefined, undefined, 4);
+  const session = new Session(document);
+  const floor = document.floors[0]!.id;
+  const room = createRoom(session, floor,
+    [{ x: 1, y: 1 }, { x: 9, y: 1 }, { x: 9, y: 9 }, { x: 1, y: 9 }],
+    "QA/Räume", {}, "QA/Karte.dungeon");
+  assert.ok(isStructuredRoom(room));
+  assert.equal(room.note, undefined);
+  assert.equal(session.snapshot().notes.size, 0);
+  const first = structuredRoom(session, room.id).key.sections[0]!;
+  assert.equal(first.kind, "markdown");
+  const exact = "## A · Truhe:\r\n*Alter Text*  \r\n[[Dungeons/Probe/Item|Beute]]\r\n";
+  editMarkdownSection(session, room.id, first.id, "", exact);
+  const featureContent = {
+    ...session.content,
+    definitions: [{ id: "qa-definition", name: "Truhe", kind: "feature" as const,
+      xp: 0, lootValue: 0 }],
+    occurrences: [{ id: "qa-occurrence", definitionId: "qa-definition",
+      roomId: room.id, marker: "A", quantity: 1, sectionId: first.id }],
+  };
+  session.execute({ label: "V4-Feature-Ziel prüfen",
+    content: { before: session.content, after: featureContent } });
+  assert.throws(() => session.execute({ label: "Falsches Abschnittsziel",
+    content: { before: session.content,
+      after: { ...session.content,
+        occurrences: [{ ...session.content.occurrences[0]!, sectionId: "missing" }] } } }),
+    /Feature-Vorkommen/);
+  const second = addMarkdownSection(session, room.id, first.id);
+  assert.throws(() => removeMarkdownSection(session, room.id, first.id), /verknüpft/);
+  editMarkdownSection(session, room.id, second, "", "## Hinweise\nEine Zeile.\n");
+  moveKeySection(session, room.id, second, -1);
+  const door = createPortal(session, floor,
+    { boundary: structuredRoom(session, room.id), anchor: { contour: 0, at: 0.5 } },
+    { variant: "door", width: 1, blocksLight: true });
+  const after = structuredRoom(session, room.id);
+  assert.equal(after.key.sections.find((section) => section.id === first.id)?.kind, "markdown");
+  assert.equal((after.key.sections.find((section) => section.id === first.id) as { markdown: string }).markdown, exact);
+  const passage = after.key.sections.find((section) => section.kind === "passage" && section.doorId === door.id)!;
+  assert.match(sectionMarkdown(session, passage), /Tür/);
+  assert.equal(keySectionUrl(session.id, room.id, first.id).includes("section=" + first.id), true);
+  assert.equal(keySectionUrl(session.id, room.id, first.id, "QA Vault").includes("vault=QA+Vault"), true);
+  assert.equal(session.snapshot().notes.size, 0);
+  const saved = session.document();
+  session.undo();
+  assert.equal(session.entities.has(door.id), false);
+  session.redo();
+  assert.deepEqual(session.document(), saved);
+  assert.deepEqual(parseDocument(JSON.stringify(saved)), saved);
+  const archived = archiveEntities(session, [door.id]);
+  assert.equal(session.entities.has(door.id), false);
+  assert.match(sectionMarkdown(session, passage), /Tür/);
+  assert.deepEqual(parseDocument(JSON.stringify(session.document())), session.document());
+  restoreArchive(session, archived.id);
+  assert.equal(session.entities.has(door.id), true);
+  assert.deepEqual(session.document(), saved);
+  const copiedFloor = duplicateFloor(session, floor);
+  const copiedRoom = [...session.entities.values()].find((entity) =>
+    isStructuredRoom(entity) && entity.floorId === copiedFloor.id);
+  assert.ok(isStructuredRoom(copiedRoom));
+  assert.notEqual(copiedRoom.key.sections[0]?.id, passage.id);
+  assert.ok(copiedRoom.key.sections.some((section) =>
+    section.kind === "markdown" && section.markdown === exact));
+  assert.deepEqual(parseDocument(JSON.stringify(session.document())), session.document());
+  const archivedFloor = archiveFloor(session, copiedFloor.id);
+  assert.equal(session.floors.has(copiedFloor.id), false);
+  restoreArchive(session, archivedFloor.id);
+  assert.ok(session.floors.has(copiedFloor.id));
+});
+
+test("V4 key edits survive pending drafts, save and fresh repository opening", async () => {
+  const store = new MemoryStore();
+  const path = "QA/V4/Karte.dungeon";
+  const initial = newDocument("V4 Entwurf", 20, 20, undefined, undefined, 4);
+  const repository = new MapRepository(store, path);
+  const session = new Session(initial);
+  await repository.beginPending(initial, session);
+  const room = createRoom(session, initial.floors[0]!.id,
+    [{ x: 1, y: 1 }, { x: 8, y: 1 }, { x: 8, y: 8 }, { x: 1, y: 8 }],
+    "QA/V4/Räume");
+  const section = structuredRoom(session, room.id).key.sections[0]!;
+  editMarkdownSection(session, room.id, section.id, "", "*Wortlaut bleibt.*\n");
+  await repository.persistDraft(session);
+  assert.equal(await store.read(path), null);
+  assert.equal([...store.files.keys()].some((key) => key.endsWith(".md")), false);
+  const restoredRepository = new MapRepository(store, path);
+  const restored = await restoredRepository.openPending();
+  assert.equal(restored.version, 4);
+  assert.equal(sectionMarkdown(restored, structuredRoom(restored, room.id).key.sections[0]!), "*Wortlaut bleibt.*\n");
+  await restoredRepository.save(restored);
+  const fresh = await new MapRepository(store, path).open();
+  assert.equal(fresh.version, 4);
+  assert.deepEqual(fresh.document(), restored.document());
+  assert.equal([...store.files.keys()].some((key) => key.endsWith(".md")), false);
 });

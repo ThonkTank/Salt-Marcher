@@ -1,3 +1,4 @@
+import type { App } from "obsidian";
 import {
   type Entity,
   type Point,
@@ -10,8 +11,10 @@ import {
   type Roof,
   type Polygon,
   isRoom,
+  isStructuredRoom,
   uid,
 } from "./model";
+import { StructuredKeyPanel } from "./key-panel";
 import { wheelNavigation } from "./navigation";
 import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
@@ -131,8 +134,11 @@ function isFloorTool(
   );
 }
 export interface EditorHost {
+  app: App;
   notice: (message: string) => void;
   openNote: (path: string) => void;
+  openRoomKey: (roomId: string) => void;
+  mapPath: string;
   save: () => Promise<void>;
   pending?: () => boolean;
   assetUrl: (path: string) => string;
@@ -323,6 +329,9 @@ export class DungeonEditor {
   private floorPanel: HTMLDetailsElement;
   private emptyPanel: HTMLElement;
   private keyDock: HTMLElement;
+  private structuredHost: HTMLElement;
+  private structuredPanel?: StructuredKeyPanel;
+  private openKeyButton: HTMLButtonElement;
   private optionsToggle: HTMLButtonElement;
   private keyButton?: HTMLButtonElement;
   private activeGroup = "selection";
@@ -627,11 +636,15 @@ export class DungeonEditor {
     this.text.addEventListener("change", () =>
       this.run(() => this.commitNote()),
     );
-    const open = element("button", "", this.keyDock, "Notiz öffnen");
-    open.addEventListener("click", () =>
+    this.structuredHost = element("div", "", this.keyDock);
+    this.structuredHost.hidden = true;
+    this.openKeyButton = element("button", "", this.keyDock, "Notiz öffnen");
+    this.openKeyButton.addEventListener("click", () =>
       this.run(() => {
         this.commitNote();
-        if (this.notePath) this.host.openNote(this.notePath);
+        const room = this.selectedRoom();
+        if (isStructuredRoom(room)) this.host.openRoomKey(room.id);
+        else if (this.notePath) this.host.openNote(this.notePath);
       }),
     );
     const footer = element("footer", "dn-footer", root);
@@ -918,6 +931,9 @@ export class DungeonEditor {
   maximize(): void {
     this.setMaximized(true);
   }
+  showLayout(): void {
+    this.setMaximized(false);
+  }
   private leaveMaximized(): void {
     this.setMaximized(false);
     this.host.exitEditor?.();
@@ -1073,7 +1089,7 @@ export class DungeonEditor {
         (entity): entity is Room =>
           isRoom(entity) && entity.floorId === sourceId,
       ))
-        if (this.session.note(room.note.path) === undefined)
+        if (room.note && this.session.note(room.note.path) === undefined)
           await this.repository.loadNote(this.session, room.note.path);
       const floor = duplicateFloor(this.session, sourceId);
       this.switchFloor(floor.id);
@@ -1358,6 +1374,7 @@ export class DungeonEditor {
       this.host.notice("Die Karten-Zwischenablage ist leer.");
       return;
     }
+    this.commitNote();
     const viewportCenter = this.renderer.toWorld({
         x: this.renderer.host.clientWidth / 2,
         y: this.renderer.host.clientHeight / 2,
@@ -1382,6 +1399,7 @@ export class DungeonEditor {
     this.text.disabled = true;
     this.text.value = "";
     this.refreshProperties();
+    void this.refreshSelectedNote();
   }
   private archiveSelection(): void {
     this.commitNote();
@@ -2886,7 +2904,7 @@ export class DungeonEditor {
     }
     try {
       if (
-        isRoom(best.boundary) &&
+        isRoom(best.boundary) && best.boundary.note &&
         this.session.note(best.boundary.note.path) === undefined
       )
         await this.repository.loadNote(this.session, best.boundary.note.path);
@@ -2916,6 +2934,7 @@ export class DungeonEditor {
     additive = false,
     primary = ids.at(-1),
   ): Promise<void> {
+    if (this.structuredPanel && !this.structuredPanel.commit()) return;
     const targets = [
       ...new Set(
         ids.flatMap((id) => {
@@ -2951,19 +2970,35 @@ export class DungeonEditor {
     await this.refreshSelectedNote();
   }
   private selectedNotePath(): string | undefined {
+    const room = this.selectedRoom();
+    const e = this.selected ? this.session.entities.get(this.selected) : undefined;
+    return isRoom(room) ? room.note?.path : e?.note?.path;
+  }
+  private selectedRoom(): Entity | undefined {
     const e = this.selected
       ? this.session.entities.get(this.selected)
       : undefined;
-    const room =
-      isRoom(e)
-        ? e
-        : e && e.roomId
-          ? this.session.entities.get(e.roomId)
-          : undefined;
-    return isRoom(room) ? room.note.path : e?.note?.path;
+    return isRoom(e) ? e : e?.roomId ? this.session.entities.get(e.roomId) : undefined;
   }
   private async refreshSelectedNote(): Promise<void> {
     const token = ++this.selectionToken;
+    this.structuredPanel?.destroy();
+    this.structuredPanel = undefined;
+    const room = this.selectedRoom();
+    if (isStructuredRoom(room)) {
+      this.notePath = undefined;
+      this.text.hidden = true;
+      this.structuredHost.hidden = false;
+      this.openKeyButton.textContent = "Raum-Key öffnen";
+      this.structuredPanel = new StructuredKeyPanel(
+        this.host.app, this.structuredHost, this.session, this.host.mapPath,
+        room.id, undefined, this.host.notice, () => !this.host.pending?.(),
+      );
+      return;
+    }
+    this.text.hidden = false;
+    this.structuredHost.hidden = true;
+    this.openKeyButton.textContent = "Notiz öffnen";
     this.notePath = this.selectedNotePath();
     this.text.disabled = true;
     this.text.value = "";
@@ -2993,6 +3028,8 @@ export class DungeonEditor {
     this.text.value = current;
   }
   commitNote(): void {
+    if (this.structuredPanel?.commit() === false)
+      throw new Error("Der geänderte Raumabschnitt konnte nicht übernommen werden.");
     if (
       !this.notePath ||
       this.text.disabled ||
@@ -3347,6 +3384,8 @@ export class DungeonEditor {
   }
   destroy(): void {
     this.closed = true;
+    this.structuredPanel?.commit();
+    this.structuredPanel?.destroy();
     this.setMaximized(false);
     this.cancel();
     this.abort.abort();

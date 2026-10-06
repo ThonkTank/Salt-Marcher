@@ -672,3 +672,16 @@
 .dn-confirm-dialog p { margin: 0 0 20px; }
 .dn-confirm-close { position: absolute; top: 12px; right: 12px; }
 .dn-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dn-room-view { overflow: auto; padding: 10px 16px; }
+.dn-room-view > .dn-map-card { height: 220px; min-height: 0; max-height: 220px; }
+.dn-room-view > .dn-map-card .dn-map-tools { display: none; }
+.dn-structured-key { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dn-structured-key h1 { margin: 8px 0; font-size: 1.4em; }
+.dn-key-navigation, .dn-key-controls { display: flex; flex-wrap: wrap; gap: 4px; }
+.dn-key-navigation button[aria-current="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
+.dn-key-content { overflow: auto; max-height: 45vh; border-top: 1px solid var(--background-modifier-border); }
+.dn-key-section { padding: 4px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.dn-key-markdown { width: 100%; min-height: 130px; resize: vertical; font: var(--font-text-size) var(--font-monospace); }
+.dn-key-preview { min-height: 36px; padding: 6px; border: 1px solid var(--background-modifier-border); }
+.dn-key-dock .dn-structured-key { overflow: auto; }
+.dn-key-dock .dn-key-content { max-height: 22vh; }

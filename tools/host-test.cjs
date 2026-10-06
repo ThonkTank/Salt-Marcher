@@ -24,11 +24,12 @@ const restart = process.argv.includes("--restart"),
   objectAlpha = process.argv.includes("--object-alpha"),
   phase2Object = process.argv.includes("--phase2-object"),
   phase3Object = process.argv.includes("--phase3-object"),
+  phase4Key = process.argv.includes("--phase4-key"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -325,7 +326,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -474,6 +475,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (phase4Key) {
+    await phase4KeyWorkflow();
+    return;
+  }
   if (phase3Object) {
     await phase3ObjectWorkflow(view);
     return;
@@ -3031,6 +3036,98 @@ async function pathLibraryWorkflow(view) {
   await page.screenshot({ path: out + "/path-library.png" });
   checks.push("Path Library selection and path save cleanly");
 }
+async function phase4KeyWorkflow() {
+  const mapPath = "Dungeons/Phase4QA/Karte.dungeon";
+  const savedPath = qa + "/phase4-key-saved.json";
+  const documentState = () => page.evaluate(() => {
+    const leaf = app.workspace.getLeavesOfType("dungeon-native-map")[0] ??
+      app.workspace.getLeavesOfType("dungeon-native-pending")[0];
+    return leaf?.view?.editor?.session?.document();
+  });
+  if (restart) {
+    const saved = JSON.parse(fs.readFileSync(savedPath, "utf8"));
+    await page.evaluate(async (path) => {
+      await app.workspace.getLeaf("tab").openFile(app.vault.getAbstractFileByPath(path));
+    }, mapPath);
+    await page.locator(".dn-canvas canvas").waitFor();
+    assert.deepEqual(await documentState(), saved.document);
+    await page.evaluate(async ({ mapId, roomId, sectionId }) => {
+      await app.plugins.getPlugin("dungeon-editor").openRoomLink({
+        map: mapId, room: roomId, section: sectionId,
+      });
+    }, { mapId: saved.document.id, roomId: saved.roomId,
+      sectionId: saved.document.entities.find((entity) => entity.id === saved.roomId).key.sections[0].id });
+    await page.locator(".dn-room-view .dn-structured-key").waitFor();
+    assert.match(await page.locator(".dn-room-view .dn-key-content").innerText(), /Wortlaut für Phase 4/);
+    assert.equal(fs.readdirSync(path.dirname(vault + "/" + mapPath)).some((name) => name.endsWith(".md")), false);
+    await page.screenshot({ path: out + "/phase4-key-reopen.png" });
+    checks.push("Fresh Obsidian process opens the exact V4 map and rendered room section without a room Markdown file");
+    return;
+  }
+  await page.evaluate(async () => {
+    await app.plugins.getPlugin("dungeon-editor").create("Phase4QA", 20, 20);
+  });
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  assert.equal((await documentState()).version, 4);
+  await chooseTool("Raum");
+  const at = (point) => page.evaluate((point) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor;
+    const renderer = editor.renderer;
+    const box = renderer.canvas.getBoundingClientRect();
+    return { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+      y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
+  }, point);
+  const a = await at({ x: 2, y: 2 });
+  const b = await at({ x: 9, y: 9 });
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() =>
+    app.workspace.getLeavesOfType("dungeon-native-pending")[0]
+      ?.view?.editor?.session?.document()?.entities?.some((entity) =>
+        entity.kind === "building" && !entity.number));
+  const building = (await documentState()).entities.find((entity) =>
+    entity.kind === "building" && !entity.number);
+  await page.evaluate(async (id) => {
+    await app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.select(id);
+  }, building.id);
+  await page.getByRole("button", { name: "Raum anlegen", exact: true }).click();
+  const room = (await documentState()).entities.find((entity) =>
+    entity.kind === "building" && entity.number);
+  assert(room?.key?.sections?.length === 1);
+  assert.equal(room.note, undefined);
+  checks.push("Native room tool adopts a V4 room without creating Markdown");
+  await page.evaluate(async ({ path, roomId }) => {
+    await app.plugins.getPlugin("dungeon-editor").openRoomKey(path, roomId);
+  }, { path: mapPath, roomId: room.id });
+  const panel = page.locator(".dn-room-view .dn-structured-key");
+  await panel.waitFor();
+  await panel.locator("textarea").fill("## A · Test:\n*Wortlaut für Phase 4.*\n");
+  await panel.getByRole("button", { name: "Übernehmen", exact: true }).click();
+  await panel.getByRole("button", { name: "+ Abschnitt", exact: true }).click();
+  await panel.locator("textarea").fill("## Zweiter Abschnitt\nNoch ein Text.\n");
+  await panel.getByRole("button", { name: "Übernehmen", exact: true }).click();
+  assert.match(await panel.locator(".dn-key-content").innerText(), /Wortlaut für Phase 4/);
+  assert.equal(await panel.locator(".dn-key-content em").count(), 1);
+  const beforeUndo = await documentState();
+  await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.session.undo());
+  assert.notDeepEqual(await documentState(), beforeUndo);
+  await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.session.redo());
+  assert.deepEqual(await documentState(), beforeUndo);
+  checks.push("Obsidian room view edits exact Markdown sections with formatted preview and undo/redo");
+  await page.evaluate(async () => {
+    await app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.save();
+  });
+  await page.waitForFunction((path) => !!app.vault.getAbstractFileByPath(path), mapPath);
+  const saved = await documentState();
+  assert.equal(saved.version, 4);
+  assert.equal(fs.readdirSync(path.dirname(vault + "/" + mapPath)).some((name) => name.endsWith(".md")), false);
+  fs.writeFileSync(savedPath, JSON.stringify({ document: saved, roomId: room.id }, null, 2));
+  await page.screenshot({ path: out + "/phase4-key-saved.png" });
+  checks.push("V4 map saved in isolated Vault with no room Markdown files");
+}
+
 async function phase3ObjectWorkflow(view) {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon",
     mapFile = path.join(vault, mapPath),

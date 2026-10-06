@@ -143,6 +143,7 @@ export class Session {
   private savedContent: DungeonContent;
   private stateContent: DungeonContent;
   readonly id: Id;
+  readonly version: 3 | 4;
   revision = 0;
   rulesRevision = 0;
   constructor(
@@ -152,6 +153,7 @@ export class Session {
     validateDocument(doc);
     doc = immutable(structuredClone(doc));
     this.id = doc.id;
+    this.version = doc.version;
     this.stateSettings = doc.settings;
     this.stateContent = doc.content;
     for (const f of doc.floors) this.levels.set(f.id, f);
@@ -268,6 +270,7 @@ export class Session {
     for (const { after } of changes)
       validateEntity(after, this.levels, (candidate) =>
         proposed.get(candidate) ?? this.records.get(candidate),
+        this.version,
       );
     for (const { id, after } of changes) {
       this.records.set(id, after);
@@ -447,7 +450,7 @@ export class Session {
       const e = get(id);
       if (e) {
         if (e.id !== id) throw new Error("Abweichende Objektkennung.");
-        validateEntity(e, nextFloors, get);
+        validateEntity(e, nextFloors, get, this.version);
       }
     }
     let settings = this.stateSettings;
@@ -470,7 +473,7 @@ export class Session {
       for (const change of entityChanges)
         if (change.after) nextEntities.set(change.id, change.after);
         else nextEntities.delete(change.id);
-    validateContent(content, nextEntities);
+    validateContent(content, nextEntities, this.version);
     const noteValues = new Map<string, string | null>();
     const patches = inverse ? [...(c.texts ?? [])].reverse() : (c.texts ?? []);
     for (const p of patches) {
@@ -575,7 +578,7 @@ export class Session {
   document(): MapDocument {
     return {
       format: "dungeon-map",
-      version: 3,
+      version: this.version,
       id: this.id,
       settings: this.stateSettings,
       floors: [...this.levels.values()],

@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 3 – wiederholte Objektplatzierung und Raumwechsel auf Kopie verifiziert und installiert; Phasen 4–6 folgen nach ROADMAP.md",
+  "phase": "Phase 4 – strukturierte V4-Raum-Keys im Worktree und isolierten Obsidian-Vault verifiziert; produktiv bleibt Phase 3 installiert",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -92,7 +92,8 @@
     "DD-028.17: Alle fünf Light-Farbvorgaben nach direkter Originalmessung am installierten Obsidian-Host gewählt; Tool-Feld und persistente Vorgabe stimmen. Karte und History unverändert, frischer Start bestanden. 40/707 Pflichtfälle belegt.",
     "DD-028.16: Scatter-RGBA-Wähler schließt auch nach geänderter Farbe per Außenklick und behält den Wert. Direktes Original, installierter Host, Frischstart sowie DD-028.17-Regression bestanden. 41/707 Pflichtfälle belegt.",
     "Phase 1: Rechteck, Ellipse, Polygon per Doppelklick, ein Feld breiter polygonaler Gang, Raum 16 samt neuem Key, Undo/Redo sowie Speichern und frischer Obsidian-Prozess auf isolierter Drachenhöhlenkopie bestanden; installierter Build 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6.",
-    "Phase 2: qa_chest im neuen Raum 16 bei (4, 3) gewählt, als Cursorbild ohne Karten- oder Historyänderung angezeigt und mit einem Klick als raumgebundenes Objekt platziert. Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden auf isolierter Drachenhöhlenkopie mit installiertem Build 4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74; 108 Kernprüfungen, Typprüfung und Build bestanden. Alle 89 produktiven Dungeondateien blieben bytegleich."
+    "Phase 2: qa_chest im neuen Raum 16 bei (4, 3) gewählt, als Cursorbild ohne Karten- oder Historyänderung angezeigt und mit einem Klick als raumgebundenes Objekt platziert. Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden auf isolierter Drachenhöhlenkopie mit installiertem Build 4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74; 108 Kernprüfungen, Typprüfung und Build bestanden. Alle 89 produktiven Dungeondateien blieben bytegleich.",
+    "Phase 4: V4-Raum ohne .md, zwei Markdown-Abschnitte mit formatierter Vorschau, Undo/Redo, Speicherung und frischer Obsidian-Start im isolierten Vault bestanden; 111 Kernprüfungen, Typprüfung und Build bestanden. 89 produktive Dungeondateien bytegleich."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -136,7 +137,8 @@
     "Gerader Auswahl- und Griffrahmen um gedrehte Einzelmöbel zusätzlich zur gedrehten Kontur; Griffzug skaliert proportional um den gegenüberliegenden Rahmenpunkt.",
     "Vier sichtbare Eckgriffe für einzelne Lichter mit eigenem transienten Auswahlrahmen; Skalieren verschiebt das Licht ohne Änderung seiner gespeicherten Beleuchtungswerte.",
     "Kartenformat V2: Building vereinigt Boden- und Wandkontur mit optionaler Raumidentität; Portale folgen gültigen Konturänderungen atomar. Beide produktiven Karten migriert; V1 wird zur Laufzeit nicht unterstützt. Temporäres Hand/Pan verarbeitet die direkt gemessenen P1-Modifier-Folgen.",
-    "Flüchtige cursorfolgende Objektvorschau im maximierten Editor mit derselben Pakettextur, den aktuellen Platzierungsmaßen und der gewählten Farbe/Drehung; Assetwechsel und Verlassen der Karte verwerfen alte Vorschauen ohne Karten- oder Historienänderung."
+    "Flüchtige cursorfolgende Objektvorschau im maximierten Editor mit derselben Pakettextur, den aktuellen Platzierungsmaßen und der gewählten Farbe/Drehung; Assetwechsel und Verlassen der Karte verwerfen alte Vorschauen ohne Karten- oder Historienänderung.",
+    "V4-Raum-Keys als geordnete Abschnitte im Kartendokument mit eigener Obsidian-Ansicht, Editor-Dock, stabilen Karten-/Raum-/Abschnittslinks und V3-Kompatibilität."
   ],
   "performance": {
     "entities": 4293,
@@ -149,7 +151,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 4 nach ROADMAP.md: Feature-Dialog und Raum-Key-Ausgabe gegen room-keys.md und karten.md abgleichen; ein Feature mit nächstem freien Buchstaben und stabilem Anker im QA-Key anlegen und Undo/Redo sowie Frischöffnung prüfen.",
+  "next": "Phase 5 nach ROADMAP.md: Feature-Dialog für V4-Abschnitte und Verknüpfung mit Kartenobjekten auf eigenen Testdaten umsetzen; Raumwechsel, Undo/Redo und Frischöffnung prüfen. Den fertigen Stand erst nach isolierter Hostprüfung und Sicherung produktiv installieren. Drachenhöhle erst in Phase 6 migrieren.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -512,7 +514,11 @@
     "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
     "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
     "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
-    "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+    "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png",
+    "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-core-test.log",
+    "/home/aaron/.cache/dungeon-native-qa/evidence/1791303555106-phase4-key-edit/result.json",
+    "/home/aaron/.cache/dungeon-native-qa/evidence/1791303573796-phase4-key-reopen/result.json",
+    "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-protected-result.json"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",
@@ -698,5 +704,15 @@
     "existingQATextsUnchanged": true,
     "open": "DD-026/DD-030-Gesamtparität und physische Eingabe bleiben offen.",
     "finalInstallBackup": "/home/aaron/.cache/dungeon-native-qa/backups/phase3-object-before-final-install-20261006-1810"
+  },
+  "phase4Keys": {
+    "status": "worktree_host_passed_not_installed",
+    "buildSha256": "e1456fede3e19bbd140996227b79b4f183df0cd9e394903644c690ad6c5eaa2a",
+    "unitTests": 111,
+    "editEvidence": "/home/aaron/.cache/dungeon-native-qa/evidence/1791303555106-phase4-key-edit/result.json",
+    "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/evidence/1791303573796-phase4-key-reopen/result.json",
+    "protectedFilesEvidence": "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-protected-result.json",
+    "productiveDungeonFilesUnchanged": 89,
+    "open": "V4-Feature-Dialog und Objektverknüpfung folgen in Phase 5; Drachenhöhle und externe Spielansicht in Phase 6."
   }
 }

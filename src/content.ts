@@ -187,7 +187,7 @@ function replaceFeatureBlock(
   occurrence: FeatureOccurrence,
   definition: FeatureDefinition,
 ): string {
-  const anchorName = occurrence.note.anchor;
+  const anchorName = occurrence.note?.anchor;
   if (!anchorName) throw new Error("Der Feature-Anker fehlt im Raum-Key.");
   const blockAnchor = `^${anchorName}`,
     existingBlockAt = current.indexOf(blockAnchor),
@@ -256,11 +256,13 @@ function occurrenceTextPatches(
   definitions: ReadonlyMap<string, FeatureDefinition>,
 ): ReturnType<typeof textPatch>[] {
   const byPath = new Map<string, FeatureOccurrence[]>();
-  for (const occurrence of occurrences)
+  for (const occurrence of occurrences) {
+    if (!occurrence.note) throw new Error("V4-Featuretexte werden in Phase 5 bearbeitet.");
     byPath.set(occurrence.note.path, [
       ...(byPath.get(occurrence.note.path) ?? []),
       occurrence,
     ]);
+  }
   return [...byPath].map(([path, values]) => {
     const before = session.note(path);
     if (before === undefined || before === null)
@@ -387,6 +389,7 @@ export function createFeatureOccurrence(
     room = session.entities.get(roomId);
   if (!definition) throw new Error("Feature-Definition nicht gefunden.");
   if (!isRoom(room)) throw new Error("Raum nicht gefunden.");
+  if (!room.note) throw new Error("V4-Features werden in Phase 5 angelegt.");
   const current = session.note(room.note.path);
   if (current === undefined)
     throw new Error("Raum-Key muss vor dem Verknüpfen geladen werden.");

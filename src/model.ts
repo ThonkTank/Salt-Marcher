@@ -46,19 +46,45 @@ export interface Building extends BaseEntity {
   readonly name?: string;
   readonly number?: string;
   readonly note?: NoteLink;
+  readonly key?: RoomKey;
 }
-export type Room = Building & {
+export interface MarkdownKeySection {
+  readonly id: Id;
+  readonly kind: "markdown";
+  readonly markdown: string;
+}
+export interface PassageKeySection {
+  readonly id: Id;
+  readonly kind: "passage";
+  readonly doorId: Id;
+}
+export type KeySection = MarkdownKeySection | PassageKeySection;
+export interface RoomKey {
+  readonly sections: readonly KeySection[];
+}
+export type RoomV3 = Building & {
   readonly name: string;
   readonly number: string;
   readonly note: NoteLink;
+  readonly key?: never;
 };
+export type RoomV4 = Building & {
+  readonly name: string;
+  readonly number: string;
+  readonly note?: never;
+  readonly key: RoomKey;
+};
+export type Room = RoomV3 | RoomV4;
 export function isRoom(entity: Entity | undefined): entity is Room {
   return (
     entity?.kind === "building" &&
     typeof entity.name === "string" &&
     typeof entity.number === "string" &&
-    entity.note !== undefined
+    (entity.note !== undefined || entity.key !== undefined)
   );
+}
+export function isStructuredRoom(entity: Entity | undefined): entity is RoomV4 {
+  return isRoom(entity) && entity.key !== undefined;
 }
 export interface Wall extends BaseEntity {
   readonly kind: "wall";
@@ -235,7 +261,8 @@ export interface FeatureOccurrence {
   readonly entityId?: Id;
   readonly marker: string;
   readonly quantity: number;
-  readonly note: NoteLink;
+  readonly note?: NoteLink;
+  readonly sectionId?: Id;
   readonly situation?: string;
   readonly reaction?: string;
 }
@@ -271,7 +298,7 @@ export interface DungeonContent {
 }
 export interface MapDocument {
   readonly format: "dungeon-map";
-  readonly version: 3;
+  readonly version: 3 | 4;
   readonly id: Id;
   readonly settings: Settings;
   readonly floors: readonly Floor[];
@@ -291,10 +318,11 @@ export function newDocument(
     Settings,
     "wallShadows" | "objectShadows" | "buildingWear"
   > = { wallShadows: true, objectShadows: true, buildingWear: 0 },
+  version: 3 | 4 = 4,
 ): MapDocument {
   const result: MapDocument = {
     format: "dungeon-map",
-    version: 3,
+    version,
     id: uid(),
     settings: {
       name,
@@ -372,6 +400,7 @@ export function validateEntity(
   e: Entity,
   floors: ReadonlyMap<Id, Floor>,
   get: (id: Id) => Entity | undefined,
+  version: 3 | 4 = 3,
 ): void {
   if (!e || typeof e.id !== "string" || !e.id || !floors.has(e.floorId))
     throw new Error("Ungültige Objekt- oder Geschosskennung.");
@@ -380,19 +409,37 @@ export function validateEntity(
     throw new Error("Ungültige Vorlagenkennung.");
   if (e.kind === "building") {
     validatePolygons(e.polygons);
-    const roomFields = [e.name, e.number, e.note],
-      roomFieldCount = roomFields.filter((value) => value !== undefined).length;
+    const hasIdentity = e.name !== undefined || e.number !== undefined,
+      isV3Room = e.note !== undefined,
+      isV4Room = e.key !== undefined;
     if (
       !Number.isInteger(e.fill) ||
       !Number.isInteger(e.wall) ||
       !Number.isFinite(e.wallWidth) ||
       e.wallWidth < 0 ||
       !Number.isFinite(e.layer) ||
-      (roomFieldCount !== 0 && roomFieldCount !== roomFields.length) ||
-      (roomFieldCount > 0 &&
-        (typeof e.name !== "string" || typeof e.number !== "string"))
+      (hasIdentity !== (isV3Room || isV4Room)) ||
+      (hasIdentity &&
+        (typeof e.name !== "string" || typeof e.number !== "string")) ||
+      (isV3Room && isV4Room) ||
+      (isV3Room && version !== 3) ||
+      (isV4Room && version !== 4)
     )
       throw new Error("Ungültige Gebäudedaten.");
+    if (isV4Room) {
+      if (!Array.isArray(e.key!.sections) ||
+          new Set(e.key!.sections.map((section) => section.id)).size !== e.key!.sections.length)
+        throw new Error("Ungültige Raumabschnitte.");
+      for (const section of e.key!.sections) {
+        if (!section.id ||
+            (section.kind === "markdown"
+              ? typeof section.markdown !== "string"
+              : section.kind === "passage"
+                ? typeof section.doorId !== "string" || !section.doorId
+                : true))
+          throw new Error("Ungültiger Raumabschnitt.");
+      }
+    }
   } else if (e.kind === "wall") {
     if (
       !Array.isArray(e.points) ||
@@ -602,7 +649,7 @@ export function validateDocument(doc: MapDocument): void {
   if (
     !doc ||
     doc.format !== "dungeon-map" ||
-    doc.version !== 3 ||
+    (doc.version !== 3 && doc.version !== 4) ||
     typeof doc.id !== "string" ||
     !doc.id
   )
@@ -623,12 +670,13 @@ export function validateDocument(doc: MapDocument): void {
     throw new Error("Doppelte Kennung.");
   for (const f of floors.values()) validateFloor(f);
   for (const e of entities.values())
-    validateEntity(e, floors, (id) => entities.get(id));
-  validateContent(doc.content, entities);
+    validateEntity(e, floors, (id) => entities.get(id), doc.version);
+  validateContent(doc.content, entities, doc.version);
 }
 export function validateContent(
   content: DungeonContent,
   entities: ReadonlyMap<Id, Entity>,
+  version: 3 | 4 = 3,
 ): void {
   if (
     !content ||
@@ -695,17 +743,37 @@ export function validateContent(
         (value) =>
           value !== undefined && (typeof value !== "string" || !value.trim()),
       ) ||
-      !occurrence.note ||
-      occurrence.note.path !== room.note.path
+      (version === 3
+        ? !occurrence.note || occurrence.note.path !== room.note?.path ||
+          occurrence.sectionId !== undefined
+        : !isStructuredRoom(room) || occurrence.note !== undefined ||
+          !occurrence.sectionId ||
+          !room.key.sections.some((section) =>
+            section.kind === "markdown" && section.id === occurrence.sectionId))
     )
       throw new Error("Ungültiges Feature-Vorkommen.");
-    safePath(occurrence.note.path);
-    if (
-      !occurrence.note.path.endsWith(".md") ||
-      typeof occurrence.note.anchor !== "string" ||
-      !occurrence.note.anchor.trim()
-    )
-      throw new Error("Ungültiger Feature-Verweis.");
+    if (version === 3 && occurrence.note) {
+      safePath(occurrence.note.path);
+      if (!occurrence.note.path.endsWith(".md") ||
+          typeof occurrence.note.anchor !== "string" ||
+          !occurrence.note.anchor.trim())
+        throw new Error("Ungültiger Feature-Verweis.");
+    }
+  }
+  if (version === 4) {
+    const archivedDoors = new Map<Id, Door>();
+    for (const bundle of content.archive)
+      for (const entity of bundle.entities)
+        if (entity.kind === "door") archivedDoors.set(entity.id, entity);
+    for (const room of entities.values()) {
+      if (!isStructuredRoom(room)) continue;
+      for (const section of room.key.sections) {
+        if (section.kind !== "passage") continue;
+        const door = entities.get(section.doorId) ?? archivedDoors.get(section.doorId);
+        if (door?.kind !== "door" || door.anchor?.boundaryId !== room.id)
+          throw new Error("Durchgang des Raum-Keys fehlt.");
+      }
+    }
   }
   const goalOrders = new Set<number>();
   for (const route of routes.values()) {
