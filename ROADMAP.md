@@ -61,3 +61,7 @@ Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platz
 - **Übertragen:** Erst nach bestandenem Kopielauf Produktstand und Originaldateien sichern, Editor und Spielansicht installieren und die produktive Drachenhöhle konfliktgeschützt migrieren. Die Raum-`.md`-Dateien erst nach vollständigem Inhalts- und Linkabgleich entfernen; Sicherungen liegen außerhalb des Vaults. Übersicht, Kreaturen, Items und Handouts bleiben erhalten. Weitere Dungeondraft-Optionen bleiben als eigene Fälle in `acceptance.json`.
 
 **Stand:** Die Drachenhöhle ist nach externer Sicherung produktiv auf V4 übertragen; die 15 früheren Raumdateien sind nach vollständigem Abgleich entfernt. 15 Raumtexte, 80 Vorkommen, 99 Objektziele und 532 stabile Links einschließlich der Kartendaten wurden geprüft. Sichtbarer Wortlaut, 559 Geometrieobjekte und Auswertungssummen stimmen mit der Quelle überein. Key-Liste, rechter Raum-Key, Gliederung, Kartenmarker, Übersichtslink und Auswertungsbericht bestehen auf der isolierten Kopie einschließlich frischem Start; der produktive Obsidian-Start mit Spielansicht und Übersichtslink besteht ebenfalls. Das bereits deaktivierte Auswertungs-Plugin bleibt deaktiviert. Die physische Maus-/Touchpad-Prüfung wurde auf Nutzerwunsch vorerst übersprungen und bleibt offen.
+
+## Folge-Roadmap
+
+Die [Roadmap für Dungeondraft-Verhalten bei Grundrissen und Objekten](ROADMAP-PARITY.md) gliedert den anschließenden Verhaltensabgleich in sieben Phasen.
