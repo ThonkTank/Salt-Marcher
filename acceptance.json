@@ -19977,21 +19977,25 @@
           }
         },
         "implementation": {
-          "state": "prototype_unintegrated",
+          "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/objekte/scatter-scale-range.ts",
-            "src/features/objekte/scatter-scale-migration.ts"
+            "src/features/objekte/scatter-scale-migration.ts",
+            "src/commands.ts",
+            "src/properties.ts",
+            "src/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Min-/Max-Felder, gespeicherte Vorgaben, natürliche Assetgrößen und gepaarte Hoststreuung noch nicht integriert/geprüft."
+          "gap": "Min-/Max-Bereich und Altvorgaben sind integriert; grafischer Original-/Hostvergleich mit mehreren Motiven, Vorschau, Undo/Redo und Frischöffnung offen."
         }
       },
       {
@@ -20036,21 +20040,25 @@
           }
         },
         "implementation": {
-          "state": "prototype_unintegrated",
+          "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/objekte/scatter-scale-range.ts",
-            "src/features/objekte/scatter-scale-migration.ts"
+            "src/features/objekte/scatter-scale-migration.ts",
+            "src/commands.ts",
+            "src/properties.ts",
+            "src/main.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Min-/Max-Felder, gespeicherte Vorgaben, natürliche Assetgrößen und gepaarte Hoststreuung noch nicht integriert/geprüft."
+          "gap": "Min-/Max-Bereich und Altvorgaben sind integriert; grafischer Original-/Hostvergleich mit mehreren Motiven, Vorschau, Undo/Redo und Frischöffnung offen."
         }
       },
       {
