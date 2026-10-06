@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase 1 Nachbesserungsplan abgeschlossen; Phasentor offen",
+  "phase": "Folge-Roadmap: Phase 1 Nachbesserung umgesetzt; getrennter Review ausstehend",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -773,19 +773,19 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_repair_planned",
+    "status": "phase1_repair_implemented_review_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Phase 1 Nachbesserung umsetzen: P15–P17-Handle-Vorschau direkt vergleichen, Snap nach Strg+S im Original isolieren, Raum/Key/Portal auf aktuellem Kandidaten im fokussierten Host mit Frischstart prüfen; nur bestätigte Produktabweichungen korrigieren.",
-    "note": "Rechteck, Ellipse, Polygon, aufeinanderfolgende Shift-Züge mit Selbstschnitt-Bereinigung und positives Snap-Runden sind direkt am Original und im isolierten Host belegt. Der Kandidat besteht 119 Kerntests, Typprüfung, Build, zwei Host-Editfolgen und deren Frischstarts.",
-    "candidateBuildSha256": "17c48aa0e0d00a40bd20a34a112808484d7e4857b08fe86d4f586d5cf4f2d64d",
+    "nextRun": "Eigener Phase-1-Reviewlauf: aktuellen Kandidaten eaf6ed0f und alle zwölf zugeordneten Unterfälle sowie Raum-/Portal-Quertor anhand direkter Original- und endgültiger Hostbelege prüfen. Bei Lücke eigenständige Nachbesserung und erneuten Review planen; nach Freigabe erst den getrennten Phase-1-Aufräum-Planlauf beginnen.",
+    "note": "Drei gehaltene Shift-Vorschauen weichen an 15 Messhöhen höchstens einen Bildschirmpixel vom Original ab. Original-Building-Rechteck bestätigt Snap an→aus durch Strg+S und freie Viertelfeldpunkte; der Kandidat fängt die von Obsidian früh verarbeitete Taste bei Editorfokus ab. Nummerierter Raum, exakter Key, Innenloch und gebundenes Portal bestehen den isolierten Host samt frischem Prozess. Typprüfung, 119 Kerntests und Build bestehen.",
+    "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Phase-1-Tor: Shift-Handle-Vorschau auf aktuellem Host, isolierter nativer Snap-Zustand nach Strg+S und aktueller Hostlauf nummerierter Raum/Key/Kontur/Frischstart. DD-011.15 wurde vollständig Phase 3 zugeordnet; Phase-1-Formen müssen trotzdem frisch öffnen. Physische Eingabe in Phase 7. Nach vollständiger Phase-1-Freigabe folgt vor Phase 2 eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und bei Bedarf weiterer Nachbesserung.",
+    "open": "Nur der getrennte Phase-1-Review steht für das aktuelle Phasentor aus. DD-011.15 als vollständiger Fall folgt in Phase 3; physische Eingabe in Phase 7. Nach freigegebener Phase 1 folgt vor Phase 2 die eigenständige Aufräumphase mit Plan, Umsetzung und Review.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -798,6 +798,11 @@
     "cleanupCadence": "Nach jeder vollständig freigegebenen Fachphase eigener Plan-, Umsetzungs- und Reviewlauf für Aufräumen; bei Lücken Nachbesserung und Review wiederholen, erst danach nächste Fachphase.",
     "repairPlanSection": "Phase 1 – Nachbesserungsplan nach dem Review vom 07.10.2026",
     "phase1AssignedCases": 12,
-    "phase3PersistenceCase": "DD-011.15"
+    "phase3PersistenceCase": "DD-011.15",
+    "repairEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
+    "repairHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
+    "repairHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
+    "repairNativeSnap": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-004028-1058062/evidence/result.json",
+    "repairVerified": "Original Dungeondraft 1.2.0.1 und isolierter Obsidian-Kandidat direkt verglichen; npm run check, npm test (119), npm run build, Host Edit und Host Reopen bestanden; produktiver Build unverändert."
   }
 }

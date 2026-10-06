@@ -321,6 +321,7 @@ export class DungeonEditor {
   private undo: HTMLButtonElement;
   private redo: HTMLButtonElement;
   private saveButton: HTMLButtonElement;
+  private snapButton: HTMLButtonElement;
   private maximizeButton: HTMLButtonElement;
   private saveState: HTMLElement;
   private title: HTMLElement;
@@ -670,11 +671,8 @@ export class DungeonEditor {
       gridButton.setAttribute("aria-pressed", String(this.gridVisible));
     }, mapSwitches);
     gridButton.setAttribute("aria-pressed", "true");
-    const snapButton = this.button("Snap", () => {
-      this.snapEnabled = !this.snapEnabled;
-      snapButton.setAttribute("aria-pressed", String(this.snapEnabled));
-    }, mapSwitches);
-    snapButton.setAttribute("aria-pressed", "true");
+    this.snapButton = this.button("Snap", () => this.toggleSnap(), mapSwitches);
+    this.snapButton.setAttribute("aria-pressed", "true");
     const viewControls = element("div", "dn-view-controls", footer);
     this.button("−", () => this.renderer.zoom(1 / 1.2), viewControls);
     this.button("+", () => this.renderer.zoom(1.2), viewControls);
@@ -1042,6 +1040,17 @@ export class DungeonEditor {
       { ...options, passive: false, capture: true },
     );
     this.root.addEventListener("keydown", (e) => this.key(e), options);
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (this.closed || !(e.ctrlKey || e.metaKey) ||
+            e.key.toLowerCase() !== "s" ||
+            !(e.target instanceof Node) || !this.root.contains(e.target)) return;
+        e.stopImmediatePropagation();
+        this.key(e);
+      },
+      { ...options, capture: true },
+    );
     window.addEventListener(
       "keydown",
       (e) => {
@@ -3221,10 +3230,15 @@ export class DungeonEditor {
       void this.select(path.id);
     }
   }
+  private toggleSnap(): void {
+    this.snapEnabled = !this.snapEnabled;
+    this.snapButton.setAttribute("aria-pressed", String(this.snapEnabled));
+  }
   private key(e: KeyboardEvent): void {
     const command = e.ctrlKey || e.metaKey;
     if (command && e.key.toLowerCase() === "s") {
       e.preventDefault();
+      this.toggleSnap();
       void this.save();
       return;
     }

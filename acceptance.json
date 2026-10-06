@@ -3258,6 +3258,23 @@
           "remaining": "Direkt gemessene getrennte und unmittelbar folgende Shift-Züge sowie drei Handle-Varianten stimmen in den Konturzahlen und Beispielpunkten einschließlich nativer Selbstschnitt-Bereinigung überein. Separater Reviewlauf und physische Eingabe in Phase 7 stehen aus.",
           "reviewResult": "open",
           "reviewFinding": "Gespeicherte Shift-Konturen und Wände passen in den gemessenen Fällen. Die während eines gehaltenen Shift-Handles veränderliche Kandidatenvorschau wurde noch nicht direkt im Host gegen P15–P17 verglichen."
+        },
+        "phase1RepairImplementation": {
+          "state": "candidate_ready_for_separate_review",
+          "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "P15–P17: identische Anker, drei während Shift gehaltene Handle-Positionen vor Pointer-Up; gespeicherte 20-Punkte-Kontur getrennt betrachtet.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/held-curve-pixel-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221547-946750/evidence/screens/P15-handle-left-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221628-947058/evidence/screens/P16-handle-near-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221710-947378/evidence/screens/P17-handle-high-held.png"
+          ],
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
+          "comparison": "15 gemessene Kurvenpunkte in den drei gehaltenen Hostvorschauen liegen 0–1 Bildschirmpixel von den nativen Konturen entfernt; alle drei Hostabschlüsse speichern dieselben 20 Punkte. Keine Geometrieänderung erforderlich.",
+          "remaining": "Getrennter Phase-1-Review des endgültigen Kandidaten ausstehend; physische Eingabe folgt in Phase 7."
         }
       },
       {
@@ -3723,6 +3740,21 @@
           "remaining": "Snap an wurde für acht positive Zugabstände einschließlich Halbfeld-Grenze gemessen; Wechsel mitten im Polygon und freie Koordinaten sind beidseitig belegt. Negative Koordinaten und das beobachtete Snap-Umschalten nach Strg+S bleiben für den Reviewlauf; physische Eingabe folgt in Phase 7.",
           "reviewResult": "open",
           "reviewFinding": "Acht positive Snap-Zugabstände, Umschalten mitten im Entwurf und freie Koordinaten passen. Ob Strg+S im Original selbst Snap ausschaltet, ist mit den vorhandenen Läufen nicht isoliert; den Zustandswechsel gezielt nachmessen."
+        },
+        "phase1RepairImplementation": {
+          "state": "candidate_ready_for_separate_review",
+          "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Frische 8×8-Karte, Building/Shape/Rechteck, Basisspeichern, Snap an, Strg+S, freies Rechteck, Leisten-Speichern; separater Prozess mit Strg+S zweimal.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-004028-1058062/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-002158-1042064/evidence/ctrl-s-repeat.json"
+          ],
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
+          "comparison": "Strg+S schaltet Snap an→aus→an; das Original speichert danach freie Viertelfeldpunkte, der Host freie Koordinaten. Speichern über die Leiste schaltet Snap nicht. Obsidian fängt die Taste vor dem Editor ab; der Kandidat verarbeitet sie deshalb bei Editorfokus im Fenster-Capture.",
+          "remaining": "Getrennter Phase-1-Review des endgültigen Kandidaten ausstehend; negative Koordinaten und physische Eingabe bleiben außerhalb der jetzt gemessenen Folge."
         }
       },
       {
@@ -3867,7 +3899,18 @@
           "reviewFinding": "Frische Originalöffnungen für Rechteck/Snap, Shift-Kurve, Portal-Randschnitt, Alt-Ellipse und Alt-Polygon sind vorhanden; der Host öffnet die geprüften Phase-1-Formen erneut. Die Anforderung aller Building-Optionen umfasst auch Stile aus Phase 3 und bleibt insgesamt offen."
         },
         "roadmapPhase": 3,
-        "phaseAssignmentNote": "Planfortschreibung 2026-10-07: voller Save/Open-Pflichtfall für alle Building-Optionen in Phase 3; Neuöffnung jeder Phase-1-Form bleibt zusätzlich dortiges Phasentor. Der Phase-1-Reviewbefund bleibt als historischer Befund erhalten."
+        "phaseAssignmentNote": "Planfortschreibung 2026-10-07: voller Save/Open-Pflichtfall für alle Building-Optionen in Phase 3; Neuöffnung jeder Phase-1-Form bleibt zusätzlich dortiges Phasentor. Der Phase-1-Reviewbefund bleibt als historischer Befund erhalten.",
+        "phase1RepairImplementation": {
+          "state": "phase1_form_reopen_candidate_ready_for_review_full_case_phase3",
+          "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json"
+          ],
+          "comparison": "Die in Phase 1 geprüften Form- und Gestenwirkungen sowie der nummerierte Raum, sein Key und die freien Snap-Koordinaten bestehen die Neuöffnung im isolierten Host.",
+          "remaining": "Der vollständige Pflichtfall aller Building-Optionen einschließlich Boden- und Wandstilen gehört zu Phase 3; getrennter Phase-1-Review steht aus."
+        }
       },
       {
         "id": "DD-011.16",
@@ -47573,6 +47616,23 @@
         "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review-20261007/evidence/1791324249151-parity-phase1-shapes-edit/result.json",
         "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review-20261007/evidence/1791324309214-parity-phase1-shapes-edit/result.json"
       ]
+    },
+    "phase1RepairImplementation": {
+      "date": "2026-10-07",
+      "state": "candidate_ready_for_separate_review",
+      "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
+      "nativeSnapEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-004028-1058062/evidence/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-002158-1042064/evidence/ctrl-s-repeat.json"
+      ],
+      "heldPreviewComparison": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/held-curve-pixel-comparison.json",
+      "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
+      "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
+      "crossCaseGate": "Nummerierter Raum behält ID, Key-Pfad und Key-Bytes bei Überlappung, Alt-Innenloch und Undo/Redo. Das neue Portal ergänzt erwartbar einen Abschnitt; dessen gespeicherte Bytes bleiben bei zwei Randschnitten, Undo/Redo und frischem Prozess erhalten. Erster Schnitt erhält, zweiter entfernt das Portal.",
+      "verification": "npm run check, 119 Kerntests, npm run build und beide isoliert installierten Hostläufe bestanden.",
+      "next": "Eigener Phase-1-Reviewlauf: endgültigen Kandidaten und zwölf zugeordnete Unterfälle samt Raum-/Portal-Tor prüfen; DD-011.15 vollständig erst Phase 3."
     }
   }
 }
