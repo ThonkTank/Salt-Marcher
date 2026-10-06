@@ -13567,7 +13567,7 @@
           "sequence": "Terrain Brush > Biome > Barren auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Barren",
           "effect": "Slots 1–4 zeigen Rocky, Dirt, Gravel, Sand; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/TerrainBrush/",
@@ -13621,7 +13621,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Barren: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-barren.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-barren.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16216,7 +16233,7 @@
           "sequence": "Terrain Brush > Biome > Desert auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Desert",
           "effect": "Slots 1–4 zeigen Sand, Sandstone, Cracked Earth, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16268,7 +16285,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Desert: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-desert.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-desert.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16282,7 +16316,7 @@
           "sequence": "Terrain Brush > Biome > Mountain auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Mountain",
           "effect": "Slots 1–4 zeigen Dry Grass, Limestone, Rocky, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16334,7 +16368,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Mountain: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-mountain.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-mountain.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16348,7 +16399,7 @@
           "sequence": "Terrain Brush > Biome > Prarie auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Prarie",
           "effect": "Slots 1–4 zeigen Grass, Dirt, Gravel, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16400,7 +16451,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Prarie: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-prarie.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-prarie.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16414,7 +16482,7 @@
           "sequence": "Terrain Brush > Biome > Rainforest auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Rainforest",
           "effect": "Slots 1–4 zeigen Moss, Dirt, Swamp, Gravel; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16466,7 +16534,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Rainforest: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-rainforest.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-rainforest.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16480,7 +16565,7 @@
           "sequence": "Terrain Brush > Biome > Settlement auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Settlement",
           "effect": "Slots 1–4 zeigen Dirt, Gravel, Sand, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16532,7 +16617,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Settlement: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-settlement.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-settlement.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -16546,7 +16648,7 @@
           "sequence": "Terrain Brush > Biome > Swamp auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Swamp",
           "effect": "Slots 1–4 zeigen Swamp, Dirt, Dry Grass, Grass; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
-          "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
@@ -16598,7 +16700,24 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
+          "gap": "Technischer Edit-/Frischstartbeleg vorhanden; finale Kartenwirkung und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Swamp: sichtbare UI-Auswahl, vier native Texturpfade, Slots 5–8 und beide Masken erhalten; kein Preset-Historyschritt. Sieben Geschosse mit je einem Preset in einer Karte gespeichert und im frischen Hostprozess einzeln mit Sprite und Slotnamen geprüft. Barren: früherer Maskenschritt bleibt undo/redo-fähig.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284352419-material-terrain-edit/dd024-biome-preset-swamp.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-terrain-biome-all-seven/evidence/1791284402796-material-terrain-reopen/dd024-biome-fresh-open-swamp.png"
+            ],
+            "gap": "Technische Masken-, Slot-5- und Geschoss-Fixtures; echte Host-Pinselgeste und finale native Pixelmischung noch offen.",
+            "build": "0544e425d2cb9eadf166331597b967dfc9654772f013c3b1c22b756af93f5534",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
