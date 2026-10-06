@@ -37762,24 +37762,31 @@
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt. Preset-Auswahl und PPI-Dateiwirkung sind im Entwicklungsbuild angeschlossen; isolierter Grafiklauf und installierter Endstand offen.",
+          "state": "partial",
+          "build": "ea6c3929fa03985e4bbb08760e506ed12ddcd82290b2c4b8f6fd7612a3ca0250",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-13-GRID-PRESET-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280768977-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json"
+          ],
+          "gap": "Isolierter Edit-/Frischstart-Host technisch bestanden; Original-GUI-Presetdateien, Dialogzustand und installierter Endstand fehlen.",
           "candidate": {
             "state": "open",
-            "observation": "Edit: Bearbeitung: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "observation": "Sieben Vorgaben sichtbar; 128/300 PPI ändern Maße; manuelle 96 setzt Custom; PNG bei 128 ist 1024×1024 und nach frischem Kartenöffnen bytegleich. Karte/History/Kamera unverändert.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-13-GRID-PRESET-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280768977-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json"
             ],
-            "gap": "Edit: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.\nFrischstart: Auswahl und Pixelwirkung eines anderen Grid Preset fehlen.",
-            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "gap": "Isolierter Edit-/Frischstart-Host technisch bestanden; Original-GUI-Presetdateien, Dialogzustand und installierter Endstand fehlen.",
+            "build": "ea6c3929fa03985e4bbb08760e506ed12ddcd82290b2c4b8f6fd7612a3ca0250",
             "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
             }
           }
         }
