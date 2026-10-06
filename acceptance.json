@@ -13795,30 +13795,37 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "32a8b9d3c0dbd7a29eaf633f466ace1f0b57b38fb78b23a825176b089c1c73b2",
+          "build": "9d9b0adc243042030ac57af93b99c956805e5e229b3f17a61781e2305f36035c",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
           "gap": "Direkter Original-Freischalt-/Speicherfall, Rückschalten/erneutes Freischalten, exakte Mischwirkung und installierter Endstand offen.",
           "candidate": {
             "state": "open",
-            "observation": "Acht Slots mit Slot-5-Fill und Smooth-Schalter blieben im aktuellen Kandidaten-Build nach Save und frischem Hostprozess erhalten.",
+            "observation": "Acht-Slot-Fill und Smooth-Checkbox bestanden erneut im isolierten Editlauf und nach frischem Hostprozess; zwei gesonderte Slot-Clamp-Proben endeten vor der Zielassertion bei der Pending-Handoff-/Werkzeugwahl.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Direkter Original-Freischalt-/Speicherfall, Rückschalten/erneutes Freischalten, exakte Mischwirkung und installierter Endstand offen.",
+            "gap": "Direkter Original-Freischalt-/Speicherfall, Rückschalten/erneutes Freischalten, exakte Mischwirkung und installierter Endstand offen. Aktueller Resize-Randfix auf späterem Build nur in Kerntests; Slot-Clamp-UI-Probe offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
@@ -13972,12 +13979,13 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "32a8b9d3c0dbd7a29eaf633f466ace1f0b57b38fb78b23a825176b089c1c73b2",
+          "build": "9d9b0adc243042030ac57af93b99c956805e5e229b3f17a61781e2305f36035c",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/group-cases.json",
@@ -13989,18 +13997,24 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
           "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall und installierter Endstand offen.",
           "candidate": {
             "state": "open",
-            "observation": "Acht Slots mit Slot-5-Fill und Smooth-Schalter blieben im aktuellen Kandidaten-Build nach Save und frischem Hostprozess erhalten.",
+            "observation": "Acht-Slot-Fill und Smooth-Checkbox bestanden erneut im isolierten Editlauf und nach frischem Hostprozess; zwei gesonderte Slot-Clamp-Proben endeten vor der Zielassertion bei der Pending-Handoff-/Werkzeugwahl.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall und installierter Endstand offen.",
+            "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall und installierter Endstand offen. Aktueller Resize-Randfix auf späterem Build nur in Kerntests; Slot-Clamp-UI-Probe offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
@@ -14061,27 +14075,34 @@
             "src/renderer.ts"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "32a8b9d3c0dbd7a29eaf633f466ace1f0b57b38fb78b23a825176b089c1c73b2",
+          "build": "9d9b0adc243042030ac57af93b99c956805e5e229b3f17a61781e2305f36035c",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
           "gap": "Sichtbarer Zwei-Textur-Normal/Smooth-Vergleich mit Original, Original-History und installierter Endstand offen.",
           "candidate": {
             "state": "open",
-            "observation": "Smooth-Checkbox erzeugte einen Geschoss-History-Schritt und unveränderte Masken; neue Terrain-Sprite, Save und frischer Hostprozess technisch bestanden.",
+            "observation": "Acht-Slot-Fill und Smooth-Checkbox bestanden erneut im isolierten Editlauf und nach frischem Hostprozess; zwei gesonderte Slot-Clamp-Proben endeten vor der Zielassertion bei der Pending-Handoff-/Werkzeugwahl.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Sichtbarer Zwei-Textur-Normal/Smooth-Vergleich mit Original, Original-History und installierter Endstand offen.",
+            "gap": "Sichtbarer Zwei-Textur-Normal/Smooth-Vergleich mit Original, Original-History und installierter Endstand offen. Aktueller Resize-Randfix auf späterem Build nur in Kerntests; Slot-Clamp-UI-Probe offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
@@ -14249,27 +14270,34 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/DD-024-TERRAIN-HOST-RESULT.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/src/features/material/terrain-selection-dialog.ts",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-TERRAIN-PERSISTENCE-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "32a8b9d3c0dbd7a29eaf633f466ace1f0b57b38fb78b23a825176b089c1c73b2",
+          "build": "9d9b0adc243042030ac57af93b99c956805e5e229b3f17a61781e2305f36035c",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
           "gap": "Acht Slots, zweite Maske und Smooth-Wert technisch gespeichert; vollständige Original-Slot-/Pinsel-/Bildpaarung und installierter Endstand offen.",
           "candidate": {
             "state": "open",
-            "observation": "Acht Slots mit Slot-5-Fill und Smooth-Schalter blieben im aktuellen Kandidaten-Build nach Save und frischem Hostprozess erhalten.",
+            "observation": "Acht-Slot-Fill und Smooth-Checkbox bestanden erneut im isolierten Editlauf und nach frischem Hostprozess; zwei gesonderte Slot-Clamp-Proben endeten vor der Zielassertion bei der Pending-Handoff-/Werkzeugwahl.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Acht Slots, zweite Maske und Smooth-Wert technisch gespeichert; vollständige Original-Slot-/Pinsel-/Bildpaarung und installierter Endstand offen.",
+            "gap": "Acht Slots, zweite Maske und Smooth-Wert technisch gespeichert; vollständige Original-Slot-/Pinsel-/Bildpaarung und installierter Endstand offen. Aktueller Resize-Randfix auf späterem Build nur in Kerntests; Slot-Clamp-UI-Probe offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
@@ -16638,30 +16666,37 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "32a8b9d3c0dbd7a29eaf633f466ace1f0b57b38fb78b23a825176b089c1c73b2",
+          "build": "9d9b0adc243042030ac57af93b99c956805e5e229b3f17a61781e2305f36035c",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-11-DD-024-08-10-24-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277594294-material-terrain-edit/dd024-eight-slots-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-eight-slots-fresh-render-20261006/evidence/1791277624275-material-terrain-reopen/dd024-eight-slots-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
           ],
           "gap": "Gepaarter Original-/Host-Zeichenstrich mit Slot 5 und installierter Endstand offen; Fill allein schließt den Malfall nicht.",
           "candidate": {
             "state": "open",
-            "observation": "Acht Slots mit Slot-5-Fill und Smooth-Schalter blieben im aktuellen Kandidaten-Build nach Save und frischem Hostprozess erhalten.",
+            "observation": "Acht-Slot-Fill und Smooth-Checkbox bestanden erneut im isolierten Editlauf und nach frischem Hostprozess; zwei gesonderte Slot-Clamp-Proben endeten vor der Zielassertion bei der Pending-Handoff-/Werkzeugwahl.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-11-SMOOTH-BLEND-CANDIDATE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278053155-material-terrain-edit/dd024-eight-slots-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-eight-20261006/evidence/1791278104507-material-terrain-reopen/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278611720-material-terrain-edit/dd024-eight-slots-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-smooth-after-review-20261006/evidence/1791278638675-material-terrain-reopen/dd024-eight-slots-steps.json"
             ],
-            "gap": "Gepaarter Original-/Host-Zeichenstrich mit Slot 5 und installierter Endstand offen; Fill allein schließt den Malfall nicht.",
+            "gap": "Gepaarter Original-/Host-Zeichenstrich mit Slot 5 und installierter Endstand offen; Fill allein schließt den Malfall nicht. Aktueller Resize-Randfix auf späterem Build nur in Kerntests; Slot-Clamp-UI-Probe offen.",
             "phaseStates": {
               "edit": "technical_pass",
               "reopen": "technical_pass"
