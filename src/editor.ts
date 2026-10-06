@@ -43,6 +43,8 @@ import {
   moveEntity,
   hit,
   smoothPath,
+  buildingPolygonPoints,
+  type BuildingCurve,
   portalPose,
   buildingContourEntries,
   nearestBuildingVertex,
@@ -112,6 +114,7 @@ interface Gesture {
   corner?: number;
   ridge?: number;
   moved: boolean;
+  curve?: boolean;
   points: Point[];
   erase: boolean;
 }
@@ -120,6 +123,7 @@ interface PathDraft {
   points: Point[];
   erase: boolean;
   smooth: boolean;
+  curves?: BuildingCurve[];
   sourceId?: string;
 }
 function isFloorTool(
@@ -1758,6 +1762,7 @@ export class DungeonEditor {
       corner: corner !== undefined && corner >= 0 ? corner : undefined,
       ridge: ridge !== undefined && ridge >= 0 ? ridge : undefined,
       moved: false,
+      curve: tool === "polygon" && e.shiftKey,
       points: [point],
       erase: isFloorTool(tool)
         ? floorEraseActive(this.settings.floorMode, e.altKey)
@@ -1827,6 +1832,29 @@ export class DungeonEditor {
     }
     void this.select(entity.id);
   }
+  private previewPolygonDraft(
+    draft: PathDraft,
+    cursor?: Point,
+    pendingCurve?: { vertex: Point; handle: Point },
+    erase = draft.erase,
+  ): void {
+    const vertices = [...draft.points],
+      curves = [...(draft.curves ?? [])];
+    if (pendingCurve) {
+      vertices.push(pendingCurve.vertex);
+      curves.push({ index: vertices.length - 1, handle: pendingCurve.handle });
+    } else if (cursor) vertices.push(cursor);
+    const unresolved = curves.some((curve) => curve.index === vertices.length - 1),
+      closed = vertices.length >= 3 && !unresolved;
+    this.renderer.previewPath(
+      buildingPolygonPoints(vertices, curves, closed),
+      closed,
+      false,
+      closed,
+      erase,
+      vertices,
+    );
+  }
   private update(e: PointerEvent): void {
     const g = this.gesture;
     if (!g) {
@@ -1853,22 +1881,26 @@ export class DungeonEditor {
             this.settings.corridorRadius,
             floorEraseActive(this.settings.floorMode, e.altKey),
           );
+        else if (this.pathDraft.tool === "polygon")
+          this.previewPolygonDraft(
+            this.pathDraft,
+            point,
+            undefined,
+            floorEraseActive(this.settings.floorMode, e.altKey),
+          );
         else
           this.renderer.previewPath(
             [...this.pathDraft.points, point],
-            this.pathDraft.tool === "polygon" ||
-              this.pathDraft.tool === "pattern" ||
+            this.pathDraft.tool === "pattern" ||
               this.pathDraft.tool === "roof" ||
               this.pathDraft.tool === "water" ||
               (this.pathDraft.tool === "path" && this.settings.path.closed),
             (this.pathDraft.tool === "wall" && this.settings.wall.smooth) ||
               (this.pathDraft.tool === "path" && this.settings.path.smooth),
-            this.pathDraft.tool === "polygon" ||
-              this.pathDraft.tool === "pattern" ||
+            this.pathDraft.tool === "pattern" ||
               this.pathDraft.tool === "roof" ||
               this.pathDraft.tool === "water",
-            this.pathDraft.tool === "polygon" &&
-              floorEraseActive(this.settings.floorMode, e.altKey),
+            false,
           );
       }
       return;
@@ -1878,6 +1910,7 @@ export class DungeonEditor {
       point = this.renderer.toWorld(local);
     if (Math.hypot(local.x - g.startLocal.x, local.y - g.startLocal.y) > 1)
       g.moved = true;
+    if (g.tool === "polygon" && e.shiftKey) g.curve = true;
     if (isFloorTool(g.tool))
       g.erase = floorEraseActive(this.settings.floorMode, e.altKey);
     else if (g.tool === "water" && this.settings.waterShape !== "brush")
@@ -1924,21 +1957,31 @@ export class DungeonEditor {
           this.settings.corridorRadius,
           g.erase,
         );
+      else if (g.tool === "polygon") {
+        const draft = this.pathDraft;
+        if (draft)
+          this.previewPolygonDraft(
+            draft,
+            g.curve && g.moved ? undefined : this.snap(point),
+            g.curve && g.moved
+              ? { vertex: this.snap(g.start), handle: this.snap(point) }
+              : undefined,
+            g.erase,
+          );
+      }
       else
         this.renderer.previewPath(
           points,
-          g.tool === "polygon" ||
-            g.tool === "pattern" ||
+          g.tool === "pattern" ||
             g.tool === "roof" ||
             g.tool === "water" ||
             (g.tool === "path" && this.settings.path.closed),
           (g.tool === "wall" && this.settings.wall.smooth) ||
             (g.tool === "path" && this.settings.path.smooth),
-          g.tool === "polygon" ||
-            g.tool === "pattern" ||
+          g.tool === "pattern" ||
             g.tool === "roof" ||
             g.tool === "water",
-          g.tool === "polygon" && g.erase,
+          false,
         );
     } else if (
       g.tool === "ellipse" ||
@@ -2181,12 +2224,14 @@ export class DungeonEditor {
       (g.tool === "water" && this.settings.waterShape === "polygon") ||
       (g.tool === "pattern" && this.settings.surfaceShape === "polygon")
     ) {
-      const next = this.snap(point),
+      const next = this.snap(
+          g.tool === "polygon" && g.curve && g.moved ? g.start : point,
+        ),
         extension =
           !this.pathDraft && g.tool === "wall" && e.ctrlKey
             ? this.wallExtension(next)
             : undefined,
-        draft =
+        draft: PathDraft =
           this.pathDraft?.tool === g.tool
             ? this.pathDraft
             : {
@@ -2198,6 +2243,7 @@ export class DungeonEditor {
                     (extension?.smooth ?? this.settings.wall.smooth)) ||
                   (g.tool === "path" && this.settings.path.smooth) ||
                   ((g.tool === "wall" || g.tool === "path") && e.shiftKey),
+                curves: [],
                 sourceId: extension?.id,
               },
         duplicate = draft.points.some(
@@ -2222,7 +2268,15 @@ export class DungeonEditor {
           (e.detail >= 2 && draft.points.length >= (closed ? 3 : 2));
       if (g.tool === "polygon" || g.tool === "corridor")
         draft.erase = g.erase;
-      if (!finish && !duplicate) draft.points.push(next);
+      if (!finish && !duplicate) {
+        draft.points.push(next);
+        if (g.tool === "polygon" && g.curve && g.moved &&
+            draft.points.length >= 2)
+          (draft.curves ??= []).push({
+            index: draft.points.length - 1,
+            handle: this.snap(point),
+          });
+      }
       if (finish) {
         this.pathDraft = undefined;
         if (g.tool === "corridor")
@@ -2230,7 +2284,8 @@ export class DungeonEditor {
         else this.renderer.previewPath([], false, false);
         if (g.tool === "polygon") {
           this.paintTask = this.composeFloor(
-            [{ outer: draft.points, holes: [] }],
+            [{ outer: buildingPolygonPoints(draft.points, draft.curves ?? [], true),
+              holes: [] }],
             draft.erase,
           );
         } else if (g.tool === "corridor") {
@@ -2311,16 +2366,17 @@ export class DungeonEditor {
             this.settings.corridorRadius,
             g.erase,
           );
+        else if (g.tool === "polygon")
+          this.previewPolygonDraft(draft);
         else
           this.renderer.previewPath(
             draft.points,
             closed,
             draft.smooth,
-            g.tool === "polygon" ||
-              g.tool === "pattern" ||
+            g.tool === "pattern" ||
               g.tool === "roof" ||
               g.tool === "water",
-            (g.tool === "polygon" || g.tool === "water") && draft.erase,
+            g.tool === "water" && draft.erase,
           );
       }
     } else if (this.isBrushTool(g.tool)) {
@@ -3077,7 +3133,8 @@ export class DungeonEditor {
     else this.renderer.previewPath([], false, false);
     if (draft.tool === "polygon") {
       this.paintTask = this.composeFloor(
-        [{ outer: draft.points, holes: [] }],
+        [{ outer: buildingPolygonPoints(draft.points, draft.curves ?? [], true),
+          holes: [] }],
         draft.erase,
       );
     } else if (draft.tool === "corridor") {
@@ -3164,9 +3221,11 @@ export class DungeonEditor {
       e.target instanceof HTMLSelectElement
     )
       return;
-    if (command && e.key.toLowerCase() === "z") {
+    if (command && (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "y")) {
       e.preventDefault();
-      this.run(() => this.stepHistory(e.shiftKey ? "redo" : "undo"));
+      this.run(() => this.stepHistory(
+        e.key.toLowerCase() === "y" || e.shiftKey ? "redo" : "undo",
+      ));
       return;
     }
     if (command && e.key.toLowerCase() === "c") {
@@ -3238,6 +3297,10 @@ export class DungeonEditor {
     if (e.key === "Backspace" && this.pathDraft) {
       e.preventDefault();
       this.pathDraft.points.pop();
+      if (this.pathDraft.tool === "polygon")
+        this.pathDraft.curves = this.pathDraft.curves?.filter(
+          (curve) => curve.index < this.pathDraft!.points.length,
+        );
       if (
         this.pathDraft.tool === "polygon" ||
         this.pathDraft.tool === "corridor"
@@ -3252,22 +3315,21 @@ export class DungeonEditor {
           this.settings.corridorRadius,
           this.pathDraft.erase,
         );
+      else if (this.pathDraft.tool === "polygon")
+        this.previewPolygonDraft(this.pathDraft);
       else
         this.renderer.previewPath(
           this.pathDraft.points,
-          this.pathDraft.tool === "polygon" ||
-            this.pathDraft.tool === "pattern" ||
+          this.pathDraft.tool === "pattern" ||
             this.pathDraft.tool === "roof" ||
             this.pathDraft.tool === "water" ||
             (this.pathDraft.tool === "path" && this.settings.path.closed),
           (this.pathDraft.tool === "wall" && this.settings.wall.smooth) ||
             (this.pathDraft.tool === "path" && this.settings.path.smooth),
-          this.pathDraft.tool === "polygon" ||
-            this.pathDraft.tool === "pattern" ||
+          this.pathDraft.tool === "pattern" ||
             this.pathDraft.tool === "roof" ||
             this.pathDraft.tool === "water",
-          this.pathDraft.tool === "polygon" &&
-            this.pathDraft.erase,
+          false,
         );
       return;
     }
@@ -3298,7 +3360,9 @@ export class DungeonEditor {
       e.stopPropagation();
       if (this.gesture?.temporaryPan) return;
       if (this.gesture || this.pathDraft || this.paintWorker) {
+        const leaveBuilding = isFloorTool(this.tool);
         this.cancel();
+        if (leaveBuilding) this.setTool("select");
         return;
       }
       if (this.root.classList.contains("dn-maximized")) {
@@ -3337,13 +3401,7 @@ export class DungeonEditor {
             this.pathDraft.erase,
           );
         else if (this.pathDraft?.tool === "polygon")
-          this.renderer.previewPath(
-            this.pathDraft.points,
-            true,
-            false,
-            true,
-            this.pathDraft.erase,
-          );
+          this.previewPolygonDraft(this.pathDraft);
       } else this.setTool("ellipse");
     }
     if (e.key === "w") this.setTool("wall");

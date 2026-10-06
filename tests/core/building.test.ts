@@ -3,10 +3,27 @@ import assert from "node:assert/strict";
 import { parseDocument, type Door, type Building, type Polygon, isRoom } from "../../src/model";
 import { Session } from "../../src/session";
 import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation } from "../../src/commands";
-import { boundarySegments, alignedPortalAt, portalPose, rectangle, reanchorPortal, buildingContourEntries, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
+import { boundarySegments, alignedPortalAt, portalPose, rectangle, reanchorPortal, buildingContourEntries, buildingPolygonPoints, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
 import { composeBuilding } from "../../src/compute";
 import { floorEraseActive } from "../../src/drawing";
 import { newDocument } from "./fixtures";
+
+test("Building Shift curve follows the next polygon point and survives sampled contour storage", () => {
+  const base = [{ x: 1, y: 2 }, { x: 6, y: 2 }, { x: 6, y: 5 }],
+    curves = [{ index: 2, handle: { x: 5, y: 4 } }],
+    pending = buildingPolygonPoints(base, curves),
+    short = buildingPolygonPoints([...base, { x: 4, y: 5 }], curves, true),
+    wide = buildingPolygonPoints([...base, { x: 1, y: 5 }], curves, true);
+  assert.equal(pending.length, 19);
+  assert.equal(short.length, 20);
+  assert.equal(wide.length, 20);
+  assert.equal(short[1]!.x, 6);
+  assert.ok(Math.abs(short[2]!.x - 1510 / 256) < 0.015);
+  assert.ok(Math.abs(short[2]!.y - 551 / 256) < 0.015);
+  assert.ok(Math.abs(Math.min(...short.slice(2, 19).map(p => p.x)) - 1324 / 256) < 0.02);
+  assert.ok(Math.abs(Math.min(...wide.slice(2, 19).map(p => p.x)) - 1007 / 256) < 0.02);
+  assert.deepEqual(buildingPolygonPoints(base, [], true), base);
+});
 
 
 test("bound portals snap to the center of a matching corridor endpoint", () => {

@@ -1626,6 +1626,7 @@ export class MapRenderer {
     smooth: boolean,
     fill = false,
     erase = false,
+    markers: readonly Point[] = points,
   ): void {
     const g = this.preview;
     g.clear();
@@ -1638,7 +1639,7 @@ export class MapRenderer {
     const color = erase ? 0xc93c3c : 0x008da8;
     if (fill && closed) g.fill({ color, alpha: 0.15 });
     g.stroke({ color, width: 2 / this.camera.scale });
-    for (const point of points)
+    for (const point of markers)
       g.circle(point.x, point.y, 3 / this.camera.scale).fill(color);
     this.invalidate();
   }

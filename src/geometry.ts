@@ -45,6 +45,61 @@ export function ellipse(a: Point, b: Point, count = 32): Point[] {
     return { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry };
   });
 }
+export interface BuildingCurve {
+  readonly index: number;
+  readonly handle: Point;
+}
+
+/** Expand Shift-dragged polygon vertices into the sampled contour stored by Building Tool. */
+export function buildingPolygonPoints(
+  vertices: readonly Point[],
+  curves: readonly BuildingCurve[],
+  closed = false,
+): Point[] {
+  if (!vertices.length || !curves.length) return [...vertices];
+  const byIndex = new Map(curves.map((curve) => [curve.index, curve.handle]));
+  const result: Point[] = [vertices[0]!];
+  for (let index = 1; index < vertices.length; index++) {
+    const start = vertices[index - 1]!,
+      end = vertices[index]!,
+      handle = byIndex.get(index);
+    if (!handle) {
+      result.push(end);
+      continue;
+    }
+    const distance = Math.hypot(end.x - start.x, end.y - start.y);
+    if (distance < 1e-6) {
+      result.push(end);
+      continue;
+    }
+    const tangent = {
+        x: (end.x - start.x) / distance,
+        y: (end.y - start.y) / distance,
+      },
+      normal = { x: -tangent.y, y: tangent.x },
+      next = vertices[index + 1] ?? (closed ? vertices[0]! : handle),
+      lateral = 0.553 * ((next.x - end.x) * normal.x +
+        (next.y - end.y) * normal.y),
+      pull = 1.35 * ((handle.x - end.x) * tangent.x +
+        (handle.y - end.y) * tangent.y),
+      bend = { x: end.x + normal.x * lateral, y: end.y + normal.y * lateral },
+      first = { x: bend.x + tangent.x * pull,
+        y: bend.y + tangent.y * pull };
+    // Dungeondraft's saved contour has sixteen midpoint samples before the vertex.
+    for (let step = 0; step < 16; step++) {
+      const t = (step + 0.5) / 16,
+        u = 1 - t;
+      result.push({
+        x: u ** 3 * start.x + 3 * u ** 2 * t * first.x +
+          3 * u * t ** 2 * bend.x + t ** 3 * end.x,
+        y: u ** 3 * start.y + 3 * u ** 2 * t * first.y +
+          3 * u * t ** 2 * bend.y + t ** 3 * end.y,
+      });
+    }
+    result.push(end);
+  }
+  return result;
+}
 export function inside(point: Point, points: readonly Point[]): boolean {
   let result = false;
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {

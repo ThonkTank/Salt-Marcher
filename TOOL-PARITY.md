@@ -137,3 +137,11 @@ Die folgenden Vereinfachungen waren im Gleichwertigkeitslauf ausdrücklich zugel
 - Dachlicht und Wasserufer verwenden einfache, stabile Darstellung statt Dungeondrafts Shadern. Form, Bedeutung und Editierbarkeit bleiben erhalten.
 
 Ob diese Abweichungen beim strikten Abgleich bestehen können, ist offen.
+
+## Folge-Roadmap: Phase 1 Umsetzungskandidat
+
+Der Kandidat `main.js` mit SHA-256 `8155097ccf7f7e0e038894e5a922dbf7ea2401680d172f7eb971f5732db7e73c` ergänzt Shift-gezogene Building-Polygonkurven und Strg+Y. Escape verwirft einen laufenden Building-Entwurf und kehrt wie Dungeondraft 1.2.0.1 zur inaktiven Werkzeugansicht zurück. Die gemeinsame Boden-/Wandkontur bleibt Grundlage für boolesches Alt-Radieren und Portal-Follow.
+
+Direkte Originalkarten belegen zwei Kurven mit verschiedenem Folgepunkt, deren unveränderte Neuöffnung, den Alt-Schnitt durch einen wandgebundenen Durchgang einschließlich Undo/Redo und Neuöffnung sowie Escape bei Rechteck, Ellipse, Polygon und gehaltenem Alt-Radierzug. Die Originalfolge steht in `/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md`. Der isoliert installierte Obsidian-Kandidat bestand die gleichen Grundformen und Gesten mit Undo/Redo, fünf gespeicherten Grundrissen und einer zweiten Karte mit entferntem Portal. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791316565338-parity-phase1-edit/result.json` und `/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791316703303-parity-phase1-reopen/result.json`; Typprüfung, 116 Kerntests und Build bestehen.
+
+Phase 1 ist noch nicht freigegeben: Die allgemeine Shift-Kurvenregel in weiteren Richtungen, Snap-Umschaltung mitten im Entwurf, native Rücktaste bis zum leeren Entwurf und die frische Originalöffnung genau der Alt-Ellipsen-/Polygon-Schnitte fehlen. Der separate Reviewlauf und die physische Eingabe in Phase 7 stehen aus. Die Einzelgrenzen sind in `acceptance.json` bei `DD-011.01–.10` und `.13–.15` vermerkt; der produktiv installierte Vault-Build blieb unverändert.
