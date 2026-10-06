@@ -2767,7 +2767,7 @@
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
-  "updated": "2026-10-06",
+  "updated": "2026-10-07",
   "strictParity": {
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
@@ -2872,6 +2872,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-shapes-20261007/evidence/1791326854195-parity-phase1-shapes-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "4×3-Rechteck: gehaltene Maßvorschau, vierpunktiger Boden, Wand, Undo/Redo und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json"
+          ]
         }
       },
       {
@@ -2971,6 +2983,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Ellipsenvorschau 3×2, 28 Punkte; weitere gemessene Größen und Alt-Innenloch mit Wand, History und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json"
+          ]
         }
       },
       {
@@ -3064,6 +3089,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Doppelklick schließt das Building-Polygon mit Boden und Wand; Speichern und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json"
+          ]
         }
       },
       {
@@ -3151,6 +3189,17 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Nativer 1×3-Polygongang mit vier Punkten, umlaufender Wand, History und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json"
+          ]
         }
       },
       {
@@ -3230,6 +3279,17 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
+          ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Rücktaste entfernt Punkt und sichtbare Vorschau, leert den Einpunktentwurf ohne Kartenwirkung und nimmt einen Shift-Schritt zurück.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-backspace-20261007/evidence/1791327951769-parity-phase1-edit/result.json"
           ]
         }
       },
@@ -3339,6 +3399,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Drei gehaltene Shift-Vorschauen, Kontursamples, Selbstschnitt, getrennte Kurven, Wand, History und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json"
+          ]
         }
       },
       {
@@ -3424,6 +3498,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Alt-Rechteck erzeugt ein reversibles Innenloch; die gemessenen Randschnitte erhalten und entfernen das gebundene Portal samt Neuöffnung.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327861295-parity-phase1-repair-reopen/result.json"
+          ]
         }
       },
       {
@@ -3506,6 +3593,17 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Alt-Ellipse erzeugt ein Innenloch mit Wand; History und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json"
+          ]
         }
       },
       {
@@ -3582,6 +3680,17 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
+          ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Alt-Polygon erzeugt ein Innenloch mit Wand; History und Neuöffnung bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json"
           ]
         }
       },
@@ -3663,6 +3772,18 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json"
+          ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Escape verwirft Rechteck-, Ellipsen-, Polygon- und Alt-Radierentwurf ohne Kartenänderung; Editor bleibt offen.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/escape-rectangle-timeline.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-repair-20261007/evidence/1791327345236-parity-phase1-repair-edit/result.json"
           ]
         }
       },
@@ -3872,6 +3993,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json"
           ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Snap an/aus, positive Halbfeldgrenze, freie Koordinaten, Wechsel im Polygonentwurf und Strg+S an→aus→an bestanden.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327861295-parity-phase1-repair-reopen/result.json"
+          ]
         }
       },
       {
@@ -3952,6 +4087,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json"
+          ]
+        },
+        "phase1ThirdReview": {
+          "date": "2026-10-07",
+          "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+          "result": "measured_sequence_passed",
+          "finding": "Strg+Y stellt Rechteck, Radierungen und Kurven als vollständige History-Schritte wieder her.",
+          "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json"
           ]
         }
       },
@@ -47818,6 +47965,39 @@
       "hostFocusedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-repair-20261007/evidence/1791327562115-parity-phase1-repair-reopen/result.json",
       "verification": "Alle sechs Edit-/Neuöffnungsläufe und die erzwungene Capture-Verlustprobe bestanden ohne Hostfehler; npm run check, 119 Kerntests und npm run build bestanden. Produktive Installation unverändert.",
       "next": "Getrennter Review des Kandidaten über zwölf Phase-1-Unterfälle und das Raum-/Portal-Quertor. DD-011.15 vollständig Phase 3; physische Eingabe Phase 7."
+    },
+    "phase1ThirdReview": {
+      "date": "2026-10-07",
+      "result": "gate_passed",
+      "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+      "assignedCases": [
+        "DD-011.01",
+        "DD-011.02",
+        "DD-011.03",
+        "DD-011.04",
+        "DD-011.05",
+        "DD-011.06",
+        "DD-011.07",
+        "DD-011.08",
+        "DD-011.09",
+        "DD-011.10",
+        "DD-011.13",
+        "DD-011.14"
+      ],
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-20261007/phase1-review.md",
+      "hostReviewEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327693334-parity-phase1-shapes-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-shapes-20261007/evidence/1791327704216-parity-phase1-shapes-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327710730-parity-phase1-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-main-20261007/evidence/1791327841852-parity-phase1-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327861295-parity-phase1-repair-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-backspace-20261007/evidence/1791327951769-parity-phase1-edit/result.json"
+      ],
+      "crossCaseGate": "Nummerierter Raum 1 und Key-Bytes bleiben über Überlappung, Alt-Innenloch, Portal-Erhalt/Entfernen, Undo/Redo, Speichern und Frischstart konsistent. Der tatsächliche Key-Datei-Hash wurde zusätzlich mit dem gespeicherten Reviewhash verglichen.",
+      "verification": "Originalbelege aller zwölf Unterfälle, unabhängige Hostläufe auf einem Kandidaten-Hash, npm run check, 119/119 Kerntests und npm run build geprüft. Keine Phase-1-Nachbesserung offen; produktive Installation unverändert.",
+      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7.",
+      "next": "Eigener Phase-1-Aufräumplanlauf; danach getrennter Umsetzungs- und Reviewlauf der Aufräumphase."
     }
   }
 }

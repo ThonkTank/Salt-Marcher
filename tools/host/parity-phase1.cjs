@@ -410,5 +410,19 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "multi-curve-reopen.png") });
     checks.push("Fresh Obsidian process keeps both Shift curves and their wall");
   }
-  return { edit, reopen };
+  async function backspacePreview() {
+    await open();
+    await chooseTool("Polygonraum");
+    for (const point of [{ x: 2, y: 2 }, { x: 5, y: 2 },
+      { x: 5, y: 5 }, { x: 2, y: 5 }]) await click(point);
+    assert.equal((await state()).draft.length, 4);
+    await page.screenshot({ path: path.join(out, "backspace-before.png") });
+    await page.keyboard.press("Backspace");
+    assert.equal((await state()).draft.length, 3);
+    await page.screenshot({ path: path.join(out, "backspace-after.png") });
+    assert.equal((await buildings()).length, 0);
+    checks.push("Backspace removes the visible last polygon point without committing a Building");
+  }
+  return { edit: process.env.DUNGEON_PHASE1_REVIEW_ONLY === "backspace"
+    ? backspacePreview : edit, reopen };
 };
