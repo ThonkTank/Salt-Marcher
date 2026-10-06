@@ -979,12 +979,13 @@ export class DungeonEditor {
     }, options);
     // Capture can disappear while a drag is still pressed. Pointer-up,
     // pointer-cancel, Escape or window blur decides how the gesture ends.
+    const outsideUncapturedGesture = (e: PointerEvent): boolean =>
+      this.gesture?.pointer === e.pointerId &&
+      !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas;
     window.addEventListener(
       "pointermove",
       (e) => {
-        const gesture = this.gesture;
-        if (gesture?.pointer === e.pointerId &&
-            !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
+        if (outsideUncapturedGesture(e))
           this.run(() => this.update(e));
       },
       { ...options, capture: true },
@@ -992,9 +993,7 @@ export class DungeonEditor {
     window.addEventListener(
       "pointerup",
       (e) => {
-        const gesture = this.gesture;
-        if (gesture?.pointer === e.pointerId &&
-            !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
+        if (outsideUncapturedGesture(e))
           this.run(() => this.commit(e));
       },
       { ...options, capture: true },
@@ -1002,9 +1001,7 @@ export class DungeonEditor {
     window.addEventListener(
       "pointercancel",
       (e) => {
-        const gesture = this.gesture;
-        if (gesture?.pointer === e.pointerId &&
-            !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
+        if (outsideUncapturedGesture(e))
           this.cancel();
       },
       { ...options, capture: true },
@@ -1858,6 +1855,20 @@ export class DungeonEditor {
       true,
     );
   }
+  private refreshFloorPathPreview(
+    draft: PathDraft,
+    cursor?: Point,
+    erase = draft.erase,
+  ): void {
+    if (draft.tool === "corridor")
+      this.renderer.previewBrush(
+        cursor ? [...draft.points, cursor] : draft.points,
+        this.settings.corridorRadius,
+        erase,
+      );
+    else if (draft.tool === "polygon")
+      this.previewPolygonDraft(draft, cursor, undefined, erase);
+  }
   private update(e: PointerEvent): void {
     const g = this.gesture;
     if (!g) {
@@ -1878,19 +1889,10 @@ export class DungeonEditor {
       }
       if (this.pathDraft) {
         const point = this.snap(this.renderer.toWorld(this.renderer.local(e)));
-        if (this.pathDraft.tool === "corridor")
-          this.renderer.previewBrush(
-            [...this.pathDraft.points, point],
-            this.settings.corridorRadius,
-            floorEraseActive(this.settings.floorMode, e.altKey),
-          );
-        else if (this.pathDraft.tool === "polygon")
-          this.previewPolygonDraft(
-            this.pathDraft,
-            point,
-            undefined,
-            floorEraseActive(this.settings.floorMode, e.altKey),
-          );
+        if (this.pathDraft.tool === "corridor" ||
+            this.pathDraft.tool === "polygon")
+          this.refreshFloorPathPreview(this.pathDraft, point,
+            floorEraseActive(this.settings.floorMode, e.altKey));
         else
           this.renderer.previewPath(
             [...this.pathDraft.points, point],
@@ -2291,96 +2293,11 @@ export class DungeonEditor {
           });
       }
       if (finish) {
-        this.pathDraft = undefined;
-        if (g.tool === "corridor")
-          this.renderer.previewBrush([], this.settings.corridorRadius, g.erase);
-        else this.renderer.previewPath([], false, false);
-        if (g.tool === "polygon") {
-          this.paintTask = this.composeFloor(
-            [{ outer: buildingPolygonPoints(draft.points, draft.curves ?? [], true),
-              holes: [] }],
-            draft.erase,
-          );
-        } else if (g.tool === "corridor") {
-          this.paintTask = this.composeFloor(
-            undefined,
-            draft.erase,
-            draft.points,
-          );
-        } else if (g.tool === "wall") {
-          const source = draft.sourceId
-            ? this.session.entities.get(draft.sourceId)
-            : undefined;
-          if (source?.kind === "wall") {
-            const wall = {
-              ...source,
-              points: draft.points,
-              smooth: draft.smooth,
-            };
-            this.session.execute({
-              label: "Wand fortsetzen",
-              entities: [{ id: wall.id, before: source, after: wall }],
-            });
-            void this.select(wall.id);
-          } else {
-            const wall = createWall(
-              this.session,
-              this.renderer.floorId,
-              draft.points,
-              draft.smooth,
-              false,
-              this.settings.wall.width,
-              this.settings.wall.assetId,
-              this.settings.wall.layer,
-              this.settings.wall.shadow,
-            );
-            void this.select(wall.id);
-          }
-        } else if (g.tool === "pattern") {
-          const surface = createSurface(
-            this.session,
-            this.renderer.floorId,
-            "pattern",
-            draft.points,
-            {
-              ...this.settings.surfaces.pattern,
-              material: this.settings.material,
-            },
-          );
-          void this.select(surface.id);
-        } else if (g.tool === "roof") {
-          const roof = createRoof(
-            this.session,
-            this.renderer.floorId,
-            draft.points,
-            { ...this.settings.roof, material: this.settings.material },
-          );
-          void this.select(roof.id);
-        } else if (g.tool === "water") {
-          this.paintTask = this.composeArea(
-            "water",
-            [{ outer: draft.points, holes: [] }],
-            draft.erase,
-          );
-        } else {
-          const path = createMapPath(
-            this.session,
-            this.renderer.floorId,
-            draft.points,
-            { ...this.settings.path, material: this.settings.material },
-          );
-          void this.select(path.id);
-        }
+        this.completePathDraft(draft);
       } else {
         this.pathDraft = draft;
-        if (g.tool === "corridor")
-          this.renderer.previewBrush(
-            draft.points,
-            this.settings.corridorRadius,
-            g.erase,
-          );
-        else if (g.tool === "polygon")
-          this.previewPolygonDraft(draft);
+        if (g.tool === "corridor" || g.tool === "polygon")
+          this.refreshFloorPathPreview(draft);
         else
           this.renderer.previewPath(
             draft.points,
@@ -3137,6 +3054,9 @@ export class DungeonEditor {
       this.host.notice("Für diese Kontur fehlen noch Punkte.");
       return;
     }
+    this.completePathDraft(draft);
+  }
+  private completePathDraft(draft: PathDraft): void {
     this.pathDraft = undefined;
     if (draft.tool === "corridor")
       this.renderer.previewBrush(
@@ -3328,14 +3248,9 @@ export class DungeonEditor {
           this.settings.floorMode,
           e.altKey,
         );
-      if (this.pathDraft.tool === "corridor")
-        this.renderer.previewBrush(
-          this.pathDraft.points,
-          this.settings.corridorRadius,
-          this.pathDraft.erase,
-        );
-      else if (this.pathDraft.tool === "polygon")
-        this.previewPolygonDraft(this.pathDraft);
+      if (this.pathDraft.tool === "corridor" ||
+          this.pathDraft.tool === "polygon")
+        this.refreshFloorPathPreview(this.pathDraft);
       else
         this.renderer.previewPath(
           this.pathDraft.points,
@@ -3413,14 +3328,9 @@ export class DungeonEditor {
           );
         this.host.persistToolDefaults?.();
         this.refreshProperties();
-        if (this.pathDraft?.tool === "corridor")
-          this.renderer.previewBrush(
-            this.pathDraft.points,
-            this.settings.corridorRadius,
-            this.pathDraft.erase,
-          );
-        else if (this.pathDraft?.tool === "polygon")
-          this.previewPolygonDraft(this.pathDraft);
+        if (this.pathDraft?.tool === "corridor" ||
+            this.pathDraft?.tool === "polygon")
+          this.refreshFloorPathPreview(this.pathDraft);
       } else this.setTool("ellipse");
     }
     if (e.key === "w") this.setTool("wall");

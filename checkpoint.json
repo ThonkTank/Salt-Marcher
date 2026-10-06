@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: zweiter Phase-1-Review abgeschlossen; Phasentor wegen instabilem Eingabepfad offen",
+  "phase": "Folge-Roadmap: Phase-1-Aufräum-Umsetzung abgeschlossen; getrennter Aufräum-Review offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -773,19 +773,19 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_cleanup_plan_ready",
+    "status": "phase1_cleanup_implementation_ready_for_review",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-1-Aufräum-Umsetzungslauf nach ROADMAP-PARITY-CLEANUP-1-PLAN.md: PathDraft-Abschluss vereinheitlichen, Selbstschnitt-Vorprüfung räumlich eingrenzen und Capture-/QA-Listener bereinigen; danach Basistests, Benchmark, isolierte Hostfolgen und Frischstarts. Anschließend eigener Aufräum-Review.",
-    "note": "Phase-1-Aufräumplan nach bestandenem Fachreview erstellt. Konkrete Befunde: doppelter PathDraft-Abschluss, quadratische Selbstschnitt-Vorprüfung (Median 9,397 ms bei 2.048 und 36,181 ms bei 4.096 Punkten), wiederholter Capture-Guard und bleibende Diagnose-Listener. Produktcode und produktiver Vault-Build in diesem Planlauf unverändert.",
-    "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+    "nextRun": "Eigener Phase-1-Aufräum-Review nach ROADMAP-PARITY-CLEANUP-1-PLAN.md: Code-Diff, PathDraft-Abschluss, Kantenkandidaten, Listener-Lebensdauer, Benchmark und sechs Host-/Frischstartläufe unabhängig prüfen. Erst danach Aufräumtor entscheiden; bei Lücke getrennter Nachbesserungslauf.",
+    "note": "Phase-1-Aufräum-Umsetzung auf isoliertem Kandidaten: PathDraft-Abschluss, Polygon-/Gang-Vorschau und Pointer-Fallback gebündelt; Selbstschnitt-Vorprüfung räumlich eingegrenzt. Median 9,098 → 0,665 ms (2.048 Punkte) und 36,158 → 1,164 ms (4.096 Punkte). 119 Kerntests, Build, alle drei Hostfolgen samt Neustart sowie Off-Canvas-Capture-Probe bestanden. Produktiver Vault-Build unverändert; Aufräumtor noch offen.",
+    "candidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Getrennter Aufräum-Umsetzungslauf und anschließender Aufräum-Review; bei Lücken Nachbesserung und erneuter Review. Phase 2 erst nach bestandenem Aufräumtor. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7.",
+    "open": "Getrennter Aufräum-Review; bei Lücken Nachbesserung und erneuter Review. Phase 2 erst nach bestandenem Aufräumtor. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -828,6 +828,9 @@
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-backspace-20261007/evidence/1791327951769-parity-phase1-edit/result.json"
     ],
     "cleanupPhase1Plan": "ROADMAP-PARITY-CLEANUP-1-PLAN.md",
-    "cleanupPhase1Baseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-plan-20261007/compute-baseline.json"
+    "cleanupPhase1Baseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-plan-20261007/compute-baseline.json",
+    "cleanupPhase1Implementation": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/cleanup-implementation.md",
+    "cleanupPhase1BuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
+    "cleanupPhase1Verification": "npm run check, 119/119 Kerntests, npm run build; Benchmark vor/nach; drei isolierte Phase-1-Hostfolgen und je frischer Prozess; Capture-Verlust außerhalb Canvas mit genau einem Abschluss, Escape und Pointer-Cancel."
   }
 }

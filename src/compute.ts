@@ -69,21 +69,31 @@ const polygons = (value: MultiPolygon): Polygon[] =>
   }));
 const cross = (a: Point, b: Point): number => a.x * b.y - a.y * b.x;
 function ringSelfIntersects(ring: readonly Point[]): boolean {
-  for (let i = 0; i < ring.length; i++) {
-    const a = ring[i]!, b = ring[(i + 1) % ring.length]!,
-      ab = { x: b.x - a.x, y: b.y - a.y };
-    for (let j = i + 2; j < ring.length; j++) {
-      if (i === 0 && j === ring.length - 1) continue;
-      const c = ring[j]!, d = ring[(j + 1) % ring.length]!,
-        cd = { x: d.x - c.x, y: d.y - c.y },
-        determinant = cross(ab, cd);
+  const edges = ring.map((a, index) => {
+    const b = ring[(index + 1) % ring.length]!;
+    return {
+      index, a,
+      direction: { x: b.x - a.x, y: b.y - a.y },
+      minX: Math.min(a.x, b.x), maxX: Math.max(a.x, b.x),
+      minY: Math.min(a.y, b.y), maxY: Math.max(a.y, b.y),
+    };
+  }).sort((a, b) => a.minX - b.minX || a.index - b.index);
+  let active: typeof edges = [];
+  for (const edge of edges) {
+    active = active.filter(previous => previous.maxX >= edge.minX);
+    for (const previous of active) {
+      const distance = Math.abs(previous.index - edge.index);
+      if (distance === 1 || distance === ring.length - 1 ||
+          previous.maxY < edge.minY || edge.maxY < previous.minY) continue;
+      const determinant = cross(previous.direction, edge.direction);
       if (Math.abs(determinant) < 1e-12) continue;
-      const ac = { x: c.x - a.x, y: c.y - a.y },
-        alongAB = cross(ac, cd) / determinant,
-        alongCD = cross(ac, ab) / determinant;
+      const ac = { x: edge.a.x - previous.a.x, y: edge.a.y - previous.a.y },
+        alongAB = cross(ac, edge.direction) / determinant,
+        alongCD = cross(ac, previous.direction) / determinant;
       if (alongAB > 1e-8 && alongAB < 1 - 1e-8 &&
           alongCD > 1e-8 && alongCD < 1 - 1e-8) return true;
     }
+    active.push(edge);
   }
   return false;
 }

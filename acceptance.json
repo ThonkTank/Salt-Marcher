@@ -47998,6 +47998,28 @@
       "verification": "Originalbelege aller zwölf Unterfälle, unabhängige Hostläufe auf einem Kandidaten-Hash, npm run check, 119/119 Kerntests und npm run build geprüft. Keine Phase-1-Nachbesserung offen; produktive Installation unverändert.",
       "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7.",
       "next": "Eigener Phase-1-Aufräumplanlauf; danach getrennter Umsetzungs- und Reviewlauf der Aufräumphase."
+    },
+    "phase1CleanupImplementation": {
+      "date": "2026-10-07",
+      "state": "candidate_ready_for_separate_cleanup_review",
+      "candidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/cleanup-implementation.md",
+      "benchmarkBefore": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/before/building-benchmark.json",
+      "benchmarkAfter": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/after-compute/building-benchmark.json",
+      "benchmarkMedianMs": { "points2048": [9.098, 0.665], "points4096": [36.158, 1.164] },
+      "hostEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328415402-parity-phase1-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328460926-parity-phase1-shapes-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328544529-parity-phase1-shapes-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328549809-parity-phase1-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328764538-parity-phase1-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328769673-parity-phase1-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328887087-parity-phase1-repair-reopen/result.json"
+      ],
+      "verification": "npm run check, 119/119 Kerntests und npm run build bestanden. Sechs vollständige Host-/Frischstartläufe und die zusätzliche Off-Canvas-Capture-Probe bestanden; Raum-ID, Key-Bytes, Portal, Konturen und Undo/Redo enthalten. Produktiver Build unverändert.",
+      "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3.",
+      "next": "Eigener Aufräum-Reviewlauf: Diff, Performance, vollständige Hostbelege und Listener-Lebensdauer prüfen und erst dort das Aufräumtor entscheiden."
     }
   }
 }

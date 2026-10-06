@@ -214,7 +214,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "room-final.png") });
     checks.push("Numbered room retains ID and exact key bytes through overlap, Alt hole, portal cuts, history and save");
   }
-  async function inputTrace(forceCaptureLoss = false) {
+  async function inputTrace(forceCaptureLoss = false, outsideCanvas = false) {
     const startTrace = () => page.evaluate(() => {
       window.__phase1InputAbort?.abort();
       const abort = new AbortController();
@@ -224,6 +224,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       const canvas = editor?.renderer.canvas;
       if (!canvas) throw new Error("Canvas missing for input trace");
       const record = (where) => (event) => {
+        if (window.__phase1InputTrace.length >= 512) return;
         const current = app.workspace.activeLeaf?.view?.editor;
         const pointer = event instanceof PointerEvent ? event.pointerId : undefined;
         window.__phase1InputTrace.push({
@@ -263,6 +264,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
           .filter((entity) => entity.kind === "building").length,
         trace: window.__phase1InputTrace ?? [] };
     });
+    const stopTrace = () => page.evaluate(() => window.__phase1InputAbort?.abort());
     const releaseCapture = () => page.evaluate(() => {
       const editor = app.workspace.activeLeaf?.view?.editor;
       const pointer = editor?.gesture?.pointer;
@@ -272,20 +274,39 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       if (captured) canvas.releasePointerCapture(pointer);
       return { gesture: true, captured };
     });
+    const outside = () => page.evaluate(() => {
+      const canvas = app.workspace.activeLeaf.view.editor.renderer.canvas;
+      const box = canvas.getBoundingClientRect();
+      const candidates = [
+        { x: box.right + 12, y: box.top + box.height / 2 },
+        { x: box.left - 12, y: box.top + box.height / 2 },
+        { x: box.left + box.width / 2, y: box.bottom + 12 },
+        { x: box.left + box.width / 2, y: box.top - 12 },
+      ];
+      const point = candidates.find(({ x, y }) => x >= 0 && x < innerWidth &&
+        y >= 0 && y < innerHeight && document.elementFromPoint(x, y) !== canvas);
+      if (!point) throw new Error("No point outside canvas inside editor window");
+      return point;
+    });
     await open("Room");
+    const outsidePoint = outsideCanvas ? await outside() : undefined;
     await chooseTool("Raum");
     await startTrace();
     const from = await at({ x: 2, y: 2 }), to = await at({ x: 6, y: 5 });
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await page.mouse.move(to.x, to.y, { steps: 8 });
-    await page.screenshot({ path: path.join(out, "input-held-rectangle.png") });
+    if (!outsideCanvas)
+      await page.screenshot({ path: path.join(out, "input-held-rectangle.png") });
     const rectangleRelease = forceCaptureLoss ? await releaseCapture() : undefined;
+    if (outsidePoint) await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
     await page.mouse.up();
     await page.waitForTimeout(1000);
     const rectangle = await snapshot();
+    await stopTrace();
     fs.writeFileSync(path.join(out, "input-rectangle-trace.json"),
-      JSON.stringify({ from, to, forcedRelease: rectangleRelease, ...rectangle }, null, 2));
+      JSON.stringify({ from, to, outsidePoint, forcedRelease: rectangleRelease,
+        ...rectangle }, null, 2));
 
     await open("Snap");
     await chooseTool("Raum");
@@ -295,23 +316,62 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await page.mouse.down();
     await page.mouse.move(cancelTo.x, cancelTo.y, { steps: 8 });
     const escapeRelease = forceCaptureLoss ? await releaseCapture() : undefined;
+    if (outsidePoint) await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
     await page.keyboard.press("Escape");
     await page.mouse.up();
     await page.waitForTimeout(400);
     const escape = await snapshot();
+    await stopTrace();
     fs.writeFileSync(path.join(out, "input-escape-trace.json"),
       JSON.stringify({ from: cancelFrom, to: cancelTo,
-        forcedRelease: escapeRelease, ...escape }, null, 2));
+        outsidePoint, forcedRelease: escapeRelease, ...escape }, null, 2));
+    let pointerCancel;
+    if (outsidePoint) {
+      await open("Preview");
+      await chooseTool("Raum");
+      await startTrace();
+      const cancelFrom = await at({ x: 2, y: 2 });
+      const cancelTo = await at({ x: 4, y: 4 });
+      await page.mouse.move(cancelFrom.x, cancelFrom.y);
+      await page.mouse.down();
+      await page.mouse.move(cancelTo.x, cancelTo.y, { steps: 8 });
+      const cancelRelease = await releaseCapture();
+      await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
+      await page.evaluate(({ x, y }) => {
+        const pointer = app.workspace.activeLeaf.view.editor.gesture?.pointer;
+        if (pointer === undefined) throw new Error("Gesture ended before pointercancel");
+        window.dispatchEvent(new PointerEvent("pointercancel", {
+          bubbles: true, pointerId: pointer, clientX: x, clientY: y,
+        }));
+      }, outsidePoint);
+      await page.mouse.up();
+      pointerCancel = await snapshot();
+      await stopTrace();
+      fs.writeFileSync(path.join(out, "input-pointercancel-trace.json"),
+        JSON.stringify({ outsidePoint, forcedRelease: cancelRelease,
+          ...pointerCancel }, null, 2));
+    }
     assert.equal(rectangle.buildings, 1, "Rectangle completion did not create a Building");
     assert.equal(escape.viewType, "dungeon-native-map", "Escape closed the editor tab");
     assert.equal(escape.buildings, 0, "Escape changed the map");
     assert.equal(escape.tool, "select", "Escape did not leave Building drawing");
+    if (outsidePoint) {
+      assert.equal(rectangleRelease?.captured, true);
+      assert.ok(rectangle.trace.some(event => event.type === "pointerup" &&
+        event.target !== "CANVAS" && event.capture === false));
+      assert.equal(escape.buildings, 0);
+      assert.equal(pointerCancel?.buildings, 0, "Pointer-cancel changed the map");
+      assert.equal(pointerCancel?.gesture, undefined, "Pointer-cancel left a gesture");
+      checks.push("Lost capture outside canvas completes once; Escape and pointer-cancel abort");
+    }
     checks.push("Pointer timeline confirms rectangle completion and Escape cancellation");
   }
   async function edit() {
     if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "snap") return snap();
     if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input") return inputTrace();
     if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input-loss") return inputTrace(true);
+    if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input-outside")
+      return inputTrace(true, true);
     await preview();
     await snap();
     await room();

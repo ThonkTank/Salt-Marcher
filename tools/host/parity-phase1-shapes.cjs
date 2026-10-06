@@ -38,10 +38,14 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
       }, { from, to });
       fs.writeFileSync(path.join(out, "rectangle-before-input.json"), JSON.stringify(before, null, 2));
       await page.evaluate(() => {
+        window.__phase1RectangleAbort?.abort();
+        const abort = new AbortController();
+        window.__phase1RectangleAbort = abort;
         window.__phase1RectangleEvents = [];
         const canvas = app.workspace.activeLeaf.view.editor.renderer.canvas;
         const record = (where) => (event) => {
           const editor = app.workspace.activeLeaf?.view?.editor;
+          if (window.__phase1RectangleEvents.length >= 512) return;
           window.__phase1RectangleEvents.push({ time: Math.round(performance.now() * 10) / 10,
             where, type: event.type, pointer: event.pointerId,
             target: event.target?.tagName, active: document.activeElement?.tagName,
@@ -53,8 +57,10 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
         };
         for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel",
           "gotpointercapture", "lostpointercapture"]) {
-          window.addEventListener(type, record("window-capture"), { capture: true });
-          canvas.addEventListener(type, record("canvas-bubble"));
+          window.addEventListener(type, record("window-capture"),
+            { capture: true, signal: abort.signal });
+          canvas.addEventListener(type, record("canvas-bubble"),
+            { signal: abort.signal });
         }
       });
     }
@@ -80,6 +86,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
         fs.writeFileSync(path.join(out, "rectangle-preview-failure.json"),
           JSON.stringify(await page.evaluate(() => {
             const editor = app.workspace.activeLeaf?.view?.editor;
+            window.__phase1RectangleAbort?.abort();
             return { events: window.__phase1RectangleEvents,
               gesture: editor?.gesture, preview: editor?.renderer.previewSize?.text,
               buildings: editor?.session.document().entities
@@ -92,6 +99,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     if (expected === 1 && screenshot === "rectangle-4x3-preview.png") {
       const after = await page.evaluate(() => {
         const editor = app.workspace.activeLeaf?.view?.editor;
+        window.__phase1RectangleAbort?.abort();
         return { events: window.__phase1RectangleEvents,
           gesture: editor?.gesture, paint: !!editor?.paintWorker,
           buildings: editor?.session.document().entities
