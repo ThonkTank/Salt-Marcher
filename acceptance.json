@@ -19649,10 +19649,13 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/editor.ts"
+            "src/editor.ts",
+            "src/features/objekte/object-modifier-release.ts"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
           ]
         },
         "hostCheck": {
@@ -19663,9 +19666,11 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
           ],
-          "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten und installierter Endstand offen.",
+          "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
           "candidate": {
             "state": "pass",
             "observation": "A-down/up spiegelte nur die aktive Vorschau; bei gehaltenem A platziertes Objekt speichert flip=true. Undo/Redo und Frischstart bestanden.",
@@ -19674,9 +19679,11 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
             ],
-            "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten und installierter Endstand offen.",
+            "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
             "phaseStates": {
               "edit": "pass",
               "reopen": "pass"
@@ -19807,27 +19814,38 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/features/objekte/object-modifier-release.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
+          "state": "partial",
           "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+          ],
+          "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
           "candidate": {
             "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt.",
+            "observation": "Z+Rad wurde im DD-026.22-Edit-/Frischstartlauf mit +5°-Platzierung und Speicherung technisch ausgeführt; ein eigener DD-026.27-Fallrecord fehlt.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
             ],
-            "gap": "Edit: Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Wirkung von Z+Mausrad-Feindrehung ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
+            "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
             "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
             "phaseStates": {
               "edit": "open",
