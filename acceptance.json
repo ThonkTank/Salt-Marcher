@@ -30436,11 +30436,13 @@
         "original": {
           "sequence": "Menu bei geöffneter Karte → Package Custom Assets",
           "options": null,
-          "effect": null,
+          "effect": "Menu > Package Custom Assets öffnet den Original-Paketdialog.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Öffnen und Schließen belegt; keine Editor-Umsetzung."
         },
         "target": "Package Custom Assets öffnet den Paketierdialog mit Rohordner, Metadaten und Optionen.",
         "baseline": {
@@ -33167,8 +33169,10 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Link sichtbar, Ziel und Inhalt nicht geöffnet."
         },
         "target": "Nach Originalmessung offen: „Step-by-Step Guide“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33221,8 +33225,10 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Link sichtbar, Ziel und Inhalt nicht geöffnet."
         },
         "target": "Nach Originalmessung offen: „Example Template“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33272,11 +33278,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Base Folder",
           "options": null,
-          "effect": null,
+          "effect": "Der gewählte Rohassetordner erscheint als Base Folder.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Pfad wurde durch protokollierten Helfer geliefert; sichtbarer nativer GTK-Picker im Testdisplay nicht belegt."
         },
         "target": "Nach Originalmessung offen: „Base Folder“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33326,11 +33334,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Browse",
           "options": null,
-          "effect": null,
+          "effect": "Browse startet eine native zenity-Ordneranfrage für den Rohassetordner.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Sichtbarer GTK-Dateidialog im Testdisplay nicht belegt; Pfadübergabe durch protokollierten Helfer."
         },
         "target": "Nach Originalmessung offen: „Browse“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33380,11 +33390,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Name",
           "options": null,
-          "effect": null,
+          "effect": "Name DD046 QA Native wird im überschriebenen Rohordner-pack.json und im Paketmanifest gespeichert; die Ausgabedatei heißt DD046 QA Native.dungeondraft_pack.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Leerer Name, Sonderzeichen und Dubletten nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Name“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33434,11 +33446,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Version",
           "options": null,
-          "effect": null,
+          "effect": "Version 1.2 wird im überschriebenen pack.json und Paketmanifest gespeichert; sichtbarer Standardwert ist 1.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Validierung anderer Versionen nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Version“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33488,11 +33502,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Author",
           "options": null,
-          "effect": null,
+          "effect": "Autor QA DD046 wird im überschriebenen pack.json und Paketmanifest gespeichert.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Leerer und ungültiger Wert nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Author“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33542,11 +33558,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Keywords",
           "options": null,
-          "effect": null,
+          "effect": "Keywords dd046-probe werden im überschriebenen pack.json und Paketmanifest gespeichert.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Mehrere oder leere Keywords nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Keywords“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33596,11 +33614,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Allow 3rd party mapping software to use this pack",
           "options": null,
-          "effect": null,
+          "effect": "Schalter startet aus; unveränderte Ausgabe speichert allow_3rd_party_mapping_software_to_read=false.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Aktivierte Wirkung nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Allow 3rd party mapping software to use this pack“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33650,11 +33670,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Embed thumbnails",
           "options": null,
-          "effect": null,
+          "effect": "Schalter Embed thumbnails startet aus; der Minimalfall erzeugt keine zusätzliche Thumbnail-Datei.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Aktivierte Wirkung nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Embed thumbnails“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33704,11 +33726,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Override custom color settings",
           "options": null,
-          "effect": null,
+          "effect": "Schalter startet aus; unveränderte Ausgabe speichert custom_color_overrides.enabled=false.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Aktivierte Farbwirkung nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Override custom color settings“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33758,11 +33782,14 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Package",
           "options": null,
-          "effect": null,
+          "effect": "Package ist ohne Basisordner deaktiviert; mit Rohordner und ausgefüllten Feldern erfragt Dungeondraft einen Ausgabeordner, erzeugt ein GDPC-v1-Paket mit vier Einträgen und überschreibt pack.json im Rohordner.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd046-native/runs/20261006-142827-518748/evidence/container.json"
+          ],
+          "gap": "Nur eine erfolgreiche Konfiguration; genaue Aktivierungsregel, Fehlerfälle, Überschreiben vorhandener Ausgabedatei und aktivierte Schalter offen."
         },
         "target": "Nach Originalmessung offen: „Package“ wird beim Erstellen eines Custom-Asset-Pakets im Paketdialog berücksichtigt.",
         "baseline": {
@@ -33812,11 +33839,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → Cancel",
           "options": null,
-          "effect": null,
+          "effect": "Cancel schließt den leeren Paketdialog ohne Ausgabedatei.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-assets-package.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Abbruch nach Eingaben oder während des Schreibens nicht getestet."
         },
         "target": "Nach Originalmessung offen: „Cancel“ schließt den aktuellen Dialog ohne die noch unbestätigte Änderung zu übernehmen.",
         "baseline": {
@@ -44987,11 +45016,13 @@
         "original": {
           "sequence": "Menu > Package Custom Assets → X / Schließen",
           "options": null,
-          "effect": null,
+          "effect": "X schließt den leeren Paketdialog ohne Ausgabedatei.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/10-package-empty.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/10-package-empty.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-NATIVE-PACKAGER-RESULT-20261006.md"
+          ],
+          "gap": "Abbruch nach Eingaben oder während des Schreibens nicht getestet."
         },
         "target": "Nach Originalmessung offen: „X / Schließen“ schließt den aktuellen Dialog ohne die noch unbestätigte Änderung zu übernehmen.",
         "baseline": {
