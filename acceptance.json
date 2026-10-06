@@ -4675,7 +4675,7 @@
         "original": {
           "sequence": "X-Kachel in der Wandgalerie wählen.",
           "options": "X in der automatischen Wandgalerie ausgewählt und separates Rechteck gezeichnet.",
-          "effect": "Neues Bodenpolygon ohne sichtbaren Wandring; gespeicherte Polygonzahl 3→4, Wandzahl 3→3.",
+          "effect": "X/None erzeugt ein Bodenpolygon ohne Wandring. In der isolierten 8×8-Paarprobe bleibt bei wall_shadow=true am rechten und unteren Außenrand des frischen Original-Rechtecks kein entsprechender Flächenschatten messbar.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
@@ -4684,7 +4684,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/16-building-drag-result.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/map/bau-gui-working.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/gui-summary.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-PAIRED-RUN-RESULT.md"
           ]
         },
         "target": "Building-Boden ohne automatische Wand funktional gleichwertig erzeugen.",
@@ -4717,17 +4718,19 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Wandstil X erzeugt Building-Boden ohne automatische Wand; bisheriger Kernstand und korrigierter isolierter Hostbeleg."
+            "Wandstil X erzeugt Building-Boden ohne automatische Wand; bisheriger Kernstand und korrigierter isolierter Hostbeleg.",
+            "Kandidat 9c107e5: Building-Flächenschatten und Preview-Schatten nur bei vorhandener Wand; Original/Host-Nachprüfung auf genau diesem Build offen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-PAIRED-RUN-RESULT.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Technische Hostfolge bestanden; originaler Schattenrand der wandlosen Fläche ist nicht gepaart. Installierter Endstand offen.",
+          "gap": "Paarprobe wies einen etwa 14 Pixel breiten Schatten am wandlosen Host-Rechteck nach, der im Original fehlt. Korrektur 9c107e5 ist statisch vorbereitet; erneute Host-Edit-/Frischstart-Bildprüfung und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: None fea8c37d-f83a-47eb-b994-a82eb5236b28: wallWidth=0, Textursprites=0, Zeichenaktionen=fill, vorherige Paketwand erhalten=true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; None wallWidth=0; Sprites=0; Aktionen=fill.",
@@ -33818,15 +33821,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Kandidat cfc61bd: reiner GDPC-v1-Encoder reproduziert das gemessene 1.898-Byte-Paket bytegenau, nur für die All-off-Schalterlage; Dialog, Rohordner-Overwrite und Ausgabeablauf offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-ENCODER-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Encoder-Goldentest und Typprüfung bestanden; Paketdialog, Speicherablauf, isolierter Host und installierter Endstand offen."
         }
       },
       {
