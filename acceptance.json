@@ -13576,9 +13576,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/08-barren-check.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Barren setzt Slots 1–4 auf Rocky, Dirt, Gravel, Sand; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Barren setzt Slots 1–4 auf Rocky, Dirt, Gravel, Sand; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Host hat kein Biome-Menü im Terrainpinsel.",
@@ -13607,7 +13607,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -13618,7 +13621,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16221,9 +16224,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-desert.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Desert setzt Slots 1–4 auf Sand, Sandstone, Cracked Earth, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Desert setzt Slots 1–4 auf Sand, Sandstone, Cracked Earth, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16251,7 +16254,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16262,7 +16268,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16284,9 +16290,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-mountain.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Mountain setzt Slots 1–4 auf Dry Grass, Limestone, Rocky, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Mountain setzt Slots 1–4 auf Dry Grass, Limestone, Rocky, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16314,7 +16320,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16325,7 +16334,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16347,9 +16356,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-prarie.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Prarie setzt Slots 1–4 auf Grass, Dirt, Gravel, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Prarie setzt Slots 1–4 auf Grass, Dirt, Gravel, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16377,7 +16386,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16388,7 +16400,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16410,9 +16422,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-rainforest.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Rainforest setzt Slots 1–4 auf Moss, Dirt, Swamp, Gravel; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Rainforest setzt Slots 1–4 auf Moss, Dirt, Swamp, Gravel; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16440,7 +16452,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16451,7 +16466,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16473,9 +16488,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-settlement.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Settlement setzt Slots 1–4 auf Dirt, Gravel, Sand, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Settlement setzt Slots 1–4 auf Dirt, Gravel, Sand, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16503,7 +16518,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16514,7 +16532,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
@@ -16536,9 +16554,9 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-swamp.png"
           ],
-          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
+          "gap": "Presetwahl erzeugt keinen eigenen Undo-Schritt und erhält einen älteren Terrainstrich: Undo/Redo ändern nur Masken, Preset-Slots bleiben. Individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Biome Swamp setzt Slots 1–4 auf Swamp, Dirt, Dry Grass, Grass; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
+        "target": "Biome Swamp setzt Slots 1–4 auf Swamp, Dirt, Dry Grass, Grass; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement. Presetwahl ohne eigenen Undo-Schritt; früherer Terrainstrich bleibt bei unveränderten Presettexturen undo-/redo-fähig.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16566,7 +16584,10 @@
           "state": "candidate_partial_uninstalled",
           "changes": [
             "src/features/material/native-terrain-biomes.ts",
-            "src/features/material/terrain-biome-floor.ts"
+            "src/features/material/terrain-biome-floor.ts",
+            "src/features/material/terrain-biome-command.ts",
+            "src/properties.ts",
+            "src/session.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
@@ -16577,7 +16598,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
+          "gap": "Originalfolge einschließlich History und Swamp-Frischstart belegt; Biome-Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht paarweise geprüft."
         }
       },
       {
