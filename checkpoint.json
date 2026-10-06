@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase 1 Nachbesserung umgesetzt; getrennter Review ausstehend",
+  "phase": "Folge-Roadmap: zweiter Phase-1-Review abgeschlossen; Phasentor wegen instabilem Eingabepfad offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -773,19 +773,19 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_repair_implemented_review_pending",
+    "status": "phase1_second_review_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-1-Reviewlauf: aktuellen Kandidaten eaf6ed0f und alle zwölf zugeordneten Unterfälle sowie Raum-/Portal-Quertor anhand direkter Original- und endgültiger Hostbelege prüfen. Bei Lücke eigenständige Nachbesserung und erneuten Review planen; nach Freigabe erst den getrennten Phase-1-Aufräum-Planlauf beginnen.",
-    "note": "Drei gehaltene Shift-Vorschauen weichen an 15 Messhöhen höchstens einen Bildschirmpixel vom Original ab. Original-Building-Rechteck bestätigt Snap an→aus durch Strg+S und freie Viertelfeldpunkte; der Kandidat fängt die von Obsidian früh verarbeitete Taste bei Editorfokus ab. Nummerierter Raum, exakter Key, Innenloch und gebundenes Portal bestehen den isolierten Host samt frischem Prozess. Typprüfung, 119 Kerntests und Build bestehen.",
+    "nextRun": "Eigener Phase-1-Nachbesserungslauf: Rechteck-Pointerfolge und Escape bei gehaltenem Zug zeitlich nachzeichnen (Down/Move/Up/Cancel/Lost-Capture, Trefferziel, Fokus, Gesture, Worker). Host- von Produktursache trennen, nur bestätigte Abweichung korrigieren; anschließend breite Formen-Editfolgen und frische Neuöffnung auf demselben Build wiederholen. Danach eigener erneuter Reviewlauf.",
+    "note": "Fokussierter aktueller Build besteht Shift-Handle-Vorschau, Snap/Strg+S und Raum-Key-Portal samt Frischstart. Breiter Host: acht Hauptchecks bestanden, dann schloss Escape beim gehaltenen Rechteck den Editor. Zwei Shapes-Starts stoppten beim ersten Rechteck; im zweiten sind Pointer-Down und Vorschau belegt, ein Abschluss nach Pointer-Up nicht. Basisprüfungen bestehen, breites Phase-1-Tor nicht.",
     "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Nur der getrennte Phase-1-Review steht für das aktuelle Phasentor aus. DD-011.15 als vollständiger Fall folgt in Phase 3; physische Eingabe in Phase 7. Nach freigegebener Phase 1 folgt vor Phase 2 die eigenständige Aufräumphase mit Plan, Umsetzung und Review.",
+    "open": "Ungeklärte Eingabe-/Capture-Folge beim Rechteck und Escape; vollständige aktuelle Edit- und Frischöffnungsfolge aller Phase-1-Formen fehlt. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7. Vor einer Aufräumphase muss ein eigener Nachbesserungs- und erneuter Reviewlauf das Phase-1-Tor schließen.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -803,6 +803,14 @@
     "repairHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
     "repairHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
     "repairNativeSnap": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007/runs/20261007-004028-1058062/evidence/result.json",
-    "repairVerified": "Original Dungeondraft 1.2.0.1 und isolierter Obsidian-Kandidat direkt verglichen; npm run check, npm test (119), npm run build, Host Edit und Host Reopen bestanden; produktiver Build unverändert."
+    "repairVerified": "Original Dungeondraft 1.2.0.1 und isolierter Obsidian-Kandidat direkt verglichen; npm run check, npm test (119), npm run build, Host Edit und Host Reopen bestanden; produktiver Build unverändert.",
+    "secondReviewDate": "2026-10-07",
+    "secondReviewResult": "gate_open",
+    "secondReviewEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-20261007/phase1-review.md",
+    "secondReviewHostAttempts": [
+      "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-shapes-20261007/evidence/1791326775983-parity-phase1-shapes-edit/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json",
+      "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-shapes-20261007/evidence/1791326854195-parity-phase1-shapes-edit/result.json"
+    ]
   }
 }

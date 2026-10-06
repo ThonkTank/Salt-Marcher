@@ -27,8 +27,27 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
   }
   async function heldShape(a, b, label, screenshot, expected = 1) {
     const from = await world(a), to = await world(b);
+    if (expected === 1 && screenshot === "rectangle-4x3-preview.png") {
+      const before = await page.evaluate(({ from, to }) => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        const canvas = editor?.renderer?.canvas;
+        return { tool: editor?.tool, from, to, canvas: canvas?.getBoundingClientRect().toJSON(),
+          hitFrom: document.elementFromPoint(from.x, from.y)?.outerHTML.slice(0, 200),
+          hitTo: document.elementFromPoint(to.x, to.y)?.outerHTML.slice(0, 200),
+          active: document.activeElement?.outerHTML.slice(0, 200) };
+      }, { from, to });
+      fs.writeFileSync(path.join(out, "rectangle-before-input.json"), JSON.stringify(before, null, 2));
+    }
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
+    if (expected === 1 && screenshot === "rectangle-4x3-preview.png") {
+      const after = await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { tool: editor?.tool, gesture: editor?.gesture,
+          active: document.activeElement?.outerHTML.slice(0, 200) };
+      });
+      fs.writeFileSync(path.join(out, "rectangle-after-down.json"), JSON.stringify(after, null, 2));
+    }
     await page.mouse.move(to.x, to.y, { steps: 8 });
     await page.waitForFunction((label) => {
       const editor = app.workspace.activeLeaf?.view?.editor;

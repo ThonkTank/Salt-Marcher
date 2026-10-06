@@ -167,9 +167,30 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     const beforeCancel = (await buildings()).length;
     await chooseTool("Raum");
     const from = await world({ x: 20, y: 12 }), to = await world({ x: 22, y: 15 });
+    fs.writeFileSync(path.join(out, "escape-rectangle-before-input.json"),
+      JSON.stringify(await page.evaluate(({ from, to }) => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { tool: editor?.tool, from, to,
+          canvas: editor?.renderer?.canvas.getBoundingClientRect().toJSON(),
+          hitFrom: document.elementFromPoint(from.x, from.y)?.outerHTML.slice(0, 200),
+          hitTo: document.elementFromPoint(to.x, to.y)?.outerHTML.slice(0, 200),
+          active: document.activeElement?.outerHTML.slice(0, 200) };
+      }, { from, to }), null, 2));
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
+    fs.writeFileSync(path.join(out, "escape-rectangle-after-down.json"),
+      JSON.stringify(await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { tool: editor?.tool, gesture: editor?.gesture,
+          active: document.activeElement?.outerHTML.slice(0, 200) };
+      }), null, 2));
     await page.mouse.move(to.x, to.y, { steps: 8 });
+    fs.writeFileSync(path.join(out, "escape-rectangle-after-move.json"),
+      JSON.stringify(await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { tool: editor?.tool, gesture: editor?.gesture,
+          active: document.activeElement?.outerHTML.slice(0, 200) };
+      }), null, 2));
     await page.keyboard.press("Escape");
     await page.mouse.up();
     assert.equal((await buildings()).length, beforeCancel);
