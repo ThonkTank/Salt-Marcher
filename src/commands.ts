@@ -173,6 +173,35 @@ export function adoptFloorAsRoom(
   });
   return room;
 }
+function roomAt(
+  session: Session,
+  floorId: string,
+  point: Point,
+  preferredId?: string,
+): Room | undefined {
+  const rooms = [...session.entities.values()].filter(
+    (entity): entity is Room => isRoom(entity) && entity.floorId === floorId,
+  );
+  const contains = (room: Room) => room.polygons.some(
+    (polygon) => inside(point, polygon.outer) &&
+      !polygon.holes.some((hole) => inside(point, hole)),
+  );
+  return rooms.find((room) => room.id === preferredId && contains(room)) ??
+    rooms.find(contains);
+}
+
+export function objectAtPoint(
+  session: Session,
+  object: MapObject,
+  point: Point,
+): MapObject {
+  const { roomId: _previousRoomId, ...rest } = object;
+  const room = roomAt(session, object.floorId, point, object.roomId);
+  return room
+    ? { ...rest, x: point.x, y: point.y, roomId: room.id }
+    : { ...rest, x: point.x, y: point.y };
+}
+
 export function createObject(
   session: Session,
   floorId: string,
@@ -188,16 +217,7 @@ export function createObject(
     label: "",
   },
 ): MapObject {
-  const room = [...session.entities.values()].find(
-    (e) =>
-      isRoom(e) &&
-      e.floorId === floorId &&
-      e.polygons.some(
-        (polygon) =>
-          inside(point, polygon.outer) &&
-          !polygon.holes.some((hole) => inside(point, hole)),
-      ),
-  );
+  const room = roomAt(session, floorId, point);
   const object: MapObject = {
     id: uid(),
     kind: "object",

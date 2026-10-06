@@ -28,6 +28,12 @@ Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platz
 - **Angleichen/ergänzen:** Wiederholt setzen und die Zuordnung zum tatsächlichen Raum bei Platzierung und Verschiebung sichern.
 - **Prüfen:** Zwei Objekte setzen, eines verschieben; Auswahl, Raumzuordnung, Undo/Redo und Frischöffnung auf der Kopie kontrollieren.
 
+**Abgleich:** Dungeondraft 1.2.0.1 behält das Objektwerkzeug für Folgeklicks bei und erzeugt getrennte Instanzen. Die direkte Auswahl- und gemeinsame Zugprobe belegt einen rücknehmbaren Bewegungsschritt. Raum-Keys und `roomId` sind eigene Kartenfunktionen.
+
+**Umsetzung:** Platzierung und Objektzüge ermitteln den Raum anhand des Objektmittelpunkts auf demselben Geschoss; außerhalb eines Raums entfällt `roomId`. Der Raumwechsel bleibt Teil des Bewegungsbefehls und aktualisiert den angezeigten Key der Auswahl.
+
+**Nachweis:** Im installierten Build wurden zwei `qa_chest`-Objekte nacheinander in Raum 16 gesetzt. Eines wurde in den angrenzenden QA-Raum 17 gezogen; Auswahl, beide Raumkennungen, Key-Anzeige, Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden. Die vorhandenen Texte der isolierten Drachenhöhlenkopie blieben bytegleich. Typprüfung, 109 Tests und Build bestanden. Physische Eingabe, weitere Objektoptionen und vollständige Dungeondraft-Parität bleiben offen.
+
 ## Phase 4 – Feature im Raum-Key anlegen
 
 - **Abgleichen:** Vorhandenen Feature-Dialog und Key-Ausgabe mit `room-keys.md` und `karten.md` prüfen; Dungeondraft liefert hierfür keinen Raum-Key.

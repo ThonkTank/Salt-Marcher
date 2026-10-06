@@ -25,6 +25,7 @@ import {
   adoptFloorAsRoom,
   createDoor,
   createObject,
+  objectAtPoint,
   scatterObjects,
   createLight,
   createPortal,
@@ -64,6 +65,45 @@ import {
   copyAtViewportCenter,
   type SelectionType,
 } from "../src/selection";
+
+test("repeated furniture placement and movement keep room ownership in one undo step", () => {
+  const document = newDocument("Raumzuordnung", 16, 8),
+    session = new Session(document),
+    floor = document.floors[0]!.id,
+    roomA = createRoom(session, floor,
+      [{ x: 1, y: 1 }, { x: 5, y: 1 }, { x: 5, y: 5 }, { x: 1, y: 5 }],
+      "Dungeons/Probe/Räume"),
+    roomB = createRoom(session, floor,
+      [{ x: 7, y: 1 }, { x: 11, y: 1 }, { x: 11, y: 5 }, { x: 7, y: 5 }],
+      "Dungeons/Probe/Räume"),
+    first = createObject(session, floor, { x: 2, y: 3 }),
+    second = createObject(session, floor, { x: 4, y: 3 });
+  assert.notEqual(first.id, second.id);
+  assert.equal(first.roomId, roomA.id);
+  assert.equal(second.roomId, roomA.id);
+  const beforeMove = session.historySize,
+    moved = objectAtPoint(session, first, { x: 9, y: 3 });
+  session.execute({ label: "Möbel verschieben",
+    entities: [{ id: first.id, before: first, after: moved }] });
+  assert.equal(session.historySize, beforeMove + 1);
+  assert.equal((session.entities.get(first.id) as MapObject).roomId, roomB.id);
+  assert.deepEqual(session.entities.get(second.id), second);
+  session.undo();
+  assert.deepEqual(session.entities.get(first.id), first);
+  session.redo();
+  assert.deepEqual(session.entities.get(first.id), moved);
+  assert.equal((parseDocument(JSON.stringify(session.document())).entities
+    .find((entity) => entity.id === first.id) as MapObject).roomId, roomB.id);
+  const outside = objectAtPoint(session, moved, { x: 6, y: 3 });
+  assert.equal(Object.hasOwn(outside, "roomId"), false);
+  session.execute({ label: "Möbel aus Raum verschieben",
+    entities: [{ id: moved.id, before: moved, after: outside }] });
+  const reopenedOutside = parseDocument(JSON.stringify(session.document()))
+    .entities.find((entity) => entity.id === first.id);
+  assert.deepEqual(reopenedOutside, outside);
+  session.undo();
+  assert.deepEqual(session.entities.get(first.id), moved);
+});
 
 test("DD-028 object alpha survives property history and a fresh document parse", () => {
   const document = newDocument("Objektfarbe", 8, 8);

@@ -23,11 +23,12 @@ const restart = process.argv.includes("--restart"),
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
   phase2Object = process.argv.includes("--phase2-object"),
+  phase3Object = process.argv.includes("--phase3-object"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -214,7 +215,7 @@ function prepare() {
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
     fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
   }
-  if (phase2Object && !restart) {
+  if ((phase2Object || phase3Object) && !restart) {
     const source = path.join(sourceVault, "Dungeons/Drachenhöhle");
     assert(fs.existsSync(path.join(source, "Karte.dungeon")), "Phase-1-Kopie fehlt");
     fs.cpSync(source, path.join(vault, "Dungeons/Drachenhöhle"), { recursive: true });
@@ -324,7 +325,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -473,6 +474,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (phase3Object) {
+    await phase3ObjectWorkflow(view);
+    return;
+  }
   if (phase2Object) {
     await phase2ObjectWorkflow(view);
     return;
@@ -3026,6 +3031,203 @@ async function pathLibraryWorkflow(view) {
   await page.screenshot({ path: out + "/path-library.png" });
   checks.push("Path Library selection and path save cleanly");
 }
+async function phase3ObjectWorkflow(view) {
+  const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon",
+    mapFile = path.join(vault, mapPath),
+    savedPath = qa + "/phase3-object-saved.json",
+    packPath = process.env.DUNGEON_OBJECT_PACK;
+  const hash = (file) => crypto.createHash("sha256")
+    .update(fs.readFileSync(file)).digest("hex");
+  const protectedFiles = () => {
+    const files = {};
+    const walk = (directory) => {
+      for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+        const absolute = path.join(directory, item.name);
+        if (item.isDirectory()) walk(absolute);
+        else if (absolute !== mapFile)
+          files[path.relative(vault, absolute)] = hash(absolute);
+      }
+    };
+    walk(path.join(vault, "Dungeons/Drachenhöhle"));
+    return files;
+  };
+  await page.evaluate(async (path) => {
+    const file = app.vault.getAbstractFileByPath(path);
+    if (!file) throw new Error("Drachenhöhlenkopie fehlt: " + path);
+    await app.workspace.getLeaf("tab").openFile(file);
+  }, mapPath);
+  await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
+  const starting = await view(),
+    room16 = starting.document.entities.find((entity) =>
+      entity.kind === "building" && entity.number === "16"),
+    spareBuilding = starting.document.entities.find((entity) =>
+      entity.kind === "building" && !entity.number &&
+      entity.polygons.some((polygon) =>
+        Math.min(...polygon.outer.map((point) => point.x)) === 10 &&
+        Math.max(...polygon.outer.map((point) => point.x)) === 15 &&
+        Math.min(...polygon.outer.map((point) => point.y)) === 2 &&
+        Math.max(...polygon.outer.map((point) => point.y)) === 5));
+  assert(room16?.note?.path, "Testraum 16 fehlt");
+  if (restart) {
+    const saved = JSON.parse(fs.readFileSync(savedPath, "utf8"));
+    assert.equal(starting.dirty, false);
+    assert.deepEqual(starting.document, saved.document);
+    assert.equal(hash(mapFile), saved.mapHash);
+    assert.deepEqual(protectedFiles(), saved.protected);
+    assert.equal(fs.readFileSync(path.join(vault, saved.room17.note.path), "utf8"),
+      saved.room17Text);
+    await chooseTool("Auswahl");
+    await page.evaluate((id) => {
+      const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        .view.editor;
+      editor.renderer.focus(id, 5);
+      return editor.select(id);
+    }, saved.moved.id);
+    await page.waitForFunction((notePath) => {
+      const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        ?.view?.editor;
+      return editor?.notePath === notePath &&
+        editor.text.value.includes("# 17 Raum 17");
+    }, saved.room17.note.path);
+    await page.screenshot({ path: out + "/phase3-object-reopen.png" });
+    checks.push("Fresh Obsidian process restores both objects, their room IDs and the destination key");
+    return;
+  }
+  assert(packPath && fs.existsSync(packPath), "QA-Objektpaket fehlt");
+  assert(spareBuilding, "Unnummerierter angrenzender Grundriss fehlt");
+  const protectedBefore = protectedFiles();
+  await chooseTool("Raum");
+  await page.evaluate(async ({ focusId, selectedId }) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor;
+    editor.renderer.focus(focusId, 6);
+    await editor.select(selectedId);
+  }, { focusId: room16.id, selectedId: spareBuilding.id });
+  const at = (point) => page.evaluate((point) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer,
+      box = renderer.canvas.getBoundingClientRect(),
+      screen = { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+        y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
+    if (screen.x < box.x || screen.x >= box.right ||
+        screen.y < box.y || screen.y >= box.bottom)
+      throw new Error("Testpunkt liegt außerhalb der Karte");
+    return screen;
+  }, point);
+  const drag = async (from, to) => {
+    const a = await at(from), b = await at(to);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 12 });
+    await page.mouse.up();
+  };
+  await page.getByRole("button", { name: "Raum anlegen", exact: true }).click();
+  const room17 = (await view()).document.entities.find((entity) =>
+    entity.kind === "building" && entity.number === "17");
+  assert(room17?.note?.path, "QA-Raum 17 wurde nicht angelegt");
+  checks.push("Adjacent QA room 17 and its key are adopted through the room tool");
+
+  const encoded = fs.readFileSync(packPath).toString("base64");
+  await page.evaluate(async (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    const plugin = app.plugins.getPlugin("dungeon-editor");
+    const [record] = await plugin.assets.add([new Blob([bytes])]);
+    await plugin.reloadAssets();
+    const session = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.session;
+    const before = session.settings;
+    session.execute({ label: "QA-Paket für Karte aktivieren",
+      settings: { before, after: { ...before, assetPacks: [record.metadata.id] } } });
+  }, encoded);
+  const asset = await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").listAssets()
+      .find((candidate) => candidate.kind === "object" && candidate.name === "qa_chest"));
+  assert(asset, "qa_chest fehlt in der Objektwahl");
+  await chooseTool("Möbel");
+  await page.getByRole("combobox", { name: "Paketobjekt", exact: true })
+    .selectOption(asset.id);
+  await page.getByRole("spinbutton", { name: "Breite in Feldern" }).fill("2");
+  await page.getByRole("spinbutton", { name: "Höhe in Feldern" }).fill("2");
+  await page.evaluate((id) => {
+    app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer.focus(id, 6);
+  }, room16.id);
+  const beforeObjects = await view(),
+    beforeIds = new Set(beforeObjects.document.entities.map((entity) => entity.id));
+  for (const point of [{ x: 3, y: 3 }, { x: 6, y: 3 }]) {
+    const screen = await at(point);
+    await page.mouse.click(screen.x, screen.y);
+  }
+  const placed = await view(),
+    additions = placed.document.entities.filter((entity) => !beforeIds.has(entity.id));
+  assert.equal(additions.length, 2);
+  assert(additions.every((entity) => entity.kind === "object" &&
+    entity.roomId === room16.id && entity.assetId === asset.id));
+  assert.equal(placed.history, beforeObjects.history + 2);
+  assert.equal(await page.evaluate(() =>
+    app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.tool),
+    "object");
+  checks.push("Two consecutive clicks place two distinct room-bound objects without a tool change");
+
+  await chooseTool("Auswahl");
+  const firstScreen = await at({ x: 3, y: 3 });
+  await page.mouse.click(firstScreen.x, firstScreen.y);
+  assert.equal(await page.evaluate(() =>
+    app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.selected),
+    additions[0].id);
+  await page.waitForFunction((notePath) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor;
+    return editor?.notePath === notePath &&
+      editor.text.value.includes("# 16 Raum 16");
+  }, room16.note.path);
+  await drag({ x: 3, y: 3 }, { x: 12, y: 3 });
+  await page.waitForFunction((notePath) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor;
+    return editor?.notePath === notePath &&
+      editor.text.value.includes("# 17 Raum 17");
+  }, room17.note.path);
+  const movedState = await view(),
+    moved = movedState.document.entities.find((entity) => entity.id === additions[0].id),
+    still = movedState.document.entities.find((entity) => entity.id === additions[1].id);
+  assert.equal(moved?.x, 12);
+  assert.equal(moved?.y, 3);
+  assert.equal(moved?.roomId, room17.id);
+  assert.deepEqual(still, additions[1]);
+  assert.equal(movedState.history, placed.history + 1);
+  assert.equal(await page.evaluate(() =>
+    app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.selected),
+    additions[0].id);
+  checks.push("Selection drag moves one object and switches its room ID and key context");
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  assert.deepEqual((await view()).document, placed.document);
+  await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+  assert.deepEqual((await view()).document, movedState.document);
+  checks.push("One Undo and Redo restore exact positions and room ownership");
+
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  await page.waitForFunction(() => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor;
+    return !!editor && !editor.session.dirty && !editor.saving;
+  }, null, { timeout: 20000 });
+  const saved = await view(),
+    afterProtected = protectedFiles(),
+    room17Path = path.relative(vault, path.join(vault, room17.note.path));
+  for (const [file, digest] of Object.entries(protectedBefore))
+    assert.equal(afterProtected[file], digest, "Bestandstext geändert: " + file);
+  const room17Text = fs.readFileSync(path.join(vault, room17.note.path), "utf8");
+  assert.match(room17Text, /^---\nroom_id: /);
+  assert.match(room17Text, /# 17 Raum 17/);
+  const protectedSaved = { ...afterProtected };
+  assert(protectedSaved[room17Path]);
+  fs.writeFileSync(savedPath, JSON.stringify({ document: saved.document,
+    moved, room17, room17Text, mapHash: hash(mapFile), protected: protectedSaved }, null, 2));
+  await page.screenshot({ path: out + "/phase3-object-saved.png" });
+  checks.push("V3 map and new QA key save while all existing dungeon texts stay byte-identical");
+}
+
 async function phase2ObjectWorkflow(view) {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon",
     savedPath = qa + "/phase2-object-saved.json",

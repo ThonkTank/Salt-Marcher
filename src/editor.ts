@@ -23,6 +23,7 @@ import {
   createMapPath,
   createRoof,
   createObject,
+  objectAtPoint,
   scatterObjects,
   createLight,
   addFloor,
@@ -677,6 +678,9 @@ export class DungeonEditor {
         [...this.selection].some((id) => e.ids.has(id))
       )
         this.refreshProperties();
+      if (this.selected && e.ids.has(this.selected) &&
+          this.selectedNotePath() !== this.notePath)
+        void this.refreshSelectedNote();
     });
     this.setTool("select");
     this.refresh();
@@ -2018,9 +2022,16 @@ export class DungeonEditor {
         this.renderer.setSelectionGroupFrame(result.frame);
         this.session.execute({
           label: action.mode === "scale" ? "Auswahl gemeinsam skalieren" : "Auswahl gemeinsam drehen",
-          entities: sources.map((before, index) => ({
-            id: before.id, before, after: result.entities[index]!,
-          })),
+          entities: sources.map((before, index) => {
+            const transformed = result.entities[index]!;
+            return {
+              id: before.id, before,
+              after: transformed.kind === "object"
+                ? objectAtPoint(this.session, transformed,
+                    { x: transformed.x, y: transformed.y })
+                : transformed,
+            };
+          }),
         });
         return;
       }
@@ -2035,10 +2046,14 @@ export class DungeonEditor {
         const scaledLight = action.mode === "scale" && source.kind === "light" && frame
           ? transformSelectionGroup([source], frame, action, g.start, point)
           : undefined,
-          after = scaledLight?.entities[0] ??
+          transformed = scaledLight?.entities[0] ??
             (action.mode === "scale" && source.kind !== "light"
               ? scaleBoxSelection(source, action.corner, g.start, point)
-              : rotateBoxSelection(source, g.start, point));
+              : rotateBoxSelection(source, g.start, point)),
+          after = transformed.kind === "object"
+            ? objectAtPoint(this.session, transformed,
+                { x: transformed.x, y: transformed.y })
+            : transformed;
         if (scaledLight) this.renderer.setSelectionLightFrame(scaledLight.frame);
         if (JSON.stringify(source) !== JSON.stringify(after))
           this.session.execute({
@@ -2368,7 +2383,10 @@ export class DungeonEditor {
                 ),
               },
             };
-          } else after = moveEntity(entity, dx, dy);
+          } else after = entity.kind === "object"
+            ? objectAtPoint(this.session, entity,
+                { x: entity.x + dx, y: entity.y + dy })
+            : moveEntity(entity, dx, dy);
           changes.set(id, { id, before: entity, after });
           if (entity.kind === "building")
             for (const dependentId of this.session.dependents(entity.id)) {
@@ -2402,7 +2420,8 @@ export class DungeonEditor {
             {
               id: original.id,
               before: original,
-              after: { ...original, x: original.x + dx, y: original.y + dy },
+              after: objectAtPoint(this.session, original,
+                { x: original.x + dx, y: original.y + dy }),
             },
           ],
         });
@@ -2897,7 +2916,6 @@ export class DungeonEditor {
     additive = false,
     primary = ids.at(-1),
   ): Promise<void> {
-    const token = ++this.selectionToken;
     const targets = [
       ...new Set(
         ids.flatMap((id) => {
@@ -2930,6 +2948,9 @@ export class DungeonEditor {
         : [...this.selection].at(-1);
     this.renderer.select(this.selection);
     this.refreshProperties();
+    await this.refreshSelectedNote();
+  }
+  private selectedNotePath(): string | undefined {
     const e = this.selected
       ? this.session.entities.get(this.selected)
       : undefined;
@@ -2939,7 +2960,11 @@ export class DungeonEditor {
         : e && e.roomId
           ? this.session.entities.get(e.roomId)
           : undefined;
-    this.notePath = isRoom(room) ? room.note.path : e?.note?.path;
+    return isRoom(room) ? room.note.path : e?.note?.path;
+  }
+  private async refreshSelectedNote(): Promise<void> {
+    const token = ++this.selectionToken;
+    this.notePath = this.selectedNotePath();
     this.text.disabled = true;
     this.text.value = "";
     this.noteBase = "";

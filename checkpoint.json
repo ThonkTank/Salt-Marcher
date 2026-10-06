@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 2 – Objektwahl, Cursorvorschau und Einzelplatzierung auf Kopie verifiziert und installiert; Phasen 3–6 folgen nach ROADMAP.md",
+  "phase": "Phase 3 – wiederholte Objektplatzierung und Raumwechsel auf Kopie verifiziert und installiert; Phasen 4–6 folgen nach ROADMAP.md",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -149,14 +149,14 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 3 nach ROADMAP.md: zwei Objekte wiederholt platzieren, eines zwischen Räumen verschieben und Auswahl, roomId, Undo/Redo sowie Frischöffnung auf isolierter Drachenhöhlenkopie prüfen.",
+  "next": "Phase 4 nach ROADMAP.md: Feature-Dialog und Raum-Key-Ausgabe gegen room-keys.md und karten.md abgleichen; ein Feature mit nächstem freien Buchstaben und stabilem Anker im QA-Key anlegen und Undo/Redo sowie Frischöffnung prüfen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
     "Frühere 39 Hostprüfungen sind Regressionsevidenz und keine 1:1-Abnahme.",
     "Vollständiges Spielansicht-Layout und physische Eingabe nach der Detailreduktion noch nicht erneut geprüft; allgemeine RAM-Ersparnis nicht isoliert belegt.",
     "Breiter Gleichwertigkeitstest scheitert reproduzierbar vor dem Auswahlteil am Dach-Polygon: drei statt vier Eckpunkte in zwei Läufen. Dach erst in seiner Werkzeugreihenfolge untersuchen; keine bestandene Gesamtregression behaupten.",
-    "DD-026 bleibt trotz Phase-2-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen, wiederholte Platzierung und physische Eingabe bleiben offen."
+    "DD-026 bleibt trotz Phase-3-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen und physische Eingabe bleiben offen."
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -661,7 +661,7 @@
     "gitRoot": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor",
     "activeInstalledSource": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1",
     "vaultPlugin": "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-editor",
-    "installedBuildSha256": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+    "installedBuildSha256": "7d714bae9dfde2dcff4635ef76ad82b6742b3b7b7518a45576c28433730ead05",
     "backup": "/home/aaron/.cache/dungeon-native-qa/backups/project-cleanup-20261006",
     "worktrees": 30,
     "verification": {
@@ -670,7 +670,9 @@
       "installedHost": "/home/aaron/.cache/dungeon-native-qa/project-cleanup-smoke/evidence/1791296970618-compact-edit/result.json",
       "mainHost": "/home/aaron/.cache/dungeon-native-qa/project-cleanup-main-smoke/evidence/1791297004859-compact-edit/result.json",
       "installedPhase2Edit": "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
-      "installedPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json"
+      "installedPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+      "installedPhase3Edit": "/home/aaron/.cache/dungeon-native-qa/phase3-object-installed-qa/evidence/1791300137079-phase3-object-edit/result.json",
+      "installedPhase3Reopen": "/home/aaron/.cache/dungeon-native-qa/phase3-object-installed-qa/evidence/1791300161589-phase3-object-reopen/result.json"
     }
   },
   "phase2Object": {
@@ -682,5 +684,19 @@
     "roomId": "45626e10-0bca-486d-9cd7-69041e41fb4f",
     "open": "DD-026-Gesamtparität und physische Eingabe bleiben offen.",
     "finalInstallBackup": "/home/aaron/.cache/dungeon-native-qa/backups/phase2-object-before-final-install-20261006-165242"
+  },
+  "phase3Object": {
+    "status": "installed_host_passed_strict_parity_partial",
+    "installedBuild": "7d714bae9dfde2dcff4635ef76ad82b6742b3b7b7518a45576c28433730ead05",
+    "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase3-object-before-install-20261006-1755",
+    "editEvidence": "/home/aaron/.cache/dungeon-native-qa/phase3-object-installed-qa/evidence/1791300137079-phase3-object-edit/result.json",
+    "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/phase3-object-installed-qa/evidence/1791300161589-phase3-object-reopen/result.json",
+    "savedQA": "/home/aaron/.cache/dungeon-native-qa/phase3-object-installed-qa/phase3-object-saved.json",
+    "room16Id": "45626e10-0bca-486d-9cd7-69041e41fb4f",
+    "room17Id": "30a607d5-10f1-4143-ae75-01220d9071ce",
+    "unitTests": 109,
+    "existingQATextsUnchanged": true,
+    "open": "DD-026/DD-030-Gesamtparität und physische Eingabe bleiben offen.",
+    "finalInstallBackup": "/home/aaron/.cache/dungeon-native-qa/backups/phase3-object-before-final-install-20261006-1810"
   }
 }
