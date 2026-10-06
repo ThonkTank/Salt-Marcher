@@ -43,7 +43,7 @@ export class StructuredKeyPanel {
   }
 
   private dirty(): boolean {
-    return !!this.editor && this.editor.value !== this.original;
+    return !!this.editor && this.editor.value !== this.original.replace(/\r\n?/g, "\n");
   }
 
   commit(): boolean {

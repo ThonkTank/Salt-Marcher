@@ -4697,6 +4697,16 @@
       },
       {
         "id": "DD-012.01",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Punktmodus im Worktree-Host bestanden; Original-Trefferzonen bei zwei Zoomstufen und installierter Endstand offen."
+        },
         "parent": "DD-012",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -4770,6 +4780,17 @@
       },
       {
         "id": "DD-012.02",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Rechteck- und 32-Punkt-Ellipsenzug im Worktree-Host bestanden; direkter Motivvergleich und Paketwand noch im Review.",
+          "originalFreshOpen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014225-1138596/evidence/result.json"
+        },
         "parent": "DD-012",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -4845,6 +4866,16 @@
       },
       {
         "id": "DD-012.03",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Gehaltene Boden-/Wand-/Portalvorschau ohne Mutation und eigener Escape-Abbruch bestanden; Original-Escape nicht abschließend belegt."
+        },
         "parent": "DD-012",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -4911,6 +4942,16 @@
       },
       {
         "id": "DD-013.01",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Delete am Viereckgriff im Worktree-Host bestanden; widersprüchliche physische Original-Action und installierter Endstand offen."
+        },
         "parent": "DD-013",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -4975,6 +5016,16 @@
       },
       {
         "id": "DD-013.02",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Backspace 4→3 mit Undo/Redo und Frischöffnung im Worktree-Host bestanden; Original-Paketwand-/Hostpaar und installierter Endstand offen."
+        },
         "parent": "DD-013",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -5042,6 +5093,16 @@
       },
       {
         "id": "DD-013.03",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Dreipunkt-Backspace und Delete lassen den aktuellen Kandidaten unverändert; Original-Assembly beschreibt Umrissentfernung bei ausgelöster Action. Original-Tastenzustellung, Mehrteil-/Loch-/Raumfolge offen."
+        },
         "parent": "DD-013",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -5112,6 +5173,17 @@
       },
       {
         "id": "DD-014.01",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Kantenmittelzug 3→4 samt Vorschau und Frischöffnung im Worktree-Host bestanden; Paketwand- und originaler Escape-Fall offen.",
+          "originalFreshOpen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014158-1138237/evidence/result.json"
+        },
         "parent": "DD-014",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",
@@ -5199,6 +5271,16 @@
       },
       {
         "id": "DD-014.02",
+        "phase2Candidate": {
+          "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "state": "host_edit_reopen_passed_review_open",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/phase2-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330179913-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-implementation-20261007/host/evidence/1791330273073-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Ein gebundenes Portal folgt transient und atomar einschließlich Undo/Redo und Frischöffnung; zwei Portale und nahe Ersatzwand offen."
+        },
         "parent": "DD-014",
         "area": "bau",
         "path": "Design > Building Tool > Edit Points",

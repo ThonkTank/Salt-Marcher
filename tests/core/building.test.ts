@@ -7,6 +7,13 @@ import { boundarySegments, alignedPortalAt, portalPose, rectangle, buildingEllip
 import { composeBuilding } from "../../src/compute";
 import { floorEraseActive } from "../../src/drawing";
 import { newDocument } from "./fixtures";
+import {
+  buildingVertexGrip, buildingEdgeMidpointGrip,
+  previewBuildingVertexDrag, planBuildingVertexDrag,
+  previewBuildingEdgeDrag, planBuildingEdgeDrag,
+  planBuildingBackspacePoint,
+} from "../../src/features/bau/building-point-gestures";
+import { previewBuildingMutationWithPortals } from "../../src/features/bau/building-edge-portal-preview";
 
 test("Building ellipse sampling follows measured native sizes", () => {
   for (const [a, b, count, sample] of [
@@ -1291,4 +1298,146 @@ test("point topology guard also rejects null edges, hole overlap and part overla
     [{ x: 4, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 6 }, { x: 10, y: 6 }],
     { kind: "move", contour: 1, index: 0 },
   );
+});
+
+test("Building point grips edit a rectangle and sampled ellipse in one history step", () => {
+  for (const contour of [
+    rectangle({ x: 1, y: 1 }, { x: 6, y: 5 }),
+    buildingEllipse({ x: 1, y: 1 }, { x: 5, y: 5 }),
+  ]) {
+    const document = newDocument("Punktzug", 12, 12),
+      building: Building = {
+        id: "point-building", kind: "building", floorId: document.floors[0]!.id,
+        polygons: [{ outer: contour, holes: [] }], layer: 200,
+        fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+      },
+      session = new Session({ ...document, entities: [building] }),
+      grip = buildingVertexGrip(building, contour[0]!, 0.2);
+    assert.ok(grip);
+    assert.equal(buildingVertexGrip(building,
+      { x: contour[0]!.x + 0.21, y: contour[0]!.y }, 0.2), null);
+    const destination = { x: contour[0]!.x - 0.5, y: contour[0]!.y - 0.5 },
+      preview = previewBuildingVertexDrag(building, grip!, destination),
+      planned = planBuildingVertexDrag([...session.entities.values()],
+        building, grip!, destination);
+    assert.ok(preview);
+    assert.equal(planned.status, "command");
+    if (planned.status !== "command") continue;
+    assert.deepEqual(planned.after, preview);
+    assert.deepEqual(session.entities.get(building.id), building);
+    session.execute(planned.command);
+    assert.deepEqual(session.entities.get(building.id), preview);
+    assert.equal(session.historySize, 1);
+    session.undo();
+    assert.deepEqual(session.entities.get(building.id), building);
+    session.redo();
+    assert.deepEqual(session.entities.get(building.id), preview);
+  }
+});
+
+test("edge preview and commit follow a bound portal without a premature document edit", () => {
+  const document = newDocument("Kantenpunkt", 12, 12),
+    building: Building = {
+      id: "edge-building", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: [
+        { x: 1, y: 1 }, { x: 6, y: 1 }, { x: 6, y: 5 },
+      ], holes: [] }], layer: 200, fill: 0xbfb09a,
+      wall: 0x403e39, wallWidth: 0.2,
+    },
+    door: Door = {
+      id: "edge-door", kind: "door", floorId: document.floors[0]!.id,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.2 },
+      width: 0.8, variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, door] }),
+    midpoint = { x: 3.5, y: 1 },
+    grip = buildingEdgeMidpointGrip(building, midpoint, 0.2),
+    destination = { x: 3.5, y: 0 },
+    before = session.document();
+  assert.ok(grip);
+  assert.equal(buildingEdgeMidpointGrip(building,
+    { x: midpoint.x, y: midpoint.y + 0.21 }, 0.2), null);
+  const after = previewBuildingEdgeDrag(building, grip!, destination);
+  assert.ok(after);
+  const preview = previewBuildingMutationWithPortals(
+      [...session.entities.values()], building, after!,
+      { kind: "insert", contour: grip!.contour, index: grip!.index + 1 }),
+    planned = planBuildingEdgeDrag([...session.entities.values()],
+      building, grip!, destination);
+  assert.equal(planned.status, "command");
+  if (planned.status !== "command") return;
+  assert.deepEqual(session.document(), before);
+  assert.deepEqual(planned.after, preview.building);
+  assert.deepEqual(planned.command.entities?.find(change => change.id === door.id)?.after,
+    preview.portals[0]?.after);
+  session.execute(planned.command);
+  assert.equal((session.entities.get(building.id) as Building).polygons[0]!.outer.length, 4);
+  assert.equal(session.historySize, 1);
+  session.undo();
+  assert.deepEqual(session.entities.get(door.id), door);
+  session.redo();
+  assert.deepEqual(session.entities.get(door.id), preview.portals[0]?.after);
+});
+
+test("Backspace removes one hovered point and stops at the confirmed three-point boundary", () => {
+  const document = newDocument("Punkt entfernen", 12, 12),
+    building: Building = {
+      id: "backspace-building", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: rectangle({ x: 1, y: 1 }, { x: 6, y: 5 }), holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    session = new Session({ ...document, entities: [building] }),
+    grip = buildingVertexGrip(building, { x: 6, y: 1 }, 0.2),
+    result = planBuildingBackspacePoint([...session.entities.values()], building, grip!);
+  assert.equal(result.status, "command");
+  if (result.status !== "command") return;
+  session.execute(result.command);
+  assert.equal(result.after.polygons[0]!.outer.length, 3);
+  const nextGrip = buildingVertexGrip(result.after,
+    result.after.polygons[0]!.outer[0]!, 0.2),
+    minimum = planBuildingBackspacePoint(
+      [...session.entities.values()], result.after, nextGrip!);
+  assert.equal(minimum.status, "minimum");
+  assert.equal(session.historySize, 1);
+  assert.deepEqual(session.entities.get(building.id), result.after);
+});
+
+test("point grips address a hole and a second Building part without changing the other contours", () => {
+  const document = newDocument("Mehrteilpunkte", 30, 20),
+    building: Building = {
+      id: "multipart-points", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [
+        { outer: rectangle({ x: 1, y: 1 }, { x: 15, y: 15 }),
+          holes: [rectangle({ x: 4, y: 4 }, { x: 7, y: 7 })] },
+        { outer: rectangle({ x: 18, y: 1 }, { x: 24, y: 7 }), holes: [] },
+      ], layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    session = new Session({ ...document, entities: [building] }),
+    holeGrip = buildingVertexGrip(building, { x: 4, y: 4 }, 0.2);
+  assert.equal(holeGrip?.contour, 1);
+  const invalid = { x: 16, y: 4 };
+  assert.throws(() => planBuildingVertexDrag([...session.entities.values()],
+    building, holeGrip!, invalid));
+  assert.equal(session.historySize, 0);
+  const hole = planBuildingVertexDrag([...session.entities.values()],
+    building, holeGrip!, { x: 3, y: 4 });
+  assert.equal(hole.status, "command");
+  if (hole.status !== "command") return;
+  assert.deepEqual(hole.after.polygons[0]!.outer, building.polygons[0]!.outer);
+  assert.deepEqual(hole.after.polygons[1], building.polygons[1]);
+  session.execute(hole.command);
+  const edgeGrip = buildingEdgeMidpointGrip(hole.after, { x: 21, y: 1 }, 0.2);
+  assert.equal(edgeGrip?.contour, 2);
+  const part = planBuildingEdgeDrag([...session.entities.values()], hole.after,
+    edgeGrip!, { x: 21, y: 0 });
+  assert.equal(part.status, "command");
+  if (part.status !== "command") return;
+  assert.deepEqual(part.after.polygons[0], hole.after.polygons[0]);
+  assert.equal(part.after.polygons[1]!.outer.length, 5);
+  session.execute(part.command);
+  assert.equal(session.historySize, 2);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), hole.after);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), building);
 });

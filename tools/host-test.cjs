@@ -30,11 +30,12 @@ const restart = process.argv.includes("--restart"),
   parityPhase1 = process.argv.includes("--parity-phase1"),
   parityPhase1Shapes = process.argv.includes("--parity-phase1-shapes"),
   parityPhase1Repair = process.argv.includes("--parity-phase1-repair"),
+  parityPhase2Points = process.argv.includes("--parity-phase2-points"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -57,6 +58,7 @@ let peak = 0;
 const unit = "dungeon-native-" + process.pid;
 const toolNavigation = {
   Auswahl: ["Auswahl", "Auswahl"],
+  Punkte: ["Bauwerk", "Punkte bearbeiten"],
   Verschieben: ["Auswahl", "Hand"],
   Raum: ["Bauwerk", "Rechteck"],
   Polygonraum: ["Bauwerk", "Polygon"],
@@ -343,6 +345,41 @@ function prepare() {
       }, null, 2));
     }
   }
+  if (parityPhase2Points && !restart) {
+    const destination = vault + "/Dungeons/Parity/Punkte.dungeon";
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    const ellipse = Array.from({ length: 32 }, (_, index) => {
+      const angle = index * Math.PI * 2 / 32;
+      return { x: 12 + 2 * Math.cos(angle), y: 4 + 2 * Math.sin(angle) };
+    });
+    fs.writeFileSync(destination, JSON.stringify({
+      format: "dungeon-map", version: 3, id: "parity-phase2-points",
+      settings: { name: "Punktgesten", width: 20, height: 16,
+        feetPerField: 5, wallShadows: true, objectShadows: false, buildingWear: 0 },
+      floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+      entities: [
+        { id: "rect", kind: "building", floorId: "floor-1", number: "1",
+          name: "Punktraum", note: { path: "Dungeons/Parity/Räume/01 Punktraum.md" },
+          polygons: [{ outer: [{ x: 2, y: 2 }, { x: 6, y: 2 },
+            { x: 6, y: 6 }, { x: 2, y: 6 }], holes: [] }],
+          layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2 },
+        { id: "ellipse", kind: "building", floorId: "floor-1",
+          polygons: [{ outer: ellipse, holes: [] }],
+          layer: 200, fill: 0xaba08c, wall: 0x403e39, wallWidth: 0.2 },
+        { id: "triangle", kind: "building", floorId: "floor-1",
+          polygons: [{ outer: [{ x: 2, y: 10 }, { x: 6, y: 10 },
+            { x: 6, y: 14 }], holes: [] }],
+          layer: 200, fill: 0xc4b397, wall: 0x403e39, wallWidth: 0.2 },
+        { id: "triangle-door", kind: "door", floorId: "floor-1",
+          anchor: { boundaryId: "triangle", contour: 0, at: 0.15 },
+          width: 0.7, variant: "door" },
+      ],
+      content: { definitions: [], occurrences: [], routes: [], archive: [] },
+    }, null, 2));
+    const note = vault + "/Dungeons/Parity/Räume/01 Punktraum.md";
+    fs.mkdirSync(path.dirname(note), { recursive: true });
+    fs.writeFileSync(note, "# 01 Punktraum\r\n\r\nUnveränderter QA-Text.\r\n");
+  }
 }
 async function shutdown() {
   if (stopping) return;
@@ -423,7 +460,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -592,6 +629,12 @@ async function workflow() {
   }
   if (parityPhase1Repair) {
     const scenario = require("./host/parity-phase1-repair.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityPhase2Points) {
+    const scenario = require("./host/parity-phase2-points.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

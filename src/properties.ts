@@ -41,6 +41,7 @@ import type { ColorableObjectSource } from "./renderer";
 
 export type Tool =
   | "select"
+  | "edit-points"
   | "room"
   | "polygon"
   | "ellipse"
@@ -1727,6 +1728,12 @@ export class Properties {
     this.objectLibraryPreview = undefined;
     this.root.replaceChildren();
     const e = selected ? this.session.entities.get(selected) : undefined;
+    if (tool === "edit-points") {
+      const help = document.createElement("p");
+      help.className = "dn-help";
+      help.textContent = "Gebäude wählen · Eckpunkt oder Kantenmitte ziehen · Rücktaste entfernt den markierten Eckpunkt";
+      this.root.append(help);
+    }
     const floorTool =
       tool === "room" ||
       tool === "polygon" ||

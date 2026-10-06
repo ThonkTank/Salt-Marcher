@@ -14,6 +14,7 @@ import {
 } from "pixi.js";
 import {
   type Entity,
+  type Building,
   type Id,
   type Point,
   type Polygon,
@@ -74,6 +75,20 @@ export interface ColorableObjectSource {
   readonly image: Blob;
   readonly settings: ColorableObjectSettings;
 }
+interface BuildingPreview {
+  sourceId: Id;
+  sourceVisible: boolean;
+  shadowVisible?: boolean;
+  entity: Building;
+  container: Container;
+  graphic: Graphics;
+  wallLayer: Container;
+  shadow?: Graphics;
+  floorTexture?: Texture;
+  wallTexture?: Texture;
+  assets: string[];
+  portals: readonly { before: Door; after: Door | null }[];
+}
 type ObjectPreviewSettings = Pick<
   MapObject,
   "rotation" | "width" | "height" | "color" | "alpha" | "assetId" | "flip" | "shadow"
@@ -105,6 +120,9 @@ export class MapRenderer {
   private previewSizePoint?: Point;
   private selection = new Graphics();
   private preview = new Graphics();
+  private buildingPreview?: BuildingPreview;
+  private buildingPointEditing = false;
+  private buildingPointHover?: { contour: number; index: number; kind: "vertex" | "edge" };
   private objectPreview = new Container();
   private objectPreviewShadow = new Graphics();
   private objectPreviewFallback: Graphics;
@@ -388,6 +406,7 @@ export class MapRenderer {
     return this.textures.acquire(reference);
   }
   private rebuild(): void {
+    this.clearBuildingPreview();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     for (const e of this.session.entities.values())
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
@@ -839,7 +858,7 @@ export class MapRenderer {
         if (!this.closed) this.onError(String(error));
       });
   }
-  private drawSurface(v: Visual, g: Graphics, texture?: Texture): void {
+  private drawSurface(v: Visual, g: Graphics, texture?: Texture, previewDoors?: readonly Door[]): void {
     const e = v.entity;
     if (e.kind !== "building" && e.kind !== "surface") return;
     g.clear();
@@ -905,7 +924,7 @@ export class MapRenderer {
             });
         }
       }
-      const doors = [...this.session.dependents(e.id)]
+      const doors = previewDoors ?? [...this.session.dependents(e.id)]
         .map((id) => this.session.entities.get(id))
         .filter(
           (d): d is Door =>
@@ -1420,6 +1439,19 @@ export class MapRenderer {
     this.drawSelection();
     this.invalidate();
   }
+  setBuildingPointEditing(active: boolean): void {
+    this.buildingPointEditing = active;
+    this.buildingPointHover = undefined;
+    this.drawSelection();
+    this.invalidate();
+  }
+  setBuildingPointHover(hover?: { contour: number; index: number; kind: "vertex" | "edge" }): void {
+    if (!this.buildingPointEditing && !hover) return;
+    if (JSON.stringify(this.buildingPointHover) === JSON.stringify(hover)) return;
+    this.buildingPointHover = hover;
+    this.drawSelection();
+    this.invalidate();
+  }
   get selectionGroupFrame(): SelectionFrame | undefined {
     return this.groupFrame;
   }
@@ -1477,14 +1509,32 @@ export class MapRenderer {
   }
   private drawEntitySelection(g: Graphics, e: Entity, frame?: SelectionFrame): void {
     if (e.kind === "building") {
+      let contour = 0;
       for (const polygon of e.polygons)
         for (const ring of [polygon.outer, ...polygon.holes]) {
           g.poly(
             ring.flatMap((point) => [point.x, point.y]),
             true,
           ).stroke({ color: 0x008da8, width: 2 / this.camera.scale });
-          for (const point of ring)
-            g.circle(point.x, point.y, 4 / this.camera.scale).fill(0x008da8);
+          for (const [index, point] of ring.entries()) {
+            const hovered = this.buildingPointEditing &&
+              this.buildingPointHover?.kind === "vertex" &&
+              this.buildingPointHover.contour === contour &&
+              this.buildingPointHover.index === index;
+            g.circle(point.x, point.y, (hovered ? 6 : 4) / this.camera.scale)
+              .fill(hovered ? 0x49bf68 : 0x008da8);
+            if (this.buildingPointEditing) {
+              const next = ring[(index + 1) % ring.length]!,
+                x = (point.x + next.x) / 2,
+                y = (point.y + next.y) / 2,
+                edgeHover = this.buildingPointHover?.kind === "edge" &&
+                  this.buildingPointHover.contour === contour &&
+                  this.buildingPointHover.index === index;
+              g.circle(x, y, (edgeHover ? 6 : 3) / this.camera.scale)
+                .fill(edgeHover ? 0x49bf68 : 0xd9b43d);
+            }
+          }
+          contour++;
         }
     } else if (e.kind === "object" || e.kind === "reference") {
       const c = Math.cos(e.rotation),
@@ -1591,6 +1641,151 @@ export class MapRenderer {
         contour++;
       }
     this.invalidate();
+  }
+  /** Draw the proposed floor, package wall and portal anchors without changing the session. */
+  previewBuildingShape(
+    after: Building,
+    activeContour: number,
+    portals: readonly { before: Door; after: Door | null }[] = [],
+  ): void {
+    const source = this.visuals.get(after.id);
+    if (source?.entity.kind !== "building" ||
+        source.entity !== this.session.entities.get(after.id) ||
+        source.entity.floorId !== this.floorId) return;
+    if (this.buildingPreview?.sourceId !== after.id) this.clearBuildingPreview();
+    let state = this.buildingPreview;
+    if (!state) {
+      const container = new Container(), graphic = new Graphics(),
+        wallLayer = new Container();
+      container.addChild(graphic, wallLayer);
+      container.zIndex = after.layer;
+      container.alpha = source.container.alpha;
+      container.tint = source.container.tint;
+      this.roomLayer.addChild(container);
+      state = {
+        sourceId: after.id, sourceVisible: source.container.visible,
+        shadowVisible: source.shadow?.visible, entity: after,
+        container, graphic, wallLayer, assets: [], portals: [],
+      };
+      const created = state;
+      this.buildingPreview = state;
+      source.container.visible = false;
+      if (source.shadow) source.shadow.visible = false;
+      if (this.settings.wallShadows) {
+        state.shadow = new Graphics();
+        state.shadow.alpha = container.alpha;
+        state.shadow.tint = container.tint;
+        this.areaShadowLayer.addChild(state.shadow);
+      }
+      if (after.material) {
+        const reference = after.material.assetId
+          ? after.material.assetId + "\0" + (after.material.assetPart ?? "image")
+          : after.material.asset!;
+        created.assets.push(reference);
+        void this.textures.acquire(reference).then((texture) => {
+          if (this.buildingPreview !== created || this.closed) return;
+          created.floorTexture = texture;
+          this.drawBuildingPreview(created);
+        }).catch((error) => {
+          if (this.buildingPreview === created && !this.closed)
+            this.onError(String(error));
+        });
+      }
+      if (after.wallAssetId && after.wallWidth > 0) {
+        const reference = after.wallAssetId + "\0image";
+        created.assets.push(reference);
+        void this.textures.acquire(reference).then((texture) => {
+          if (this.buildingPreview !== created || this.closed) return;
+          created.wallTexture = texture;
+          this.drawBuildingPreview(created);
+        }).catch((error) => {
+          if (this.buildingPreview === created && !this.closed)
+            this.onError(String(error));
+        });
+      }
+    }
+    state.entity = after;
+    state.portals = portals;
+    this.positionBuildingPreviewPortals(state);
+    this.drawBuildingPreview(state);
+    this.selection.visible = false;
+    this.previewBuilding(after.polygons, activeContour);
+  }
+  private buildingPreviewDoors(state: BuildingPreview): Door[] {
+    if (state.portals.length)
+      return state.portals.flatMap(({ after }) => after ? [after] : []);
+    return [...this.session.dependents(state.sourceId)]
+      .map((id) => this.session.entities.get(id))
+      .filter((door): door is Door => door?.kind === "door");
+  }
+  private positionBuildingPreviewPortals(state: BuildingPreview): void {
+    for (const { before, after } of state.portals) {
+      const visual = this.visuals.get(before.id);
+      if (visual?.entity.kind !== "door") continue;
+      visual.container.visible = !!after;
+      if (!after) continue;
+      const pose = portalPose(after, (id) => id === state.entity.id
+        ? state.entity : this.session.entities.get(id));
+      visual.container.position.set(pose.x, pose.y);
+      visual.container.rotation = pose.angle + (after.flip ? Math.PI : 0);
+    }
+  }
+  private drawBuildingPreview(state: BuildingPreview): void {
+    const after = state.entity, doors = this.buildingPreviewDoors(state);
+    this.drawSurface({
+      entity: after, container: state.container,
+      bounds: entityBounds(after, (id) => this.session.entities.get(id)),
+    }, state.graphic, state.floorTexture, doors);
+    if (state.shadow) {
+      state.shadow.clear();
+      for (const polygon of after.polygons) {
+        state.shadow.poly(polygon.outer.flatMap((point) =>
+          [point.x + 0.22, point.y + 0.22]), true)
+          .fill({ color: 0x17191a, alpha: 0.22 });
+        for (const hole of polygon.holes)
+          state.shadow.poly(hole.flatMap((point) =>
+            [point.x + 0.22, point.y + 0.22]), true).cut();
+      }
+    }
+    for (const child of state.wallLayer.removeChildren()) child.destroy();
+    if (state.wallTexture && after.wallWidth > 0)
+      for (const segment of wallSegments(after, doors)) {
+        const dx = segment.b.x - segment.a.x,
+          dy = segment.b.y - segment.a.y,
+          length = Math.hypot(dx, dy);
+        if (!length) continue;
+        const sprite = new Sprite(state.wallTexture);
+        sprite.anchor.set(0, 0.5);
+        sprite.position.set(segment.a.x, segment.a.y);
+        sprite.rotation = Math.atan2(dy, dx);
+        sprite.width = length + 0.02;
+        sprite.height = after.wallWidth;
+        state.wallLayer.addChild(sprite);
+      }
+    this.invalidate();
+  }
+  private clearBuildingPreview(): void {
+    const state = this.buildingPreview;
+    if (!state) return;
+    this.buildingPreview = undefined;
+    for (const { before } of state.portals) {
+      const visual = this.visuals.get(before.id);
+      if (visual?.entity.kind !== "door") continue;
+      const current = visual.entity,
+        pose = portalPose(current, (id) => this.session.entities.get(id));
+      visual.container.visible = true;
+      visual.container.position.set(pose.x, pose.y);
+      visual.container.rotation = pose.angle + (current.flip ? Math.PI : 0);
+    }
+    state.container.destroy({ children: true });
+    state.shadow?.destroy();
+    for (const reference of state.assets) this.textures.release(reference);
+    const source = this.visuals.get(state.sourceId);
+    if (source) {
+      source.container.visible = state.sourceVisible;
+      if (source.shadow && state.shadowVisible !== undefined)
+        source.shadow.visible = state.shadowVisible;
+    }
   }
   private positionPreviewSize(): void {
     if (!this.previewSize || !this.previewSizePoint) return;
@@ -1851,6 +2046,7 @@ export class MapRenderer {
     this.invalidate();
   }
   cancelPreview(ids?: Iterable<Id>): void {
+    this.clearBuildingPreview();
     this.preview.clear();
     this.previewSizePoint = undefined;
     if (this.previewSize) this.previewSize.visible = false;
@@ -1892,6 +2088,7 @@ export class MapRenderer {
   }
   destroy(): void {
     this.closed = true;
+    this.clearBuildingPreview();
     this.clearObjectPreview();
     if (this.frame) cancelAnimationFrame(this.frame);
     this.resize?.disconnect();
