@@ -23220,18 +23220,41 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/features/objekte/light-wheel.ts"
+            "src/features/objekte/light-wheel.ts",
+            "src/properties.ts",
+            "src/editor.ts",
+            "src/commands.ts",
+            "src/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
+          "gap": "Enger integrierter Bedien-/Persistenzbeleg vorhanden; native Lichtpixel und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Integrierter 8×8-Host: Range-Start 5, Grenzen 0,5–20, Rad ±0,5, Shift ±0,1, Alt ±5°; sichtbare Vorschau und konstante Kamera/History vor Klick. Ein Klick speichert Radius 5,5 und Rotation 5° in einem History-Schritt; Undo/Redo, Save und frischer Prozess erhalten beide Werte. Export schließt den Cursor aus.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-range5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-rotation5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285209062-objekte-04-reopen/dd029-light-wheel-reopen.json"
+            ],
+            "gap": "Eingebaute asymmetrische Lichttextur und Schatten-/Pixelwirkung fehlen; installierte Endabnahme offen.",
+            "build": "feb33637ceb398cf854d954e4a345b56e661ace9c4bd4d342a17ef46e845f1f0",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -23803,18 +23826,41 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/features/objekte/light-wheel.ts"
+            "src/features/objekte/light-wheel.ts",
+            "src/properties.ts",
+            "src/editor.ts",
+            "src/commands.ts",
+            "src/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
+          "gap": "Enger integrierter Bedien-/Persistenzbeleg vorhanden; native Lichtpixel und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Integrierter 8×8-Host: Range-Start 5, Grenzen 0,5–20, Rad ±0,5, Shift ±0,1, Alt ±5°; sichtbare Vorschau und konstante Kamera/History vor Klick. Ein Klick speichert Radius 5,5 und Rotation 5° in einem History-Schritt; Undo/Redo, Save und frischer Prozess erhalten beide Werte. Export schließt den Cursor aus.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-range5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-rotation5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285209062-objekte-04-reopen/dd029-light-wheel-reopen.json"
+            ],
+            "gap": "Eingebaute asymmetrische Lichttextur und Schatten-/Pixelwirkung fehlen; installierte Endabnahme offen.",
+            "build": "feb33637ceb398cf854d954e4a345b56e661ace9c4bd4d342a17ef46e845f1f0",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -23865,18 +23911,41 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/features/objekte/light-wheel.ts"
+            "src/features/objekte/light-wheel.ts",
+            "src/properties.ts",
+            "src/editor.ts",
+            "src/commands.ts",
+            "src/renderer.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
+          "gap": "Enger integrierter Bedien-/Persistenzbeleg vorhanden; native Lichtpixel und installierte Endabnahme offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Integrierter 8×8-Host: Range-Start 5, Grenzen 0,5–20, Rad ±0,5, Shift ±0,1, Alt ±5°; sichtbare Vorschau und konstante Kamera/History vor Klick. Ein Klick speichert Radius 5,5 und Rotation 5° in einem History-Schritt; Undo/Redo, Save und frischer Prozess erhalten beide Werte. Export schließt den Cursor aus.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-INTEGRATED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-range5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-preview-rotation5.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285104974-objekte-04-edit/dd029-light-wheel-placed.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-integration-20261006/evidence/1791285209062-objekte-04-reopen/dd029-light-wheel-reopen.json"
+            ],
+            "gap": "Eingebaute asymmetrische Lichttextur und Schatten-/Pixelwirkung fehlen; installierte Endabnahme offen.",
+            "build": "feb33637ceb398cf854d954e4a345b56e661ace9c4bd4d342a17ef46e845f1f0",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
