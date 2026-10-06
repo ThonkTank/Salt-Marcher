@@ -4697,6 +4697,17 @@
       },
       {
         "id": "DD-012.01",
+        "phase2Review": {
+          "state": "partial",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Modus und Griffanzeige im aktuellen Host bestanden; Original-Trefferzonen bei zwei Zoomstufen und installierter Endstand fehlen."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -4780,6 +4791,18 @@
       },
       {
         "id": "DD-012.02",
+        "phase2Review": {
+          "state": "partial",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014225-1138596/evidence/result.json"
+          ],
+          "gap": "Rechteck/Ellipse im Host und verformte 32-Punkt-Ellipse im Original frisch geöffnet; Paketwand und fallgleiche freie Zielposition fehlen."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -4866,6 +4889,17 @@
       },
       {
         "id": "DD-012.03",
+        "phase2Review": {
+          "state": "open",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Eigene gehaltene Boden-/Wandvorschau belegt; Original-Escape und Paketwandvorschau dieses Builds nicht entschieden."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -4942,6 +4976,17 @@
       },
       {
         "id": "DD-013.01",
+        "phase2Review": {
+          "state": "open",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Delete als 4→3-Alias implementiert, obwohl die physische Original-Action weiterhin widersprüchlich ist; Planregel nicht erfüllt."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -5016,6 +5061,17 @@
       },
       {
         "id": "DD-013.02",
+        "phase2Review": {
+          "state": "partial",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Backspace 4→3, Undo/Redo und Neuöffnung beidseitig im Grundeffekt belegt; aktuelle Paketwand-/Portalpaarung und Installation offen."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -5093,6 +5149,17 @@
       },
       {
         "id": "DD-013.03",
+        "phase2Review": {
+          "state": "open_implementation_gap",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Kandidat blockiert Delete bei drei Punkten; Original-Assembly beschreibt nach ausgelöster Action Entfernen nur des gewählten Umrisses. Action-Zustellung und Raum-/Portalfolge offen."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -5173,6 +5240,18 @@
       },
       {
         "id": "DD-014.01",
+        "phase2Review": {
+          "state": "partial",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014158-1138237/evidence/result.json"
+          ],
+          "gap": "Kantenmittelzug 3→4 und frische Öffnung beidseitig belegt; Paketwand, Trefferzone und Original-Escape nicht fallgleich geprüft."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
@@ -5271,6 +5350,17 @@
       },
       {
         "id": "DD-014.02",
+        "phase2Review": {
+          "state": "partial",
+          "reviewedCommit": "b3f3d58",
+          "reviewedBuildSha256": "9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330424154-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/host/evidence/1791330476218-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Ein Portal folgt im Host atomar; R3/R4-Ankerwerte, zwei Portale und Ersatzwand nicht im aktuellen Build gepaart."
+        },
         "phase2Candidate": {
           "version": "Dungeon-Editor 0.1.0 Worktree, Build SHA-256 9c95644137d64bf2f712dfc4e1855e700951e636ac0b77697a5f7382701af9c7",
           "state": "host_edit_reopen_passed_review_open",
