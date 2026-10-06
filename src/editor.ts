@@ -137,7 +137,7 @@ export interface EditorHost {
   app: App;
   notice: (message: string) => void;
   openNote: (path: string) => void;
-  openRoomKey: (roomId: string, sectionId?: string) => void;
+  openRoomKey: (roomId: string, sectionId?: string, anchor?: string) => void;
   mapPath: string;
   save: () => Promise<void>;
   pending?: () => boolean;
@@ -642,6 +642,12 @@ export class DungeonEditor {
     this.openKeyButton.addEventListener("click", () =>
       this.run(() => {
         this.commitNote();
+        const selectedEntity = this.selected ? this.session.entities.get(this.selected) : undefined;
+        if (selectedEntity?.keyTarget) {
+          this.host.openRoomKey(selectedEntity.keyTarget.roomId,
+            selectedEntity.keyTarget.sectionId, selectedEntity.keyTarget.anchor);
+          return;
+        }
         const room = this.selectedRoom();
         if (isStructuredRoom(room)) {
           const occurrence = this.session.content.occurrences.find((item) =>
@@ -2979,7 +2985,9 @@ export class DungeonEditor {
     const token = ++this.selectionToken;
     this.structuredPanel?.destroy();
     this.structuredPanel = undefined;
-    const room = this.selectedRoom();
+    const selectedEntity = this.selected ? this.session.entities.get(this.selected) : undefined;
+    const target = selectedEntity?.keyTarget;
+    const room = target ? this.session.entities.get(target.roomId) : this.selectedRoom();
     if (isStructuredRoom(room)) {
       const occurrence = this.session.content.occurrences.find((item) =>
         item.entityId === this.selected && item.roomId === room.id);
@@ -2989,7 +2997,8 @@ export class DungeonEditor {
       this.openKeyButton.textContent = "Raum-Key öffnen";
       this.structuredPanel = new StructuredKeyPanel(
         this.host.app, this.structuredHost, this.session, this.host.mapPath,
-        room.id, occurrence?.sectionId, this.host.notice, () => !this.host.pending?.(),
+        room.id, target?.sectionId ?? occurrence?.sectionId,
+        this.host.notice, () => !this.host.pending?.(), target?.anchor,
       );
       return;
     }

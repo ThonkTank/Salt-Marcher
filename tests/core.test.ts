@@ -28,6 +28,7 @@ import {
   structuredRoom,
 } from "../src/room-key";
 import { Session, textPatch } from "../src/session";
+import { projectedRoomDocuments, stripFeatureBoundaries } from "../src/room-projection";
 const newDocument: typeof createDocument = (name, width, height, assets, appearance, version = 3) =>
   createDocument(name, width, height, assets, appearance, version);
 import { readObjectArgb, writeObjectArgb } from "../src/features/objekte/color-alpha";
@@ -3955,6 +3956,65 @@ test("V4 feature text is exact, links one object and copies only its shared text
   const next = createFeatureOccurrence(s, definition.id, a.id, 1, undefined, {},
     { markdown: "Neu." });
   assert.equal(next.marker, "G");
+});
+
+test("V4 imported shared text, generic Key targets and room projection survive a room move", () => {
+  const doc = newDocument("Importierte Räume", 30, 12, undefined, undefined, 4);
+  const setup = new Session(doc), floor = doc.floors[0]!.id;
+  const outline = (x: number) => [{ x, y: 1 }, { x: x + 8, y: 1 },
+    { x: x + 8, y: 9 }, { x, y: 9 }];
+  const a = createRoom(setup, floor, outline(1), "QA/Räume");
+  const b = createRoom(setup, floor, outline(14), "QA/Räume");
+  const linked = createObject(setup, floor, { x: 3, y: 3 });
+  const generic = createObject(setup, floor, { x: 4, y: 3 });
+  const section = structuredRoom(setup, a.id).key.sections[0]!.id;
+  const textId = "shared-text", body = "Originalwortlaut.\n";
+  const markdown = `## A · Gemeinsamer Ort:\n<!-- dungeon-feature:${textId}:start -->\n${body}\n<!-- dungeon-feature:${textId}:end -->`;
+  const original = setup.document();
+  const migrated = { ...original,
+    entities: original.entities.map((entity) => entity.id === a.id
+      ? { ...entity, key: { sections: [{ id: section, kind: "markdown" as const, markdown }],
+          sourcePath: "QA/Räume/01 Ort.md" } }
+      : entity.id === generic.id
+        ? { ...entity, keyTarget: { roomId: a.id, sectionId: section,
+            anchor: "A · Gemeinsamer Ort:" } } : entity),
+    content: { ...original.content, definitions: [
+      { id: "definition-a", name: "A", kind: "feature" as const, xp: 0, lootValue: 0 },
+      { id: "definition-b", name: "B", kind: "creature" as const, xp: 0, lootValue: 0 },
+    ], occurrences: [
+      { id: "occ-a", definitionId: "definition-a", roomId: a.id,
+        entityId: linked.id, marker: "A", quantity: 1, sectionId: section, textId },
+      { id: "occ-b", definitionId: "definition-b", roomId: a.id,
+        marker: "B", quantity: 1, sectionId: section, textId },
+    ] },
+  };
+  const s = new Session(parseDocument(JSON.stringify(migrated)));
+  const first = s.content.occurrences[0]!, second = s.content.occurrences[1]!;
+  assert.equal(structuredFeatureText(s, first), body);
+  assert.equal(structuredFeatureText(s, second), body);
+  assert.equal(stripFeatureBoundaries(markdown), "## A · Gemeinsamer Ort:\n" + body);
+  const projection = projectedRoomDocuments(s.document());
+  assert.equal(projection.find((room) => room.id === a.id)?.text,
+    `---\nroom_id: "1"\n---\n## A · Gemeinsamer Ort:\n${body}`);
+  const moved = objectAtPoint(s, linked, { x: 16, y: 3 });
+  executeLinkedObjectChanges(s, "Gemeinsamen Text bewegen", [
+    { id: linked.id, before: linked, after: moved },
+  ]);
+  const after = s.content.occurrences.find((item) => item.id === first.id)!;
+  assert.equal(after.roomId, b.id);
+  assert.notEqual(after.textId, second.textId);
+  assert.equal(structuredFeatureText(s, after), body);
+  assert.equal(structuredFeatureText(s, second), body);
+  assert.equal((s.entities.get(generic.id) as MapObject).keyTarget?.sectionId, section);
+  const copy = duplicateFloor(s, floor);
+  const copiedRoom = [...s.entities.values()].find((entity) => isStructuredRoom(entity) &&
+    entity.floorId === copy.id && entity.number === "1");
+  const copiedGeneric = [...s.entities.values()].find((entity) => entity.kind === "object" &&
+    entity.floorId === copy.id && entity.id !== generic.id && entity.keyTarget);
+  assert.ok(isStructuredRoom(copiedRoom));
+  assert.equal(copiedRoom.key.sourcePath, undefined);
+  assert.equal(copiedGeneric?.keyTarget?.roomId, copiedRoom.id);
+  assert.deepEqual(parseDocument(JSON.stringify(s.document())), s.document());
 });
 
 test("V4 single feature section keeps its ID when its object changes rooms", () => {

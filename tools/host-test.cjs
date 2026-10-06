@@ -26,11 +26,12 @@ const restart = process.argv.includes("--restart"),
   phase3Object = process.argv.includes("--phase3-object"),
   phase4Key = process.argv.includes("--phase4-key"),
   phase5Feature = process.argv.includes("--phase5-feature"),
+  phase6Migration = process.argv.includes("--phase6-migration"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -198,12 +199,12 @@ function prepare() {
     );
   fs.writeFileSync(
     vault + "/.obsidian/community-plugins.json",
-    JSON.stringify(["dungeon-editor"]),
+    JSON.stringify(phase6Migration ? ["dungeon-editor", "dungeon-auswertung", "dnd-ot-spielansicht"] : ["dungeon-editor"]),
   );
   fs.writeFileSync(vault + "/.obsidian/app.json", "{}");
   fs.writeFileSync(
     vault + "/.obsidian/core-plugins.json",
-    JSON.stringify({ "file-explorer": true, "command-palette": true }),
+    JSON.stringify({ "file-explorer": true, "command-palette": true, ...(phase6Migration ? { outline: true } : {}) }),
   );
   fs.writeFileSync(
     qa + "/config/obsidian/obsidian.json",
@@ -212,6 +213,32 @@ function prepare() {
     }),
   );
   if (large && !restart) prepareLarge(vault);
+  if (phase6Migration) {
+    const stage = process.env.DUNGEON_PHASE6_STAGE;
+    assert(stage && fs.existsSync(stage + "/migration.json"), "Phase-6-Ablage fehlt");
+    if (!restart) {
+      for (const dir of ["Dungeons/Drachenhöhle", "Dungeons/_System"])
+        fs.cpSync(path.join(sourceVault, dir), path.join(vault, dir), { recursive: true });
+      const manifest = JSON.parse(fs.readFileSync(stage + "/migration.json", "utf8"));
+      for (const item of manifest.stagedFiles) {
+        const destination = path.join(vault, item.path);
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.copyFileSync(path.join(stage, item.path), destination);
+      }
+      for (const room of manifest.rooms) fs.rmSync(path.join(vault, room.path));
+    }
+    for (const plugin of ["dungeon-auswertung", "dnd-ot-spielansicht"])
+      fs.mkdirSync(path.join(vault, ".obsidian/plugins", plugin), { recursive: true });
+    const sourcePlugins = path.join(sourceVault, ".obsidian/plugins");
+    for (const plugin of ["dungeon-auswertung", "dnd-ot-spielansicht"])
+      fs.copyFileSync(path.join(sourcePlugins, plugin, "manifest.json"), path.join(vault, ".obsidian/plugins", plugin, "manifest.json"));
+    fs.copyFileSync(path.join(stage, "dungeon-auswertung-main.js"), path.join(vault, ".obsidian/plugins/dungeon-auswertung/main.js"));
+    fs.copyFileSync(path.join(sourcePlugins, "dungeon-auswertung/styles.css"), path.join(vault, ".obsidian/plugins/dungeon-auswertung/styles.css"));
+    for (const name of ["core.js", "format2.js", "fast.js", "sections.js", "worker.js"])
+      fs.copyFileSync(path.join(sourcePlugins, "dungeon-auswertung", name), path.join(vault, ".obsidian/plugins/dungeon-auswertung", name));
+    fs.copyFileSync(path.join(root, "tools/spielansicht/main.js"), path.join(vault, ".obsidian/plugins/dnd-ot-spielansicht/main.js"));
+    fs.copyFileSync(path.join(root, "tools/spielansicht/styles.css"), path.join(vault, ".obsidian/plugins/dnd-ot-spielansicht/styles.css"));
+  }
   if (compactSmoke) {
     const dungeon = "Dungeons/Drachenhöhle/Karte.dungeon";
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
@@ -402,7 +429,7 @@ async function workflow() {
   }
   assert(page, "Obsidian window");
   page.setDefaultTimeout(12000);
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (e) => errors.push(e.stack || e.message));
   page.on("console", (e) => {
     if (e.type() === "error")
       fs.appendFileSync(out + "/console.log", e.text() + "\n");
@@ -478,6 +505,10 @@ async function workflow() {
     });
   if (phase5Feature) {
     await phase5FeatureWorkflow();
+    return;
+  }
+  if (phase6Migration) {
+    await phase6MigrationWorkflow();
     return;
   }
   if (phase4Key) {
@@ -3041,6 +3072,117 @@ async function pathLibraryWorkflow(view) {
   await page.screenshot({ path: out + "/path-library.png" });
   checks.push("Path Library selection and path save cleanly");
 }
+async function phase6MigrationWorkflow() {
+  const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon";
+  const overviewPath = "Dungeons/Drachenhöhle/Drachenhöhle.md";
+  await page.waitForFunction(() => !!app.plugins.getPlugin("dnd-ot-spielansicht") &&
+    !!app.plugins.getPlugin("dungeon-auswertung"), null, { timeout: 15000 });
+  const inventory = await page.evaluate(async (mapPath) => {
+    const native = app.plugins.getPlugin("dungeon-editor");
+    const rooms = await native.readStructuredRoomDocuments(mapPath);
+    const doc = JSON.parse(await app.vault.read(app.vault.getAbstractFileByPath(mapPath)));
+    return { rooms: rooms.length, sections: rooms.map(r => r.sections.length),
+      version: doc.version, occurrences: doc.content.occurrences.length,
+      routes: doc.content.routes.length,
+      targets: doc.entities.filter(e => e.keyTarget).length,
+      roomFiles: app.vault.getMarkdownFiles().filter(f => f.path.startsWith("Dungeons/Drachenhöhle/Räume/")).length };
+  }, mapPath);
+  assert.equal(inventory.version, 4);
+  assert.equal(inventory.rooms, 15);
+  assert.equal(inventory.occurrences, 80);
+  assert.equal(inventory.routes, 22);
+  assert.equal(inventory.targets, 99);
+  assert.equal(inventory.roomFiles, 0);
+  checks.push("V4 copy opens with 15 virtual keys, 80 occurrences, 22 routes and 99 object targets after room files are removed");
+  await page.evaluate(async path => app.plugins.getPlugin("dnd-ot-spielansicht").restoreLayout(path), overviewPath);
+  await page.locator(".dnd-index-key .dnd-index-entry").first().waitFor({ state: "attached", timeout: 15000 });
+  assert.equal(await page.locator(".dnd-index-key .dnd-index-entry").count(), 15);
+  await page.locator(".dn-room-view .dn-key-section").first().waitFor({ timeout: 15000 });
+  await page.locator(".dnd-v4-outline-entry").first().waitFor({ timeout: 15000 });
+  const initial = await page.evaluate(() => ({
+    detail: app.workspace.getLeavesOfType("dungeon-native-room")[0]?.getViewState()?.state,
+    outline: document.querySelectorAll(".dnd-v4-outline-entry").length,
+    map: !!document.querySelector(".dnd-play-map-pane .dn-map-card"),
+  }));
+  assert(initial.detail?.roomId);
+  assert(initial.outline > 2);
+  assert(initial.map);
+  checks.push("Spielansicht shows Key list, right room detail, outline and focused native map");
+  await page.evaluate(() => app.workspace.setActiveLeaf(app.workspace.getLeavesOfType("dnd-dungeon-key")[0]));
+  await page.locator(".dnd-index-key .dnd-v4-room-link").nth(8).click();
+  await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-room")[0]
+    ?.view?.panel?.root?.innerText?.includes("9 Schlafhöhle 2"), null, { timeout: 10000 });
+  const selected = await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-room")[0]?.getViewState()?.state);
+  assert(selected?.roomId && selected.roomId !== initial.detail.roomId);
+  checks.push("Key-list mouse click opens room 9 in the right V4 detail pane");
+  for (let i=0;i<8;i++) {
+    const scale=await page.evaluate(() => app.workspace.getLeavesOfType("dnd-play-map")[0]?.view?.map?.renderer?.camera?.scale||0);
+    if(scale>=20)break;
+    await page.locator('.dnd-play-map-pane button[aria-label="+"]').click();
+  }
+  const marker = await page.evaluate(roomId => {
+    const pane=app.workspace.getLeavesOfType("dnd-play-map")[0]?.view,card=pane?.map;
+    const occurrence=card?.map?.session.content.occurrences.find(item => item.roomId===roomId && item.marker==="C" && item.entityId);
+    const entity=occurrence && card.map.session.entities.get(occurrence.entityId);
+    if(!entity||!card.renderer?.canvas)return null;
+    const canvas=card.renderer.canvas.getBoundingClientRect(),camera=card.renderer.camera;
+    const local={x:camera.x+entity.x*camera.scale,y:camera.y+entity.y*camera.scale};
+    return {x:canvas.x+local.x,y:canvas.y+local.y,
+      canvas:{x:canvas.x,y:canvas.y,width:canvas.width,height:canvas.height},local,scale:camera.scale,
+      hit:card.renderer.hitTest({x:entity.x,y:entity.y},candidate=>candidate.kind==="object"&&!!candidate.keyTarget)?.id,
+      entityId:entity.id,sectionId:occurrence.sectionId,roomId:occurrence.roomId};
+  }, selected.roomId);
+  assert(marker && marker.x > 0 && marker.y > 0,"Featuremarker C liegt nicht in der Spielkarte");
+  fs.writeFileSync(out+"/phase6-marker.json",JSON.stringify(marker,null,2));
+  await page.mouse.click(marker.x,marker.y);
+  await page.waitForFunction(target => app.workspace.getLeavesOfType("dungeon-native-room")[0]
+    ?.getViewState()?.state?.sectionId===target, marker.sectionId, {timeout:10000});
+  checks.push("Migrated map marker C opens its exact V4 Key section by mouse click");
+  await page.locator(".dnd-v4-outline-entry").filter({ hasText: "C · Spinnennest:" }).click();
+  await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-room")[0]
+    ?.getViewState()?.state?.sectionId, null, { timeout: 10000 });
+  checks.push("Outline navigates to the selected existing heading");
+  const roomText = await page.locator(".dn-room-view .dn-key-content").first().innerText();
+  assert.match(roomText, /Ein Ettercap, drei Riesenspinnen und ein Insektenschwarm/);
+  await page.screenshot({ path: out + "/phase6-room-key.png", timeout: 15000 });
+  await page.evaluate(() => {
+    const file = app.vault.getAbstractFileByPath("Dungeons/Drachenhöhle/Drachenhöhle.md");
+    const leaf = app.workspace.getLeavesOfType("markdown").find(item => item.view.file?.path === file.path);
+    app.workspace.setActiveLeaf(leaf);
+  });
+  const stable = page.locator('.dnd-play-overview a[href^="obsidian://dungeon-room?"]').first();
+  await stable.waitFor({ timeout: 10000 });
+  const stableUrl = await stable.getAttribute("href");
+  await stable.click();
+  const expectedRoom = new URL(stableUrl).searchParams.get("room");
+  await page.waitForFunction(id => app.workspace.getLeavesOfType("dungeon-native-room")
+    .some(leaf => leaf.getViewState()?.state?.roomId === id), expectedRoom, { timeout: 10000 });
+  checks.push("Overview stable room link opens its V4 target without a room Markdown file");
+  const reportInput = await page.evaluate(async path => {
+    const input = await app.plugins.getPlugin("dungeon-auswertung").readDungeon(path);
+    return { rooms: input.rooms.length, documents: input.documents.length,
+      virtual: input.documents.filter(doc => doc.path.startsWith("Dungeons/Drachenhöhle/Räume/")).length,
+      boss: input.config.bosses[0]?.feature };
+  }, overviewPath);
+  assert.equal(reportInput.rooms, 15);
+  assert.equal(reportInput.virtual, 15);
+  assert.match(reportInput.boss, /\[\[Dungeons\/Drachenhöhle\/Räume\/13 Hort#\^hortwache/);
+  const report = await page.evaluate(async () => {
+    const file = app.vault.getAbstractFileByPath("Dungeons/Drachenhöhle/Auswertung.md");
+    await app.workspace.getLeaf("tab").openFile(file, { state: { mode: "preview" } });
+    return file.path;
+  });
+  assert.equal(report, "Dungeons/Drachenhöhle/Auswertung.md");
+  await page.locator(".dungeon-report:visible").first().waitFor({ timeout: 15000 });
+  await page.waitForFunction(() => [...document.querySelectorAll(".dungeon-report")].some(el => el.offsetParent && el.innerText
+    ?.includes("Gesamtdungeon")), null, { timeout: 15000 });
+  const reportText = await page.locator(".dungeon-report:visible").first().innerText();
+  assert(!reportText.includes("Auswertung nicht möglich"), reportText.slice(0, 400));
+  checks.push("Legacy Auswertung loads all virtual room documents and renders the existing report");
+  await page.screenshot({ path: out + "/phase6-spielansicht.png", timeout: 15000 });
+  fs.writeFileSync(out + "/phase6-inventory.json", JSON.stringify({ inventory, initial, selected, reportInput }, null, 2));
+}
+
 async function phase5FeatureWorkflow() {
   const mapPath = "Dungeons/Phase5QA/Karte.dungeon";
   const savedPath = qa + "/phase5-feature-saved.json";

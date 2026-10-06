@@ -105,7 +105,7 @@ export function structuredFeatureText(session: Session, occurrence: FeatureOccur
   if (!isStructuredRoom(room)) throw new Error("Strukturierter Raum fehlt.");
   const section = room.key.sections.find((item) => item.id === occurrence.sectionId);
   if (section?.kind !== "markdown") throw new Error("Feature-Abschnitt fehlt.");
-  const [start, end] = featureTextRange(section.markdown, occurrence.id);
+  const [start, end] = featureTextRange(section.markdown, occurrence.textId ?? occurrence.id);
   return section.markdown.slice(start, end);
 }
 function nextFeatureMarker(content: DungeonContent, roomId: string): string {
@@ -672,23 +672,31 @@ export function executeLinkedObjectChanges(
     if (!definition) throw new Error("Feature-Definition fehlt.");
     const section = source.key.sections.find((item) => item.id === linked.sectionId);
     if (section?.kind !== "markdown") throw new Error("Feature-Abschnitt fehlt.");
-    const [start, end] = featureTextRange(section.markdown, linked.id);
+    const textId = linked.textId ?? linked.id;
+    const [start, end] = featureTextRange(section.markdown, textId);
     const description = section.markdown.slice(start, end);
     const [marker, nextFeatureOrdinal] = definition.kind === "creature"
       ? [creatureMarker(session.content, definition), target.key.nextFeatureOrdinal]
       : nextStructuredMarker(target, { ...session.content, occurrences });
     const shared = session.content.occurrences.some((item) => item.id !== linked.id &&
       item.roomId === source.id && item.sectionId === section.id);
+    const sharedText = occurrences.some((item) => item.id !== linked.id &&
+      item.roomId === source.id && item.sectionId === section.id &&
+      (item.textId ?? item.id) === textId);
     let sectionId = section.id;
+    let movedTextId = textId;
     if (shared) {
-      const old = section.markdown;
-      const preserved = old.slice(0, start - featureTextStart(linked.id).length - 1) +
-        description + old.slice(end + 1 + featureTextEnd(linked.id).length);
-      setRoom({ ...source, key: { ...source.key, sections: source.key.sections.map((item) =>
-        item.id === section.id ? { ...section, markdown: preserved } : item) } });
+      if (!sharedText) {
+        const old = section.markdown;
+        const preserved = old.slice(0, start - featureTextStart(textId).length - 1) +
+          description + old.slice(end + 1 + featureTextEnd(textId).length);
+        setRoom({ ...source, key: { ...source.key, sections: source.key.sections.map((item) =>
+          item.id === section.id ? { ...section, markdown: preserved } : item) } });
+      }
       sectionId = uid();
+      movedTextId = sharedText ? uid() : textId;
       const copy = { id: sectionId, kind: "markdown" as const,
-        markdown: `## ${marker} · ${definition.name}:\n` + featureSegment(linked.id, description) };
+        markdown: `## ${marker} · ${definition.name}:\n` + featureSegment(movedTextId, description) };
       setRoom({ ...target, key: { ...target.key,
         ...(nextFeatureOrdinal !== undefined ? { nextFeatureOrdinal } : {}),
         sections: [...target.key.sections, copy] } });
@@ -704,7 +712,8 @@ export function executeLinkedObjectChanges(
         sections: [...target.key.sections, moved] } });
     }
     occurrences = occurrences.map((item) => item.id === linked.id
-      ? { ...item, roomId: target.id, marker, sectionId } : item);
+      ? { ...item, roomId: target.id, marker, sectionId,
+          ...(sharedText ? { textId: movedTextId } : {}) } : item);
   }
   for (const room of rooms.values())
     changes.set(room.id, { id: room.id, before: session.entities.get(room.id)!, after: room });

@@ -13,6 +13,7 @@ import {
   type SliderComponent,
   type ToggleComponent,
   type WorkspaceLeaf,
+  type WorkspaceSplit,
 } from "obsidian";
 import { closeSync, createReadStream, openSync, readSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -39,6 +40,7 @@ import { Session } from "./session";
 import { FileConflict, MapRepository, type FileStore } from "./persistence";
 import { DungeonEditor, type EditorHost } from "./editor";
 import { StructuredKeyPanel } from "./key-panel";
+import { projectedRoomDocuments, roomSectionForAnchor } from "./room-projection";
 import { ExportDialog } from "./features/verwaltung/export-dialog";
 import { encodeRasterFile } from "./features/verwaltung/raster-files";
 import { serializeUniversalVtt03 } from "./features/verwaltung/universal-vtt";
@@ -525,6 +527,14 @@ export default class DungeonPlugin extends Plugin {
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });
+    this.registerDomEvent(document, "click", (event) => {
+      const link = (event.target as Element | null)?.closest?.('a[href^="obsidian://dungeon-room?"]');
+      if (!link || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const params = Object.fromEntries(new URL(link.getAttribute("href")!).searchParams);
+      void this.openRoomLink(params).catch((error) => new Notice(String(error)));
+    }, true);
     this.registerExtensions(["dungeon"], VIEW);
     this.app.workspace.onLayoutReady(() => void this.restorePendingViews());
     this.addCommand({
@@ -559,7 +569,9 @@ export default class DungeonPlugin extends Plugin {
         );
         if (!(file instanceof TFile) || file.extension !== "dungeon") continue;
         const host = document.createElement("div"),
-          roomId = this.roomId(context.sourcePath);
+          roomId = element.closest<HTMLElement>(".dn-structured-key")?.dataset.keyRoom ??
+            this.roomId(context.sourcePath);
+        host.style.width = embed.style.width;
         embed.replaceWith(host);
         context.addChild(new DungeonEmbed(host, this, file.path, roomId));
       }
@@ -670,7 +682,7 @@ export default class DungeonPlugin extends Plugin {
     });
     this.app.workspace.revealLeaf(leaf);
   }
-  async openRoomKey(path: string, roomId: string, sectionId?: string): Promise<void> {
+  async openRoomKey(path: string, roomId: string, sectionId?: string, anchor?: string): Promise<void> {
     for (const type of [VIEW, PENDING_VIEW])
       for (const candidate of this.app.workspace.getLeavesOfType(type)) {
         const view = candidate.view as unknown as {
@@ -678,16 +690,36 @@ export default class DungeonPlugin extends Plugin {
         };
         if ((view.file?.path ?? view.mapPath) === path) view.editor?.showLayout();
       }
+    const game = (this.app as App & { plugins: { getPlugin(id: string): unknown } })
+      .plugins.getPlugin("dnd-ot-spielansicht") as { rightGroup?: () => WorkspaceSplit | undefined } | undefined;
+    const playGroup = game?.rightGroup?.();
     const leaf = this.app.workspace.getLeavesOfType(ROOM_VIEW)
       .find((candidate) => candidate.view.containerEl.isConnected) ??
+      (playGroup ? this.app.workspace.createLeafInParent(playGroup, 0) : undefined) ??
       this.app.workspace.getRightLeaf(false) ??
       this.app.workspace.getLeaf("split", "vertical");
     await leaf.setViewState({ type: ROOM_VIEW, active: true,
-      state: { path, roomId, sectionId } });
+      state: { path, roomId, sectionId, anchor } });
     this.app.workspace.revealLeaf(leaf);
   }
+  async readStructuredRoomDocuments(mapPath: string): Promise<ReturnType<typeof projectedRoomDocuments>> {
+    const file = this.app.vault.getAbstractFileByPath(mapPath);
+    if (!(file instanceof TFile) || file.extension !== "dungeon") return [];
+    return projectedRoomDocuments(parseDocument(await this.app.vault.read(file)));
+  }
+  async openRoomBySourcePath(mapPath: string, sourcePath: string, anchor?: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(mapPath);
+    if (!(file instanceof TFile)) throw new Error("Dungeonkarte fehlt.");
+    const doc = parseDocument(await this.app.vault.read(file));
+    const room = doc.entities.find((entity) => isStructuredRoom(entity) &&
+      entity.key.sourcePath === sourcePath);
+    if (!isStructuredRoom(room)) throw new Error("Raum-Key fehlt.");
+    const sectionId = roomSectionForAnchor(room, anchor);
+    if (anchor && !sectionId) throw new Error("Raumanker fehlt: " + anchor);
+    await this.openRoomKey(mapPath, room.id, sectionId, anchor);
+  }
   private async openRoomLink(params: Record<string, string>): Promise<void> {
-    const { map, room, section } = params;
+    const { map, room, section, anchor } = params;
     if (!map || !room) throw new Error("Raum-Link ist unvollständig.");
     const matches: { path: string; doc: ReturnType<typeof parseDocument> }[] = [];
     for (const file of this.app.vault.getFiles().filter((item) => item.extension === "dungeon")) {
@@ -703,7 +735,7 @@ export default class DungeonPlugin extends Plugin {
       isStructuredRoom(entity) && entity.key.sections.some((item) => item.id === section)) : [];
     if (section && sectionRooms.length !== 1)
       throw new Error("Raumabschnitt zum Link fehlt oder ist nicht eindeutig.");
-    await this.openRoomKey(match.path, sectionRooms[0]?.id ?? room, section);
+    await this.openRoomKey(match.path, sectionRooms[0]?.id ?? room, section, anchor);
   }
   createDungeonMap(input: {
     path: string;
@@ -1307,7 +1339,7 @@ class DungeonMapCard {
     return (
       isRoom(entity) ||
       (entity.kind === "door" && !!entity.passage) ||
-      (entity.kind === "object" && !!this.occurrenceFor(entity))
+      (entity.kind === "object" && (!!this.occurrenceFor(entity) || !!entity.keyTarget))
     );
   }
   private activateAt(event: PointerEvent): void {
@@ -1397,6 +1429,8 @@ class DungeonMapCard {
   private showFeature(object: MapObject): void {
     const occurrence = this.occurrenceFor(object);
     if (occurrence) this.openOccurrence(occurrence);
+    else if (object.keyTarget) void this.plugin.openRoomKey(this.path,
+      object.keyTarget.roomId, object.keyTarget.sectionId, object.keyTarget.anchor);
   }
   private openOccurrence(occurrence: FeatureOccurrence): void {
     this.focusId = occurrence.roomId;
@@ -1663,6 +1697,7 @@ class DungeonRoomView extends ItemView {
   private path?: string;
   private roomId?: string;
   private sectionId?: string;
+  private anchor?: string;
   private map?: OpenMap;
   private acquiredPath?: string;
   private panel?: StructuredKeyPanel;
@@ -1673,22 +1708,25 @@ class DungeonRoomView extends ItemView {
   getDisplayText(): string { return "Raum-Key"; }
   getIcon(): string { return "file-text"; }
   getState(): Record<string, unknown> {
-    return { path: this.path, roomId: this.roomId, sectionId: this.sectionId };
+    return { path: this.path, roomId: this.roomId, sectionId: this.sectionId, anchor: this.anchor };
   }
   async setState(state: Record<string, unknown>): Promise<void> {
     const path = typeof state.path === "string" ? state.path : undefined;
     const roomId = typeof state.roomId === "string" ? state.roomId : undefined;
     const sectionId = typeof state.sectionId === "string" ? state.sectionId : undefined;
+    const anchor = typeof state.anchor === "string" ? state.anchor : undefined;
     if (this.panel && !this.panel.commit()) return;
     if (path === this.path && roomId === this.roomId && this.panel) {
       this.sectionId = sectionId;
-      this.panel.focus(sectionId);
+      this.anchor = anchor;
+      this.panel.focus(sectionId, anchor);
       return;
     }
     this.path = path;
     this.roomId = roomId;
     this.sectionId = sectionId;
-    if (this.contentEl.isConnected) await this.render();
+    this.anchor = anchor;
+    if (path && roomId) await this.render();
   }
   async onOpen(): Promise<void> { await this.render(); }
   private async clear(): Promise<void> {
@@ -1715,10 +1753,11 @@ class DungeonRoomView extends ItemView {
       if (generation !== this.generation) { this.plugin.release(path, map); return; }
       this.map = map;
       this.acquiredPath = path;
-      if (map.session.version !== 4 || !isStructuredRoom(map.session.entities.get(this.roomId)))
+      const room = map.session.entities.get(this.roomId);
+      if (map.session.version !== 4 || !isStructuredRoom(room))
         throw new Error("Strukturierter Raum-Key nicht gefunden.");
       this.contentEl.classList.add("dn-room-view");
-      if (!pending) {
+      if (!pending && !room.key.sourcePath) {
         this.card = this.plugin.createDungeonMap({ path, focusRoom: this.roomId, compact: true });
         this.contentEl.append(this.card.el);
       }
@@ -1731,7 +1770,7 @@ class DungeonRoomView extends ItemView {
       });
       this.panel = new StructuredKeyPanel(
         this.app, this.contentEl, map.session, path, this.roomId, this.sectionId,
-        (message) => new Notice(message), () => !map.pending,
+        (message) => new Notice(message), () => !map.pending, this.anchor,
       );
     } catch (error) {
       this.contentEl.createEl("p", { text: "Raum-Key konnte nicht geöffnet werden: " + String(error) });
@@ -1755,7 +1794,7 @@ function editorHost(
     openNote: (path) => {
       void plugin.app.workspace.openLinkText(path, mapPath, "split");
     },
-    openRoomKey: (roomId, sectionId) => { void plugin.openRoomKey(mapPath, roomId, sectionId); },
+    openRoomKey: (roomId, sectionId, anchor) => { void plugin.openRoomKey(mapPath, roomId, sectionId, anchor); },
     mapPath,
     save,
     assetUrl: (path) => plugin.assetUrl(path),

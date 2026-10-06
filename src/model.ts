@@ -21,6 +21,7 @@ interface BaseEntity {
   readonly prefabId?: Id;
   readonly roomId?: Id;
   readonly note?: NoteLink;
+  readonly keyTarget?: { readonly roomId: Id; readonly sectionId: Id; readonly anchor?: string };
 }
 export interface Material {
   readonly asset?: string;
@@ -62,6 +63,7 @@ export type KeySection = MarkdownKeySection | PassageKeySection;
 export interface RoomKey {
   readonly sections: readonly KeySection[];
   readonly nextFeatureOrdinal?: number;
+  readonly sourcePath?: string;
 }
 export type RoomV3 = Building & {
   readonly name: string;
@@ -264,6 +266,7 @@ export interface FeatureOccurrence {
   readonly quantity: number;
   readonly note?: NoteLink;
   readonly sectionId?: Id;
+  readonly textId?: Id;
   readonly situation?: string;
   readonly reaction?: string;
 }
@@ -429,6 +432,8 @@ export function validateEntity(
       throw new Error("Ungültige Gebäudedaten.");
     if (isV4Room) {
       if (!Array.isArray(e.key!.sections) ||
+          (e.key!.sourcePath !== undefined &&
+            (typeof e.key!.sourcePath !== "string" || !e.key!.sourcePath.endsWith(".md"))) ||
           (e.key!.nextFeatureOrdinal !== undefined &&
             (!Number.isInteger(e.key!.nextFeatureOrdinal) || e.key!.nextFeatureOrdinal < 1)) ||
           new Set(e.key!.sections.map((section) => section.id)).size !== e.key!.sections.length)
@@ -647,6 +652,9 @@ export function validateEntity(
     if (!e.note.path.endsWith(".md"))
       throw new Error("Der Raum-Key muss eine Markdown-Datei sein.");
   }
+  if (e.keyTarget && (version !== 4 || !e.keyTarget.roomId || !e.keyTarget.sectionId ||
+      (e.keyTarget.anchor !== undefined && typeof e.keyTarget.anchor !== "string")))
+    throw new Error("Ungültiges Key-Ziel.");
 }
 export function validateDocument(doc: MapDocument): void {
   if (
@@ -674,6 +682,12 @@ export function validateDocument(doc: MapDocument): void {
   for (const f of floors.values()) validateFloor(f);
   for (const e of entities.values())
     validateEntity(e, floors, (id) => entities.get(id), doc.version);
+  for (const e of entities.values()) if (e.keyTarget) {
+    const room = entities.get(e.keyTarget.roomId);
+    if (!isStructuredRoom(room) || !room.key.sections.some((section) =>
+      section.id === e.keyTarget!.sectionId))
+      throw new Error("Key-Ziel des Kartenobjekts fehlt.");
+  }
   validateContent(doc.content, entities, doc.version);
 }
 export function validateContent(
@@ -746,6 +760,8 @@ export function validateContent(
         (value) =>
           value !== undefined && (typeof value !== "string" || !value.trim()),
       ) ||
+      (occurrence.textId !== undefined &&
+        (version !== 4 || typeof occurrence.textId !== "string" || !occurrence.textId)) ||
       (version === 3
         ? !occurrence.note || occurrence.note.path !== room.note?.path ||
           occurrence.sectionId !== undefined

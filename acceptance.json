@@ -2728,6 +2728,40 @@
       "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
       "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+    },
+    {
+      "id": "NATIVE-21",
+      "requirement": "Drachenhöhle verlustfrei auf V4-Raum-Keys migrieren, stabile Raumlinks und bestehende Auswertung sowie Spielansicht erhalten",
+      "status": "productive_transfer_verified_physical_input_deferred",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/verification.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-host/evidence/1791307968358-phase6-migration-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-host/evidence/1791308052987-phase6-migration-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-transfer-test/backup/transfer-result.json",
+        "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006/transfer-result.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-verify.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-fresh.json",
+        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-link.json"
+      ],
+      "originalCheck": {
+        "status": "not-applicable",
+        "product": "Vorhandener Drachenhöhlen-Vault und Auswertungsbericht",
+        "version": "Stand 06.10.2026 vor Phase 6",
+        "sources": [
+          "Dungeons/Drachenhöhle/Karte.dungeon",
+          "Dungeons/Drachenhöhle/Räume/",
+          "Dungeons/Drachenhöhle/Auswertung.md"
+        ],
+        "observations": [
+          "15 bestehende Raumtitel und Texte, 532 sichtbare Linknamen einschließlich Kartendaten, Bild-Einbettungen und 559 Geometrieobjekte stimmen auf der isolierten Kopie mit der Quelle überein.",
+          "Der bisherige Bericht behält 187 Features, 40 Verbindungen, 67 Einträge, 8.500 Monster-EP und 15.875 angepasste EP."
+        ],
+        "directEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/phase6-staging/verification.json"
+        ]
+      },
+      "verifiedScope": "Isolierte V4-Kopie ohne Raumdateien öffnet in Obsidian: Key-Liste, rechter Raum-Key, Gliederung, Kartenmarker und Übersichtslink; Auswertung rendert und der Ablauf besteht nach frischem Start. Der produktive Vault ist gesichert und übertragen; Obsidian 1.13.7 öffnet die V4-Karte mit Spielansicht und stabilem Übersichtslink. 115 Kernprüfungen, Typprüfung und Build bestehen.",
+      "remaining": "Physische Maus-/Touchpad-Prüfung auf Nutzerwunsch vorerst übersprungen. Das zuvor deaktivierte Auswertungs-Plugin bleibt deaktiviert; seine aktualisierte Fassung bestand auf der isolierten Kopie."
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",

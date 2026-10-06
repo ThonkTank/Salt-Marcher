@@ -31,8 +31,10 @@ export class StructuredKeyPanel {
     sectionId: string | undefined,
     private readonly notice: (message: string) => void,
     private readonly canLink: () => boolean,
+    private anchor?: string,
   ) {
     this.root = host.createDiv({ cls: "dn-structured-key" });
+    this.root.dataset.keyRoom = roomId;
     this.selected = sectionId;
     this.stop = session.subscribe((event) => {
       if (!this.closed && event.ids.has(roomId) && !this.dirty()) this.render();
@@ -56,12 +58,11 @@ export class StructuredKeyPanel {
     }
   }
 
-  focus(sectionId?: string): void {
+  focus(sectionId?: string, anchor?: string): void {
     if (!this.commit()) return;
     this.selected = sectionId;
+    this.anchor = anchor;
     this.render();
-    if (sectionId)
-      requestAnimationFrame(() => this.root.querySelector<HTMLElement>(`[data-key-section="${CSS.escape(sectionId)}"]`)?.scrollIntoView({ block: "nearest" }));
   }
 
   private button(parent: HTMLElement, label: string, action: () => void): HTMLButtonElement {
@@ -94,7 +95,7 @@ export class StructuredKeyPanel {
     const room = structuredRoom(this.session, this.roomId);
     if (!this.selected || !room.key.sections.some((section) => section.id === this.selected))
       this.selected = room.key.sections.find((section) => section.kind === "markdown")?.id ?? room.key.sections[0]?.id;
-    this.root.createEl("h1", { text: `${room.number} ${room.name}` });
+    if (!room.key.sourcePath) this.root.createEl("h1", { text: `${room.number} ${room.name}` });
     const navigation = this.root.createDiv({ cls: "dn-key-navigation" });
     for (const section of room.key.sections) {
       const entry = this.button(navigation, sectionTitle(this.session, section) || "Leerer Abschnitt", () => this.focus(section.id));
@@ -106,11 +107,20 @@ export class StructuredKeyPanel {
       this.render();
     });
     const content = this.root.createDiv({ cls: "dn-key-content" });
+    const rendered: Promise<void>[] = [];
     for (const section of room.key.sections) {
       const block = content.createDiv({ cls: "dn-key-section" });
       block.dataset.keySection = section.id;
-      void this.renderMarkdown(sectionMarkdown(this.session, section), block, this.rendered);
+      rendered.push(this.renderMarkdown(sectionMarkdown(this.session, section), block, this.rendered));
     }
+    const selectedId = this.selected, anchor = this.anchor;
+    void Promise.all(rendered).then(() => {
+      if (this.closed || selectedId !== this.selected || !selectedId) return;
+      const block = this.root.querySelector<HTMLElement>(`[data-key-section="${CSS.escape(selectedId)}"]`);
+      if (!block) return;
+      const target = anchor ? block.querySelector<HTMLElement>(`#${CSS.escape(anchor.replace(/^\^/, ""))}, [data-heading="${CSS.escape(anchor)}"], [data-block-id="${CSS.escape(anchor.replace(/^\^/, ""))}"]`) : null;
+      (target ?? block).scrollIntoView({ block: "nearest" });
+    }).catch((error) => this.notice(String(error)));
     const selected = room.key.sections.find((section) => section.id === this.selected);
     if (!selected) return;
     const controls = this.root.createDiv({ cls: "dn-key-controls" });

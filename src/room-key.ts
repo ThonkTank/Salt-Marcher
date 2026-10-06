@@ -9,9 +9,10 @@ export function structuredRoom(session: Session, roomId: string): RoomV4 {
   return room;
 }
 
-export function keySectionUrl(mapId: string, roomId: string, sectionId?: string, vault?: string): string {
+export function keySectionUrl(mapId: string, roomId: string, sectionId?: string, vault?: string, anchor?: string): string {
   const query = new URLSearchParams({ map: mapId, room: roomId });
   if (sectionId) query.set("section", sectionId);
+  if (anchor) query.set("anchor", anchor);
   if (vault) query.set("vault", vault);
   return "obsidian://dungeon-room?" + query.toString();
 }
@@ -54,9 +55,9 @@ export function editMarkdownSection(session: Session, roomId: string, sectionId:
   const section = room.key.sections.find((item) => item.id === sectionId);
   if (section?.kind !== "markdown" || section.markdown !== before)
     throw new Error("Der Key-Abschnitt wurde zwischenzeitlich geändert.");
-  for (const occurrence of session.content.occurrences.filter((item) =>
-    item.roomId === roomId && item.sectionId === sectionId))
-    featureTextRange(after, occurrence.id);
+  for (const textId of new Set(session.content.occurrences.filter((item) =>
+    item.roomId === roomId && item.sectionId === sectionId).map((item) => item.textId ?? item.id)))
+    featureTextRange(after, textId);
   replaceSections(session, room, room.key.sections.map((item) =>
     item.id === sectionId ? { ...section, markdown: after } : item), "Key-Abschnitt bearbeiten");
 }

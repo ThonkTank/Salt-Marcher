@@ -1,7 +1,7 @@
 {
-  "phase": "Phase 5 – V4-Features mit Kartenobjekten verknüpft, im isolierten Obsidian geprüft und produktiv installiert; Drachenhöhle unverändert",
+  "phase": "Phase 6 – V4-Drachenhöhle produktiv übertragen und frisch geöffnet; physische Eingabe offen",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
-  "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
+  "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
   "verified": [
     "TypeScript-Prüfung, 46 Kernprüfungen und Produktionsbuild bestehen",
@@ -153,12 +153,12 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 6 nach ROADMAP.md: 15 Drachenhöhlen-Raumdateien, Abschnittsgrenzen, Anker und Vault-Verweise vollständig erfassen; auf isolierter Kopie verlustfrei migrieren und den zusammenhängenden Karten-, Key- und Spielansicht-Ablauf abnehmen. Produktive Migration erst nach Kopieabnahme und eigener Sicherung.",
+  "next": "Die auf Nutzerwunsch verschobene physische Maus-/Touchpad-Bedienung an der produktiven Spielansicht nachholen; weitere Dungeondraft-Paritätsfälle bleiben gesondert offen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
     "Frühere 39 Hostprüfungen sind Regressionsevidenz und keine 1:1-Abnahme.",
-    "Vollständiges Spielansicht-Layout und physische Eingabe nach der Detailreduktion noch nicht erneut geprüft; allgemeine RAM-Ersparnis nicht isoliert belegt.",
+    "Phase-6-Spielansicht einschließlich Key-Liste, rechter Detailansicht, Gliederung, Marker und Auswertung ist isoliert und nach frischem Start geprüft; die produktive Spielansicht und Übersichtslink-Navigation bestehen nach frischem Start. Physische Eingabe bleibt auf Nutzerwunsch offen; allgemeine RAM-Ersparnis ist nicht isoliert belegt.",
     "Breiter Gleichwertigkeitstest scheitert reproduzierbar vor dem Auswahlteil am Dach-Polygon: drei statt vier Eckpunkte in zwei Läufen. Dach erst in seiner Werkzeugreihenfolge untersuchen; keine bestandene Gesamtregression behaupten.",
     "DD-026 bleibt trotz Phase-3-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen und physische Eingabe bleiben offen."
   ],
@@ -739,5 +739,27 @@
     "finalInstallBackup": "/home/aaron/.cache/dungeon-native-qa/backups/phase5-before-final-install-20261006-185032",
     "phase4RegressionEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791305474881-phase4-key-edit/result.json",
     "phase4RegressionReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791305491851-phase4-key-reopen/result.json"
+  },
+  "phase6Migration": {
+    "status": "productive_transfer_and_fresh_open_verified_physical_input_deferred",
+    "mapId": "1c952bc3-0e89-5465-9c15-9adc55770a99",
+    "rooms": 15,
+    "occurrences": 80,
+    "routes": 22,
+    "stableLinks": 532,
+    "genericObjectTargets": 30,
+    "sourceFilesProtected": 29,
+    "coreTests": 115,
+    "verification": "/home/aaron/.cache/dungeon-native-qa/phase6-staging/verification.json",
+    "hostEdit": "/home/aaron/.cache/dungeon-native-qa/phase6-host/evidence/1791307968358-phase6-migration-edit/result.json",
+    "hostReopen": "/home/aaron/.cache/dungeon-native-qa/phase6-host/evidence/1791308052987-phase6-migration-reopen/result.json",
+    "transferRehearsal": "/home/aaron/.cache/dungeon-native-qa/phase6-transfer-test/backup/transfer-result.json",
+    "transferBackup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
+    "transferResult": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006/transfer-result.json",
+    "productiveVerification": "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-verify.json",
+    "productiveFreshOpen": "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-fresh.json",
+    "productiveLink": "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-link.json",
+    "productiveVaultChanged": true,
+    "open": "Physische Maus-/Touchpad-Prüfung auf Nutzerwunsch vorerst übersprungen. Das schon zuvor deaktivierte Auswertungs-Plugin wurde aktualisiert, aber nicht aktiviert; der Bericht bestand auf der isolierten Kopie."
   }
 }

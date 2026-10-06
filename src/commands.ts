@@ -883,6 +883,8 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
     ? entity.key.sections.map((section) => [section.id, uid()] as const) : []));
   const sourceOccurrences = session.content.occurrences.filter((item) => ids.has(item.roomId));
   const occurrenceIds = new Map(sourceOccurrences.map((item) => [item.id, uid()]));
+  const textIds = new Map(sourceOccurrences.map((item) =>
+    [item.textId ?? item.id, item.textId ? uid() : occurrenceIds.get(item.id)!] as const));
   const groups = new Map(entities.flatMap((entity) => entity.groupId ? [entity.groupId] : []).map((id) => [id, uid()]));
   const floor: Floor = {
     ...source, id: uid(), name: source.name + " Kopie",
@@ -893,18 +895,24 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
       id: ids.get(entity.id)!, floorId: floor.id,
       ...(entity.groupId ? { groupId: groups.get(entity.groupId)! } : {}),
       ...(entity.roomId ? { roomId: ids.get(entity.roomId) ?? entity.roomId } : {}),
+      ...(entity.keyTarget ? { keyTarget: { ...entity.keyTarget,
+        roomId: ids.get(entity.keyTarget.roomId) ?? entity.keyTarget.roomId,
+        sectionId: sectionIds.get(entity.keyTarget.sectionId) ?? entity.keyTarget.sectionId } } : {}),
     };
-    if (isStructuredRoom(entity)) return {
+    if (isStructuredRoom(entity)) {
+      const { sourcePath: _sourcePath, ...keyWithoutSource } = entity.key;
+      return {
       ...entity, ...common,
-      key: { ...entity.key, sections: entity.key.sections.map((section) =>
+      key: { ...keyWithoutSource, sections: entity.key.sections.map((section) =>
         section.kind === "passage"
           ? { ...section, id: sectionIds.get(section.id)!, doorId: ids.get(section.doorId)! }
           : { ...section, id: sectionIds.get(section.id)!,
-              markdown: sourceOccurrences.reduce((markdown, occurrence) =>
-                markdown.split(`dungeon-feature:${occurrence.id}:`).join(
-                  `dungeon-feature:${occurrenceIds.get(occurrence.id)!}:`),
+              markdown: [...textIds].reduce((markdown, [oldId, newId]) =>
+                markdown.split(`dungeon-feature:${oldId}:`).join(
+                  `dungeon-feature:${newId}:`),
                 section.markdown) }) },
-    };
+      };
+    }
     if (entity.kind === "door") return {
       ...entity, ...common,
       ...(entity.anchor ? { anchor: { ...entity.anchor, boundaryId: ids.get(entity.anchor.boundaryId)! } } : {}),
@@ -920,6 +928,7 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
         ...item, id: occurrenceIds.get(item.id)!, roomId: ids.get(item.roomId)!,
         ...(item.entityId ? { entityId: ids.get(item.entityId)! } : {}),
         ...(item.sectionId ? { sectionId: sectionIds.get(item.sectionId)! } : {}),
+        ...(item.textId ? { textId: textIds.get(item.textId)! } : {}),
       }))] } },
     affectsRules: true,
   });
