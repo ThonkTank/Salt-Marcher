@@ -4206,14 +4206,15 @@
         "original": {
           "sequence": "Markierten Griff überfahren und Delete drücken.",
           "options": "Panel zeigt DEL/BKSP.",
-          "effect": "Früherer direkter 1.2.0.1-Bildbeleg: Rechteck wird Dreieck; neue modfreie 1.2.0.1-Wiederholung trotz Hovergriff ohne Wirkung.",
+          "effect": "Früherer direkter 1.2.0.1-Bildbeleg: Rechteck wird Dreieck; neue modfreie 1.2.0.1-Wiederholung trotz Hovergriff ohne Wirkung. Assemblypfad: bei ausgelöster Action delete und vier oder mehr Konturpunkten wird genau ein Hover-Eckpunkt entfernt; bei drei Punkten wird der gewählte Umriss entfernt. Die physische DEL/BKSP-Zustellung des wirkungslosen Versuchs bleibt offen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-hover.png",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-delete.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/11-pacing-delete.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/11-pacing-delete.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01301-DELETE-ASSEMBLY.md"
           ]
         },
         "target": "Punktentfernung ohne unbeabsichtigtes Archivieren und mit gleicher Kontur-/Portalfolge.",
@@ -4231,8 +4232,8 @@
           },
           "comparison": {
             "status": "offen",
-            "difference": "Älterer Original-Einzelschritt und neuer Originalversuch widersprechen sich. Der Editor bietet Punktentfernung per Alt-Klick, aber Delete archiviert die ganze Auswahl.",
-            "gap": "Bedienvoraussetzung des älteren Erfolgs, gespeicherte Originalpunktfolge, Undo/Redo und Neustart fehlen; gleiche Punktwirkung über alternative Bedienung noch nicht vollständig verglichen.",
+            "difference": "Historischer Editorstand: Delete archivierte die ganze Auswahl. Original-Assembly belegt die griffbezogene Action, aber die physische Taste des widersprüchlichen GUI-Versuchs ist ungeklärt.",
+            "gap": "DEL/BKSP-Zustellung des wirkungslosen Originalversuchs; Hostpaarung am neuen Integrationsstand, Undo/Redo und Frischöffnung fehlen.",
             "target": "Punktentfernung ohne unbeabsichtigtes Archivieren und mit gleicher Kontur-/Portalfolge.",
             "effort": "unklar"
           },
@@ -4243,15 +4244,20 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Delete am ausgewählten Building-Eckgriff mit mehr als drei Punkten entfernt einen Punkt statt die Auswahl zu archivieren; Dreipunktaktion wird bis zur eigenen Umriss-Mutation abgefangen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01301-DELETE-ASSEMBLY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/BAU-DELETE-EDGE-INTEGRATION.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Neuer Delete-Hook nur gebaut und statisch geprüft. Isolierter Host und installierter Endstand fehlen; Dreipunkt-Umrisswirkung noch nicht implementiert."
         }
       },
       {
@@ -4331,14 +4337,15 @@
         "original": {
           "sequence": "Punkt an Dreieck oder geschlossenem Mehrteilbau entfernen.",
           "options": "Panel nennt nur Remove Point.",
-          "effect": "Backspace am grün markierten Dreipunktgriff lässt Kontur, Paketwand und Datei unverändert.",
+          "effect": "Backspace am grün markierten Dreipunktgriff lässt Kontur, Paketwand und Datei unverändert. Assemblypfad bei tatsächlich ausgelöster Action delete: genau die ausgewählte Dreipunktkontur wird als Umriss entfernt; getrennte andere Umrisse bleiben. Die abweichende Backspace-GUI-Beobachtung bleibt als Eingabe-/Fokuslücke bestehen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Original-Lauf R5/R6 vom 05.10.2026",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-013-Building-Point-Delete.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd013-native/shots/07-hover.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F28-triangle-backspace-after.png"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-123725-2939198/evidence/screens/F28-triangle-backspace-after.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01303-TRIANGLE-OUTLINE-STATIC.md"
           ]
         },
         "target": "Originalgrenze und Reaktion übernehmen.",
@@ -4354,8 +4361,8 @@
           },
           "comparison": {
             "status": "offen",
-            "difference": "Natives Minimum unbekannt.",
-            "gap": "Dreieck, Löcher, mehrere Teile und Portalanker fehlen.",
+            "difference": "Die direkte Backspace-Probe blieb unverändert; die Original-Assembly entfernt bei ausgelöster delete-Action jedoch den gewählten Dreipunktumriss. Der Editor blockiert diesen Fall derzeit.",
+            "gap": "Physische Action-Zustellung, zweiteilige/Loch-Karte, Portalfolge, Undo/Redo und Frischöffnung direkt prüfen.",
             "target": "Originalgrenze und Reaktion übernehmen.",
             "effort": "unklar"
           },
@@ -4368,10 +4375,12 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Backspace am ausgewählten Dreipunktgriff erzeugt keinen Command und archiviert das Building nicht."
+            "Backspace am ausgewählten Dreipunktgriff erzeugt keinen Command und archiviert das Building nicht.",
+            "Delete am ausgewählten Dreipunktgriff archiviert die Building-Gesamtentität jetzt nicht mehr; native Umrissentfernung bleibt offen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/BAU-DELETE-EDGE-INTEGRATION.md"
           ]
         },
         "hostCheck": {
@@ -4381,7 +4390,7 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230504625-bau-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230513850-bau-01-reopen/group-cases.json"
           ],
-          "gap": "Isolierter Host in Bearbeitung und nach Frischstart bestanden; installierter Endstand und Bau-Basispaket DD-012 noch offen.",
+          "gap": "Alter Hostbeleg zeigte eine unveränderte Backspace-Folge; Assembly belegt Umrissentfernung nach ausgelöster Action. Zweiteilige/Loch-/Portal-Hostfälle und installierter Endstand fehlen.",
           "phaseStates": {
             "edit": "pass",
             "reopen": "pass"
@@ -4404,7 +4413,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-midpoint.png",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-EDGE-PREVIEW-HOOK.md"
           ]
         },
         "target": "Punkt an gewünschter Kantenposition mit gleichwertiger Vorschau und Wirkung einfügen.",
@@ -4433,15 +4443,20 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Kantenmittelpunkt-Zug zeichnet Boden und Paketwand transient mit derselben Vorschau wie Eckpunkt-Zug."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/BAU-DELETE-EDGE-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-EDGE-PREVIEW-HOOK.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Transiente Boden-/Wand-Vorschau nach Editor-Hook noch nicht im isolierten Host mit Original, Abbruch und Frischöffnung verglichen."
         }
       },
       {
@@ -12146,7 +12161,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-redo-confirmed.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-redo-confirmed.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-16-ROOF-UNDO-STATIC.md"
           ]
         },
         "target": "Platzierte Dach rückgängig machen.",
@@ -12178,13 +12194,15 @@
         "implementation": {
           "state": "not_started",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-16-ROOF-UNDO-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt. Neuer Quelltest belegt einen History-Schritt für Dach, Undo/Redo und V3-Parse; aktuelles Hostbild vor/nach Undo bleibt offen."
         }
       },
       {
@@ -18720,14 +18738,15 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-CURSOR-PREVIEW.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Hostpaarung für Assetbild, Vorschau, Abbruch, Shadow, History und Frischöffnung offen.",
+          "gap": "Hostpaarung für Assetbild, Vorschau, Abbruch, Shadow, History und Frischöffnung offen. Neuer Fortsetzungs-Hook hält Objektwerkzeug und gleiche Assetvorschau nach Klick aktiv; isolierter Host und installierter Endstand hierzu offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.",
@@ -18806,14 +18825,15 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-19-NATIVE-DEFAULTS.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Vorhandener Hostbeleg betrifft Paketobjekte; native Atlas-Größe, Halbfeld-Snap, Layer und Bildwirkung am aktuellen Integrationsstand offen.",
+          "gap": "Vorhandener Hostbeleg betrifft Paketobjekte; native Atlas-Größe, Halbfeld-Snap, Layer und Bildwirkung am aktuellen Integrationsstand offen. Neuer Fortsetzungs-Hook hält Objektwerkzeug und gleiche Assetvorschau nach Klick aktiv; isolierter Host und installierter Endstand hierzu offen.",
           "candidate": {
             "state": "pass",
             "observation": "Edit: Object Tool: Klick erzeugte QA-Paketobjekt ed4fa24e-5199-419e-a48c-94f699f3550f, zweiter Klick a1ab6d4e-0ea6-4d22-b1d3-711bb8600024; beide sind sichtbar und als V3-Entitäten gespeichert.\nFrischstart: Frisch geöffnet: beide platzierten Paketobjekte ed4fa24e-5199-419e-a48c-94f699f3550f/a1ab6d4e-0ea6-4d22-b1d3-711bb8600024 mit exakt gespeicherten Entitätswerten und Texturen.",
@@ -20622,11 +20642,12 @@
         "original": {
           "sequence": "Zwei verschiedene Globuskacheln per Umschalt-Klick wählen",
           "options": null,
-          "effect": "Beide Kacheln markiert; gespeicherter Strich enthielt zwei konkrete Varianten.",
+          "effect": "Beide Kacheln markiert; gespeicherter Strich enthielt zwei konkrete Varianten. Assemblypfad ScatterTool.Next: pro Vorschau bei mehreren gewählten Texturen Random.Next(Anzahl) als direkter Listenindex; keine Gewichtung oder Shuffle-Runde in diesem Schritt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/08-shift-first.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/after-redo-settled.dungeondraft_map"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/after-redo-settled.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-19-VARIANTENWAHL.md"
           ]
         },
         "target": "Mehrere konkrete Bildassets für einen Streustrich.",
@@ -20643,7 +20664,7 @@
           "comparison": {
             "status": "Abweichung",
             "difference": "Mehrfachwahl konkreter Assets fehlt.",
-            "gap": "Gewichtung und Auswahlgrenzen offen.",
+            "gap": "Original-Auswahlregel statisch geklärt; Editor-Mehrfachwahl, Hostlauf, Undo/Redo und Frischöffnung bleiben offen.",
             "target": "Mehrere konkrete Bildassets für einen Streustrich.",
             "effort": "groß"
           },
@@ -20654,15 +20675,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Reiner Helfer bildet native Listenindex-Wahl und natürliche Assetmaße ab; UI/Scatter-Anschluss fehlen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-19-VARIANTENWAHL.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Mehrfachwahl und Variantenschritt sind noch nicht an Editor-Scatter angeschlossen; isolierter Host und installierter Endstand offen."
         }
       },
       {
