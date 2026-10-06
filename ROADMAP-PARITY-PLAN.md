@@ -82,6 +82,8 @@ Jeder Zyklus hat einen eigenen Planlauf mit aktuellen Code- und Belegbefunden, e
 
 Für die freigegebene Fachphase 1 liegt der konkrete [Aufräumplan für Building-Grundformen](ROADMAP-PARITY-CLEANUP-1-PLAN.md) vor. Sein eigener Umsetzungslauf folgt als Nächstes; der Aufräum-Review bleibt ein weiterer getrennter Arbeitslauf.
 
+Stand nach dem getrennten Aufräum-Review vom 07.10.2026: Umsetzung und Aufräumtor der Phase 1 sind bestanden. Der [Reviewbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/cleanup-review.md) und `acceptance.json` enthalten die Einzelbelege. Der nächste eigene Arbeitslauf plant Phase 2; die obige Phasenreihenfolge bleibt bestehen.
+
 | Nach Fachphase | Prüf- und Aufräumfokus |
 | --- | --- |
 | 1 | Building-Entwurf, gemeinsame Vorschau-/Commit-Geometrie, Selbstschnitt-Bereinigung und deren Kosten bei großen Konturen. |

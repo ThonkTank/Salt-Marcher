@@ -48020,6 +48020,28 @@
       "verification": "npm run check, 119/119 Kerntests und npm run build bestanden. Sechs vollständige Host-/Frischstartläufe und die zusätzliche Off-Canvas-Capture-Probe bestanden; Raum-ID, Key-Bytes, Portal, Konturen und Undo/Redo enthalten. Produktiver Build unverändert.",
       "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3.",
       "next": "Eigener Aufräum-Reviewlauf: Diff, Performance, vollständige Hostbelege und Listener-Lebensdauer prüfen und erst dort das Aufräumtor entscheiden."
+    },
+    "phase1CleanupReview": {
+      "date": "2026-10-07",
+      "result": "gate_passed",
+      "implementationCommit": "c7368f0",
+      "candidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/cleanup-review.md",
+      "benchmarkReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/benchmark/building-benchmark.json",
+      "crossingEquivalence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/crossing-equivalence.json",
+      "enterHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/host-enter/evidence/1791329150884-parity-phase1-shapes-edit/result.json",
+      "hostEvidenceValidated": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328415402-parity-phase1-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328460926-parity-phase1-shapes-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328544529-parity-phase1-shapes-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328549809-parity-phase1-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328764538-parity-phase1-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328769673-parity-phase1-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328887087-parity-phase1-repair-reopen/result.json"
+      ],
+      "verification": "Diff beseitigt den doppelten PathDraft-Abschluss und die drei Fallback-Guards; Diagnose-Listener werden begrenzt und abgebrochen. Erneut 119/119 Kerntests, Typprüfung und identischer Build-Hash. 406 alte/neue Ringresultate identisch; erneuter Benchmark 0,644/1,170 ms und damit mindestens halbiert. Alle sieben Hostbelege besitzen denselben Build-Hash und keinen Fehler; Enter zusätzlich gezielt geprüft. Raum-Key-Bytes unabhängig nachgehasht.",
+      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7.",
+      "next": "Eigener Phase-2-Planlauf: offene Originalregeln für Konturpunkt-Ziehen, Einfügen und Entfernen festlegen und einen konkreten Plan neben der Roadmap ablegen."
     }
   }
 }
