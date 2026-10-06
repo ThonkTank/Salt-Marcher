@@ -24,11 +24,14 @@ import { mountPathLibraryView } from "./features/material/path-library-view";
 import { mountPatternColorPicker } from "./features/material/pattern-color-picker";
 import { mountLightColorPalette } from "./features/objekte/light-color-palette";
 import {
+  nativePathDimensions,
+  nativePathWidthFactor,
+} from "./features/material/native-path-scale";
+import {
   mountObjectColorPicker,
   type MountedObjectColorPicker,
   type ObjectColorPickerHooks,
 } from "./features/objekte/rgba-picker";
-import { type BuildingWallChoice } from "./features/bau/building-wall-choice";
 import { mountScatterColorPicker } from "./features/objekte/scatter-picker-dismiss";
 import {
   createObjectLibraryTilePreview,
@@ -63,7 +66,7 @@ export interface ToolSettings {
   material?: Material;
   layer: number;
   light: Pick<Light, "radius" | "intensity" | "color" | "shadows" | "assetId">;
-  room: Pick<import("./model").Room, "wallAssetId"> & { noWall?: boolean };
+  room: Pick<import("./model").Room, "wallAssetId">;
   wall: {
     smooth: boolean;
     width: number;
@@ -462,31 +465,22 @@ export class Properties {
       this.root.append(button);
     }
     const packageWalls = this.assets().filter((asset) => asset.kind === "wall");
-    if (e?.kind === "building" || floorTool)
+    if (packageWalls.length && (e?.kind === "building" || floorTool))
       this.choice(
-        "Wand für Grundriss",
+        "Paketwand für Räume",
         e?.kind === "building"
-          ? (e.wallWidth === 0 ? "__no_wall__" : e.wallAssetId ?? "")
-          : (this.defaults.room.noWall ? "__no_wall__" : this.defaults.room.wallAssetId ?? ""),
+          ? (e.wallAssetId ?? "")
+          : (this.defaults.room.wallAssetId ?? ""),
         [
           ["", "Lesbare Grundwand"],
-          ["__no_wall__", "None (ohne Wand)"],
           ...packageWalls.map(
             (asset) => [asset.id, asset.name] as [string, string],
           ),
         ],
         (assetId) => {
-          const choice: BuildingWallChoice = assetId === "__no_wall__"
-            ? { kind: "none" }
-            : assetId ? { kind: "asset", assetId } : { kind: "basic" };
-          this.defaults.room = choice.kind === "asset"
-            ? { wallAssetId: choice.assetId }
-            : { noWall: choice.kind === "none" };
-          if (e?.kind === "building") this.change(e, {
-            wallAssetId: choice.kind === "asset" ? choice.assetId : undefined,
-            wallWidth: choice.kind === "none" ? 0 :
-              e.wallWidth || this.defaults.surfaces.floor.wallWidth,
-          });
+          this.defaults.room = { wallAssetId: assetId || undefined };
+          if (e?.kind === "building")
+            this.change(e, { wallAssetId: assetId || undefined });
         },
         true,
       );
@@ -945,8 +939,8 @@ export class Properties {
         ? e.material?.assetId : this.defaults.material?.assetId;
       const pathTexture = this.assets().find((asset) => asset.id === pathAssetId)
         ?.pathTexturePixels;
-      const nativeWidthUnit = pathTexture?.height
-        ? pathTexture.height / 256 : undefined;
+      const nativeWidthUnit = pathTexture
+        ? nativePathDimensions(pathTexture, 1).width : undefined;
       const update = (patch: Partial<MapPath>) => {
         this.defaults.path = { ...this.defaults.path, ...patch };
         if (e?.kind === "path") this.change(e, patch);
@@ -981,12 +975,13 @@ export class Properties {
           const currentMaterial = e?.kind === "path"
             ? e.material : this.defaults.material;
           if (!currentMaterial) throw new Error("Pfadmaterial fehlt.");
+          const dimensions = nativePathDimensions(pathTexture, i.valueAsNumber);
           const nextMaterial = {
             ...currentMaterial,
-            tileSize: pathTexture.width / 256 * i.valueAsNumber,
+            tileSize: dimensions.repeatLength,
           };
           this.defaults.material = nextMaterial;
-          update({ width: nativeWidthUnit * i.valueAsNumber,
+          update({ width: dimensions.width,
             material: nextMaterial });
         },
         ".1",
@@ -1164,9 +1159,10 @@ export class Properties {
             : undefined,
           currentPathWidth = e?.kind === "path" ? e.width : this.defaults.path.width,
           widthFactor = previousPath
-            ? currentPathWidth / (previousPath.height / 256) : 1,
-          pathWidth = nativePath
-            ? (nativePath.height / 256) * widthFactor : undefined,
+            ? nativePathWidthFactor(currentPathWidth, previousPath) : 1,
+          nativeDimensions = nativePath
+            ? nativePathDimensions(nativePath, widthFactor) : undefined,
+          pathWidth = nativeDimensions?.width,
           next: Material | undefined = asset
             ? {
                 assetId: asset.id,
@@ -1178,8 +1174,7 @@ export class Properties {
                       : asset.kind === "material"
                         ? "tile"
                         : "image",
-                tileSize: nativePath
-                  ? nativePath.width / 256 * widthFactor : material?.tileSize ?? 4,
+                tileSize: nativeDimensions?.repeatLength ?? material?.tileSize ?? 4,
                 tint: material?.tint ?? 0xffffff,
                 rotation: material?.rotation ?? 0,
               }
@@ -1581,6 +1576,7 @@ export class Properties {
             },
             onClose: () => {
               if (selectedId) this.clearObjectColorPreview(selectedId);
+              this.objectPicker = undefined;
               pickerButton.disabled = false;
             },
           };

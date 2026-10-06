@@ -695,9 +695,7 @@ export default class DungeonPlugin extends Plugin {
       try {
         if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
           throw new Error("Die Originaldatei passt nicht zu Dungeondraft 1.2.0.1 Linux64.");
-        const next = await readNativePathCatalog(
-          new LocalBinarySource(path),
-        );
+        const next = await readNativePathCatalog(new LocalBinarySource(path));
         if (await fileSha256(path) !== NATIVE_PATH_PCK_SHA256)
           throw new Error("Die Originaldatei wurde während des Ladens verändert.");
         this.nativePathCatalog = next;
@@ -1878,7 +1876,7 @@ editorHost(
           () => map.repository.save(map.session),
           () => this.exitEditor(),
           false, file.basename,
-        )
+        ),
       );
       await this.editor.init();
       this.editor.maximize();
@@ -2947,9 +2945,6 @@ class MapSettingsModal extends Modal {
         current.height.toLocaleString("de-DE") +
         " Felder. Positive Werte erweitern, negative schneiden den sichtbaren Rand ab.",
     });
-    this.contentEl.createEl("p", {
-      text: "Eine Änderung der Kartengröße kann nicht rückgängig gemacht werden.",
-    });
     const result = this.contentEl.createEl("p");
     const update = () => {
       const width = current.width + margins.left + margins.right,
@@ -2975,8 +2970,7 @@ class MapSettingsModal extends Modal {
             }),
         );
     update();
-    const actions = new Setting(this.contentEl);
-    actions.addButton((button) =>
+    new Setting(this.contentEl).addButton((button) =>
       button
         .setButtonText("Übernehmen")
         .setCta()
@@ -2994,9 +2988,6 @@ class MapSettingsModal extends Modal {
           }
         }),
     );
-    actions.addButton((button) => button
-      .setButtonText("Abbrechen")
-      .onClick(() => this.close()));
   }
   onClose(): void {
     this.generation++;

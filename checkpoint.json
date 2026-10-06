@@ -1,5 +1,5 @@
 {
-  "phase": "Vollständige Dungeondraft-Angleichung: 42 von 707 Pflichtfällen am installierten Endstand fallbezogen belegt; weitere Pakete in Arbeit",
+  "phase": "Phase 1 – Grundrisse und Raum-Key auf Kopie verifiziert und installiert; Objektphasen folgen nach ROADMAP.md",
   "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/live-before-v2-20261004-1155",
   "installed": true,
@@ -91,7 +91,7 @@
     "DD-028.06: Original und installierter Obsidian-Host zeigen A128/A0 der Colorable-Bibliothekskachel vor Accept/Escape; Farbwirkung bleibt nach Panel-Neuaufbau erhalten. Platzierung, Auswahl, Undo/Redo, Save und Frischstart bestanden. 39/707 Pflichtfälle belegt.",
     "DD-028.17: Alle fünf Light-Farbvorgaben nach direkter Originalmessung am installierten Obsidian-Host gewählt; Tool-Feld und persistente Vorgabe stimmen. Karte und History unverändert, frischer Start bestanden. 40/707 Pflichtfälle belegt.",
     "DD-028.16: Scatter-RGBA-Wähler schließt auch nach geänderter Farbe per Außenklick und behält den Wert. Direktes Original, installierter Host, Frischstart sowie DD-028.17-Regression bestanden. 41/707 Pflichtfälle belegt.",
-    "DD-013.02/.03 auf DD-021.27-Releasebasis mit Backspace/Minimumgrenze umgesetzt; isolierter Host Edit und Frischstart je 2 pass. Wegen offener DD-012-Basis noch nicht installiert oder zur 42/707-Abnahme gezählt."
+    "Phase 1: Rechteck, Ellipse, Polygon per Doppelklick, ein Feld breiter polygonaler Gang, Raum 16 samt neuem Key, Undo/Redo sowie Speichern und frischer Obsidian-Prozess auf isolierter Drachenhöhlenkopie bestanden; installierter Build 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -147,7 +147,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Grafische Prüfungen bis zur erreichten Speicherreserve aussetzen. DD-012/013, DD-020.21–.25, DD-024-Pinsel und DD-026/027-Bibliothek fallgenau offen halten. Quell- und Implementierungsarbeit in drei getrennten Bereichszweigen parallel fortführen; Integrationsvorschau einzeln prüfen.",
+  "next": "Phase 2 nach ROADMAP.md: Dungeondraft-Objektplatzierung gegen den installierten Editor abgleichen, nötige Lücken angleichen und auf isolierter Drachenhöhlenkopie mit Save/Reopen prüfen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -240,7 +240,7 @@
     "selectionAllCorners": "Alle vier ungedrehten Möbelgriffe bei 100/200 Prozent direkt gemessen: 47 rechts unten und 29 weitere Druckpunkte an Ecke 0, 1 und 3. Ungefähr 33 Bildschirmpixel Kreisradius, Scale vor Move. Produkt unverändert nach der rechten-unteren Korrektur; 74 Kernprüfungen und Typprüfung bestanden.",
     "selectionAllCornersEvidence": "/home/aaron/.cache/dungeon-native-qa/evidence/native-all-corners-original.json"
   },
-  "memoryPolicy": "Keine feste Produkt-, Karten-, Paket-, Cache- oder Historiengrenze. Grafische QA läuft exklusiv und nur mit vorab geprüfter RAM-/Swapreserve; ein Lauf wird vor globalem Speichermangel geordnet beendet. Quellenprüfung und kleine Tests können parallel laufen.",
+  "memoryPolicy": "Keine feste Prozess-, Karten-, Paket-, Cache- oder Historiengrenze. Lazy Bilddekodierung und verlustfrei neu ladbare Ressourcen; nur akute systemweite Speichernot stoppt Tests.",
   "updated": "2026-10-06",
   "objectiveFile": "/home/aaron/.codex/attachments/3e185053-f776-4250-b83f-81ef08edd8ed/pasted-text-1.txt",
   "evidence": [
@@ -503,9 +503,8 @@
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-installed/evidence/1791227440795-objekte-03-reopen/group-cases.json",
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227458167-objekte-03-edit/group-cases.json",
     "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02816-final-dd02817-regression/evidence/1791227481101-objekte-03-reopen/group-cases.json",
-    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/release-bau-backspace-next/qa/DD013-BACKSPACE-RELEASE-CANDIDATE.md",
-    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230504625-bau-01-edit/group-cases.json",
-    "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd013-backspace-host/evidence/1791230513850-bau-01-reopen/group-cases.json"
+    "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+    "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",
@@ -533,13 +532,12 @@
     "requiredCases": 707,
     "excludedCases": 12,
     "currentPackage": [
-      "DD-012/013 Baupunkt- und Backspace-Kandidat",
-      "DD-018 Portal-Radhelfer ohne Editor-Hook",
-      "DD-024 Terrain-Slot-/Renderer-Kandidat, Pinsel offen",
-      "DD-026/027 Objektbibliothek-Fuzzy-Kandidat"
+      "DD-012.01–.03 Baupunkt-Aktivierung und Vorschau",
+      "DD-024 Terrain-Slotmodell",
+      "DD-026/027 native Objektbibliothek"
     ],
     "foundation": "V3-Migration beider produktiver V2-Karten auf Kopien im echten Obsidian-Host verlustfrei gespeichert und frisch geöffnet; 107 Kerntests im Release bestanden.",
-    "hostStatus": "42 Pflichtfälle am installierten Build gleichwertig. DD-024-Host belegt begrenzte Dialog-/Slot-/Speicherfolgen; DD-026/027-Host liefert 19 Atlas-Treffer, Original-ID-Paarung offen. Kandidaten sind nicht installiert.",
+    "hostStatus": "42 Pflichtfälle am installierten Build fallbezogen gleichwertig. DD-021.27: Suchfeld-X leert Text bei unverändert gefilterter Battlements-Kachel in Bearbeitung und Frischstart; Karte/History bleiben unverändert.",
     "releaseBuild": "071a8f1a84662ff9110464afbc4ef72463e1f7e782e4649e5258b57f2fcb789a",
     "dd038Candidate": "Originalmessung belegt nach Top +1 sofort deaktiviertes Undo/Redo und gesperrten älteren Objekt-Undo-Schritt; Entwicklungsstand setzt bei Randänderung eine History-Grenze, zeigt Warnung und Abbruchknopf. 119 Kernprüfungen bestanden, ein lizenzabhängiger Test übersprungen; isolierter Host und Installation offen. Smart-Tile-Zellen noch nicht im Dokumentmodell.",
     "openOriginalGap": "DD-021.02 Enter-Abschlussregel; DD-021.15/.21 Pixel-/Knick-/UV-Paarung und weitere Texturen; DD-024 Default mit Zusatzpaket; ältere offene Fälle bleiben in acceptance.json fallgenau erhalten.",
@@ -587,7 +585,7 @@
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228758942-material-pfad-edit/group-cases.json",
       "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02127-installed-final/evidence/1791228774513-material-pfad-reopen/group-cases.json"
     ],
-    "next": "Grafische Prüfungen bis zur erreichten Speicherreserve aussetzen. DD-012/013, DD-020.21–.25, DD-024-Pinsel und DD-026/027-Bibliothek fallgenau offen halten. Quell- und Implementierungsarbeit in drei getrennten Bereichszweigen parallel fortführen; Integrationsvorschau einzeln prüfen.",
+    "next": "DD-012.01–.03 im Original-Frischstart und isolierten Host grafisch vergleichen; DD-024-Slotmodell und DD-026/027-Objektkatalog parallel vorbereiten.",
     "prefabReleaseBuild": "bb28eb36c7e7e5fac913aaaad7336aec19b6fac1d8f8c60acf89e3fcefb77c85",
     "completedRequiredCases": [
       "DD-001.04",
@@ -642,13 +640,13 @@
       }
     ],
     "dd04209Installed": "Minimaler Releasezweig f3fc4e1 + Dialogcommit 645c14f; Build 13bc76dab1cc64a6c870cfe6777db13d4cd78aa220b17032f2d7d225a007794b. Nativer Original-Dateivergleich, korrigierbarer Inline-Fehler, installierter Obsidian Edit/Reopen, DD-039-Regression, Vorlagen-Vergessen-Regression und produktive V2-Karten auf isolierten Kopien bestanden. Plugin und zwei Karten zuvor vollständig gesichert; 185 geschützte Vault-Dateien außer beauftragtem main.js bytegleich.",
-    "parallelWork": {
-      "integrationBranch": "integration/parallel-preflight",
-      "memoryGuardCommit": "b9ae708",
-      "terrainHostReport": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/DD-024-TERRAIN-HOST-RESULT.md",
-      "objectHostReport": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/objekte/qa/objekte/DD-026-027-NATIVE-FUZZY-HOST-RESULT.md",
-      "oomReport": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/MEMORY-INCIDENT-20261005.md",
-      "graphicsSlot": "gesperrt bis Vorprüfung besteht"
+    "phase1Room": {
+      "installedBuild": "94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
+      "status": "installed_host_passed_strict_parity_partial",
+      "editEvidence": "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+      "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json",
+      "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase1-room-before-install-20261006",
+      "open": "Physische Eingabe und weitere DD-011-Unterfälle bleiben offen."
     }
   }
 }

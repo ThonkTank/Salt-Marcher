@@ -289,7 +289,7 @@ export class Session {
       label: locked ? "Element sperren" : "Element entsperren",
     });
   }
-  execute(command: Command, history: "record" | "reset" = "record"): void {
+  execute(command: Command): void {
     this.assertMutable();
     if (
       !(
@@ -339,18 +339,13 @@ export class Session {
         }),
       ),
       event = this.apply(owned, false);
-    if (history === "reset") {
-      this.past = [];
-      this.future = [];
-    } else {
-      this.past.push(owned);
-      this.future = [];
-      if (
-        Number.isFinite(this.historyLimit) &&
-        this.past.length > this.historyLimit
-      )
-        this.past.shift();
-    }
+    this.past.push(owned);
+    this.future = [];
+    if (
+      Number.isFinite(this.historyLimit) &&
+      this.past.length > this.historyLimit
+    )
+      this.past.shift();
     this.emit(event);
   }
   undo(): void {

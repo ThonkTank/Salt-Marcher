@@ -5,6 +5,11 @@ export const NATIVE_PATH_PCK_SHA256 =
   "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 export const NATIVE_PATH_PACK_ID = "dungeondraft-builtin-1.2.0.1";
 
+/** Native paths use a dedicated namespace and must not change package-path rendering. */
+export function isNativePathAssetId(id: string | undefined): boolean {
+  return id?.startsWith(`pack:${NATIVE_PATH_PACK_ID}:path:`) ?? false;
+}
+
 export interface NativePathTexture {
   readonly asset: AssetDefinition;
   readonly sourcePath: string;
@@ -135,7 +140,7 @@ export async function readNativePathCatalog(
 ): Promise<NativePathCatalog> {
   const entries = await readDirectory(source);
   const textures: NativePathTexture[] = [];
-  const images = new Map<string, Blob>();
+  const images = new Map<string, DirectoryEntry>();
   for (const [importPath, metadata] of entries) {
     const match = PATH_IMPORT.exec(importPath);
     if (!match) continue;
@@ -188,16 +193,20 @@ export async function readNativePathCatalog(
       width,
       height,
     });
-    images.set(id, source
-      .slice(texture.offset + 32, texture.offset + texture.size)
-      .slice(0, undefined, "image/webp"));
+    images.set(id, { offset: texture.offset + 32, size: texture.size - 32 });
   }
   if (!textures.length) invalid("Keine nativen Pfadtexturen gefunden.");
   textures.sort((a, b) => a.asset.name.localeCompare(b.asset.name, "en"));
   return {
     textures,
     image(assetId: string): Blob | undefined {
-      return images.get(assetId);
+      const entry = images.get(assetId);
+      return (
+        entry &&
+        source
+          .slice(entry.offset, entry.offset + entry.size)
+          .slice(0, undefined, "image/webp")
+      );
     },
   };
 }

@@ -2695,15 +2695,22 @@
           }
         },
         "implementation": {
-          "state": "not_started",
+          "state": "installed_partial",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/phase1-room-drawing/ROADMAP.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "main.js SHA-256 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json"
+          ],
+          "gap": "Grundform, Vorschau, Undo/Redo und Frischöffnung auf Kopie belegt; numerische Maßvorschau, Abbruch und genaue Material-/Wandwirkung nicht paarweise geprüft."
         }
       },
       {
@@ -2751,15 +2758,22 @@
           }
         },
         "implementation": {
-          "state": "not_started",
+          "state": "installed_partial",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/phase1-room-drawing/ROADMAP.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "main.js SHA-256 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json"
+          ],
+          "gap": "5×3-Ellipse mit Kontur und Frischöffnung auf Kopie belegt; genaue Originalgeometrie, Material-/Wandwirkung und Abbruch nicht paarweise geprüft."
         }
       },
       {
@@ -2811,19 +2825,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/phase1-room-drawing/ROADMAP.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
+          "state": "partial",
+          "build": "main.js SHA-256 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01101-08-BUILDING-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/evidence/1791205747790-bau-01-edit/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/evidence/1791205759541-bau-01-reopen/group-cases.json"
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json"
           ],
-          "gap": "Neuerer isolierter Doppelklick und Frischstart bestanden; physische Eingabe und installierter Endstand offen."
+          "gap": "Doppelklick schließt im synthetischen Obsidian-Host und bleibt nach Frischöffnung erhalten; physische Maus-/Touchpad-Eingabe und weitere Polygonoptionen offen."
         },
         "inventoryNote": "Quellenstand 2026-10-06: Der historische X11-Doppelklickfehler bleibt als Baseline erhalten; der neuere isolierte bau-01-Hostlauf auf Build fa2bc3940e schloss und öffnete das Polygon erfolgreich. Installierter Endstand und physische Eingabe offen."
       },
@@ -2871,15 +2890,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/phase1-room-drawing/ROADMAP.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "main.js SHA-256 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295816699-phase1-room-edit/phase1-room.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase1-room-qa/installed/evidence/1791295835042-phase1-room-reopen/phase1-room.json"
+          ],
+          "gap": "Ein Feld breiter Polygonzug mit umlaufender Kontur und Frischöffnung belegt; genaue native Eck-/Wanddarstellung und physische Eingabe offen."
         }
       },
       {

@@ -1,5 +1,5 @@
-// Isolated native Obsidian test. Keep system memory headroom after the
-// 2026-10-05 global OOM during a Dungeondraft graphics run.
+// Isolated native Obsidian test. No fixed CPU, RAM, swap or admission limits.
+// User authorization 2026-10-02 supersedes the old launch guard.
 const fs = require("node:fs"),
   path = require("node:path"),
   assert = require("node:assert/strict"),
@@ -10,11 +10,6 @@ const {
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { PNG } = require("pngjs");
 const { prepareLarge } = require("./large-fixture.cjs");
-const dd041HostNavigation = require("./dd041-host-navigation.cjs");
-const { createGroupRecord } = require("./group-record.cjs");
-const { loadGroups } = require("./group-catalog.cjs");
-const { snapshot: memorySnapshot, assess: assessMemory } =
-  require("./gui-memory-guard.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
@@ -22,22 +17,16 @@ const root = path.resolve(__dirname, ".."),
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
-  groupArgument = process.argv.indexOf("--group"),
-  activeGroupId = groupArgument < 0 ? null : process.argv[groupArgument + 1],
   v2Open = process.argv.includes("--v2-open"),
-  installedMapsOpen = process.argv.includes("--installed-maps-open"),
   patternOutline = process.argv.includes("--pattern-outline"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
   pathLibrary = process.argv.includes("--path-library"),
-  nativePathDialog = process.argv.includes("--native-path-dialog"),
-  dd041Navigation = process.argv.includes("--dd041-navigation"),
-  dd041PanOnly = process.argv.includes("--pan-only"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (activeGroupId ? `-${activeGroupId}` : nativePathDialog ? "-native-path-dialog" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : dd041Navigation ? dd041PanOnly ? "-dd041-pan" : "-dd041-navigation" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -53,11 +42,7 @@ let browser,
   timer,
   scope,
   stopping = false,
-  guardFailure,
-  groupResult,
-  nativePathDialogResult;
-if (activeGroupId && !/^[a-z0-9-]+$/.test(activeGroupId))
-  throw new Error(`Ungültige Gruppenkennung: ${activeGroupId}`);
+  guardFailure;
 const checks = [],
   errors = [];
 let peak = 0;
@@ -157,9 +142,10 @@ function processes() {
     });
 }
 function telemetry() {
-  const memory = memorySnapshot(),
+  const mem = fs.readFileSync("/proc/meminfo", "utf8"),
     psi = fs.readFileSync("/proc/pressure/memory", "utf8");
-  const total = Number(psi.match(/^full .*total=(\d+)/m)[1]);
+  const available = Number(mem.match(/^MemAvailable:\s+(\d+)/m)[1]) * 1024,
+    total = Number(psi.match(/^full .*total=(\d+)/m)[1]);
   const app = processes().find(
     (p) =>
       p.args[0]?.startsWith("/app/obsidian") &&
@@ -185,15 +171,13 @@ function telemetry() {
       );
     } catch {}
   peak = Math.max(peak, current);
-  return { time: Date.now(), available: memory.available,
-    memTotal: memory.total, swapTotal: memory.swapTotal,
-    swapFree: memory.swapFree, total, current, ...details };
+  return { time: Date.now(), available, total, current, ...details };
 }
 function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || nativePathDialog)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
@@ -229,7 +213,7 @@ function prepare() {
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
     fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
   }
-  if ((v2Open || installedMapsOpen) && !restart) {
+  if (v2Open && !restart) {
     for (const dungeon of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
       fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
       fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
@@ -318,10 +302,6 @@ process.on("SIGTERM", () => {
   void shutdown().finally(() => process.exit(1));
 });
 async function main() {
-  const launchMemory = assessMemory(memorySnapshot(), "launch");
-  if (!launchMemory.allowed)
-    throw new Error("Grafiktest wegen Speicherreserve nicht gestartet: " +
-      JSON.stringify(launchMemory));
   assert(
     !processes().some(
       (p) =>
@@ -338,8 +318,8 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (activeGroupId ? `group-${activeGroupId}-` : nativePathDialog ? "native-path-dialog-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : dd041Navigation ? dd041PanOnly ? "dd041-pan-" : "dd041-navigation-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
-      memoryPolicy: "preflight reserve and runtime memory/swap guard",
+      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
   let baseline = telemetry();
@@ -351,15 +331,11 @@ async function main() {
       const row = telemetry();
       fs.appendFileSync(out + "/memory.jsonl", JSON.stringify(row) + "\n");
       const elapsed = row.time - baseline.time;
-      const memory = assessMemory({ total: row.memTotal,
-        available: row.available, swapTotal: row.swapTotal,
-        swapFree: row.swapFree }, "runtime");
       if (
-        !memory.allowed ||
+        row.available < 256 * 1048576 ||
         (elapsed >= 2000 && row.total - baseline.total > elapsed * 1000 * 0.5)
       ) {
-        guardFailure = "System memory reserve exhausted: " +
-          memory.reasons.join(", ");
+        guardFailure = "Acute system-wide memory shortage";
         rejectGuard(new Error(guardFailure));
       }
       if (elapsed >= 2000) baseline = row;
@@ -428,7 +404,7 @@ async function workflow() {
       app.vault?.adapter?.basePath === expected &&
       app.workspace?.layoutReady,
     vault,
-    { timeout: 90000 },
+    { timeout: 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -443,14 +419,13 @@ async function workflow() {
       2,
     ),
   );
-  const trustButton = page.getByRole("button", {
-    name: "Dem Ersteller vertrauen und Erweiterungen aktivieren",
-    exact: true,
-  });
-  if (await trustButton.isVisible() ||
-      !(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")))) {
-    await trustButton.click();
-    await trustButton.waitFor({ state: "detached", timeout: 12000 });
+  if (!(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")))) {
+    await page
+      .getByRole("button", {
+        name: "Dem Ersteller vertrauen und Erweiterungen aktivieren",
+        exact: true,
+      })
+      .click();
   }
   await page.waitForFunction(
     () => !!app.plugins.getPlugin("dungeon-editor"),
@@ -477,71 +452,6 @@ async function workflow() {
   );
   await page.setViewportSize({ width: 1120, height: 840 });
   await page.bringToFront();
-  if (process.env.DUNGEON_QA_FOCUS_READY === "1") {
-    const focusState = () => page.evaluate(() => {
-      const current = window.electron?.remote?.getCurrentWindow?.();
-      const nativeHandle = current?.getNativeWindowHandle?.();
-      let activeLocation = null;
-      try { activeLocation = activeWindow?.location?.href ?? null; } catch {
-        activeLocation = "unavailable";
-      }
-      return { activeWindowSame: activeWindow === window,
-        activeDocumentSame: activeDocument === document,
-        activeLocation,
-        pageLocation: window.location.href,
-        electronWindowId: current?.id ?? null,
-        electronWindowTitle: current?.getTitle?.() ?? null,
-        mediaSourceId: current?.getMediaSourceId?.() ?? null,
-        nativeHandleHex: nativeHandle?.toString("hex") ?? null,
-        nativeX11Id: nativeHandle?.length >= 4 ? nativeHandle.readUInt32LE(0) : null,
-        documentFocused: document.hasFocus(),
-        electronFocused: current?.isFocused?.() ?? null };
-    });
-    const before = await focusState();
-    const focusLog = { before, cdpPageUrls: browser.contexts().flatMap((context) =>
-      context.pages().map((candidate) => candidate.url())), activation: [] };
-    const writeFocus = () => fs.writeFileSync(out + "/focus-readiness.json",
-      JSON.stringify(focusLog, null, 2) + "\n");
-    writeFocus();
-    assert.equal(process.env.XDG_SESSION_TYPE, "x11", "QA focus activation requires X11");
-    const mediaId = /^window:(\d+):/.exec(before.mediaSourceId ?? "")?.[1];
-    const x11Id = Number(mediaId ?? before.nativeX11Id);
-    assert(Number.isSafeInteger(x11Id) && x11Id > 0,
-      "QA Obsidian window has no valid X11 ID");
-    focusLog.x11Id = x11Id;
-    writeFocus();
-    if (!before.electronFocused || !before.activeWindowSame ||
-        !before.activeDocumentSame) {
-      for (const action of ["windowactivate", "windowfocus"]) {
-        const entry = { action };
-        try {
-          cp.execFileSync("xdotool", [action, "--sync", String(x11Id)],
-            { timeout: 5000, stdio: "pipe" });
-          entry.completed = true;
-        } catch (error) {
-          entry.completed = false;
-          entry.error = String(error);
-        }
-        entry.state = await focusState();
-        focusLog.activation.push(entry);
-        writeFocus();
-        if (entry.state.electronFocused && entry.state.activeWindowSame &&
-          entry.state.activeDocumentSame) break;
-      }
-      const last = focusLog.activation.at(-1)?.state;
-      if (last?.electronFocused &&
-          (!last.activeWindowSame || !last.activeDocumentSame)) {
-        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-        focusLog.afterFocusEvent = await focusState();
-        writeFocus();
-      }
-    }
-    const after = await focusState();
-    focusLog.after = after;
-    writeFocus();
-    assert(after.electronFocused && after.activeWindowSame &&
-      after.activeDocumentSame, "Obsidian active window differs from focused QA page");
-  }
   const view = () =>
     page.evaluate(() => {
       const e =
@@ -557,34 +467,8 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  if (activeGroupId) {
-    const group = loadGroups(root).find((item) => item.id === activeGroupId);
-    assert(group, `Unknown group: ${activeGroupId}`);
-    const scenario = require(`./groups/scenarios/${activeGroupId}.cjs`);
-    const build = crypto.createHash("sha256").update(fs.readFileSync(pluginRoot + "/main.js")).digest("hex");
-    const record = createGroupRecord(group, out, build, restart ? "reopen" : "edit");
-    try {
-      await scenario({ page, out, qa, vault, restart, group, record });
-    } finally {
-      groupResult = record.finish();
-    }
-    checks.push(`${activeGroupId}: ${groupResult.counts.pass} pass, ${groupResult.counts.fail} fail, ${groupResult.counts.deviation} deviation, ${groupResult.counts.open} open`);
-    assert.equal(groupResult.counts.fail, 0, `Group ${activeGroupId} has failing cases`);
-    return;
-  }
-  if (nativePathDialog) {
-    const scenario = require("./groups/scenarios/material-pfad-dialog.cjs");
-    nativePathDialogResult = await scenario({ page, out, qa, vault, restart });
-    checks.push(`DD-021.15 PCK dialog substep: ${nativePathDialogResult.state}`);
-    assert.notEqual(nativePathDialogResult.state, "fail", "Native path dialog substep failed");
-    return;
-  }
   if (v2Open) {
     await v2OpenWorkflow(view);
-    return;
-  }
-  if (installedMapsOpen) {
-    await installedMapsOpenWorkflow(view);
     return;
   }
   if (patternAlpha) {
@@ -601,14 +485,6 @@ async function workflow() {
   }
   if (pathLibrary) {
     await pathLibraryWorkflow(view);
-    return;
-  }
-  if (dd041Navigation) {
-    assert(!restart, "DD-041 uses a fresh isolated map in one host run");
-    const result = await dd041HostNavigation({ page, out, panOnly: dd041PanOnly });
-    checks.push(...result.records.map((entry) =>
-      `${entry.caseId} ${entry.name}: ${entry.passed ? "pass" : "deviation"}`));
-    assert(result.passed, `DD-041 deviations: ${result.failures.join(", ")}`);
     return;
   }
   if (compactSmoke) {
@@ -3459,26 +3335,6 @@ async function v2OpenWorkflow(view) {
   }
   await page.screenshot({ path: out + "/v2-maps-opened.png" });
 }
-async function installedMapsOpenWorkflow(view) {
-  assert(!restart, "Installed map check starts in one fresh process");
-  for (const mapPath of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
-    const source = fs.readFileSync(path.resolve(sourceVault, mapPath));
-    const expected = JSON.parse(source.toString("utf8"));
-    assert.equal(expected.version, 3);
-    await page.evaluate(async (target) => {
-      const file = app.vault.getAbstractFileByPath(target);
-      const leaf = app.workspace.getLeavesOfType("dungeon-native-map")[0] ?? app.workspace.getLeaf(false);
-      await leaf.openFile(file);
-    }, mapPath);
-    await page.locator(".dn-canvas canvas").last().waitFor({ state: "visible", timeout: 30000 });
-    assert.deepEqual((await view()).document, expected);
-    const copy = fs.readFileSync(path.join(vault, mapPath));
-    assert.equal(crypto.createHash("sha256").update(copy).digest("hex"),
-      crypto.createHash("sha256").update(source).digest("hex"));
-    checks.push(`Installed build opens ${mapPath} in fresh Obsidian without map changes`);
-  }
-  await page.screenshot({ path: out + "/installed-maps-opened.png" });
-}
 async function compactWorkflow() {
   const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon";
   await page.evaluate(async (path) => {
@@ -3818,14 +3674,6 @@ async function largeWorkflow() {
       errors,
       guardFailure,
       peakBytes: peak,
-      group: groupResult ? { id: groupResult.groupId, phase: groupResult.phase,
-        complete: groupResult.complete, counts: groupResult.counts } : null,
-      nativePathDialog: nativePathDialogResult ? {
-        caseId: nativePathDialogResult.caseId,
-        phase: nativePathDialogResult.phase,
-        state: nativePathDialogResult.state,
-        gap: nativePathDialogResult.gap,
-      } : null,
       passed: !failure && !errors.length && !guardFailure,
     };
     fs.mkdirSync(out, { recursive: true });

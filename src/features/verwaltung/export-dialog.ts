@@ -1,4 +1,7 @@
-import { App, ButtonComponent, Modal, Setting, SliderComponent, TextComponent } from "obsidian";
+import { App, ButtonComponent, DropdownComponent, Modal, Setting,
+  SliderComponent, TextComponent } from "obsidian";
+import { GRID_PPI_RANGE, gridOutputDimensions, selectGridPreset,
+  setManualGridPpi, type GridPresetState } from "./grid-presets";
 import { defaultExportQualityPercent, exportFormatLabels, exportPixelDimensions,
   exportQualityPercent, nonNegativePercent, qualityForExportRequest,
   supportsExportQuality,
@@ -18,6 +21,7 @@ export interface ExportDialogConfig {
   initial: ExportRequest;
   onExport: (request: ExportRequest, signal: AbortSignal) =>
     ExportResult | Promise<ExportResult>;
+  onGridPreferencesClosed?: (state: GridPresetState) => void;
   advanced?: {
     /** A control is active only when the export callback applies its value. */
     supported: readonly ExportAdvancedKey[];
@@ -34,7 +38,9 @@ export interface ExportDialogConfig {
 export class ExportDialog extends Modal {
   private readonly initial: ExportRequest;
   private readonly onExport: ExportDialogConfig["onExport"];
+  private readonly onGridPreferencesClosed?: ExportDialogConfig["onGridPreferencesClosed"];
   private readonly advanced?: ExportDialogConfig["advanced"];
+  private gridPreferences?: GridPresetState;
   private controller?: AbortController;
   private generation = 0;
   private busy = false;
@@ -49,6 +55,7 @@ export class ExportDialog extends Modal {
       throw new RangeError("Ungültige Exportvorgabe");
     this.initial = { ...config.initial };
     this.onExport = config.onExport;
+    this.onGridPreferencesClosed = config.onGridPreferencesClosed;
     this.advanced = config.advanced;
     const supported = new Set(config.advanced?.supported ?? []);
     const needs = (key: ExportAdvancedKey, available: boolean) => {
@@ -83,6 +90,8 @@ export class ExportDialog extends Modal {
     let qualitySetting: Setting | undefined;
     let qualitySlider: SliderComponent | undefined;
     let qualityInput: TextComponent | undefined;
+    let pixelsInput: TextComponent | undefined;
+    let presetDropdown: DropdownComponent | undefined;
     const supported = new Set(this.advanced?.supported ?? []);
     const supports = (key: ExportAdvancedKey) => supported.has(key);
     const levels = this.advanced?.levels ?? [];
@@ -99,6 +108,13 @@ export class ExportDialog extends Modal {
     let opacityText = String(initial.overlayOpacityPercent ?? 100);
     let cameraFilterId = initial.cameraFilterId ?? filters[0]?.id ?? "none";
     let gridPresetId = initial.gridPresetId ?? presets[0]?.id ?? "custom";
+    this.gridPreferences = supports("gridPresetId")
+      ? selectGridPreset(gridPresetId, this.initial.pixelsPerCell) ?? undefined
+      : undefined;
+    if (this.gridPreferences) {
+      gridPresetId = this.gridPreferences.presetId;
+      pixelsText = String(this.gridPreferences.pixelsPerCell);
+    }
     let crop = initial.crop ?? null;
     let exportButton: ButtonComponent | undefined;
     let cropButton: ButtonComponent | undefined;
@@ -107,6 +123,8 @@ export class ExportDialog extends Modal {
     const message = this.contentEl.createDiv({ cls: "dn-export-message" });
     message.setAttribute("role", "alert");
     const valid = () => positivePixelsPerCell(pixelsText) !== null &&
+      (!supports("gridPresetId") ||
+        setManualGridPpi(Number(pixelsText)) !== null) &&
       qualityForExportRequest(format, qualityText) !== null &&
       (!supports("sourceLevelId") || levels.some(({ id }) => id === sourceLevelId)) &&
       (!supports("brightnessPercent") || nonNegativePercent(brightnessText) !== null) &&
@@ -126,8 +144,13 @@ export class ExportDialog extends Modal {
       if (outputDimensions) {
         const ppi = positivePixelsPerCell(pixelsText);
         const dimensions = ppi && this.advanced?.mapSize
-          ? exportPixelDimensions(this.advanced.mapSize, ppi,
-            supports("crop") ? crop : null) : null;
+          ? supports("gridPresetId")
+            ? gridOutputDimensions(this.advanced.mapSize, ppi,
+              supports("crop") && crop ? {
+                width: crop.width, height: crop.height } : null)
+            : exportPixelDimensions(this.advanced.mapSize, ppi,
+              supports("crop") ? crop : null)
+          : null;
         outputDimensions.textContent = dimensions
           ? `Ausgabe: ${dimensions.width} × ${dimensions.height} Pixel`
           : "Ausgabemaße noch nicht verfügbar";
@@ -171,11 +194,23 @@ export class ExportDialog extends Modal {
       });
     new Setting(this.contentEl).setName("Pixel pro Feld")
       .addText((input) => {
+        pixelsInput = input;
         input.inputEl.type = "number";
-        input.inputEl.min = "1";
+        input.inputEl.min = String(supports("gridPresetId")
+          ? GRID_PPI_RANGE.min : 1);
+        if (supports("gridPresetId"))
+          input.inputEl.max = String(GRID_PPI_RANGE.max);
         input.inputEl.step = "1";
         input.setValue(pixelsText).onChange((value) => {
           pixelsText = value;
+          if (supports("gridPresetId")) {
+            const changed = setManualGridPpi(Number(value));
+            if (changed) {
+              gridPresetId = changed.presetId;
+              this.gridPreferences = changed;
+              presetDropdown?.setValue(gridPresetId);
+            }
+          }
           message.textContent = "";
           refresh();
         });
@@ -228,10 +263,23 @@ export class ExportDialog extends Modal {
       .addOptions(choices(filters)).setValue(cameraFilterId)
       .setDisabled(!supports("cameraFilterId"))
       .onChange((value) => { cameraFilterId = value; refresh(); }));
-    row("Grid Presets", "gridPresetId").addDropdown((dropdown) => dropdown
-      .addOptions(choices(presets)).setValue(gridPresetId)
-      .setDisabled(!supports("gridPresetId"))
-      .onChange((value) => { gridPresetId = value; refresh(); }));
+    row("Grid Presets", "gridPresetId").addDropdown((dropdown) => {
+      presetDropdown = dropdown;
+      dropdown.addOptions(choices(presets)).setValue(gridPresetId)
+        .setDisabled(!supports("gridPresetId"))
+        .onChange((value) => {
+          if (!supports("gridPresetId")) return;
+          const ppi = positivePixelsPerCell(pixelsText);
+          const changed = selectGridPreset(value,
+            ppi ?? this.initial.pixelsPerCell);
+          if (!changed) return;
+          pixelsText = String(changed.pixelsPerCell);
+          pixelsInput?.setValue(pixelsText);
+          gridPresetId = changed.presetId;
+          this.gridPreferences = changed;
+          refresh();
+        });
+    });
     outputDimensions = this.contentEl.createDiv({ cls: "dn-export-dimensions" });
     new Setting(this.contentEl).setName("Show in Folder on Finish")
       .setDesc("Noch nicht verfügbar; Wirkung im Original offen.")
@@ -335,6 +383,8 @@ export class ExportDialog extends Modal {
   }
 
   onClose(): void {
+    if (this.gridPreferences)
+      this.onGridPreferencesClosed?.(this.gridPreferences);
     this.generation++;
     this.controller?.abort();
     this.controller = undefined;
