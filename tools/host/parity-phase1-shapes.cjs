@@ -37,6 +37,26 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
           active: document.activeElement?.outerHTML.slice(0, 200) };
       }, { from, to });
       fs.writeFileSync(path.join(out, "rectangle-before-input.json"), JSON.stringify(before, null, 2));
+      await page.evaluate(() => {
+        window.__phase1RectangleEvents = [];
+        const canvas = app.workspace.activeLeaf.view.editor.renderer.canvas;
+        const record = (where) => (event) => {
+          const editor = app.workspace.activeLeaf?.view?.editor;
+          window.__phase1RectangleEvents.push({ time: Math.round(performance.now() * 10) / 10,
+            where, type: event.type, pointer: event.pointerId,
+            target: event.target?.tagName, active: document.activeElement?.tagName,
+            capture: canvas.hasPointerCapture(event.pointerId),
+            gesture: editor?.gesture && { pointer: editor.gesture.pointer,
+              tool: editor.gesture.tool, moved: editor.gesture.moved },
+            paint: !!editor?.paintWorker,
+            buildings: editor?.session.document().entities.filter(e => e.kind === "building").length });
+        };
+        for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel",
+          "gotpointercapture", "lostpointercapture"]) {
+          window.addEventListener(type, record("window-capture"), { capture: true });
+          canvas.addEventListener(type, record("canvas-bubble"));
+        }
+      });
     }
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -49,13 +69,36 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
       fs.writeFileSync(path.join(out, "rectangle-after-down.json"), JSON.stringify(after, null, 2));
     }
     await page.mouse.move(to.x, to.y, { steps: 8 });
-    await page.waitForFunction((label) => {
-      const editor = app.workspace.activeLeaf?.view?.editor;
-      return editor?.renderer.previewSize?.visible &&
-        editor.renderer.previewSize.text === label;
-    }, label);
+    try {
+      await page.waitForFunction((label) => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return editor?.renderer.previewSize?.visible &&
+          editor.renderer.previewSize.text === label;
+      }, label);
+    } catch (error) {
+      if (expected === 1 && screenshot === "rectangle-4x3-preview.png")
+        fs.writeFileSync(path.join(out, "rectangle-preview-failure.json"),
+          JSON.stringify(await page.evaluate(() => {
+            const editor = app.workspace.activeLeaf?.view?.editor;
+            return { events: window.__phase1RectangleEvents,
+              gesture: editor?.gesture, preview: editor?.renderer.previewSize?.text,
+              buildings: editor?.session.document().entities
+                .filter((e) => e.kind === "building").length };
+          }), null, 2));
+      throw error;
+    }
     await page.screenshot({ path: path.join(out, screenshot) });
     await page.mouse.up();
+    if (expected === 1 && screenshot === "rectangle-4x3-preview.png") {
+      const after = await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { events: window.__phase1RectangleEvents,
+          gesture: editor?.gesture, paint: !!editor?.paintWorker,
+          buildings: editor?.session.document().entities
+            .filter((e) => e.kind === "building").length };
+      });
+      fs.writeFileSync(path.join(out, "rectangle-after-up.json"), JSON.stringify(after, null, 2));
+    }
     await count(expected);
     assert.equal((await state()).preview, null);
   }

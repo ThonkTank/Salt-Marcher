@@ -977,21 +977,13 @@ export class DungeonEditor {
         this.renderer.clearObjectPreview();
       }
     }, options);
-    canvas.addEventListener(
-      "lostpointercapture",
-      () => {
-        const gesture = this.gesture;
-        if (!gesture) return;
-        if (gesture.temporaryPan && this.space) return;
-        this.cancel();
-      },
-      options,
-    );
+    // Capture can disappear while a drag is still pressed. Pointer-up,
+    // pointer-cancel, Escape or window blur decides how the gesture ends.
     window.addEventListener(
       "pointermove",
       (e) => {
         const gesture = this.gesture;
-        if (gesture?.temporaryPan && gesture.pointer === e.pointerId &&
+        if (gesture?.pointer === e.pointerId &&
             !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
           this.run(() => this.update(e));
       },
@@ -1001,7 +993,7 @@ export class DungeonEditor {
       "pointerup",
       (e) => {
         const gesture = this.gesture;
-        if (gesture?.temporaryPan && gesture.pointer === e.pointerId &&
+        if (gesture?.pointer === e.pointerId &&
             !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
           this.run(() => this.commit(e));
       },
@@ -1011,7 +1003,7 @@ export class DungeonEditor {
       "pointercancel",
       (e) => {
         const gesture = this.gesture;
-        if (gesture?.temporaryPan && gesture.pointer === e.pointerId &&
+        if (gesture?.pointer === e.pointerId &&
             !canvas.hasPointerCapture(e.pointerId) && e.target !== canvas)
           this.cancel();
       },

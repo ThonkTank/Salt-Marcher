@@ -176,6 +176,29 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
           hitTo: document.elementFromPoint(to.x, to.y)?.outerHTML.slice(0, 200),
           active: document.activeElement?.outerHTML.slice(0, 200) };
       }, { from, to }), null, 2));
+    await page.evaluate(() => {
+      window.__phase1EscapeEvents = [];
+      const canvas = app.workspace.activeLeaf.view.editor.renderer.canvas;
+      const record = (where) => (event) => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        window.__phase1EscapeEvents.push({ time: Math.round(performance.now() * 10) / 10,
+          where, type: event.type, key: event instanceof KeyboardEvent ? event.key : undefined,
+          pointer: event instanceof PointerEvent ? event.pointerId : undefined,
+          buttons: event instanceof PointerEvent ? event.buttons : undefined,
+          x: event instanceof PointerEvent ? event.clientX : undefined,
+          y: event instanceof PointerEvent ? event.clientY : undefined,
+          target: event.target?.tagName, active: document.activeElement?.tagName,
+          capture: event instanceof PointerEvent ? canvas.hasPointerCapture(event.pointerId) : undefined,
+          gesture: editor?.gesture && { pointer: editor.gesture.pointer,
+            tool: editor.gesture.tool, moved: editor.gesture.moved },
+          defaultPrevented: event.defaultPrevented });
+      };
+      for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel",
+        "gotpointercapture", "lostpointercapture", "keydown"]) {
+        window.addEventListener(type, record("window-capture"), { capture: true });
+        canvas.addEventListener(type, record("canvas-bubble"));
+      }
+    });
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     fs.writeFileSync(path.join(out, "escape-rectangle-after-down.json"),
@@ -193,6 +216,13 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
       }), null, 2));
     await page.keyboard.press("Escape");
     await page.mouse.up();
+    fs.writeFileSync(path.join(out, "escape-rectangle-timeline.json"),
+      JSON.stringify(await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf?.view?.editor;
+        return { viewType: app.workspace.activeLeaf?.view?.getViewType?.(),
+          tool: editor?.tool, gesture: editor?.gesture,
+          events: window.__phase1EscapeEvents };
+      }), null, 2));
     assert.equal((await buildings()).length, beforeCancel);
     assert.equal((await state()).tool, "select");
     await chooseTool("Polygonraum");

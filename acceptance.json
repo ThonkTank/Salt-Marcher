@@ -47801,6 +47801,23 @@
       "open": "Breite Shapes-Folge zeigte fehlende erste Vorschau beziehungsweise nach wirksamem Pointer-Down und Vorschau fehlenden Rechteckabschluss. Hauptfolge schloss den Editor bei Escape im gehaltenen Rechteckzug. Vollständiger aktueller Edit-/Frischöffnungsnachweis aller Phase-1-Formen fehlt.",
       "crossCaseGate": "Nummerierter Raum, Key-Bytes, Alt-Innenloch, Portal-Erhalt/Entfernen, Undo/Redo und Frischstart im fokussierten aktuellen Host bestanden.",
       "next": "Eigener Nachbesserungslauf: Pointer-/Capture-/Fokus-/Escape-Zeitspur, Ursache zwischen Hoststeuerung und Editor trennen, nur bestätigte Produktabweichung korrigieren; danach breite Edit- und Frischöffnungsfolgen erneut prüfen."
+    },
+    "phase1CaptureRepairImplementation": {
+      "date": "2026-10-07",
+      "state": "candidate_ready_for_separate_review",
+      "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-repair-20261007/phase1-capture-repair-evidence.md",
+      "cause": "Im alten Kandidaten ging Pointer-Capture während eines aktiven Rechteckzugs vor Escape verloren. Der Lost-Capture-Handler verwarf die Geste; Escape schloss danach den Editor-Tab. Der alte breite Hostlauf belegt dieselbe Zeitfolge.",
+      "change": "Lost-Capture beendet keine aktive Zeichengeste mehr. Pointer-Up, Pointer-Cancel, Escape oder Fenster-Fokusverlust entscheiden über Commit oder Abbruch; ein Fenster-Fallback verarbeitet Zeigerereignisse außerhalb des Canvas ohne Capture.",
+      "forcedCaptureLoss": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-repair-20261007/evidence/1791327345236-parity-phase1-repair-edit/result.json",
+      "hostShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-shapes-20261007/evidence/1791327359917-parity-phase1-shapes-edit/result.json",
+      "hostShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-shapes-20261007/evidence/1791327369130-parity-phase1-shapes-reopen/result.json",
+      "hostMainEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-main-20261007/evidence/1791327406911-parity-phase1-edit/result.json",
+      "hostMainReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-main-20261007/evidence/1791327545355-parity-phase1-reopen/result.json",
+      "hostFocusedEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-repair-20261007/evidence/1791327550818-parity-phase1-repair-edit/result.json",
+      "hostFocusedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-repair-20261007/evidence/1791327562115-parity-phase1-repair-reopen/result.json",
+      "verification": "Alle sechs Edit-/Neuöffnungsläufe und die erzwungene Capture-Verlustprobe bestanden ohne Hostfehler; npm run check, 119 Kerntests und npm run build bestanden. Produktive Installation unverändert.",
+      "next": "Getrennter Review des Kandidaten über zwölf Phase-1-Unterfälle und das Raum-/Portal-Quertor. DD-011.15 vollständig Phase 3; physische Eingabe Phase 7."
     }
   }
 }

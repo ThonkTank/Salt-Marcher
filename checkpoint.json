@@ -773,19 +773,19 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_second_review_gate_open",
+    "status": "phase1_capture_repair_implemented_review_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-1-Nachbesserungslauf: Rechteck-Pointerfolge und Escape bei gehaltenem Zug zeitlich nachzeichnen (Down/Move/Up/Cancel/Lost-Capture, Trefferziel, Fokus, Gesture, Worker). Host- von Produktursache trennen, nur bestätigte Abweichung korrigieren; anschließend breite Formen-Editfolgen und frische Neuöffnung auf demselben Build wiederholen. Danach eigener erneuter Reviewlauf.",
-    "note": "Fokussierter aktueller Build besteht Shift-Handle-Vorschau, Snap/Strg+S und Raum-Key-Portal samt Frischstart. Breiter Host: acht Hauptchecks bestanden, dann schloss Escape beim gehaltenen Rechteck den Editor. Zwei Shapes-Starts stoppten beim ersten Rechteck; im zweiten sind Pointer-Down und Vorschau belegt, ein Abschluss nach Pointer-Up nicht. Basisprüfungen bestehen, breites Phase-1-Tor nicht.",
-    "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
+    "nextRun": "Eigener dritter Phase-1-Reviewlauf: aktuellen Kandidaten dbf47e59 samt zwölf Unterfällen und Raum-/Portal-Quertor gegen Original- und isolierte Hostbelege entscheiden. Bei Lücken eigener Nachbesserungslauf; bei bestandenem Tor erst danach eigene Phase-1-Aufräumplanung.",
+    "note": "Zeitspur belegt vorzeitig verlorenes Pointer-Capture als Ursache des Rechteck-/Escape-Abbruchs im alten Kandidaten. Der neue Kandidat beendet die Geste erst bei Pointer-Up, Pointer-Cancel, Escape oder Fokusverlust. Erzwungener Capture-Verlust sowie breite Shapes-, Haupt- und fokussierte Hostfolgen mit jeweiligem Frischstart bestehen; die separate Phasenfreigabe steht noch aus.",
+    "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Ungeklärte Eingabe-/Capture-Folge beim Rechteck und Escape; vollständige aktuelle Edit- und Frischöffnungsfolge aller Phase-1-Formen fehlt. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7. Vor einer Aufräumphase muss ein eigener Nachbesserungs- und erneuter Reviewlauf das Phase-1-Tor schließen.",
+    "open": "Formale Phase-1-Entscheidung über zwölf Unterfälle und das Raum-/Portal-Quertor im eigenen Reviewlauf. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7. Aufräumplanung erst nach Phasenfreigabe.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -811,6 +811,9 @@
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-shapes-20261007/evidence/1791326775983-parity-phase1-shapes-edit/result.json",
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-main-20261007/evidence/1791326804744-parity-phase1-edit/result.json",
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review2-shapes-20261007/evidence/1791326854195-parity-phase1-shapes-edit/result.json"
-    ]
+    ],
+    "captureRepairEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-repair-20261007/phase1-capture-repair-evidence.md",
+    "captureRepairBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
+    "captureRepairVerified": "Erzwungener Capture-Verlust und breite Formen-, Haupt- sowie fokussierte Hostfolgen mit frischem Prozess bestanden; npm run check, 119 Tests und npm run build bestanden. Produktiver Build unverändert."
   }
 }
