@@ -5098,7 +5098,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5130,7 +5130,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01602-WALL-ENTER-STATIC.md"
           ],
           "gap": "Enter steht im Original als Abschlussgeste, aber ein kontrollierter neuer Wandzug mit Enter-Abschluss und gespeichertem Ergebnis fehlt."
         },
@@ -5167,7 +5168,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5199,7 +5200,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01603-WALL-DOUBLECLICK-STATIC.md"
           ],
           "gap": "Doppelklick wird als Abschlussgeste für den freien Wandzug genannt; ein direkter Originalzug mit beobachtetem Doppelklick-Abschluss und gespeicherter Wirkung fehlt."
         },
@@ -5236,7 +5238,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5268,7 +5270,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01604-WALL-BACKSPACE-STATIC.md"
           ],
           "gap": "Backspace steht als Undo Point in der Leiste; eine direkt gemessene Punktfolge vor/nach Backspace fehlt."
         },
@@ -5305,7 +5308,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5337,7 +5340,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01605-WALL-SHIFT-CURVE-STATIC.md"
           ],
           "gap": "Shift-Kurve ist sichtbar; ob Shift nur das gehaltene Segment oder den ganzen Wandzug krümmt, ist offen."
         },
@@ -5375,7 +5379,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5407,7 +5411,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01606-WALL-CTRL-EXTEND-STATIC.md"
           ],
           "gap": "Ctrl-Fortsetzung ist benannt; die vollständige aktuelle Originalfolge an Anfang und Ende einer vorhandenen Wand fehlt."
         },
@@ -5445,7 +5450,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5477,7 +5482,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01607-WALL-EDIT-POINTS-STATIC.md"
           ],
           "gap": "Edit Points ist sichtbar; genaue Griffbewegung mit Vorschau, History und Speicherung an einer unabhängigen Wand fehlt."
         },
@@ -5515,7 +5521,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5547,7 +5553,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01608-WALL-SORT-OVER-STATIC.md"
           ],
           "gap": "Over ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen."
         },
@@ -5585,7 +5592,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5617,7 +5624,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01609-WALL-SORT-UNDER-STATIC.md"
           ],
           "gap": "Under ist sichtbar; die tatsächliche Zeichenreihenfolge an einer Kreuzung ist nicht isoliert gemessen."
         },
@@ -5655,7 +5663,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -12359,7 +12367,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-02-WATER-BRUSH-STROKE-STATIC.md"
           ]
         },
         "target": "Wasserfläche mit vergleichbarer Kontur.",
@@ -12396,7 +12405,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12413,7 +12422,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-03-WATER-SIZE-0-STATIC.md"
           ]
         },
         "target": "Kleinste native Pinselabdeckung erreichen.",
@@ -12450,7 +12460,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12467,7 +12477,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-04-WATER-RECTANGLE-STATIC.md"
           ]
         },
         "target": "Gleiche Wassergeometrie.",
@@ -12504,7 +12515,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12521,7 +12532,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-05-WATER-CIRCLE-STATIC.md"
           ]
         },
         "target": "Gleiche runde Wassergeometrie.",
@@ -12558,7 +12570,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Quellen-/Codebefund und konkreter Original-/Host-Prüfweg im Dossier; fallgleicher Grafikvergleich und installierter Endstand offen."
         }
       },
       {
@@ -18933,14 +18945,29 @@
             "Escape bei ruhender Objekt-Cursorvorschau verlässt den Editor nicht und erhält das aktive Objektwerkzeug."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-20-ESCAPE-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-20-ESCAPE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Einmal Escape mit echter Atlas-Kachel im isolierten Host und am installierten Endstand sowie Folgeplatzierung noch nicht geprüft."
+          "state": "partial",
+          "build": "659ba155ee7f95be5c6648dc5f3731423ff97dd2fbef8d929453858891ef7af6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02620-escape-retry-20261006/evidence/1791271946406-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02620-escape-retry-20261006/evidence/1791271946406-objekte-01-edit/dd02620-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+          ],
+          "gap": "Installierter Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Escape erhielt ruhendes Atlas-Cursorbild, Werkzeug, Karte und History; Folgeklick platzierte genau ein Objekt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02620-escape-retry-20261006/evidence/1791271946406-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02620-escape-retry-20261006/evidence/1791271946406-objekte-01-edit/dd02620-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+            ],
+            "gap": "Installierter Endstand offen."
+          }
         }
       },
       {
@@ -18953,12 +18980,12 @@
         "original": {
           "sequence": "Zweiten/dritten Klick ohne Werkzeugwechsel",
           "options": null,
-          "effect": "Mehrere Objekte nacheinander gespeichert.",
+          "effect": "Drei aufeinanderfolgende Platzierungen: Atlas, nach Optionswechsel Atlas, nach Assetwechsel Book; ältere Objekte bleiben wertgleich.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-book.dungeondraft_map"
-          ],
-          "gap": "Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen."
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-book.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-21-WIEDERHOLTE-PLATZIERUNG.md"
+          ]
         },
         "target": "Weitere Kartenklicks erzeugen ohne Werkzeugwechsel je ein zusätzliches Möbel mit den jeweils aktiven Optionen.",
         "baseline": {
@@ -18985,32 +19012,34 @@
           }
         },
         "implementation": {
-          "state": "not_started",
+          "state": "candidate_partial_uninstalled",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "b2d2c13c07f6658a94d841a229f527f76900fc22d5e19fb1c8ad6b0be958094f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272072120-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272072120-objekte-01-edit/dd02621-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272091165-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272091165-objekte-01-reopen/dd02621-steps.json"
+          ],
+          "gap": "Installierter Endstand offen; Bildskalierung und weitere Modifier sind eigene Fälle.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart.",
+            "state": "pass",
+            "observation": "Drei Klicks mit Options-/Assetwechsel änderten ältere Objekte nicht; Undo/Redo, Speichern und Frischöffnung bestanden.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272072120-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272072120-objekte-01-edit/dd02621-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272091165-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02621-repeat-retry-20261006/evidence/1791272091165-objekte-01-reopen/dd02621-steps.json"
             ],
-            "gap": "Edit: Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart. Originalgrenze: Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen.\nFrischstart: Zwei Hostinstanzen sind belegt, aber wiederholte Platzierung mit Optionswechsel nicht gepaart. Originalgrenze: Wiederholte Platzierung mit Optionswechsel im Original nicht als ein Ablauf gemessen.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
+            "gap": "Installierter Endstand offen; Bildskalierung und weitere Modifier sind eigene Fälle."
           }
         }
       },
@@ -20016,23 +20045,36 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/features/objekte/scatter-scale-range.ts",
-            "src/features/objekte/scatter-scale-migration.ts",
-            "src/commands.ts",
-            "src/properties.ts",
-            "src/main.ts"
+            "Mehrfachwahl konkreter Streuassets, natürliche Einzelmaße, unabhängige Min-/Max-Skalierung und Ebenenwert sind in Werkzeug, Vorgaben und einem History-Schritt integriert."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Min-/Max-Bereich und Altvorgaben sind integriert; grafischer Original-/Hostvergleich mit mehreren Motiven, Vorschau, Undo/Redo und Frischöffnung offen."
+          "state": "partial",
+          "build": "659ba155ee7f95be5c6648dc5f3731423ff97dd2fbef8d929453858891ef7af6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+          ],
+          "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Zwei ausgewählte Bilder erzeugten sieben Objekte; individuelle PNG-Maße bei Skalierung 1,5, ein Undo-Schritt und Frischöffnung bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+            ],
+            "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen."
+          }
         }
       },
       {
@@ -20079,23 +20121,36 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "src/features/objekte/scatter-scale-range.ts",
-            "src/features/objekte/scatter-scale-migration.ts",
-            "src/commands.ts",
-            "src/properties.ts",
-            "src/main.ts"
+            "Mehrfachwahl konkreter Streuassets, natürliche Einzelmaße, unabhängige Min-/Max-Skalierung und Ebenenwert sind in Werkzeug, Vorgaben und einem History-Schritt integriert."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Min-/Max-Bereich und Altvorgaben sind integriert; grafischer Original-/Hostvergleich mit mehreren Motiven, Vorschau, Undo/Redo und Frischöffnung offen."
+          "state": "partial",
+          "build": "659ba155ee7f95be5c6648dc5f3731423ff97dd2fbef8d929453858891ef7af6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+          ],
+          "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen.",
+          "candidate": {
+            "state": "partial",
+            "observation": "Zwei ausgewählte Bilder erzeugten sieben Objekte; individuelle PNG-Maße bei Skalierung 1,5, ein Undo-Schritt und Frischöffnung bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+            ],
+            "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen."
+          }
         }
       },
       {
@@ -20694,17 +20749,34 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Reiner Helfer bildet native Listenindex-Wahl und natürliche Assetmaße ab; UI/Scatter-Anschluss fehlen."
+            "Mehrfachwahl konkreter Streuassets, natürliche Einzelmaße, unabhängige Min-/Max-Skalierung und Ebenenwert sind in Werkzeug, Vorgaben und einem History-Schritt integriert."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-19-VARIANTENWAHL.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-19-VARIANTENWAHL.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Mehrfachwahl und Variantenschritt sind noch nicht an Editor-Scatter angeschlossen; isolierter Host und installierter Endstand offen."
+          "state": "partial",
+          "build": "659ba155ee7f95be5c6648dc5f3731423ff97dd2fbef8d929453858891ef7af6",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+          ],
+          "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Zwei ausgewählte Bilder erzeugten sieben Objekte; individuelle PNG-Maße bei Skalierung 1,5, ein Undo-Schritt und Frischöffnung bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271633707-objekte-02-edit/scatter-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd027-scatter-multiasset-retry-20261006/evidence/1791271654469-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-027-FOCUSED-HOST-20261006.md"
+            ],
+            "gap": "Isolierter Strich mit zwei Atlas-Assets, Min=Max=1,5, Undo/Redo und Frischöffnung bestanden. Originalverteilung, Vorschau/Abbruch, weitere Grenzwerte und installierter Endstand bleiben offen."
+          }
         }
       },
       {
