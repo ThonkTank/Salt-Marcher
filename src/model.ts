@@ -61,6 +61,7 @@ export interface PassageKeySection {
 export type KeySection = MarkdownKeySection | PassageKeySection;
 export interface RoomKey {
   readonly sections: readonly KeySection[];
+  readonly nextFeatureOrdinal?: number;
 }
 export type RoomV3 = Building & {
   readonly name: string;
@@ -428,6 +429,8 @@ export function validateEntity(
       throw new Error("Ungültige Gebäudedaten.");
     if (isV4Room) {
       if (!Array.isArray(e.key!.sections) ||
+          (e.key!.nextFeatureOrdinal !== undefined &&
+            (!Number.isInteger(e.key!.nextFeatureOrdinal) || e.key!.nextFeatureOrdinal < 1)) ||
           new Set(e.key!.sections.map((section) => section.id)).size !== e.key!.sections.length)
         throw new Error("Ungültige Raumabschnitte.");
       for (const section of e.key!.sections) {
@@ -748,6 +751,7 @@ export function validateContent(
           occurrence.sectionId !== undefined
         : !isStructuredRoom(room) || occurrence.note !== undefined ||
           !occurrence.sectionId ||
+          (entity && (entity.kind !== "object" || entity.roomId !== room.id)) ||
           !room.key.sections.some((section) =>
             section.kind === "markdown" && section.id === occurrence.sectionId))
     )
@@ -761,6 +765,9 @@ export function validateContent(
     }
   }
   if (version === 4) {
+    const linked = content.occurrences.map((item) => item.entityId).filter(Boolean);
+    if (new Set(linked).size !== linked.length)
+      throw new Error("Ein Kartenobjekt ist mehrfach mit Features verknüpft.");
     const archivedDoors = new Map<Id, Door>();
     for (const bundle of content.archive)
       for (const entity of bundle.entities)

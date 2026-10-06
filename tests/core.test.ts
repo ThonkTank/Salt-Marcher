@@ -2130,6 +2130,8 @@ import {
   archiveRoute,
   createFeatureDefinition,
   createFeatureOccurrence,
+  executeLinkedObjectChanges,
+  structuredFeatureText,
   createRoute,
   restoreArchive,
   updateFeatureQuantity,
@@ -3895,6 +3897,146 @@ test("V4 rooms keep exact Markdown, passage sections and stable targets without 
   assert.equal(session.floors.has(copiedFloor.id), false);
   restoreArchive(session, archivedFloor.id);
   assert.ok(session.floors.has(copiedFloor.id));
+});
+
+test("V4 feature text is exact, links one object and copies only its shared text on room change", () => {
+  const doc = newDocument("V4 Features", 30, 15, undefined, undefined, 4);
+  const s = new Session(doc), floor = doc.floors[0]!.id;
+  const outline = (left: number) => [
+    { x: left, y: 1 }, { x: left + 9, y: 1 },
+    { x: left + 9, y: 10 }, { x: left, y: 10 },
+  ];
+  const a = createRoom(s, floor, outline(1), "QA/Räume");
+  const b = createRoom(s, floor, outline(14), "QA/Räume");
+  const aFirst = structuredRoom(s, a.id).key.sections[0]!;
+  editMarkdownSection(s, a.id, aFirst.id, "", "## D · Bestehender Eintrag:\nUnverändert.\n");
+  const definition = createFeatureDefinition(s, {
+    name: "Schrein", kind: "feature", description: "Nicht in V4 kopieren", xp: 0, lootValue: 0,
+  });
+  assert.equal(definition.description, undefined);
+  const object = createObject(s, floor, { x: 3, y: 3 }, {
+    rotation: 0, width: 1, height: 1, color: 0xffffff, label: "Altar",
+  });
+  const exact = "*Wortlaut*  \r\n[[QA/Item|Fund]]\r\n";
+  const first = createFeatureOccurrence(s, definition.id, a.id, 1, object.id, {},
+    { markdown: exact, sectionId: aFirst.id });
+  assert.equal(first.marker, "E");
+  assert.equal(structuredFeatureText(s, first), exact);
+  assert.equal((s.entities.get(object.id) as MapObject).label, "Altar");
+  assert.throws(() => createFeatureOccurrence(s, definition.id, a.id, 1, object.id, {},
+    { markdown: "zweites Vorkommen" }), /bereits ein Feature/);
+  const other = createFeatureOccurrence(s, definition.id, a.id, 1, undefined, {},
+    { markdown: "Anderer Text.", sectionId: aFirst.id });
+  assert.equal(other.marker, "F");
+  const shared = structuredRoom(s, a.id).key.sections.find((section) => section.id === aFirst.id)!;
+  assert.equal(shared.kind, "markdown");
+  assert.throws(() => editMarkdownSection(s, a.id, shared.id, shared.markdown,
+    shared.markdown.replace(`<!-- dungeon-feature:${first.id}:start -->`, "")), /Grenzen/);
+  const beforeMove = s.document(), history = s.historySize;
+  const moved = objectAtPoint(s, object, { x: 16, y: 3 });
+  executeLinkedObjectChanges(s, "Feature verschieben", [{ id: object.id, before: object, after: moved }]);
+  assert.equal(s.historySize, history + 1);
+  const relocated = s.content.occurrences.find((item) => item.id === first.id)!;
+  assert.equal(relocated.roomId, b.id);
+  assert.equal(relocated.marker, "A");
+  assert.notEqual(relocated.sectionId, aFirst.id);
+  assert.equal(structuredFeatureText(s, relocated), exact);
+  assert.equal(structuredFeatureText(s, other), "Anderer Text.");
+  assert.match((structuredRoom(s, a.id).key.sections.find((section) => section.id === aFirst.id) as
+    { markdown: string }).markdown, /Wortlaut/);
+  assert.throws(() => executeLinkedObjectChanges(s, "Außerhalb", [{
+    id: object.id, before: moved, after: objectAtPoint(s, moved, { x: 12, y: 3 }),
+  }]), /Zielraum/);
+  assert.equal(s.historySize, history + 1);
+  s.undo();
+  assert.deepEqual(s.document(), beforeMove);
+  s.redo();
+  assert.deepEqual(parseDocument(JSON.stringify(s.document())), s.document());
+  const next = createFeatureOccurrence(s, definition.id, a.id, 1, undefined, {},
+    { markdown: "Neu." });
+  assert.equal(next.marker, "G");
+});
+
+test("V4 single feature section keeps its ID when its object changes rooms", () => {
+  const doc = newDocument("V4 Einzeltext", 30, 15, undefined, undefined, 4);
+  const s = new Session(doc), floor = doc.floors[0]!.id;
+  const a = createRoom(s, floor, [{ x: 1, y: 1 }, { x: 9, y: 1 },
+    { x: 9, y: 9 }, { x: 1, y: 9 }], "QA/Räume");
+  const b = createRoom(s, floor, [{ x: 14, y: 1 }, { x: 22, y: 1 },
+    { x: 22, y: 9 }, { x: 14, y: 9 }], "QA/Räume");
+  const definition = createFeatureDefinition(s, { name: "Statue", kind: "feature" });
+  const object = createObject(s, floor, { x: 3, y: 3 });
+  const occurrence = createFeatureOccurrence(s, definition.id, a.id, 1, object.id, {},
+    { markdown: "Exakt.\n" });
+  const moved = objectAtPoint(s, object, { x: 16, y: 3 });
+  executeLinkedObjectChanges(s, "Statue verschieben", [{ id: object.id, before: object, after: moved }]);
+  const after = s.content.occurrences.find((item) => item.id === occurrence.id)!;
+  assert.equal(after.sectionId, occurrence.sectionId);
+  assert.equal(after.roomId, b.id);
+  assert.equal(structuredFeatureText(s, after), "Exakt.\n");
+  assert.ok(!structuredRoom(s, a.id).key.sections.some((section) => section.id === occurrence.sectionId));
+  const copy = duplicateFloor(s, floor);
+  const copied = s.content.occurrences.find((item) => item.id !== occurrence.id &&
+    s.entities.get(item.roomId)?.floorId === copy.id)!;
+  assert.ok(copied);
+  assert.notEqual(copied.sectionId, occurrence.sectionId);
+  assert.equal(structuredFeatureText(s, copied), "Exakt.\n");
+  const nextSection = addMarkdownSection(s, a.id);
+  editMarkdownSection(s, a.id, nextSection, "", "## Hinweise\nUnverändert.\n");
+  createPortal(s, floor,
+    { boundary: structuredRoom(s, a.id), anchor: { contour: 0, at: 0.5 } },
+    { variant: "door", width: 1, blocksLight: true });
+  moveKeySection(s, a.id, nextSection, -1);
+  const next = createFeatureOccurrence(s, definition.id, a.id, 1, undefined, {},
+    { markdown: "Weiterer Text." });
+  assert.equal(next.marker, "B");
+  assert.deepEqual(parseDocument(JSON.stringify(s.document())), s.document());
+});
+
+test("V4 group move copies two feature fragments atomically and rejects an invalid target", () => {
+  const doc = newDocument("V4 Sammelzug", 30, 15, undefined, undefined, 4);
+  const s = new Session(doc), floor = doc.floors[0]!.id;
+  const corners = (left: number) => [{ x: left, y: 1 }, { x: left + 8, y: 1 },
+    { x: left + 8, y: 9 }, { x: left, y: 9 }];
+  const a = createRoom(s, floor, corners(1), "QA/Räume");
+  const b = createRoom(s, floor, corners(14), "QA/Räume");
+  const definition = createFeatureDefinition(s, { name: "Fund", kind: "loot" });
+  const firstObject = createObject(s, floor, { x: 3, y: 3 });
+  const secondObject = createObject(s, floor, { x: 5, y: 3 });
+  const sectionId = structuredRoom(s, a.id).key.sections[0]!.id;
+  const first = createFeatureOccurrence(s, definition.id, a.id, 1, firstObject.id, {},
+    { markdown: "Erster Fund.", sectionId });
+  const second = createFeatureOccurrence(s, definition.id, a.id, 1, secondObject.id, {},
+    { markdown: "Zweiter Fund.", sectionId });
+  const before = s.document(), history = s.historySize;
+  assert.throws(() => executeLinkedObjectChanges(s, "Ungültiger Sammelzug", [
+    { id: firstObject.id, before: firstObject,
+      after: objectAtPoint(s, firstObject, { x: 16, y: 3 }) },
+    { id: secondObject.id, before: secondObject,
+      after: objectAtPoint(s, secondObject, { x: 11, y: 3 }) },
+  ]), /Zielraum/);
+  assert.equal(s.historySize, history);
+  assert.deepEqual(s.document(), before);
+  executeLinkedObjectChanges(s, "Sammelzug", [
+    { id: firstObject.id, before: firstObject,
+      after: objectAtPoint(s, firstObject, { x: 16, y: 3 }) },
+    { id: secondObject.id, before: secondObject,
+      after: objectAtPoint(s, secondObject, { x: 18, y: 3 }) },
+  ]);
+  assert.equal(s.historySize, history + 1);
+  const moved = s.content.occurrences.filter((item) => [first.id, second.id].includes(item.id));
+  assert.deepEqual(moved.map((item) => item.marker), ["A", "B"]);
+  assert.ok(moved.every((item) => item.roomId === b.id && item.sectionId !== sectionId));
+  assert.deepEqual(moved.map((item) => structuredFeatureText(s, item)),
+    ["Erster Fund.", "Zweiter Fund."]);
+  const source = structuredRoom(s, a.id).key.sections.find((item) => item.id === sectionId)!;
+  assert.equal(source.kind, "markdown");
+  assert.match(source.markdown, /Erster Fund\./);
+  assert.match(source.markdown, /Zweiter Fund\./);
+  s.undo();
+  assert.deepEqual(s.document(), before);
+  s.redo();
+  assert.deepEqual(parseDocument(JSON.stringify(s.document())), s.document());
 });
 
 test("V4 key edits survive pending drafts, save and fresh repository opening", async () => {

@@ -25,11 +25,12 @@ const restart = process.argv.includes("--restart"),
   phase2Object = process.argv.includes("--phase2-object"),
   phase3Object = process.argv.includes("--phase3-object"),
   phase4Key = process.argv.includes("--phase4-key"),
+  phase5Feature = process.argv.includes("--phase5-feature"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -326,7 +327,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -475,6 +476,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (phase5Feature) {
+    await phase5FeatureWorkflow();
+    return;
+  }
   if (phase4Key) {
     await phase4KeyWorkflow();
     return;
@@ -3036,6 +3041,141 @@ async function pathLibraryWorkflow(view) {
   await page.screenshot({ path: out + "/path-library.png" });
   checks.push("Path Library selection and path save cleanly");
 }
+async function phase5FeatureWorkflow() {
+  const mapPath = "Dungeons/Phase5QA/Karte.dungeon";
+  const savedPath = qa + "/phase5-feature-saved.json";
+  const documentState = () => page.evaluate(() => {
+    const leaf = app.workspace.getLeavesOfType("dungeon-native-map")[0] ??
+      app.workspace.getLeavesOfType("dungeon-native-pending")[0];
+    return leaf?.view?.editor?.session?.document();
+  });
+  if (restart) {
+    const saved = JSON.parse(fs.readFileSync(savedPath, "utf8"));
+    await page.evaluate(async (path) => {
+      await app.workspace.getLeaf("tab").openFile(app.vault.getAbstractFileByPath(path));
+    }, mapPath);
+    await page.locator(".dn-canvas canvas").waitFor();
+    assert.deepEqual(await documentState(), saved.document);
+    await page.evaluate(async ({ mapId, roomId, sectionId }) => {
+      await app.plugins.getPlugin("dungeon-editor").openRoomLink({
+        map: mapId, room: roomId, section: sectionId,
+      });
+    }, { mapId: saved.document.id, roomId: saved.sourceRoomId,
+      sectionId: saved.occurrence.sectionId });
+    await page.locator(".dn-room-view .dn-structured-key").waitFor();
+    assert.match(await page.locator(".dn-room-view .dn-key-content").innerText(), /Wortlaut für Phase 5/);
+    await page.screenshot({ path: out + "/phase5-feature-reopen.png" });
+    checks.push("Fresh Obsidian opens the V4 feature and resolves its moved section ID to the new room");
+    return;
+  }
+  await page.evaluate(async () => {
+    await app.plugins.getPlugin("dungeon-editor").create("Phase5QA", 26, 14);
+  });
+  await page.locator(".dn-canvas canvas").waitFor({ timeout: 30000 });
+  await page.evaluate(async () => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor;
+    const session = editor.session, floorId = session.document().floors[0].id;
+    const room = (id, number, left) => ({
+      id, kind: "building", floorId,
+      polygons: [{ outer: [{ x: left, y: 1 }, { x: left + 8, y: 1 },
+        { x: left + 8, y: 10 }, { x: left, y: 10 }], holes: [] }],
+      layer: 200, number, name: "Raum " + number,
+      key: { sections: [{ id: id + "-section", kind: "markdown", markdown: "" }] },
+      fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    });
+    const first = room("phase5-room-a", "1", 1), second = room("phase5-room-b", "2", 14);
+    const object = { id: "phase5-object", kind: "object", floorId, roomId: first.id,
+      x: 3, y: 3, rotation: 0, width: 5, height: 5, color: 0xffffff, label: "Altar" };
+    session.execute({ label: "QA-Räume und Objekt", entities: [first, second, object].map((entity) =>
+      ({ id: entity.id, before: null, after: entity })) });
+    const definition = { id: "phase5-definition", name: "Schrein", kind: "feature",
+      xp: 0, lootValue: 0 };
+    session.execute({ label: "QA-Definition", content: { before: session.content,
+      after: { ...session.content, definitions: [definition] } } });
+    await editor.select(object.id);
+  });
+  await page.locator(".dn-group-rail").getByRole("button", { name: "Inhalte", exact: true }).click();
+  await page.locator(".dn-tool-rail").getByRole("button", { name: "Dungeon-Inhalte", exact: true }).click();
+  await page.locator(".modal-container .modal").last().getByRole("button", {
+    name: "Vorkommen anlegen", exact: true }).first().click();
+  const modal = page.locator(".modal-container .modal").last();
+  await modal.locator("textarea").fill("*Wortlaut für Phase 5.*\n[[QA/Item|Beute]]\n");
+  await modal.getByRole("button", { name: "Vorkommen anlegen", exact: true }).click();
+  const created = await documentState();
+  const occurrence = created.content.occurrences[0];
+  assert.equal(occurrence.marker, "A");
+  assert.equal(occurrence.entityId, "phase5-object");
+  assert.equal(occurrence.roomId, "phase5-room-a");
+  assert.equal(created.entities.find((entity) => entity.id === "phase5-object").label, "Altar");
+  assert.match(created.entities.find((entity) => entity.id === "phase5-room-a").key.sections
+    .find((section) => section.id === occurrence.sectionId).markdown, /Wortlaut für Phase 5/);
+  checks.push("V4 feature dialog stores exact Markdown, assigns A and links the selected object without changing its label");
+  await page.keyboard.press("Escape");
+  await page.evaluate(async ({ roomId, sectionId }) => {
+    await app.plugins.getPlugin("dungeon-editor").openRoomKey("Dungeons/Phase5QA/Karte.dungeon", roomId, sectionId);
+  }, { roomId: occurrence.roomId, sectionId: occurrence.sectionId });
+  const panel = page.locator(".dn-room-view .dn-structured-key");
+  await panel.waitFor();
+  assert.equal(await panel.locator(".dn-key-content em").count(), 1);
+  const roomText = await panel.locator("textarea").inputValue();
+  await panel.locator("textarea").fill(roomText.replace("Wortlaut für Phase 5", "Wortlaut für Phase 5, geändert"));
+  await panel.getByRole("button", { name: "Übernehmen", exact: true }).click();
+  assert.match(await panel.locator(".dn-key-content").innerText(), /Wortlaut für Phase 5, geändert/);
+  await page.screenshot({ path: out + "/phase5-feature-linked.png" });
+  checks.push("Right room view renders and edits the same linked Markdown section");
+  const beforeMove = await documentState();
+  await chooseTool("Auswahl");
+  const at = (point) => page.evaluate((point) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor;
+    const renderer = editor.renderer, box = renderer.canvas.getBoundingClientRect();
+    return { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+      y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
+  }, point);
+  const start = await at({ x: 3, y: 3 }), end = await at({ x: 16, y: 3 });
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForFunction(() => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-pending")[0]?.view.editor;
+    return editor?.session.content.occurrences[0]?.roomId === "phase5-room-b";
+  }, undefined, { timeout: 12000 });
+  const moved = await documentState();
+  assert.equal(moved.content.occurrences[0].sectionId, occurrence.sectionId);
+  assert.equal(moved.content.occurrences[0].marker, "A");
+  assert.equal(moved.entities.find((entity) => entity.id === "phase5-object").roomId, "phase5-room-b");
+  checks.push("Native drag moves object, feature and stable key section in one operation");
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  assert.deepEqual(await documentState(), beforeMove);
+  await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+  assert.deepEqual(await documentState(), moved);
+  checks.push("One Undo and Redo restore object, occurrence and key text together");
+  await page.evaluate(async () => {
+    await app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.save();
+  });
+  await page.waitForFunction((path) => !!app.vault.getAbstractFileByPath(path), mapPath);
+  const saved = await documentState();
+  assert.equal(fs.readdirSync(path.dirname(vault + "/" + mapPath)).some((name) => name.endsWith(".md")), false);
+  fs.writeFileSync(savedPath, JSON.stringify({ document: saved, occurrence, sourceRoomId: "phase5-room-a" }, null, 2));
+  checks.push("Linked V4 map saves without room Markdown files");
+  await page.evaluate(async () => {
+    await app.plugins.getPlugin("dungeon-editor").openRoomKey(
+      "Dungeons/Phase5QA/Karte.dungeon", "phase5-room-b");
+  });
+  const objectOnCard = await page.evaluate(() => {
+    const card = app.workspace.getLeavesOfType("dungeon-native-room")[0].view.card;
+    const renderer = card.renderer, box = renderer.canvas.getBoundingClientRect();
+    return { x: box.x + renderer.camera.x + 16 * renderer.camera.scale,
+      y: box.y + renderer.camera.y + 3 * renderer.camera.scale };
+  });
+  await page.mouse.click(objectOnCard.x, objectOnCard.y);
+  await page.waitForFunction((id) => {
+    const view = app.workspace.getLeavesOfType("dungeon-native-room")[0]?.view;
+    return view?.sectionId === id;
+  }, occurrence.sectionId, { timeout: 12000 });
+  checks.push("Clicking the map object opens its exact room-key section");
+}
+
 async function phase4KeyWorkflow() {
   const mapPath = "Dungeons/Phase4QA/Karte.dungeon";
   const savedPath = qa + "/phase4-key-saved.json";

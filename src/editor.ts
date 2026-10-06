@@ -62,7 +62,7 @@ import {
 } from "./properties";
 import { type AssetDefinition } from "./assets";
 import { floorEraseActive } from "./drawing";
-import { archiveEntities, archiveFloor } from "./content";
+import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
 import { setIcon } from "obsidian";
 import {
   selectableByClick,
@@ -137,7 +137,7 @@ export interface EditorHost {
   app: App;
   notice: (message: string) => void;
   openNote: (path: string) => void;
-  openRoomKey: (roomId: string) => void;
+  openRoomKey: (roomId: string, sectionId?: string) => void;
   mapPath: string;
   save: () => Promise<void>;
   pending?: () => boolean;
@@ -643,7 +643,11 @@ export class DungeonEditor {
       this.run(() => {
         this.commitNote();
         const room = this.selectedRoom();
-        if (isStructuredRoom(room)) this.host.openRoomKey(room.id);
+        if (isStructuredRoom(room)) {
+          const occurrence = this.session.content.occurrences.find((item) =>
+            item.entityId === this.selected);
+          this.host.openRoomKey(room.id, occurrence?.sectionId);
+        }
         else if (this.notePath) this.host.openNote(this.notePath);
       }),
     );
@@ -2037,10 +2041,9 @@ export class DungeonEditor {
       }
       if (action.mode !== "move") {
         const result = transformSelectionGroup(sources, frame, action, g.start, point);
-        this.renderer.setSelectionGroupFrame(result.frame);
-        this.session.execute({
-          label: action.mode === "scale" ? "Auswahl gemeinsam skalieren" : "Auswahl gemeinsam drehen",
-          entities: sources.map((before, index) => {
+        executeLinkedObjectChanges(this.session,
+          action.mode === "scale" ? "Auswahl gemeinsam skalieren" : "Auswahl gemeinsam drehen",
+          sources.map((before, index) => {
             const transformed = result.entities[index]!;
             return {
               id: before.id, before,
@@ -2049,8 +2052,8 @@ export class DungeonEditor {
                     { x: transformed.x, y: transformed.y })
                 : transformed,
             };
-          }),
-        });
+          }));
+        this.renderer.setSelectionGroupFrame(result.frame);
         return;
       }
     }
@@ -2072,12 +2075,11 @@ export class DungeonEditor {
             ? objectAtPoint(this.session, transformed,
                 { x: transformed.x, y: transformed.y })
             : transformed;
-        if (scaledLight) this.renderer.setSelectionLightFrame(scaledLight.frame);
         if (JSON.stringify(source) !== JSON.stringify(after))
-          this.session.execute({
-            label: action.mode === "scale" ? "Auswahl skalieren" : "Auswahl drehen",
-            entities: [{ id: source.id, before: source, after }],
-          });
+          executeLinkedObjectChanges(this.session,
+            action.mode === "scale" ? "Auswahl skalieren" : "Auswahl drehen",
+            [{ id: source.id, before: source, after }]);
+        if (scaledLight) this.renderer.setSelectionLightFrame(scaledLight.frame);
         return;
       }
     }
@@ -2420,29 +2422,22 @@ export class DungeonEditor {
         }
         if (changes.size) {
           const frame = this.renderer.selectionGroupFrame;
-          if (frame)
-            this.renderer.setSelectionGroupFrame({
-              ...frame, x: frame.x + dx, y: frame.y + dy,
-            });
-          this.session.execute({
-            label: "Auswahl verschieben",
-            entities: [...changes.values()],
+          executeLinkedObjectChanges(this.session, "Auswahl verschieben", [...changes.values()]);
+          if (frame) this.renderer.setSelectionGroupFrame({
+            ...frame, x: frame.x + dx, y: frame.y + dy,
           });
         }
         return;
       }
       if (original.kind === "object") {
-        this.session.execute({
-          label: "Möbel verschieben",
-          entities: [
+        executeLinkedObjectChanges(this.session, "Möbel verschieben", [
             {
               id: original.id,
               before: original,
               after: objectAtPoint(this.session, original,
                 { x: original.x + dx, y: original.y + dy }),
             },
-          ],
-        });
+          ]);
       } else if (
         original.kind === "building" ||
         original.kind === "wall" ||
@@ -2986,13 +2981,15 @@ export class DungeonEditor {
     this.structuredPanel = undefined;
     const room = this.selectedRoom();
     if (isStructuredRoom(room)) {
+      const occurrence = this.session.content.occurrences.find((item) =>
+        item.entityId === this.selected && item.roomId === room.id);
       this.notePath = undefined;
       this.text.hidden = true;
       this.structuredHost.hidden = false;
       this.openKeyButton.textContent = "Raum-Key öffnen";
       this.structuredPanel = new StructuredKeyPanel(
         this.host.app, this.structuredHost, this.session, this.host.mapPath,
-        room.id, undefined, this.host.notice, () => !this.host.pending?.(),
+        room.id, occurrence?.sectionId, this.host.notice, () => !this.host.pending?.(),
       );
       return;
     }

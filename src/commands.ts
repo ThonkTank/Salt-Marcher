@@ -879,6 +879,10 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
   if (!source) throw new Error("Ausgangsgeschoss fehlt.");
   const entities = [...session.entities.values()].filter((entity) => entity.floorId === sourceId);
   const ids = new Map(entities.map((entity) => [entity.id, uid()]));
+  const sectionIds = new Map(entities.flatMap((entity) => isStructuredRoom(entity)
+    ? entity.key.sections.map((section) => [section.id, uid()] as const) : []));
+  const sourceOccurrences = session.content.occurrences.filter((item) => ids.has(item.roomId));
+  const occurrenceIds = new Map(sourceOccurrences.map((item) => [item.id, uid()]));
   const groups = new Map(entities.flatMap((entity) => entity.groupId ? [entity.groupId] : []).map((id) => [id, uid()]));
   const floor: Floor = {
     ...source, id: uid(), name: source.name + " Kopie",
@@ -892,10 +896,14 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
     };
     if (isStructuredRoom(entity)) return {
       ...entity, ...common,
-      key: { sections: entity.key.sections.map((section) =>
+      key: { ...entity.key, sections: entity.key.sections.map((section) =>
         section.kind === "passage"
-          ? { ...section, id: uid(), doorId: ids.get(section.doorId)! }
-          : { ...section, id: uid() }) },
+          ? { ...section, id: sectionIds.get(section.id)!, doorId: ids.get(section.doorId)! }
+          : { ...section, id: sectionIds.get(section.id)!,
+              markdown: sourceOccurrences.reduce((markdown, occurrence) =>
+                markdown.split(`dungeon-feature:${occurrence.id}:`).join(
+                  `dungeon-feature:${occurrenceIds.get(occurrence.id)!}:`),
+                section.markdown) }) },
     };
     if (entity.kind === "door") return {
       ...entity, ...common,
@@ -907,6 +915,12 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
     label: "Geschoss kopieren",
     floors: [{ id: floor.id, before: null, after: floor }],
     entities: copies.map((entity) => ({ id: entity.id, before: null, after: entity })),
+    content: { before: session.content, after: { ...session.content,
+      occurrences: [...session.content.occurrences, ...sourceOccurrences.map((item) => ({
+        ...item, id: occurrenceIds.get(item.id)!, roomId: ids.get(item.roomId)!,
+        ...(item.entityId ? { entityId: ids.get(item.entityId)! } : {}),
+        ...(item.sectionId ? { sectionId: sectionIds.get(item.sectionId)! } : {}),
+      }))] } },
     affectsRules: true,
   });
   return floor;
@@ -1205,7 +1219,7 @@ export function createPortal(
   if (room && isStructuredRoom(room)) {
     const afterRoom: Room = {
       ...room,
-      key: { sections: [
+      key: { ...room.key, sections: [
         ...room.key.sections.filter((section) => section.kind === "passage"),
         { id: uid(), kind: "passage", doorId: id },
         ...room.key.sections.filter((section) => section.kind !== "passage"),

@@ -9,7 +9,9 @@ import {
   type Floor,
   type MapObject,
   type Room,
+  type RoomV4,
   isRoom,
+  isStructuredRoom,
   uid,
 } from "./model";
 import { Session, textPatch, type RecordChange } from "./session";
@@ -28,6 +30,7 @@ export interface FeatureOccurrenceInput {
   readonly quantity: number;
   readonly situation?: string;
   readonly reaction?: string;
+  readonly markdown?: string;
 }
 export interface DungeonAnalysis {
   readonly definitions: number;
@@ -57,6 +60,53 @@ function letterMarker(index: number): string {
     value = Math.floor(value / 26);
   }
   return marker;
+}
+function markerOrdinal(marker: string): number {
+  if (!/^[A-Z]+$/.test(marker)) return 0;
+  return [...marker].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0);
+}
+function nextStructuredMarker(room: RoomV4, content: DungeonContent): [string, number] {
+  const creatureMarkers = new Set(content.occurrences.filter((item) =>
+    content.definitions.find((definition) => definition.id === item.definitionId)?.kind === "creature")
+    .map((item) => item.marker));
+  const headings = room.key.sections.flatMap((section) =>
+    section.kind === "markdown"
+      ? [...section.markdown.matchAll(/^#{1,6}\s+([A-Z]+)\s*·/gm)]
+          .map((match) => match[1]!).filter((marker) => !creatureMarkers.has(marker))
+      : []);
+  const assigned = content.occurrences.filter((item) => item.roomId === room.id &&
+    content.definitions.find((definition) => definition.id === item.definitionId)?.kind !== "creature")
+    .map((item) => item.marker);
+  const next = Math.max(room.key.nextFeatureOrdinal ?? 1,
+    ...[...headings, ...assigned].map((marker) => markerOrdinal(marker) + 1));
+  return [letterMarker(next), next + 1];
+}
+export function featureTextStart(id: string): string {
+  return `<!-- dungeon-feature:${id}:start -->`;
+}
+export function featureTextEnd(id: string): string {
+  return `<!-- dungeon-feature:${id}:end -->`;
+}
+function featureSegment(id: string, markdown: string): string {
+  if (markdown.includes(featureTextStart(id)) || markdown.includes(featureTextEnd(id)))
+    throw new Error("Der Featuretext enthält eine interne Kennung.");
+  return `${featureTextStart(id)}\n${markdown}\n${featureTextEnd(id)}`;
+}
+export function featureTextRange(markdown: string, id: string): [number, number] {
+  const start = featureTextStart(id) + "\n", end = "\n" + featureTextEnd(id),
+    begin = markdown.indexOf(start), finish = markdown.indexOf(end, begin + start.length);
+  if (begin < 0 || finish < 0 || markdown.indexOf(start, begin + start.length) >= 0 ||
+      markdown.indexOf(end, finish + end.length) >= 0)
+    throw new Error("Die Featuretext-Grenzen fehlen oder sind mehrfach vorhanden.");
+  return [begin + start.length, finish];
+}
+export function structuredFeatureText(session: Session, occurrence: FeatureOccurrence): string {
+  const room = session.entities.get(occurrence.roomId);
+  if (!isStructuredRoom(room)) throw new Error("Strukturierter Raum fehlt.");
+  const section = room.key.sections.find((item) => item.id === occurrence.sectionId);
+  if (section?.kind !== "markdown") throw new Error("Feature-Abschnitt fehlt.");
+  const [start, end] = featureTextRange(section.markdown, occurrence.id);
+  return section.markdown.slice(start, end);
 }
 function nextFeatureMarker(content: DungeonContent, roomId: string): string {
   const definitions = new Map(
@@ -318,7 +368,7 @@ export function createFeatureDefinition(
     xp: cleanNumber(input.xp),
     lootValue: cleanNumber(input.lootValue),
     ...(input.encounter?.trim() ? { encounter: input.encounter.trim() } : {}),
-    ...(optional(input.description)
+    ...(session.version === 3 && optional(input.description)
       ? { description: optional(input.description) }
       : {}),
     ...(optional(input.reference)
@@ -351,7 +401,7 @@ export function updateFeatureDefinition(
     ...(input.encounter?.trim()
       ? { encounter: input.encounter.trim() }
       : { encounter: undefined }),
-    description: optional(input.description),
+    description: session.version === 3 ? optional(input.description) : before.description,
     reference: optional(input.reference),
     encounterLink: optional(input.encounterLink),
   };
@@ -370,7 +420,7 @@ export function updateFeatureDefinition(
     "Feature-Definition bearbeiten",
     content,
     [],
-    occurrenceTextPatches(session, affected, definitions),
+    session.version === 3 ? occurrenceTextPatches(session, affected, definitions) : [],
   );
   return after;
 }
@@ -382,6 +432,7 @@ export function createFeatureOccurrence(
   quantity = 1,
   entityId?: string,
   details: Omit<FeatureOccurrenceInput, "quantity"> = {},
+  keyInput?: { readonly markdown: string; readonly sectionId?: string },
 ): FeatureOccurrence {
   const definition = session.content.definitions.find(
       (value) => value.id === definitionId,
@@ -389,13 +440,67 @@ export function createFeatureOccurrence(
     room = session.entities.get(roomId);
   if (!definition) throw new Error("Feature-Definition nicht gefunden.");
   if (!isRoom(room)) throw new Error("Raum nicht gefunden.");
+  if (!Number.isInteger(quantity) || quantity <= 0)
+    throw new Error("Die Menge muss eine positive ganze Zahl sein.");
+  if (isStructuredRoom(room)) {
+    if (!keyInput) throw new Error("V4-Featuretext fehlt.");
+    const id = uid(),
+      [marker, nextFeatureOrdinal] = definition.kind === "creature"
+        ? [creatureMarker(session.content, definition), room.key.nextFeatureOrdinal]
+        : nextStructuredMarker(room, session.content),
+      emptyInitial = !keyInput.sectionId && room.key.sections.length === 1 &&
+        room.key.sections[0]?.kind === "markdown" &&
+        room.key.sections[0].markdown === "" &&
+        !session.content.occurrences.some((item) => item.roomId === room.id),
+      existing = keyInput.sectionId
+        ? room.key.sections.find((section) => section.id === keyInput.sectionId)
+        : emptyInitial ? room.key.sections[0] : undefined;
+    if (keyInput.sectionId && existing?.kind !== "markdown")
+      throw new Error("Gewählter Raumabschnitt fehlt.");
+    const sectionId = existing?.id ?? uid(),
+      section = existing?.kind === "markdown" && !emptyInitial
+        ? { ...existing, markdown: existing.markdown +
+            (existing.markdown.endsWith("\n") || !existing.markdown ? "" : "\n") +
+            `**${marker} · ${definition.name}:**\n` + featureSegment(id, keyInput.markdown) }
+        : { id: sectionId, kind: "markdown" as const,
+            markdown: `## ${marker} · ${definition.name}:\n` + featureSegment(id, keyInput.markdown) },
+      afterRoom: RoomV4 = { ...room, key: {
+        ...room.key,
+        ...(nextFeatureOrdinal !== undefined ? { nextFeatureOrdinal } : {}),
+        sections: existing
+          ? room.key.sections.map((item) => item.id === sectionId ? section : item)
+          : [...room.key.sections, section],
+      } },
+      changes: RecordChange<Entity>[] = [{ id: room.id, before: room, after: afterRoom }];
+    let linked = entityId;
+    if (linked) {
+      const object = session.entities.get(linked);
+      if (object?.kind !== "object" || object.floorId !== room.floorId || object.roomId !== room.id)
+        throw new Error("Das ausgewählte Kartenobjekt liegt nicht im Raum.");
+      if (session.content.occurrences.some((item) => item.entityId === linked))
+        throw new Error("Das Kartenobjekt besitzt bereits ein Feature.");
+    } else {
+      const position = center(room), object: MapObject = {
+        id: uid(), kind: "object", floorId: room.floorId, roomId: room.id,
+        x: position.x, y: position.y, rotation: 0, width: 0.8, height: 0.8,
+        color: 0xf3efe4, label: "",
+      };
+      linked = object.id;
+      changes.push({ id: object.id, before: null, after: object });
+    }
+    const occurrence: FeatureOccurrence = {
+      id, definitionId, roomId: room.id, entityId: linked, marker, quantity, sectionId,
+    };
+    replaceContent(session, "Feature-Vorkommen anlegen", {
+      ...session.content, occurrences: [...session.content.occurrences, occurrence],
+    }, changes);
+    return occurrence;
+  }
   if (!room.note) throw new Error("V4-Features werden in Phase 5 angelegt.");
   const current = session.note(room.note.path);
   if (current === undefined)
     throw new Error("Raum-Key muss vor dem Verknüpfen geladen werden.");
   if (current === null) throw new Error("Raum-Key fehlt.");
-  if (!Number.isInteger(quantity) || quantity <= 0)
-    throw new Error("Die Menge muss eine positive ganze Zahl sein.");
   const id = uid(),
     marker = nextMarker(session.content, room.id, definition),
     anchor = "feature-" + id,
@@ -476,11 +581,10 @@ export function updateFeatureQuantity(
     "Feature-Menge ändern",
     content,
     [],
-    occurrenceTextPatches(
-      session,
-      [after],
+    session.version === 3 ? occurrenceTextPatches(
+      session, [after],
       new Map(content.definitions.map((value) => [value.id, value])),
-    ),
+    ) : [],
   );
   return after;
 }
@@ -494,6 +598,24 @@ export function updateFeatureOccurrence(
     throw new Error("Die Menge muss eine positive ganze Zahl sein.");
   const before = session.content.occurrences.find((value) => value.id === id);
   if (!before) throw new Error("Feature-Vorkommen nicht gefunden.");
+  if (session.version === 4) {
+    const room = session.entities.get(before.roomId);
+    if (!isStructuredRoom(room)) throw new Error("Strukturierter Raum fehlt.");
+    const section = room.key.sections.find((item) => item.id === before.sectionId);
+    if (section?.kind !== "markdown") throw new Error("Feature-Abschnitt fehlt.");
+    const [start, end] = featureTextRange(section.markdown, before.id);
+    const markdown = input.markdown ?? section.markdown.slice(start, end);
+    const afterSection = { ...section,
+      markdown: section.markdown.slice(0, start) + markdown + section.markdown.slice(end) };
+    const afterRoom: RoomV4 = { ...room, key: { ...room.key, sections:
+      room.key.sections.map((item) => item.id === section.id ? afterSection : item) } };
+    const after: FeatureOccurrence = { ...before, quantity: input.quantity };
+    replaceContent(session, "Feature-Vorkommen bearbeiten", {
+      ...session.content,
+      occurrences: session.content.occurrences.map((item) => item.id === id ? after : item),
+    }, [{ id: room.id, before: room, after: afterRoom }]);
+    return after;
+  }
   const after: FeatureOccurrence = {
       ...before,
       quantity: input.quantity,
@@ -518,6 +640,77 @@ export function updateFeatureOccurrence(
     ),
   );
   return after;
+}
+
+export function executeLinkedObjectChanges(
+  session: Session,
+  label: string,
+  entityChanges: readonly RecordChange<Entity>[],
+): void {
+  if (session.version !== 4) {
+    session.execute({ label, entities: entityChanges });
+    return;
+  }
+  const changes = new Map(entityChanges.map((change) => [change.id, change]));
+  const rooms = new Map<string, RoomV4>();
+  const currentRoom = (id: string): RoomV4 => {
+    const entity = rooms.get(id) ?? changes.get(id)?.after ?? session.entities.get(id);
+    if (!isStructuredRoom(entity)) throw new Error("Strukturierter Zielraum fehlt.");
+    return entity;
+  };
+  const setRoom = (room: RoomV4): void => { rooms.set(room.id, room); };
+  let occurrences = [...session.content.occurrences];
+  for (const change of entityChanges) {
+    const before = change.before, after = change.after;
+    if (before?.kind !== "object" || after?.kind !== "object" ||
+        before.roomId === after.roomId) continue;
+    const linked = occurrences.find((item) => item.entityId === before.id);
+    if (!linked) continue;
+    if (!after.roomId) throw new Error("Ein verknüpftes Feature benötigt einen Zielraum.");
+    const source = currentRoom(linked.roomId), target = currentRoom(after.roomId);
+    const definition = session.content.definitions.find((item) => item.id === linked.definitionId);
+    if (!definition) throw new Error("Feature-Definition fehlt.");
+    const section = source.key.sections.find((item) => item.id === linked.sectionId);
+    if (section?.kind !== "markdown") throw new Error("Feature-Abschnitt fehlt.");
+    const [start, end] = featureTextRange(section.markdown, linked.id);
+    const description = section.markdown.slice(start, end);
+    const [marker, nextFeatureOrdinal] = definition.kind === "creature"
+      ? [creatureMarker(session.content, definition), target.key.nextFeatureOrdinal]
+      : nextStructuredMarker(target, { ...session.content, occurrences });
+    const shared = session.content.occurrences.some((item) => item.id !== linked.id &&
+      item.roomId === source.id && item.sectionId === section.id);
+    let sectionId = section.id;
+    if (shared) {
+      const old = section.markdown;
+      const preserved = old.slice(0, start - featureTextStart(linked.id).length - 1) +
+        description + old.slice(end + 1 + featureTextEnd(linked.id).length);
+      setRoom({ ...source, key: { ...source.key, sections: source.key.sections.map((item) =>
+        item.id === section.id ? { ...section, markdown: preserved } : item) } });
+      sectionId = uid();
+      const copy = { id: sectionId, kind: "markdown" as const,
+        markdown: `## ${marker} · ${definition.name}:\n` + featureSegment(linked.id, description) };
+      setRoom({ ...target, key: { ...target.key,
+        ...(nextFeatureOrdinal !== undefined ? { nextFeatureOrdinal } : {}),
+        sections: [...target.key.sections, copy] } });
+    } else {
+      const heading = new RegExp(`^(##\\s+)${linked.marker}(\\s*·)`, "m");
+      if (!heading.test(section.markdown))
+        throw new Error("Die Feature-Kennzeichnung im Abschnitt fehlt.");
+      const moved = { ...section, markdown: section.markdown.replace(heading, `$1${marker}$2`) };
+      setRoom({ ...source, key: { ...source.key,
+        sections: source.key.sections.filter((item) => item.id !== section.id) } });
+      setRoom({ ...target, key: { ...target.key,
+        ...(nextFeatureOrdinal !== undefined ? { nextFeatureOrdinal } : {}),
+        sections: [...target.key.sections, moved] } });
+    }
+    occurrences = occurrences.map((item) => item.id === linked.id
+      ? { ...item, roomId: target.id, marker, sectionId } : item);
+  }
+  for (const room of rooms.values())
+    changes.set(room.id, { id: room.id, before: session.entities.get(room.id)!, after: room });
+  session.execute({ label, entities: [...changes.values()],
+    ...(rooms.size ? { content: { before: session.content,
+      after: { ...session.content, occurrences } } } : {}) });
 }
 
 export function createRoute(

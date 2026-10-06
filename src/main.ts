@@ -61,6 +61,7 @@ import {
   archiveRoute,
   createFeatureDefinition,
   createFeatureOccurrence,
+  structuredFeatureText,
   createRoute,
   restoreArchive,
   updateFeatureDefinition,
@@ -688,16 +689,21 @@ export default class DungeonPlugin extends Plugin {
   private async openRoomLink(params: Record<string, string>): Promise<void> {
     const { map, room, section } = params;
     if (!map || !room) throw new Error("Raum-Link ist unvollständig.");
-    const matches: string[] = [];
+    const matches: { path: string; doc: ReturnType<typeof parseDocument> }[] = [];
     for (const file of this.app.vault.getFiles().filter((item) => item.extension === "dungeon")) {
       try {
         const doc = parseDocument(await this.app.vault.read(file));
-        if (doc.id === map) matches.push(file.path);
+        if (doc.id === map) matches.push({ path: file.path, doc });
       } catch { /* unrelated or unreadable map */ }
     }
     if (matches.length !== 1)
       throw new Error(matches.length ? "Kartenkennung ist nicht eindeutig." : "Karte zum Raum-Link nicht gefunden.");
-    await this.openRoomKey(matches[0]!, room, section);
+    const match = matches[0]!;
+    const sectionRooms = section ? match.doc.entities.filter((entity) =>
+      isStructuredRoom(entity) && entity.key.sections.some((item) => item.id === section)) : [];
+    if (section && sectionRooms.length !== 1)
+      throw new Error("Raumabschnitt zum Link fehlt oder ist nicht eindeutig.");
+    await this.openRoomKey(match.path, sectionRooms[0]?.id ?? room, section);
   }
   createDungeonMap(input: {
     path: string;
@@ -1673,6 +1679,7 @@ class DungeonRoomView extends ItemView {
     const path = typeof state.path === "string" ? state.path : undefined;
     const roomId = typeof state.roomId === "string" ? state.roomId : undefined;
     const sectionId = typeof state.sectionId === "string" ? state.sectionId : undefined;
+    if (this.panel && !this.panel.commit()) return;
     if (path === this.path && roomId === this.roomId && this.panel) {
       this.sectionId = sectionId;
       this.panel.focus(sectionId);
@@ -1748,7 +1755,7 @@ function editorHost(
     openNote: (path) => {
       void plugin.app.workspace.openLinkText(path, mapPath, "split");
     },
-    openRoomKey: (roomId) => { void plugin.openRoomKey(mapPath, roomId); },
+    openRoomKey: (roomId, sectionId) => { void plugin.openRoomKey(mapPath, roomId, sectionId); },
     mapPath,
     save,
     assetUrl: (path) => plugin.assetUrl(path),
@@ -2111,7 +2118,7 @@ class FeatureDefinitionModal extends Modal {
             .setValue(String(value[key]))
             .onChange((text) => Object.assign(value, { [key]: Number(text) })),
         );
-    new Setting(this.contentEl)
+    if (this.session.version === 3) new Setting(this.contentEl)
       .setName("Beschreibung")
       .setDesc("Erscheint als Fließtext im Raum-Key.")
       .addTextArea((input) =>
@@ -2223,6 +2230,9 @@ class FeatureOccurrenceModal extends Modal {
         quantity: this.occurrence?.quantity ?? 1,
         situation: this.occurrence?.situation ?? "",
         reaction: this.occurrence?.reaction ?? "",
+        markdown: this.occurrence && this.session.version === 4
+          ? structuredFeatureText(this.session, this.occurrence) : "",
+        sectionId: "",
       };
     if (!definitions.length || !rooms.length) {
       this.contentEl.createEl("p", {
@@ -2244,6 +2254,22 @@ class FeatureOccurrenceModal extends Modal {
             value.definitionId = definitionId;
           });
       });
+    const sectionRow = this.contentEl.createDiv({ cls: "dn-feature-section-choice" });
+    const sectionLabel = sectionRow.createEl("label", { text: "Key-Abschnitt " });
+    const sectionSelect = sectionLabel.createEl("select");
+    sectionSelect.setAttribute("aria-label", "Key-Abschnitt");
+    const refreshSections = () => {
+      sectionRow.hidden = this.session.version !== 4 || !!this.occurrence;
+      sectionSelect.replaceChildren();
+      sectionSelect.createEl("option", { text: "Neuer Abschnitt", value: "" });
+      const room = this.session.entities.get(value.roomId);
+      if (isStructuredRoom(room)) for (const section of room.key.sections)
+        if (section.kind === "markdown") sectionSelect.createEl("option", {
+          text: section.markdown.match(/^#{1,6}\s+(.+)$/m)?.[1] ?? "Abschnitt",
+          value: section.id,
+        });
+      value.sectionId = "";
+    };
     new Setting(this.contentEl).setName("Fundort").addDropdown((dropdown) => {
       for (const room of rooms)
         dropdown.addOption(room.id, `${room.number} ${room.name}`);
@@ -2252,14 +2278,22 @@ class FeatureOccurrenceModal extends Modal {
         .setDisabled(!!this.occurrence)
         .onChange((roomId) => {
           value.roomId = roomId;
+          refreshSections();
         });
     });
+    refreshSections();
+    sectionSelect.addEventListener("change", () => { value.sectionId = sectionSelect.value; });
     new Setting(this.contentEl).setName("Menge").addText((input) =>
       input.setValue(String(value.quantity)).onChange((quantity) => {
         value.quantity = Number(quantity);
       }),
     );
-    new Setting(this.contentEl)
+    if (this.session.version === 4) new Setting(this.contentEl)
+      .setName("Raumtext (Markdown)")
+      .setDesc("Textansicht und Feature-Werkzeug bearbeiten denselben Abschnitt.")
+      .addTextArea((input) => input.setValue(value.markdown)
+        .onChange((markdown) => { value.markdown = markdown; }));
+    if (this.session.version === 3) new Setting(this.contentEl)
       .setName("Aktuelle Situation")
       .setDesc("Kurzer, auswertungsrelevanter Zustand im Raum.")
       .addTextArea((input) =>
@@ -2267,7 +2301,7 @@ class FeatureOccurrenceModal extends Modal {
           value.situation = situation;
         }),
       );
-    new Setting(this.contentEl)
+    if (this.session.version === 3) new Setting(this.contentEl)
       .setName("Reaktion")
       .setDesc("Kurze Reaktion auf die Gruppe oder eine Auslösung.")
       .addTextArea((input) =>
@@ -2276,7 +2310,9 @@ class FeatureOccurrenceModal extends Modal {
         }),
       );
     this.contentEl.createEl("p", {
-      text: "Der Editor ergänzt im Raum-Key eine neue Überschrift und erzeugt einen nummerierten Marker. Ist bereits ein passendes Kartenobjekt ausgewählt, wird es stattdessen verknüpft.",
+      text: this.session.version === 4
+        ? "Der Text wird wortgleich im Raum-Key gespeichert. Ein ausgewähltes Kartenobjekt wird mit diesem Abschnitt verknüpft."
+        : "Der Editor ergänzt im Raum-Key eine neue Überschrift und erzeugt einen nummerierten Marker. Ist bereits ein passendes Kartenobjekt ausgewählt, wird es stattdessen verknüpft.",
     });
     new Setting(this.contentEl).addButton((button) =>
       button
@@ -2287,23 +2323,22 @@ class FeatureOccurrenceModal extends Modal {
           try {
             const room = this.session.entities.get(value.roomId);
             if (!isRoom(room)) throw new Error("Raum nicht gefunden.");
-            if (!room.note) throw new Error("V4-Features werden in Phase 5 angelegt.");
-            if (this.session.note(room.note.path) === undefined)
+            if (room.note && this.session.note(room.note.path) === undefined)
               await this.repository.loadNote(this.session, room.note.path);
             if (this.occurrence)
               updateFeatureOccurrence(this.session, this.occurrence.id, {
                 quantity: value.quantity,
                 situation: value.situation,
                 reaction: value.reaction,
+                ...(this.session.version === 4 ? { markdown: value.markdown } : {}),
               });
             else {
               const currentSelection = this.selectedId
                   ? this.session.entities.get(this.selectedId)
                   : undefined,
                 linkedId =
-                  currentSelection &&
-                  !isRoom(currentSelection) &&
-                  currentSelection.roomId === room.id
+                  currentSelection?.kind === "object" &&
+                  (this.session.version === 4 || currentSelection.roomId === room.id)
                     ? currentSelection.id
                     : undefined;
               createFeatureOccurrence(
@@ -2313,6 +2348,9 @@ class FeatureOccurrenceModal extends Modal {
                 value.quantity,
                 linkedId,
                 { situation: value.situation, reaction: value.reaction },
+                this.session.version === 4
+                  ? { markdown: value.markdown, sectionId: value.sectionId || undefined }
+                  : undefined,
               );
             }
             this.done();
@@ -2643,8 +2681,7 @@ class DungeonContentModal extends Modal {
           .setDisabled(occurrence.quantity <= 1)
           .onClick(async () => {
             try {
-              if (!occurrence.note) throw new Error("V4-Features werden in Phase 5 bearbeitet.");
-              if (this.session.note(occurrence.note.path) === undefined)
+              if (occurrence.note && this.session.note(occurrence.note.path) === undefined)
                 await this.repository.loadNote(
                   this.session,
                   occurrence.note.path,
@@ -2667,8 +2704,7 @@ class DungeonContentModal extends Modal {
           .setTooltip("Menge erhöhen")
           .onClick(async () => {
             try {
-              if (!occurrence.note) throw new Error("V4-Features werden in Phase 5 bearbeitet.");
-              if (this.session.note(occurrence.note.path) === undefined)
+              if (occurrence.note && this.session.note(occurrence.note.path) === undefined)
                 await this.repository.loadNote(
                   this.session,
                   occurrence.note.path,

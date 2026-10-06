@@ -1702,7 +1702,16 @@
         "directEvidence": []
       },
       "verifiedScope": "Definitionen und Vorkommen besitzen stabile Kennungen, Raumanker und strukturierte Beschreibung, Fundort, Menge/Besetzung, Situation, Reaktion sowie Regel- und Encounter-Verweise; der Raum-Key zeigt daraus Fließtext.",
-      "verifiedAt": "2026-10-03"
+      "verifiedAt": "2026-10-03",
+      "phase5": {
+        "status": "verified_on_isolated_v4_test_data_with_installed_build",
+        "scope": "Feature-Dialog und Key-Ansicht bearbeiten denselben V4-Markdown-Text; genau ein Objekt je Vorkommen, fortlaufender Buchstabe, stabiler Abschnitt, atomarer Raumwechsel mit gemeinsamem Abschnitt und Undo/Redo. Produktive Drachenhöhle bleibt V3.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase5-core-test.log",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305436316-phase5-feature-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305466710-phase5-feature-reopen/result.json"
+        ]
+      }
     },
     {
       "id": "EB-005",
@@ -1821,6 +1830,16 @@
           "/home/aaron/.cache/dungeon-native-qa/evidence/1791303555106-phase4-key-edit/result.json",
           "/home/aaron/.cache/dungeon-native-qa/evidence/1791303573796-phase4-key-reopen/result.json",
           "/home/aaron/.cache/dungeon-native-qa/evidence/phase4-protected-result.json"
+        ]
+      },
+      "phase5": {
+        "status": "verified_on_isolated_v4_test_data_with_installed_build",
+        "scope": "Wortgleicher V4-Featuretext, Abschnittsgrenzen, stabile ID beim Einzelabschnitt, kopierter Text beim gemeinsamen Abschnitt, Undo/Redo, Speichern und Frischöffnung; 89 produktive Dungeondateien bytegleich.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase5-core-test.log",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305436316-phase5-feature-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305466710-phase5-feature-reopen/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase5-protected-result.json"
         ]
       }
     },
@@ -2507,7 +2526,15 @@
       "verifiedScope": "Alle 15 Räume behalten ihre Nummern 1–15. Die 62 ortsgebundenen Feature-Vorkommen verwenden je Raum A–G; 70 sichtbare Kartenmarker, 60 Featureanker und sämtliche zugehörigen Links wurden konsistent umgestellt. Die 18 Kreaturenvorkommen behalten ihre 13 namensbasierten Kürzel. Bei Detailzoom sind Raumnummer 1 und Feature A gleichzeitig sichtbar und getrennt anklickbar. Neue Features erhalten automatisch den nächsten freien Buchstaben, neue Kreaturen weiterhin ein namensbasiertes Kürzel. Der Vergleich mit der Sicherung fand in 21 geänderten Markdown-Dateien keine unbeauftragte Textänderung; die zuvor ungespeicherte Position der nördlichen Öffnung in Raum 1 wurde erhalten.",
       "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
+      "phase5": {
+        "status": "verified_on_isolated_v4_test_data_with_installed_build",
+        "scope": "Der V4-Dialog vergibt A im neuen Raum; Kernprüfungen decken Vergabe nach dem höchsten vorhandenen Buchstaben ohne Lückenwiederverwendung und Kennzeichnungswechsel beim Raumzug ab. Drachenhöhlenmigration und strikte Parität bleiben offen.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/phase5-core-test.log",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305436316-phase5-feature-edit/result.json"
+        ]
+      }
     },
     {
       "id": "NATIVE-14",
@@ -2608,7 +2635,15 @@
       "verifiedScope": "Ein echter Klick auf Featuremarker A in Raum 1 wechselte von einem anderen Abschnitt zuverlässig zu A · Säulen im rechten Detailbereich; die rechte Gliederung markierte denselben Abschnitt. Der Infobereich unter der Karte blieb leer, Kartenhöhe und Viewporthöhe blieben unverändert und der Raumkontext für Aktuell erhalten. Derselbe direkte Ablauf gilt für Featureknöpfe innerhalb einer Rauminfo. Bereits geöffnete Artikel erhalten den Unterpfad nach dem Öffnen erneut als flüchtigen Zustand, damit der Sprung nicht an der vorherigen Scrollposition hängen bleibt. Im Test traten keine Seitenfehler auf.",
       "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
+      "phase5": {
+        "status": "verified_on_isolated_v4_test_data_with_installed_build",
+        "scope": "Klick auf das verknüpfte V4-Kartenobjekt öffnet seinen exakten Key-Abschnitt rechts; eine frische Obsidian-Instanz löst dessen stabile ID nach Raumwechsel auf.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305436316-phase5-feature-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791305466710-phase5-feature-reopen/result.json"
+        ]
+      }
     },
     {
       "id": "NATIVE-18",

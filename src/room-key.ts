@@ -1,6 +1,7 @@
 import { type Door, type KeySection, type RoomV4, isStructuredRoom, uid } from "./model";
 import { passageText } from "./commands";
 import { Session } from "./session";
+import { featureTextRange } from "./content";
 
 export function structuredRoom(session: Session, roomId: string): RoomV4 {
   const room = session.entities.get(roomId);
@@ -33,7 +34,7 @@ export function sectionTitle(session: Session, section: KeySection): string {
 }
 
 function replaceSections(session: Session, room: RoomV4, sections: readonly KeySection[], label: string): void {
-  const after: RoomV4 = { ...room, key: { sections } };
+  const after: RoomV4 = { ...room, key: { ...room.key, sections } };
   session.execute({ label, entities: [{ id: room.id, before: room, after }] });
 }
 
@@ -53,6 +54,9 @@ export function editMarkdownSection(session: Session, roomId: string, sectionId:
   const section = room.key.sections.find((item) => item.id === sectionId);
   if (section?.kind !== "markdown" || section.markdown !== before)
     throw new Error("Der Key-Abschnitt wurde zwischenzeitlich geändert.");
+  for (const occurrence of session.content.occurrences.filter((item) =>
+    item.roomId === roomId && item.sectionId === sectionId))
+    featureTextRange(after, occurrence.id);
   replaceSections(session, room, room.key.sections.map((item) =>
     item.id === sectionId ? { ...section, markdown: after } : item), "Key-Abschnitt bearbeiten");
 }

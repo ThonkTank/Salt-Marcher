@@ -61,6 +61,8 @@ interface Visual {
   container: Container;
   label?: Text;
   labelPoint?: Point;
+  featureBadge?: Container;
+  featureMarker?: string;
   bounds: Bounds;
   assets?: string[];
   gradient?: FillGradient;
@@ -390,6 +392,12 @@ export class MapRenderer {
       if (event.floors) this.rebuild();
       else {
         let rebuiltVisual = false;
+        if (event.content && this.session.version === 4)
+          for (const visual of [...this.visuals.values()])
+            if (visual.entity.kind === "object") {
+              this.sync(visual.entity.id);
+              if (visual !== this.visuals.get(visual.entity.id)) rebuiltVisual = true;
+            }
         for (const id of event.ids) {
           const before = this.visuals.get(id);
           this.sync(id);
@@ -421,6 +429,7 @@ export class MapRenderer {
       v.container.destroy({ children: true });
       v.pathGeometry?.destroy();
       v.label?.destroy();
+      v.featureBadge?.destroy({ children: true });
       v.gradient?.destroy();
       for (const asset of v.assets ?? []) this.textures.release(asset);
       this.visuals.delete(id);
@@ -536,7 +545,10 @@ export class MapRenderer {
         ? { ...stored, color: this.objectColorPreview.color,
           alpha: this.objectColorPreview.alpha }
         : stored,
-      old = this.visuals.get(id);
+      old = this.visuals.get(id),
+      featureMarker = this.session.version === 4 && e?.kind === "object"
+        ? this.session.content.occurrences.find((item) => item.entityId === id)?.marker
+        : undefined;
     if (!e || (e.floorId !== this.floorId && e.floorId !== this.compareFloor)) {
       this.clearVisual(id);
       return;
@@ -554,6 +566,7 @@ export class MapRenderer {
       e.color === old.entity.color &&
       e.alpha === old.entity.alpha &&
       e.label === old.entity.label &&
+      featureMarker === old.featureMarker &&
       e.assetId === old.entity.assetId &&
       e.layer === old.entity.layer &&
       e.shadow === old.entity.shadow &&
@@ -793,6 +806,7 @@ export class MapRenderer {
       g.tint = e.color;
       g.alpha = objectAlphaOpacity(e.alpha ?? 255);
       if (e.label) this.addLabel(visual, e.label, { x: e.x, y: e.y });
+      if (featureMarker) this.addFeatureBadge(visual, featureMarker, { x: e.x, y: e.y });
       if (e.assetId) {
         const reference = e.assetId + "\0image";
         const colorable = this.colorableObject?.(e.assetId);
@@ -1258,6 +1272,23 @@ export class MapRenderer {
     visual.label = text;
     visual.labelPoint = p;
   }
+  private addFeatureBadge(visual: Visual, marker: string, p: Point): void {
+    if (this.appearance.labels === false) return;
+    const badge = new Container(), text = new Text({
+      text: marker,
+      style: { fontFamily: "sans-serif", fontSize: 14, fontWeight: "bold", fill: 0xffffff },
+      resolution: 2,
+    });
+    text.anchor.set(0.5);
+    const background = new Graphics();
+    background.rect(-Math.max(11, text.width / 2 + 5), -10,
+      Math.max(22, text.width + 10), 20).fill(0x383838);
+    badge.addChild(background, text);
+    this.labels.addChild(badge);
+    visual.featureBadge = badge;
+    visual.featureMarker = marker;
+    visual.labelPoint = p;
+  }
   private positionLabel(v: Visual): void {
     const viewportWidth = this.captureViewport?.width ?? this.host.clientWidth,
       viewportHeight = this.captureViewport?.height ?? this.host.clientHeight;
@@ -1296,6 +1327,16 @@ export class MapRenderer {
         v.label.y >= -30 &&
         v.label.x <= viewportWidth + 30 &&
         v.label.y <= viewportHeight + 30;
+    }
+    if (v.featureBadge && v.labelPoint) {
+      v.featureBadge.position.set(
+        v.labelPoint.x * this.camera.scale + this.camera.x,
+        v.labelPoint.y * this.camera.scale + this.camera.y - (v.label ? 22 : 0),
+      );
+      v.featureBadge.visible = v.container.visible && v.entity.floorId === this.floorId &&
+        (this.camera.scale >= 9 || this.selected.has(v.entity.id)) &&
+        v.featureBadge.x >= -30 && v.featureBadge.y >= -30 &&
+        v.featureBadge.x <= viewportWidth + 30 && v.featureBadge.y <= viewportHeight + 30;
     }
   }
   private dimensionText(): Text {
