@@ -12867,8 +12867,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/01-deep-water.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-pixels/RESULT.md"
+          ],
+          "gap": "Native Exportpixel zeigen den Einfluss von Farbe, Blend und Alpha an einer 8×8-Fixture; vollständige Mischformel, identische Lighting-Optionen aller Paare und Picker-Accept für Alpha 128 bleiben offen."
         },
         "target": "Tiefe Farbe samt Alpha gleichwertig.",
         "baseline": {
@@ -12951,8 +12953,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/02-shallow-water.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-pixels/RESULT.md"
+          ],
+          "gap": "Native Exportpixel zeigen den Einfluss von Farbe, Blend und Alpha an einer 8×8-Fixture; vollständige Mischformel, identische Lighting-Optionen aller Paare und Picker-Accept für Alpha 128 bleiben offen."
         },
         "target": "Flachwasserfarbe im Wasserverlauf.",
         "baseline": {
@@ -13036,8 +13040,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-native/RESULT.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/03-blend-05.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/04-blend-40.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/dd023-water-native/runs/20261006-131420-331248/evidence/08-second-water-water.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd023-water-pixels/RESULT.md"
+          ],
+          "gap": "Native Exportpixel zeigen den Einfluss von Farbe, Blend und Alpha an einer 8×8-Fixture; vollständige Mischformel, identische Lighting-Optionen aller Paare und Picker-Accept für Alpha 128 bleiben offen."
         },
         "target": "Kontinuierlicher nativ vergleichbarer Farbverlauf.",
         "baseline": {
