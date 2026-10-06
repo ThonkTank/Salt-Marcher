@@ -60,9 +60,13 @@ export function buildingPolygonPoints(
   const byIndex = new Map(curves.map((curve) => [curve.index, curve.handle]));
   const result: Point[] = [vertices[0]!];
   for (let index = 1; index < vertices.length; index++) {
-    const start = vertices[index - 1]!,
-      end = vertices[index]!,
-      handle = byIndex.get(index);
+    const handle = byIndex.get(index);
+    // After a Shift curve, the following click controls its bend. It becomes a
+    // contour vertex only if the polygon is closed at that point.
+    if (!handle && byIndex.has(index - 1) && index + 1 < vertices.length)
+      continue;
+    const start = result[result.length - 1]!,
+      end = vertices[index]!;
     if (!handle) {
       result.push(end);
       continue;

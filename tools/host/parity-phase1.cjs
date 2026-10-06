@@ -280,6 +280,37 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     fs.writeFileSync(path.join(qa, "parity-phase1-curve-saved.json"),
       JSON.stringify((await state()).document, null, 2));
     checks.push("Diagonal Shift curve matches native samples, Undo/Redo and save");
+    await open("Dungeons/Parity/Mehrkurve.dungeon");
+    await chooseTool("Polygonraum");
+    await click({ x: 1, y: 1 });
+    await click({ x: 6, y: 1 });
+    await drag({ x: 6, y: 3 }, { x: 5, y: 2 }, "Shift");
+    await click({ x: 5, y: 4 });
+    await drag({ x: 4, y: 6 }, { x: 3, y: 5 }, "Shift");
+    assert.equal((await state()).curves.length, 2);
+    await click({ x: 1, y: 6 });
+    await double({ x: 1, y: 6 });
+    await count(1);
+    const multi = (await buildings())[0];
+    assert.ok(multi.wallWidth > 0);
+    assert.ok(multi.polygons[0].outer.length >= 37);
+    assert.ok(!multi.polygons[0].outer.some(p => p.x === 5 && p.y === 4));
+    for (const [x, y] of [[1523, 295], [811, 1424]])
+      assert.ok(multi.polygons[0].outer.some(p =>
+        Math.abs(p.x * 256 - x) <= 3 && Math.abs(p.y * 256 - y) <= 3));
+    await page.screenshot({ path: path.join(out, "multi-curve.png") });
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await count(0);
+    await page.keyboard.press("Control+y");
+    await count(1);
+    await page.evaluate(async () => {
+      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+    });
+    await waitForFileAbsent(path.join(vault, "Dungeons/Parity/Mehrkurve.dungeon.draft"));
+    fs.writeFileSync(path.join(qa, "parity-phase1-multi-curve-saved.json"),
+      JSON.stringify((await state()).document, null, 2));
+    checks.push("Two separated Shift curves create one walled Building with native contour samples, history and save");
   }
   async function reopen() {
     await open();
@@ -308,6 +339,15 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     assert.equal(curveFresh.dirty, false);
     await page.screenshot({ path: path.join(out, "diagonal-curve-reopen.png") });
     checks.push("Fresh Obsidian process keeps the diagonal Building contour");
+    await open("Dungeons/Parity/Mehrkurve.dungeon");
+    const multiSaved = JSON.parse(fs.readFileSync(
+      path.join(qa, "parity-phase1-multi-curve-saved.json"), "utf8"));
+    const multiFresh = await state();
+    assert.deepEqual(multiFresh.document.entities, multiSaved.entities);
+    assert.equal(multiFresh.document.entities.filter(e => e.kind === "building").length, 1);
+    assert.equal(multiFresh.dirty, false);
+    await page.screenshot({ path: path.join(out, "multi-curve-reopen.png") });
+    checks.push("Fresh Obsidian process keeps both Shift curves and their wall");
   }
   return { edit, reopen };
 };

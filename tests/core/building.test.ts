@@ -48,6 +48,33 @@ test("Building Shift curve follows the next polygon point and survives sampled c
   assert.deepEqual(buildingPolygonPoints(base, [], true), base);
 });
 
+test("finished Building Shift contours ignore handle distance and retain separated curves", () => {
+  const vertices = [{ x: 1, y: 2 }, { x: 6, y: 2 },
+    { x: 6, y: 5 }, { x: 1, y: 7 }];
+  const contours = [{ x: 4, y: 4 }, { x: 5, y: 4 }, { x: 5, y: 3 }]
+    .map(handle => buildingPolygonPoints(vertices, [{ index: 2, handle }], true));
+  assert.deepEqual(contours[0], contours[1]);
+  assert.deepEqual(contours[1], contours[2]);
+  const two = buildingPolygonPoints(
+    [{ x: 1, y: 1 }, { x: 6, y: 1 }, { x: 6, y: 3 },
+      { x: 5, y: 4 }, { x: 4, y: 6 }, { x: 1, y: 6 }],
+    [{ index: 2, handle: { x: 5, y: 2 } },
+      { index: 4, handle: { x: 3, y: 5 } }], true,
+  );
+  assert.equal(two.length, 37);
+  assert.ok(!two.some(point => point.x === 5 && point.y === 4));
+  assert.ok(two.some(point => point.x < 4 && point.y > 4));
+  const follower = buildingPolygonPoints(
+    [{ x: 1, y: 1 }, { x: 5, y: 1 }, { x: 5, y: 3 },
+      { x: 7, y: 4 }, { x: 1, y: 6 }],
+    [{ index: 2, handle: { x: 4, y: 2 } }], true,
+  );
+  assert.equal(follower.length, 20);
+  assert.ok(!follower.some(point => point.x === 7 && point.y === 4));
+  assert.ok(Math.abs(follower[2]!.x * 256 - 1305) <= 1.5);
+  assert.ok(Math.abs(follower[2]!.y * 256 - 295) <= 1.5);
+});
+
 
 test("bound portals snap to the center of a matching corridor endpoint", () => {
   const room = {

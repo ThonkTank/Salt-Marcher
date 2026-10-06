@@ -2844,15 +2844,15 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-preview.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-commit.png"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Originale Maßvorschau und einzelne Wand-/Bodenstile noch nicht paarweise verglichen."
         }
       },
@@ -2920,15 +2920,15 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/07-ellipse-preview.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd012-native-b/shots/08-ellipse-commit.png"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Exakte Kontur- und Stilwirkung weiterer Ellipsengrößen sowie nativer Escape-Abbruch offen."
         }
       },
@@ -3003,14 +3003,14 @@
         "inventoryNote": "Quellenstand 2026-10-06: Der historische X11-Doppelklickfehler bleibt als Baseline erhalten; der neuere isolierte bau-01-Hostlauf auf Build fa2bc3940e schloss und öffnete das Polygon erfolgreich. Installierter Endstand und physische Eingabe offen.",
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/poly-finish.png"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Physischer Doppelklick bleibt für Phase 7 offen."
         }
       },
@@ -3079,12 +3079,12 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/A06-thin-four-after.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Exakte Eck- und Wandbildwirkung sowie physische Eingabe offen."
         }
       },
@@ -3144,7 +3144,7 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
@@ -3152,8 +3152,8 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220000-938342/evidence/maps/P8-after-backspace-one.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Separater Reviewlauf; physische Eingabe folgt in Phase 7."
         }
       },
@@ -3214,18 +3214,23 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-212834-915833/evidence/maps/P1-curve-saved.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-213300-916678/evidence/maps/P2-curve-saved.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-214800-929667/evidence/maps/P1-curve-fresh-reopen.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220000-938342/evidence/maps/P9-reverse-curve-saved.dungeondraft_map",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220652-941590/evidence/maps/P12-diagonal-saved.dungeondraft_map"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220652-941590/evidence/maps/P12-diagonal-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221547-946750/evidence/maps/P15-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221628-947058/evidence/maps/P16-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221710-947378/evidence/maps/P17-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-221851-948059/evidence/maps/P19-two-separated-curves-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-222803-960043/evidence/maps/P21-follower-outward-clean.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
-          "remaining": "Mehrere Shift-Kurven in einem Polygon und freie Handle-Varianten ungeklärt; zwei längere native Züge erzeugten zusätzliche Punkte."
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
+          "remaining": "Getrennte Shift-Kurven und drei Handle-Varianten sind gemessen; native Selbstschnitt-Bereinigung der Mehrkurvenkontur weicht noch ab. Separater Reviewlauf offen."
         }
       },
       {
@@ -3287,15 +3292,15 @@
         "inventoryNote": "Zielpräzisierung 2026-10-06: Der native Alt-Rechteckbeleg enthält Boden-/Wandschnitt, Undo/Redo, aber kein gebundenes Portal.",
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-214237-924920/evidence/maps/P4-portal-before-erase-final.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-214237-924920/evidence/maps/P4-erase2-redo.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-214443-926746/evidence/maps/P5-portal-cut-fresh-reopen.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Ein erster Randschnitt mit erhaltenem Portal ist im Original belegt, aber noch nicht im aktuellen Host nachgestellt."
         }
       },
@@ -3360,13 +3365,13 @@
         "inventoryNote": "Belegkorrektur 2026-10-06: Die spätere native B02→B04-Kartenfolge belegt DD-011.08 direkt; die ältere Aussage „direkt nicht geprüft“ ist historisch.",
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B04-alt-ellipse-after.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220200-939226/evidence/maps/P10-alt-ellipse-fresh-reopen.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Separater Reviewlauf; physische Eingabe folgt in Phase 7."
         }
       },
@@ -3426,13 +3431,13 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B09-alt-poly-after.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220233-939499/evidence/maps/P11-alt-polygon-fresh-reopen.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Separater Reviewlauf; physische Eingabe folgt in Phase 7."
         }
       },
@@ -3491,7 +3496,7 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-215336-934031/evidence/maps/P6-rect-escape-saved.dungeondraft_map",
@@ -3501,8 +3506,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-215336-934031/evidence/maps/P7-alt-escape-saved.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-215336-934031/evidence/screens/P7-poly-before-escape.png"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Separater Reviewlauf; physische Maus-/Touchpad-Eingabe folgt in Phase 7."
         }
       },
@@ -3673,14 +3678,14 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-121641-2888505/evidence/maps/C23-snap-off-quarter-after.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261006-220000-938342/evidence/maps/P8-snap-mixed.dungeondraft_map"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Exakte native Snap-Einrasttoleranz ungeklärt; Wechsel mitten im Polygon und freie Koordinaten sind beidseitig belegt."
         }
       },
@@ -3741,15 +3746,15 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-undo.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/rect-redo.png"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Physische Strg+Y-Eingabe bleibt für Phase 7 offen."
         }
       },
@@ -3809,12 +3814,12 @@
         },
         "phase1Implementation": {
           "state": "candidate_host_passed_review_pending",
-          "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
+          "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md"
           ],
-          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
-          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
           "remaining": "Persistenz weiterer Building-Stile und Werkzeugvorgaben folgt in Phase 3; Original-Frischöffnung aller Einzelvarianten fehlt."
         }
       },

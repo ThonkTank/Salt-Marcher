@@ -310,6 +310,14 @@ function prepare() {
       entities: [],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     }, null, 2));
+    fs.writeFileSync(vault + "/Dungeons/Parity/Mehrkurve.dungeon", JSON.stringify({
+      format: "dungeon-map", version: 3, id: "parity-phase1-multi-curve",
+      settings: { name: "Mehrkurve", width: 8, height: 8, feetPerField: 5,
+        wallShadows: false, objectShadows: false, buildingWear: 0 },
+      floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+      entities: [],
+      content: { definitions: [], occurrences: [], routes: [], archive: [] },
+    }, null, 2));
   }
 }
 async function shutdown() {
