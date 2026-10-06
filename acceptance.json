@@ -33093,20 +33093,22 @@
         "command": "Paket aus/an",
         "scope": "required",
         "original": {
-          "sequence": "Geladene QATile03-Karte > Assets > Paket abwählen; vor Wiederöffnen Palette und platzierte Textur prüfen, speichern.",
+          "sequence": "Geladene QATile03-Karte > Assets > Paket abwählen > Accept; Galerie nach Werkzeugwechsel, Fläche vor Save, gespeicherte Karte und frischen OFF-Start prüfen; Paket im OFF-Prozess reaktivieren und mit aktivem Paketprofil frisch öffnen.",
           "options": null,
-          "effect": "Nach Abwahl fordert Dungeondraft Speichern und Wiederöffnen. Die Color-Kachel bleibt zuvor geladen; die gespeicherte Karte hat ein leeres asset_manifest und behält ihre platzierte Pakettexturreferenz.",
+          "effect": "Nach Abwahl verlangt Dungeondraft Save/Reopen. Die vorhandene Fläche bleibt im offenen Prozess farbig; die Color-Kachel verschwindet beim Neuaufbau der Building-Galerie. Die gespeicherte Karte hat ein leeres asset_manifest, behält QATile03-Referenz und 17 Tilezellen. Im frischen OFF-Start erscheint die Fläche dunkel und Color fehlt. Mit ausdrücklich aktivem Paketprofil im frischen ON-Start erscheinen Muster und neue Platzierung wieder.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-disabled-pack-selection.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/21-inmap-pack-off.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/22-off-staged.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/dd010-pack-off.dungeondraft_map",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-010-PACK-ACTIVATION-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-010-PACK-ACTIVATION-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd01015-native/RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/dd01015-native/EVIDENCE-SHA256.txt"
           ],
-          "gap": "Frisch geöffnete deaktivierte Karte, neue Platzierung danach sowie Cancel/X-Semantik sind noch nicht direkt gemessen."
+          "gap": "Reopen nach Reaktivierung mit unverändertem OFF-Profil sowie Cancel/X-Semantik bleiben offen; ON-Frischstart benutzte ausdrücklich ein aktiviertes Paketprofil."
         },
-        "target": "Beim Abwählen in einer offenen Karte die geänderte Paketauswahl speichern; bereits geladene Werkzeugkacheln und platzierte Texturen bleiben bis zum Wiederöffnen sichtbar. Wirkung nach frischem Öffnen gesondert messen.",
+        "target": "Paketabwahl speichern; vorhandene Textur in der offenen Ansicht erhalten, die Kachel nach Werkzeug-Neuaufbau entfernen und nach OFF-Frischstart die fehlende Textur dunkel darstellen. Neue Pakettexturen erst nach frischem Öffnen laden. Wiederaktivierung mit unverändertem OFF-Profil gesondert messen.",
         "baseline": {
           "editor": {
             "sequence": "Host-Paketdialog mit Soforttoggle",
@@ -33135,17 +33137,21 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Laufzeit-Paketmenge beim Kartenöffnen getrennt von gespeicherten assetPacks eingefroren; Werkzeugkatalog, farbbare Objekte und Pfadstart verwenden den geladenen Zustand."
+            "Kartenansichten frieren die geladenen Paket-IDs ein; Werkzeug-Neuaufbau schneidet die gespeicherte Auswahl mit den geladenen IDs, ohne bestehende Texturauflösung sofort zu verlieren.",
+            "Neue Ansicht filtert abgewählte Pakettexturen; fehlende Paketböden erhalten dunklen Fallback. V2-Karten ohne assetPacks frieren vorhandene Paket-IDs ohne Dateimigration ein."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-010-RUNTIME-PACK-CANDIDATE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-010-RUNTIME-PACK-CANDIDATE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-010-LEGACY-ASSET-PACKS-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Vor-Wiederöffnen-Kandidat gebaut, aber fokussierter isolierter Hostlauf, Original-Frischstart und installierter Endstand offen."
+          "build": "1e97cbba0e9a7ce5c12ffb497db6ea4128bb61fac680682417959c6742434c89",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-010-15-HOST-ATTEMPTS-20261006.md"
+          ],
+          "gap": "Zwei isolierte Läufe auf Zwischenbuild erreichten die Abwahl nicht: Nach Bibliothek-Klick erschien im erfassten Fenster kein Paketdialog. Der neuere Werkzeug-/Renderer-Kandidat ist gebaut, aber nicht grafisch gepaart oder installiert."
         }
       },
       {
