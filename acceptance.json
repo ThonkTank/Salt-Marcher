@@ -2818,9 +2818,14 @@
         "hostCheck": {
           "state": "open",
           "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01101-08-BUILDING-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/evidence/1791205747790-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/evidence/1791205759541-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Neuerer isolierter Doppelklick und Frischstart bestanden; physische Eingabe und installierter Endstand offen."
+        },
+        "inventoryNote": "Quellenstand 2026-10-06: Der historische X11-Doppelklickfehler bleibt als Baseline erhalten; der neuere isolierte bau-01-Hostlauf auf Build fa2bc3940e schloss und öffnete das Polygon erfolgreich. Installierter Endstand und physische Eingabe offen."
       },
       {
         "id": "DD-011.04",
@@ -3004,9 +3009,10 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/erase-commit.png"
-          ]
+          ],
+          "gap": "Der direkte Alt-Rechteckschnitt enthielt kein gebundenes Portal. Dessen Schnittfolge ist noch nicht im Original belegt."
         },
-        "target": "Boden, Randwand und gebundene Portale konsistent schneiden.",
+        "target": "Boden und Randwand wie im Original schneiden; Folgen für gebundene Portale nach direkter Originalmessung festlegen.",
         "baseline": {
           "editor": {
             "sequence": "Bauwerk > Rechteck > Alt ziehen",
@@ -3023,7 +3029,7 @@
             "status": "gleichwertig belegt",
             "difference": "Kleiner Bereichsschnitt gleichartig.",
             "gap": "Portalfolge und mehrteilige Kontur bleiben offen.",
-            "target": "Boden, Randwand und gebundene Portale konsistent schneiden.",
+            "target": "Boden und Randwand wie im Original schneiden; Folgen für gebundene Portale nach direkter Originalmessung festlegen.",
             "effort": "mittel"
           },
           "checks": {
@@ -3042,7 +3048,8 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+        },
+        "inventoryNote": "Zielpräzisierung 2026-10-06: Der native Alt-Rechteckbeleg enthält Boden-/Wandschnitt, Undo/Redo, aber kein gebundenes Portal."
       },
       {
         "id": "DD-011.08",
@@ -3054,13 +3061,17 @@
         "original": {
           "sequence": "Alt beim Ellipsenziehen halten.",
           "options": "Panel zeigt allgemeines Hold ALT Erase.",
-          "effect": "Elliptischer Boden-/Wandschnitt naheliegend, direkt nicht geprüft.",
+          "effect": "Direkter Alt-Ellipsenschnitt erzeugte ein rundes Innenloch mit eigener Wandkontur; Wände 1→2, Undo/Redo. Frischöffnung genau dieses Stands fehlt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-011-Building-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd011-native/shots/building-panel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01101-08-BUILDING-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B02-rect-base.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/B04-alt-ellipse-after.dungeondraft_map"
+          ],
+          "gap": "Original-Frischöffnung des B04-Alt-Ellipsenschnitts fehlt; gebundene Portalfolge wurde nicht gemessen."
         },
         "target": "Elliptische Radierung wie Original beobachten und abgleichen.",
         "baseline": {
@@ -3097,7 +3108,8 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+        },
+        "inventoryNote": "Belegkorrektur 2026-10-06: Die spätere native B02→B04-Kartenfolge belegt DD-011.08 direkt; die ältere Aussage „direkt nicht geprüft“ ist historisch."
       },
       {
         "id": "DD-011.09",
