@@ -1,6 +1,6 @@
 {
-  "phase": "Phase 6 – V4-Drachenhöhle produktiv übertragen und frisch geöffnet; physische Eingabe offen",
-  "goal": "707 weiterhin geforderte Unterfälle aus der vollständigen Inventur gleichwertig gegen Dungeondraft 1.2.0.1 belegen; zwölf DD-037-Mod-Fälle sind beschlossene Ausnahme.",
+  "phase": "Folge-Roadmap: übergreifender Planlauf abgeschlossen; Phase 1 Umsetzung offen",
+  "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen, jede Phase getrennt planen, umsetzen und reviewen; danach aufräumen.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
   "verified": [
@@ -153,7 +153,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Die auf Nutzerwunsch verschobene physische Maus-/Touchpad-Bedienung an der produktiven Spielansicht nachholen; weitere Dungeondraft-Paritätsfälle bleiben gesondert offen.",
+  "next": "Eigenen Umsetzungslauf für Phase 1 aus ROADMAP-PARITY-PLAN.md beginnen; Shift-Kurve und Original-Portalfolge zuerst nachmessen, danach belegte Unterschiede implementieren und isoliert prüfen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -771,5 +771,14 @@
     "coreTests": 115,
     "protectedDungeonFilesUnchanged": 74,
     "physicalInput": "deferred_at_user_request"
+  },
+  "parityRoadmap": {
+    "status": "plan_run_complete_implementation_open",
+    "roadmap": "ROADMAP-PARITY.md",
+    "plan": "ROADMAP-PARITY-PLAN.md",
+    "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+    "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+    "nextRun": "Phase 1 Umsetzung; danach eigener Reviewlauf",
+    "note": "Ein isolierter Vorlauf für Rechteck, Alt-Radieren und Strg+Y bestand mit einem vorläufigen Build; dessen Codeänderungen wurden für die Trennung der Arbeitsläufe zurückgenommen. Dieser Lauf ist kein Abnahmebeleg."
   }
 }
