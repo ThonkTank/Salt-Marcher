@@ -37711,19 +37711,20 @@
         "command": "Grid Presets",
         "scope": "required",
         "original": {
-          "sequence": "Hauptleiste > Export > Export Options → Grid Presets",
+          "sequence": "Export einer 8×8-Karte: Optimal Halved, Commercial Print, manuell 96, zurück zu Optimal Halved; PNG bei 128; X/erneutes Öffnen; frischer Prozess mit gespeicherter Konfiguration.",
           "options": "Dropdown vollständig: Custom, Best Quality, Optimal Halved, Commercial Print, Roll 20, 40\" TV, 55\" TV.",
-          "effect": "Grid Presets zeigt im gemessenen Startzustand Custom.",
+          "effect": "Optimal Halved=128 PPI/1024², Commercial Print=300 PPI/2400², manuell 96=Custom/768²; PNG bei 128 ist 1024². X erhält Optimal Halved/128 im selben Prozess. Neustart zeigt Custom/128.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/14-grid-presets.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD043-ADVANCED-EXPORT-IL-PCK-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD043-ADVANCED-EXPORT-IL-PCK-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md"
           ],
-          "gap": "Auswahl und Pixelwirkung eines anderen Grid Preset fehlen."
+          "gap": "Vier übrige feste Vorgaben, Crop-Kombination, Grenzwert- und Halbwert-Rundung sowie tatsächliche Bildpixelgleichheit nicht direkt gemessen."
         },
-        "target": "Nach Originalmessung offen: „Grid Presets“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
+        "target": "Sieben Originalvorgaben in Reihenfolge; gemessene PPI-/Ausgabemaße und PNG-Dimensionen; manuelle PPI-Eingabe setzt Custom; gleicher Prozess erhält Preset, frischer Prozess erhält PPI und zeigt Custom.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -37754,25 +37755,32 @@
           "changes": [
             "src/features/verwaltung/grid-presets.ts",
             "src/features/verwaltung/export-dialog.ts",
-            "src/main.ts"
+            "src/main.ts",
+            "Exportdialog speichert Preset/PPI beim Schließen; Laufzeit erhält die Presetwahl, Prozessneustart zeigt Custom beim gespeicherten PPI."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD043-ADVANCED-EXPORT-IL-PCK-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-MODULE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-MODULE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "ea6c3929fa03985e4bbb08760e506ed12ddcd82290b2c4b8f6fd7612a3ca0250",
+          "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-13-GRID-PRESET-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280768977-verwaltung-export-edit/dd043-grid-presets-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean-20261006/evidence/1791281495978-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json"
           ],
-          "gap": "Isolierter Edit-/Frischstart-Host technisch bestanden; Original-GUI-Presetdateien, Dialogzustand und installierter Endstand fehlen.",
+          "gap": "Original und Host belegen Preset-/PPI-Folge; zwei saubere Erststart-Hostläufe öffnen nach Menüklick keinen Exportdialog. Ursache offen; installierter Endstand und Bildpixelgleichheit fehlen.",
           "candidate": {
             "state": "open",
-            "observation": "Sieben Vorgaben sichtbar; 128/300 PPI ändern Maße; manuelle 96 setzt Custom; PNG bei 128 ist 1024×1024 und nach frischem Kartenöffnen bytegleich. Karte/History/Kamera unverändert.",
+            "observation": "Wiederverwendete isolierte QA-Umgebung: Edit/Frischstart technisch bestanden, inklusive gleicher Prozess Optimal Halved/128 und Neustart Custom/128. Zwei neue QA-Umgebungen: nach sichtbarem Exportmenüklick kein Dialog; kein Speicherdruck.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
@@ -37780,12 +37788,18 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-13-GRID-PRESET-HOST-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280768977-verwaltung-export-edit/dd043-grid-presets-result.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791280783708-verwaltung-export-reopen/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean-20261006/evidence/1791281495978-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json"
             ],
-            "gap": "Isolierter Edit-/Frischstart-Host technisch bestanden; Original-GUI-Presetdateien, Dialogzustand und installierter Endstand fehlen.",
-            "build": "ea6c3929fa03985e4bbb08760e506ed12ddcd82290b2c4b8f6fd7612a3ca0250",
+            "gap": "Original und Host belegen Preset-/PPI-Folge; zwei saubere Erststart-Hostläufe öffnen nach Menüklick keinen Exportdialog. Ursache offen; installierter Endstand und Bildpixelgleichheit fehlen.",
+            "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
-              "edit": "technical_pass",
+              "edit": "technical_pass_with_fresh_setup_gap",
               "reopen": "technical_pass"
             }
           }
