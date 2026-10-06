@@ -38601,9 +38601,11 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-15-PPI-CROP-NATIVE-RESULT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-ppi-native/runs/20261006-151708-618060/evidence/measurements.json"
           ],
-          "gap": "Crop und Halbwert-Rundung sowie Datei-Maße bei 300/96 fehlen."
+          "gap": "PPI-Maße 128/300/96 und 128-PNG direkt belegt. Crop-Datei und Reset belegt, aber die Geste/Koordinatenregel, Halbwert-Rundung und Dateien bei 300/96 bleiben offen."
         },
         "target": "Angezeigte Ausgabemaße folgen den Originalwerten für Kartengröße, PPI und künftig Crop; 128-PNG bestätigt 1024² bei 8×8 Feldern.",
         "baseline": {
@@ -38637,7 +38639,7 @@
             "src/features/verwaltung/grid-presets.ts",
             "src/features/verwaltung/export-dialog.ts",
             "src/main.ts",
-            "Installierter Release belegt 8×8 bei Standardwert 256 Pixel/Feld zu 2048×2048 samt Inhalt/Raster unten rechts; geänderte Werte und Crop offen."
+            "Installierter Release belegt 8×8 bei 256, 128, 300 und 96 Pixel/Feld samt direkter Maßreaktion; 128-PNG misst 1024×1024. Crop fehlt."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
@@ -38655,9 +38657,11 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291787919-dd043-minimal-edit/dd043-minimal-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291799388-dd043-minimal-reopen/dd043-minimal-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-ppi-installed-host/evidence/1791292526620-dd043-ppi-edit/dd043-ppi-probe.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-ppi-installed-host/evidence/1791292539666-dd043-ppi-reopen/dd043-ppi-probe.json"
           ],
-          "gap": "Nur Default 8×8/256 am installierten Stand belegt. Geänderte PPI-/Preset-Werte, 128-PNG und Crop-Wirkung auf diesem Build sowie Original-Crop-Grenzen offen.",
+          "gap": "Installierter Endstand: 128/300/96 zeigen 1024²/2400²/768²; 128-PNG hat 1024² in Bearbeitung und Frischstart. Crop-Option, Crop-Datei und zuverlässige Gestenpaarung fehlen; keine vollständige Fallabnahme.",
           "candidate": {
             "state": "open",
             "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
@@ -38769,15 +38773,17 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Crop",
           "options": null,
-          "effect": "Crop ist im Exportdialog als Bedienelement sichtbar.",
+          "effect": "Crop blendet den Dialog ab und erlaubt eine Bildauswahl. Eine gemessene Auswahl ergibt 1536×1280 Pixel und exportiert den räumlichen Quellbereich (512,256)–(2048,1536) der 2048²-Vollausgabe; 251 RGB-Pixel weichen gegenüber dem direkten Vollbild-Crop geringfügig ab, Alpha stimmt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-15-PPI-CROP-NATIVE-RESULT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-ppi-native/runs/20261006-151708-618060/evidence/measurements.json"
           ],
-          "gap": "Crop-Geste und Auswirkung auf Bildausschnitt, Maße und gespeicherte Ausgabe fehlen."
+          "gap": "Allgemeine Geste/Koordinaten- und Snapregel offen; ein zweiter Zwei-Klick-Ansatz endete mit Original-Exception. Keine Hostpaarung."
         },
-        "target": "Nach Originalmessung offen: „Crop“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
+        "target": "Crop wählt einen sichtbaren Kartenausschnitt; Anzeige und exportierte PNG-Maße folgen dem gewählten Bereich. Für den gemessenen 8×8-Fall: 1536×1280 und räumlicher Bereich (512,256)–(2048,1536) bei 256 Pixel/Feld. Genaue Gestenregel bleibt bis zu weiterer Originalprobe offen.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -38841,15 +38847,17 @@
         "original": {
           "sequence": "Hauptleiste > Export > Export Options → Reset Crop",
           "options": null,
-          "effect": "Reset Crop ist im unbeschnittenen Startzustand sichtbar und inaktiv.",
+          "effect": "Reset Crop ist im unbeschnittenen Zustand inaktiv; nach einer Crop-Auswahl setzt es die Dialoganzeige von 1536×1280 wieder auf 2048×2048 und wird inaktiv.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-043-15-PPI-CROP-NATIVE-RESULT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-ppi-native/runs/20261006-151708-618060/evidence/measurements.json"
           ],
-          "gap": "Reset Crop nach tatsächlichem Crop und seine Auswirkung fehlen."
+          "gap": "Zurückgesetzte Datei-Ausgabe und Hostpaarung fehlen."
         },
-        "target": "Nach Originalmessung offen: „Reset Crop“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
+        "target": "Reset Crop entfernt den gewählten Ausschnitt und stellt die volle Kartenausgabe samt 2048×2048-Anzeige im gemessenen 8×8-Fall bei 256 Pixel/Feld wieder her.",
         "baseline": {
           "editor": {
             "sequence": null,
