@@ -38937,7 +38937,8 @@
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/25-change-size.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md"
           ],
           "gap": "Obere Beschnittwirkung auf Tile-Zellen und andere Entity-Arten nicht direkt gemessen."
         },
@@ -38968,9 +38969,16 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/commands.ts",
+            "src/features/material/terrain-mask-resize.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts"
+          ]
         },
         "hostCheck": {
           "state": "partial",
@@ -38982,7 +38990,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Der neu gespeicherte Top-Resize wurde in keinem weiteren frischen Prozess geöffnet."
-        }
+        },
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
       },
       {
         "id": "DD-038.03",
@@ -38998,7 +39007,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md"
           ],
           "gap": "Rechte Erweiterung/Beschnittwirkung auf gespeicherte Zellen und Polygone nicht direkt gemessen."
         },
@@ -39029,9 +39039,16 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/commands.ts",
+            "src/features/material/terrain-mask-resize.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts"
+          ]
         },
         "hostCheck": {
           "state": "partial",
@@ -39043,7 +39060,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen rechten Rand fehlen."
-        }
+        },
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
       },
       {
         "id": "DD-038.04",
@@ -39059,7 +39077,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md"
           ],
           "gap": "Untere Erweiterung/Beschnittwirkung auf gespeicherte Zellen und Polygone nicht direkt gemessen."
         },
@@ -39090,9 +39109,16 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/commands.ts",
+            "src/features/material/terrain-mask-resize.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts"
+          ]
         },
         "hostCheck": {
           "state": "partial",
@@ -39104,7 +39130,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen unteren Rand fehlen."
-        }
+        },
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
       },
       {
         "id": "DD-038.05",
@@ -39120,7 +39147,8 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md"
           ],
           "gap": "Linker Beschnitt für andere Entity-Arten und globale Eingabegrenzen nicht gemessen."
         },
@@ -39151,9 +39179,16 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/commands.ts",
+            "src/features/material/terrain-mask-resize.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts"
+          ]
         },
         "hostCheck": {
           "state": "partial",
@@ -39165,7 +39200,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Das Original verwirft dabei 4 von 10 Tile-Zellen dauerhaft; dem Editor fehlt ein getrenntes Tile-Zellmodell für den Hostvergleich."
-        }
+        },
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
       },
       {
         "id": "DD-038.06",
@@ -39182,7 +39218,8 @@
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-change-map-size.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md"
           ],
           "gap": "Ob neu nach Resize erzeugte Aktionen rückgängig gemacht werden können, was mit einer zuvor vorhandenen Redo-Verzweigung geschieht und ob ältere History intern gelöscht oder nur gesperrt wird, wurde nicht geprüft."
         },
@@ -39215,13 +39252,18 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Bestätigte Randänderung räumt ältere Undo-/Redo-Schritte ab und bleibt als geänderter Kartenzustand speicherbar; der Dialog zeigt die Nicht-Undo-Warnung."
+            "Bestätigte Randänderung räumt ältere Undo-/Redo-Schritte ab und bleibt als geänderter Kartenzustand speicherbar; der Dialog zeigt die Nicht-Undo-Warnung.",
+            "src/commands.ts",
+            "src/features/material/terrain-mask-resize.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/session.ts",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/commands.ts",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/src/main.ts",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/core.test.ts"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/tests/core.test.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-REVIEW-FOLLOWUP-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/src/features/material/terrain-mask-resize.ts"
           ]
         },
         "hostCheck": {
@@ -39234,7 +39276,8 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Eine neue Aktion nach Resize und deren Undo wurde im Original noch nicht geprüft."
-        }
+        },
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
       },
       {
         "id": "DD-038.07",
