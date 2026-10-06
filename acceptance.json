@@ -14528,15 +14528,43 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-material-catalog.ts",
+            "src/features/material/native-material-assets.ts",
+            "src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-025-06-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "2c34bf8a464027a2707548f2c9ff0ceced6883ed4849595bfe930245ec861417",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-025-06-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276006114-material-dach-material-edit/dd02506-native-materials.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276006114-material-dach-material-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276038031-material-dach-material-reopen/dd02506-native-materials.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276038031-material-dach-material-reopen/group-cases.json"
+          ],
+          "gap": "Gepaarte Original-Materialwahl mit Strichbild, Kartenpixeln, Undo/Redo und Save/Frischstart sowie installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Zwölf eingebaute Materialpaare mit 24 Bildern im isolierten Host geladen, bei BuiltIns AUS verborgen, im Materialpinsel gewählt und nach Obsidian-Frischstart erneut geladen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-025-06-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276006114-material-dach-material-edit/dd02506-native-materials.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276006114-material-dach-material-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276038031-material-dach-material-reopen/dd02506-native-materials.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02506-native-material-20261006/evidence/1791276038031-material-dach-material-reopen/group-cases.json"
+            ],
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            },
+            "gap": "Original-Kartenwirkung und installierter Endstand offen."
+          }
         }
       },
       {
