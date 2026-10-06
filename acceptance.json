@@ -6303,11 +6303,15 @@
         "original": {
           "sequence": "An Wall-Tool-Wand platzieren.",
           "options": "Anchored aktiv.",
-          "effect": "Wandunterbrechung in älteren Beispielen sichtbar.",
+          "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-017-Anchored-Door.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01701-05-ANCHORED-PORTAL-STATIC.md"
+          ],
+          "gap": "Die bisher zitierte portal-study.dungeondraft_map enthält nur eine Building-Wand (type:0) mit zwei Türen und keine unabhängige Wall-Tool-Wand (type:1). Platzierung und Wandunterbrechung an dieser Wandklasse sind im Original direkt neu zu messen.",
+          "counterEvidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/portal-study.dungeondraft_map"
           ]
         },
@@ -6346,7 +6350,8 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+        },
+        "inventoryNote": "Belegkorrektur 2026-10-06: portal-study.dungeondraft_map ist kein Beleg für DD-017.03; der Original-Wall-Tool-Wandfall bleibt offen."
       },
       {
         "id": "DD-017.04",
@@ -7031,15 +7036,17 @@
         "command": "Winkelregler/Zahlfeld",
         "scope": "required",
         "original": {
-          "sequence": "Slider und Winkelzahl ändern.",
+          "sequence": "Regler ändern; separate Zahlfeldeingabe noch direkt zu messen.",
           "options": "Freier Modus; Bereich mit Wrap um ±180°.",
           "effect": "Portal dreht sich am freien Punkt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01810-14-PORTAL-ROTATION-STATIC.md"
+          ],
+          "gap": "Der freie Regler und gespeicherte Winkel sind belegt; eine separat manuell eingetippte Zahl und deren gespeicherte Wirkung sind noch nicht direkt protokolliert."
         },
         "target": "Freie Winkelwahl mit nativer Vorschau.",
         "baseline": {
@@ -7215,14 +7222,16 @@
         "original": {
           "sequence": "Unter −180° weiterdrehen.",
           "options": "Winkelanzeige.",
-          "effect": "Nächster Wert 175° in früherer Probe.",
+          "effect": "Grenzübergang −180°→175° in direkter Probe; die 1.2.0.1-IL wrappt rechnerisch exakt +180° auf −180°.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01810-14-PORTAL-ROTATION-STATIC.md"
+          ],
+          "gap": "Die sichtbare Original-Winkelbeschriftung bei einem Schritt rechnerisch exakt auf +180° ist nicht separat fotografiert; beide Grenzübergänge sind gemessen."
         },
         "target": "Winkelanzeige und gespeicherte Rotation äquivalent.",
         "baseline": {
