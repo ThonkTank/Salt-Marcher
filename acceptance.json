@@ -37775,9 +37775,10 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean-20261006/evidence/1791281495978-verwaltung-export-edit/dd043-grid-presets-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
           ],
-          "gap": "Original und Host belegen Preset-/PPI-Folge; zwei saubere Erststart-Hostläufe öffnen nach Menüklick keinen Exportdialog. Ursache offen; installierter Endstand und Bildpixelgleichheit fehlen.",
+          "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
           "candidate": {
             "state": "open",
             "observation": "Wiederverwendete isolierte QA-Umgebung: Edit/Frischstart technisch bestanden, inklusive gleicher Prozess Optimal Halved/128 und Neustart Custom/128. Zwei neue QA-Umgebungen: nach sichtbarem Exportmenüklick kein Dialog; kein Speicherdruck.",
@@ -37794,9 +37795,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean-20261006/evidence/1791281495978-verwaltung-export-edit/dd043-grid-presets-result.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-clean2-20261006/evidence/1791281611964-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
             ],
-            "gap": "Original und Host belegen Preset-/PPI-Folge; zwei saubere Erststart-Hostläufe öffnen nach Menüklick keinen Exportdialog. Ursache offen; installierter Endstand und Bildpixelgleichheit fehlen.",
+            "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
             "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
               "edit": "technical_pass_with_fresh_setup_gap",
@@ -37868,9 +37870,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
           ],
-          "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+          "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: 64 und 128 Pixel/Feld lieferten 512×512 und 1024×1024 PNG.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
@@ -37884,9 +37887,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
             ],
-            "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+            "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
             "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
               "edit": "technical_pass_with_fresh_setup_gap",
@@ -37960,9 +37964,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
           ],
-          "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+          "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
@@ -37979,9 +37984,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
             ],
-            "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+            "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
             "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
               "edit": "technical_pass_with_fresh_setup_gap",
