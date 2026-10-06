@@ -22,6 +22,10 @@ test("Building ellipse sampling follows measured native sizes", () => {
       Math.abs(point.x * 256 - sample[0]) <= 1.5 &&
       Math.abs(point.y * 256 - sample[1]) <= 1.5));
   }
+  assert.equal(buildingEllipse({ x: 3, y: 0.25 },
+    { x: 7.5, y: 3.5 }).length, 28);
+  assert.equal(buildingEllipse({ x: 1, y: 1 },
+    { x: 5.75, y: 4.75 }).length, 32);
 });
 
 test("Building Shift curve follows the next polygon point and survives sampled contour storage", () => {
@@ -89,6 +93,52 @@ test("finished Building Shift contours ignore handle distance and retain separat
   assert.ok(!follower.some(point => point.x === 7 && point.y === 4));
   assert.ok(Math.abs(follower[2]!.x * 256 - 1305) <= 1.5);
   assert.ok(Math.abs(follower[2]!.y * 256 - 295) <= 1.5);
+});
+
+test("consecutive Shift input and crossing cleanup match native Building contours", () => {
+  const consecutive = [
+      { x: 1, y: 1 }, { x: 6, y: 1 }, { x: 6, y: 4 },
+      { x: 4, y: 6 }, { x: 1, y: 6 },
+    ],
+    firstCurve = { index: 2, handle: { x: 5, y: 3 } },
+    secondCurve = { index: 3, handle: { x: 3, y: 5 } },
+    p18 = buildingPolygonPoints(consecutive, [firstCurve, secondCurve], true);
+  assert.deepEqual(p18, buildingPolygonPoints(consecutive, [firstCurve], true));
+  assert.equal(p18.length, 20);
+  const draw = (outer: ReturnType<typeof buildingPolygonPoints>) =>
+    composeBuilding({ kind: "compose-building", sources: [],
+      shape: [{ outer, holes: [] }], nativeBuilding: true, erase: false });
+  const split = draw(p18);
+  assert.equal(split.mode, "draw");
+  if (split.mode !== "draw") return;
+  assert.deepEqual(split.polygons.map(p => p.outer.length), [14, 8]);
+  assert.ok(Math.abs(split.polygons[0]!.outer[0]!.x * 256 - 1510) <= 1);
+  assert.ok(Math.abs(split.polygons[1]!.outer[0]!.y * 256 - 1048) <= 1);
+
+  const p19 = buildingPolygonPoints([
+    { x: 1, y: 1 }, { x: 6, y: 1 }, { x: 6, y: 3 },
+    { x: 5, y: 4 }, { x: 4, y: 6 }, { x: 1, y: 6 },
+  ], [
+    { index: 2, handle: { x: 5, y: 2 } },
+    { index: 4, handle: { x: 3, y: 5 } },
+  ], true);
+  assert.equal(p19.length, 37);
+  const joined = draw(p19);
+  assert.equal(joined.mode, "draw");
+  if (joined.mode !== "draw") return;
+  assert.equal(joined.polygons.length, 1);
+  assert.equal(joined.polygons[0]!.outer.length, 39);
+  assert.ok(joined.polygons[0]!.outer.some(p =>
+    Math.abs(p.x * 256 - 1469) <= 1 && Math.abs(p.y * 256 - 808) <= 1));
+
+  const p30 = buildingPolygonPoints([
+    { x: 1, y: 1 }, { x: 6, y: 1 }, { x: 6, y: 4 },
+    { x: 5, y: 5 }, { x: 1, y: 6 },
+  ], [firstCurve], true);
+  const narrow = draw(p30);
+  assert.equal(narrow.mode, "draw");
+  if (narrow.mode !== "draw") return;
+  assert.deepEqual(narrow.polygons.map(p => p.outer.length), [17, 5]);
 });
 
 

@@ -25,7 +25,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     }, prefix + name + ".dungeon");
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
   }
-  async function heldShape(a, b, label, screenshot) {
+  async function heldShape(a, b, label, screenshot, expected = 1) {
     const from = await world(a), to = await world(b);
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -37,7 +37,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     }, label);
     await page.screenshot({ path: path.join(out, screenshot) });
     await page.mouse.up();
-    await count(1);
+    await count(expected);
     assert.equal((await state()).preview, null);
   }
   async function click(point) {
@@ -47,6 +47,15 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
   async function double(point) {
     const p = await world(point);
     await page.mouse.dblclick(p.x, p.y, { delay: 90 });
+  }
+  async function shiftDrag(a, b) {
+    const from = await world(a), to = await world(b);
+    await page.keyboard.down("Shift");
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    await page.mouse.up();
+    await page.keyboard.up("Shift");
   }
   async function save(name) {
     await page.evaluate(async () => {
@@ -101,9 +110,49 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await undoRedo();
     await save("Gang");
     checks.push("Native 1×3 polygon corridor closes as one walled, reversible Building");
+
+    await open("Kreuzung");
+    await chooseTool("Polygonraum");
+    await click({ x: 1, y: 1 });
+    await click({ x: 6, y: 1 });
+    await shiftDrag({ x: 6, y: 4 }, { x: 5, y: 3 });
+    await shiftDrag({ x: 4, y: 6 }, { x: 3, y: 5 });
+    await click({ x: 1, y: 6 });
+    await double({ x: 1, y: 6 });
+    await count(1);
+    const crossing = await building();
+    assert.deepEqual(crossing.polygons.map(p => p.outer.length), [14, 8]);
+    assert.ok(crossing.wallWidth > 0);
+    assert.ok(Math.abs(crossing.polygons[0].outer[0].x * 256 - 1510) <= 1);
+    await page.screenshot({ path: path.join(out, "consecutive-shift-crossing.png") });
+    await undoRedo();
+    await save("Kreuzung");
+    checks.push("Consecutive Shift gestures store the native two crossing contours and walls");
+
+    await open("Snap");
+    await chooseTool("Raum");
+    assert.equal(await page.evaluate(() =>
+      app.workspace.activeLeaf.view.editor.snapEnabled), true);
+    await heldShape({ x: 1.46875, y: 1.46875 },
+      { x: 2.46875, y: 2.46875 }, "(1, 1)", "snap-below-half.png");
+    await heldShape({ x: 4.5, y: 4.5 }, { x: 5.5, y: 5.5 },
+      "(1, 1)", "snap-at-half.png", 2);
+    const snapped = (await state()).document.entities
+      .filter(e => e.kind === "building").map(e => e.polygons[0].outer);
+    assert.deepEqual(snapped, [
+      [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 1, y: 2 }],
+      [{ x: 5, y: 5 }, { x: 6, y: 5 }, { x: 6, y: 6 }, { x: 5, y: 6 }],
+    ]);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await count(1);
+    await page.keyboard.press("Control+y");
+    await count(2);
+    await save("Snap");
+    checks.push("Positive Snap rounds to the nearest field, including the native half-field tie");
   }
   async function reopen() {
-    for (const name of ["Rechteck", "Ellipse", "Gang"]) {
+    for (const name of ["Rechteck", "Ellipse", "Gang", "Kreuzung", "Snap"]) {
       await open(name);
       const saved = JSON.parse(fs.readFileSync(
         path.join(qa, "phase1-form-" + name + "-saved.json"), "utf8"));

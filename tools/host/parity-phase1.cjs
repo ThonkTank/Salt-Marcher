@@ -302,7 +302,8 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await count(1);
     const multi = (await buildings())[0];
     assert.ok(multi.wallWidth > 0);
-    assert.ok(multi.polygons[0].outer.length >= 37);
+    assert.equal(multi.polygons.length, 1);
+    assert.equal(multi.polygons[0].outer.length, 39);
     assert.ok(!multi.polygons[0].outer.some(p => p.x === 5 && p.y === 4));
     for (const [x, y] of [[1523, 295], [811, 1424]])
       assert.ok(multi.polygons[0].outer.some(p =>

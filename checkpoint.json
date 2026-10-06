@@ -773,20 +773,20 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_candidate_shapes_and_gestures_host_passed_native_gaps_open",
+    "status": "phase1_candidate_host_passed_review_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Phase 1: native Selbstschnitt-Bereinigung für Shift-Mehrkurven und exakte Snap-Toleranz gezielt messen und angleichen; danach separater Reviewlauf",
-    "note": "Rechteckmaß, gelbe Formvorschau, fünf ganzzahlige Ellipsengrößen und ein 1×3-Polygongang sind am Original und im isolierten Host paarweise belegt. Der finale Kandidat besteht 118 Kerntests, Typprüfung, Build, zwei Host-Editfolgen und deren Frischstarts.",
-    "candidateBuildSha256": "fa495d6b917a8b1d14ae0663efee1ffd469c1ed085cdea79be8b5b1f12c424db",
-    "candidateCoreTests": 118,
+    "nextRun": "Phase 1 separater Reviewlauf: 13 DD-011-Unterfälle gegen Roadmap, Plan und Endstand prüfen",
+    "note": "Rechteck, Ellipse, Polygon, aufeinanderfolgende Shift-Züge mit Selbstschnitt-Bereinigung und positives Snap-Runden sind direkt am Original und im isolierten Host belegt. Der Kandidat besteht 119 Kerntests, Typprüfung, Build, zwei Host-Editfolgen und deren Frischstarts.",
+    "candidateBuildSha256": "17c48aa0e0d00a40bd20a34a112808484d7e4857b08fe86d4f586d5cf4f2d64d",
+    "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
-    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-shapes-20261006/evidence/1791321030760-parity-phase1-edit/result.json",
-    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-shapes-20261006/evidence/1791321249986-parity-phase1-reopen/result.json",
-    "open": "Selbstschneidende Mehrkurven werden nativ anders bereinigt; exakte Snap-Toleranz und nicht ganzzahlige Ellipsenabtastung ungemessen. Phase-1-Review offen; physische Eingabe folgt in Phase 7.",
-    "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-shapes-20261006/evidence/1791320990534-parity-phase1-shapes-edit/result.json",
-    "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-shapes-20261006/evidence/1791321015760-parity-phase1-shapes-reopen/result.json"
+    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
+    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
+    "open": "Separater Phase-1-Review offen. Negative Snap-Koordinaten und der beobachtete Snap-Zustand nach Strg+S sind ungeklärt; Boden-/Wandstil folgt in Phase 3, physische Eingabe in Phase 7.",
+    "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
+    "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json"
   }
 }

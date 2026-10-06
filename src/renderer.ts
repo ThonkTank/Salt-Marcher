@@ -1662,6 +1662,7 @@ export class MapRenderer {
     fill = false,
     erase = false,
     markers: readonly Point[] = points,
+    nativeBuilding = false,
   ): void {
     const g = this.preview;
     g.clear();
@@ -1671,9 +1672,9 @@ export class MapRenderer {
     for (let index = 1; index < path.length; index++)
       g.lineTo(path[index]!.x, path[index]!.y);
     if (closed) g.closePath();
-    const color = erase ? 0xc93c3c : 0x008da8;
-    if (fill && closed) g.fill({ color, alpha: 0.15 });
-    g.stroke({ color, width: 2 / this.camera.scale });
+    const color = erase ? 0xc93c3c : nativeBuilding ? 0xffdc00 : 0x008da8;
+    if (fill && closed && !nativeBuilding) g.fill({ color, alpha: 0.15 });
+    g.stroke({ color, width: (nativeBuilding ? 1.5 : 2) / this.camera.scale });
     for (const point of markers)
       g.circle(point.x, point.y, 3 / this.camera.scale).fill(color);
     this.invalidate();

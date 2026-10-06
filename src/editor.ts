@@ -1854,6 +1854,7 @@ export class DungeonEditor {
       closed,
       erase,
       vertices,
+      true,
     );
   }
   private update(e: PointerEvent): void {
@@ -2729,6 +2730,7 @@ export class DungeonEditor {
     try {
       const result = await worker.request<ComposeBuildingResult>({
         kind: "compose-building",
+        nativeBuilding: category === "floor",
         sources: sources.map((source) => ({
           id: source.id,
           polygons: source.polygons,

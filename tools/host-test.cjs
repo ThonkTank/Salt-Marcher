@@ -319,7 +319,7 @@ function prepare() {
       entities: [],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     }, null, 2));
-    for (const name of ["Form-Rechteck", "Form-Ellipse", "Form-Gang"]) {
+    for (const name of ["Form-Rechteck", "Form-Ellipse", "Form-Gang", "Form-Kreuzung", "Form-Snap"]) {
       fs.writeFileSync(vault + "/Dungeons/Parity/" + name + ".dungeon", JSON.stringify({
         format: "dungeon-map", version: 3, id: "parity-phase1-" + name,
         settings: { name, width: 8, height: 8, feetPerField: 5,

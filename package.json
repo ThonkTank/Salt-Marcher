@@ -9,11 +9,13 @@
     "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs tests/migrate-building-v2.test.mjs"
   },
   "dependencies": {
+    "clipper-lib": "^6.4.2",
     "pixi.js": "8.22.0",
     "pngjs": "^7.0.0",
     "polygon-clipping": "^0.15.7"
   },
   "devDependencies": {
+    "@types/clipper-lib": "^6.4.0",
     "@types/node": "^22.0.0",
     "@types/pngjs": "^6.0.5",
     "esbuild": "^0.25.0",

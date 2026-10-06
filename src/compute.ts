@@ -1,4 +1,5 @@
 import clipping, { type MultiPolygon, type Pair } from "polygon-clipping";
+import ClipperLib from "clipper-lib";
 import { type Point, type Polygon, type Light } from "./model";
 
 export interface Segment {
@@ -21,6 +22,7 @@ export interface ComposeBuildingRequest {
   sources: readonly FloorSource[];
   shape?: readonly Polygon[];
   stroke?: { readonly points: readonly Point[]; readonly radius: number };
+  nativeBuilding?: boolean;
   erase: boolean;
 }
 export type ComposeBuildingResult =
@@ -65,6 +67,54 @@ const polygons = (value: MultiPolygon): Polygon[] =>
     outer: ringPoints(rings[0]!),
     holes: rings.slice(1).map(ringPoints),
   }));
+const cross = (a: Point, b: Point): number => a.x * b.y - a.y * b.x;
+function ringSelfIntersects(ring: readonly Point[]): boolean {
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!, b = ring[(i + 1) % ring.length]!,
+      ab = { x: b.x - a.x, y: b.y - a.y };
+    for (let j = i + 2; j < ring.length; j++) {
+      if (i === 0 && j === ring.length - 1) continue;
+      const c = ring[j]!, d = ring[(j + 1) % ring.length]!,
+        cd = { x: d.x - c.x, y: d.y - c.y },
+        determinant = cross(ab, cd);
+      if (Math.abs(determinant) < 1e-12) continue;
+      const ac = { x: c.x - a.x, y: c.y - a.y },
+        alongAB = cross(ac, cd) / determinant,
+        alongCD = cross(ac, ab) / determinant;
+      if (alongAB > 1e-8 && alongAB < 1 - 1e-8 &&
+          alongCD > 1e-8 && alongCD < 1 - 1e-8) return true;
+    }
+  }
+  return false;
+}
+function normalizeCrossingBuilding(polygon: Polygon): Polygon[] {
+  if (polygon.holes.length || !ringSelfIntersects(polygon.outer)) return [polygon];
+  // Dungeondraft's Godot 3.4 polygon operation uses Clipper 6 at 10^5
+  // precision on a 256-pixel field. The serialized contour is pixel-rounded.
+  const clipper = new ClipperLib.Clipper();
+  const path = polygon.outer.map(point => ({
+    X: Math.round(point.x * 256) * 100000,
+    Y: Math.round(point.y * 256) * 100000,
+  }));
+  if (!clipper.AddPath(path, ClipperLib.PolyType.ptSubject, true)) return [polygon];
+  const tree = new ClipperLib.PolyTree();
+  if (!clipper.Execute(ClipperLib.ClipType.ctUnion, tree,
+    ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftEvenOdd))
+    return [polygon];
+  const point = ({ X, Y }: ClipperLib.IntPoint): Point =>
+    ({ x: X / 25600000, y: Y / 25600000 });
+  const result: Polygon[] = [];
+  const visit = (node: ClipperLib.PolyNode): void => {
+    if (!node.IsHole()) result.push({
+      outer: node.Contour().map(point),
+      holes: node.Childs().filter(child => child.IsHole())
+        .map(child => child.Contour().map(point)),
+    });
+    node.Childs().forEach(visit);
+  };
+  tree.Childs().forEach(visit);
+  return result.length ? result : [polygon];
+}
 function signedArea(ring: readonly Pair[]): number {
   let value = 0;
   for (let index = 0; index < ring.length; index++) {
@@ -143,7 +193,9 @@ export function composeBuilding(
         radius: request.stroke.radius,
         erase: false,
       })
-    : [...request.shape!];
+    : request.nativeBuilding
+      ? request.shape!.flatMap(normalizeCrossingBuilding)
+      : [...request.shape!];
   const brushGeometry = multiPolygon(brush);
   if (!brushGeometry.length)
     return request.erase

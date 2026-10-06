@@ -48,7 +48,7 @@ export function ellipse(a: Point, b: Point, count = 32): Point[] {
 export function buildingEllipse(a: Point, b: Point): Point[] {
   const count = 4 * Math.max(
     7,
-    Math.round(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)),
+    Math.floor(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)),
   );
   return ellipse(a, b, count);
 }
@@ -66,12 +66,17 @@ export function buildingPolygonPoints(
   if (!vertices.length || !curves.length) return [...vertices];
   const byIndex = new Map(curves.map((curve) => [curve.index, curve.handle]));
   const result: Point[] = [vertices[0]!];
+  let nextControlsCurve = false;
   for (let index = 1; index < vertices.length; index++) {
-    const handle = byIndex.get(index);
     // After a Shift curve, the following click controls its bend. It becomes a
-    // contour vertex only if the polygon is closed at that point.
-    if (!handle && byIndex.has(index - 1) && index + 1 < vertices.length)
+    // contour vertex only if the polygon is closed at that point. A second
+    // Shift-drag at that position still controls the first curve.
+    if (nextControlsCurve && index + 1 < vertices.length) {
+      nextControlsCurve = false;
       continue;
+    }
+    nextControlsCurve = false;
+    const handle = byIndex.get(index);
     const start = result[result.length - 1]!,
       end = vertices[index]!;
     if (!handle) {
@@ -103,6 +108,7 @@ export function buildingPolygonPoints(
       });
     }
     result.push(end);
+    nextControlsCurve = true;
   }
   return result;
 }
