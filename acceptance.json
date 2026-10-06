@@ -12631,21 +12631,23 @@
         "id": "DD-023.07",
         "parent": "DD-023",
         "area": "material",
-        "path": "Terrain > Water Brush > Shift/invertAction (API-Kandidat)",
-        "command": "Shift/invertAction (API-Kandidat)",
+        "path": "Terrain > Water Brush > Polygon > Shift-Bogenpunkt (1.2.0.1-Quellkandidat)",
+        "command": "Shift-Bogenpunkt im Wasserpolygon",
         "scope": "required",
         "original": {
-          "sequence": "ShapeTool-API nennt Shift/invertAction beim Zeichnen.",
-          "options": "Shift/invertAction (API-Kandidat)",
-          "effect": null,
-          "version": null,
+          "sequence": "Shift bei einem freien Polygonpunkt halten und Punkt/Bogen gegen denselben Zug ohne Shift vergleichen.",
+          "options": "Shift im Polygonmodus; Alt ist die eigenständige Entfernen-Geste DD-023.12.",
+          "effect": "Die installierte 1.2.0.1-Assembly führt Shift über MarkPolyPoint/EditArcPoint/ArcSegments; sichtbare Bogenwirkung und gespeicherte Punktdaten sind noch nicht direkt gemessen.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; installierte Assembly statisch geprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/ShapeTool/"
-          ]
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/ShapeTool/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-07-SHIFT-INVERT-STATIC.md"
+          ],
+          "gap": "Direkte Originalprobe mit freiem Wasserpolygon, sichtbarer Bogen-/Punktwirkung, Save und Frischstart fehlt."
         },
-        "target": "Native Entfernungsgeste falls aktiv.",
+        "target": "Tatsächlich beobachtete Shift-Bogenpunktbedienung im Wasserpolygon gleichwertig; Detailwirkung nach Originalprobe festlegen.",
         "baseline": {
           "editor": {
             "sequence": "Host Alt radiert; Shift-Wirkung für Wasser nicht gesichert.",
@@ -12659,9 +12661,9 @@
           },
           "comparison": {
             "status": "offen",
-            "difference": "Nur API-Kandidat, native 1.2-Wirkung nicht beobachtet.",
-            "gap": "Shift in Formmodi direkt prüfen.",
-            "target": "Native Entfernungsgeste falls aktiv.",
+            "difference": "Die bisherige Shift-Radieren-Zielangabe war ein unbestätigter API-Kandidat; die Referenzversion bindet Radieren an Alt und führt Shift in die Bogenpunktbearbeitung.",
+            "gap": "Original-Polygon mit Shift-Zwischenpunkt und Kontrollzug ohne Shift grafisch und in gespeicherter Karte vergleichen.",
+            "target": "Tatsächlich beobachtete Shift-Bogenpunktbedienung im Wasserpolygon gleichwertig; Detailwirkung nach Originalprobe festlegen.",
             "effort": "unklar"
           },
           "checks": {
@@ -12679,8 +12681,9 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+          "gap": "Originale Shift-Bogenpunktwirkung und fallgleicher Hostlauf offen; Alt-Radieren wird unter DD-023.12 geprüft."
+        },
+        "inventoryNote": "Quellenkorrektur 2026-10-06: Shift-Radieren war nur ein API-Kandidat; installierte 1.2.0.1-Assembly bindet Radieren an Alt (DD-023.12) und führt Shift im Polygonmodus zu Bogenpunkten. /home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-07-SHIFT-INVERT-STATIC.md"
       },
       {
         "id": "DD-023.08",
