@@ -5836,7 +5836,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/18-wall-tool-colored.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01612-15-WALL-COLOR-JOINT-LOOP-UNDO-STATIC.md"
           ],
           "gap": "Wall-Color färbte die Galerie-Vorschau; Wirkung auf eine vorhandene oder neu gezeichnete Kartenwand ist nicht isoliert."
         },
@@ -5874,7 +5875,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Fallbefund im Dossier; fallgleicher aktueller Hostlauf und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5908,7 +5909,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-joint-ui.png",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-joint-right.png",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01612-15-WALL-COLOR-JOINT-LOOP-UNDO-STATIC.md"
           ]
         },
         "target": "Native Eckverbindungen mit Speicherung.",
@@ -5945,7 +5947,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Fallbefund im Dossier; fallgleicher aktueller Hostlauf und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -5972,13 +5974,18 @@
         "original": {
           "sequence": "Punktfolge an Anfang schließen.",
           "options": "Datei kennt loop.",
-          "effect": "Die Originaldatei enthält eine geschlossene unabhängige Wand (loop) mit gebundenem Portal.",
+          "effect": "Älteres Originalbild zeigt einen möglichen Wand-Loop; ein gespeicherter geschlossener Wandzug mit gebundenem Portal ist nicht belegt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-loops.png",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01612-15-WALL-COLOR-JOINT-LOOP-UNDO-STATIC.md"
+          ],
+          "gap": "Die früher zitierte Karte enthält fünf Wände mit loop:false und keine Portale. Geschlossenen Zug und Portalbindung direkt neu messen.",
+          "counterEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01612-15-WALL-COLOR-JOINT-LOOP-UNDO-STATIC.md"
           ]
         },
         "target": "Geschlossene eigenständige Wand wie Original.",
@@ -5996,7 +6003,7 @@
           "comparison": {
             "status": "offen",
             "difference": "Gleiche Loop-Erstellung und Portalfolge nicht belegt.",
-            "gap": "Direkter geschlossen/Undo/Redo/Reopen-Test.",
+            "gap": "Original-Loop und Portalfolge neu messen; dann identische Hostfolge mit Undo/Redo und Frischöffnung.",
             "target": "Geschlossene eigenständige Wand wie Original.",
             "effort": "unklar"
           },
@@ -6015,7 +6022,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Fallbefund im Dossier; fallgleicher aktueller Hostlauf und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -6030,7 +6037,8 @@
               "reopen": "open"
             }
           }
-        }
+        },
+        "inventoryNote": "Belegkorrektur 2026-10-06: own-wall-joint-modes.dungeondraft_map belegt DD-016.14 nicht; loop ist bei allen fünf Wänden false, portals leer."
       },
       {
         "id": "DD-016.15",
@@ -6047,7 +6055,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-loops.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wall-loops.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01612-15-WALL-COLOR-JOINT-LOOP-UNDO-STATIC.md"
           ]
         },
         "target": "Wand und Portale gemeinsam löschen/wiederherstellen.",
@@ -6084,7 +6093,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Fallbefund im Dossier; fallgleicher aktueller Hostlauf und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": null,
@@ -12699,7 +12708,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
           ]
         },
         "target": "Tiefe Farbe samt Alpha gleichwertig.",
@@ -12736,7 +12746,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12753,7 +12763,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
           ]
         },
         "target": "Flachwasserfarbe im Wasserverlauf.",
@@ -12790,7 +12801,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12807,7 +12818,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
           ]
         },
         "target": "Kontinuierlicher nativ vergleichbarer Farbverlauf.",
@@ -12844,7 +12856,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
         }
       },
       {
@@ -12862,7 +12874,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-DISABLE-BORDER-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-DISABLE-BORDER-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-08-11-WATER-COLOR-BORDER-STATIC.md"
           ]
         },
         "target": "Rand ausblenden ohne übrige Wasseränderung.",
@@ -12899,7 +12912,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Kein kontrolliertes Border-ON/OFF-Paar; Wirkung und Hostvergleich offen."
+          "gap": "Original-Assembly/Farb- und Reglerzustand im Dossier; identischer Grafik-/Datei-/Historyvergleich und installierter Endstand offen."
         }
       },
       {
@@ -19059,7 +19072,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md"
           ],
           "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
@@ -19088,32 +19102,34 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "90b3f9445f3c2ce89b7613e8faf1ab1e2815f831d56d5ae982ff07097c4d9bcc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/dd02622-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/dd02622-steps.json"
+          ],
+          "gap": "Original-Kartenwert nach genau einem Wheel-Tick, Touchpad-Grenzen und installierter Endstand offen.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera.",
+            "state": "partial",
+            "observation": "Isolierter Editier- und Frischstartlauf bestanden; Kamerazustand, Werkzeugwert, Platzierung, Undo/Redo und gespeicherte Karte geprüft.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/dd02622-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/dd02622-steps.json"
             ],
-            "gap": "Edit: Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Mausrad-Drehung ist nicht gemessen; Host-Wheel navigiert die Kamera. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
+            "gap": "Original-Kartenwert nach genau einem Wheel-Tick, Touchpad-Grenzen und installierter Endstand offen."
           }
         }
       },
@@ -19130,7 +19146,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md"
           ],
           "gap": "Native Speicherwirkung dieses Modifiers bzw."
         },
@@ -19159,32 +19176,34 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "90b3f9445f3c2ce89b7613e8faf1ab1e2815f831d56d5ae982ff07097c4d9bcc",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/dd02623-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/dd02623-steps.json"
+          ],
+          "gap": "Original-Range-Grenzen und Original-Kartenwert nach genau einem Alt-Wheel-Tick sowie installierter Endstand offen.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt.",
+            "state": "partial",
+            "observation": "Isolierter Editier- und Frischstartlauf bestanden; Kamerazustand, Werkzeugwert, Platzierung, Undo/Redo und gespeicherte Karte geprüft.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/dd02623-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/dd02623-steps.json"
             ],
-            "gap": "Edit: Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Alt+Mausrad-Scale ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
+            "gap": "Original-Range-Grenzen und Original-Kartenwert nach genau einem Alt-Wheel-Tick sowie installierter Endstand offen."
           }
         }
       },
