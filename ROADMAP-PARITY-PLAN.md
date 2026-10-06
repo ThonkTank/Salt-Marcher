@@ -30,6 +30,8 @@ Testdaten bleiben unter `/home/aaron/.cache/dungeon-native-qa/`. Produktive Dung
 
 ## Phase 2 – Konturpunkte bearbeiten
 
+Der eigene Planlauf vom 07.10.2026 hat den [konkreten Phase-2-Plan](ROADMAP-PARITY-PHASE2-PLAN.md) mit Ausgangsbelegen, Messreihenfolge, technischem Weg und Phasentor abgelegt. Der nächste Arbeitslauf ist die Umsetzung; der Review und eine mögliche Nachbesserung folgen jeweils getrennt.
+
 **Offene Punkte:** `DD-012.01–.03` brauchen Punktmodus, Trefferzone, Eck- und Ellipsenpunktzug mit laufender Vorschau. `DD-013.01–.03` brauchen die genaue Delete-/Rücktasten-Vorbedingung und die native Mindestpunktzahl; der jüngere Delete-Befund widerspricht einem älteren Versuch und darf nicht aufgelöst behauptet werden. `DD-014.01–.02` brauchen Einfügepunkt an Kanten, Wand- und Portalfolge einschließlich Neuöffnung. Der ältere Esc-Versuch während eines gehaltenen Punktzugs war kein erfolgreicher Abbruch; dessen Wirkung bleibt Messfrage.
 
 **Technik:** Punkt-Treffer und Vorschau in `src/editor.ts`/`src/renderer.ts`, Konturersatz und Topologieprüfung in `src/geometry.ts`, atomare Building- und Portaländerung über `planBuildingContourMutation` in `src/commands.ts`. Erst die Originalmessung legt Delete und Escape fest. Gezielt testen: Ecke verschieben, Ellipsenpunkt verschieben, Kante einfügen, Punkt entfernen, Drei-Punkte-Grenze, gebundenes Portal, Undo/Redo und Neuöffnung.

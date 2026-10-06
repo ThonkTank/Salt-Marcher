@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-1-Aufräum-Review bestanden; Phase-2-Planlauf als Nächstes",
+  "phase": "Folge-Roadmap: Phase-2-Plan abgelegt; gesonderter Umsetzungslauf als Nächstes",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -153,7 +153,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 1 Nachbesserung umsetzen: P15–P17-Handle-Vorschau direkt vergleichen, Snap nach Strg+S im Original isolieren, Raum/Key/Portal auf aktuellem Kandidaten im fokussierten Host mit Frischstart prüfen; nur bestätigte Produktabweichungen korrigieren.",
+  "next": "Phase 2 in einem eigenen Lauf nach ROADMAP-PARITY-PHASE2-PLAN.md umsetzen: offene Originalfragen gezielt messen, bestätigte Punktgesten und Boden-/Wand-/Portalfolge implementieren, isoliert testen; danach eigener Reviewlauf.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -773,13 +773,14 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_cleanup_review_passed_phase2_plan_next",
+    "status": "phase2_plan_ready_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-2-Planlauf zu DD-012 bis DD-014: aktuelle Original- und Hostbelege für Punktziehen, Einfügen, Delete/Rücktaste und Portalfolge prüfen, ungeklärte Originalregeln gezielt messen und einen konkreten technischen Phasenplan neben ROADMAP-PARITY.md ablegen. Noch keine Umsetzung oder Phase-2-Abnahme in diesem Planlauf.",
-    "note": "Getrennter Phase-1-Aufräum-Review bestanden: Diff beseitigt doppelten PathDraft-Abschluss und Fallback-Guards; 406 alte/neue Ringresultate identisch, Benchmark erneut 14,1- bzw. 30,9-fach schneller. Typprüfung, 119 Tests, gleicher Build-Hash, alle sieben Hostbelege, Enter-Zusatzprobe und Key-Bytes bestätigt. Produktiver Vault-Build unverändert.",
+    "nextRun": "Eigener Phase-2-Umsetzungslauf nach ROADMAP-PARITY-PHASE2-PLAN.md: zuerst Delete-Action, Dreipunkt-Umriss, Trefferzone, Escape und fehlende Frischöffnungen gezielt im Original messen; dann bestätigte Regeln für Punktmodus, Ziehen, Einfügen, Entfernen und Boden-/Wand-/Portalvorschau implementieren und auf isoliert installiertem Endstand prüfen. Der getrennte Review entscheidet erst danach das Phasentor.",
+    "note": "Getrennter Phase-1-Aufräum-Review bestanden. Phase-2-Plan für DD-012 bis DD-014 abgelegt; R1–R6 und alte Kandidatenbelege gegen den jetzigen Quellstand abgegrenzt. Delete-Tastenzustellung und Dreipunkt-Umriss bleiben Originalmessfragen, keine Produktregel. Produktiver Vault-Build unverändert.",
+    "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",

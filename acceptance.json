@@ -48021,6 +48021,17 @@
       "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3.",
       "next": "Eigener Aufräum-Reviewlauf: Diff, Performance, vollständige Hostbelege und Listener-Lebensdauer prüfen und erst dort das Aufräumtor entscheiden."
     },
+    "phase2Plan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
+      "assignedCases": ["DD-012.01", "DD-012.02", "DD-012.03", "DD-013.01", "DD-013.02", "DD-013.03", "DD-014.01", "DD-014.02"],
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "currentCandidateCommit": "93507a5",
+      "currentCandidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
+      "openOriginalQuestions": "Delete-Action-Zustellung, Dreipunkt-Umriss bei Einzel-/Mehrteil-/Lochkarte, Trefferzonen, Escape bei gehaltenem Punkt-/Kantenzug, Ellipsen- und einfache Einfüge-Frischöffnung sowie weitere Portalnähe.",
+      "decision": "Keine der acht Anforderungen durch diesen Plan als implementiert oder abgenommen markieren. Umsetzung, Review, mögliche Nachbesserung und Aufräumen bleiben getrennte Arbeitsläufe."
+    },
     "phase1CleanupReview": {
       "date": "2026-10-07",
       "result": "gate_passed",
