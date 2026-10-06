@@ -23054,15 +23054,20 @@
         "command": "Range",
         "scope": "required",
         "original": {
-          "sequence": "Range vor Platzierung setzen",
-          "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Light Tool wählen, Range 5 auf 5,5 setzen, Vorschau/Platzierung, Undo/Redo, speichern und frisch öffnen.",
+          "options": "Eingebauter Light Style 1; 8×8, 100 % Zoom; keine Mods/Custom-Pakete.",
+          "effect": "Start 5; Minimum 0,5, Maximum 20, Eingabeschritt 0,1. Gespeichertes Licht hat range 5,5 und ist nach Redo/Frischstart bytegleich; seine Vorschau ist sichtbar.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-123951-244591",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-124428-256491"
+          ],
+          "gap": "Nominale Range-Geometrie belegt; exakte Textur-/Schattenpixelwirkung und andere Lichtstile offen."
         },
-        "target": "Nach Originalmessung: Range steuert gespeicherte Reichweite und sichtbaren Lichtkreis bei gleichem Wert.",
+        "target": "Range 5 ist der Start; 0,5–20 und 0,1 Eingabeschritt. Für die drei eingebauten 1024²-Lichtstile entspricht Editor-Radius in Feldern der nativen Range. Pixelwirkung separat prüfen.",
         "baseline": {
           "editor": {
             "sequence": "Beleuchtung > Lichtreichweite in Feldern",
@@ -23087,15 +23092,20 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/objekte/light-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
         }
       },
       {
@@ -23627,15 +23637,20 @@
         "command": "Mausrad Range",
         "scope": "required",
         "original": {
-          "sequence": "Mausrad laut nativer Fußzeile für Range",
-          "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Über der Karte Rad auf/ab und Shift+Rad auf/ab; jeweils Range und Vorschau prüfen.",
+          "options": "Eingebauter Light Style 1; 8×8, 100 % Zoom; keine Mods/Custom-Pakete.",
+          "effect": "Rad: 5→5,5→5; Shift+Rad: 5→5,1→5. 0,5 und 20 sind Anschläge. Vorschau ändert ihren beleuchteten Ausschnitt; Range 5,5 bleibt in der Karte erhalten.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-123951-244591",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-124428-256491"
+          ],
+          "gap": "Nominale Range-Geometrie belegt; exakte Textur-/Schattenpixelwirkung und andere Lichtstile offen."
         },
-        "target": "Nach Originalmessung: Mausrad verändert die Reichweite in denselben Schritten und der Klick speichert den neuen Wert.",
+        "target": "Über dem Lichtwerkzeug ändern Radschritte die Range um ±0,5, mit Shift um ±0,1, begrenzt auf 0,5–20; Vorschau und gespeicherte Lichtwirkung folgen.",
         "baseline": {
           "editor": {
             "sequence": "Beleuchtung > numerische Lichtreichweite",
@@ -23660,15 +23675,20 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/objekte/light-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
         }
       },
       {
@@ -23679,15 +23699,20 @@
         "command": "Alt+Mausrad Rotate",
         "scope": "required",
         "original": {
-          "sequence": "Alt+Mausrad laut nativer Fußzeile für Rotate",
-          "options": null,
-          "effect": null,
-          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Über der Karte Alt+Rad auf/ab, Vorschau, Platzierung, Undo/Redo und Frischstart prüfen.",
+          "options": "Eingebauter Light Style 1; 8×8, 100 % Zoom; keine Mods/Custom-Pakete.",
+          "effect": "Alt+Rad rotiert um ±5° mit Wrap −180°…180°; ein Gegentick stellt die Vorschau pixelgleich wieder her. Nach +5° steht in der Karte rotation 0,087266 rad; Undo entfernt, Redo/Frischstart erhält sie.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkte Originalprobe 2026-10-06",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-light-controls.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-123951-244591",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd029-wheel-native-20261006/runs/20261006-124428-256491"
+          ],
+          "gap": "Nominale Range-Geometrie belegt; exakte Textur-/Schattenpixelwirkung und andere Lichtstile offen."
         },
-        "target": "Nach Originalmessung: Alt+Mausrad ändert die Ausrichtung der Lichtvorschau und speichert dieselbe Rotation beim Platzieren.",
+        "target": "Alt+Rad ändert die Lichtrichtung um ±5° mit Wrap; die Vorschau reagiert, Platzierung/Undo/Redo/Speichern erhalten die Rotation.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -23712,15 +23737,20 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/objekte/light-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-02-13-14-ORIGINAL-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-RANGE-UNIT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Direkter Originalbeleg vorhanden; integrierter Editor-Hostvergleich und installierte Endabnahme offen."
         }
       },
       {
