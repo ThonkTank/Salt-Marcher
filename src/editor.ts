@@ -278,6 +278,7 @@ export class DungeonEditor {
   private unsub?: () => void;
   private assetUnsub?: () => void;
   private gesture?: Gesture;
+  private objectPreviewPoint?: Point;
   private tool: Tool = "select";
   private previousTool?: Tool;
   private previousToolButton: HTMLButtonElement;
@@ -432,7 +433,10 @@ export class DungeonEditor {
       host.notice,
       host.assets,
       host.assetUrl,
-      host.persistToolDefaults,
+      () => {
+        host.persistToolDefaults?.();
+        this.refreshObjectPreview();
+      },
       (id) => this.adoptFloor(id),
       (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
       (id) => this.renderer.clearObjectColorPreview(id),
@@ -936,7 +940,12 @@ export class DungeonEditor {
     );
     canvas.addEventListener("pointercancel", () => this.cancel(), options);
     canvas.addEventListener("pointerleave", () => {
-      if (!this.gesture && this.tool === "prefab") this.renderer.cancelPreview();
+      if (this.gesture) return;
+      if (this.tool === "prefab") this.renderer.cancelPreview();
+      if (this.tool === "object") {
+        this.objectPreviewPoint = undefined;
+        this.renderer.clearObjectPreview();
+      }
     }, options);
     canvas.addEventListener(
       "lostpointercapture",
@@ -1022,6 +1031,8 @@ export class DungeonEditor {
       () => {
         this.space = false;
         this.cancel();
+        this.objectPreviewPoint = undefined;
+        this.renderer.clearObjectPreview();
       },
       options,
     );
@@ -1083,6 +1094,10 @@ export class DungeonEditor {
       this.referenceAlpha,
       this.currentAlpha,
     );
+  }
+  private refreshObjectPreview(): void {
+    if (this.tool === "object" && this.objectPreviewPoint)
+      this.renderer.previewObject(this.objectPreviewPoint, this.settings.object);
   }
   private refreshProperties(): void {
     this.properties?.render(this.tool, this.selected, this.floor.value);
@@ -1381,6 +1396,8 @@ export class DungeonEditor {
   private setTool(tool: Tool): void {
     this.run(() => this.commitNote());
     this.cancel();
+    this.objectPreviewPoint = undefined;
+    this.renderer.clearObjectPreview();
     if (tool !== this.tool) this.previousTool = this.tool;
     this.tool = tool;
     this.previousToolButton.disabled =
@@ -1784,6 +1801,13 @@ export class DungeonEditor {
   private update(e: PointerEvent): void {
     const g = this.gesture;
     if (!g) {
+      if (this.tool === "object") {
+        this.objectPreviewPoint = this.snap(
+          this.renderer.toWorld(this.renderer.local(e)),
+        );
+        this.refreshObjectPreview();
+        return;
+      }
       if (this.tool === "prefab") {
         this.renderer.previewBrush(
           [this.snap(this.renderer.toWorld(this.renderer.local(e)))],
@@ -3103,6 +3127,7 @@ export class DungeonEditor {
       };
       this.host.persistToolDefaults?.();
       this.refreshProperties();
+      this.refreshObjectPreview();
       return;
     }
     if (this.tool === "object" && (e.key === "[" || e.key === "]")) {
@@ -3114,6 +3139,7 @@ export class DungeonEditor {
       };
       this.host.persistToolDefaults?.();
       this.refreshProperties();
+      this.refreshObjectPreview();
       return;
     }
     if (
@@ -3129,6 +3155,7 @@ export class DungeonEditor {
       };
       this.host.persistToolDefaults?.();
       this.refreshProperties();
+      this.refreshObjectPreview();
       return;
     }
     if (e.key === "Enter" && this.pathDraft) {

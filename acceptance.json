@@ -933,7 +933,20 @@
       "verifiedScope": "Objekte wählen, platzieren, verschieben, drehen, skalieren, färben, sperren und gruppieren ist nativ geprüft. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
       "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
+      "phase2": {
+        "status": "installed_host_passed_strict_parity_partial",
+        "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+        "verifiedScope": "qa_chest im neuen Raum 16 mit Cursorbild, einem Klick, roomId, Undo/Redo, V3-Speicherung und frischem Obsidian-Prozess geprüft.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
+          "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
+          "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+        ],
+        "open": "Vollständige Dungeondraft-Objektbibliothek, identisches Original-/Host-Asset, weitere Optionen und physische Eingabe bleiben offen."
+      }
     },
     {
       "id": "DD-027",
@@ -19580,23 +19593,32 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/editor.ts",
             "src/renderer.ts",
-            "src/features/objekte/object-cursor-preview.ts"
+            "src/features/objekte/object-cursor-preview.ts",
+            "tools/host-test.cjs"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-CURSOR-PREVIEW.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Hostpaarung für Assetbild, Vorschau, Abbruch, Shadow, History und Frischöffnung offen. Neuer Fortsetzungs-Hook hält Objektwerkzeug und gleiche Assetvorschau nach Klick aktiv; isolierter Host und installierter Endstand hierzu offen.",
+          "state": "partial",
+          "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+          ],
+          "gap": "Cursorbild für qa_chest und Verlassen der Karte im installierten Host belegt; dieselbe Atlas-Textur und vollständige native Vorschau-/Modifierfolge sind nicht gepaart.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.",
@@ -19614,7 +19636,8 @@
               "edit": "open",
               "reopen": "open"
             }
-          }
+          },
+          "phase2Scope": "Ein Paketobjekt in Raum 16: Wahl, sichtbare Cursorvorschau, Klick, Undo/Redo, Speicherung und Frischöffnung; produktive Dungeondateien bytegleich."
         }
       },
       {
@@ -19662,28 +19685,38 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/editor.ts",
             "src/model.ts",
             "src/properties.ts",
             "src/features/objekte/native-object-placement.ts",
             "src/features/objekte/native-object-catalog.ts",
-            "src/assets.ts"
+            "src/assets.ts",
+            "src/renderer.ts",
+            "tools/host-test.cjs"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-19-NATIVE-DEFAULTS.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-19-NACH-OBJEKTKLICK.md",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Vorhandener Hostbeleg betrifft Paketobjekte; native Atlas-Größe, Halbfeld-Snap, Layer und Bildwirkung am aktuellen Integrationsstand offen. Neuer Fortsetzungs-Hook hält Objektwerkzeug und gleiche Assetvorschau nach Klick aktiv; isolierter Host und installierter Endstand hierzu offen.",
+          "state": "partial",
+          "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+          ],
+          "gap": "Ein Klick setzt qa_chest mit Position und roomId; Original-Atlas, native Standardgröße, Layer und Snap sind nicht vollständig mit diesem QA-Asset gepaart.",
           "candidate": {
             "state": "pass",
             "observation": "Edit: Object Tool: Klick erzeugte QA-Paketobjekt ed4fa24e-5199-419e-a48c-94f699f3550f, zweiter Klick a1ab6d4e-0ea6-4d22-b1d3-711bb8600024; beide sind sichtbar und als V3-Entitäten gespeichert.\nFrischstart: Frisch geöffnet: beide platzierten Paketobjekte ed4fa24e-5199-419e-a48c-94f699f3550f/a1ab6d4e-0ea6-4d22-b1d3-711bb8600024 mit exakt gespeicherten Entitätswerten und Texturen.",
@@ -19702,7 +19735,8 @@
               "edit": "pass",
               "reopen": "pass"
             }
-          }
+          },
+          "phase2Scope": "Ein Paketobjekt in Raum 16: Wahl, sichtbare Cursorvorschau, Klick, Undo/Redo, Speicherung und Frischöffnung; produktive Dungeondateien bytegleich."
         }
       },
       {
@@ -20374,21 +20408,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/editor.ts",
-            "src/session.ts"
+            "src/session.ts",
+            "tools/host-test.cjs"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+          ],
+          "gap": "Einzelplatzierung Undo/Redo ist belegt; Original- und Hostfolge mit mehreren Platzierungen und Optionswechseln bleibt offen.",
           "candidate": {
             "state": "pass",
             "observation": "Edit: Erste Platzierung ed4fa24e-5199-419e-a48c-94f699f3550f: Undo entfernte das einzige Objekt, Redo stellte dieselben Werte wieder her; Speichern erhielt den Redo-Zustand.\nFrischstart: Frisch geöffnet: die durch Undo entfernte und durch Redo wiederhergestellte erste Instanz ed4fa24e-5199-419e-a48c-94f699f3550f blieb exakt gespeichert; Verlauf selbst wurde im Editlauf geprüft.",
@@ -20407,7 +20450,8 @@
               "edit": "pass",
               "reopen": "pass"
             }
-          }
+          },
+          "phase2Scope": "Ein Paketobjekt in Raum 16: Wahl, sichtbare Cursorvorschau, Klick, Undo/Redo, Speicherung und Frischöffnung; produktive Dungeondateien bytegleich."
         }
       },
       {
@@ -20452,15 +20496,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_partial",
+          "changes": [
+            "tools/host-test.cjs"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298371518-phase2-object-edit/phase2-object-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/phase2-object-qa/installed-final/evidence/1791298380323-phase2-object-reopen/phase2-object-reopen.png"
+          ],
+          "gap": "Host-Speicherung und frischer Obsidian-Prozess sind belegt; ein frischer Dungeondraft-Prozess für diesen Unterfall fehlt.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Host-Speichern und frisches Öffnen werden geprüft; ein frischer Original-Reopen für DD-026 fehlt.",
@@ -20478,7 +20533,8 @@
               "edit": "open",
               "reopen": "open"
             }
-          }
+          },
+          "phase2Scope": "Ein Paketobjekt in Raum 16: Wahl, sichtbare Cursorvorschau, Klick, Undo/Redo, Speicherung und Frischöffnung; produktive Dungeondateien bytegleich."
         }
       },
       {

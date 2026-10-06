@@ -73,6 +73,10 @@ export interface ColorableObjectSource {
   readonly image: Blob;
   readonly settings: ColorableObjectSettings;
 }
+type ObjectPreviewSettings = Pick<
+  MapObject,
+  "rotation" | "width" | "height" | "color" | "alpha" | "assetId" | "flip" | "shadow"
+>;
 function samplePolyline(
   points: readonly Point[],
   closed: boolean,
@@ -151,6 +155,14 @@ export class MapRenderer {
   private verticalDimension?: Text;
   private selection = new Graphics();
   private preview = new Graphics();
+  private objectPreview = new Container();
+  private objectPreviewShadow = new Graphics();
+  private objectPreviewFallback: Graphics;
+  private objectPreviewSprite?: Sprite;
+  private objectPreviewSettings?: ObjectPreviewSettings;
+  private objectPreviewSignature?: string;
+  private objectPreviewResource?: string;
+  private objectPreviewRevision = 0;
   private objectColorPreview?: { id: Id; color: number; alpha: number };
   private mapMask = new Graphics();
   private textures: TexturePool;
@@ -202,6 +214,10 @@ export class MapRenderer {
       .roundRect(-0.5, -0.5, 1, 1, 0.07)
       .fill(0xffffff)
       .stroke({ width: 0.045, color: 0x32271e });
+    this.objectPreviewFallback = new Graphics(this.furniture);
+    this.objectPreview.addChild(this.objectPreviewShadow, this.objectPreviewFallback);
+    this.objectPreview.visible = false;
+    this.objectPreview.eventMode = "none";
   }
   get canvas(): HTMLCanvasElement {
     return this.app.canvas;
@@ -236,6 +252,7 @@ export class MapRenderer {
         previousGrid = this.appearance.grid,
         previousSelection = this.selection.visible,
         previousPreview = this.preview.visible,
+        previousObjectPreview = this.objectPreview.visible,
         previousLights = this.lightLayer.visible,
         previousDimensions = this.dimensions.visible,
         previousDimensionLabels = this.dimensionLabels.visible;
@@ -246,6 +263,7 @@ export class MapRenderer {
         this.appearance.grid = options.grid;
         this.selection.visible = false;
         this.preview.visible = false;
+        this.objectPreview.visible = false;
         this.lightLayer.visible = options.lighting !== false;
         this.dimensions.visible = false;
         this.dimensionLabels.visible = false;
@@ -266,6 +284,7 @@ export class MapRenderer {
         this.appearance.grid = previousGrid;
         this.selection.visible = previousSelection;
         this.preview.visible = previousPreview;
+        this.objectPreview.visible = previousObjectPreview;
         this.lightLayer.visible = previousLights;
         this.dimensions.visible = previousDimensions;
         this.dimensionLabels.visible = previousDimensionLabels;
@@ -314,6 +333,7 @@ export class MapRenderer {
       this.lightLayer,
       this.selection,
       this.preview,
+      this.objectPreview,
     );
     this.world.mask = this.mapMask;
     this.app.stage.addChild(
@@ -482,6 +502,7 @@ export class MapRenderer {
     this.cameraChanged();
   }
   reloadAssets(): void {
+    this.clearObjectPreview();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     this.textures.destroy();
     this.textures = new TexturePool(this.assetUrl);
@@ -1810,6 +1831,90 @@ export class MapRenderer {
     }
     this.invalidate();
   }
+  previewObject(point: Point, settings: ObjectPreviewSettings): void {
+    if (this.closed) return;
+    this.objectPreviewSettings = { ...settings };
+    this.objectPreview.visible = !this.capturing;
+    this.objectPreview.position.set(point.x, point.y);
+    this.objectPreview.rotation = settings.rotation;
+    this.objectPreview.scale.x = settings.flip ? -1 : 1;
+    this.objectPreview.alpha = 0.72;
+    this.objectPreviewFallback.scale.set(settings.width, settings.height);
+    this.objectPreviewFallback.tint = settings.color;
+    this.objectPreviewFallback.alpha = objectAlphaOpacity(settings.alpha ?? 255);
+    this.objectPreviewShadow.clear();
+    if (this.settings.objectShadows && settings.shadow !== false)
+      this.objectPreviewShadow
+        .roundRect(
+          -settings.width / 2 + 0.13,
+          -settings.height / 2 + 0.13,
+          settings.width,
+          settings.height,
+          Math.min(settings.width, settings.height) * 0.08,
+        )
+        .fill({ color: 0x111314, alpha: 0.26 * objectAlphaOpacity(settings.alpha ?? 255) });
+    if (this.objectPreviewSprite) {
+      this.objectPreviewSprite.width = settings.width;
+      this.objectPreviewSprite.height = settings.height;
+      const colorable = !!settings.assetId && !!this.colorableObject?.(settings.assetId);
+      this.objectPreviewSprite.tint = colorable ? 0xffffff : settings.color;
+      this.objectPreviewSprite.alpha = colorable ? 1 : objectAlphaOpacity(settings.alpha ?? 255);
+    }
+    const signature = settings.assetId
+      ? [settings.assetId, settings.color, settings.alpha ?? 255].join("\0")
+      : "";
+    if (signature !== this.objectPreviewSignature) {
+      this.objectPreviewRevision++;
+      this.objectPreviewSprite?.destroy();
+      this.objectPreviewSprite = undefined;
+      if (this.objectPreviewResource) this.textures.release(this.objectPreviewResource);
+      this.objectPreviewResource = undefined;
+      this.objectPreviewSignature = signature;
+      this.objectPreviewFallback.visible = true;
+      if (settings.assetId) {
+        const reference = settings.assetId + "\0image",
+          colorable = this.colorableObject?.(settings.assetId),
+          variant = colorable
+            ? this.textures.acquireColorableObject(
+                reference, colorable.image, settings.color, settings.alpha ?? 255,
+                colorable.settings,
+              )
+            : undefined,
+          revision = this.objectPreviewRevision;
+        this.objectPreviewResource = variant?.key ?? reference;
+        void (variant?.texture ?? this.textures.acquire(reference))
+          .then((texture) => {
+            if (this.closed || revision !== this.objectPreviewRevision) return;
+            const sprite = new Sprite(texture);
+            sprite.anchor.set(0.5);
+            this.objectPreviewSprite = sprite;
+            this.objectPreview.addChild(sprite);
+            this.objectPreviewFallback.visible = false;
+            this.previewObject(
+              { x: this.objectPreview.position.x, y: this.objectPreview.position.y },
+              this.objectPreviewSettings!,
+            );
+          })
+          .catch((error) => {
+            if (!this.closed && revision === this.objectPreviewRevision)
+              this.onError(String(error));
+          });
+      }
+    }
+    this.invalidate();
+  }
+  clearObjectPreview(): void {
+    this.objectPreviewRevision++;
+    this.objectPreview.visible = false;
+    this.objectPreviewSettings = undefined;
+    this.objectPreviewSignature = undefined;
+    this.objectPreviewSprite?.destroy();
+    this.objectPreviewSprite = undefined;
+    this.objectPreviewFallback.visible = true;
+    if (this.objectPreviewResource) this.textures.release(this.objectPreviewResource);
+    this.objectPreviewResource = undefined;
+    this.invalidate();
+  }
   previewMove(ids: Iterable<Id>, dx: number, dy: number): void {
     for (const id of ids) {
       const v = this.visuals.get(id);
@@ -1914,6 +2019,7 @@ export class MapRenderer {
   }
   destroy(): void {
     this.closed = true;
+    this.clearObjectPreview();
     if (this.frame) cancelAnimationFrame(this.frame);
     this.resize?.disconnect();
     this.unsub?.();

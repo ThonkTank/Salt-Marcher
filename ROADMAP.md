@@ -18,6 +18,10 @@ Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platz
 - **Angleichen/ergänzen:** Nur die Lücken beheben, die das Wählen und sichtbare Platzieren eines Objekts verhindern.
 - **Prüfen:** Ein Objekt im neuen Testraum setzen; Position, Darstellung, Undo/Redo, Speichern und Frischöffnung auf der Kopie bestätigen.
 
+**Umsetzung:** Das gewählte Paketobjekt folgt als flüchtiges Bild dem Cursor. Die Vorschau übernimmt Größe, Farbe und Drehung der Platzierung, verschwindet beim Verlassen der Karte und verwirft verspätete Assetbilder. Der vorhandene Klickbefehl setzt weiterhin genau ein Objekt mit Raumkennung und einem Undo-Schritt.
+
+**Nachweis:** `qa_chest` wurde im isolierten Raum 16 bei (4, 3) sichtbar platziert. Cursorvorschau ohne Karten- oder Verlaufsänderung, Position, `roomId`, Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden mit dem installierten Build. Alle 89 produktiven Dungeondateien blieben bytegleich. Die vollständige Objektbibliothek und weitere Dungeondraft-Unterfälle bleiben in `acceptance.json` offen.
+
 ## Phase 3 – Mehrere Objekte und Raumzuordnung
 
 - **Abgleichen:** Wiederholte Platzierung und Auswahl mit Dungeondraft; `roomId` und Verschieben zwischen Räumen mit dem Kartenmodell.

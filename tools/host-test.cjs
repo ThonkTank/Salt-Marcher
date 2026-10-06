@@ -22,11 +22,12 @@ const restart = process.argv.includes("--restart"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
   prefabForget = process.argv.includes("--prefab-forget"),
   objectAlpha = process.argv.includes("--object-alpha"),
+  phase2Object = process.argv.includes("--phase2-object"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -213,6 +214,11 @@ function prepare() {
     fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
     fs.copyFileSync(path.resolve(sourceVault, dungeon), vault + "/" + dungeon);
   }
+  if (phase2Object && !restart) {
+    const source = path.join(sourceVault, "Dungeons/Drachenhöhle");
+    assert(fs.existsSync(path.join(source, "Karte.dungeon")), "Phase-1-Kopie fehlt");
+    fs.cpSync(source, path.join(vault, "Dungeons/Drachenhöhle"), { recursive: true });
+  }
   if (v2Open && !restart) {
     for (const dungeon of ["Dungeons/Drachenhöhle/Karte.dungeon", "Dungeons/test/Karte.dungeon"]) {
       fs.mkdirSync(path.dirname(vault + "/" + dungeon), { recursive: true });
@@ -318,7 +324,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -467,6 +473,10 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
+  if (phase2Object) {
+    await phase2ObjectWorkflow(view);
+    return;
+  }
   if (v2Open) {
     await v2OpenWorkflow(view);
     return;
@@ -3015,6 +3025,185 @@ async function pathLibraryWorkflow(view) {
     !app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.dirty);
   await page.screenshot({ path: out + "/path-library.png" });
   checks.push("Path Library selection and path save cleanly");
+}
+async function phase2ObjectWorkflow(view) {
+  const mapPath = "Dungeons/Drachenhöhle/Karte.dungeon",
+    savedPath = qa + "/phase2-object-saved.json",
+    mapFile = path.join(vault, mapPath),
+    packPath = process.env.DUNGEON_OBJECT_PACK;
+  const hash = (file) => crypto.createHash("sha256")
+    .update(fs.readFileSync(file)).digest("hex");
+  const protectedFiles = (base) => {
+    const result = {};
+    const visit = (directory) => {
+      for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+        const absolute = path.join(directory, item.name);
+        if (item.isDirectory()) visit(absolute);
+        else if (absolute !== path.join(base, mapPath))
+          result[path.relative(base, absolute)] = hash(absolute);
+      }
+    };
+    visit(path.join(base, "Dungeons/Drachenhöhle"));
+    return result;
+  };
+  await page.evaluate(async (mapPath) => {
+    const file = app.vault.getAbstractFileByPath(mapPath);
+    if (!file) throw new Error("Drachenhöhlenkopie fehlt: " + mapPath);
+    await app.workspace.getLeaf("tab").openFile(file);
+  }, mapPath);
+  await page.locator(".dn-canvas canvas").last().waitFor({ timeout: 30000 });
+  const room = (await view()).document.entities.find((entity) =>
+    entity.kind === "building" && entity.number === "16");
+  assert(room?.note?.path, "Der Phase-1-Testraum 16 fehlt");
+  if (restart) {
+    const saved = JSON.parse(fs.readFileSync(savedPath, "utf8"));
+    const fresh = await view();
+    assert.equal(fresh.dirty, false);
+    assert.deepEqual(fresh.document, saved.document);
+    assert.equal(hash(mapFile), saved.mapHash);
+    assert.deepEqual(protectedFiles(vault), saved.protected);
+    const object = fresh.document.entities.find((entity) => entity.id === saved.object.id);
+    assert.deepEqual(object, saved.object);
+    await page.waitForFunction((id) => {
+      const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+        ?.view?.editor?.renderer;
+      renderer?.focus(id, 1);
+      return !!renderer?.visuals.get(id)?.container.children
+        .some((child) => !!child.texture);
+    }, object.id, { timeout: 12000 });
+    await page.screenshot({ path: out + "/phase2-object-reopen.png" });
+    checks.push("Fresh Obsidian process opens the same visible object and unchanged room texts");
+    return;
+  }
+  assert(packPath && fs.existsSync(packPath), "QA-Objektpaket fehlt");
+  assert.equal(hash(packPath),
+    "fa57fbd15cfb8339b00b0f780b90e6fa2abda743e8ef271b84dbb5eaa74f1628");
+  const protectedBefore = protectedFiles(vault);
+  const encoded = fs.readFileSync(packPath).toString("base64");
+  await page.evaluate(async (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    const plugin = app.plugins.getPlugin("dungeon-editor");
+    const [record] = await plugin.assets.add([new Blob([bytes])]);
+    await plugin.reloadAssets();
+    const session = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.session;
+    const before = session.settings;
+    session.execute({ label: "QA-Paket für Karte aktivieren",
+      settings: { before, after: { ...before, assetPacks: [record.metadata.id] } } });
+  }, encoded);
+  const asset = await page.evaluate(() =>
+    app.plugins.getPlugin("dungeon-editor").listAssets()
+      .find((candidate) => candidate.kind === "object" && candidate.name === "qa_chest"));
+  assert(asset, "qa_chest fehlt in der Objektwahl");
+  await chooseTool("Möbel");
+  await page.getByRole("combobox", { name: "Paketobjekt", exact: true })
+    .selectOption(asset.id);
+  const image = page.locator('img[alt="Paketobjekt Vorschau"]');
+  await page.waitForFunction(() =>
+    document.querySelector('img[alt="Paketobjekt Vorschau"]')?.naturalWidth > 0);
+  assert(await image.isVisible());
+  await page.evaluate((roomId) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    renderer.focus(roomId, 1);
+  }, room.id);
+  const at = (point) => page.evaluate((point) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    const box = renderer.canvas.getBoundingClientRect();
+    const screen = {
+      x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+      y: box.y + renderer.camera.y + point.y * renderer.camera.scale,
+    };
+    if (screen.x < box.x || screen.x >= box.right ||
+        screen.y < box.y || screen.y >= box.bottom)
+      throw new Error("Testpunkt liegt außerhalb der Karte");
+    return screen;
+  }, point);
+  const initial = await view();
+  await page.evaluate((assetId) => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor;
+    const point = { x: 4, y: 3 };
+    editor.renderer.previewObject(point, { ...editor.settings.object, assetId });
+    editor.renderer.previewObject(point, { ...editor.settings.object, assetId: undefined });
+  }, asset.id);
+  await sleep(300);
+  assert.equal(await page.evaluate(() => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer;
+    const stale = !!renderer.objectPreviewSprite;
+    renderer.clearObjectPreview();
+    return stale;
+  }), false, "Ein verspätetes Assetbild darf die neue Vorschau nicht ersetzen");
+  const position = await at({ x: 4, y: 3 });
+  await page.mouse.move(position.x, position.y);
+  await page.waitForFunction((assetId) => {
+    const renderer = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor?.renderer;
+    return renderer?.objectPreview.visible &&
+      renderer.objectPreviewSettings?.assetId === assetId &&
+      !!renderer.objectPreviewSprite?.texture;
+  }, asset.id, { timeout: 12000 });
+  const hover = await page.evaluate(() => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor;
+    return { point: { x: editor.renderer.objectPreview.x,
+      y: editor.renderer.objectPreview.y },
+      sprite: { width: editor.renderer.objectPreviewSprite.width,
+        height: editor.renderer.objectPreviewSprite.height },
+      settings: { ...editor.settings.object },
+      visible: editor.renderer.objectPreview.visible };
+  });
+  assert.deepEqual(hover.point, { x: 4, y: 3 });
+  assert.equal(hover.sprite.width, hover.settings.width);
+  assert.equal(hover.sprite.height, hover.settings.height);
+  const beforeClick = await view();
+  assert.deepEqual(beforeClick.document, initial.document);
+  assert.equal(beforeClick.history, initial.history);
+  assert.equal(beforeClick.dirty, initial.dirty);
+  await page.screenshot({ path: out + "/phase2-object-hover.png" });
+  await page.mouse.move(10, 10);
+  assert.equal(await page.evaluate(() =>
+    app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      .view.editor.renderer.objectPreview.visible), false);
+  await page.mouse.move(position.x, position.y);
+  await page.waitForFunction(() =>
+    !!app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor?.renderer?.objectPreviewSprite?.texture);
+  checks.push("Selected qa_chest visibly follows the cursor without document or history changes");
+  await page.mouse.click(position.x, position.y);
+  const placed = await view();
+  const previousIds = new Set(initial.document.entities.map((entity) => entity.id));
+  const additions = placed.document.entities.filter((entity) => !previousIds.has(entity.id));
+  assert.equal(additions.length, 1);
+  const object = additions[0];
+  assert.equal(object.kind, "object");
+  assert.equal(object.assetId, asset.id);
+  assert.equal(object.roomId, room.id);
+  assert.equal(object.x, 4);
+  assert.equal(object.y, 3);
+  assert.equal(placed.history, initial.history + 1);
+  await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+  assert.deepEqual((await view()).document, initial.document);
+  await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+  assert.deepEqual((await view()).document, placed.document);
+  checks.push("One click places one room-bound object; Undo and Redo restore the exact map state");
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  await page.waitForFunction(() => {
+    const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]
+      ?.view?.editor;
+    return !!editor && !editor.session.dirty && !editor.saving;
+  }, null, { timeout: 20000 });
+  const saved = await view();
+  assert.deepEqual(protectedFiles(vault), protectedBefore);
+  fs.writeFileSync(savedPath, JSON.stringify({
+    document: saved.document, object, mapHash: hash(mapFile),
+    protected: protectedBefore,
+  }, null, 2));
+  await page.mouse.move(10, 10);
+  await page.screenshot({ path: out + "/phase2-object-saved.png" });
+  checks.push("V3 map saves the object while every other copied dungeon file stays byte-identical");
 }
 async function objectAlphaWorkflow(view) {
   const mapPath = "Dungeons/ObjectAlphaQA/Karte.dungeon";
