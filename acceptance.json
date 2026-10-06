@@ -12159,7 +12159,21 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Integrierte Typprüfung, 192 Kerntests und Build bestanden; isolierter Hostbild-/Frischstartvergleich, weitere Dachtypen/Ebenen und installierter Endstand offen."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build bestanden; isolierter Hostbild-/Frischstartvergleich, weitere Dachtypen/Ebenen und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Im isolierten Host sichtbar 0,3 bei gespeichertem Geschosswert 0,5; neues Satteldach und erster Save aufgezeichnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-HOST-ATTEMPTS-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd022-roof-light-host-20261006-try2/evidence/1791286977570-material-dach-material-edit/dd022-roof-light.json"
+            ],
+            "gap": "Zwei Fehler im Prüfszenario verhinderten die vollständige Edit- und Frischstartprüfung; Pixelwirkung gegen das Original und installierter Endstand offen.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "open",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -12880,15 +12894,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Farb- und Blendvorgaben ließen vorhandenes Wasser unangetastet; die zweite per UI gezeichnete Fläche speicherte die neuen ARGB-/Blendwerte.\nFrischstart: Beide individuellen Wasserwerte, der geschossweite Rand und die getrennten frischen Werkzeugvorgaben wurden in derselben Karte wieder geöffnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-blend-half.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-values.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/vault/Dungeons/WaterStateQA/Karte.dungeon"
+            ],
+            "gap": "Edit: Die exakte native Pixelmischung und Alpha-Ausgabe sind offen.\nFrischstart: Exakte native Deep-/Shallow-/Blend-Pixel und Randtextur bleiben ungepaart.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -12938,15 +12978,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Farb- und Blendvorgaben ließen vorhandenes Wasser unangetastet; die zweite per UI gezeichnete Fläche speicherte die neuen ARGB-/Blendwerte.\nFrischstart: Beide individuellen Wasserwerte, der geschossweite Rand und die getrennten frischen Werkzeugvorgaben wurden in derselben Karte wieder geöffnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-blend-half.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-values.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/vault/Dungeons/WaterStateQA/Karte.dungeon"
+            ],
+            "gap": "Edit: Die exakte native Pixelmischung und Alpha-Ausgabe sind offen.\nFrischstart: Exakte native Deep-/Shallow-/Blend-Pixel und Randtextur bleiben ungepaart.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -12997,15 +13063,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Farb- und Blendvorgaben ließen vorhandenes Wasser unangetastet; die zweite per UI gezeichnete Fläche speicherte die neuen ARGB-/Blendwerte.\nFrischstart: Beide individuellen Wasserwerte, der geschossweite Rand und die getrennten frischen Werkzeugvorgaben wurden in derselben Karte wieder geöffnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-blend-half.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-new-tool-values.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/vault/Dungeons/WaterStateQA/Karte.dungeon"
+            ],
+            "gap": "Edit: Die exakte native Pixelmischung und Alpha-Ausgabe sind offen.\nFrischstart: Exakte native Deep-/Shallow-/Blend-Pixel und Randtextur bleiben ungepaart.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -13057,15 +13149,42 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Disable Border schaltete die Linien beider vorhandener Wasserflächen sofort und reversibel; die gespeicherte Floor-Option blieb getrennt von Polygonwerten.\nFrischstart: Beide individuellen Wasserwerte, der geschossweite Rand und die getrennten frischen Werkzeugvorgaben wurden in derselben Karte wieder geöffnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-old-border-off-1.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-old-border-on.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-old-border-off-2.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-both-border-on.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-both-border-off.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/vault/Dungeons/WaterStateQA/Karte.dungeon"
+            ],
+            "gap": "Edit: Pixelgenaue native Randzeichnung bleibt offen.\nFrischstart: Exakte native Deep-/Shallow-/Blend-Pixel und Randtextur bleiben ungepaart.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -13223,15 +13342,38 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "pass",
+            "observation": "Edit: Die neue Wasserfläche und der geschossweite Rand wurden in einer 8×8-QA-Karte gespeichert.\nFrischstart: Beide individuellen Wasserwerte, der geschossweite Rand und die getrennten frischen Werkzeugvorgaben wurden in derselben Karte wieder geöffnet.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/vault/Dungeons/WaterStateQA/Karte.dungeon",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png"
+            ],
+            "gap": "Edit: Frischöffnung wird separat im zweiten Hostprozess geprüft.\nFrischstart: Exakte native Deep-/Shallow-/Blend-Pixel und Randtextur bleiben ungepaart.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "pass"
+            }
+          }
         }
       },
       {
@@ -17444,15 +17586,38 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Ein Toolbar-Undo entfernte genau die zweite Wasserfläche und ließ die erste bestehen.\nFrischstart: Die durch Redo gespeicherte zweite Wasserfläche ist nach frischem Start erhalten.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-undo-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png"
+            ],
+            "gap": "Frischstart: Die Undo-/Redo-Geste wurde nur im Editlauf ausgeführt; neue History startet beim Öffnen leer.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
@@ -17500,15 +17665,38 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "V3-Wasserfläche speichert individuelle Deep-/Shallow-ARGB und Blend Distance; geschossweiter Randzustand und transiente Werkzeugvorgaben im integrierten Kandidaten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-WATER-HOST-RESULT-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen."
+          "gap": "Originalwirkung direkt belegt; gleiches Verhalten und Kartenbild im isolierten Host sowie am installierten Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Edit: Ein Toolbar-Redo stellte die zweite Wasserfläche mit ihren ARGB-/Blendwerten wieder her.\nFrischstart: Die durch Redo gespeicherte zweite Wasserfläche ist nach frischem Start erhalten.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-redo-second-water.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286919041-material-wasser-edit/water-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/material-wasser-state-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd023-water-host-20261006-try1/evidence/1791286935101-material-wasser-reopen/water-fresh-open.png"
+            ],
+            "gap": "Frischstart: Die Undo-/Redo-Geste wurde nur im Editlauf ausgeführt; neue History startet beim Öffnen leer.",
+            "build": "97abffce9063d25f5c60a9dbd304dd061cbe2508733e8c57d414c6eb8f8e706b",
+            "phaseStates": {
+              "edit": "pass",
+              "reopen": "open"
+            }
+          }
         }
       },
       {
