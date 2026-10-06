@@ -3368,7 +3368,7 @@ async function compactWorkflow() {
   await page.evaluate(() => {
     const card = window.__qaCompact.card,
       room = [...card.map.session.entities.values()].find(
-        (entity) => entity.kind === "room" && entity.number === "1",
+        (entity) => entity.kind === "building" && entity.number === "1",
       );
     card.focus(room.id);
   });

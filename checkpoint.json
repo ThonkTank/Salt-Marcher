@@ -648,5 +648,19 @@
       "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase1-room-before-install-20261006",
       "open": "Physische Eingabe und weitere DD-011-Unterfälle bleiben offen."
     }
+  },
+  "projectLayout": {
+    "gitRoot": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor",
+    "activeInstalledSource": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1",
+    "vaultPlugin": "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-editor",
+    "installedBuildSha256": "94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6",
+    "backup": "/home/aaron/.cache/dungeon-native-qa/backups/project-cleanup-20261006",
+    "worktrees": 30,
+    "verification": {
+      "mainUnit": "200 bestanden, 1 übersprungen; TypeScript und Build bestanden",
+      "installedUnit": "108 bestanden; TypeScript und Build bestanden",
+      "installedHost": "/home/aaron/.cache/dungeon-native-qa/project-cleanup-smoke/evidence/1791296970618-compact-edit/result.json",
+      "mainHost": "/home/aaron/.cache/dungeon-native-qa/project-cleanup-main-smoke/evidence/1791297004859-compact-edit/result.json"
+    }
   }
 }
