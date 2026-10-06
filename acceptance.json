@@ -4638,9 +4638,9 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Technische Hostfolge bestanden; Wandbreite, Kurvenanschlüsse und Schatten sind im Original-/Hostbild nicht ausgerichtet verglichen. Installierter Endstand offen.",
           "candidate": {
-            "state": "pass",
+            "state": "open",
             "observation": "Edit: Ellipse 9969aa67-5c8e-4e1a-aa27-cf79d5c677c6: asset=pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall, 32 Punkte, Textursprites=32, Undo/Redo=true/true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; Paketwand pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall; Textursprites=32.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205011208-bau-02-edit/group-cases.json",
@@ -4653,9 +4653,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/bau-01-steps.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/bau-02-wall-choice-saved.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01501-02-FINAL-GATES.md"
             ],
-            "gap": null,
+            "gap": "Technische Hostfolge bestanden; Wandbreite, Kurvenanschlüsse und Schatten sind im Original-/Hostbild nicht ausgerichtet verglichen. Installierter Endstand offen.",
             "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
             "phaseStates": {
               "edit": "pass",
@@ -4726,7 +4727,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Isolierter Host belegt Boden ohne Wandring, Undo/Redo und Frischöffnung; gepaarte Original-/Host-Schattenwirkung und installierter Endstand offen.",
+          "gap": "Technische Hostfolge bestanden; originaler Schattenrand der wandlosen Fläche ist nicht gepaart. Installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: None fea8c37d-f83a-47eb-b994-a82eb5236b28: wallWidth=0, Textursprites=0, Zeichenaktionen=fill, vorherige Paketwand erhalten=true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; None wallWidth=0; Sprites=0; Aktionen=fill.",
@@ -4741,9 +4742,10 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/bau-01-steps.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/bau-02-wall-choice-saved.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-02/evidence/1791205078744-bau-02-reopen/screens/wall-choice-fresh-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01501-02-FINAL-GATES.md"
             ],
-            "gap": "Edit: Schattenwirkung der wandlosen Bodenfläche im Original nicht gepaart vermessen.\nFrischstart: Wandlose Bodenwirkung bleibt wegen des ungepaarten Schattenrands im Original offen.",
+            "gap": "Technische Hostfolge bestanden; originaler Schattenrand der wandlosen Fläche ist nicht gepaart. Installierter Endstand offen.",
             "build": "dafbf0f9bc7324859991b2067b143d931a9ea6dc46952ee1bbe870f49765b300",
             "phaseStates": {
               "edit": "open",
