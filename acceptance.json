@@ -4723,14 +4723,17 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-PAIRED-RUN-RESULT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-PAIRED-RUN-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-SHADOW-FIX-RESULT.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Paarprobe wies einen etwa 14 Pixel breiten Schatten am wandlosen Host-Rechteck nach, der im Original fehlt. Korrektur 9c107e5 ist statisch vorbereitet; erneute Host-Edit-/Frischstart-Bildprüfung und installierter Endstand offen.",
+          "state": "partial",
+          "build": "86d6b1154277af022dc3bdf73eb68b5c614b4aff97281a83a428b098f2f494d0",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD015-SHADOW-FIX-RESULT.md"
+          ],
+          "gap": "Enger Edit-/Frischstart-Hostlauf belegt nach Korrektur keinen zusätzlichen Schatten am wandlosen Rechteck; Konturbearbeitungs-Preview und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: None fea8c37d-f83a-47eb-b994-a82eb5236b28: wallWidth=0, Textursprites=0, Zeichenaktionen=fill, vorherige Paketwand erhalten=true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; None wallWidth=0; Sprites=0; Aktionen=fill.",
@@ -29670,15 +29673,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Enger DD-043-Release auf installierter Basis: Exportdialog und echter Menüanschluss, Build 064bebec8543a534dcfea223d82c886e10543bff9c99b7cb53ef82fa95041c23."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd043-minimal-20261006/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "equal",
+          "build": "064bebec8543a534dcfea223d82c886e10543bff9c99b7cb53ef82fa95041c23",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291787919-dd043-minimal-edit/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291799388-dd043-minimal-reopen/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-v2/evidence/1791291829822-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-v2/evidence/1791291842603-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
+          ],
+          "gap": null,
           "candidate": {
             "state": "pass",
             "observation": "Edit: Editormenü öffnet den Exportdialog mit PNG, JPEG, WEBP und Universal VTT.\nFrischstart: Frischstart: Editormenü öffnet erneut den Exportdialog mit vier Formaten.",
@@ -29696,8 +29710,13 @@
               "edit": "pass",
               "reopen": "pass"
             }
+          },
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
           }
-        }
+        },
+        "verifiedScope": "Gespeicherte Karte: echtes Editormenü öffnet sichtbaren Exportdialog mit PNG, JPEG, WEBP und Universal VTT; installierter Build in Edit und Frischstart bestanden. Dateiausgaben sind eigene Fälle."
       },
       {
         "id": "DD-036.04",
@@ -30474,9 +30493,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33316,9 +33339,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33372,9 +33399,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33428,9 +33459,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33484,9 +33519,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33540,9 +33579,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33596,9 +33639,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -33823,9 +33870,12 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Kandidat cfc61bd: reiner GDPC-v1-Encoder reproduziert das gemessene 1.898-Byte-Paket bytegenau, nur für die All-off-Schalterlage; Dialog, Rohordner-Overwrite und Ausgabeablauf offen."
+            "Kandidat cfc61bd: reiner GDPC-v1-Encoder reproduziert das gemessene 1.898-Byte-Paket bytegenau, nur für die All-off-Schalterlage; Dialog, Rohordner-Overwrite und Ausgabeablauf offen.",
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
           ],
           "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-ENCODER-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-ENCODER-20261006.md"
           ]
         },
@@ -33881,9 +33931,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -38578,26 +38632,32 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "installed_partial",
           "changes": [
             "src/features/verwaltung/grid-presets.ts",
             "src/features/verwaltung/export-dialog.ts",
-            "src/main.ts"
+            "src/main.ts",
+            "Installierter Release belegt 8×8 bei Standardwert 256 Pixel/Feld zu 2048×2048 samt Inhalt/Raster unten rechts; geänderte Werte und Crop offen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd043-minimal-20261006/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
           ]
         },
         "hostCheck": {
           "state": "partial",
-          "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
+          "build": "064bebec8543a534dcfea223d82c886e10543bff9c99b7cb53ef82fa95041c23",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-CLEAN-HOST-FAILURES-STATIC-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291787919-dd043-minimal-edit/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291799388-dd043-minimal-reopen/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
           ],
-          "gap": "Original und Host belegen die gemessene Preset-/PPI-Folge. Zwei Erststartläufe scheitern vor dem Modal bei ungeklärter Testhost-Bereitschaft; kein Produktabweichungsbeleg. Installierter Endstand, Bildpixelgleichheit und offene Grenz-/Crop-Fälle fehlen.",
+          "gap": "Nur Default 8×8/256 am installierten Stand belegt. Geänderte PPI-/Preset-Werte, 128-PNG und Crop-Wirkung auf diesem Build sowie Original-Crop-Grenzen offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
@@ -45058,9 +45118,13 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Isolierter DD-046-Dialog/Flow als nicht angeschlossener Kandidat; nur gemessene All-off-Paketfolge, Hostprüfung offen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-046-DIALOG-WORKFLOW-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -45222,15 +45286,26 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "installed_verified",
+          "changes": [
+            "Enger DD-043-Release auf installierter Basis: Exportdialog und echter Menüanschluss, Build 064bebec8543a534dcfea223d82c886e10543bff9c99b7cb53ef82fa95041c23."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/releases/dd043-minimal-20261006/installation-manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "equal",
+          "build": "064bebec8543a534dcfea223d82c886e10543bff9c99b7cb53ef82fa95041c23",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291787919-dd043-minimal-edit/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-host/evidence/1791291799388-dd043-minimal-reopen/dd043-minimal-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-v2/evidence/1791291829822-v2-open-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-minimal-installed-v2/evidence/1791291842603-v2-open-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/DD-043-INSTALLED-FINAL-INDEPENDENT-REVIEW-20261006.md"
+          ],
+          "gap": null,
           "candidate": {
             "state": "pass",
             "observation": "Edit: Sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.\nFrischstart: Frischstart: sichtbares Dialog-X schließt ohne Export-Blob; Kartenzustand unverändert=true.",
@@ -45248,8 +45323,13 @@
               "edit": "pass",
               "reopen": "pass"
             }
+          },
+          "phaseStates": {
+            "edit": "pass",
+            "reopen": "pass"
           }
-        }
+        },
+        "verifiedScope": "Sichtbares Exportdialog-X vor Dateiausgabe schließt ohne Blob oder Download; Dokument, Dirty, History, Kamera und Kartendatei bleiben auf installiertem Build in Edit und Frischstart unverändert."
       },
       {
         "id": "DD-043.24",
