@@ -4426,7 +4426,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-midpoint.png",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-EDGE-PREVIEW-HOOK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-EDGE-PREVIEW-HOOK.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-02-STATIC-STATUS.md"
           ]
         },
         "target": "Punkt an gewünschter Kantenposition mit gleichwertiger Vorschau und Wirkung einfügen.",
@@ -4469,7 +4470,8 @@
           "build": null,
           "evidence": [],
           "gap": "Transiente Boden-/Wand-Vorschau nach Editor-Hook noch nicht im isolierten Host mit Original, Abbruch und Frischöffnung verglichen."
-        }
+        },
+        "inventoryNote": "Quellenkorrektur 2026-10-06: R3 E14 speichert das Viereck, E15/E16 belegen Undo/Redo. Frisches Originalöffnen genau dieses einfachen Stands und erfolgreicher Escape-Abbruch bleiben offen."
       },
       {
         "id": "DD-014.02",
@@ -4481,13 +4483,14 @@
         "original": {
           "sequence": "Nach Kanten-Drag Kontur prüfen.",
           "options": "Paketwand vorhanden.",
-          "effect": "Viereck statt Dreieck und Wand nachgeführt; Portale nicht geprüft. Direktes R3/R4 zeigt Portal bei (6,3) nach Kantenpunkt-Einfügen mit neuem Wandanker; Undo/Redo und Frischöffnung erhalten es.",
+          "effect": "Viereck statt Dreieck; Boden und Paketwand folgen. Direktes R3/R4 zeigt das gebundene Portal bei (6,3) mit neuem Wandanker; Undo/Redo und Frischöffnung erhalten es.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01402-PORTAL-PREVIEW-HOOK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01402-PORTAL-PREVIEW-HOOK.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-02-STATIC-STATUS.md"
           ]
         },
         "target": "Boden, Wand und Portale nach Einfügen konsistent.",
@@ -4529,7 +4532,8 @@
           "build": null,
           "evidence": [],
           "gap": "Commit-Portalfolge statisch geprüft; gehaltene Vorschau mit Portal-Override, Escape, Save/Reopen und installierter Endstand offen."
-        }
+        },
+        "inventoryNote": "Quellenkorrektur 2026-10-06: R3 E19→E22 und E23/E24 sowie R4 E25/E26 belegen das gebundene Portal einschließlich Undo/Redo und Frischöffnung. Der ältere Satz „Portale nicht geprüft“ ist überholt. Kandidaten-Previewanker und installierter Host bleiben offen."
       },
       {
         "id": "DD-015.01",
@@ -21344,13 +21348,15 @@
         "command": "X im Suchfeld",
         "scope": "required",
         "original": {
-          "sequence": null,
-          "options": null,
+          "sequence": "Im Scatter-Suchfeld steht Atlas; rechts ist ein eigenes X sichtbar.",
+          "options": "Suchfeld-X neben getrenntem Papierkorb.",
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/32-scatter-round-picker.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/26-scatter-search-atlas.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-21-26-STATIC.md"
+          ],
+          "gap": "Das X wurde im Original nicht gedrückt; Suchtext, Galerie, Kachelmarkierung und Karte nach Klick sind unbekannt."
         },
         "target": "Nach Originalmessung: Das X verändert Suchtext, Galerie und Auswahl gemäß der getrennt gemessenen Originalwirkung.",
         "baseline": {
@@ -21386,7 +21392,8 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+        },
+        "inventoryNote": "Quellenkorrektur 2026-10-06: Das frühere Bild 32-scatter-round-picker.png zeigt den Farbpicker, nicht das Suchfeld-X. 26-scatter-search-atlas.png zeigt das X, aber keine Klickwirkung."
       },
       {
         "id": "DD-028.01",
