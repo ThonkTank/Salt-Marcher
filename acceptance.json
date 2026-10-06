@@ -33087,15 +33087,20 @@
         "command": "Paket aus/an",
         "scope": "required",
         "original": {
-          "sequence": "Geladene Karte > Assets → Paket aus/an",
+          "sequence": "Geladene QATile03-Karte > Assets > Paket abwählen; vor Wiederöffnen Palette und platzierte Textur prüfen, speichern.",
           "options": null,
-          "effect": null,
+          "effect": "Nach Abwahl fordert Dungeondraft Speichern und Wiederöffnen. Die Color-Kachel bleibt zuvor geladen; die gespeicherte Karte hat ein leeres asset_manifest und behält ihre platzierte Pakettexturreferenz.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-disabled-pack-selection.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-disabled-pack-selection.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/21-inmap-pack-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/22-off-staged.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd010-native-20261004-193622/evidence/dd010-pack-off.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/verwaltung/DD-010-PACK-ACTIVATION-20261006.md"
+          ],
+          "gap": "Frisch geöffnete deaktivierte Karte, neue Platzierung danach sowie Cancel/X-Semantik sind noch nicht direkt gemessen."
         },
-        "target": "Nach Originalmessung offen: „Paket aus/an“ verwaltet oder filtert die gewählten Assetpakete ohne Verlust der Kartenzuordnung.",
+        "target": "Beim Abwählen in einer offenen Karte die geänderte Paketauswahl speichern; bereits geladene Werkzeugkacheln und platzierte Texturen bleiben bis zum Wiederöffnen sichtbar. Wirkung nach frischem Öffnen gesondert messen.",
         "baseline": {
           "editor": {
             "sequence": "Host-Paketdialog mit Soforttoggle",
@@ -33122,15 +33127,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Laufzeit-Paketmenge beim Kartenöffnen getrennt von gespeicherten assetPacks eingefroren; Werkzeugkatalog, farbbare Objekte und Pfadstart verwenden den geladenen Zustand."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-010-RUNTIME-PACK-CANDIDATE-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Vor-Wiederöffnen-Kandidat gebaut, aber fokussierter isolierter Hostlauf, Original-Frischstart und installierter Endstand offen."
         }
       },
       {
