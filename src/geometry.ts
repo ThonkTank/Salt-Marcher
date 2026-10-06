@@ -9,7 +9,6 @@ import {
   type Point,
   type Polygon,
   type Room,
-  type Wall,
 } from "./model";
 
 export function objectPoints(object: MapObject): Point[] {

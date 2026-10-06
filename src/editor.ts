@@ -41,7 +41,6 @@ import {
   nearestBoundary,
   rectangle,
   moveEntity,
-  entityBounds,
   hit,
   smoothPath,
   portalPose,
@@ -334,7 +333,6 @@ export class DungeonEditor {
   private openKeyButton: HTMLButtonElement;
   private optionsToggle: HTMLButtonElement;
   private keyButton?: HTMLButtonElement;
-  private activeGroup = "selection";
   private toolButtons = new Map<Tool, HTMLButtonElement>();
   private toolGroups = new Map<Tool, string>();
   private toolLabels = new Map<Tool, string>();
@@ -875,7 +873,6 @@ export class DungeonEditor {
     this.showPanel("properties", "Auswahl");
   }
   private showGroup(id: string): void {
-    this.activeGroup = id;
     for (const [group, button] of this.groupButtons) {
       const active = group === id;
       button.classList.toggle("is-active", active);
@@ -2023,27 +2020,12 @@ export class DungeonEditor {
     }
     g.last = local;
   }
-  private commit(e: PointerEvent): void {
-    const g = this.gesture;
-    if (!g || g.pointer !== e.pointerId) return;
-    const point = this.renderer.toWorld(this.renderer.local(e));
-    if (isFloorTool(g.tool))
-      g.erase = floorEraseActive(this.settings.floorMode, e.altKey);
-    this.gesture = undefined;
-    this.renderer.cancelPreview(
-      g?.entity && this.selection.has(g.entity.id)
-        ? this.selection
-        : g?.entity
-          ? [g.entity.id]
-          : [],
-    );
-    if (this.renderer.canvas.hasPointerCapture(e.pointerId))
-      this.renderer.canvas.releasePointerCapture(e.pointerId);
+  private commitSelectionGesture(g: Gesture, e: PointerEvent, point: Point): boolean {
     if (g.tool === "select" && g.groupTransform) {
       const { sources, frame, action, blank } = g.groupTransform;
       if (!g.moved) {
         if (blank && action.mode === "rotate") void this.select(undefined);
-        return;
+        return true;
       }
       if (action.mode !== "move") {
         const result = transformSelectionGroup(sources, frame, action, g.start, point);
@@ -2060,14 +2042,14 @@ export class DungeonEditor {
             };
           }));
         this.renderer.setSelectionGroupFrame(result.frame);
-        return;
+        return true;
       }
     }
     if (g.tool === "select" && g.transform) {
       const { source, action, blank, frame } = g.transform;
       if (!g.moved) {
         if (blank && action.mode === "rotate") void this.select(undefined);
-        return;
+        return true;
       }
       if (action.mode !== "move") {
         const scaledLight = action.mode === "scale" && source.kind === "light" && frame
@@ -2086,7 +2068,7 @@ export class DungeonEditor {
             action.mode === "scale" ? "Auswahl skalieren" : "Auswahl drehen",
             [{ id: source.id, before: source, after }]);
         if (scaledLight) this.renderer.setSelectionLightFrame(scaledLight.frame);
-        return;
+        return true;
       }
     }
     if (g.tool === "select" && !g.entity && g.moved) {
@@ -2117,8 +2099,11 @@ export class DungeonEditor {
           )
           .map((entity) => entity.id);
       void this.selectMany(ids, e.shiftKey);
-      return;
+      return true;
     }
+    return false;
+  }
+  private commitToolGesture(g: Gesture, e: PointerEvent, point: Point): void {
     if (g.tool === "room") {
       const a = this.snap(g.start),
         b = this.snap(point);
@@ -2587,6 +2572,25 @@ export class DungeonEditor {
           ],
         });
     }
+  }
+  private commit(e: PointerEvent): void {
+    const g = this.gesture;
+    if (!g || g.pointer !== e.pointerId) return;
+    const point = this.renderer.toWorld(this.renderer.local(e));
+    if (isFloorTool(g.tool))
+      g.erase = floorEraseActive(this.settings.floorMode, e.altKey);
+    this.gesture = undefined;
+    this.renderer.cancelPreview(
+      g?.entity && this.selection.has(g.entity.id)
+        ? this.selection
+        : g?.entity
+          ? [g.entity.id]
+          : [],
+    );
+    if (this.renderer.canvas.hasPointerCapture(e.pointerId))
+      this.renderer.canvas.releasePointerCapture(e.pointerId);
+    if (this.commitSelectionGesture(g, e, point)) return;
+    this.commitToolGesture(g, e, point);
   }
   private composeFloor(
     shape: readonly Polygon[] | undefined,

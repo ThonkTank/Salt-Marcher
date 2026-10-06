@@ -57,16 +57,18 @@ function ring(cx, cy, rx, ry, count, wobble = 0) {
 function room(id, floorId, number, x, y) {
   return {
     id,
-    kind: "room",
+    kind: "building",
     floorId,
     name: "Raum " + number,
     number: String(number),
-    points: [
+    polygons: [{ outer: [
       { x, y },
       { x: x + 7, y },
       { x: x + 7, y: y + 5 },
       { x, y: y + 5 },
-    ],
+    ], holes: [] }],
+    layer: 200,
+    wallWidth: 0.2,
     note: { path: `Dungeons/Grosskarte/Räume/${id}.md` },
     fill: 0xc6bda9,
     wall: 0x3d3b38,
@@ -156,8 +158,7 @@ function prepareLarge(vault) {
           id: `door-${floorIndex}-${index}`,
           kind: "door",
           floorId: floor.id,
-          boundaryId: id,
-          at: 3.5 / 24,
+          anchor: { boundaryId: id, contour: 0, at: 3.5 / 24 },
           width: 1,
           variant: index % 9 === 0 ? "opening" : "door",
           blocksLight: index % 9 !== 0,
@@ -191,7 +192,7 @@ function prepareLarge(vault) {
   }
   const document = {
     format: "dungeon-map",
-    version: 1,
+    version: 3,
     id: "large-native-fixture",
     settings: { name: "Großkarte", width: 204, height: 144, feetPerField: 5, wallShadows: true, objectShadows: true, buildingWear: 0 },
     floors,

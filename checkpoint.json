@@ -676,7 +676,7 @@
     "gitRoot": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor",
     "activeInstalledSource": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1",
     "vaultPlugin": "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-editor",
-    "installedBuildSha256": "92beb4a8fae34c8621972c845637360c57a73b13d8e9a8283e72720afaeab687",
+    "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
     "backup": "/home/aaron/.cache/dungeon-native-qa/backups/project-cleanup-20261006",
     "worktrees": 30,
     "verification": {
@@ -761,5 +761,15 @@
     "productiveLink": "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-link.json",
     "productiveVaultChanged": true,
     "open": "Physische Maus-/Touchpad-Prüfung auf Nutzerwunsch vorerst übersprungen. Das schon zuvor deaktivierte Auswertungs-Plugin wurde aktualisiert, aber nicht aktiviert; der Bericht bestand auf der isolierten Kopie."
+  },
+  "cleanup": {
+    "status": "installed_and_host_verified",
+    "buildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+    "backup": "/home/aaron/.cache/dungeon-native-qa/backups/cleanup-before-final-install-20261006-204555",
+    "evidence": "/home/aaron/.cache/dungeon-native-qa/cleanup-result.json",
+    "productionState": "/home/aaron/.cache/dungeon-native-qa/cleanup-production-state.json",
+    "coreTests": 115,
+    "protectedDungeonFilesUnchanged": 74,
+    "physicalInput": "deferred_at_user_request"
   }
 }

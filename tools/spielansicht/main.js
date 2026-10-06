@@ -8,6 +8,14 @@ const INDEX_VIEWS={
  characters:{type:'dnd-dungeon-characters',label:'Charaktere',icon:'users',folder:'Kreaturen',exclude:['Begegnungswerte']},
  items:{type:'dnd-dungeon-items',label:'Items',icon:'package',folder:'Items'}
 };
+function layoutLeaves(layout){
+ const leaves=[];
+ const walk=node=>{if(node.type==='leaf')leaves.push(node);else node.children?.forEach(walk);};
+ walk(layout.main);
+ const usedIds=new Set(leaves.map(node=>node.id));
+ const freshId=base=>{let id=base,index=2;while(usedIds.has(id))id=base+index++;usedIds.add(id);return id;};
+ return {leaves,freshId};
+}
 function plain(s) {
  return s.replace(/!\[\[[\s\S]*?\]\]/g,'').replace(/!\[[^\]]*\]\([^)]*\)/g,'')
  .replace(/\[\[([^\]]+)\]\]/g,(_,s)=>{let p=s.split(/(?<!\\)\|/);return p.length>1?p.at(-1):p[0].split('/').at(-1).replace(/\.md(?=#|$)/,'');})
@@ -292,10 +300,8 @@ class Spielansicht extends Plugin {
   this.settings.activeDungeon=dungeon.root;this.settings.activeOverview=OVERVIEW;
   const firstRoom=this.app.vault.getMarkdownFiles().filter(f=>f.path.startsWith(ROOMS)).sort((a,b)=>a.path.localeCompare(b.path))[0]?.path||OVERVIEW;
   const nativeMap=this.app.vault.getAbstractFileByPath(dungeon.root+'Karte.dungeon');
-  const w=this.app.workspace,L=await this.readyLayout(),leaves=[];
-  const walk=n=>{if(n.type==='leaf')leaves.push(n);else n.children?.forEach(walk);};walk(L.main);
-  const usedIds=new Set(leaves.map(n=>n.id));
-  const freshId=base=>{let id=base,index=2;while(usedIds.has(id))id=base+index++;usedIds.add(id);return id;};
+  const w=this.app.workspace,L=await this.readyLayout();
+  const {leaves,freshId}=layoutLeaves(L);
 	  const activeFile=leaves.find(n=>n.id===L.active)?.state?.state?.file;
 	  const selectedRoom=leaves.find(n=>this.isRoom(n.state?.state?.file)&&n.state.state.file.startsWith(ROOMS))?.state.state.file||(this.isDungeon(activeFile)?activeFile:firstRoom);
   let overview=leaves.find(n=>n.state?.state?.file===OVERVIEW)||{id:freshId('dndoverview'),type:'leaf',state:{type:'markdown',state:{file:OVERVIEW,mode:'preview'}}};
@@ -330,9 +336,8 @@ class Spielansicht extends Plugin {
   }
  }
  async restoreV4Layout(dungeon,virtual,path){
-  const w=this.app.workspace,L=await this.readyLayout(),leaves=[];
-  const walk=n=>{if(n.type==='leaf')leaves.push(n);else n.children?.forEach(walk);};walk(L.main);
-  const usedIds=new Set(leaves.map(n=>n.id)),freshId=base=>{let id=base,i=2;while(usedIds.has(id))id=base+i++;usedIds.add(id);return id;};
+  const w=this.app.workspace,L=await this.readyLayout();
+  const {leaves,freshId}=layoutLeaves(L);
   const root=dungeon.root,mapPath=root+'Karte.dungeon';
   const selected=path?this.app.vault.getAbstractFileByPath(path):null;
   const overviewPath=selected instanceof TFile&&selected.extension==='md'&&selected.parent?.path===root.slice(0,-1)?selected.path:dungeon.overview;

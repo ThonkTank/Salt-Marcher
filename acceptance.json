@@ -2741,7 +2741,9 @@
         "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006/transfer-result.json",
         "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-verify.json",
         "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-fresh.json",
-        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-link.json"
+        "/home/aaron/.cache/dungeon-native-qa/phase6-staging/production-link.json",
+        "/home/aaron/.cache/dungeon-native-qa/cleanup-result.json",
+        "/home/aaron/.cache/dungeon-native-qa/cleanup-production-state.json"
       ],
       "originalCheck": {
         "status": "not-applicable",

@@ -126,3 +126,9 @@ Die aus der SVG-Vorlage übernommenen absoluten Koordinaten der produktiven Drac
 ## Projektablage
 
 Der Git-Hauptstand liegt unter `/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor`. Der aktuell installierte Phase-1-Quellstand liegt als Worktree des Zweigs `active/installed-phase1` unter `/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1`; der Tag `installed-phase1-before-cleanup-20261006` hält dessen Ausgangsstand fest. Im Vault bleiben die installierten Laufzeitdateien als echte Dateien, während Entwicklungsdateien auf diesen Worktree verweisen. Die früheren Cache-Pfade bleiben als Kompatibilitätslinks erreichbar; Belegtexte und Karten bleiben unverändert.
+
+## Modulgrenzen nach der Bereinigung
+
+`src/main.ts` enthält den Plugin-Lebenszyklus und die gemeinsame Session-Verwaltung. Vault-Speicheradapter liegen in `src/vault-stores.ts`, Ansichten und Dialoge unter `src/ui/`. Die bisherigen Einstiegspunkte `src/commands.ts` und `src/content.ts` bleiben als Exporte erhalten; Objektbefehle und reine Auswertung liegen in eigenen Modulen. Pfad- und Dachzeichnung liegen in `src/render-drawing.ts`. Die Eigenschaftenansicht und der Zeigerabschluss rufen kleinere Methoden in derselben Reihenfolge auf. Diese Aufteilung ändert weder Kartenformat noch gespeicherte Einstellungen oder öffentliche Plugin-IDs.
+
+Die Kernprüfungen werden über `tests/core.test.ts` in fester Reihenfolge geladen. `tools/host-test.cjs` behält seine CLI und Ergebnisdateien; die Host-Szenarien liegen unter `tools/host/`. Die Phase-6-Auswertung wird mit `tools/build-auswertung-adapter.mjs` aus einer temporären Kopie gebaut. Der installierte Plugin-Quellordner im Vault dient dabei ausschließlich als Eingabe; das Buildziel liegt außerhalb des Vaults.

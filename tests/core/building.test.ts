@@ -1,0 +1,1144 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { parseDocument, type Door, type Building, type Polygon, isRoom } from "../../src/model";
+import { Session } from "../../src/session";
+import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation } from "../../src/commands";
+import { boundarySegments, alignedPortalAt, portalPose, rectangle, reanchorPortal, buildingContourEntries, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
+import { composeBuilding } from "../../src/compute";
+import { floorEraseActive } from "../../src/drawing";
+import { newDocument } from "./fixtures";
+
+
+test("bound portals snap to the center of a matching corridor endpoint", () => {
+  const room = {
+      id: "room",
+      kind: "building" as const,
+      floorId: "floor",
+      number: "1",
+      name: "Eingang",
+      note: { path: "Dungeons/Test/Räume/01 Eingang.md" },
+      polygons: [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 7, y: 7 }),
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    },
+    corridor = {
+      id: "corridor",
+      kind: "path" as const,
+      floorId: "floor",
+      points: [
+        { x: 3.5, y: 0 },
+        { x: 3.5, y: -5 },
+      ],
+      width: 3,
+      style: "road" as const,
+      color: 0xffffff,
+      outlineColor: 0,
+      outlineWidth: 0.1,
+      layer: 0,
+      start: "round" as const,
+      end: "round" as const,
+      blocksLight: false,
+      smooth: false,
+      closed: false,
+    };
+  assert.deepEqual(
+    alignedPortalAt({ x: 3.1, y: 0 }, room, [corridor], 3),
+    { contour: 0, at: 0.125 },
+  );
+  assert.notDeepEqual(
+    alignedPortalAt({ x: 3.1, y: 0 }, room, [corridor], 1),
+    { contour: 0, at: 0.125 },
+  );
+});
+
+test("floor erase state follows the persistent mode and transient Alt modifier", () => {
+  assert.equal(floorEraseActive("draw", false), false);
+  assert.equal(floorEraseActive("draw", true), true);
+  assert.equal(floorEraseActive("erase", false), true);
+  assert.equal(floorEraseActive("erase", true), true);
+});
+
+test("building keeps multiple parts, holes and the same id when assigned a room key", () => {
+  const document = newDocument("Gebäudeaggregat", 40, 40),
+    session = new Session(document),
+    floorId = document.floors[0]!.id,
+    polygons = [
+      {
+        outer: rectangle({ x: 1, y: 1 }, { x: 12, y: 12 }),
+        holes: [rectangle({ x: 4, y: 4 }, { x: 7, y: 7 })],
+      },
+      {
+        outer: rectangle({ x: 18, y: 2 }, { x: 24, y: 8 }),
+        holes: [],
+      },
+    ],
+    building = createBuilding(session, floorId, polygons, {
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    }),
+    room = adoptFloorAsRoom(
+      session,
+      building.id,
+      "QA/Räume",
+      {},
+      "QA/Gebäudeaggregat.dungeon",
+    );
+  assert.equal(session.document().version, 3);
+  assert.equal(room.id, building.id);
+  assert.deepEqual(room.polygons, polygons);
+  assert.equal(isRoom(room), true);
+  session.undo();
+  const restored = session.entities.get(building.id);
+  assert.equal(restored?.kind, "building");
+  assert.equal(isRoom(restored), false);
+  if (restored?.kind !== "building") throw new Error("Gebäude fehlt.");
+  assert.deepEqual(restored.polygons, polygons);
+  assert.equal(session.note(room.note!.path), null);
+});
+
+test("room assignment binds existing building portals and creates their key blocks atomically", () => {
+  const document = newDocument("Portale vor Raum", 30, 30),
+    session = new Session(document),
+    floorId = document.floors[0]!.id,
+    building = createBuilding(session, floorId, [{
+      outer: rectangle({ x: 2, y: 2 }, { x: 12, y: 10 }),
+      holes: [],
+    }], {
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    }),
+    northDoor = createPortal(session, floorId,
+      { boundary: building, anchor: { contour: 0, at: 0.125 } },
+      { variant: "door", width: 1, blocksLight: true,
+        passage: { description: "Steintür", state: "locked", hidden: true,
+          hiddenDC: 14, hp: 20, ac: 15, key: "Messingschlüssel" } },
+    ),
+    westOpening = createPortal(session, floorId,
+      { boundary: building, anchor: { contour: 0, at: 0.875 } },
+      { variant: "opening", width: 1, blocksLight: false },
+    ),
+    room = adoptFloorAsRoom(session, building.id, "QA/Räume"),
+    key = session.note(room.note!.path)!;
+  assert.equal(northDoor.note, undefined);
+  assert.equal(westOpening.note, undefined);
+  assert.match(key, new RegExp(`\\^durchgang-${northDoor.id}`));
+  assert.match(key, new RegExp(`\\^durchgang-${westOpening.id}`));
+  assert.match(key, /Steintür\. Verschlossen\. Versteckt \(SG 14\)\. 20 HP, RK 15\. Schlüssel: Messingschlüssel\./);
+  for (const id of [northDoor.id, westOpening.id]) {
+    const door = session.entities.get(id);
+    assert.equal(door?.kind, "door");
+    if (door?.kind !== "door") continue;
+    assert.equal(door.note?.path, room.note!.path);
+    assert.ok(door.passage?.direction);
+  }
+  const finalDocument = session.document();
+  session.undo();
+  assert.equal(session.note(room.note!.path), null);
+  assert.deepEqual(session.entities.get(northDoor.id), northDoor);
+  assert.deepEqual(session.entities.get(westOpening.id), westOpening);
+  assert.equal(isRoom(session.entities.get(building.id)), false);
+  session.redo();
+  assert.equal(session.note(room.note!.path), key);
+  assert.deepEqual(session.document(), finalDocument);
+  assert.deepEqual(parseDocument(JSON.stringify(finalDocument)), finalDocument);
+});
+
+test("room assignment refuses to replace an existing portal key reference", () => {
+  const document = newDocument("Geschützter Durchgang", 20, 20),
+    session = new Session(document),
+    floorId = document.floors[0]!.id,
+    building = createBuilding(session, floorId, [{
+      outer: rectangle({ x: 2, y: 2 }, { x: 10, y: 10 }),
+      holes: [],
+    }], { layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2 }),
+    door = createPortal(session, floorId,
+      { boundary: building, anchor: { contour: 0, at: 0.125 } },
+      { variant: "door", width: 1, blocksLight: true },
+    ),
+    existing = { ...door, note: { path: "QA/Andere.md", anchor: "alter-anker" } };
+  session.loadNote("QA/Andere.md", "Bewahrter Text.\r\n");
+  session.execute({ label: "Vorhandenen Verweis setzen", entities: [
+    { id: door.id, before: door, after: existing },
+  ] });
+  const before = session.document();
+  assert.throws(
+    () => adoptFloorAsRoom(session, building.id, "QA/Räume"),
+    /anderen Key-Verweis/,
+  );
+  assert.deepEqual(session.document(), before);
+  assert.equal(session.note("QA/Andere.md"), "Bewahrter Text.\r\n");
+  assert.equal(isRoom(session.entities.get(building.id)), false);
+});
+
+test("building room metadata is all-or-nothing", () => {
+  const document = newDocument("Raumidentität", 20, 20),
+    floorId = document.floors[0]!.id,
+    partial: Building = {
+      id: "partial-room",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 1, y: 1 }, { x: 5, y: 5 }),
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+      name: "Unvollständig",
+    };
+  assert.throws(
+    () => new Session({ ...document, entities: [partial] }),
+    /Gebäudedaten/,
+  );
+});
+
+test("portal anchors address one building contour and reject missing contours", () => {
+  const document = newDocument("Konturportal", 30, 30),
+    session = new Session(document),
+    floorId = document.floors[0]!.id,
+    building = createBuilding(
+      session,
+      floorId,
+      [{
+        outer: rectangle({ x: 1, y: 1 }, { x: 12, y: 12 }),
+        holes: [rectangle({ x: 3, y: 3 }, { x: 7, y: 7 })],
+      }],
+      {
+        layer: 200,
+        fill: 0xbfb09a,
+        wall: 0x403e39,
+        wallWidth: 0.2,
+      },
+    ),
+    door = createPortal(
+      session,
+      floorId,
+      { boundary: building, anchor: { contour: 1, at: 0.125 } },
+      { variant: "door", width: 2, blocksLight: true },
+    ),
+    pose = portalPose(door, (id) => session.entities.get(id));
+  assert.deepEqual(pose, { x: 5, y: 3, angle: 0 });
+  assert.equal(boundarySegments(building, [door]).length, 9);
+  assert.deepEqual(
+    parseDocument(JSON.stringify(session.document())).entities.find(
+      (entity) => entity.id === door.id,
+    ),
+    door,
+  );
+  assert.throws(
+    () =>
+      createPortal(
+        session,
+        floorId,
+        { boundary: building, anchor: { contour: 2, at: 0.5 } },
+        { variant: "door", width: 1, blocksLight: true },
+      ),
+    /Wandbindung/,
+  );
+});
+
+test("portal reanchoring follows point edits but survives booleans only on retained walls", () => {
+  const document = newDocument("Portalabgleich", 30, 30),
+    session = new Session(document),
+    floorId = document.floors[0]!.id,
+    before = createBuilding(
+      session,
+      floorId,
+      [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+        holes: [],
+      }],
+      {
+        layer: 200,
+        fill: 0xbfb09a,
+        wall: 0x403e39,
+        wallWidth: 0.2,
+      },
+    ),
+    door = createPortal(
+      session,
+      floorId,
+      { boundary: before, anchor: { contour: 0, at: 0.125 } },
+      { variant: "door", width: 1, blocksLight: true },
+    ),
+    extended: Building = {
+      ...before,
+      polygons: [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 12, y: 10 }),
+        holes: [],
+      }],
+    },
+    retained = reanchorPortal(door, before, extended, "survive");
+  assert.ok(retained);
+  assert.deepEqual(
+    portalPose(retained, (id) => (id === extended.id ? extended : undefined)),
+    { x: 5, y: 0, angle: 0 },
+  );
+  const moved: Building = {
+      ...before,
+      polygons: [{
+        outer: [
+          { x: 0, y: 1 },
+          { x: 10, y: 1 },
+          { x: 10, y: 10 },
+          { x: 0, y: 10 },
+        ],
+        holes: [],
+      }],
+    },
+    followed = reanchorPortal(door, before, moved, "follow");
+  assert.ok(followed);
+  assert.equal(
+    portalPose(followed, (id) => (id === moved.id ? moved : undefined)).y,
+    1,
+  );
+  const cut: Building = {
+    ...before,
+    polygons: [{
+      outer: [
+        { x: 0, y: 0 },
+        { x: 4, y: 0 },
+        { x: 4, y: 2 },
+        { x: 6, y: 2 },
+        { x: 6, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+        { x: 0, y: 10 },
+      ],
+      holes: [],
+    }],
+  };
+  assert.equal(reanchorPortal(door, before, cut, "survive"), null);
+});
+
+test("building draw keeps the sole room id and commits portal loss without touching key bytes", () => {
+  const document = newDocument("Atomarer Grundriss", 30, 30),
+    floorId = document.floors[0]!.id,
+    style = {
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    },
+    plain: Building = {
+      id: "plain-first",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 9, y: 0 }, { x: 16, y: 10 }),
+        holes: [],
+      }],
+      ...style,
+    },
+    room: Building = {
+      id: "numbered-later",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+        holes: [],
+      }],
+      number: "7",
+      name: "Sonderraum",
+      note: { path: "QA/Räume/07 Sonderraum.md" },
+      ...style,
+    },
+    kept: Door = {
+      id: "kept-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: room.id, contour: 0, at: 0.875 },
+      width: 1,
+      variant: "door",
+    },
+    lost: Door = {
+      id: "lost-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: plain.id, contour: 0, at: 29 / 34 },
+      width: 1,
+      variant: "door",
+    },
+    session = new Session({
+      ...document,
+      entities: [plain, room, kept, lost],
+    }),
+    keyBytes = "---\r\nroom_id: \"numbered-later\"\r\n---\r\n# 7  Sonderraum!\r\n\r\n- Tür:  unverändert.\r\n";
+  session.loadNote(room.note!.path, keyBytes);
+  const beforeEntities = session.document().entities,
+    beforePose = portalPose(kept, (id) => session.entities.get(id)),
+    result = composeBuilding({
+      kind: "compose-building",
+      sources: [
+        { id: plain.id, polygons: plain.polygons },
+        { id: room.id, polygons: room.polygons },
+      ],
+      shape: [{
+        outer: rectangle({ x: 8, y: 4 }, { x: 11, y: 6 }),
+        holes: [],
+      }],
+      erase: false,
+    }),
+    plan = planBuildingMutation({
+      entities: [...session.entities.values()],
+      floorId,
+      result,
+      expectedRevision: session.revision,
+      currentRevision: session.revision,
+    });
+  assert.equal(plan.selectedId, room.id);
+  assert.ok(plan.command);
+  assert.equal(Object.hasOwn(plan.command!, "texts"), false);
+  session.execute(plan.command!);
+  assert.equal(session.historySize, 1);
+  assert.equal(session.entities.has(plain.id), false);
+  assert.equal(isRoom(session.entities.get(room.id)), true);
+  assert.equal(session.entities.has(lost.id), false);
+  const keptAfter = session.entities.get(kept.id);
+  assert.equal(keptAfter?.kind, "door");
+  if (keptAfter?.kind !== "door") throw new Error("Portal fehlt.");
+  assert.equal(keptAfter.anchor?.boundaryId, room.id);
+  const afterPose = portalPose(keptAfter, (id) => session.entities.get(id));
+  assert.ok(Math.abs(afterPose.x - beforePose.x) < 1e-8);
+  assert.ok(Math.abs(afterPose.y - beforePose.y) < 1e-8);
+  assert.equal(session.note(room.note!.path), keyBytes);
+  const afterEntities = session.document().entities;
+
+  session.undo();
+  assert.deepEqual(session.document().entities, beforeEntities);
+  assert.equal(session.note(room.note!.path), keyBytes);
+  session.redo();
+  assert.deepEqual(session.document().entities, afterEntities);
+  assert.equal(session.note(room.note!.path), keyBytes);
+});
+
+test("building draw chooses the earlier unnumbered id independent of worker id order", () => {
+  const document = newDocument("Deterministische ID", 30, 30),
+    floorId = document.floors[0]!.id,
+    style = {
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    },
+    first: Building = {
+      id: "document-first",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 6, y: 6 }),
+        holes: [],
+      }],
+      ...style,
+    },
+    second: Building = {
+      id: "worker-first",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 5, y: 0 }, { x: 11, y: 6 }),
+        holes: [],
+      }],
+      ...style,
+    },
+    geometry = composeBuilding({
+      kind: "compose-building",
+      sources: [
+        { id: second.id, polygons: second.polygons },
+        { id: first.id, polygons: first.polygons },
+      ],
+      shape: [{
+        outer: rectangle({ x: 4, y: 2 }, { x: 7, y: 4 }),
+        holes: [],
+      }],
+      erase: false,
+    });
+  assert.equal(geometry.mode, "draw");
+  if (geometry.mode !== "draw") return;
+  assert.deepEqual(geometry.mergedIds, [second.id, first.id]);
+  const plan = planBuildingMutation({
+    entities: [first, second],
+    floorId,
+    result: geometry,
+    expectedRevision: 4,
+    currentRevision: 4,
+  });
+  assert.equal(plan.selectedId, first.id);
+  assert.ok(
+    plan.command?.entities?.some(
+      (change) => change.id === second.id && change.after === null,
+    ),
+  );
+});
+
+test("building planner creates and fully erases an unnumbered building with ordinary undo", () => {
+  const document = newDocument("Neuer Grundriss", 20, 20),
+    floorId = document.floors[0]!.id,
+    polygon = {
+      outer: rectangle({ x: 2, y: 2 }, { x: 8, y: 8 }),
+      holes: [],
+    },
+    fresh: Building = {
+      id: "fresh-building",
+      kind: "building",
+      floorId,
+      polygons: [polygon],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    },
+    session = new Session(document),
+    draw = composeBuilding({
+      kind: "compose-building",
+      sources: [],
+      shape: [polygon],
+      erase: false,
+    }),
+    create = planBuildingMutation({
+      entities: [],
+      floorId,
+      result: draw,
+      expectedRevision: 0,
+      currentRevision: 0,
+      newBuilding: fresh,
+    });
+  assert.ok(create.command);
+  session.execute(create.command!);
+  assert.equal(session.entities.has(fresh.id), true);
+  assert.equal(session.historySize, 1);
+
+  const erase = composeBuilding({
+      kind: "compose-building",
+      sources: [{ id: fresh.id, polygons: fresh.polygons }],
+      shape: [{
+        outer: rectangle({ x: 1, y: 1 }, { x: 9, y: 9 }),
+        holes: [],
+      }],
+      erase: true,
+    }),
+    remove = planBuildingMutation({
+      entities: [...session.entities.values()],
+      floorId,
+      result: erase,
+      expectedRevision: 1,
+      currentRevision: 1,
+    });
+  assert.ok(remove.command);
+  session.execute(remove.command!);
+  assert.equal(session.entities.has(fresh.id), false);
+  assert.equal(session.historySize, 2);
+  session.undo();
+  assert.deepEqual(session.entities.get(fresh.id), fresh);
+  session.undo();
+  assert.equal(session.entities.has(fresh.id), false);
+  session.redo();
+  session.redo();
+  assert.equal(session.entities.has(fresh.id), false);
+});
+
+test("building erase removes only unsupported portals in the same undo step", () => {
+  const document = newDocument("Portalradierer", 20, 20),
+    floorId = document.floors[0]!.id,
+    room: Building = {
+      id: "erase-room",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+      number: "1",
+      name: "Radierraum",
+      note: { path: "QA/Räume/01 Radierraum.md" },
+    },
+    lost: Door = {
+      id: "erased-wall-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: room.id, contour: 0, at: 0.05 },
+      width: 1,
+      variant: "door",
+    },
+    kept: Door = {
+      id: "remaining-wall-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: room.id, contour: 0, at: 0.2 },
+      width: 1,
+      variant: "door",
+    },
+    session = new Session({ ...document, entities: [room, lost, kept] }),
+    keyBytes = "# 1  Radierraum\r\n\r\nUngewöhnlich; exakt!\r\n";
+  session.loadNote(room.note!.path, keyBytes);
+  const before = session.document().entities,
+    keptPose = portalPose(kept, (id) => session.entities.get(id)),
+    result = composeBuilding({
+      kind: "compose-building",
+      sources: [{ id: room.id, polygons: room.polygons }],
+      shape: [{
+        outer: rectangle({ x: 1, y: -1 }, { x: 3, y: 2 }),
+        holes: [],
+      }],
+      erase: true,
+    }),
+    plan = planBuildingMutation({
+      entities: [...session.entities.values()],
+      floorId,
+      result,
+      expectedRevision: 0,
+      currentRevision: 0,
+    });
+  assert.ok(plan.command);
+  assert.equal(Object.hasOwn(plan.command!, "texts"), false);
+  session.execute(plan.command!);
+  assert.equal(session.historySize, 1);
+  assert.equal(session.entities.has(lost.id), false);
+  const keptAfter = session.entities.get(kept.id);
+  assert.equal(keptAfter?.kind, "door");
+  if (keptAfter?.kind !== "door") throw new Error("Portal fehlt.");
+  const nextPose = portalPose(keptAfter, (id) => session.entities.get(id));
+  assert.ok(Math.abs(nextPose.x - keptPose.x) < 1e-8);
+  assert.ok(Math.abs(nextPose.y - keptPose.y) < 1e-8);
+  assert.equal(session.note(room.note!.path), keyBytes);
+  const after = session.document().entities;
+  session.undo();
+  assert.deepEqual(session.document().entities, before);
+  session.redo();
+  assert.deepEqual(session.document().entities, after);
+  assert.equal(session.note(room.note!.path), keyBytes);
+});
+
+test("building planner rejects two rooms, full room erase and stale worker output", () => {
+  const document = newDocument("Schutzregeln", 20, 20),
+    floorId = document.floors[0]!.id,
+    room = (id: string, number: string, x: number): Building => ({
+      id,
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: rectangle({ x, y: 0 }, { x: x + 6, y: 6 }),
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+      number,
+      name: "Raum " + number,
+      note: { path: `QA/Räume/${number}.md` },
+    }),
+    first = room("room-a", "1", 0),
+    second = room("room-b", "2", 5),
+    draw = composeBuilding({
+      kind: "compose-building",
+      sources: [
+        { id: first.id, polygons: first.polygons },
+        { id: second.id, polygons: second.polygons },
+      ],
+      shape: [{
+        outer: rectangle({ x: 4, y: 2 }, { x: 7, y: 4 }),
+        holes: [],
+      }],
+      erase: false,
+    });
+  assert.throws(
+    () => planBuildingMutation({
+      entities: [first, second],
+      floorId,
+      result: draw,
+      expectedRevision: 0,
+      currentRevision: 0,
+    }),
+    /Zwei nummerierte Räume/,
+  );
+  const erase = composeBuilding({
+    kind: "compose-building",
+    sources: [{ id: first.id, polygons: first.polygons }],
+    shape: [{
+      outer: rectangle({ x: -1, y: -1 }, { x: 7, y: 7 }),
+      holes: [],
+    }],
+    erase: true,
+  });
+  assert.throws(
+    () => planBuildingMutation({
+      entities: [first],
+      floorId,
+      result: erase,
+      expectedRevision: 0,
+      currentRevision: 0,
+    }),
+    /Archivierungsablauf/,
+  );
+  assert.throws(
+    () => planBuildingMutation({
+      entities: [first],
+      floorId,
+      result: draw,
+      expectedRevision: 8,
+      currentRevision: 9,
+    }),
+    /inzwischen geändert/,
+  );
+});
+
+function multiContourBuilding(floorId: string): Building {
+  return {
+    id: "multi-contour-room",
+    kind: "building",
+    floorId,
+    polygons: [
+      {
+        outer: rectangle({ x: 0, y: 0 }, { x: 12, y: 12 }),
+        holes: [rectangle({ x: 3, y: 3 }, { x: 7, y: 7 })],
+      },
+      {
+        outer: rectangle({ x: 20, y: 0 }, { x: 28, y: 8 }),
+        holes: [],
+      },
+    ],
+    layer: 200,
+    fill: 0xbfb09a,
+    wall: 0x403e39,
+    wallWidth: 0.2,
+    number: "4",
+    name: "Mehrkonturraum",
+    note: { path: "QA/Räume/04 Mehrkonturraum.md" },
+  };
+}
+
+test("building contour addressing distinguishes outer rings, holes and detached parts", () => {
+  const building = multiContourBuilding("floor"),
+    entries = buildingContourEntries(building);
+  assert.deepEqual(
+    entries.map(({ contour, polygon, hole }) => ({ contour, polygon, hole })),
+    [
+      { contour: 0, polygon: 0, hole: undefined },
+      { contour: 1, polygon: 0, hole: 0 },
+      { contour: 2, polygon: 1, hole: undefined },
+    ],
+  );
+  const vertex = nearestBuildingVertex({ x: 7.1, y: 3 }, building);
+  assert.equal(vertex.contour, 1);
+  assert.equal(vertex.index, 1);
+  assert.ok(Math.abs(vertex.distance - 0.1) < 1e-9);
+  const segment = nearestBuildingSegment({ x: 24, y: 0.1 }, building);
+  assert.equal(segment.contour, 2);
+  assert.equal(segment.index, 0);
+  assert.ok(Math.abs(segment.distance - 0.1) < 1e-9);
+  const changedHole = [
+      { x: 3, y: 3 },
+      { x: 9, y: 4 },
+      { x: 7, y: 7 },
+      { x: 3, y: 7 },
+    ],
+    after = replaceBuildingContour(building, 1, changedHole);
+  assert.deepEqual(after.polygons[0]!.outer, building.polygons[0]!.outer);
+  assert.deepEqual(after.polygons[0]!.holes[0], changedHole);
+  assert.deepEqual(after.polygons[1], building.polygons[1]);
+});
+
+test("moving a hole point follows its portal atomically and preserves exact key bytes", () => {
+  const document = newDocument("Lochpunkt", 40, 30),
+    floorId = document.floors[0]!.id,
+    building = multiContourBuilding(floorId),
+    holeDoor: Door = {
+      id: "hole-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 1, at: 0.125 },
+      width: 0.5,
+      variant: "door",
+    },
+    detachedDoor: Door = {
+      id: "detached-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 2, at: 0.125 },
+      width: 0.5,
+      variant: "door",
+    },
+    session = new Session({
+      ...document,
+      entities: [building, holeDoor, detachedDoor],
+    }),
+    keyBytes = "# 4  Mehrkonturraum\r\n\r\nLochwand:  exakt; bitte!\r\n";
+  session.loadNote(building.note!.path, keyBytes);
+  const hole = [...building.polygons[0]!.holes[0]!];
+  hole[1] = { x: 9, y: 4 };
+  const after = replaceBuildingContour(building, 1, hole),
+    command = planBuildingContourMutation({
+      entities: [...session.entities.values()],
+      before: building,
+      after,
+      edit: { kind: "move", contour: 1, index: 1 },
+    });
+  assert.ok(command);
+  assert.equal(Object.hasOwn(command!, "texts"), false);
+  assert.deepEqual(
+    command!.entities?.map((change) => change.id),
+    [building.id, holeDoor.id],
+  );
+  const beforeEntities = session.document().entities;
+  session.execute(command!);
+  assert.equal(session.historySize, 1);
+  const movedDoor = session.entities.get(holeDoor.id);
+  assert.equal(movedDoor?.kind, "door");
+  if (movedDoor?.kind !== "door") throw new Error("Lochportal fehlt.");
+  const pose = portalPose(movedDoor, (id) => session.entities.get(id));
+  assert.ok(Math.abs(pose.x - 6) < 1e-8);
+  assert.ok(Math.abs(pose.y - 3.5) < 1e-8);
+  assert.ok(Math.abs(pose.angle - Math.atan2(1, 6)) < 1e-8);
+  assert.deepEqual(session.entities.get(detachedDoor.id), detachedDoor);
+  assert.equal(session.note(building.note!.path), keyBytes);
+  const afterEntities = session.document().entities;
+  session.undo();
+  assert.deepEqual(session.document().entities, beforeEntities);
+  assert.equal(session.note(building.note!.path), keyBytes);
+  session.redo();
+  assert.deepEqual(session.document().entities, afterEntities);
+  assert.equal(session.note(building.note!.path), keyBytes);
+});
+
+test("inserting on a detached contour follows the same wall segment through undo", () => {
+  const document = newDocument("Getrennte Restfläche", 40, 30),
+    floorId = document.floors[0]!.id,
+    building = multiContourBuilding(floorId),
+    door: Door = {
+      id: "detached-edit-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 2, at: 0.1875 },
+      width: 0.5,
+      variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, door] }),
+    contour = [...building.polygons[1]!.outer];
+  contour.splice(1, 0, { x: 24, y: -2 });
+  const after = replaceBuildingContour(building, 2, contour),
+    command = planBuildingContourMutation({
+      entities: [...session.entities.values()],
+      before: building,
+      after,
+      edit: { kind: "insert", contour: 2, index: 1 },
+    });
+  assert.ok(command);
+  const beforeEntities = session.document().entities;
+  session.execute(command!);
+  const followed = session.entities.get(door.id);
+  assert.equal(followed?.kind, "door");
+  if (followed?.kind !== "door") throw new Error("Portal fehlt.");
+  const pose = portalPose(followed, (id) => session.entities.get(id));
+  assert.ok(Math.abs(pose.x - 26) < 1e-8);
+  assert.ok(Math.abs(pose.y + 1) < 1e-8);
+  assert.ok(Math.abs(pose.angle - Math.atan2(2, 4)) < 1e-8);
+  session.undo();
+  assert.deepEqual(session.document().entities, beforeEntities);
+  session.redo();
+  assert.equal(session.entities.has(door.id), true);
+});
+
+test("removing a hole point projects an adjacent portal onto the joined edge", () => {
+  const document = newDocument("Lochpunkt entfernen", 40, 30),
+    floorId = document.floors[0]!.id,
+    building = multiContourBuilding(floorId),
+    door: Door = {
+      id: "removed-hole-point-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 1, at: 0.125 },
+      width: 0.5,
+      variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, door] }),
+    hole = building.polygons[0]!.holes[0]!.filter((_, index) => index !== 1),
+    after = replaceBuildingContour(building, 1, hole),
+    command = planBuildingContourMutation({
+      entities: [...session.entities.values()],
+      before: building,
+      after,
+      edit: { kind: "remove", contour: 1, index: 1 },
+    });
+  assert.ok(command);
+  session.execute(command!);
+  const followed = session.entities.get(door.id);
+  assert.equal(followed?.kind, "door");
+  if (followed?.kind !== "door") throw new Error("Portal fehlt.");
+  const pose = portalPose(followed, (id) => session.entities.get(id));
+  assert.ok(Math.abs(pose.x - 4) < 1e-8);
+  assert.ok(Math.abs(pose.y - 4) < 1e-8);
+  assert.ok(Math.abs(pose.angle - Math.PI / 4) < 1e-8);
+  session.undo();
+  assert.deepEqual(session.entities.get(door.id), door);
+  session.redo();
+  assert.equal(session.entities.has(door.id), true);
+});
+
+function rejectsBuildingTopology(
+  name: string,
+  polygons: readonly Polygon[],
+  contour: number,
+  afterPoints: readonly { x: number; y: number }[],
+  edit: Parameters<typeof planBuildingContourMutation>[0]["edit"],
+): void {
+  const document = newDocument(name, 40, 40),
+    floorId = document.floors[0]!.id,
+    building: Building = {
+      id: "guarded-building",
+      kind: "building",
+      floorId,
+      polygons,
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+      number: "9",
+      name: "Topologieschutz",
+      note: { path: "QA/Räume/09 Topologieschutz.md" },
+    },
+    door: Door = {
+      id: "guarded-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.75 },
+      width: 0.5,
+      variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, door] }),
+    keyBytes = "# 9  Topologieschutz\r\n\r\nUnverändert!\r\n",
+    after = replaceBuildingContour(building, contour, afterPoints),
+    beforeDocument = session.document();
+  session.loadNote(building.note!.path, keyBytes);
+  assert.throws(
+    () =>
+      planBuildingContourMutation({
+        entities: [...session.entities.values()],
+        before: building,
+        after,
+        edit,
+      }),
+    /Ungültige Gebäudetopologie/,
+  );
+  assert.deepEqual(session.document(), beforeDocument);
+  assert.deepEqual(session.entities.get(door.id), door);
+  assert.equal(session.note(building.note!.path), keyBytes);
+  assert.equal(session.historySize, 0);
+  assert.equal(session.dirty, false);
+}
+
+test("point mutation rejects a near-zero-area contour before creating a command", () => {
+  const document = newDocument("Fast flächenlose Kontur", 40, 40),
+    floorId = document.floors[0]!.id,
+    building: Building = {
+      id: "near-zero-area-building",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 1 }],
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+      number: "10",
+      name: "Flächenschutz",
+      note: { path: "QA/Räume/10 Flächenschutz.md" },
+    },
+    door: Door = {
+      id: "near-zero-area-door",
+      kind: "door",
+      floorId,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.1 },
+      width: 0.5,
+      variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, door] }),
+    keyBytes = "# 10  Flächenschutz\r\n\r\nUnverändert!\r\n",
+    points = [...building.polygons[0]!.outer];
+  session.loadNote(building.note!.path, keyBytes);
+  points[2] = { x: 0, y: 0.000005 };
+  const after = replaceBuildingContour(building, 0, points),
+    twiceArea = points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length]!;
+      return sum + point.x * next.y - next.x * point.y;
+    }, 0),
+    beforeDocument = session.document();
+  assert.ok(Math.abs(twiceArea - 0.00005) < 1e-12);
+  let command: ReturnType<typeof planBuildingContourMutation> | undefined;
+  assert.throws(
+    () => {
+      command = planBuildingContourMutation({
+        entities: [...session.entities.values()],
+        before: building,
+        after,
+        edit: { kind: "move", contour: 0, index: 2 },
+      });
+    },
+    /Die Kontur hat keine Fläche\./,
+  );
+  assert.equal(command, undefined);
+  assert.deepEqual(session.document(), beforeDocument);
+  assert.deepEqual(session.entities.get(door.id), door);
+  assert.equal(session.note(building.note!.path), keyBytes);
+  assert.equal(session.revision, 0);
+  assert.equal(session.historySize, 0);
+  assert.equal(session.dirty, false);
+  assert.equal(session.canUndo, false);
+  assert.equal(session.canRedo, false);
+});
+
+test("point mutation validation does not add the topology guard to document loading", () => {
+  const document = newDocument("Bestehende Kontur", 40, 40),
+    floorId = document.floors[0]!.id,
+    existing: Building = {
+      id: "existing-self-intersection",
+      kind: "building",
+      floorId,
+      polygons: [{
+        outer: [
+          { x: 0, y: 0 },
+          { x: 10, y: 10 },
+          { x: 10, y: 0 },
+          { x: 0, y: 8 },
+        ],
+        holes: [],
+      }],
+      layer: 200,
+      fill: 0xbfb09a,
+      wall: 0x403e39,
+      wallWidth: 0.2,
+    },
+    parsed = parseDocument(JSON.stringify({
+      ...document,
+      entities: [existing],
+    }));
+  assert.deepEqual(parsed.entities, [existing]);
+});
+
+test("point topology guard rejects the self-intersecting move reproducer", () => {
+  rejectsBuildingTopology(
+    "Selbstschnitt Move",
+    [{
+      outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+      holes: [],
+    }],
+    0,
+    [{ x: 0, y: 0 }, { x: 5, y: 12 }, { x: 10, y: 10 }, { x: 0, y: 10 }],
+    { kind: "move", contour: 0, index: 1 },
+  );
+});
+
+test("point topology guard rejects the self-intersecting insert reproducer", () => {
+  rejectsBuildingTopology(
+    "Selbstschnitt Insert",
+    [{
+      outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+      holes: [],
+    }],
+    0,
+    [
+      { x: 0, y: 0 },
+      { x: 5, y: 12 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 },
+    ],
+    { kind: "insert", contour: 0, index: 1 },
+  );
+});
+
+test("point topology guard rejects the self-intersecting remove reproducer", () => {
+  const before = [
+    { x: 3, y: 1 },
+    { x: 7, y: 2 },
+    { x: 6, y: 3 },
+    { x: 4, y: 3 },
+    { x: 4, y: 5 },
+    { x: 5, y: 8 },
+    { x: 1, y: 7 },
+  ];
+  rejectsBuildingTopology(
+    "Selbstschnitt Remove",
+    [{ outer: before, holes: [] }],
+    0,
+    before.slice(1),
+    { kind: "remove", contour: 0, index: 0 },
+  );
+});
+
+test("point topology guard rejects a hole escaping its outer ring", () => {
+  rejectsBuildingTopology(
+    "Auslaufendes Loch",
+    [{
+      outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+      holes: [rectangle({ x: 3, y: 3 }, { x: 7, y: 7 })],
+    }],
+    1,
+    [{ x: 3, y: 3 }, { x: 12, y: 3 }, { x: 7, y: 7 }, { x: 3, y: 7 }],
+    { kind: "move", contour: 1, index: 1 },
+  );
+});
+
+test("point topology guard also rejects null edges, hole overlap and part overlap", () => {
+  rejectsBuildingTopology(
+    "Nullkante",
+    [{
+      outer: rectangle({ x: 0, y: 0 }, { x: 10, y: 10 }),
+      holes: [],
+    }],
+    0,
+    [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 },
+    ],
+    { kind: "insert", contour: 0, index: 1 },
+  );
+  rejectsBuildingTopology(
+    "Lochüberlappung",
+    [{
+      outer: rectangle({ x: 0, y: 0 }, { x: 20, y: 20 }),
+      holes: [
+        rectangle({ x: 2, y: 2 }, { x: 6, y: 6 }),
+        rectangle({ x: 8, y: 2 }, { x: 12, y: 6 }),
+      ],
+    }],
+    1,
+    [{ x: 2, y: 2 }, { x: 10, y: 2 }, { x: 6, y: 6 }, { x: 2, y: 6 }],
+    { kind: "move", contour: 1, index: 1 },
+  );
+  rejectsBuildingTopology(
+    "Teilüberlappung",
+    [
+      {
+        outer: rectangle({ x: 0, y: 0 }, { x: 6, y: 6 }),
+        holes: [],
+      },
+      {
+        outer: rectangle({ x: 10, y: 0 }, { x: 16, y: 6 }),
+        holes: [],
+      },
+    ],
+    1,
+    [{ x: 4, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 6 }, { x: 10, y: 6 }],
+    { kind: "move", contour: 1, index: 0 },
+  );
+});

@@ -401,19 +401,7 @@ export class Properties {
         this.notice("Objektvorschau konnte nicht geladen werden: " + String(error));
     });
   }
-  render(tool: Tool, selected: string | undefined, floorId: string): void {
-    const activePicker = this.objectPicker;
-    this.objectPicker = undefined;
-    activePicker?.close("escape");
-    this.objectLibraryPreview?.dispose();
-    this.objectLibraryPreview = undefined;
-    this.root.replaceChildren();
-    const e = selected ? this.session.entities.get(selected) : undefined;
-    const floorTool =
-      tool === "room" ||
-      tool === "polygon" ||
-      tool === "ellipse" ||
-      tool === "corridor";
+  private renderFloorControls(tool: Tool, e: Entity | undefined, floorTool: boolean): void {
     if (floorTool) {
       this.choice(
         "Modus",
@@ -528,6 +516,8 @@ export class Properties {
           true,
         );
     }
+  }
+  private renderPortalControls(tool: Tool, e: Entity | undefined): void {
     if (e?.kind === "door" || tool === "door") {
       const portal = e?.kind === "door" ? e : this.defaults.portal;
       const update = (patch: Partial<ToolSettings["portal"]>) => {
@@ -695,6 +685,8 @@ export class Properties {
           );
       }
     }
+  }
+  private renderSurfaceControls(tool: Tool, e: Entity | undefined, floorTool: boolean): void {
     if (
       tool === "cave" ||
       tool === "material" ||
@@ -799,6 +791,8 @@ export class Properties {
         (value) =>
           (this.defaults.waterShape = value as ToolSettings["waterShape"]),
       );
+  }
+  private renderSurfaceAndPathControls(tool: Tool, e: Entity | undefined, floorTool: boolean, selected: string | undefined, floorId: string): void {
     if (
       e?.kind === "surface" ||
       floorTool ||
@@ -1034,6 +1028,8 @@ export class Properties {
         update({ blocksLight: i.checked }),
       );
     }
+  }
+  private renderRoofControls(tool: Tool, e: Entity | undefined): void {
     if (e?.kind === "roof" || tool === "roof") {
       const roof = e?.kind === "roof" ? e : this.defaults.roof;
       const update = (patch: Partial<Roof>) => {
@@ -1092,6 +1088,8 @@ export class Properties {
         (i) => update({ color: parseInt(i.value.slice(1), 16) }),
       );
     }
+  }
+  private renderMaterialControls(tool: Tool, e: Entity | undefined, selected: string | undefined, floorId: string): void {
     if (
       e?.kind === "building" ||
       e?.kind === "surface" ||
@@ -1317,6 +1315,8 @@ export class Properties {
         );
       }
     }
+  }
+  private renderLightControls(tool: Tool, e: Entity | undefined): void {
     if (e?.kind === "light" || tool === "light") {
       const light = e?.kind === "light" ? e : this.defaults.light;
       const update = (patch: Partial<Light>) => {
@@ -1374,6 +1374,8 @@ export class Properties {
         update({ shadows: i.checked }),
       );
     }
+  }
+  private renderReferenceControls(e: Entity | undefined): void {
     if (e?.kind === "reference") {
       const image = e;
       const update = (patch: Partial<ReferenceImage>) =>
@@ -1423,6 +1425,8 @@ export class Properties {
         "1",
       );
     }
+  }
+  private renderObjectControls(tool: Tool, e: Entity | undefined): void {
     if (e?.kind === "object" || tool === "object" || tool === "scatter") {
       let object = e?.kind === "object" ? e : this.defaults.object;
       const update = (patch: Partial<MapObject>) => {
@@ -1620,6 +1624,9 @@ export class Properties {
         (i) => update({ flip: i.checked }),
       );
     }
+  }
+
+  private renderScatterAndFloorProperties(tool: Tool, floorId: string): void {
     if (tool === "scatter") {
       this.field(
         "Streuabstand in Feldern",
@@ -1711,5 +1718,29 @@ export class Properties {
       "1",
       ".05",
     );
+  }
+  render(tool: Tool, selected: string | undefined, floorId: string): void {
+    const activePicker = this.objectPicker;
+    this.objectPicker = undefined;
+    activePicker?.close("escape");
+    this.objectLibraryPreview?.dispose();
+    this.objectLibraryPreview = undefined;
+    this.root.replaceChildren();
+    const e = selected ? this.session.entities.get(selected) : undefined;
+    const floorTool =
+      tool === "room" ||
+      tool === "polygon" ||
+      tool === "ellipse" ||
+      tool === "corridor";
+    this.renderFloorControls(tool, e, floorTool);
+    this.renderPortalControls(tool, e);
+    this.renderSurfaceControls(tool, e, floorTool);
+    this.renderSurfaceAndPathControls(tool, e, floorTool, selected, floorId);
+    this.renderRoofControls(tool, e);
+    this.renderMaterialControls(tool, e, selected, floorId);
+    this.renderLightControls(tool, e);
+    this.renderReferenceControls(e);
+    this.renderObjectControls(tool, e);
+    this.renderScatterAndFloorProperties(tool, floorId);
   }
 }
