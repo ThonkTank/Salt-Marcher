@@ -4458,18 +4458,41 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Kantenmittelpunkt-Zug zeichnet Boden und Paketwand transient mit derselben Vorschau wie Eckpunkt-Zug."
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/building-point-gestures.ts"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/BAU-DELETE-EDGE-INTEGRATION.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01401-EDGE-PREVIEW-HOOK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Transiente Boden-/Wand-Vorschau nach Editor-Hook noch nicht im isolierten Host mit Original, Abbruch und Frischöffnung verglichen."
+          "state": "partial",
+          "build": "4de900d76418bb2bd286f2ad73b5f74143a3d74f5c836818fa22ff7cc26412f9",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/bau-point-gestures-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/bau-point-gestures-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Original-/Host-Motivpaar, Original-Frischöffnung dieses einfachen Stands, Escape-Abbruch und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Transiente Füllung und vier Paketwand-Sprites; 3→4 Punkte, ein History-Schritt, Undo/Redo, Save und Frischstart bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/bau-point-gestures-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/bau-point-gestures-reopen.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/group-cases.json"
+            ],
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            },
+            "gap": "Original-/Host-Motivpaar, Original-Frischöffnung dieses einfachen Stands, Escape-Abbruch und installierter Endstand offen."
+          }
         },
         "inventoryNote": "Quellenkorrektur 2026-10-06: R3 E14 speichert das Viereck, E15/E16 belegen Undo/Redo. Frisches Originalöffnen genau dieses einfachen Stands und erfolgreicher Escape-Abbruch bleiben offen."
       },
@@ -4521,17 +4544,42 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Reiner Helfer berechnet Portalanker für die gehaltene Kanten-Vorschau; Renderer-Anschluss fehlt."
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/building-point-gestures.ts",
+            "src/features/bau/building-edge-portal-preview.ts"
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01402-PORTAL-PREVIEW-HOOK.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md"
           ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Commit-Portalfolge statisch geprüft; gehaltene Vorschau mit Portal-Override, Escape, Save/Reopen und installierter Endstand offen."
+          "state": "partial",
+          "build": "4de900d76418bb2bd286f2ad73b5f74143a3d74f5c836818fa22ff7cc26412f9",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/bau-point-gestures-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/bau-point-gestures-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/group-cases.json"
+          ],
+          "gap": "Original-/Host-Motivpaar, mehrere Portale/nahe Ersatzwand und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Transiente Füllung, Paketwand und Portalvorschau bei (6,3); Commit, Undo/Redo, Save und Frischstart bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-014-01-02-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/bau-point-gestures-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276543962-bau-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/bau-point-gestures-reopen.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd014-edge-portal-pack-20261006/evidence/1791276564758-bau-01-reopen/group-cases.json"
+            ],
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            },
+            "gap": "Original-/Host-Motivpaar, mehrere Portale/nahe Ersatzwand und installierter Endstand offen."
+          }
         },
         "inventoryNote": "Quellenkorrektur 2026-10-06: R3 E19→E22 und E23/E24 sowie R4 E25/E26 belegen das gebundene Portal einschließlich Undo/Redo und Frischöffnung. Der ältere Satz „Portale nicht geprüft“ ist überholt. Kandidaten-Previewanker und installierter Host bleiben offen."
       },
