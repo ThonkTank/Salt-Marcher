@@ -4469,12 +4469,13 @@
         "original": {
           "sequence": "Nach Kanten-Drag Kontur prüfen.",
           "options": "Paketwand vorhanden.",
-          "effect": "Viereck statt Dreieck und Wand nachgeführt; Portale nicht geprüft.",
+          "effect": "Viereck statt Dreieck und Wand nachgeführt; Portale nicht geprüft. Direktes R3/R4 zeigt Portal bei (6,3) nach Kantenpunkt-Einfügen mit neuem Wandanker; Undo/Redo und Frischöffnung erhalten es.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin: direkte Belege gemäß Dossier; Hersteller-API zusätzlich, selbst nicht versionsgebunden",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-014-Building-Point-Insert.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-building-point-insert.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01402-PORTAL-PREVIEW-HOOK.md"
           ]
         },
         "target": "Boden, Wand und Portale nach Einfügen konsistent.",
@@ -4503,15 +4504,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Reiner Helfer berechnet Portalanker für die gehaltene Kanten-Vorschau; Renderer-Anschluss fehlt."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01402-PORTAL-PREVIEW-HOOK.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Commit-Portalfolge statisch geprüft; gehaltene Vorschau mit Portal-Override, Escape, Save/Reopen und installierter Endstand offen."
         }
       },
       {
@@ -4613,7 +4618,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/shots/16-building-drag-result.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/native/map/bau-gui-working.dungeondraft_map",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/gui-summary.json"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/bau/gui-voll-20261004-2047/gui-summary.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md"
           ]
         },
         "target": "Building-Boden ohne automatische Wand funktional gleichwertig erzeugen.",
@@ -4644,15 +4650,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Wandstil X erzeugt Building-Boden ohne automatische Wand; bisheriger Kernstand und korrigierter isolierter Hostbeleg."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01502-NONE-WALL-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Isolierter Host belegt Boden ohne Wandring, Undo/Redo und Frischöffnung; gepaarte Original-/Host-Schattenwirkung und installierter Endstand offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: None fea8c37d-f83a-47eb-b994-a82eb5236b28: wallWidth=0, Textursprites=0, Zeichenaktionen=fill, vorherige Paketwand erhalten=true; Save=true.\nFrischstart: Frischöffnung: Dokument/Datei bytegleich=true; None wallWidth=0; Sprites=0; Aktionen=fill.",
@@ -4693,7 +4703,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-015-Building-Package-Wall.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/FloorShapeTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/dd015017-native/shots/03-building-panel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01503-WALL-COLOR-STATIC.md"
           ],
           "gap": "Tint-Wirkung der automatischen Wand auf der Karte und in der Datei ist nicht separat gemessen."
         },
@@ -4725,7 +4736,9 @@
         "implementation": {
           "state": "not_started",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01503-WALL-COLOR-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -5044,7 +5057,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-016-Wall-Tool.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/WallTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-wall-joint-modes.dungeondraft_map",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-wall.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01601-INDEPENDENT-STRAIGHT-WALL.md"
           ]
         },
         "target": "Eigenständige Wand in gleicher Lage.",
@@ -5076,7 +5090,9 @@
         "implementation": {
           "state": "not_started",
           "changes": [],
-          "evidence": []
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD01601-INDEPENDENT-STRAIGHT-WALL.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
@@ -9453,10 +9469,11 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PathTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-021/native/shots/path-controls-later.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-021-INITIAL-AND-PERSISTENCE-STATIC.md"
           ]
         },
-        "target": "Pfadwerkzeug zugänglich.",
+        "target": "Pfadwerkzeug mit der belegten Startwahl und den zugehörigen Parametern zugänglich.",
         "baseline": {
           "editor": {
             "sequence": "Gelände → Pfade verfügbar.",
@@ -9483,31 +9500,23 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Erster Pfadaufruf eines neuen, unberührten Profils setzt bei verfügbarem Originalkatalog Battlements, Breite 69/256 Feld und Layer 100; alte gespeicherte Vorgaben bleiben erhalten."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-021-START-INTEGRATION.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
-          "candidate": {
-            "state": "open",
-            "observation": null,
-            "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199562154-material-pfad-edit/material-pfad-steps.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/material-pfad/evidence/1791199572664-material-pfad-reopen/material-pfad-steps.json"
-            ],
-            "gap": "Edit: Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.\nFrischstart: Host: Dieser Detailfall wurde in der Pfad-Gruppensitzung nicht ausgeführt.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
-          }
+          "state": "partial",
+          "build": "ab93763651110ace3e14da487933594041b37025839b7ca9508257c9b8e38057",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-path-default-parallel-retry2-20261006/evidence/1791270820640-material-pfad-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-path-default-parallel-retry2-20261006/evidence/1791270820640-material-pfad-edit/library-before.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd021-path-default-parallel-retry2-20261006/evidence/1791270857166-material-pfad-reopen/group-cases.json"
+          ],
+          "gap": "Neues Profil: Startasset, Breite und Layer im isolierten Host bestätigt; altes Profil, Built-ins OFF, spätere PCK-Ladung, vollständiger Originalbildvergleich und installierter Endstand offen."
         }
       },
       {
@@ -11828,7 +11837,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-shade-off.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-shade-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
           ]
         },
         "target": "Globale Dachschattierung schaltbar.",
@@ -11858,15 +11868,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
         }
       },
       {
@@ -11884,7 +11898,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
           ]
         },
         "target": "Dachbeleuchtung folgt Sonnenrichtung.",
@@ -11913,15 +11928,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
         }
       },
       {
@@ -11942,7 +11961,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135-contrast-08.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/12-roof-quickbox-bottom.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/14-roof-manual-end-confirm.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-SHADE-CONTRAST-STATIC.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-SHADE-CONTRAST-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
           ]
         },
         "target": "Dachkontrast einstellbar.",
@@ -11971,15 +11991,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalwirkung belegt; Wertebereich, Shaderformel und Hostgleichwertigkeit offen."
+          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
         }
       },
       {
@@ -12220,7 +12244,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/native-reopen-ready.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/native-reopen-ready.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-17-ROOF-FRESH-OPEN-STATIC.md"
           ]
         },
         "target": "Dach und alle Lichtparameter erhalten.",
@@ -12250,15 +12275,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Dachentität besteht einen Save- und frischen Repository-/Session-Open-Test; globale Dachlichtwerte fehlen im V3-Modell."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-17-ROOF-FRESH-OPEN-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Dachentität statisch nach frischer Repository-Öffnung belegt; globale Original-Dachlichtwerte, aktueller Host-Neustart samt Bild und installierter Endstand offen."
         }
       },
       {
@@ -18865,14 +18894,16 @@
         "original": {
           "sequence": "Escape bei Cursor-Vorschau",
           "options": null,
-          "effect": "Object Tool blieb offen.",
+          "effect": "Atlas Globe 01: Bilder vor und nach einmal Escape sind pixelgleich; Object Tool, markierte Kachel und Cursorvorschau bleiben; ein anschließender Klick platziert.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/08-escape-hover.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/08-escape-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-20-ESCAPE-STATIC.md"
           ],
-          "gap": "Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt."
+          "gap": "Nur ruhende Cursorvorschau vor der ersten Platzierung direkt belegt; andere Gesten/Dialoge und mehrfaches Escape offen."
         },
-        "target": "Escape-Vorschauabbruch ohne Verlassen des Kartenblatts.",
+        "target": "Einmal Escape bei ruhender Objekt-Cursorvorschau erhält Werkzeug, Kachel und Vorschau; anschließender Klick platziert weiter.",
         "baseline": {
           "editor": {
             "sequence": "Escape im maximierten Objektwerkzeug",
@@ -18885,9 +18916,9 @@
           },
           "comparison": {
             "status": "Abweichung",
-            "difference": "Werkzeug-/Fensterzustand weicht ab.",
+            "difference": "Historischer Host verließ bei Escape das maximierte Kartenblatt, während das Original Werkzeug und Vorschau erhielt.",
             "gap": "Andere Hostzustände offen.",
-            "target": "Escape-Vorschauabbruch ohne Verlassen des Kartenblatts.",
+            "target": "Einmal Escape bei ruhender Objekt-Cursorvorschau erhält Werkzeug, Kachel und Vorschau; anschließender Klick platziert weiter.",
             "effort": "klein"
           },
           "checks": {
@@ -18897,33 +18928,19 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Escape bei ruhender Objekt-Cursorvorschau verlässt den Editor nicht und erhält das aktive Objektwerkzeug."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-20-ESCAPE-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
-          "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor.",
-            "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
-            ],
-            "gap": "Edit: Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor. Originalgrenze: Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt.\nFrischstart: Original-Escape erhielt das Object Tool; maximierter Host verlässt bisher den Editor. Originalgrenze: Escape-Abbruch ist nur für den geprüften Vorschauzustand direkt belegt.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
-            "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
-            }
-          }
+          "gap": "Einmal Escape mit echter Atlas-Kachel im isolierten Host und am installierten Endstand sowie Folgeplatzierung noch nicht geprüft."
         }
       },
       {
