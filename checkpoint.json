@@ -778,13 +778,13 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Phase 1: offene Grundform-/Randschnitt-Matrix und native Selbstschnitt-Bereinigung gezielt vergleichen; danach separater Reviewlauf",
-    "note": "Drei native Handle-Varianten speichern dieselbe Kurve; der erste Folgepunkt steuert die Krümmung und entfällt als Ecke, sobald ein weiterer Punkt folgt. Der Kandidat besteht die isolierte Mehrkurven-Hostfolge samt frischer Neuöffnung.",
-    "candidateBuildSha256": "47d0359a848e4bfc199c75e96a56aca109188c6132e3f91fb87a53ab1eaf921e",
+    "nextRun": "Phase 1: Grundform-Vorschau und Ellipsen-/Polygongangwirkung paarweise abgleichen; native Selbstschnitt-Bereinigung prüfen; danach separater Reviewlauf",
+    "note": "Die isolierte Hostfolge bildet nun auch beide nativen Randschnitte ab: erster Schnitt erhält das Portal am Wandmittelpunkt, zweiter entfernt es. Mehrkurvenfolge, Undo/Redo und frische Neuöffnung bestehen ebenfalls.",
+    "candidateBuildSha256": "c6639bc92ee28f38247df113631515553f76272dff14711ae1c2b02e18c4284e",
     "candidateCoreTests": 117,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
-    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318562574-parity-phase1-edit/result.json",
-    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791318758311-parity-phase1-reopen/result.json",
-    "open": "Nativer Selbstschnitt bereinigt Mehrkurvenkonturen anders; DD-011.01/.02/.04 und erster Randschnitt aus .07 brauchen noch vollständigen paarweisen Vergleich. Exakte Snap-Toleranz offen; physische Eingabe folgt gemäß Roadmap in Phase 7."
+    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791319285275-parity-phase1-edit/result.json",
+    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791319508257-parity-phase1-reopen/result.json",
+    "open": "Nativer Selbstschnitt bereinigt Mehrkurvenkonturen anders; DD-011.01/.02/.04 brauchen noch vollständigen paarweisen Vorschau-/Konturvergleich. Exakte Snap-Toleranz offen; physische Eingabe folgt gemäß Roadmap in Phase 7."
   }
 }

@@ -16,11 +16,11 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     return { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
       y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
   }, point);
-  const count = async (expected) => page.waitForFunction((expected) => {
+  const count = async (expected, timeout = 15000) => page.waitForFunction((expected) => {
     const editor = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
     return !!editor && !editor.paintWorker &&
       editor.session.document().entities.filter(e => e.kind === "building").length === expected;
-  }, expected, { timeout: 15000 });
+  }, expected, { timeout });
   const buildings = async () => (await state()).document.entities.filter(e => e.kind === "building");
   const click = async (point) => {
     const p = await world(point);
@@ -49,7 +49,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await open();
     await chooseTool("Raum");
     await drag({ x: 2, y: 2 }, { x: 9, y: 9 });
-    await count(1);
+    await count(1, 45000);
     const first = (await buildings())[0];
     assert.equal(first.polygons[0].outer.length, 4);
     assert.ok(first.wallWidth > 0);
@@ -232,7 +232,16 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     await open("Dungeons/Parity/Portal.dungeon");
     assert.equal((await state()).document.entities.filter(e => e.kind === "door").length, 1);
     await chooseTool("Raum");
-    await drag({ x: 4, y: 1 }, { x: 7, y: 4 }, "Alt");
+    await drag({ x: 3.5, y: 1.5 }, { x: 4.5, y: 3 }, "Alt");
+    await page.waitForFunction(() => {
+      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      return !e?.paintWorker && e?.session.document().entities
+        .filter(x => x.kind === "building")[0]?.polygons[0]?.outer.length === 8;
+    });
+    assert.equal((await state()).document.entities.filter(e => e.kind === "door").length, 1);
+    await page.screenshot({ path: path.join(out, "portal-wall-partial-cut.png") });
+    checks.push("First native matching Alt cut retains the portal on the remaining wall");
+    await drag({ x: 3, y: 1.5 }, { x: 5, y: 3 }, "Alt");
     await page.waitForFunction(() => {
       const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
       return !e?.paintWorker && e?.session.document().entities

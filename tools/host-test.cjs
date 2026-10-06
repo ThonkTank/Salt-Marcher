@@ -288,13 +288,13 @@ function prepare() {
     }, null, 2));
     fs.writeFileSync(vault + "/Dungeons/Parity/Portal.dungeon", JSON.stringify({
       format: "dungeon-map", version: 3, id: "parity-phase1-portal",
-      settings: { name: "Portalradierung", width: 12, height: 10, feetPerField: 5,
+      settings: { name: "Portalradierung", width: 8, height: 8, feetPerField: 5,
         wallShadows: false, objectShadows: false, buildingWear: 0 },
       floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
       entities: [
         { id: "building-1", kind: "building", floorId: "floor-1",
-          polygons: [{ outer: [{ x: 2, y: 2 }, { x: 9, y: 2 },
-            { x: 9, y: 9 }, { x: 2, y: 9 }], holes: [] }],
+          polygons: [{ outer: [{ x: 2, y: 2 }, { x: 6, y: 2 },
+            { x: 6, y: 6 }, { x: 2, y: 6 }], holes: [] }],
           layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2 },
         { id: "door-1", kind: "door", floorId: "floor-1",
           anchor: { boundaryId: "building-1", contour: 0, at: 0.125 },

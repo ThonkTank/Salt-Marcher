@@ -741,21 +741,12 @@ export function reanchorPortal(
       anchor: { ...door.anchor, boundaryId: after.id },
     };
   }
-  const samples = [0, -door.width / 2, door.width / 2]
-      .map((offset) =>
-        boundaryPoseAt(before, door.anchor!.contour, door.anchor!.at, offset),
-      ),
-    center = samples[0];
-  if (!center || samples.some((sample) => !sample)) return null;
-  const anchors = samples.map((sample) => nearestBoundary(sample!, after)),
-    target = anchors[0]!;
-  if (
-    anchors.some(
-      (anchor) =>
-        anchor.distance > tolerance || anchor.contour !== target.contour,
-    )
-  )
-    return null;
+  const center = boundaryPoseAt(before, door.anchor.contour, door.anchor.at);
+  if (!center) return null;
+  // Dungeondraft retains a portal when a Boolean cut reaches one side of its
+  // span, provided its center is still on the original-facing wall.
+  const target = nearestBoundary(center, after);
+  if (target.distance > tolerance) return null;
   const nextPose = boundaryPoseAt(after, target.contour, target.at);
   if (!nextPose || Math.abs(Math.cos(nextPose.angle - center.angle)) < 0.996)
     return null;

@@ -369,6 +369,23 @@ test("portal reanchoring follows point edits but survives booleans only on retai
     portalPose(followed, (id) => (id === moved.id ? moved : undefined)).y,
     1,
   );
+  const partial: Building = {
+    ...before,
+    polygons: [{
+      outer: [
+        { x: 0, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 2 },
+        { x: 6, y: 2 }, { x: 6, y: 0 }, { x: 10, y: 0 },
+        { x: 10, y: 10 }, { x: 0, y: 10 },
+      ],
+      holes: [],
+    }],
+  };
+  const partiallyRetained = reanchorPortal(door, before, partial, "survive");
+  assert.ok(partiallyRetained);
+  assert.deepEqual(
+    portalPose(partiallyRetained, (id) => (id === partial.id ? partial : undefined)),
+    { x: 5, y: 0, angle: 0 },
+  );
   const cut: Building = {
     ...before,
     polygons: [{
