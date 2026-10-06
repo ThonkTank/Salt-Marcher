@@ -9,13 +9,13 @@ Der verbindliche Unterfallkatalog steht in `acceptance.json`. Die Phasen decken 
 1. Den aktuellen **installierten** Editorstand und den passenden Unterfall in `acceptance.json` lesen. Vorhandene Nachweise sind Ausgangspunkte, keine pauschale Paritätsfreigabe.
 2. Die Eingabefolge, Optionen, Vorschau, Zustandswechsel und gespeicherte Wirkung direkt in Dungeondraft auf isolierten Testdaten belegen. Eine noch unbekannte Originalwirkung vor der Umsetzung gezielt nachmessen.
 3. Nur bestätigte Abweichungen angleichen. Danach denselben Ablauf im installierten Obsidian auf einer isolierten Kopie prüfen, einschließlich Undo/Redo, Speichern und frischer Neuöffnung, soweit der Unterfall diese Zustände betrifft.
-4. Die betroffenen Unterfälle erst nach Originalbeleg, implementierter Wirkung, Hostlauf und Endstandsprüfung schließen; Beleg, Build, Abweichung und Restarbeit in `acceptance.json` und `TOOL-PARITY.md` festhalten. `checkpoint.json` nennt danach die nächste Phase. Typprüfung, Kerntests und Build sind zusätzliche Prüfungen.
+4. Die betroffenen Unterfälle erst nach Originalbeleg, implementierter Wirkung, Hostlauf und Endstandsprüfung schließen; Beleg, Build, Abweichung und Restarbeit in `acceptance.json` und `TOOL-PARITY.md` festhalten. Zeigt der Review Lücken, folgt ein eigener Nachbesserungslauf und danach ein neuer Reviewlauf; beide werden wiederholt, bis das Phasentor ohne offene Nachbesserung bestanden ist. Erst dann nennt `checkpoint.json` die zugehörige Aufräumphase. Typprüfung, Kerntests und Build sind zusätzliche Prüfungen.
 
-Die Phasen laufen in der folgenden Reihenfolge. Es läuft höchstens eine grafische Testinstanz. Produktive Dungeontexte, Karten, Links und gespeicherte Bildgrößen bleiben bei den Werkzeugprüfungen geschützt. Physische Maus- und Touchpad-Eingaben werden nicht durch synthetische Ereignisse als abgenommen ausgegeben.
+Die Fachphasen laufen in der folgenden Reihenfolge. Nach jeder freigegebenen Fachphase folgt vor der nächsten Fachphase eine eigene Aufräumphase mit getrenntem Plan-, Umsetzungs- und Reviewlauf. Erst ihr bestandener Review öffnet die nächste Fachphase; nach Phase 7 schließt die Aufräumphase die Roadmap ab. Es läuft höchstens eine grafische Testinstanz. Produktive Dungeontexte, Karten, Links und gespeicherte Bildgrößen bleiben bei den Werkzeugprüfungen geschützt. Physische Maus- und Touchpad-Eingaben werden nicht durch synthetische Ereignisse als abgenommen ausgegeben.
 
 ## Phase 1 – Grundformen und Zeichengesten
 
-**Unterfälle:** `DD-011.01` bis `.10` sowie `.13` bis `.15`.
+**Unterfälle:** `DD-011.01` bis `.10` sowie `.13` und `.14`. `DD-011.15` wird vollständig in Phase 3 geprüft; das Speichern und frische Wiederöffnen aller hier gezeichneten Formen bleibt Teil dieses Phasentors.
 
 Rechteck, Ellipse, Polygon und ein schmaler Polygongang erhalten dieselbe wirksame Vorschau und Abschlussfolge wie das Original. Rücktaste, Shift-Kurve, Alt-Radieren, Escape und Snap an/aus werden jeweils mit fertigem Boden und umlaufender Wand verglichen. Die eigenen zusätzlichen Eingänge dürfen bleiben, sofern der originale Ablauf funktioniert.
 
@@ -31,11 +31,11 @@ Punktbearbeitung aktivieren, Eck- und Ellipsenpunkte ziehen, Punkte an Kanten ei
 
 ## Phase 3 – Boden und Gebäudewand gestalten
 
-**Unterfälle:** `DD-011.11` und `.12`, `DD-011.16` bis `.22` sowie `DD-015`.
+**Unterfälle:** `DD-011.11`, `.12`, `.15`, `.16` bis `.22` sowie `DD-015`.
 
 Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners und Stilwechsel vor und nach dem Zeichnen werden mit denselben Testkonturen geprüft. Paketwände müssen Punktänderungen folgen. Farbwahl wird nur für diese Werkzeugoptionen einbezogen.
 
-**Phasentor:** Stil, Farbe, Kontur und Wandverbindung zeigen die belegte Wirkung und bleiben nach Bearbeitung, Undo/Redo, Speichern und Neuöffnung erhalten.
+**Phasentor:** Stil, Farbe, Kontur und Wandverbindung zeigen die belegte Wirkung und bleiben nach Bearbeitung, Undo/Redo, Speichern und Neuöffnung erhalten. `DD-011.15` umfasst danach alle Building-Optionen einschließlich der bereits in Phase 1 geprüften Formen.
 
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
@@ -61,8 +61,12 @@ Mausrad, Alt+Mausrad, Umschalt+Mausrad, gehaltenes A, Rechtsklick und Z+Mausrad 
 
 **Phasentor:** Jede Geste verändert nur die belegte Eigenschaft und bewegt die Kamera nicht unbeabsichtigt. Auswahl, Raumzuordnung, Undo/Redo und frische Neuöffnung stimmen für die geprüften Objektfolgen.
 
-## Phase 7 – Gemeinsamer Ablauf und Abschluss
+## Phase 7 – Gemeinsamer Ablauf
 
 Auf einer isolierten Kopie einen Raum zeichnen und bearbeiten, mehrere Objekte auswählen und setzen, eines zwischen Räumen verschieben, ein Feature mit seinem wortgleichen Key-Abschnitt verbinden und den Abschnitt über die Karte öffnen. Danach Undo/Redo, Speichern und einen frischen Obsidian-Prozess prüfen. Die zuvor übersprungene physische Maus-/Touchpad-Probe und eine große kombinierte Testkarte erhalten eigene Ergebnisse; ohne diese Belege werden sie nicht als abgeschlossen markiert.
 
-**Abschluss:** Alle Pflicht-Unterfälle dieser Roadmap besitzen direkte Original- und Endstandsbelege. Der bestehende Raum–Objekt–Key-Ablauf, die Spielansicht, IDs, Links und geschützte Texte bestehen die Regression. Offene Fälle außerhalb dieser Roadmap werden nicht als erledigt ausgewiesen.
+**Phasentor:** Alle Pflicht-Unterfälle dieser Roadmap besitzen direkte Original- und Endstandsbelege. Der bestehende Raum–Objekt–Key-Ablauf, die Spielansicht, IDs, Links und geschützte Texte bestehen die Regression. Offene Fälle außerhalb dieser Roadmap werden nicht als erledigt ausgewiesen.
+
+## Aufräumphase nach jeder Fachphase
+
+Jede Aufräumphase prüft die gerade eingeführten Modelle, Zustände, Ereigniswege und Tests auf doppelte Logik, verdeckte Kopplung, unnötige Arbeit und nicht freigegebene Ressourcen. Der Planlauf legt die konkreten Schwächen und eine begrenzte Änderungsfolge fest; der Umsetzungslauf bereinigt sie ohne Änderung der belegten Werkzeugwirkung; der Reviewlauf prüft Diff, Basistests, passende Original-/Hostregression und frische Neuöffnung. Befunde bleiben offen, wenn die Wirkung nicht erneut belegt ist. Nach Phase 7 umfasst dieser Lauf zusätzlich den Gesamtabschluss der Roadmap.

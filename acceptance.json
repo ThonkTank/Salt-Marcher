@@ -3865,7 +3865,9 @@
           "remaining": "Frische Originalkarten belegen die in Phase 1 geprüften Form-/Schnittfolgen; der isolierte Host öffnet den Kandidaten erneut. Alle Building-Optionen einschließlich Boden-/Wandstil und Werkzeugvorgaben werden erst nach Phase 3 vollständig geprüft. Gehaltene Shift-Vorschau und Snap-Speicherzustand bleiben im Phase-1-Review offen.",
           "reviewResult": "open",
           "reviewFinding": "Frische Originalöffnungen für Rechteck/Snap, Shift-Kurve, Portal-Randschnitt, Alt-Ellipse und Alt-Polygon sind vorhanden; der Host öffnet die geprüften Phase-1-Formen erneut. Die Anforderung aller Building-Optionen umfasst auch Stile aus Phase 3 und bleibt insgesamt offen."
-        }
+        },
+        "roadmapPhase": 3,
+        "phaseAssignmentNote": "Planfortschreibung 2026-10-07: voller Save/Open-Pflichtfall für alle Building-Optionen in Phase 3; Neuöffnung jeder Phase-1-Form bleibt zusätzlich dortiges Phasentor. Der Phase-1-Reviewbefund bleibt als historischer Befund erhalten."
       },
       {
         "id": "DD-011.16",
