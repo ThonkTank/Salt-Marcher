@@ -13564,17 +13564,21 @@
         "command": "Biome: Barren",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Barren auswählen.",
+          "sequence": "Terrain Brush > Biome > Barren auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Barren",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Rocky, Dirt, Gravel, Sand; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/TerrainBrush/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/08-barren-check.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Barren-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Barren setzt Slots 1–4 auf Rocky, Dirt, Gravel, Sand; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Host hat kein Biome-Menü im Terrainpinsel.",
@@ -13600,15 +13604,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16200,16 +16210,20 @@
         "command": "Biome: Desert",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Desert auswählen.",
+          "sequence": "Terrain Brush > Biome > Desert auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Desert",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Sand, Sandstone, Cracked Earth, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-desert.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Desert-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Desert setzt Slots 1–4 auf Sand, Sandstone, Cracked Earth, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16234,15 +16248,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16253,16 +16273,20 @@
         "command": "Biome: Mountain",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Mountain auswählen.",
+          "sequence": "Terrain Brush > Biome > Mountain auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Mountain",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Dry Grass, Limestone, Rocky, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-mountain.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Mountain-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Mountain setzt Slots 1–4 auf Dry Grass, Limestone, Rocky, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16287,15 +16311,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16306,16 +16336,20 @@
         "command": "Biome: Prarie",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Prarie auswählen.",
+          "sequence": "Terrain Brush > Biome > Prarie auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Prarie",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Grass, Dirt, Gravel, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-prarie.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Prarie-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Prarie setzt Slots 1–4 auf Grass, Dirt, Gravel, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16340,15 +16374,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16359,16 +16399,20 @@
         "command": "Biome: Rainforest",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Rainforest auswählen.",
+          "sequence": "Terrain Brush > Biome > Rainforest auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Rainforest",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Moss, Dirt, Swamp, Gravel; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-rainforest.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Rainforest-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Rainforest setzt Slots 1–4 auf Moss, Dirt, Swamp, Gravel; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16393,15 +16437,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16412,16 +16462,20 @@
         "command": "Biome: Settlement",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Settlement auswählen.",
+          "sequence": "Terrain Brush > Biome > Settlement auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Settlement",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Dirt, Gravel, Sand, Snow; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-settlement.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Settlement-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Settlement setzt Slots 1–4 auf Dirt, Gravel, Sand, Snow; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16446,15 +16500,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
@@ -16465,16 +16525,20 @@
         "command": "Biome: Swamp",
         "scope": "required",
         "original": {
-          "sequence": "Im Biome-Menü Swamp auswählen.",
+          "sequence": "Terrain Brush > Biome > Swamp auf isolierter 8×8-Karte mit acht Slots und zwei bemalten Masken wählen.",
           "options": "Biome: Swamp",
-          "effect": null,
+          "effect": "Slots 1–4 zeigen Swamp, Dirt, Dry Grass, Grass; Kartenwirkung ändert sich sichtbar. Slots 5–8 bleiben in der gemessenen Folge erhalten.",
           "version": "1.2.0.1 Opulent Kirin; sichtbarer Direktbeleg, Wirkung ungeprüft",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-024.md",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png"
-          ]
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-terrain-biomes.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD024-BIOME-NATIVE-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-biome-20261006/evidence/preset-swamp.png"
+          ],
+          "gap": "Presetwahl erzeugte keinen erreichbaren Undo-Schritt. Wirkung auf vorhandene History offen; individueller Save/Frischstart nur für Swamp direkt belegt."
         },
-        "target": "Swamp-Vorgabe nach Originalwirkung wählen.",
+        "target": "Biome Swamp setzt Slots 1–4 auf Swamp, Dirt, Dry Grass, Grass; Slots 5–8, beide Masken und Smooth bleiben erhalten. Biome-Anzeige ist laufzeitlich und nach Neustart Settlement.",
         "baseline": {
           "editor": {
             "sequence": "Kein Biome-Menü im Host-Terrainwerkzeug.",
@@ -16499,15 +16563,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/material/native-terrain-biomes.ts",
+            "src/features/material/terrain-biome-floor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-PRESET-SOURCE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-BIOME-FLOOR-PLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Sieben Original-Presets und reine Slotwechselplanung belegt; Menü/Session/Renderer im isolierten Host und installierter Endstand noch nicht verglichen. Historywirkung bei früherem Schritt offen."
         }
       },
       {
