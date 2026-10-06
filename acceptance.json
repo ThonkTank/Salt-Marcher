@@ -25158,19 +25158,21 @@
         "id": "DD-030.26",
         "parent": "DD-030",
         "area": "objekte",
-        "path": "Select > Transformation > Licht-Reichweite am Griff",
-        "command": "Licht-Reichweite am Griff",
+        "path": "Select > Transformation > Licht-Eckgriff",
+        "command": "Licht-Eckgriff",
         "scope": "required",
         "original": {
           "sequence": "Lichtgriff ziehen",
           "options": null,
-          "effect": null,
+          "effect": "Der Eckzug verschiebt die Lichtposition und vergrößert den Auswahlrahmen vorübergehend. Die gespeicherte Reichweite 0,8 und der sichtbare Lichtkreis bleiben unverändert; nach Fremdauswahl und Wiederwahl erscheint wieder der normale 64×64-Rahmen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-030-SELECT.md"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-030-SELECT.md",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/native-light-corner-scale-original.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd030-light-lifetime-QPQQ0K/summary.json"
           ]
         },
-        "target": "Nach Originalmessung: Lichtgriff ändert Reichweite und sichtbaren Lichtkreis in gleichem Maß; Undo stellt beides her.",
+        "target": "Licht-Eckzug verschiebt die Lichtposition und zeigt den vorübergehend vergrößerten Auswahlrahmen; Reichweite und Lichtkreis bleiben unverändert. Nach Fremdauswahl und Wiederwahl erscheint der normale Rahmen. Undo und Speichern gesondert prüfen.",
         "baseline": {
           "editor": {
             "sequence": "Auswahl > Lichtgriff ziehen",
@@ -25185,7 +25187,7 @@
             "status": "offen",
             "difference": "",
             "gap": "Gleiche Griffzone, Geometrie, Snap und Verlauf pro Elementart fehlen. Originaltest: Den jeweiligen Griff an einer fixierten Entität ziehen; Geometrie, Snap, Undo und gespeicherten Wert vor/nachher erfassen.",
-            "target": "Nach Originalmessung: Lichtgriff ändert Reichweite und sichtbaren Lichtkreis in gleichem Maß; Undo stellt beides her.",
+            "target": "Licht-Eckzug verschiebt die Lichtposition und zeigt den vorübergehend vergrößerten Auswahlrahmen; Reichweite und Lichtkreis bleiben unverändert. Nach Fremdauswahl und Wiederwahl erscheint der normale Rahmen. Undo und Speichern gesondert prüfen.",
             "effort": "unklar"
           },
           "checks": {
