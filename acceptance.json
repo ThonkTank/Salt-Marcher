@@ -20224,13 +20224,15 @@
         "original": {
           "sequence": "Spread setzen, dann Streustrich ziehen",
           "options": null,
-          "effect": null,
+          "effect": "1.2.0.1-IL prüft gewachsene GlobalRects gegen bereits gestreute Objekte; eine direkte Originalkarte für den Spread-Grenzwert fehlt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-06-10-STATIC.md"
+          ],
+          "gap": "Die IL belegt den Rect-Ausschluss, aber weder den resultierenden Objektabstand noch die Grenzfälle in einer gepaarten Originalkarte."
         },
-        "target": "Nach Originalmessung: Spread verändert den Abstand der gestreuten Objekte zum Strich mit derselben Verteilung.",
+        "target": "Spread begrenzt die Überschneidung gestreuter Objekte anhand der um den gewählten Wert gewachsenen Objekt-Rechtecke; konkrete Kartenwirkung nach Originalmessung.",
         "baseline": {
           "editor": {
             "sequence": "Streuen > Streuradius in Feldern",
@@ -20245,7 +20247,7 @@
             "status": "nur statisch belegt",
             "difference": "",
             "gap": "Gleiche Verteilung und einzelne gespeicherte Werte nicht isoliert verglichen. Originaltest: Mit fixierten Assets genau diesen Streuparameter ändern; Objekte und Werte eines Kontrollstrichs vor/nachher vergleichen.",
-            "target": "Nach Originalmessung: Spread verändert den Abstand der gestreuten Objekte zum Strich mit derselben Verteilung.",
+            "target": "Gleichwertiger Ausschluss über gewachsene Objekt-Rechtecke; konkrete Kartenwirkung nach Originalmessung.",
             "effort": "mittel"
           },
           "checks": {
@@ -20264,7 +20266,8 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
-        }
+        },
+        "inventoryNote": "Zielkorrektur 2026-10-06: Spread bezeichnet in der 1.2.0.1-Assembly einen Kollisionsausschluss per gewachsenem GlobalRect, keinen zufälligen Versatz vom Strich."
       },
       {
         "id": "DD-027.10",
