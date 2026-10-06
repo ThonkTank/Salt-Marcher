@@ -13,7 +13,21 @@ test("Building Shift curve follows the next polygon point and survives sampled c
     curves = [{ index: 2, handle: { x: 5, y: 4 } }],
     pending = buildingPolygonPoints(base, curves),
     short = buildingPolygonPoints([...base, { x: 4, y: 5 }], curves, true),
-    wide = buildingPolygonPoints([...base, { x: 1, y: 5 }], curves, true);
+    wide = buildingPolygonPoints([...base, { x: 1, y: 5 }], curves, true),
+    reversed = buildingPolygonPoints(
+      [{ x: 6, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 4 }, { x: 6, y: 4 }],
+      [{ index: 2, handle: { x: 2, y: 3 } }], true,
+    ),
+    diagonal = buildingPolygonPoints(
+      [{ x: 1, y: 1 }, { x: 5, y: 1 }, { x: 6, y: 5 }, { x: 1, y: 6 }],
+      [{ index: 2, handle: { x: 5, y: 4 } }], true,
+    ),
+    nativeDiagonal = [
+      [1228, 321], [1138, 447], [1064, 567], [1005, 680],
+      [962, 785], [934, 882], [921, 970], [924, 1050],
+      [941, 1119], [973, 1178], [1020, 1227], [1082, 1264],
+      [1158, 1290], [1248, 1303], [1352, 1304], [1471, 1291],
+    ];
   assert.equal(pending.length, 19);
   assert.equal(short.length, 20);
   assert.equal(wide.length, 20);
@@ -22,6 +36,15 @@ test("Building Shift curve follows the next polygon point and survives sampled c
   assert.ok(Math.abs(short[2]!.y - 551 / 256) < 0.015);
   assert.ok(Math.abs(Math.min(...short.slice(2, 19).map(p => p.x)) - 1324 / 256) < 0.02);
   assert.ok(Math.abs(Math.min(...wide.slice(2, 19).map(p => p.x)) - 1007 / 256) < 0.02);
+  assert.equal(reversed.length, 20);
+  assert.ok(Math.abs(reversed[2]!.x - 320 / 256) < 0.01);
+  assert.ok(Math.abs(reversed[2]!.y - 295 / 256) < 0.01);
+  assert.ok(Math.abs(Math.max(...reversed.slice(2, 19).map(p => p.x)) - 784 / 256) < 0.02);
+  assert.equal(diagonal.length, 20);
+  nativeDiagonal.forEach(([x, y], step) => {
+    assert.ok(Math.abs(diagonal[step + 2]!.x * 256 - x!) <= 1.5);
+    assert.ok(Math.abs(diagonal[step + 2]!.y * 256 - y!) <= 1.5);
+  });
   assert.deepEqual(buildingPolygonPoints(base, [], true), base);
 });
 

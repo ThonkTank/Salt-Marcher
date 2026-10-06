@@ -153,7 +153,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 1 fortsetzen: native Shift-Kurve in weiteren Richtungen, Snap-Wechsel im Polygon und Rücktaste bis zum leeren Entwurf messen; Alt-Ellipsen-/Polygon-Schnitte frisch öffnen. Danach Endstandsreview als eigener Lauf.",
+  "next": "Phase 1: freie Shift-Handle-Varianten und mehrere Kurven in einem Polygon mit einer neuen kontrollierten Originalfolge messen; genaue Snap-Einrasttoleranz vergleichen. Danach separater Endstandsreview.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -778,13 +778,13 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Phase 1 Messlücken und Kandidatenabgleich fortsetzen; danach separater Reviewlauf",
+    "nextRun": "Phase 1: Handle-/Mehrkurvenregel und Snap-Toleranz; anschließend separater Reviewlauf",
     "note": "Ein isolierter Vorlauf für Rechteck, Alt-Radieren und Strg+Y bestand mit einem vorläufigen Build; dessen Codeänderungen wurden für die Trennung der Arbeitsläufe zurückgenommen. Dieser Lauf ist kein Abnahmebeleg.",
-    "candidateBuildSha256": "8155097ccf7f7e0e038894e5a922dbf7ea2401680d172f7eb971f5732db7e73c",
+    "candidateBuildSha256": "376a80a6e4cb966d5b64e93b318acfccda7ec34ec8ce974fe803bc7ed10907e7",
     "candidateCoreTests": 116,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
-    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791316565338-parity-phase1-edit/result.json",
-    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791316703303-parity-phase1-reopen/result.json",
-    "open": "Kurvenregel weiterer Richtungen, Snap-Wechsel im Polygon, native Rücktaste bis leer und exakte Original-Neuöffnung der Alt-Ellipsen-/Polygon-Schnitte. Physische Eingabe gemäß Roadmap in Phase 7."
+    "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317437553-parity-phase1-edit/result.json",
+    "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/evidence/1791317608645-parity-phase1-reopen/result.json",
+    "open": "Mehrere Shift-Kurven in einem Polygon, freie Handle-Varianten und exakte Snap-Einrasttoleranz; zwei längere Original-Handle-Züge isolierten die Regel nicht. Physische Eingabe folgt gemäß Roadmap in Phase 7."
   }
 }

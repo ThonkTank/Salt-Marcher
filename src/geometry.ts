@@ -67,24 +67,19 @@ export function buildingPolygonPoints(
       result.push(end);
       continue;
     }
-    const distance = Math.hypot(end.x - start.x, end.y - start.y);
-    if (distance < 1e-6) {
+    if (Math.hypot(end.x - start.x, end.y - start.y) < 1e-6) {
       result.push(end);
       continue;
     }
-    const tangent = {
-        x: (end.x - start.x) / distance,
-        y: (end.y - start.y) / distance,
+    const next = vertices[index + 1] ?? (closed ? vertices[0]! : handle),
+      bend = {
+        x: end.x + 0.553 * (next.x - end.x),
+        y: end.y + 0.553 * (next.y - end.y),
       },
-      normal = { x: -tangent.y, y: tangent.x },
-      next = vertices[index + 1] ?? (closed ? vertices[0]! : handle),
-      lateral = 0.553 * ((next.x - end.x) * normal.x +
-        (next.y - end.y) * normal.y),
-      pull = 1.35 * ((handle.x - end.x) * tangent.x +
-        (handle.y - end.y) * tangent.y),
-      bend = { x: end.x + normal.x * lateral, y: end.y + normal.y * lateral },
-      first = { x: bend.x + tangent.x * pull,
-        y: bend.y + tangent.y * pull };
+      first = {
+        x: bend.x - 0.45 * (end.x - start.x),
+        y: bend.y - 0.45 * (end.y - start.y),
+      };
     // Dungeondraft's saved contour has sixteen midpoint samples before the vertex.
     for (let step = 0; step < 16; step++) {
       const t = (step + 0.5) / 16,

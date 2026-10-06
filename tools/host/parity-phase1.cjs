@@ -153,7 +153,19 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     assert.ok(unsnapped.polygons[0].outer.some(p =>
       Math.abs(p.x - Math.round(p.x)) > 0.1));
     checks.push("Snap off stores free Building coordinates");
+    await page.getByRole("button", { name: "Snap", exact: true }).click();
+    await chooseTool("Polygonraum");
+    await click({ x: 2.25, y: 16.25 });
+    assert.ok(Number.isInteger((await state()).draft[0].x));
+    await page.getByRole("button", { name: "Snap", exact: true }).click();
+    await click({ x: 4.25, y: 16.25 });
+    assert.ok(Math.abs((await state()).draft[1].x -
+      Math.round((await state()).draft[1].x)) > 0.1);
+    await page.keyboard.press("Escape");
+    assert.equal((await state()).tool, "select");
+    checks.push("Snap toggles during a polygon draft without changing earlier points");
     const beforeCancel = (await buildings()).length;
+    await chooseTool("Raum");
     const from = await world({ x: 20, y: 12 }), to = await world({ x: 22, y: 15 });
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -242,6 +254,32 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     fs.writeFileSync(path.join(qa, "parity-phase1-portal-saved.json"),
       JSON.stringify((await state()).document, null, 2));
     checks.push("Native matching Alt cut removes a bound portal atomically with Undo, Ctrl+Y and save");
+    await open("Dungeons/Parity/Kurve.dungeon");
+    await chooseTool("Polygonraum");
+    await click({ x: 1, y: 1 });
+    await click({ x: 5, y: 1 });
+    await drag({ x: 6, y: 5 }, { x: 5, y: 4 }, "Shift");
+    await click({ x: 1, y: 6 });
+    await double({ x: 1, y: 6 });
+    await count(1);
+    const diagonal = (await buildings())[0].polygons[0].outer;
+    assert.equal(diagonal.length, 20);
+    for (const [x, y] of [[1228, 321], [921, 970], [1471, 1291]])
+      assert.ok(diagonal.some(p =>
+        Math.abs(p.x * 256 - x) <= 2 && Math.abs(p.y * 256 - y) <= 2));
+    await page.screenshot({ path: path.join(out, "diagonal-curve.png") });
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await count(0);
+    await page.keyboard.press("Control+y");
+    await count(1);
+    await page.evaluate(async () => {
+      await app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.save();
+    });
+    await waitForFileAbsent(path.join(vault, "Dungeons/Parity/Kurve.dungeon.draft"));
+    fs.writeFileSync(path.join(qa, "parity-phase1-curve-saved.json"),
+      JSON.stringify((await state()).document, null, 2));
+    checks.push("Diagonal Shift curve matches native samples, Undo/Redo and save");
   }
   async function reopen() {
     await open();
@@ -261,6 +299,15 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks,
     assert.equal(portalFresh.dirty, false);
     await page.screenshot({ path: path.join(out, "portal-wall-reopen.png") });
     checks.push("Fresh Obsidian process keeps the cut contour and removed portal");
+    await open("Dungeons/Parity/Kurve.dungeon");
+    const curveSaved = JSON.parse(fs.readFileSync(
+      path.join(qa, "parity-phase1-curve-saved.json"), "utf8"));
+    const curveFresh = await state();
+    assert.deepEqual(curveFresh.document.entities, curveSaved.entities);
+    assert.equal(curveFresh.document.entities.filter(e => e.kind === "building").length, 1);
+    assert.equal(curveFresh.dirty, false);
+    await page.screenshot({ path: path.join(out, "diagonal-curve-reopen.png") });
+    checks.push("Fresh Obsidian process keeps the diagonal Building contour");
   }
   return { edit, reopen };
 };
