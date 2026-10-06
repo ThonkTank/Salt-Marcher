@@ -7941,15 +7941,42 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts",
+            "src/features/bau/cave-ground-override.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275345901-bau-04-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275345901-bau-04-edit/dd01909-cave-override-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275362041-bau-04-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275362041-bau-04-reopen/dd01909-cave-override-steps.json"
+          ],
+          "gap": "Originalwirkung über andere Ebenen, Original-Undo/Frischstart und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Zwei Höhlen derselben Ebene in einem History-Schritt umgefärbt; andere Ebene und Geometrie unverändert; Undo/Redo, Save und Frischstart bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275345901-bau-04-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275345901-bau-04-edit/dd01909-cave-override-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275362041-bau-04-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd01909-cave-override-20261006/evidence/1791275362041-bau-04-reopen/dd01909-cave-override-steps.json"
+            ],
+            "gap": "Originalwirkung über andere Ebenen, Original-Undo/Frischstart und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -13829,15 +13856,43 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts",
+            "src/features/material/terrain-fill.ts",
+            "src/features/material/terrain-fill-command.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/dd02410-terrain-fill-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/dd02410-terrain-fill-steps.json"
+          ],
+          "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall, acht Slots und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Slot 2/Moss füllte jedes RGBA-Splatbyte im zweiten Kanal; ein Fill-History-Schritt, Undo/Redo, Save und Frischstart bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275258322-material-terrain-edit/dd02410-terrain-fill-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02410-terrain-fill-20261006/evidence/1791275286460-material-terrain-reopen/dd02410-terrain-fill-steps.json"
+            ],
+            "gap": "Direkter Original-Fill-Button-/Pixel-/Save-Fall, acht Slots und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -20011,15 +20066,44 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts",
+            "src/commands.ts",
+            "src/main.ts",
+            "src/features/objekte/scatter-rotation-migration.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+          ],
+          "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Asymmetrischer Scatter-Drehbereich 30°–60° ergab neun Winkel im Bereich; History, Undo/Redo, Save und Frischstart technisch bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+            ],
+            "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -20063,15 +20147,44 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/properties.ts",
+            "src/commands.ts",
+            "src/main.ts",
+            "src/features/objekte/scatter-rotation-migration.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+          ],
+          "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Separater Max-Winkel 60° bei Min 30° wirkte auf alle neun Objekte; History, Undo/Redo, Save und Frischstart technisch bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+            ],
+            "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         }
       },
       {
@@ -20269,15 +20382,43 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/commands.ts",
+            "src/features/objekte/scatter-spread.ts",
+            "src/properties.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "partial",
+          "build": "c9feb7882186dea3bcaaec28bf9e7218b304fcd67ff5ce355c86982cb8a19096",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+          ],
+          "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+          "candidate": {
+            "state": "open",
+            "observation": "Neun Objekte blieben auf der Strichlinie; gedrehte GlobalRects hielten Spread 0,5 ein. History, Undo/Redo, Save und Frischstart technisch bestanden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-019-024-027-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275105212-objekte-02-edit/dd02705-06-09-edit.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02705-06-09-rotation-spread-20261006/evidence/1791275131585-objekte-02-reopen/dd02705-06-09-reopen.json"
+            ],
+            "gap": "Direkte geänderte Original-Kartenwirkung und installierter Endstand offen.",
+            "phaseStates": {
+              "edit": "technical_pass",
+              "reopen": "technical_pass"
+            }
+          }
         },
         "inventoryNote": "Zielkorrektur 2026-10-06: Spread bezeichnet in der 1.2.0.1-Assembly einen Kollisionsausschluss per gewachsenem GlobalRect, keinen zufälligen Versatz vom Strich."
       },
