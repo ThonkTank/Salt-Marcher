@@ -2637,7 +2637,7 @@
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
-  "updated": "2026-10-05",
+  "updated": "2026-10-06",
   "strictParity": {
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
@@ -6816,7 +6816,8 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-portal-textures.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-FREE-PLACEMENT-STATIC.md"
           ]
         },
         "target": "Freies Portal ohne Wandbindung.",
@@ -6846,15 +6847,22 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/free-portal-placement.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-FREE-PLACEMENT-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-018-PORTAL-PREVIEW-INTEGRATION.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Grafischer Halbzellen-/Flip-Vergleich, Mouse-down-Commit, Undo/Redo und Frischöffnung offen."
         }
       },
       {
@@ -7037,7 +7045,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md"
           ]
         },
         "target": "Mausrad verstellt freien Portalwinkel um 5°.",
@@ -7066,15 +7075,23 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/portal-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-018-PORTAL-PREVIEW-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-ESCAPE-PREVIEW-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Exklusiver Original-/Hostlauf für sichtbare Vorschau, Radereignisse, Grenzwinkel, Speichern und Frischöffnung offen."
         }
       },
       {
@@ -7092,7 +7109,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md"
           ]
         },
         "target": "Shift+Wheel um 15°.",
@@ -7120,15 +7138,23 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/portal-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-018-PORTAL-PREVIEW-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-ESCAPE-PREVIEW-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Exklusiver Original-/Hostlauf für sichtbare Vorschau, Radereignisse, Grenzwinkel, Speichern und Frischöffnung offen."
         }
       },
       {
@@ -7146,7 +7172,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/grundriss-bau/DD-018-Portal-Variants.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/PortalTool/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/dungeondraft-portal-rotation.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md"
           ]
         },
         "target": "Winkelanzeige und gespeicherte Rotation äquivalent.",
@@ -7174,15 +7201,23 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/bau/portal-wheel.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-WHEEL-ASSEMBLY.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-018-PORTAL-PREVIEW-INTEGRATION.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD018-ESCAPE-PREVIEW-STATIC.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Exklusiver Original-/Hostlauf für sichtbare Vorschau, Radereignisse, Grenzwinkel, Speichern und Frischöffnung offen."
         }
       },
       {
@@ -11891,7 +11926,8 @@
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135-contrast-08.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/12-roof-quickbox-bottom.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/14-roof-manual-end-confirm.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/14-roof-manual-end-confirm.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-SHADE-CONTRAST-STATIC.md"
           ]
         },
         "target": "Dachkontrast einstellbar.",
@@ -11928,7 +11964,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Originalwirkung belegt; Wertebereich, Shaderformel und Hostgleichwertigkeit offen."
         }
       },
       {
@@ -12763,7 +12799,8 @@
           "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-023.md",
-            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/"
+            "https://megasploot.github.io/DungeondraftModdingAPI/reference/WaterBrush/",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-023-DISABLE-BORDER-STATIC.md"
           ]
         },
         "target": "Rand ausblenden ohne übrige Wasseränderung.",
@@ -12800,7 +12837,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Kein kontrolliertes Border-ON/OFF-Paar; Wirkung und Hostvergleich offen."
         }
       },
       {
@@ -13479,7 +13516,8 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/DD-024-TERRAIN-HOST-RESULT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/src/features/material/terrain-selection-dialog.ts"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/src/features/material/terrain-selection-dialog.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-TERRAIN-PERSISTENCE-STATIC.md"
           ]
         },
         "hostCheck": {
@@ -13918,7 +13956,8 @@
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/qa/DD-024-TERRAIN-HOST-RESULT.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/src/features/material/terrain-selection-dialog.ts"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/material-terrain-slots/src/features/material/terrain-selection-dialog.ts",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-TERRAIN-PERSISTENCE-STATIC.md"
           ]
         },
         "hostCheck": {
@@ -14364,7 +14403,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-025.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/MaterialBrush/",
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-smooth.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-material-smooth.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-025-SMOOTH-STATIC.md"
           ]
         },
         "target": "Glatte/raue Kante je Material/Layer.",
@@ -14401,7 +14441,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Smooth als gespeicherter Originalwert belegt; Kantenwirkung und Hostvergleich offen."
         }
       },
       {
@@ -18642,7 +18682,8 @@
           "effect": "Atlas Globe 01 folgte als Bild dem Cursor.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-CURSOR-PREVIEW.md"
           ],
           "gap": "Cursorvorschau ist nur für das geprüfte Asset direkt belegt."
         },
@@ -18671,15 +18712,22 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/renderer.ts",
+            "src/features/objekte/object-cursor-preview.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-18-CURSOR-PREVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Hostpaarung für Assetbild, Vorschau, Abbruch, Shadow, History und Frischöffnung offen.",
           "candidate": {
             "state": "open",
             "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Atlas-Cursorbildvorschau und Hostvorschau mit gleichem Asset fehlen als Paar.",
@@ -18715,7 +18763,8 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/09-place-default.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-19-NATIVE-DEFAULTS.md"
           ],
           "gap": "Ein Basisklick ist im Original mit Atlas Globe 01 belegt. Die vollständige Zielwirkung mit demselben QA-Asset und denselben Layer-, Winkel- und Scale-Einstellungen wie im Host fehlt: Original Layer 100/Scale 1, Host Layer 500/Breite 1,6/Höhe 0,9; Geometrie und Pixelbild sind ungepaart."
         },
@@ -18748,18 +18797,23 @@
           "changes": [
             "src/editor.ts",
             "src/model.ts",
-            "src/properties.ts"
+            "src/properties.ts",
+            "src/features/objekte/native-object-placement.ts",
+            "src/features/objekte/native-object-catalog.ts",
+            "src/assets.ts"
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evaluation-current.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-19-NATIVE-DEFAULTS.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-CURSOR-INTEGRATION.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "gap": "Vorhandener Hostbeleg betrifft Paketobjekte; native Atlas-Größe, Halbfeld-Snap, Layer und Bildwirkung am aktuellen Integrationsstand offen.",
           "candidate": {
             "state": "pass",
             "observation": "Edit: Object Tool: Klick erzeugte QA-Paketobjekt ed4fa24e-5199-419e-a48c-94f699f3550f, zweiter Klick a1ab6d4e-0ea6-4d22-b1d3-711bb8600024; beide sind sichtbar und als V3-Entitäten gespeichert.\nFrischstart: Frisch geöffnet: beide platzierten Paketobjekte ed4fa24e-5199-419e-a48c-94f699f3550f/a1ab6d4e-0ea6-4d22-b1d3-711bb8600024 mit exakt gespeicherten Entitätswerten und Texturen.",
@@ -19894,7 +19948,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md"
           ]
         },
         "target": "Nach Originalmessung: jede gestreute Objektgröße hält Scale Min ein und wird je Asset gleich gespeichert.",
@@ -19922,15 +19977,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "prototype_unintegrated",
+          "changes": [
+            "src/features/objekte/scatter-scale-range.ts",
+            "src/features/objekte/scatter-scale-migration.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Min-/Max-Felder, gespeicherte Vorgaben, natürliche Assetgrößen und gepaarte Hoststreuung noch nicht integriert/geprüft."
         }
       },
       {
@@ -19946,7 +20007,8 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd027/evidence/06-scatter-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md"
           ]
         },
         "target": "Nach Originalmessung: jede gestreute Objektgröße hält Scale Max ein und wird je Asset gleich gespeichert.",
@@ -19974,15 +20036,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "prototype_unintegrated",
+          "changes": [
+            "src/features/objekte/scatter-scale-range.ts",
+            "src/features/objekte/scatter-scale-migration.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-RANGE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-027-SCALE-MIGRATION-HOOKPLAN.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Min-/Max-Felder, gespeicherte Vorgaben, natürliche Assetgrößen und gepaarte Hoststreuung noch nicht integriert/geprüft."
         }
       },
       {
