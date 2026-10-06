@@ -19226,12 +19226,13 @@
         "original": {
           "sequence": "Umschalt+Mausrad: Cycle",
           "options": null,
-          "effect": null,
+          "effect": "1.2.0.1-Assembly belegt zyklischen Wechsel des GridMenu-Auswahlindex; konkrete Atlas-Nachbarfolge noch nicht direkt gemessen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-24-SHIFT-MAUSRAD-CYCLE.md"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Direkte native Atlas-Nachbar-IDs und Reihenfolge unter Exact-Suche sowie installierter Endstand offen."
         },
         "target": "Nach Originalmessung: Umschalt+Mausrad wechselt das konkret gewählte Asset und der nächste Klick platziert genau dieses.",
         "baseline": {
@@ -19258,31 +19259,41 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/properties.ts",
+            "src/features/objekte/object-shift-wheel-cycle.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+          ],
+          "gap": "Direkte native Atlas-Nachbar-IDs und Reihenfolge unter Exact-Suche sowie installierter Endstand offen.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt.",
+            "state": "pass",
+            "observation": "Exact-Atlas-Kacheln zyklisch gewechselt, letztes Asset platziert, Undo/Redo und Frischstart bestanden.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
             ],
-            "gap": "Edit: Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Speicherwirkung von Umschalt+Mausrad-Assetwechsel ist nicht gemessen; Hostfolge fehlt. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "gap": "Direkte native Atlas-Nachbar-IDs und Reihenfolge unter Exact-Suche sowie installierter Endstand offen.",
             "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
+              "edit": "pass",
+              "reopen": "pass"
             }
           }
         }
@@ -19297,12 +19308,13 @@
         "original": {
           "sequence": "A halten: Mirror",
           "options": null,
-          "effect": null,
+          "effect": "1.2.0.1-IL setzt die Vorschau-X-Skala nur bei gehaltener Mirror-Aktion negativ; Confirm zeichnet die aktuelle Vorschau.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten."
         },
         "target": "Nach Originalmessung: gehaltenes A spiegelt die Platzierungsvorschau und das neu gespeicherte Möbel in derselben Achse.",
         "baseline": {
@@ -19329,31 +19341,39 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+          ],
+          "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten und installierter Endstand offen.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter.",
+            "state": "pass",
+            "observation": "A-down/up spiegelte nur die aktive Vorschau; bei gehaltenem A platziertes Objekt speichert flip=true. Undo/Redo und Frischstart bestanden.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
             ],
-            "gap": "Edit: A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: A-Halten-Spiegelung blieb in der alten Originalprobe ohne bestätigte Wirkung; Host hat einen Umschalter. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten und installierter Endstand offen.",
             "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
+              "edit": "pass",
+              "reopen": "pass"
             }
           }
         }
@@ -19368,12 +19388,13 @@
         "original": {
           "sequence": "Rechtsklick: 90° Turn",
           "options": null,
-          "effect": null,
+          "effect": "1.2.0.1-IL addiert bei Rechtsklick +90°, mit Alt −90°, und wrappt den Winkel vor der Vorschau.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Direktes Original-GUI-/Kartenpaar bei Rechtsklick."
         },
         "target": "Nach Originalmessung: Rechtsklick dreht die Platzierung um 90° und der nächste Klick speichert diese Ausrichtung.",
         "baseline": {
@@ -19400,31 +19421,40 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/editor.ts",
+            "src/features/objekte/object-right-click-rotation.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+          ],
+          "gap": "Direktes Original-GUI-/Kartenpaar bei Rechtsklick und installiertem Endstand offen.",
           "candidate": {
-            "state": "open",
-            "observation": "Edit: Edit: QA-Paketobjekt pack:QAObjASl:object:textures%2Fobjects%2FQA%20Object%20Color.png gewählt, zwei Instanzen platziert und V3 gespeichert. Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion.\nFrischstart: Frischöffnung: zwei Paketobjekte bytegleich aus V3-Karte geladen; History wurde nicht als prozessübergreifend behauptet. Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion.",
+            "state": "pass",
+            "observation": "Rechtsklick +90°, Alt+Rechtsklick −90° ohne Karte/History bis Linksklick; platziertes Objekt speichert π/2. Undo/Redo und Frischstart bestanden.",
             "evidence": [
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199665707-objekte-01-edit/edit-flow.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-panel.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/objekte-01/evidence/1791199671187-objekte-01-reopen/reopen-flow.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
             ],
-            "gap": "Edit: Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.\nFrischstart: Native Wirkung von Rechtsklick-90-Grad ist nicht gemessen; Host startet damit keine Objektaktion. Originalgrenze: Native Speicherwirkung dieses Modifiers bzw.",
-            "build": "a357c691cd61ff9d063edf13065528c83c4dae37171ce540b05942af3e550e80",
+            "gap": "Direktes Original-GUI-/Kartenpaar bei Rechtsklick und installiertem Endstand offen.",
             "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
+              "edit": "pass",
+              "reopen": "pass"
             }
           }
         }
