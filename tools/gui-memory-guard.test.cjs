@@ -11,9 +11,9 @@ const memory = (available, swapFree) => ({
 });
 
 test("graphics launch waits for enough physical headroom", () => {
-  assert.deepEqual(assess(memory(3.5, 5.9), "launch").reasons,
+  assert.deepEqual(assess(memory(2.9, 5.9), "launch").reasons,
     ["MemAvailable"]);
-  assert.equal(assess(memory(5, 5.9), "launch").allowed, true);
+  assert.equal(assess(memory(3.5, 5.9), "launch").allowed, true);
 });
 
 test("running graphics stop before the observed OOM reserve", () => {

@@ -23,7 +23,7 @@ function assess(memory, phase) {
   const launch = phase === "launch";
   if (!launch && phase !== "runtime") throw new Error(`Unbekannte Phase: ${phase}`);
   const minAvailable = launch
-    ? Math.max(4 * GIB, Math.ceil(memory.total * 0.58))
+    ? Math.max(3 * GIB, Math.ceil(memory.total * 0.40))
     : Math.max(1.5 * GIB, Math.ceil(memory.total * 0.22));
   const minSwapFree = memory.swapTotal
     ? (launch
