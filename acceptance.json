@@ -11973,12 +11973,14 @@
           "sequence": "Shade ON/OFF ändert Schattierung aller Dächer sichtbar.",
           "options": "Shade",
           "effect": "Shade OFF änderte dasselbe Dach sichtbar.",
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Gable-Originallauf 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-shade-off.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd022-roof-light-native/runs/rooflight-20261006-a"
           ]
         },
         "target": "Globale Dachschattierung schaltbar.",
@@ -12020,7 +12022,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
+          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
@@ -12034,12 +12036,14 @@
           "sequence": "Sun Direction 45→135 ändert vorhandene Dachzeichnung.",
           "options": "Sun Direction",
           "effect": "Sonnenrichtung 45 auf 135 änderte dieselbe Dachzeichnung.",
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Gable-Originallauf 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022/native/shots/roof-sun-135.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd022-roof-light-native/runs/rooflight-20261006-a"
           ]
         },
         "target": "Dachbeleuchtung folgt Sonnenrichtung.",
@@ -12080,7 +12084,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
+          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
@@ -12091,10 +12095,10 @@
         "command": "Shade Contrast",
         "scope": "required",
         "original": {
-          "sequence": "Shade Contrast 0,3→0,8 verstärkt Helligkeitsdifferenz.",
+          "sequence": "Neue 8×8-Karte, ein Gable-Dach: UI-Kontrast 0,3 unberührt speichern; 0,8 setzen und speichern; Undo/Redo des früheren Dachzugs; 0,6 ohne Zwischensave setzen und Undo/Redo wiederholen.",
           "options": "Shade Contrast",
-          "effect": "Kontrast 0,3 auf 0,8 verstärkte die Helligkeitsdifferenz.",
-          "version": "1.2.0.1 Opulent Kirin; Umfang der Direktbelege siehe Dossier",
+          "effect": "Unberührter Erstsave speichert 0,5 trotz UI-Feld 0,3. Änderung auf 0,8 dunkelt das Dach sichtbar und speichert 0,8. Kontraständerung erzeugt keinen Undo-Schritt: Undo entfernt das Dach, Redo stellt es her; Regler 0,8 bzw. in der Gegenprobe 0,6 bleibt erhalten.",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Gable-Originallauf 2026-10-06",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/flaechen-material/DD-022.md",
             "https://megasploot.github.io/DungeondraftModdingAPI/reference/RoofTool/",
@@ -12102,10 +12106,13 @@
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/12-roof-quickbox-bottom.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/material/scroll-run/evidence/14-roof-manual-end-confirm.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-SHADE-CONTRAST-STATIC.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd022-roof-light-native/runs/rooflight-20261006-a"
+          ],
+          "gap": "Direkt nur Gable/Ground, numerische Werte 0,3→0,8→0,6; Slider-Zwischenwerte, weitere Dachtypen/Ebenen und Frischstart dieser Karte offen."
         },
-        "target": "Dachkontrast einstellbar.",
+        "target": "Geschossweiter Dachkontrast startet im sichtbaren Feld bei 0,3; unberührter Erstsave speichert den nativen Sammlungswert 0,5. Änderungen wirken auf Dächer derselben Ebene und bleiben bei Undo/Redo eines früheren Dachzugs erhalten, ohne eigenen History-Schritt.",
         "baseline": {
           "editor": {
             "sequence": "Host hat keinen Dachkontrastregler.",
@@ -12143,7 +12150,7 @@
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originalbildwirkung belegt; Regler-/Shaderwirkung im aktuellen Host, Frischöffnung und installierter Endstand offen."
+          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
