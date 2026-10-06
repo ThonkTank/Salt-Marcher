@@ -12012,17 +12012,20 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+            "V3-Geschosszustand und Roof-Panel angeschlossen; Regleränderung bleibt außerhalb History und rebasiert ältere Floor-Schritte.",
+            "Enger achsparalleler Gable-Kandidat mit Laufzeit-Override für erste 0,3-Vorschau; gespeicherter Erstwert 0,5."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-CANDIDATE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-022-ROOF-LIGHT-FEAB1CF-REVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build bestanden; isolierter Hostbild-/Frischstartvergleich, weitere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
@@ -12074,17 +12077,20 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+            "V3-Geschosszustand und Roof-Panel angeschlossen; Regleränderung bleibt außerhalb History und rebasiert ältere Floor-Schritte.",
+            "Enger achsparalleler Gable-Kandidat mit Laufzeit-Override für erste 0,3-Vorschau; gespeicherter Erstwert 0,5."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-CANDIDATE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-022-ROOF-LIGHT-FEAB1CF-REVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build bestanden; isolierter Hostbild-/Frischstartvergleich, weitere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
@@ -12140,17 +12146,20 @@
         "implementation": {
           "state": "candidate_partial_uninstalled",
           "changes": [
-            "Reiner Zustand für pro Geschoss gespeicherte Dachlichtwerte vorbereitet; Modell, UI und Renderer noch nicht angeschlossen."
+            "V3-Geschosszustand und Roof-Panel angeschlossen; Regleränderung bleibt außerhalb History und rebasiert ältere Floor-Schritte.",
+            "Enger achsparalleler Gable-Kandidat mit Laufzeit-Override für erste 0,3-Vorschau; gespeicherter Erstwert 0,5."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-STATE-CONCEPT.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-CANDIDATE.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-022-ROOF-LIGHT-FEAB1CF-REVIEW.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-022-ROOF-LIGHT-NATIVE-RESULT.md"
           ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Originallauf ergänzt; integrierter Hostvergleich, andere Dachtypen/Ebenen und installierter Endstand offen."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build bestanden; isolierter Hostbild-/Frischstartvergleich, weitere Dachtypen/Ebenen und installierter Endstand offen."
         }
       },
       {
@@ -23528,15 +23537,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Drei 1024²-Lichttexturen werden aus der SHA-geprüften Original-PCK lazy geladen und als drehbare Vorschau und platzierte Textur dargestellt.",
+            "Paketlicht-Tint bleibt unverändert; fehlgeschlagener Cursor-Texturabruf ist erneut versuchbar."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-NATIVE-TEXTURES-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-TEXTURE-REVIEW-FIX-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build sowie echter PCK-Katalogtest bestanden; Host-/Original-Pixelvergleich, Lichtmischung, Schatten und installierter Endstand offen."
         }
       },
       {
@@ -23580,15 +23595,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Drei 1024²-Lichttexturen werden aus der SHA-geprüften Original-PCK lazy geladen und als drehbare Vorschau und platzierte Textur dargestellt.",
+            "Paketlicht-Tint bleibt unverändert; fehlgeschlagener Cursor-Texturabruf ist erneut versuchbar."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-NATIVE-TEXTURES-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-TEXTURE-REVIEW-FIX-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build sowie echter PCK-Katalogtest bestanden; Host-/Original-Pixelvergleich, Lichtmischung, Schatten und installierter Endstand offen."
         }
       },
       {
@@ -23632,15 +23653,21 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "Drei 1024²-Lichttexturen werden aus der SHA-geprüften Original-PCK lazy geladen und als drehbare Vorschau und platzierte Textur dargestellt.",
+            "Paketlicht-Tint bleibt unverändert; fehlgeschlagener Cursor-Texturabruf ist erneut versuchbar."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-NATIVE-TEXTURES-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-029-TEXTURE-REVIEW-FIX-20261006.md"
+          ]
         },
         "hostCheck": {
           "state": "open",
           "build": null,
           "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "gap": "Integrierte Typprüfung, 192 Kerntests und Build sowie echter PCK-Katalogtest bestanden; Host-/Original-Pixelvergleich, Lichtmischung, Schatten und installierter Endstand offen."
         }
       },
       {
