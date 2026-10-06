@@ -37813,18 +37813,19 @@
         "command": "Grid PPI",
         "scope": "required",
         "original": {
-          "sequence": "Hauptleiste > Export > Export Options → Grid PPI",
+          "sequence": "8×8-Karte exportieren: Preset 128/300 PPI wählen, manuell 96 PPI eingeben, danach PNG bei 128 erzeugen; X und frischen Prozess prüfen.",
           "options": null,
-          "effect": "Grid PPI zeigt 256; auf der 8×8-Karte resultieren 2048×2048 Pixel in PNG und VTT-Bild.",
+          "effect": "PPI 128→1024², 300→2400², manuell 96→768²; PNG bei 128 hat 1024². Nach X im selben Prozess bleibt 128, nach Neustart bleibt 128 bei Custom.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md"
           ],
-          "gap": "Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen."
+          "gap": "Direkte PNG-Datei bei manuell 96/300, PPI-Grenzwerte und Halbwert-Rundung fehlen."
         },
-        "target": "Nach Originalmessung offen: „Grid PPI“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
+        "target": "Grid PPI aktualisiert Vorschau und Ausgabepixel gemäß Original, bleibt nach Dialogschluss und Prozessneustart erhalten; manuelle Eingabe setzt die Presetauswahl auf Custom.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -37851,31 +37852,45 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/verwaltung/grid-presets.ts",
+            "src/features/verwaltung/export-dialog.ts",
+            "src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+          ],
+          "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
           "candidate": {
             "state": "open",
-            "observation": "Edit: 64 und 128 Pixel/Feld lieferten 512×512 und 1024×1024 PNG.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart.",
+            "observation": "Edit: 64 und 128 Pixel/Feld lieferten 512×512 und 1024×1024 PNG.\nFrischstart: Frischstart: Dieser Export-Unterfall wurde im begrenzten Rasterlauf nicht gepaart. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-64-grid.png",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/png-128-grid.png",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
             ],
-            "gap": "Edit: Original-PPI-Grenzen und Pixelwirkung im gleichen Fall sind noch nicht gepaart.\nFrischstart: Änderung von Grid PPI und resultierende Ausgabepixel/Grenzwerte fehlen; nur der Standard 256 wurde gemessen.",
-            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+            "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
-              "edit": "open",
-              "reopen": "open"
+              "edit": "technical_pass_with_fresh_setup_gap",
+              "reopen": "technical_pass"
             }
           }
         }
@@ -37888,19 +37903,21 @@
         "command": "Output pixel dimensions",
         "scope": "required",
         "original": {
-          "sequence": "Hauptleiste > Export > Export Options → Output pixel dimensions",
+          "sequence": "8×8-Karte: im Exportdialog PPI 256, 128, 300 und manuell 96 prüfen; sichtbaren PNG-Export bei 128 ausführen.",
           "options": null,
-          "effect": "Der Dialog zeigt 2048×2048 Ausgabepixel; PNG und eingebettetes VTT-Bild bestätigen diese Maße.",
+          "effect": "Ausgabemaße 2048², 1024², 2400² und 768² erscheinen unmittelbar; 128-PNG hat 1024².",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-export-options.png",
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd044-native-20261005-004931/evidence/13-export-panel.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-133859-3034935/evidence/screens/07-export-default-options.png",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/png-grid-light-on.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/native/runs/20261005-134626-3046382/evidence/exports/wall-portal-light.dd2vtt",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md"
+          ],
+          "gap": "Crop und Halbwert-Rundung sowie Datei-Maße bei 300/96 fehlen."
         },
-        "target": "Nach Originalmessung offen: „Output pixel dimensions“ beeinflusst die exportierte Datei bzw. den gewählten Ausschnitt entsprechend dem sichtbaren Dialogwert.",
+        "target": "Angezeigte Ausgabemaße folgen den Originalwerten für Kartengröße, PPI und künftig Crop; 128-PNG bestätigt 1024² bei 8×8 Feldern.",
         "baseline": {
           "editor": {
             "sequence": null,
@@ -37927,18 +37944,28 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "candidate_partial_uninstalled",
+          "changes": [
+            "src/features/verwaltung/grid-presets.ts",
+            "src/features/verwaltung/export-dialog.ts",
+            "src/main.ts"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt.",
+          "state": "partial",
+          "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
+          ],
+          "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
           "candidate": {
-            "state": "pass",
-            "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld.",
+            "state": "open",
+            "observation": "Edit: 8×8 Felder und 256 Pixel/Feld ergeben 2048×2048 Ausgabepixel.\nFrischstart: Frischstart: Der Menüexport ergibt 2048×2048 Pixel bei 8×8 Feldern und 256 Pixel/Feld. Ergänzung: 128/300/96 PPI und 1024²/2400²/768² im isolierten Host sichtbar; 128-PNG 1024². Gleicher Prozess behält Auswahl; Neustart Custom/128.",
             "evidence": [
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206261614-verwaltung-export-edit/edit-export.json",
@@ -37948,13 +37975,17 @@
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/group-cases.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/reopen-export.json",
               "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/ui-png-256-grid-Karte.png",
-              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-dialog-before-x.png"
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/verwaltung-export/evidence/1791206309426-verwaltung-export-reopen/export-dialog-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-GRID-PRESETS-NATIVE-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD04313-PRESET-PERSISTENCE-HOST-20261006.md",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281429510-verwaltung-export-edit/dd043-grid-presets-result.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd043-grid-host-20261006/evidence/1791281455789-verwaltung-export-reopen/dd043-grid-presets-result.json"
             ],
-            "gap": null,
-            "build": "fa2bc3940efb8203a6290ae67d52ee7501bf49a01a5ce9ab7214310b6c021d4a",
+            "gap": "Gemessene PPI-/Maßfolge im Original und bestehenden isolierten Host belegt; zwei neue QA-Umgebungen öffnen den Exportdialog nicht. Installierter Endstand und weitere Grenz-/Crop-Fälle fehlen.",
+            "build": "3a949f7bb4cca09cfd41709dfe09a1e5169a28b95ee733df2fcbb5e0a06c9b4e",
             "phaseStates": {
-              "edit": "pass",
-              "reopen": "pass"
+              "edit": "technical_pass_with_fresh_setup_gap",
+              "reopen": "technical_pass"
             }
           }
         }
