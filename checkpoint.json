@@ -773,19 +773,19 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase1_review_passed_cleanup_plan_pending",
+    "status": "phase1_cleanup_plan_ready",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-1-Aufräumplanlauf: aktuellen Building-Code und Reviewbelege auf unnötige Duplikate, Vorschau-/Commit-Geometrie, Selbstschnittkosten und Eingabeereignisse prüfen; konkrete begrenzte Aufräumarbeit im Plan festlegen. Danach eigene Umsetzung und eigener Review, erst dann Phase 2.",
-    "note": "Dritter getrennter Review: zwölf zugeordnete Phase-1-Unterfälle und Raum-/Portal-Quertor bestanden auf dem isoliert installierten Build dbf47e59. Drei unabhängige Edit-/Frischstartfolgen und gezielte Rücktasten-Vorschauprobe bestanden. Produktiver Build unverändert.",
+    "nextRun": "Eigener Phase-1-Aufräum-Umsetzungslauf nach ROADMAP-PARITY-CLEANUP-1-PLAN.md: PathDraft-Abschluss vereinheitlichen, Selbstschnitt-Vorprüfung räumlich eingrenzen und Capture-/QA-Listener bereinigen; danach Basistests, Benchmark, isolierte Hostfolgen und Frischstarts. Anschließend eigener Aufräum-Review.",
+    "note": "Phase-1-Aufräumplan nach bestandenem Fachreview erstellt. Konkrete Befunde: doppelter PathDraft-Abschluss, quadratische Selbstschnitt-Vorprüfung (Median 9,397 ms bei 2.048 und 36,181 ms bei 4.096 Punkten), wiederholter Capture-Guard und bleibende Diagnose-Listener. Produktcode und produktiver Vault-Build in diesem Planlauf unverändert.",
     "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
     "candidateCoreTests": 119,
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Phase-1-Aufräumphase mit eigenem Plan-, Umsetzungs- und Reviewlauf. DD-011.15 vollständig Phase 3; physische Eingabe Phase 7. Phase 2 beginnt erst nach bestandenem Aufräumreview.",
+    "open": "Getrennter Aufräum-Umsetzungslauf und anschließender Aufräum-Review; bei Lücken Nachbesserung und erneuter Review. Phase 2 erst nach bestandenem Aufräumtor. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -826,6 +826,8 @@
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327847967-parity-phase1-repair-edit/result.json",
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-focused-20261007/evidence/1791327861295-parity-phase1-repair-reopen/result.json",
       "/home/aaron/.cache/dungeon-native-qa/parity-phase1-review3-backspace-20261007/evidence/1791327951769-parity-phase1-edit/result.json"
-    ]
+    ],
+    "cleanupPhase1Plan": "ROADMAP-PARITY-CLEANUP-1-PLAN.md",
+    "cleanupPhase1Baseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-plan-20261007/compute-baseline.json"
   }
 }

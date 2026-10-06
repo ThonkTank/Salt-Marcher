@@ -80,6 +80,8 @@ Testdaten bleiben unter `/home/aaron/.cache/dungeon-native-qa/`. Produktive Dung
 
 Jeder Zyklus hat einen eigenen Planlauf mit aktuellen Code- und Belegbefunden, einen Umsetzungslauf und einen Reviewlauf. Das folgende Thema ist eine Suchrichtung, keine vorweggenommene Änderung. Der Planlauf begrenzt die konkrete Arbeit erst nach Freigabe der jeweiligen Fachphase.
 
+Für die freigegebene Fachphase 1 liegt der konkrete [Aufräumplan für Building-Grundformen](ROADMAP-PARITY-CLEANUP-1-PLAN.md) vor. Sein eigener Umsetzungslauf folgt als Nächstes; der Aufräum-Review bleibt ein weiterer getrennter Arbeitslauf.
+
 | Nach Fachphase | Prüf- und Aufräumfokus |
 | --- | --- |
 | 1 | Building-Entwurf, gemeinsame Vorschau-/Commit-Geometrie, Selbstschnitt-Bereinigung und deren Kosten bei großen Konturen. |
