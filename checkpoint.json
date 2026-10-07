@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-3-Review entdeckt reproduzierbare X/None-Wand-Neuerzeugung nach Alt-Radierung",
+  "phase": "Folge-Roadmap: Phase-3-Nachbesserungsplan für X/None-Wand und Original-Optionskarte abgelegt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -165,7 +165,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Eigener Phase-3-Nachbesserungsplan für die reproduzierte X/None-Wand-Neuerzeugung und eine gleich aufgebaute Original-/Host-Optionskarte; danach gesonderte Umsetzung und Review. Bevel-Ecktextur, Feldfarb-Kanalstufe, Pipettenvergleich derselben Szene und übrige 17-Fall-Prüfung bleiben offen.",
+  "next": "Eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md: Original-Geltungsbereich nachmessen, neunfache Host-Gegenkarte aufbauen, bestätigte Wandneuerzeugung atomar angleichen und Basistests/Host/Frischstart prüfen. Danach unabhängiger Review aller 17 Unterfälle; Bevel, Farbfläche und Pipette bleiben bis zu direkten Gegenbelegen offen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -1065,6 +1065,8 @@
     "phase3OptionsCardHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
     "phase3OptionsCardHostCombined": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
     "phase3OptionsCardHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json",
-    "phase3NoneRevivalReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/none-revival-review.md"
+    "phase3NoneRevivalReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/none-revival-review.md",
+    "phase3RepairOptionsPlan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
+    "phase3RepairOptionsPlanState": "plan_ready_for_separate_implementation"
   }
 }

@@ -4656,6 +4656,12 @@
           ],
           "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
           "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
+        },
+        "phase3RepairOptionsPlan": {
+          "date": "2026-10-07",
+          "state": "plan_ready_for_separate_implementation",
+          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
+          "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
         }
       },
       {
@@ -7134,6 +7140,12 @@
           ],
           "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
           "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
+        },
+        "phase3RepairOptionsPlan": {
+          "date": "2026-10-07",
+          "state": "plan_ready_for_separate_implementation",
+          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
+          "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
         }
       },
       {
@@ -50482,6 +50494,20 @@
       ],
       "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
       "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
+    },
+    "phase3RepairOptionsPlan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
+      "baseCommit": "d589876",
+      "baseBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "assignedCases": [
+        "DD-011.15",
+        "DD-015.02"
+      ],
+      "openOriginalQuestions": "Reichweite der Wandneuerzeugung nach Alt-Radierung, aktive Wandfarbe/Alpha/Bevel und Verhalten mehrerer X/None-Formen.",
+      "decision": "Zuerst Originalregel eingrenzen, danach gleich aufgebaute neunfache Host-Optionsfolge und atomare Nachbesserung; unabhängiger Review aller 17 Phase-3-Unterfälle folgt in eigenem Lauf."
     }
   }
 }
