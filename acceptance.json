@@ -3907,10 +3907,11 @@
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/smart-mask-audit.json"
           ],
           "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern.",
-          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; native Tile-Bitmasken, Prioritäten und Auswahlfolge sowie ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; die Smart-Tile-Masken liegen aus der PCK-Vorlage vor, aber Laufzeitauswahl, Belegungsdarstellung und ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
           "strictAcceptance": "open"
         }
       },
@@ -4049,10 +4050,11 @@
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/smart-mask-audit.json"
           ],
           "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern.",
-          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; native Tile-Bitmasken, Prioritäten und Auswahlfolge sowie ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; die Smart-Tile-Masken liegen aus der PCK-Vorlage vor, aber Laufzeitauswahl, Belegungsdarstellung und ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
           "strictAcceptance": "open"
         }
       },
