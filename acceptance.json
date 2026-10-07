@@ -3909,10 +3909,13 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/smart-mask-audit.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-direct-two-style.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map"
           ],
-          "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern. An der Holz/Stein-Grenze entsprechen sechs innere Holzfelder weiterhin oberen Innen-Atlaszellen; der Zellrand bleibt separat zu prüfen.",
-          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; die Smart-Tile-Masken liegen aus der PCK-Vorlage vor, aber Laufzeitauswahl, Belegungsdarstellung und ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "finding": "Bei direkter Zwei-Stil-Zeichnung und selbst bei einer isolierten Smart-Wood-Zelle passen alle gemessenen Holzfelder zu oberen Innenzellen des Atlas, nicht zu den unteren Randzellen der PCK-Vorlage. Der direkte Zeichenstand ändert nach Neuöffnung 17/18 belegte Felder; zwei weitere frische Öffnungen derselben Rohkarte sind vollständig pixelgleich. Eine entfernte Tile-Zelle ändert 61/63 weitere belegte Felder; msi.seed und Shape-Anzahl erklären die Auswahl nicht.",
+          "remaining": "Die tatsächliche Laufzeitkopie und Initialisierung der Smart-Tiles klären; direkte Edit-Folge und stabile Neuöffnung aus aktueller Tile-Belegung abbilden. Kandidat nutzt noch pfadabhängiges periodisches 8×8-Canvas; ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
           "strictAcceptance": "open"
         }
       },
@@ -4053,10 +4056,13 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/smart-mask-audit.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-direct-two-style.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map"
           ],
-          "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern. An der Holz/Stein-Grenze entsprechen sechs innere Holzfelder weiterhin oberen Innen-Atlaszellen; der Zellrand bleibt separat zu prüfen.",
-          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; die Smart-Tile-Masken liegen aus der PCK-Vorlage vor, aber Laufzeitauswahl, Belegungsdarstellung und ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "finding": "Bei direkter Zwei-Stil-Zeichnung und selbst bei einer isolierten Smart-Wood-Zelle passen alle gemessenen Holzfelder zu oberen Innenzellen des Atlas, nicht zu den unteren Randzellen der PCK-Vorlage. Der direkte Zeichenstand ändert nach Neuöffnung 17/18 belegte Felder; zwei weitere frische Öffnungen derselben Rohkarte sind vollständig pixelgleich. Eine entfernte Tile-Zelle ändert 61/63 weitere belegte Felder; msi.seed und Shape-Anzahl erklären die Auswahl nicht.",
+          "remaining": "Die tatsächliche Laufzeitkopie und Initialisierung der Smart-Tiles klären; direkte Edit-Folge und stabile Neuöffnung aus aktueller Tile-Belegung abbilden. Kandidat nutzt noch pfadabhängiges periodisches 8×8-Canvas; ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
           "strictAcceptance": "open"
         }
       },
