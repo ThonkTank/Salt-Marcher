@@ -4086,6 +4086,23 @@
           ],
           "remaining": "Sofortzug an Platz 0/6 korrekt paaren, unmittelbare Variantenfolge sowie native Atlaswahl und sichtbare Randwirkung der fünf Concrete-Zellen entscheiden; unabhängiger Review fehlt.",
           "strictAcceptance": "open"
+        },
+        "phase3FirstPairImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/first-pair-implementation.md",
+          "finding": "Wood Vertical und Diamond direkt nacheinander per Original- und Hostgalerie auf gleiche 2×2-Felder gezeichnet; Original speichert vor/nach Neustart je vier Pfad-/ARGB-Zellen korrekt. Host-Edit/Neuöffnung bestehen mit geladenen Texturen. Volle 64×64-Ladebilder: Wood 2,650 und Diamond 3,662 RGB-Stufen MAE. Diamond-Sofort-Innenbild nach eigenem Zug: 3,485 Stufen. Das erste Wood-Bild enthält noch die Konturvorschau ohne fertige Textur; Wood nach dem zweiten Zug: 9,081 Stufen. Original-Innenbilder ändern bis zum Neustart 8,937/3,299 Stufen, Host an denselben Stellen nicht.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/first-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/native-first-pair/runs/20261007-180313-1939780/evidence/floor-first-pair.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/native-first-pair-reopen/runs/20261007-180505-1940877/evidence/maps/reopened.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/host-first-pair/evidence/1791389329444-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/host-first-pair/evidence/1791389362286-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Stabilen Wood-Erstzug und Ursache der Original-Varianz im Sofortbild getrennt klären; fünf Concrete-Atlas-/Randzellen und unabhängiger Review bleiben offen. Zwei Originalversuche derselben Probe sind ausgeschöpft.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -51839,6 +51856,22 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Original-Sofortzug für Wood Vertical und Diamond korrekt paaren; Variantenfolge, native Atlaswahl und Randwirkung der fünf Concrete-Zellen klären; übrige Phase-3-Matrizen und unabhängiger Review offen."
+    },
+    "phase3FirstPairImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/first-pair-implementation.md",
+      "casesAdvanced": ["DD-011.11"],
+      "pairedGalleryGestures": 2,
+      "originalFreshReopen": true,
+      "hostFreshReopen": true,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Wood-Erstzug-Bildbereitschaft und unmittelbare Variantenfolge, Concrete-Atlasränder, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     }
   }
 }

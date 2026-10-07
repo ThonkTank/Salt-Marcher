@@ -1,6 +1,6 @@
 module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   restart,
-  chooseTool }) => {
+  chooseTool, waitForFileAbsent }) => {
   const mapPath = "Dungeons/Parity/Building-Styles.dungeon";
   const savedState = path.join(qa, "parity-phase3-building-saved.json");
   const combinedState = path.join(qa, "parity-phase3-combined-saved.json");
@@ -1238,10 +1238,13 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     fs.writeFileSync(saved, JSON.stringify((await state()).document));
     checks.push("Fourteen direct Building field clicks match native displayed Hex and stored RGB");
   }
-  async function floorGallery24(restart) {
-    const file = "Dungeons/Parity/Floor-Gallery-24.dungeon";
-    const saved = path.join(qa, "parity-phase3-floor-gallery-24-saved.json");
-    const names = [
+  async function floorGallery24(restart, pair = false) {
+    const label = pair ? "gallery-pair" : "gallery24";
+    const file = pair ? "Dungeons/Parity/Floor-Gallery-Pair.dungeon"
+      : "Dungeons/Parity/Floor-Gallery-24.dungeon";
+    const saved = path.join(qa, pair ? "parity-phase3-floor-gallery-pair-saved.json"
+      : "parity-phase3-floor-gallery-24-saved.json");
+    const names = pair ? ["tileset_wood_vertical", "tileset_diamond"] : [
       "tileset_wood_vertical", "tileset_stone", "tileset_brick_running",
       "tileset_brick_worn", "tileset_concrete_large", "tileset_brick_basketweave",
       "tileset_diamond", "tileset_concrete_slab", "tileset_carpet",
@@ -1252,19 +1255,21 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       "tileset_roman_tiles", "tileset_wood_interlaced", "tileset_worn_cobble",
     ];
     if (!restart) {
-      await page.evaluate(async ({ file, pckPath }) => {
+      await page.evaluate(async ({ file, pckPath, pair }) => {
         const plugin = app.plugins.getPlugin("dungeon-editor");
         await plugin.useNativeAssetArchive(pckPath);
         await app.vault.createFolder("Dungeons/Parity").catch(() => {});
         await app.vault.create(file, JSON.stringify({
-          format: "dungeon-map", version: 3, id: "phase3-floor-gallery-24",
-          settings: { name: "Floor Gallery 24", width: 18, height: 12,
+          format: "dungeon-map", version: 3,
+          id: pair ? "phase3-floor-gallery-pair" : "phase3-floor-gallery-24",
+          settings: { name: pair ? "Floor Gallery Pair" : "Floor Gallery 24",
+            width: 18, height: 12,
             feetPerField: 5, assetPacks: [], builtInAssets: true,
             wallShadows: false, objectShadows: false, buildingWear: 0 },
           floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
           entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
         }));
-      }, { file, pckPath });
+      }, { file, pckPath, pair });
     }
     await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
       app.vault.getAbstractFileByPath(file)), file);
@@ -1285,12 +1290,12 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
       const actual = (await state()).document;
       assert.deepEqual(actual, expected);
-      assert.equal(actual.entities.length, 24);
-      await waitForFloors(24);
-      await page.screenshot({ path: path.join(out, "gallery24-reopen.png") });
+      assert.equal(actual.entities.length, names.length);
+      await waitForFloors(names.length);
+      await page.screenshot({ path: path.join(out, label + "-reopen.png") });
       await page.getByRole("button", { name: "Raster", exact: true }).click();
-      await page.screenshot({ path: path.join(out, "gallery24-reopen-grid-off.png") });
-      checks.push("All 24 UI-chosen floor styles and colors reopen with identical parsed data and loaded textures");
+      await page.screenshot({ path: path.join(out, label + "-reopen-grid-off.png") });
+      checks.push(`All ${names.length} UI-chosen floor styles and colors reopen with identical parsed data and loaded textures`);
       return;
     }
     await chooseTool("Raum");
@@ -1312,7 +1317,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       await gallery.getByRole("button", { name: asset.name, exact: true }).click();
       assert.equal(await gallery.getByRole("button", {
         name: asset.name, exact: true }).getAttribute("aria-pressed"), "true");
-      const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
+      const x = pair ? 0 : index % 6 * 3,
+        y = pair ? index * 3 : Math.floor(index / 6) * 3;
       await draw({ x, y }, { x: x + 2, y: y + 2 }, index + 1);
       await waitForFloors(index + 1);
       const building = (await state()).document.entities[index];
@@ -1320,17 +1326,19 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       assert.equal(building.fill, Number.parseInt(asset.color, 16));
       assert.equal(building.floorAlpha, 255);
       assert.equal(building.wallWidth, 0);
-      rows.push({ index, image: asset.image, color: asset.color,
+      rows.push({ index, slot: pair ? index * 6 : index,
+        image: asset.image, color: asset.color,
         storedColor: building.fill.toString(16).padStart(6, "0") });
       await page.screenshot({ path: path.join(out,
-        "gallery24-" + String(index).padStart(2, "0") + ".png") });
+        label + "-" + String(index).padStart(2, "0") + ".png") });
     }
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    await waitForFileAbsent(path.join(vault, file + ".draft"));
     const document = (await state()).document;
     fs.writeFileSync(saved, JSON.stringify(document));
-    fs.writeFileSync(path.join(out, "gallery24.json"), JSON.stringify(rows, null, 2));
-    checks.push("All 24 floor styles were chosen through the Host gallery and drawn separately");
+    fs.writeFileSync(path.join(out, label + ".json"), JSON.stringify(rows, null, 2));
+    checks.push(`All ${names.length} floor styles were chosen through the Host gallery and drawn separately`);
   }
   async function wallGallery10(restart) {
     const file = "Dungeons/Parity/Wall-Gallery-10.dungeon";
