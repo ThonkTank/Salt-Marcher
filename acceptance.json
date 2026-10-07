@@ -4623,7 +4623,7 @@
         },
         "phase3OptionsCard": {
           "date": "2026-10-07",
-          "state": "direct_original_sequence_verified_host_pair_review_open",
+          "state": "direct_original_and_independent_host_sequences_verified_same_card_review_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
           "originalEvidence": [
@@ -4634,7 +4634,13 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map"
           ],
           "observation": "Nine distinct Building options on one original map, Alt-erased L shape, ellipse, polygon point edit, anchored door_00, undo/redo, save and fresh-process reopen. Shapes and walls are exact; all 118 occupied tile cells preserve ordered texture-path/ARGB pairs after native lookup renumbering.",
-          "remaining": "Independent same-card Host comparison and Phase-3 review remain open; intrinsic Bevel texture remains open."
+          "remaining": "Original and Host cards use different style/color matrices. Same-card Host comparison, remaining 17-case review, and intrinsic Bevel texture are open.",
+          "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json"
+          ]
         }
       },
       {
@@ -50415,12 +50421,16 @@
     },
     "phase3OptionsCard": {
       "date": "2026-10-07",
-      "state": "original_full_options_card_verified_host_review_open",
+      "state": "original_and_independent_host_cards_verified_same_card_review_open",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
       "case": "DD-011.15",
       "originalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/15-redo-point.dungeondraft_map",
       "freshMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map",
-      "remaining": "Independent same-card Host comparison and full 17-case Phase-3 review."
+      "remaining": "Original and Host cards use different style/color matrices. Same-card Host comparison, remaining 17-case review, and intrinsic Bevel texture are open.",
+      "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
+      "hostCombined": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
+      "hostCombinedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json"
     },
     "phase3WallPipette": {
       "date": "2026-10-07",

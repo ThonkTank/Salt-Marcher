@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-3-Original-Optionskarte und Wand-Pipette frisch bestätigt, Host-Gegenkarte und Bevel-Review offen",
+  "phase": "Folge-Roadmap: Phase-3-Original- und separate Host-Optionskarten bestätigt; gleich aufgebaute Gegenkarte und Review offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -104,7 +104,8 @@
     "Gezielter sieben Räume umfassender Host-UI-Paarlauf mit frischem Prozess bestanden: RGBA, sechs-/achtstellige Hexeingabe sowie Außenklick/Escape sind zu den Original-Rohkarten exakt; Feldfarbe weicht höchstens 1 Kanalstufe, Hue im Grünkanal 5/9 Stufen ab. Beide Host-Pipetten speichern denselben gerenderten Pixel mit Alpha 255.",
     "Building-Hue-Zeigereingabe auf die volle Leistenbreite abgebildet: Boden ff88a4b8 und Wand ff8f98c2 treffen jetzt die nativen Rohwerte exakt. Sieben Host-Buildings mit Picker-Eingaben bestehen Edit und bytegleichen Frischstart auf SHA c2480249; TypeScript, 138 Tests und Build bestehen.",
     "Vollständige Original-Building-Optionskarte in Dungeondraft 1.2.0.1: neun getrennte Räume mit None, fünf Wand-/mehreren Bodenstilen, Alpha-Boden/Wand, Bevel an/aus, Alt-L-Radierung, Ellipse, Polygon-Punktzug und gebundenem Door00. Undo/Redo und frischer Dungeondraft-Prozess erhalten neun Formen, neun Wanddatensätze, Portal und 118 sichtbare Bodenstil-/ARGB-Zellen semantisch.",
-    "Building-Wandpipette auf leerer Originalkarte: derselbe Bildpunkt wie bei Boden ergab RGB 114/102/88, A255; neu gezeichnete Battlements-Wand speichert ff726658. Getrennter Dungeondraft-Prozess öffnet identische Formen und Wanddaten."
+    "Building-Wandpipette auf leerer Originalkarte: derselbe Bildpunkt wie bei Boden ergab RGB 114/102/88, A255; neu gezeichnete Battlements-Wand speichert ff726658. Getrennter Dungeondraft-Prozess öffnet identische Formen und Wanddaten.",
+    "Auf dem Kandidatenbuild c2480249 besteht der isolierte Hostlauf mit neun Building-Optionen; ein frischer Prozess erhält alle neun, konvertiert ein Building zum Raum und bewahrt Wandstil, Portal, Alt-Radierung, Punktzug sowie unveränderte Key-Bytes. Ein zweiter frischer Prozess öffnet Dokument und Key-Hash exakt. Die Host-Optionsmatrix unterscheidet sich von der Originalkarte und beweist noch keine gleiche Kartenwirkung."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -163,7 +164,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Gesonderter Phase-3-Nachbesserungslauf: vollständige Original-Optionskarte als gleich aufgebaute Host-Karte mit frischem Prozess gegenüberstellen und einen selben-Szenen-Pipettenpixel prüfen; ein Kanalstufenunterschied der Farbfläche bleibt zu untersuchen. Innere Bevel-25/222-Pixel bleiben offen; verworfene Masken-, Nearest- und einzelne Godot-V-UV-Hypothesen nicht wiederholen. Danach eigener Review aller 17 Unterfälle und nur bei bestandenem Fachphasentor die gesonderte Aufräumphase.",
+  "next": "Dokumentation der vorhandenen Phasen-Roadmaps abschließen; für Phase 3 bleiben eine gleich aufgebaute Host-Gegenkarte, Bevel-Bildwirkung, ein Feldfarb-Kanalunterschied, ein Pipettenvergleich derselben Szene und der unabhängige Review aller 17 Unterfälle offen. Keine Fachphase als abgenommen kennzeichnen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -1055,10 +1056,13 @@
     "phase3OptionsCardReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
     "phase3OptionsCardOriginalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/15-redo-point.dungeondraft_map",
     "phase3OptionsCardFreshMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map",
-    "phase3OptionsCardState": "original_full_options_card_verified_host_review_open",
+    "phase3OptionsCardState": "original_and_independent_host_cards_verified_same_card_review_open",
     "phase3WallPipetteReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/wall-pipette-review.md",
     "phase3WallPipetteOriginalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/native/runs/20261007-111004-1667061/evidence/maps/01-wall-pipette.dungeondraft_map",
     "phase3WallPipetteFreshMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/native-reopen/runs/20261007-111121-1668645/evidence/maps/01-wall-pipette-reopened.dungeondraft_map",
-    "phase3WallPipetteState": "direct_original_saved_wall_verified_host_same_scene_review_open"
+    "phase3WallPipetteState": "direct_original_saved_wall_verified_host_same_scene_review_open",
+    "phase3OptionsCardHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
+    "phase3OptionsCardHostCombined": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
+    "phase3OptionsCardHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json"
   }
 }
