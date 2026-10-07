@@ -6674,6 +6674,26 @@
           "comparisonEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json"
           ]
+        },
+        "phase3WallTintRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "e46aaf77559cab28b1f9e12e8847a8d8340c1ae32be8fd77208c101d85db8f24",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/phase3-wall-tint-repair.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/wall-tint-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-source.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native/runs/20261007-080319-1482085/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-no-shadow/runs/20261007-082215-1500552/evidence/screens/02-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host/evidence/1791353643892-parity-phase3-building-edit/wall-tint-pair-64px.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354469448-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354594045-parity-phase3-building-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "remaining": "QAWall01-Wandmaterial und deckende Rotfärbung im geraden Bildpaar ausgerichtet; Alpha, Portal- und Bevel-Pixel sowie vollständige Original-UI-Folge offen."
         }
       },
       {
@@ -6961,6 +6981,26 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344337916-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Weiße Wand zeigt gleiche Bandpositionen, aber andere Helligkeit; Tint-/Alpha-Stufen bleiben ohne ausgerichteten Bildvergleich."
+        },
+        "phase3WallTintRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "e46aaf77559cab28b1f9e12e8847a8d8340c1ae32be8fd77208c101d85db8f24",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/phase3-wall-tint-repair.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/wall-tint-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-source.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native/runs/20261007-080319-1482085/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-no-shadow/runs/20261007-082215-1500552/evidence/screens/02-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host/evidence/1791353643892-parity-phase3-building-edit/wall-tint-pair-64px.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354469448-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354594045-parity-phase3-building-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "remaining": "Deckende rote Wandstreifen stimmen bis höchstens zwei Kanalstufen; bei Alpha 128 weicht die Host-Deckkraft ohne Schatten von der nativen Hälfte ab. Weitere Farben und Original-UI-Folge offen."
         }
       },
       {
@@ -7111,6 +7151,26 @@
           "comparisonEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json"
           ]
+        },
+        "phase3WallTintRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "e46aaf77559cab28b1f9e12e8847a8d8340c1ae32be8fd77208c101d85db8f24",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/phase3-wall-tint-repair.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/wall-tint-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-source.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native/runs/20261007-080319-1482085/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/native-no-shadow/runs/20261007-082215-1500552/evidence/screens/02-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host/evidence/1791353643892-parity-phase3-building-edit/wall-tint-pair-64px.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354469448-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354594045-parity-phase3-building-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "remaining": "Wandmaterial wirkt auch an Bevel-Wand; die zuvor gemessenen 25/228 klassifizierten Bevel-Eckpixel und ausgerichtete Portal-/Kurvenbilder bleiben offen."
         }
       },
       {

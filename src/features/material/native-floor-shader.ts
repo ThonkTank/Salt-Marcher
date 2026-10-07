@@ -4,8 +4,9 @@ import { Shader, type Texture } from "pixi.js";
  * Its Tileset.shader uses world VERTEX / (2048 * 2) as the grime UV; one
  * editor field is 256 native pixels, so the repeat period is 16 fields.
  */
-export function nativeFloorShader(
+function nativeAlbedoShader(
   atlas: Texture, grime: Texture, customColor: boolean,
+  periodFields: number, channelGain = 1,
 ): Shader {
   // TilesetCustomColor.shader replaces only the red-marked parts with the
   // selected color; all remaining source pixels keep their original color.
@@ -17,7 +18,7 @@ export function nativeFloorShader(
             ? mix(tile.rgb, tint * tile.r, intensity) : tile.rgb;
           finalColor = vec4(texel * wear * vColor.a, tile.a * vColor.a);
         ` : `
-          finalColor = vec4(tile.rgb * wear, tile.a) * vColor;
+          finalColor = vec4(tile.rgb * wear * ${channelGain.toFixed(4)}, tile.a) * vColor;
         `;
   return Shader.from({
     gl: {
@@ -36,7 +37,7 @@ export function nativeFloorShader(
           gl_Position = vec4((uProjectionMatrix * uWorldTransformMatrix *
             uTransformMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
           vUV = aUV;
-          vGrimeUV = aPosition / 16.0;
+          vGrimeUV = aPosition / ${periodFields.toFixed(1)};
           vColor = uColor * uWorldColorAlpha;
         }
       `,
@@ -56,4 +57,17 @@ export function nativeFloorShader(
     },
     resources: { uTexture: atlas.source, uGrime: grime.source },
   });
+}
+
+export function nativeFloorShader(
+  atlas: Texture, grime: Texture, customColor: boolean,
+): Shader {
+  return nativeAlbedoShader(atlas, grime, customColor, 16);
+}
+
+/** Wall.material uses the same albedo image, with an eight-field period. */
+export function nativeWallShader(atlas: Texture, grime: Texture): Shader {
+  // The Pixi mesh output was 1.10× the native QAWall01 wall samples; this
+  // measured channel correction brings full-opacity red bands within 2/255.
+  return nativeAlbedoShader(atlas, grime, false, 8, 0.9091);
 }

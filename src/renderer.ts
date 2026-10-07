@@ -44,10 +44,12 @@ import {
   type Bounds,
 } from "./geometry";
 import { TexturePool } from "./textures";
-import { isNativeFloorAssetId, isNativeCustomColorFloorAssetId,
+import { isNativeFloorAssetId, isNativeWallAssetId,
+  isNativeCustomColorFloorAssetId,
   NATIVE_FLOOR_GRIME_ID } from
   "./features/material/native-path-catalog";
-import { nativeFloorShader } from "./features/material/native-floor-shader";
+import { nativeFloorShader, nativeWallShader } from
+  "./features/material/native-floor-shader";
 import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
@@ -79,6 +81,7 @@ export interface Visual {
   pathMesh?: Mesh;
   pathGeometry?: MeshGeometry;
   wallGeometries?: MeshGeometry[];
+  wallShaders?: Shader[];
   floorLayer?: Container;
   floorMask?: Graphics;
   floorGeometry?: MeshGeometry;
@@ -97,8 +100,10 @@ interface BuildingPreview {
   graphic: Graphics;
   wallLayer: Container;
   wallMask: Graphics;
-  wallMeshes: Mesh[];
+  wallMeshes: Mesh<MeshGeometry, Shader>[];
   wallGeometries: MeshGeometry[];
+  wallShaders: Shader[];
+  wallGrimeTexture?: Texture;
   shadow?: Graphics;
   floorTexture?: Texture;
   floorGrimeTexture?: Texture;
@@ -431,6 +436,7 @@ export class MapRenderer {
       v.floorGeometry?.destroy();
       v.floorShader?.destroy();
       for (const geometry of v.wallGeometries ?? []) geometry.destroy();
+      for (const shader of v.wallShaders ?? []) shader.destroy();
       v.label?.destroy();
       v.featureBadge?.destroy({ children: true });
       v.gradient?.destroy();
@@ -983,8 +989,15 @@ export class MapRenderer {
     alpha = 1,
     bevel = false,
   ): void {
-    void this.acquireAsset(visual, reference)
-      .then((texture) => {
+    const useNativeAlbedo = visual.entity.kind === "building" &&
+      (isNativeFloorAssetId(visual.entity.material?.assetId) ||
+        isNativeWallAssetId(visual.entity.wallAssetId));
+    void Promise.all([
+      this.acquireAsset(visual, reference),
+      useNativeAlbedo
+        ? this.acquireAsset(visual, NATIVE_FLOOR_GRIME_ID + "\0image")
+        : Promise.resolve(undefined),
+    ]).then(([texture, grime]) => {
         if (this.visuals.get(visual.entity.id) !== visual || this.closed)
           return;
         const layer = new Container();
@@ -1017,6 +1030,7 @@ export class MapRenderer {
             paintedWidth + 0.25, bevel, 0x000000, 0.14);
         layer.mask = mask;
         visual.wallGeometries = [];
+        visual.wallShaders = [];
         for (const band of buildingWallBands(visual.entity, segments,
           paintedWidth, texture.width, texture.height, bevel)) {
           const geometry = new MeshGeometry({
@@ -1024,11 +1038,13 @@ export class MapRenderer {
             uvs: new Float32Array(band.uvs),
             indices: new Uint32Array(band.indices),
           });
-          const mesh = new Mesh({ geometry, texture });
+          const shader = grime ? nativeWallShader(texture, grime) : undefined;
+          const mesh = new Mesh({ geometry, texture, shader });
           mesh.tint = tint;
           mesh.alpha = alpha;
           layer.addChild(mesh);
           visual.wallGeometries.push(geometry);
+          if (shader) visual.wallShaders.push(shader);
         }
         visual.container.addChild(layer, mask);
         this.invalidate();
@@ -1897,7 +1913,7 @@ export class MapRenderer {
         sourceId: after.id, sourceVisible: source.container.visible,
         shadowVisible: source.shadow?.visible, entity: after,
         container, graphic, wallLayer, wallMask,
-        wallMeshes: [], wallGeometries: [], assets: [], portals: [],
+        wallMeshes: [], wallGeometries: [], wallShaders: [], assets: [], portals: [],
       };
       const created = state;
       this.buildingPreview = state;
@@ -1938,9 +1954,19 @@ export class MapRenderer {
       if (after.wallAssetId && after.wallWidth > 0) {
         const reference = after.wallAssetId + "\0image";
         created.assets.push(reference);
-        void this.textures.acquire(reference).then((texture) => {
+        const needsWallGrime = isNativeFloorAssetId(after.material?.assetId) ||
+          isNativeWallAssetId(after.wallAssetId);
+        const grimeReference = NATIVE_FLOOR_GRIME_ID + "\0image";
+        if (needsWallGrime) created.assets.push(grimeReference);
+        void Promise.all([
+          this.textures.acquire(reference),
+          needsWallGrime
+            ? this.textures.acquire(grimeReference)
+            : Promise.resolve(undefined),
+        ]).then(([texture, grime]) => {
           if (this.buildingPreview !== created || this.closed) return;
           created.wallTexture = texture;
+          created.wallGrimeTexture = grime;
           this.drawBuildingPreview(created);
         }).catch((error) => {
           if (this.buildingPreview === created && !this.closed)
@@ -2017,8 +2043,12 @@ export class MapRenderer {
           indices = new Uint32Array(band.indices);
         if (!mesh) {
           const geometry = new MeshGeometry({ positions, uvs, indices });
-          mesh = new Mesh({ geometry, texture: state.wallTexture });
+          const shader = state.wallGrimeTexture
+            ? nativeWallShader(state.wallTexture, state.wallGrimeTexture)
+            : undefined;
+          mesh = new Mesh({ geometry, texture: state.wallTexture, shader });
           state.wallGeometries.push(geometry);
+          if (shader) state.wallShaders.push(shader);
           state.wallMeshes.push(mesh);
           state.wallLayer.addChild(mesh);
         } else {
@@ -2026,7 +2056,6 @@ export class MapRenderer {
           geometry.positions = positions;
           geometry.uvs = uvs;
           geometry.indices = indices;
-          mesh.texture = state.wallTexture;
         }
         mesh.tint = after.wall;
         mesh.alpha = (after.wallAlpha ?? 255) / 255;
@@ -2037,6 +2066,7 @@ export class MapRenderer {
       state.wallLayer.removeChild(mesh);
       mesh.destroy();
       state.wallGeometries.pop()!.destroy();
+      state.wallShaders.pop()?.destroy();
     }
     this.invalidate();
   }
@@ -2058,6 +2088,7 @@ export class MapRenderer {
     state.floorGeometry?.destroy();
     state.floorShader?.destroy();
     for (const geometry of state.wallGeometries) geometry.destroy();
+    for (const shader of state.wallShaders) shader.destroy();
     for (const reference of state.assets) this.textures.release(reference);
     const source = this.visuals.get(state.sourceId);
     if (source) {

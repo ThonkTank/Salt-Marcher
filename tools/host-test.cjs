@@ -680,7 +680,10 @@ async function workflow() {
     if (process.argv.includes("--floor-mosaic"))
       await scenario.floorMosaic(restart, process.argv.includes("--default-tint"));
     else if (process.argv.includes("--floor-variant")) await scenario.floorVariant(restart);
-    else if (process.argv.includes("--visual-match")) await scenario.visualMatch();
+    else if (process.argv.includes("--visual-match"))
+      await scenario.visualMatch(process.argv.includes("--wall-tint-pair"),
+        process.argv.includes("--wall-zero-alpha"),
+        process.argv.includes("--wall-no-shadow"));
     else if (process.argv.includes("--verify-combined")) await scenario.verifyCombined();
     else if (process.argv.includes("--combined")) await scenario.combined();
     else if (restart) await scenario.reopen();

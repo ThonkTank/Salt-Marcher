@@ -388,29 +388,58 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "combined-fresh-reopen.png") });
     checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
   }
-  async function visualMatch() {
+  async function visualMatch(wallTintPair = false, wallAlphaZero = false,
+    wallNoShadow = false) {
+    const pack = fs.readFileSync(packPath);
+    assert.equal(hash(pack),
+      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
+    assert.equal(hash(fs.readFileSync(pckPath)),
+      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    await page.evaluate(async ({ pckPath, pack }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (!plugin.listAssets(["QAWall01"], true)
+        .some(asset => asset.kind === "wall" && asset.name === "QA Wall")) {
+        const bytes = Uint8Array.from(atob(pack), char => char.charCodeAt(0));
+        await plugin.assets.add([new Blob([bytes])]);
+        await plugin.reloadAssets();
+      }
+    }, { pckPath, pack: pack.toString("base64") });
     const file = "Dungeons/Parity/Visual-Match.dungeon";
     const bytes = fs.readFileSync(path.join(__dirname,
       "../fixtures/phase3-qawall-visual-match.dungeon"));
     assert.equal(hash(bytes), "65d8f9e5c2a7658c2fbb2fb3ff4935e8cbff9eff05a550bcb95d55bc88e45a0d");
+    const content = JSON.parse(bytes.toString("utf8"));
+    if (wallNoShadow) content.settings.wallShadows = false;
+    if (wallTintPair) {
+      for (const entity of content.entities) {
+        entity.wall = 0xff0000;
+        entity.wallAlpha = entity.wallBevel ? wallAlphaZero ? 0 : 128 : 255;
+        for (const polygon of entity.polygons)
+          for (const point of polygon.outer) {
+            point.x -= 1;
+            point.y += 2;
+          }
+      }
+    }
     await page.evaluate(async ({ file, content }) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       const existing = app.vault.getAbstractFileByPath(file);
       if (existing) await app.vault.modify(existing, content);
       else await app.vault.create(file, content);
       await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
-    }, { file, content: bytes.toString("utf8") });
+    }, { file, content: JSON.stringify(content) });
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
     await chooseTool("Raum");
     const grid = page.getByRole("button", { name: "Raster", exact: true });
     if (await grid.getAttribute("aria-pressed") === "true") await grid.click();
-    const layout = await page.evaluate(() => {
+    const layout = await page.evaluate((wallTintPair) => {
       const editor = app.workspace.activeLeaf.view.editor,
         renderer = editor.renderer,
         box = renderer.canvas.getBoundingClientRect();
       renderer.camera.scale = 64;
-      renderer.camera.x = box.width / 2 - 4.5 * 64;
-      renderer.camera.y = box.height / 2 - 3 * 64;
+      renderer.camera.x = box.width / 2 - (wallTintPair ? 3.5 : 4.5) * 64;
+      renderer.camera.y = box.height / 2 - (wallTintPair ? 5 : 3) * 64;
       renderer.zoom(1);
       return {
         box: box.toJSON(), camera: { ...renderer.camera },
@@ -422,7 +451,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
           material: entity.material, polygons: entity.polygons,
         })),
       };
-    });
+    }, wallTintPair);
     assert.equal(layout.entities.length, 2);
     assert(layout.entities.every(entity => entity.wallAssetId?.includes("QAWall01")));
     assert.deepEqual(layout.entities.map(entity => entity.wallBevel), [false, true]);
@@ -430,10 +459,17 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.waitForFunction(() => {
       const renderer = app.workspace.activeLeaf?.view?.editor?.renderer;
       return renderer?.visuals.size === 2 &&
-        [...renderer.visuals.values()].every(visual => visual.container.children.length >= 2);
+        [...renderer.visuals.values()].every(visual =>
+          visual.wallGeometries?.length > 0);
     });
-    await page.screenshot({ path: path.join(out, "visual-match-64px.png") });
-    checks.push("Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
+    const screenshot = !wallTintPair ? "visual-match-64px.png"
+      : wallNoShadow ? "wall-tint-no-shadow-64px.png"
+      : wallAlphaZero ? "wall-tint-zero-64px.png"
+      : "wall-tint-pair-64px.png";
+    await page.screenshot({ path: path.join(out, screenshot) });
+    checks.push(wallTintPair
+      ? `Two QAWall01 rooms render red at full and ${wallAlphaZero ? "zero" : "half"} wall opacity with bevel off and on${wallNoShadow ? ", without wall shadow" : ""}`
+      : "Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
   }
   async function floorVariant(restart) {
     const file = "Dungeons/Parity/Floor-Variants.dungeon";
