@@ -4633,14 +4633,29 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/screens/02-reopen-grid-off.png",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map"
           ],
-          "observation": "Nine distinct Building options on one original map, Alt-erased L shape, ellipse, polygon point edit, anchored door_00, undo/redo, save and fresh-process reopen. Shapes and walls are exact; all 118 occupied tile cells preserve ordered texture-path/ARGB pairs after native lookup renumbering.",
-          "remaining": "Original and Host cards use different style/color matrices. Same-card Host comparison, remaining 17-case review, and intrinsic Bevel texture are open.",
+          "observation": "Nine distinct Building options on one original map, Alt-erased L shape, ellipse, polygon point edit, anchored door_00, undo/redo, save and fresh-process reopen. Shapes and walls are exact; all 118 occupied tile cells preserve ordered texture-path/ARGB pairs after native lookup renumbering. The initially wall-less second shape acquires a current-style wall during the later Alt erasure; this was reproduced in a separate original process.",
+          "remaining": "Matching Host card must include X/None wall revival on Alt erasure, style changes, Undo/Redo, fresh reopen; intrinsic Bevel texture and 17-case review remain open.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
           "hostEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json"
           ]
+        },
+        "phase3NoneRevivalReview": {
+          "date": "2026-10-07",
+          "state": "native_reproduced_host_same_sequence_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/none-revival-review.md",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/08-room7-before-erase.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/09-room7-erased.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/01-erased-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/02-undo-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/03-redo-saved.dungeondraft_map"
+          ],
+          "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
+          "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
         }
       },
       {
@@ -7104,6 +7119,21 @@
           ],
           "remaining": "Vorheriger enger X/None-Beleg besteht; Endstandsreview offen.",
           "strictAcceptance": "open"
+        },
+        "phase3NoneRevivalReview": {
+          "date": "2026-10-07",
+          "state": "native_reproduced_host_same_sequence_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/none-revival-review.md",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/08-room7-before-erase.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/09-room7-erased.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/01-erased-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/02-undo-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/03-redo-saved.dungeondraft_map"
+          ],
+          "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
+          "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
         }
       },
       {
@@ -50426,7 +50456,7 @@
       "case": "DD-011.15",
       "originalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/15-redo-point.dungeondraft_map",
       "freshMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map",
-      "remaining": "Original and Host cards use different style/color matrices. Same-card Host comparison, remaining 17-case review, and intrinsic Bevel texture are open.",
+      "remaining": "Matching Host card must include X/None wall revival on Alt erasure, style changes, Undo/Redo, fresh reopen; intrinsic Bevel texture and 17-case review remain open.",
       "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
       "hostCombined": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
@@ -50437,6 +50467,21 @@
       "state": "direct_original_saved_wall_verified_host_same_scene_review_open",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/wall-pipette-review.md",
       "case": "DD-011.22"
+    },
+    "phase3NoneRevivalReview": {
+      "date": "2026-10-07",
+      "state": "native_reproduced_host_same_sequence_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/none-revival-review.md",
+      "originalEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/08-room7-before-erase.dungeondraft_map",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/09-room7-erased.dungeondraft_map",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/01-erased-saved.dungeondraft_map",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/02-undo-saved.dungeondraft_map",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-none-revival-20261007/native/runs/20261007-113348-1690054/evidence/maps/03-redo-saved.dungeondraft_map"
+      ],
+      "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
+      "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
     }
   }
 }
