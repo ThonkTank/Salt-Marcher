@@ -247,3 +247,9 @@ Tint-/Alpha-Paare, alle 24 Stilbilder und die übrigen offenen Phase-3-Bildpaare
 ## Phase 3: gespeicherte Boden-Deckkraft bei 128 verglichen
 
 Ein getrenntes Bildpaar mit gleicher gespeicherter Holz/Stein-Karte und Alpha 128 ergibt im Original die Deckkraft 0,5017/0,5027 und im Host 0,4982/0,5019. Jeweilige leere Hintergrundbilder trennen die unterschiedliche Kartenfläche beider Programme vom Alpha-Effekt. Die 18 Atlaszellen bleiben korrekt; der Host wurde frisch geöffnet. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/phase3-floor-alpha-probe.md`. Weitere Alpha-Werte, Pickerfolge und 22 Stilbilder bleiben offen; keine Fachphasenfreigabe.
+
+## Phase 3: alle 24 gespeicherten Bodenmotive verglichen
+
+Eine isolierte 24er-Karte mit gleichen 2×2-Konturen zeigt den Original- und Host-Ladezustand in Weiß und in den jeweiligen PCK-Standardfarben. Vier `custom_color`-Motive nutzten bisher im Host die falsche normale Tint-Formel und zeigten rote Masken. Der Kandidat `fb7491bf79fe228da6581eb03e74c032cf40bf0652a8d7e25c4a115c7f89297d` übernimmt für diese vier Motive die native Rotmaskenformel. 91/96 gespeicherte Atlasindizes stimmen direkt; bei den übrigen fünf ist die Bildabweichung zwischen gewähltem und bestem Atlasindex höchstens 0,36 RGB-Stufen. Der mittlere Pixelfehler der 24 Standardfarben beträgt 9,83 RGB-Stufen, der größte Unterschied eines Stil-Farbmittels 9,09. Beide Hostkarten wurden frisch geöffnet; Building-Optionen und Phase-1-/2-Regressionen bestanden. Typprüfung, 138 Tests und Build bestanden. Bericht: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/phase3-floor-styles-repair.md`.
+
+Die 24er-Karten belegen gespeicherte Bildwirkung, nicht jede einzelne Original-Galeriebedienung. Weitere Farb-/Alpha-Werte, unmittelbare native Zeichenfolge und die übrigen Phase-3-Bildpaare bleiben offen; das Fachphasentor ist nicht freigegeben.

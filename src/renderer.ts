@@ -44,7 +44,8 @@ import {
   type Bounds,
 } from "./geometry";
 import { TexturePool } from "./textures";
-import { isNativeFloorAssetId, NATIVE_FLOOR_GRIME_ID } from
+import { isNativeFloorAssetId, isNativeCustomColorFloorAssetId,
+  NATIVE_FLOOR_GRIME_ID } from
   "./features/material/native-path-catalog";
 import { nativeFloorShader } from "./features/material/native-floor-shader";
 import { drawPath, drawRoof } from "./render-drawing";
@@ -506,7 +507,8 @@ export class MapRenderer {
         positions: new Float32Array(positions),
         uvs: new Float32Array(uvs), indices: new Uint32Array(indices),
       }),
-      shader = nativeFloorShader(texture, grime),
+      shader = nativeFloorShader(texture, grime,
+        isNativeCustomColorFloorAssetId(building.material?.assetId)),
       mesh = new Mesh({ geometry, texture, shader }),
       layer = new Container(), mask = new Graphics();
     mesh.tint = building.fill;

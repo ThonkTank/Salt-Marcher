@@ -3953,6 +3953,25 @@
           "finding": "PCK-Tileset.material multipliziert Atlas und weltkoordinatenbasierte grime.png; der Host übernimmt dieselbe Periode von 16 Feldern. 18/18 Atlaszellen erhalten; ausgerichteter RGB-MAE Holz 21,86→4,35 und Stein 18,84→2,11.",
           "remaining": "Tint-/Alpha-Bildpaare, alle 24 Stilbilder und direkter nativer Zeichenstand offen; gesonderter Review nach den übrigen Phase-3-Nachbesserungen.",
           "strictAcceptance": "open"
+        },
+        "phase3StyleMosaic": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "fb7491bf79fe228da6581eb03e74c032cf40bf0652a8d7e25c4a115c7f89297d",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/phase3-floor-styles-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/style-mosaic-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/native3/runs/20261007-074144-1464365/evidence/screens/02-mosaic-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/native-defaults/runs/20261007-074934-1470573/evidence/screens/02-defaults-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/host-fix/evidence/1791352085438-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/host-defaults/evidence/1791352256602-parity-phase3-building-reopen/result.json"
+          ],
+          "finding": "Alle 24 gespeicherten Bodenmotive in Weiß und PCK-Standardfarbe paarweise abgebildet. Vier custom_color-Stile nutzen jetzt die native Rotmaskenformel; 91/96 Atlasindizes stimmen direkt, die fünf übrigen sind bildlich bis 0,36 RGB-Stufen gleichwertig. Mittlerer Pixelfehler bei Standardfarben 9,83 RGB-Stufen.",
+          "remaining": "Synthetisch aufgebaute gespeicherte Originalkarte belegt die Bildwirkung, nicht 24 einzelne Galeriegesten. Weitere Tint-/Alpha-Werte, unmittelbarer Zeichenstand und übrige Phase-3-Bildpaare offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4150,6 +4169,25 @@
           ],
           "finding": "Gespeicherte Bodenfarbe mit Alpha 128 mischt im Original mit 0,5017/0,5027 und im Host mit 0,4982/0,5019 Deckkraft über den jeweils direkt aufgenommenen Hintergrund; 18/18 Atlaszellen bleiben erhalten.",
           "remaining": "Dieser Lauf injizierte gespeicherte QA-Werte und wiederholte nicht die Original-Pickerfolge. Andere Alpha-Werte und 22 weitere Stile offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3StyleMosaic": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "fb7491bf79fe228da6581eb03e74c032cf40bf0652a8d7e25c4a115c7f89297d",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/phase3-floor-styles-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/style-mosaic-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/native3/runs/20261007-074144-1464365/evidence/screens/02-mosaic-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/native-defaults/runs/20261007-074934-1470573/evidence/screens/02-defaults-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/host-fix/evidence/1791352085438-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/host-defaults/evidence/1791352256602-parity-phase3-building-reopen/result.json"
+          ],
+          "finding": "Alle 24 gespeicherten Bodenmotive in Weiß und PCK-Standardfarbe paarweise abgebildet. Vier custom_color-Stile nutzen jetzt die native Rotmaskenformel; 91/96 Atlasindizes stimmen direkt, die fünf übrigen sind bildlich bis 0,36 RGB-Stufen gleichwertig. Mittlerer Pixelfehler bei Standardfarben 9,83 RGB-Stufen.",
+          "remaining": "Synthetisch aufgebaute gespeicherte Originalkarte belegt die Bildwirkung, nicht 24 einzelne Galeriegesten. Weitere Tint-/Alpha-Werte, unmittelbarer Zeichenstand und übrige Phase-3-Bildpaare offen.",
           "strictAcceptance": "open"
         }
       },

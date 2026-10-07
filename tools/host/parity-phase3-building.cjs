@@ -539,5 +539,107 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "floor-background-64px.png") });
     checks.push("Native saved wood/stone map uses the exact 18 atlas cells in a fresh Obsidian process");
   }
-  return { edit, reopen, combined, verifyCombined, visualMatch, floorVariant };
+  async function floorMosaic(restart, defaultTint = false) {
+    const file = "Dungeons/Parity/Floor-Mosaic" +
+      (defaultTint ? "-Defaults" : "") + ".dungeon";
+    const names = [
+      "smart/tileset_wood_vertical", "smart_double/tileset_stone",
+      "simple/tileset_brick_running", "simple/tileset_diamond_2",
+      "simple/tileset_brick_worn", "simple/tileset_cut_stone",
+      "simple/tileset_carpet", "simple/tileset_concrete_slab",
+      "simple/tileset_diamond", "simple/tileset_brick_basketweave",
+      "simple/tileset_cave", "simple/tileset_cobble",
+      "simple/tileset_concrete_large", "simple/tileset_concrete",
+      "simple/tileset_roman_worn", "simple/tileset_ornate",
+      "simple/tileset_roman_tiles", "simple/tileset_herringbone",
+      "simple/tileset_straw", "simple/tileset_sewers",
+      "simple/tileset_wood_damaged", "simple/tileset_plank_45",
+      "simple/tileset_wood_interlaced", "simple/tileset_worn_cobble",
+    ];
+    assert.equal(hash(fs.readFileSync(pckPath)),
+      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    await page.evaluate(async ({ file, pckPath, restart, names, defaultTint }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (!restart) {
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        const entities = names.map((name, index) => {
+          const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
+          const source = `res://textures/tilesets/${name}.png`;
+          const assetId = "pack:dungeondraft-builtin-1.2.0.1:tileset:" +
+            encodeURIComponent(source);
+          const design = plugin.nativePathCatalog.floors.find(
+            floor => floor.files.image === source);
+          if (!design) throw new Error("Bodenstil fehlt: " + source);
+          const fill = defaultTint ? Number.parseInt(design.color, 16) : 0xffffff;
+          return {
+            id: `style-${index}`, kind: "building", floorId: "floor-1",
+            polygons: [{ outer: [
+              { x, y }, { x: x + 2, y },
+              { x: x + 2, y: y + 2 }, { x, y: y + 2 },
+            ], holes: [] }],
+            layer: 200, fill, floorAlpha: 255,
+            wall: 0xffffff, wallAlpha: 255, wallWidth: 0,
+            material: { assetId, assetPart: "image", tileSize: 8,
+              tint: fill, rotation: 0 },
+          };
+        });
+        const document = {
+          format: "dungeon-map", version: 3, id: "phase3-floor-mosaic",
+          settings: { name: "Floor Mosaic", width: 18, height: 12,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: false, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+            ambient: 1 }],
+          entities, content: { definitions: [], occurrences: [],
+            routes: [], archive: [] },
+        };
+        const existing = app.vault.getAbstractFileByPath(file);
+        if (existing) await app.vault.modify(existing, JSON.stringify(document));
+        else await app.vault.create(file, JSON.stringify(document));
+      }
+      await app.workspace.getLeaf(false).openFile(
+        app.vault.getAbstractFileByPath(file));
+    }, { file, pckPath, restart, names, defaultTint });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.waitForFunction(() => {
+      const visuals = app.workspace.activeLeaf?.view?.editor?.renderer?.visuals;
+      return visuals?.size === 24 && [...visuals.values()]
+        .every(visual => visual.floorGeometry?.positions.length === 32);
+    }, null, { timeout: 30000 });
+    const variants = await page.evaluate(() => Object.fromEntries(
+      [...app.workspace.activeLeaf.view.editor.renderer.visuals]
+        .map(([id, visual]) => {
+          const mesh = visual.floorLayer.children[0],
+            geometry = visual.floorGeometry,
+            columns = mesh.texture.width / 256;
+          const cells = [];
+          for (let offset = 0; offset < geometry.positions.length; offset += 8)
+            cells.push({
+              x: geometry.positions[offset], y: geometry.positions[offset + 1],
+              atlas: Math.floor(geometry.uvs[offset + 1] *
+                mesh.texture.height / 256) * columns +
+                Math.floor(geometry.uvs[offset] *
+                  mesh.texture.width / 256),
+            });
+          return [id, cells];
+        }),
+    ));
+    fs.writeFileSync(path.join(out, "floor-mosaic-variants.json"),
+      JSON.stringify(variants, null, 2));
+    await page.evaluate(() => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer,
+        box = renderer.canvas.getBoundingClientRect();
+      renderer.camera.scale = 32;
+      renderer.camera.x = box.width / 2 - 9 * 32;
+      renderer.camera.y = box.height / 2 - 6 * 32;
+      renderer.zoom(1);
+    });
+    await page.screenshot({ path: path.join(out, "floor-mosaic-32px.png") });
+    fs.writeFileSync(path.join(out, "floor-mosaic-order.json"),
+      JSON.stringify(names, null, 2));
+    checks.push("All 24 native floor styles render in original saved-map order");
+  }
+  return { edit, reopen, combined, verifyCombined, visualMatch,
+    floorVariant, floorMosaic };
 };

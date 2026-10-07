@@ -4,7 +4,21 @@ import { Shader, type Texture } from "pixi.js";
  * Its Tileset.shader uses world VERTEX / (2048 * 2) as the grime UV; one
  * editor field is 256 native pixels, so the repeat period is 16 fields.
  */
-export function nativeFloorShader(atlas: Texture, grime: Texture): Shader {
+export function nativeFloorShader(
+  atlas: Texture, grime: Texture, customColor: boolean,
+): Shader {
+  // TilesetCustomColor.shader replaces only the red-marked parts with the
+  // selected color; all remaining source pixels keep their original color.
+  const color = customColor ? `
+          float redness = tile.r - (tile.g + tile.b) * 0.5;
+          float intensity = smoothstep(0.0, 0.5, redness);
+          vec3 tint = vColor.rgb / max(vColor.a, 0.00001);
+          vec3 texel = redness > 0.0
+            ? mix(tile.rgb, tint * tile.r, intensity) : tile.rgb;
+          finalColor = vec4(texel * wear * vColor.a, tile.a * vColor.a);
+        ` : `
+          finalColor = vec4(tile.rgb * wear, tile.a) * vColor;
+        `;
   return Shader.from({
     gl: {
       vertex: `
@@ -36,7 +50,7 @@ export function nativeFloorShader(atlas: Texture, grime: Texture): Shader {
         void main(void) {
           vec4 tile = texture(uTexture, vUV);
           vec3 wear = texture(uGrime, vGrimeUV).rgb;
-          finalColor = vec4(tile.rgb * wear, tile.a) * vColor;
+          ${color}
         }
       `,
     },

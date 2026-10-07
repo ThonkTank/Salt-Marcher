@@ -54,6 +54,15 @@ const FLOOR_ORDER = [
   "tileset_wood_interlaced", "tileset_herringbone", "tileset_sewers",
   "tileset_wood_damaged", "tileset_roman_tiles", "tileset_worn_cobble",
 ] as const;
+/** The four PCK designs whose type is custom_color. */
+const CUSTOM_COLOR_FLOOR_IDS = new Set([
+  "tileset_diamond", "tileset_diamond_2", "tileset_ornate",
+  "tileset_wood_damaged",
+].map((name) => nativeDesignId("tileset",
+  `res://textures/tilesets/simple/${name}.png`)));
+export function isNativeCustomColorFloorAssetId(id: string | undefined): boolean {
+  return id !== undefined && CUSTOM_COLOR_FLOOR_IDS.has(id);
+}
 const WALL_ORDER = [
   "battlements", "cobble", "concrete", "stone", "stone_09",
   "stone_12", "wood", "wood_02", "wood_03", "wood_04",
@@ -239,6 +248,9 @@ export async function readNativePathCatalog(
       invalid("Ungültiger Stil: " + path);
     const sourcePath = "res://" + record.path;
     const id = nativeDesignId(kind, sourcePath);
+    if (kind === "tileset" && record.type !==
+        (isNativeCustomColorFloorAssetId(id) ? "custom_color" : "normal"))
+      invalid("Unbekannter Bodenmaterialtyp: " + path);
     const dimensions = await imageDetails(sourcePath, id);
     const name = kind === "tileset" ? record.name : key
       .replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());

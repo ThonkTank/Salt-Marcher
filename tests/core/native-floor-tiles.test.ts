@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Building } from "../../src/model";
-import { nativeDesignId } from "../../src/features/material/native-path-catalog";
+import { nativeDesignId, isNativeCustomColorFloorAssetId } from
+  "../../src/features/material/native-path-catalog";
 import { nativeFloorCells, nativeFloorVariants } from
   "../../src/features/material/native-floor-tiles";
 
@@ -9,6 +10,17 @@ const wood = nativeDesignId("tileset",
   "res://textures/tilesets/smart/tileset_wood_vertical.png");
 const stone = nativeDesignId("tileset",
   "res://textures/tilesets/smart_double/tileset_stone.png");
+
+test("only the four PCK custom_color designs use the mask shader", () => {
+  const custom = ["diamond", "diamond_2", "ornate", "wood_damaged"];
+  for (const name of custom)
+    assert.equal(isNativeCustomColorFloorAssetId(nativeDesignId("tileset",
+      `res://textures/tilesets/simple/tileset_${name}.png`)), true);
+  for (const name of ["carpet", "brick_worn", "herringbone"])
+    assert.equal(isNativeCustomColorFloorAssetId(nativeDesignId("tileset",
+      `res://textures/tilesets/simple/tileset_${name}.png`)), false);
+  assert.equal(isNativeCustomColorFloorAssetId(wood), false);
+});
 
 test("native saved all-wood map reproduces 64 measured atlas cells", () => {
   const actual = nativeFloorVariants(Array(64).fill(wood), 8, 8);
