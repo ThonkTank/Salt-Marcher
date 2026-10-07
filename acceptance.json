@@ -48470,6 +48470,16 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json",
       "next": "Eigener Phase-2-Aufräumplanlauf; Umsetzung und Review getrennt."
     },
+    "phase2CleanupPlan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-2-PLAN.md",
+      "baseCommit": "2c82e6f",
+      "baseBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+      "scope": "Gestenvorschlag/Snap, Vorschau-Portal-Scan, Paketwand-Sprite-Lebensdauer und gemeinsamer Konturbefehl-Abschluss; keine neue Werkzeugwirkung.",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md",
+      "decision": "Alle acht Phase-2-Unterfälle bleiben nach dem bestandenen Fachreview abgenommen. Aufräum-Umsetzung und eigener Aufräum-Review stehen aus; Phase 3 bleibt gesperrt."
+    },
     "phase2Plan": {
       "date": "2026-10-07",
       "state": "plan_ready_for_separate_implementation",
