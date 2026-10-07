@@ -4697,6 +4697,18 @@
       },
       {
         "id": "DD-012.01",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hit-refined/runs/20261007-020806-1180547/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original-Hovergrenze bei 100/75 Prozent und eigener Host bei 64/48 Pixel/Feld gepaart; unabhängiger Review und produktiver Endstand offen."
+        },
         "phase2Review": {
           "state": "partial",
           "reviewedCommit": "b3f3d58",
@@ -4791,6 +4803,18 @@
       },
       {
         "id": "DD-012.02",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape/runs/20261007-020441-1175903/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Punktzug, Paketwand, Escape-Übernahme, Undo/Redo und Neuöffnung im Host bestanden; Original-Ellipsen-Neuöffnung liegt aus dem Vorlauf vor. Unabhängiger Review offen."
+        },
         "phase2Review": {
           "state": "partial",
           "reviewedCommit": "b3f3d58",
@@ -4889,6 +4913,18 @@
       },
       {
         "id": "DD-012.03",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape-edge/runs/20261007-020539-1177395/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original-Escape behält gehaltene Kontur; eigener Escape-Commit und Pointer-Cancel-Abbruch im Host bestanden. Unabhängiger Review offen."
+        },
         "phase2Review": {
           "state": "open",
           "reviewedCommit": "b3f3d58",
@@ -4976,6 +5012,18 @@
       },
       {
         "id": "DD-013.01",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-default/runs/20261007-015440-1162738/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original-Action durch DLL, Shortcut-Override und physische Delete-Taste bestätigt; Host-Delete am markierten Griff bestanden. Unabhängiger Review offen."
+        },
         "phase2Review": {
           "state": "open",
           "reviewedCommit": "b3f3d58",
@@ -5061,6 +5109,18 @@
       },
       {
         "id": "DD-013.02",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-backspace/runs/20261007-015520-1163118/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Rücktaste 4→3 mit Paketwand, Undo/Redo und Neuöffnung in Original- und Hostfolgen belegt. Unabhängiger Review offen."
+        },
         "phase2Review": {
           "state": "partial",
           "reviewedCommit": "b3f3d58",
@@ -5149,6 +5209,20 @@
       },
       {
         "id": "DD-013.03",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-multipart/runs/20261007-015722-1164779/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hole/runs/20261007-021652-1191200/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hole-reopen/runs/20261007-021756-1192459/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original entfernt den dreipunktigen Einzel-, gewählten Mehrteil- und Innenlochumriss; eigener Befehl und Host bestehen. Letzter nummerierter Raum bleibt zum Schutz des Keys gesperrt; unabhängiger Review und produktiver Endstand offen."
+        },
         "phase2Review": {
           "state": "open_implementation_gap",
           "reviewedCommit": "b3f3d58",
@@ -5240,6 +5314,18 @@
       },
       {
         "id": "DD-014.01",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape-edge/runs/20261007-020539-1177395/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original-Kantenmittelzug samt Escape-Übernahme und zwei Zoom-Trefferzonen, eigener Paketwandzug, Undo/Redo und Neuöffnung belegt. Unabhängiger Review offen."
+        },
         "phase2Review": {
           "state": "partial",
           "reviewedCommit": "b3f3d58",
@@ -5350,6 +5436,19 @@
       },
       {
         "id": "DD-014.02",
+        "phase2Repair": {
+          "state": "candidate_repaired_review_pending",
+          "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-two-portals/runs/20261007-021350-1187253/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-two-portals-reopen/runs/20261007-021733-1191934/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332153051-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-portal-final-20261007/host/evidence/1791332206294-parity-phase2-points-reopen/result.json"
+          ],
+          "gap": "Original und Host entfernen bei naher Ersatzwand nur das Portal des ersetzten Stücks; Undo/Redo und Neuöffnung bestehen. Unabhängiger Review und produktiver Endstand offen."
+        },
         "phase2Review": {
           "state": "partial",
           "reviewedCommit": "b3f3d58",

@@ -517,6 +517,47 @@ export function planBuildingContourMutation(
     entities: changes,
   };
 }
+export interface BuildingOutlineRemovalRequest {
+  readonly entities: readonly Entity[];
+  readonly before: Building;
+  readonly contour: number;
+}
+export interface BuildingOutlineRemovalPlan {
+  readonly command: Command;
+  readonly after: Building | null;
+}
+/** A native three-point removal removes the selected outline, not every part. */
+export function planBuildingOutlineRemoval(
+  request: BuildingOutlineRemovalRequest,
+): BuildingOutlineRemovalPlan {
+  const { before, contour } = request,
+    current = request.entities.find((entity) => entity.id === before.id),
+    entry = buildingContourEntries(before)[contour];
+  if (before.locked || !recordsEqual(current, before) ||
+      !Number.isInteger(contour) || !entry || entry.points.length !== 3)
+    throw new Error("Ungültiger oder veralteter Gebäudeumriss.");
+  const polygons = entry.hole === undefined
+      ? before.polygons.filter((_, index) => index !== entry.polygon)
+      : before.polygons.map((polygon, index) => index === entry.polygon
+        ? { ...polygon, holes: polygon.holes.filter((_, hole) => hole !== entry.hole) }
+        : polygon),
+    after: Building | null = polygons.length ? { ...before, polygons } : null;
+  if (!after && isRoom(before))
+    throw new Error("Der letzte Umriss eines nummerierten Raums benötigt den Archivierungsablauf.");
+  if (after) {
+    validatePolygons(after.polygons);
+    assertBuildingTopology(after.polygons);
+  }
+  const changes: RecordChange<Entity>[] = [{ id: before.id, before, after }];
+  for (const entity of request.entities) {
+    if (entity.kind !== "door" || entity.anchor?.boundaryId !== before.id)
+      continue;
+    const next = after ? reanchorPortal(entity, before, after, "survive") : null;
+    if (!recordsEqual(entity, next))
+      changes.push({ id: entity.id, before: entity, after: next });
+  }
+  return { command: { label: "Gebäudeumriss entfernen", entities: changes }, after };
+}
 export function createMapPath(
   session: Session,
   floorId: string,

@@ -1,6 +1,6 @@
-import type { Building, Entity, Point } from "../../model";
+import { isRoom, type Building, type Entity, type Point } from "../../model";
 import type { Command } from "../../session";
-import { planBuildingContourMutation } from "../../commands";
+import { planBuildingContourMutation, planBuildingOutlineRemoval } from "../../commands";
 import {
   buildingContourEntries,
   nearestBuildingVertex,
@@ -23,13 +23,17 @@ export interface BuildingEdgeGrip {
   readonly midpoint: Point;
 }
 
+/** Native Edit Points hover reaches roughly 16 screen pixels at 75% and 100%. */
+export const buildingPointGripPixels = 16;
+
 export type BuildingPointEdit =
   | {
       readonly status: "command";
       readonly command: Command;
       readonly after: Building;
     }
-  | { readonly status: "minimum" | "locked" | "stale" | "unchanged"; readonly command: null };
+  | { readonly status: "outline-removed"; readonly command: Command; readonly after: Building | null }
+  | { readonly status: "protected-room" | "locked" | "stale" | "unchanged"; readonly command: null };
 
 const samePoint = (a: Point, b: Point): boolean => a.x === b.x && a.y === b.y;
 const validTolerance = (value: number): boolean =>
@@ -107,7 +111,7 @@ export function planBuildingVertexDrag(
     : { status: "unchanged", command: null };
 }
 
-/** Native Backspace on a hovered point removes exactly that point, down to three. */
+/** Delete and Backspace share the native action: remove a point or a three-point outline. */
 export function planBuildingBackspacePoint(
   entities: readonly Entity[],
   before: Building,
@@ -122,7 +126,13 @@ export function planBuildingBackspacePoint(
     !samePoint(contour.points[grip.index]!, grip.point)
   )
     return { status: "stale", command: null };
-  if (contour.points.length <= 3) return { status: "minimum", command: null };
+  if (contour.points.length === 3) {
+    if (contour.hole === undefined && before.polygons.length === 1 && isRoom(before))
+      return { status: "protected-room", command: null };
+    const result = planBuildingOutlineRemoval({ entities, before, contour: grip.contour });
+    return { status: "outline-removed", ...result };
+  }
+  if (contour.points.length < 3) return { status: "stale", command: null };
   const points = contour.points.filter((_, index) => index !== grip.index),
     after = replaceBuildingContour(before, grip.contour, points),
     command = planBuildingContourMutation({

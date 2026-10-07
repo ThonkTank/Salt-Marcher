@@ -1,4 +1,4 @@
-module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
+module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks,
   chooseTool, waitForFileAbsent }) => {
   const mapPath = "Dungeons/Parity/Punkte.dungeon";
   const notePath = "Dungeons/Parity/Räume/01 Punktraum.md";
@@ -13,6 +13,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
         id: editor.renderer.buildingPreview.sourceId,
         polygons: editor.renderer.buildingPreview.entity.polygons,
         portalCount: editor.renderer.buildingPreview.portals.length,
+        wallSprites: editor.renderer.buildingPreview.wallLayer.children.length,
         sourceHidden: !editor.renderer.visuals.get(
           editor.renderer.buildingPreview.sourceId).container.visible,
       } };
@@ -60,17 +61,33 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await page.waitForFunction(id =>
       app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPreview?.sourceId === id,
     id);
+    if (before.document.entities.find(e => e.id === id)?.wallAssetId)
+      await page.waitForFunction(() =>
+        app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPreview?.wallLayer.children.length > 0);
     const held = await state();
     assert.equal(held.preview.id, id);
     assert.equal(held.preview.sourceHidden, true);
+    if (before.document.entities.find(e => e.id === id)?.wallAssetId)
+      assert.ok(held.preview.wallSprites > 0, "package wall preview");
     assert.deepEqual(held.document, before.document);
     assert.equal(held.history, before.history);
     assert.equal(held.dirty, before.dirty);
     await page.screenshot({ path: path.join(out, label + "-held.png") });
     if (cancel) {
-      await page.keyboard.press("Escape");
+      if (cancel === "pointercancel")
+        await page.locator(".dn-canvas canvas").evaluate(canvas =>
+          canvas.dispatchEvent(new PointerEvent("pointercancel", {
+            bubbles: true, pointerId: 1, pointerType: "mouse" })));
+      else await page.keyboard.press("Escape");
       await page.mouse.up();
-      assert.deepEqual((await state()).document, before.document);
+      if (cancel === "pointercancel") {
+        assert.deepEqual((await state()).document, before.document);
+        assert.equal((await state()).history, before.history);
+      } else {
+        assert.notDeepEqual((await state()).document, before.document);
+        assert.equal((await state()).history, before.history + 1);
+        assert.equal((await state()).tool, "select");
+      }
     } else {
       await page.mouse.up();
       await page.waitForFunction(id =>
@@ -87,12 +104,62 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await page.keyboard.press("Control+y");
     assert.deepEqual(await building(id), after);
   }
+  async function measuredGripHit() {
+    await select({ x: 4, y: 4 }, "rect");
+    for (const scale of [64, 48]) {
+      await page.evaluate(scale => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer,
+          box = renderer.canvas.getBoundingClientRect();
+        renderer.camera.scale = scale;
+        renderer.camera.x = box.width / 2 - 4 * scale;
+        renderer.camera.y = box.height / 2 - 4 * scale;
+        renderer.zoom(1);
+      }, scale);
+      for (const [kind, point, index] of [
+        ["vertex", { x: 2, y: 2 }, 0],
+        ["edge", { x: 4, y: 2 }, 0],
+      ]) {
+        const at = await world(point);
+        await page.mouse.move(at.x + 32, at.y - 32);
+        await page.mouse.move(at.x, at.y - 15);
+        await page.waitForFunction(({ kind, index }) => {
+          const hover = app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPointHover;
+          return hover?.kind === kind && hover.index === index;
+        }, { kind, index });
+        await page.mouse.move(at.x, at.y - 17);
+        await page.waitForFunction(() =>
+          !app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPointHover);
+      }
+      await page.screenshot({ path: path.join(out, "grips-" + scale + ".png") });
+    }
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    checks.push("Native-sized vertex and edge hit zones hold at 100 and 75 percent zoom");
+  }
   async function edit() {
     await open();
+    const packPath = root + "/../dungeon-auswertung/tests/fixtures/wall-texture-probe/own-walls.dungeondraft_pack";
+    const pack = fs.readFileSync(packPath);
+    assert.equal(digest(pack), "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
+    await page.evaluate(async (encoded) => {
+      const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.assets.add([new Blob([bytes])]);
+      await plugin.reloadAssets();
+      const editor = app.workspace.activeLeaf.view.editor;
+      const asset = plugin.listAssets(["QAWall01"]).find(item => item.kind === "wall");
+      if (!asset) throw new Error("QA package wall missing");
+      const ids = ["rect", "ellipse", "triangle"];
+      editor.session.execute({ label: "QA-Paketwand aktivieren",
+        settings: { before: editor.session.settings,
+          after: { ...editor.session.settings, assetPacks: ["QAWall01"] } },
+        entities: ids.map(id => { const before = editor.session.entities.get(id);
+          return { id, before, after: { ...before, wallAssetId: asset.id } }; }) });
+    }, pack.toString("base64"));
     await chooseTool("Punkte");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     assert.equal((await state()).tool, "edit-points");
     const keyHash = digest(fs.readFileSync(path.join(vault, notePath)));
+    await measuredGripHit();
 
     await select({ x: 4, y: 4 }, "rect");
     await hover({ x: 2, y: 2 }, 0, 0);
@@ -104,7 +171,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert.equal(rectAfter.note.path, rectBefore.note.path);
     await undoRedo("rect", rectBefore, rectAfter);
     await select({ x: 4, y: 4 }, "rect");
-    await drag({ x: 6, y: 6 }, { x: 7, y: 7 }, "rect", "rectangle-cancel", true);
+    await drag({ x: 6, y: 6 }, { x: 7, y: 7 }, "rect", "rectangle-escape", "escape");
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    assert.deepEqual(await building("rect"), rectAfter);
+    await chooseTool("Punkte");
+    await select({ x: 4, y: 4 }, "rect");
+    await drag({ x: 2, y: 6 }, { x: 1, y: 7 }, "rect", "rectangle-pointercancel", "pointercancel");
     assert.deepEqual(await building("rect"), rectAfter);
     checks.push("Building mode moves one rectangle grip with transient floor/wall preview and one undo step");
 
@@ -124,22 +197,47 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await select({ x: 5, y: 11 }, "triangle");
     await hover({ x: 4, y: 10 }, 0, 0, "edge");
     const triangleBefore = await building("triangle"),
-      portalBefore = (await state()).document.entities.find(e => e.id === "triangle-door");
+      portalBefore = (await state()).document.entities.filter(e => e.id.startsWith("triangle-door"));
     await drag({ x: 4, y: 10 }, { x: 4, y: 9 }, "triangle", "edge-insert");
     const triangleAfter = await building("triangle"),
-      portalAfter = (await state()).document.entities.find(e => e.id === "triangle-door");
+      portalAfter = (await state()).document.entities.filter(e => e.id.startsWith("triangle-door"));
     assert.equal(triangleAfter.polygons[0].outer.length, 4);
-    assert.equal(portalAfter.anchor.boundaryId, "triangle");
+    assert.deepEqual(portalAfter.map(portal => portal.id), ["triangle-door-2"]);
+    assert.equal(portalAfter[0].anchor.boundaryId, "triangle");
     await undoRedo("triangle", triangleBefore, triangleAfter);
     await page.locator(".dn-canvas canvas").focus();
     await page.keyboard.press("Control+z");
-    assert.deepEqual((await state()).document.entities.find(e => e.id === "triangle-door"), portalBefore);
+    assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), portalBefore);
     await page.keyboard.press("Control+y");
-    assert.deepEqual((await state()).document.entities.find(e => e.id === "triangle-door"), portalAfter);
+    assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), portalAfter);
     await select({ x: 5, y: 11 }, "triangle");
     await hover({ x: 3, y: 9.5 }, 0, 0, "edge");
-    await drag({ x: 3, y: 9.5 }, { x: 3, y: 8.5 }, "triangle", "edge-cancel", true);
-    checks.push("Edge-midpoint insertion previews and commits floor, wall and bound portal atomically");
+    await drag({ x: 3, y: 9.5 }, { x: 3, y: 8.5 }, "triangle", "edge-escape", "escape");
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    assert.deepEqual(await building("triangle"), triangleAfter);
+    await chooseTool("Punkte");
+    checks.push("Edge-midpoint insertion keeps the distant portal and removes the one on its replaced wall atomically");
+
+    await select({ x: 5, y: 11 }, "triangle");
+    await hover({ x: 4, y: 9 }, 0, 1);
+    await page.keyboard.press("Backspace");
+    const triangleThree = await building("triangle"),
+      portalsThree = (await state()).document.entities.filter(e => e.id.startsWith("triangle-door"));
+    assert.equal(triangleThree.polygons[0].outer.length, 3);
+    await hover({ x: 2, y: 10 }, 0, 0);
+    const beforeOutline = await state();
+    await page.keyboard.press("Delete");
+    assert.equal(await building("triangle"), undefined);
+    assert.equal((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")).length, 0);
+    assert.equal((await state()).history, beforeOutline.history + 1);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    assert.deepEqual(await building("triangle"), triangleThree);
+    assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), portalsThree);
+    await page.keyboard.press("Control+y");
+    assert.equal(await building("triangle"), undefined);
+    checks.push("Backspace removes one point, Delete removes the final non-room outline and its remaining portal in one undo step");
 
     await select({ x: 4, y: 4 }, "rect");
     await hover({ x: 6, y: 2 }, 0, 1);
@@ -172,7 +270,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       mapHash = digest(fs.readFileSync(path.join(vault, mapPath)));
     fs.writeFileSync(savedState, JSON.stringify({ final, mapHash, keyHash,
       rect: rectThree, ellipse: ellipseAfter,
-      triangle: triangleAfter, portal: portalAfter }, null, 2));
+      triangle: null, portals: [] }, null, 2));
     checks.push("Phase-2 point map saves with unchanged room-key bytes");
   }
   async function reopen() {
@@ -184,8 +282,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert.deepEqual(current.document, saved.final);
     assert.deepEqual(await building("rect"), saved.rect);
     assert.deepEqual(await building("ellipse"), saved.ellipse);
-    assert.deepEqual(await building("triangle"), saved.triangle);
-    assert.deepEqual(current.document.entities.find(e => e.id === "triangle-door"), saved.portal);
+    assert.equal(await building("triangle"), undefined);
+    assert.deepEqual(current.document.entities.filter(e => e.id.startsWith("triangle-door")), []);
     await chooseTool("Punkte");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     await select({ x: 4, y: 4 }, "rect");

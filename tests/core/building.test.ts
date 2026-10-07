@@ -8,7 +8,7 @@ import { composeBuilding } from "../../src/compute";
 import { floorEraseActive } from "../../src/drawing";
 import { newDocument } from "./fixtures";
 import {
-  buildingVertexGrip, buildingEdgeMidpointGrip,
+  buildingPointGripPixels, buildingVertexGrip, buildingEdgeMidpointGrip,
   previewBuildingVertexDrag, planBuildingVertexDrag,
   previewBuildingEdgeDrag, planBuildingEdgeDrag,
   planBuildingBackspacePoint,
@@ -972,7 +972,7 @@ test("moving a hole point follows its portal atomically and preserves exact key 
   assert.equal(session.note(building.note!.path), keyBytes);
 });
 
-test("inserting on a detached contour follows the same wall segment through undo", () => {
+test("inserting on a detached contour removes a portal from the replaced wall", () => {
   const document = newDocument("Getrennte Restfläche", 40, 30),
     floorId = document.floors[0]!.id,
     building = multiContourBuilding(floorId),
@@ -997,17 +997,11 @@ test("inserting on a detached contour follows the same wall segment through undo
   assert.ok(command);
   const beforeEntities = session.document().entities;
   session.execute(command!);
-  const followed = session.entities.get(door.id);
-  assert.equal(followed?.kind, "door");
-  if (followed?.kind !== "door") throw new Error("Portal fehlt.");
-  const pose = portalPose(followed, (id) => session.entities.get(id));
-  assert.ok(Math.abs(pose.x - 26) < 1e-8);
-  assert.ok(Math.abs(pose.y + 1) < 1e-8);
-  assert.ok(Math.abs(pose.angle - Math.atan2(2, 4)) < 1e-8);
+  assert.equal(session.entities.has(door.id), false);
   session.undo();
   assert.deepEqual(session.document().entities, beforeEntities);
   session.redo();
-  assert.equal(session.entities.has(door.id), true);
+  assert.equal(session.entities.has(door.id), false);
 });
 
 test("removing a hole point projects an adjacent portal onto the joined edge", () => {
@@ -1300,6 +1294,22 @@ test("point topology guard also rejects null edges, hole overlap and part overla
   );
 });
 
+test("Edit Points keeps the measured screen grip radius at 100 and 75 percent", () => {
+  const building: Building = {
+    id: "grips", kind: "building", floorId: "floor",
+    polygons: [{ outer: rectangle({ x: 0, y: 0 }, { x: 4, y: 4 }), holes: [] }],
+    layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+  };
+  assert.equal(buildingPointGripPixels, 16);
+  for (const scale of [64, 48]) {
+    const radius = buildingPointGripPixels / scale;
+    assert.ok(buildingVertexGrip(building, { x: 0, y: -15 / scale }, radius));
+    assert.equal(buildingVertexGrip(building, { x: 0, y: -17 / scale }, radius), null);
+    assert.ok(buildingEdgeMidpointGrip(building, { x: 2, y: -15 / scale }, radius));
+    assert.equal(buildingEdgeMidpointGrip(building, { x: 2, y: -17 / scale }, radius), null);
+  }
+});
+
 test("Building point grips edit a rectangle and sampled ellipse in one history step", () => {
   for (const contour of [
     rectangle({ x: 1, y: 1 }, { x: 6, y: 5 }),
@@ -1335,7 +1345,7 @@ test("Building point grips edit a rectangle and sampled ellipse in one history s
   }
 });
 
-test("edge preview and commit follow a bound portal without a premature document edit", () => {
+test("edge preview and commit remove a portal on the replaced wall without a premature document edit", () => {
   const document = newDocument("Kantenpunkt", 12, 12),
     building: Building = {
       id: "edge-building", kind: "building", floorId: document.floors[0]!.id,
@@ -1368,6 +1378,7 @@ test("edge preview and commit follow a bound portal without a premature document
   if (planned.status !== "command") return;
   assert.deepEqual(session.document(), before);
   assert.deepEqual(planned.after, preview.building);
+  assert.equal(preview.portals[0]?.after, null);
   assert.deepEqual(planned.command.entities?.find(change => change.id === door.id)?.after,
     preview.portals[0]?.after);
   session.execute(planned.command);
@@ -1376,10 +1387,51 @@ test("edge preview and commit follow a bound portal without a premature document
   session.undo();
   assert.deepEqual(session.entities.get(door.id), door);
   session.redo();
-  assert.deepEqual(session.entities.get(door.id), preview.portals[0]?.after);
+  assert.equal(session.entities.has(door.id), false);
 });
 
-test("Backspace removes one hovered point and stops at the confirmed three-point boundary", () => {
+test("inserting a corner removes a portal on the replaced wall and keeps a distant portal", () => {
+  const document = newDocument("Zwei Portale am Punktzug", 12, 16),
+    building: Building = {
+      id: "two-portal-building", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: [{ x: 2, y: 10 }, { x: 6, y: 10 },
+        { x: 6, y: 14 }], holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    near: Door = { id: "near", kind: "door", floorId: building.floorId,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.15 },
+      width: 0.7, variant: "door" },
+    far: Door = { id: "far", kind: "door", floorId: building.floorId,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.6 },
+      width: 0.7, variant: "door" },
+    session = new Session({ ...document, entities: [building, near, far] }),
+    grip = buildingEdgeMidpointGrip(building, { x: 4, y: 10 }, 0.2),
+    destination = { x: 4, y: 9 };
+  assert.ok(grip);
+  const result = planBuildingEdgeDrag([...session.entities.values()],
+    building, grip!, destination);
+  assert.equal(result.status, "command");
+  if (result.status !== "command") return;
+  const nearChange = result.command.entities?.find(change => change.id === near.id),
+    farChange = result.command.entities?.find(change => change.id === far.id);
+  assert.equal(nearChange?.after, null);
+  assert.equal(farChange?.after?.kind, "door");
+  session.execute(result.command);
+  assert.equal(session.entities.has(near.id), false);
+  const kept = session.entities.get(far.id);
+  assert.equal(kept?.kind, "door");
+  if (kept?.kind !== "door") return;
+  const beforePose = portalPose(far, id => id === building.id ? building : undefined),
+    afterPose = portalPose(kept, id => session.entities.get(id));
+  assert.ok(Math.hypot(afterPose.x - beforePose.x, afterPose.y - beforePose.y) < 1e-10);
+  session.undo();
+  assert.deepEqual(session.entities.get(near.id), near);
+  assert.deepEqual(session.entities.get(far.id), far);
+  session.redo();
+  assert.equal(session.entities.has(near.id), false);
+});
+
+test("native delete action removes one point and then the final three-point outline", () => {
   const document = newDocument("Punkt entfernen", 12, 12),
     building: Building = {
       id: "backspace-building", kind: "building", floorId: document.floors[0]!.id,
@@ -1395,11 +1447,95 @@ test("Backspace removes one hovered point and stops at the confirmed three-point
   assert.equal(result.after.polygons[0]!.outer.length, 3);
   const nextGrip = buildingVertexGrip(result.after,
     result.after.polygons[0]!.outer[0]!, 0.2),
-    minimum = planBuildingBackspacePoint(
+    outline = planBuildingBackspacePoint(
       [...session.entities.values()], result.after, nextGrip!);
-  assert.equal(minimum.status, "minimum");
-  assert.equal(session.historySize, 1);
+  assert.equal(outline.status, "outline-removed");
+  if (outline.status !== "outline-removed") return;
+  assert.equal(outline.after, null);
+  session.execute(outline.command);
+  assert.equal(session.entities.has(building.id), false);
+  assert.equal(session.historySize, 2);
+  session.undo();
   assert.deepEqual(session.entities.get(building.id), result.after);
+  session.redo();
+  assert.equal(session.entities.has(building.id), false);
+});
+
+test("three-point removal changes only its part and reanchors or removes its portals atomically", () => {
+  const document = newDocument("Zwei Umrisse", 30, 15),
+    building: Building = {
+      id: "multi-outline", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [
+        { outer: [{ x: 1, y: 1 }, { x: 6, y: 1 }, { x: 1, y: 6 }], holes: [] },
+        { outer: [{ x: 15, y: 1 }, { x: 20, y: 1 }, { x: 15, y: 6 }], holes: [] },
+      ], layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    removedDoor: Door = {
+      id: "removed-door", kind: "door", floorId: document.floors[0]!.id,
+      anchor: { boundaryId: building.id, contour: 0, at: 0.1 },
+      width: 0.7, variant: "door",
+    },
+    retainedDoor: Door = {
+      id: "retained-door", kind: "door", floorId: document.floors[0]!.id,
+      anchor: { boundaryId: building.id, contour: 1, at: 0.1 },
+      width: 0.7, variant: "door",
+    },
+    session = new Session({ ...document, entities: [building, removedDoor, retainedDoor] }),
+    grip = buildingVertexGrip(building, { x: 1, y: 1 }, 0.2),
+    result = planBuildingBackspacePoint([...session.entities.values()], building, grip!);
+  assert.equal(result.status, "outline-removed");
+  if (result.status !== "outline-removed") return;
+  assert.deepEqual(result.after?.polygons, [building.polygons[1]]);
+  session.execute(result.command);
+  assert.equal(session.entities.has(removedDoor.id), false);
+  const retainedAnchor = (session.entities.get(retainedDoor.id) as Door).anchor;
+  assert.equal(retainedAnchor?.boundaryId, building.id);
+  assert.equal(retainedAnchor?.contour, 0);
+  assert.ok(Math.abs(retainedAnchor!.at - retainedDoor.anchor!.at) < 1e-12);
+  assert.equal(session.historySize, 1);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), building);
+  assert.deepEqual(session.entities.get(removedDoor.id), removedDoor);
+  assert.deepEqual(session.entities.get(retainedDoor.id), retainedDoor);
+  session.redo();
+  assert.deepEqual((session.entities.get(building.id) as Building).polygons,
+    [building.polygons[1]]);
+});
+
+test("a three-point hole can be removed without changing its outer ring", () => {
+  const document = newDocument("Innenumriss", 15, 15),
+    building: Building = {
+      id: "hole-outline", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: rectangle({ x: 1, y: 1 }, { x: 12, y: 12 }),
+        holes: [[{ x: 4, y: 4 }, { x: 6, y: 4 }, { x: 4, y: 6 }]] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    session = new Session({ ...document, entities: [building] }),
+    grip = buildingVertexGrip(building, { x: 4, y: 4 }, 0.2),
+    result = planBuildingBackspacePoint([...session.entities.values()], building, grip!);
+  assert.equal(grip?.contour, 1);
+  assert.equal(result.status, "outline-removed");
+  if (result.status !== "outline-removed") return;
+  assert.deepEqual(result.after?.polygons, [{ outer: building.polygons[0]!.outer, holes: [] }]);
+  session.execute(result.command);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), building);
+});
+
+test("last outline of a numbered room leaves its identity and Key intact", () => {
+  const document = newDocument("Geschützter Raum", 12, 12),
+    room: Building = {
+      id: "numbered-room", kind: "building", floorId: document.floors[0]!.id,
+      number: "1", name: "Geschützter Raum", note: { path: "Räume/01 Geschützter Raum.md" },
+      polygons: [{ outer: [{ x: 1, y: 1 }, { x: 6, y: 1 }, { x: 1, y: 6 }], holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    },
+    session = new Session({ ...document, entities: [room] }),
+    grip = buildingVertexGrip(room, { x: 1, y: 1 }, 0.2),
+    result = planBuildingBackspacePoint([...session.entities.values()], room, grip!);
+  assert.equal(result.status, "protected-room");
+  assert.equal(session.historySize, 0);
+  assert.deepEqual(session.entities.get(room.id), room);
 });
 
 test("point grips address a hole and a second Building part without changing the other contours", () => {

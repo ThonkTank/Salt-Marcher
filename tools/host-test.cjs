@@ -373,6 +373,9 @@ function prepare() {
         { id: "triangle-door", kind: "door", floorId: "floor-1",
           anchor: { boundaryId: "triangle", contour: 0, at: 0.15 },
           width: 0.7, variant: "door" },
+        { id: "triangle-door-2", kind: "door", floorId: "floor-1",
+          anchor: { boundaryId: "triangle", contour: 0, at: 0.6 },
+          width: 0.7, variant: "door" },
       ],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     }, null, 2));

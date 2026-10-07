@@ -65,6 +65,7 @@ import {
 import { type AssetDefinition } from "./assets";
 import { floorEraseActive } from "./drawing";
 import {
+  buildingPointGripPixels,
   buildingVertexGrip,
   buildingEdgeMidpointGrip,
   previewBuildingVertexDrag,
@@ -1491,7 +1492,7 @@ export class DungeonEditor {
     const hint: Record<Tool, string> = {
       select:
         "Klick: auswählen · Umschalt: ergänzen · Alt-Klick: gesperrtes Element wählen oder Konturpunkt entfernen · Ziehen: Rahmen oder Element verschieben · Ausgewähltes Objekt: außen drehen, am Eckgriff skalieren · A: Objekte spiegeln · Doppelklick: Konturpunkt einfügen",
-      "edit-points": "Gebäude wählen · Eckpunkt ziehen: verschieben · Kantenmitte ziehen: einfügen · Rücktaste am grünen Griff: Punkt entfernen",
+      "edit-points": "Gebäude wählen · Eckpunkt ziehen: verschieben · Kantenmitte ziehen: einfügen · Delete/Rücktaste am grünen Griff: Punkt oder Dreipunktumriss entfernen",
       pan: "Ziehen: Kartenausschnitt verschieben",
       room: "Ziehen: Rechteck · Alt: ausradieren · E: Modus wechseln",
       ellipse: "Ziehen: Ellipse · Alt: ausradieren · E: Modus wechseln",
@@ -1527,7 +1528,10 @@ export class DungeonEditor {
     this.status.textContent =
       (this.paintWorker ? "Fläche wird berechnet · Escape: abbrechen · " : "") +
       hint[this.tool] +
-      " · Touchpad/Scrollen: zoomen · Leertaste/Ziehen: verschieben · Escape: abbrechen";
+      " · Touchpad/Scrollen: zoomen · Leertaste/Ziehen: verschieben · " +
+      (this.tool === "edit-points"
+        ? "Escape: Zug übernehmen und Werkzeug verlassen"
+        : "Escape: abbrechen");
   }
   private run(fn: () => void): void {
     try {
@@ -1632,15 +1636,15 @@ export class DungeonEditor {
         activeBuilding = active?.kind === "building" && !active.locked &&
           active.floorId === this.renderer.floorId ? active : undefined,
         activeGrip = activeBuilding && (
-          buildingVertexGrip(activeBuilding, point, 7 / this.renderer.camera.scale) ||
-          buildingEdgeMidpointGrip(activeBuilding, point, 7 / this.renderer.camera.scale)),
+          buildingVertexGrip(activeBuilding, point, buildingPointGripPixels / this.renderer.camera.scale) ||
+          buildingEdgeMidpointGrip(activeBuilding, point, buildingPointGripPixels / this.renderer.camera.scale)),
         building = activeGrip ? activeBuilding :
           hitBuilding?.kind === "building" ? hitBuilding : undefined;
       if (!building) {
         void this.select(undefined);
         return;
       }
-      const tolerance = 7 / this.renderer.camera.scale,
+      const tolerance = buildingPointGripPixels / this.renderer.camera.scale,
         vertex = buildingVertexGrip(building, point, tolerance),
         edge = vertex ? null : buildingEdgeMidpointGrip(building, point, tolerance);
       if (this.selected !== building.id) void this.select(building.id);
@@ -1940,7 +1944,7 @@ export class DungeonEditor {
           ? this.session.entities.get(this.selected) : undefined;
         if (building?.kind === "building" && !building.locked) {
           const point = this.renderer.toWorld(this.renderer.local(e)),
-            tolerance = 7 / this.renderer.camera.scale,
+            tolerance = buildingPointGripPixels / this.renderer.camera.scale,
             vertex = buildingVertexGrip(building, point, tolerance),
             edge = vertex ? null : buildingEdgeMidpointGrip(building, point, tolerance);
           this.hoveredBuildingVertex = vertex ?? undefined;
@@ -2268,27 +2272,30 @@ export class DungeonEditor {
     }
     return false;
   }
+  private commitBuildingPointGesture(g: Gesture, point: Point): void {
+    if (!g.moved || g.entity?.kind !== "building") return;
+    const entities = [...this.session.entities.values()];
+    if (g.buildingEdge) {
+      const result = planBuildingEdgeDrag(entities, g.entity,
+        g.buildingEdge, this.snap(point));
+      if (result.command) this.session.execute(result.command);
+    } else if (g.buildingVertex) {
+      const grip = g.buildingVertex,
+        destination = {
+          x: grip.point.x + (this.snapEnabled
+            ? Math.round(point.x - g.start.x) : point.x - g.start.x),
+          y: grip.point.y + (this.snapEnabled
+            ? Math.round(point.y - g.start.y) : point.y - g.start.y),
+        },
+        result = planBuildingVertexDrag(entities, g.entity, grip, destination);
+      if (result.command) this.session.execute(result.command);
+    }
+    this.hoveredBuildingVertex = undefined;
+    this.renderer.setBuildingPointHover();
+  }
   private commitToolGesture(g: Gesture, e: PointerEvent, point: Point): void {
     if (g.tool === "edit-points") {
-      if (!g.moved || g.entity?.kind !== "building") return;
-      const entities = [...this.session.entities.values()];
-      if (g.buildingEdge) {
-        const result = planBuildingEdgeDrag(entities, g.entity,
-          g.buildingEdge, this.snap(point));
-        if (result.command) this.session.execute(result.command);
-      } else if (g.buildingVertex) {
-        const grip = g.buildingVertex,
-          destination = {
-            x: grip.point.x + (this.snapEnabled
-              ? Math.round(point.x - g.start.x) : point.x - g.start.x),
-            y: grip.point.y + (this.snapEnabled
-              ? Math.round(point.y - g.start.y) : point.y - g.start.y),
-          },
-          result = planBuildingVertexDrag(entities, g.entity, grip, destination);
-        if (result.command) this.session.execute(result.command);
-      }
-      this.hoveredBuildingVertex = undefined;
-      this.renderer.setBuildingPointHover();
+      this.commitBuildingPointGesture(g, point);
       return;
     }
     if (g.tool === "room") {
@@ -3410,7 +3417,8 @@ export class DungeonEditor {
         this.session.execute(result.command);
         this.hoveredBuildingVertex = undefined;
         this.renderer.setBuildingPointHover();
-      }
+      } else if (result.status === "protected-room")
+        this.host.notice("Der letzte Umriss eines nummerierten Raums bleibt erhalten. Raum über das Archiv entfernen.");
       return;
     }
     if ((e.key === "Delete" || e.key === "Backspace") && this.selection.size) {
@@ -3439,6 +3447,14 @@ export class DungeonEditor {
       e.preventDefault();
       e.stopPropagation();
       if (this.gesture?.temporaryPan) return;
+      if (this.gesture?.tool === "edit-points") {
+        const gesture = this.gesture,
+          point = this.renderer.toWorld(gesture.last);
+        this.run(() => this.commitBuildingPointGesture(gesture, point));
+        this.cancel();
+        this.setTool("select");
+        return;
+      }
       if (this.gesture || this.pathDraft || this.paintWorker) {
         const leaveBuilding = isFloorTool(this.tool);
         this.cancel();

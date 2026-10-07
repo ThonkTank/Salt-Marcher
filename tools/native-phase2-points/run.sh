@@ -39,6 +39,9 @@ disable_default_assets=false
 [Mods]
 active_mods=[  ]
 INI
+if [ -n "${DUNGEON_PHASE2_SHORTCUT_DELETE:-}" ]; then
+  printf '[Shortcuts]\ndelete="%s"\n' "$DUNGEON_PHASE2_SHORTCUT_DELETE" > "$run/data/Dungeondraft/shortcuts.ini"
+fi
 dd_pid=''
 xvnc_pid=''
 cleanup() {
@@ -68,4 +71,4 @@ done
 ) > "$run/dungeondraft.log" 2>&1 &
 dd_pid=$!
 printf 'run=%s\ndisplay=%s\nrfb_port=%s\ndd_pid=%s\nxvnc_pid=%s\n' "$run" "$display" "$rfb_port" "$dd_pid" "$xvnc_pid" > "$run/session.txt"
-PYTHONDONTWRITEBYTECODE=1 python tools/native-phase2-points/probe.py "$run"
+PYTHONDONTWRITEBYTECODE=1 python "${DUNGEON_PHASE2_NATIVE_PROBE:-tools/native-phase2-points/probe.py}" "$run"

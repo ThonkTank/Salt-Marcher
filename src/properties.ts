@@ -1731,7 +1731,7 @@ export class Properties {
     if (tool === "edit-points") {
       const help = document.createElement("p");
       help.className = "dn-help";
-      help.textContent = "Gebäude wählen · Eckpunkt oder Kantenmitte ziehen · Rücktaste entfernt den markierten Eckpunkt";
+      help.textContent = "Gebäude wählen · Eckpunkt oder Kantenmitte ziehen · Delete/Rücktaste entfernt Punkt oder Dreipunktumriss";
       this.root.append(help);
     }
     const floorTool =

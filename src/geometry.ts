@@ -701,23 +701,13 @@ export function followPortalAfterContourEdit(
     };
   const position = segmentPositionAt(beforePoints, door.anchor.at);
   if (!position) return null;
+  // Native insertion keeps a portal on an unchanged wall section. A portal
+  // on the replaced section disappears when the new corner moves that wall.
+  if (edit.kind === "insert")
+    return reanchorPortal(door, before, after, "survive");
   let index = position.index,
     t = position.t;
-  if (edit.kind === "insert") {
-    const inserted = edit.index,
-      split = inserted - 1;
-    if (index > split) index++;
-    else if (index === split) {
-      const a = beforePoints[split]!,
-        b = beforePoints[(split + 1) % beforePoints.length]!,
-        q = projectionAt(afterPoints[inserted]!, a, b);
-      if (t <= q && q > 1e-9) t /= q;
-      else if (1 - q > 1e-9) {
-        index = inserted;
-        t = (t - q) / (1 - q);
-      } else t = 1;
-    }
-  } else if (edit.kind === "remove") {
+  if (edit.kind === "remove") {
     const removed = edit.index,
       previous = (removed - 1 + beforePoints.length) % beforePoints.length;
     if (index === previous || index === removed) {
