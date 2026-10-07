@@ -158,7 +158,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Gesonderter Phase-3-Nachbesserungslauf: die verbleibenden 25/222 exakten grauen Bevel-Eckpixel durch direkte Original-Topologie-/UV-Belege untersuchen; die verworfenen Masken- und Nearest-Hypothesen nicht wiederholen. Danach weitere Boden-/Wandfarben und Alpha-Werte, unmittelbare Original-Zeichenfolge und vollständige Original-Optionsrohkarte prüfen; erst dann eigener Review aller 17 Unterfälle und gesonderte Aufräumphase.",
+  "next": "Gesonderter Phase-3-Nachbesserungslauf: die fehlenden direkten Original-Rohbelege für vollständige Building-Optionen, Picker und Farb-/Alpha-Stufen priorisieren. Die inneren Bevel-25/222-Pixel bleiben offen; Masken-, Nearest- und einzelne Godot-V-UV-Hypothesen sind verworfen. Danach eigener Review aller 17 Unterfälle und nur bei bestandenem Fachphasentor die gesonderte Aufräumphase.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -538,7 +538,8 @@
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/smart-mask-audit.json",
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json",
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md",
-    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-review.md"
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-review.md",
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",
@@ -1030,6 +1031,9 @@
     "phase3WrapMaskPhase1Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase1/evidence/1791360685634-parity-phase1-shapes-reopen/result.json",
     "phase3WrapMaskPhase2Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase2/evidence/1791360707199-parity-phase2-points-edit/result.json",
     "phase3WrapMaskPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase2/evidence/1791360762569-parity-phase2-points-reopen/result.json",
-    "phase3WrapMaskState": "partial_repair_gate_open"
+    "phase3WrapMaskState": "partial_repair_gate_open",
+    "phase3GodotUvProbeReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md",
+    "phase3GodotUvProbeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.json",
+    "phase3GodotUvProbeState": "rejected_restored"
   }
 }

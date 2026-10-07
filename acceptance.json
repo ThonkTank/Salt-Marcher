@@ -7403,6 +7403,24 @@
           ],
           "rejectedProbe": "Nearest wall filtering worsens the Bevel-on corner from 203/256 to 197/256 exact pixels and was not adopted.",
           "remaining": "25/222 exact-gray pixels at the current Bevel corner still differ; previous broader classification 25/228. Other angles, assets and complete option matrix remain open."
+        },
+        "phase3GodotUvProbe": {
+          "date": "2026-10-07",
+          "state": "open_after_probe",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sourceHypothesis": "https://github.com/godotengine/godot/blob/3.5/scene/2d/line_builder.cpp#L2303-L2334",
+          "probeBuildSha256": "856206cb2b9a88fe13607c2e387c0c67e9af959a3494ac79cc85b1d8c6c15d9f",
+          "restoredBuildSha256": "7fbe503fc18db25f01aad163ca9aed86a07c8a73a0744c8c1a8c9eab8ea127a3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/host-two/evidence/1791360945564-parity-phase3-building-edit/result.json"
+          ],
+          "finding": "One-vertex Godot-style UV substitution worsened each Bevel-on corner 203/256 to 81/256 exact pixels and straight wall 1440/1440 to 928/1440. Product source and build restored.",
+          "strictAcceptance": "open"
         }
       },
       {
