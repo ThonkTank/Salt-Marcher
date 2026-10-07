@@ -685,6 +685,12 @@ async function workflow() {
     return;
   }
   if (parityPhase3Building) {
+    if (process.argv.includes("--bevel-matrix")) {
+      const scenario = require("./host/parity-phase3-bevel-matrix.cjs")(scenarioContext);
+      if (restart) await scenario.reopen();
+      else await scenario.edit();
+      return;
+    }
     if (process.argv.includes("--point-style")) {
       const scenario = require("./host/parity-phase3-point-style.cjs")(scenarioContext);
       if (restart) await scenario.reopen();
