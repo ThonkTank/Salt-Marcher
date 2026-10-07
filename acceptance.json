@@ -3997,6 +3997,15 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "24 gespeicherte Stile teilweise bildlich gepaart; unmittelbare Zeichenfolge, Varianten und vollständige Galeriebedienung offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4238,6 +4247,15 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Gespeicherte ARGB/Alpha-Werte stimmen; flächige Bildabweichung und nicht getrennte Atlas-/Hintergrundanteile bleiben.",
           "strictAcceptance": "open"
         }
       },
@@ -4730,6 +4748,15 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Neunfache Rohkarte, Undo/Redo und Neuöffnung bestehen; offene Boden-/Wand-/Pickerbildwirkung verhindert Gesamtfreigabe.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -5026,6 +5053,15 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Farbflächenwerte weichen je höchstens einen Kanalwert ab; nativer initialer Floor-Wert ist ungemessen.",
           "strictAcceptance": "open"
         }
       },
@@ -5927,6 +5963,15 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Original- und Hostpipette speichern den jeweiligen dargestellten Pixel; identischer gerenderter Bildpunkt fehlt.",
           "strictAcceptance": "open"
         }
       },
@@ -7217,6 +7262,15 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "QAWall01-Geradstücke und Türkappen eng gepaart; übrige Wandassets und Verbindungen nicht vollständig verglichen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7640,6 +7694,15 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "ARGB/Alpha und deckendes QAWall01-Geradstück gepaart; weitere Farben, Alpha-Stufen und Fugenbilder offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7936,6 +7999,15 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Bevel an/aus speichert richtige Joint-Werte; innere Eckverbindung und andere Winkel/Assets offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8109,6 +8181,15 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
+        },
+        "phase3RemainingRepairPlan": {
+          "date": "2026-10-07",
+          "state": "planned_for_separate_implementation",
+          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "reviewFinding": "Konturdaten folgen Punktzug und Radierung; gleich ausgerichtetes Bildpaar nach identischem Punktzug fehlt.",
           "strictAcceptance": "open"
         }
       },
@@ -50914,6 +50995,44 @@
       "hostPickerEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
       "hostPickerReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json",
       "remaining": "Bodenbild und unmittelbare Stile, vollständige Building-Neuöffnung, Farbfläche/Pipette unter gleichen Startbedingungen, Paketwandbilder, innere Bevel-Verbindung und Punktzugbild in eigenem Nachbesserungszyklus."
+    },
+    "phase3RemainingRepairPlan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "file": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "baselineCommit": "b45519a",
+      "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+      "openCases": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "verifiedRegressionCases": [
+        "DD-011.16",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-015.02",
+        "DD-015.06",
+        "DD-015.07"
+      ],
+      "order": [
+        "Original-/Hostmesskarten und Farbprofile",
+        "24 Bodenstile und Material-/Alpha-Wirkung",
+        "Farbfläche und Pipette bei gleichen Ausgangsbedingungen",
+        "10 native Paketwände plus QAWall01, Farbe und Alpha",
+        "Bevel-Verbindung und Paketwand nach Konturmutationen",
+        "vollständige Building-Optionskarte mit Phase-1-/2-Regression"
+      ],
+      "next": "Eigener Umsetzungslauf; danach unabhängiger 17-Fälle-Review. Phase-3-Aufräumen erst nach bestandenem Tor."
     }
   }
 }

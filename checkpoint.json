@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: unabhängiger Phase-3-Review der Optionskarten-Nachbesserung abgeschlossen; Phasentor offen",
+  "phase": "Folge-Roadmap: gesonderter Phase-3-Nachbesserungsplan für neun offene Unterfälle abgeschlossen; Umsetzung offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -169,7 +169,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Eigener Phase-3-Nachbesserungsplan für die neun offenen Unterfälle: Bodenbild/Alpha und unmittelbare Stilfolge, Farbfläche/Pipette mit gleichen Startbedingungen, Paketwand-/Bevel-/Punktzug-Bildpaare; danach eigener Umsetzungslauf und unabhängiger Review. Phase-3-Aufräumen und Phase 4 erst nach bestandenem Tor.",
+  "next": "Eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md: direkte Original-/Host-Gegenproben für Boden, Picker und Wandverbindungen, nur bestätigte Unterschiede beheben, isolierten Host mit Neuöffnung und Regression prüfen; danach unabhängiger Review aller 17 Unterfälle.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -803,12 +803,12 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase3_options_review_gate_open_8_verified_9_open",
+    "status": "phase3_remaining_repair_plan_ready",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-3-Nachbesserungsplan für die neun offenen Unterfälle: Bodenbild/Alpha und unmittelbare Stilfolge, Farbfläche/Pipette mit gleichen Startbedingungen, Paketwand-/Bevel-/Punktzug-Bildpaare; danach eigener Umsetzungslauf und unabhängiger Review. Phase-3-Aufräumen und Phase 4 erst nach bestandenem Tor.",
+    "nextRun": "Eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md: direkte Original-/Host-Gegenproben für Boden, Picker und Wandverbindungen, nur bestätigte Unterschiede beheben, isolierten Host mit Neuöffnung und Regression prüfen; danach unabhängiger Review aller 17 Unterfälle.",
     "note": "Host-Screenshots enthalten ein Skia-ICC-Profil, Originalbilder sRGB-Chromatizität. Nach Umrechnung und Entfernen des falschen Faktors 0,9091 stimmt deckendes QAWall01-Rot auf zwei 1152-Pixel-Streifen im Mittel auf 0,85/1,26 Stufen; Alpha 128 hat außen Original/Host-Deckkraft 0,5013/0,5000. Building-Optionen, kombinierter Portal-/Key-Fall sowie Phase 1/2 bestanden auf dem Build mit frischer Neuöffnung. Bevel-Rest, originales QAWall01-Portalbild, weitere Farben und Alpha-Werte, unmittelbare Zeichenfolge und vollständige Original-Optionsrohkarte bleiben offen.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "29ae6d03039cbea4bde3ac0b96921eeb87869dbe51abeb4491a0af9908cd3bff",
@@ -1088,6 +1088,8 @@
     "phase3OptionsReviewBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
     "phase3OptionsReviewState": "8_verified_9_open",
     "phase3OptionsPickerEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
-    "phase3OptionsPickerReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+    "phase3OptionsPickerReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json",
+    "phase3RemainingRepairPlan": "ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+    "phase3RemainingRepairPlanState": "plan_ready_for_separate_implementation"
   }
 }

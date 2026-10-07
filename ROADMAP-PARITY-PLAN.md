@@ -40,6 +40,8 @@ Der eigene Planlauf vom 07.10.2026 hat den [konkreten Phase-2-Plan](ROADMAP-PARI
 
 ## Phase 3 – Boden- und Gebäudewandgestaltung
 
+**Aktueller Nachbesserungsplan:** [Neun offene Bild- und Pickerfälle](ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md) nach dem unabhängigen Review vom 07.10.2026. Die acht dort belegten Unterfälle bleiben als Endstand-Regression erhalten.
+
 **Offene Punkte:** `DD-011.11–.12` betreffen Bodengalerie, bestehende versus spätere Flächen und Tint. `.15` verlangt die Neuöffnung aller Building-Optionen einschließlich der in Phase 1 geprüften Grundformen. `.16–.22` betreffen Farbknopf, Sättigung/Helligkeit, Hue, RGBA, Hex, Accept/Abbruch und das zunächst zu identifizierende kleine Symbol. `DD-015.01–.07` betreffen Paketwand, Stil ohne Wand, Wandfarbe, Bevel Corners, Wand-Follow nach Punktänderung, möglichen nachträglichen Stilwechsel und Farbknopf. Die genaue Originalwirkung von Pipette, Wandstilwechsel und einigen Farbgrenzen muss vor dem Coding nachgemessen werden.
 
 **Technik:** Material-/Wand-Auswahl und Farbsteuerung in `src/properties.ts`, Assetauflösung in `src/assets.ts`, Building- und Wanddaten in `src/model.ts`/`src/commands.ts`, Darstellung in `src/renderer.ts`. Pickerwerte werden erst bei Accept als Werkzeugvorgabe übernommen; Abbruch verändert keine Karte. Ein bereits gezeichnetes Building behält seinen gespeicherten Stil, sofern die Originalmessung keinen nachträglichen Wechsel zeigt. Paketwand und Bevel werden aus derselben gespeicherten Kontur abgeleitet, damit Punktmutationen kein Auseinanderlaufen erzeugen. Testmatrix: zwei Stile auf benachbarten Flächen, Alpha und Hex, ein Building ohne Wand, eines mit Paketwand und Bevel, Änderung der Kontur, Undo/Redo, Save/Reopen.
