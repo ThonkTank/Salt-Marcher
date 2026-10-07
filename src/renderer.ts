@@ -11,6 +11,7 @@ import {
   Sprite,
   Mesh,
   MeshGeometry,
+  Shader,
 } from "pixi.js";
 import {
   type Entity,
@@ -43,7 +44,9 @@ import {
   type Bounds,
 } from "./geometry";
 import { TexturePool } from "./textures";
-import { isNativeFloorAssetId } from "./features/material/native-path-catalog";
+import { isNativeFloorAssetId, NATIVE_FLOOR_GRIME_ID } from
+  "./features/material/native-path-catalog";
+import { nativeFloorShader } from "./features/material/native-floor-shader";
 import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
@@ -78,6 +81,7 @@ export interface Visual {
   floorLayer?: Container;
   floorMask?: Graphics;
   floorGeometry?: MeshGeometry;
+  floorShader?: Shader;
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -96,9 +100,11 @@ interface BuildingPreview {
   wallGeometries: MeshGeometry[];
   shadow?: Graphics;
   floorTexture?: Texture;
+  floorGrimeTexture?: Texture;
   floorLayer?: Container;
   floorMask?: Graphics;
   floorGeometry?: MeshGeometry;
+  floorShader?: Shader;
   wallTexture?: Texture;
   assets: string[];
   portals: readonly { before: Door; after: Door | null }[];
@@ -422,6 +428,7 @@ export class MapRenderer {
       v.container.destroy({ children: true });
       v.pathGeometry?.destroy();
       v.floorGeometry?.destroy();
+      v.floorShader?.destroy();
       for (const geometry of v.wallGeometries ?? []) geometry.destroy();
       v.label?.destroy();
       v.featureBadge?.destroy({ children: true });
@@ -456,14 +463,17 @@ export class MapRenderer {
     target: Visual | BuildingPreview,
     building: Building,
     texture: Texture,
+    grime: Texture,
     replacement?: Building,
   ): void {
     target.floorLayer?.destroy({ children: true });
     target.floorMask?.destroy();
     target.floorGeometry?.destroy();
+    target.floorShader?.destroy();
     target.floorLayer = undefined;
     target.floorMask = undefined;
     target.floorGeometry = undefined;
+    target.floorShader = undefined;
     if (texture.width % 256 || texture.height % 256 ||
         !building.polygons.length) return;
     const columns = texture.width / 256,
@@ -496,7 +506,8 @@ export class MapRenderer {
         positions: new Float32Array(positions),
         uvs: new Float32Array(uvs), indices: new Uint32Array(indices),
       }),
-      mesh = new Mesh({ geometry, texture }),
+      shader = nativeFloorShader(texture, grime),
+      mesh = new Mesh({ geometry, texture, shader }),
       layer = new Container(), mask = new Graphics();
     mesh.tint = building.fill;
     mesh.alpha = (building.floorAlpha ?? 255) / 255;
@@ -514,6 +525,7 @@ export class MapRenderer {
     target.floorLayer = layer;
     target.floorMask = mask;
     target.floorGeometry = geometry;
+    target.floorShader = shader;
   }
   private rebuild(): void {
     this.clearBuildingPreview();
@@ -938,18 +950,23 @@ export class MapRenderer {
         : e.material.asset!;
       const rawNativeFloor = e.kind === "building" &&
         isNativeFloorAssetId(e.material.assetId);
-      void this.acquireAsset(visual, reference, rawNativeFloor)
-        .then((texture) => {
-          if (this.visuals.get(id) !== visual || this.closed) return;
-          if (e.kind === "path") drawPath(visual, g, texture);
-          else if (e.kind === "roof") drawRoof(visual, g, texture);
-          else {
-            if (e.kind === "building" && rawNativeFloor)
-              this.drawNativeFloor(visual, e, texture);
-            this.drawSurface(visual, g, texture);
-          }
-          this.invalidate();
-        })
+      const grimeReference = NATIVE_FLOOR_GRIME_ID + "\0image";
+      void Promise.all([
+        this.acquireAsset(visual, reference, rawNativeFloor),
+        rawNativeFloor
+          ? this.acquireAsset(visual, grimeReference)
+          : Promise.resolve(undefined),
+      ]).then(([texture, grime]) => {
+        if (this.visuals.get(id) !== visual || this.closed) return;
+        if (e.kind === "path") drawPath(visual, g, texture);
+        else if (e.kind === "roof") drawRoof(visual, g, texture);
+        else {
+          if (e.kind === "building" && rawNativeFloor && grime)
+            this.drawNativeFloor(visual, e, texture, grime);
+          this.drawSurface(visual, g, texture);
+        }
+        this.invalidate();
+      })
         .catch((error) => {
           if (!this.closed) this.onError(String(error));
         });
@@ -1899,9 +1916,17 @@ export class MapRenderer {
           : after.material.asset!;
         const rawNativeFloor = isNativeFloorAssetId(after.material.assetId);
         created.assets.push(rawNativeFloor ? reference + "\0raw" : reference);
-        void this.textures.acquire(reference, rawNativeFloor).then((texture) => {
+        const grimeReference = NATIVE_FLOOR_GRIME_ID + "\0image";
+        if (rawNativeFloor) created.assets.push(grimeReference);
+        void Promise.all([
+          this.textures.acquire(reference, rawNativeFloor),
+          rawNativeFloor
+            ? this.textures.acquire(grimeReference)
+            : Promise.resolve(undefined),
+        ]).then(([texture, grime]) => {
           if (this.buildingPreview !== created || this.closed) return;
           created.floorTexture = texture;
+          created.floorGrimeTexture = grime;
           this.drawBuildingPreview(created);
         }).catch((error) => {
           if (this.buildingPreview === created && !this.closed)
@@ -1957,9 +1982,10 @@ export class MapRenderer {
       entity: after, container: state.container,
       bounds: entityBounds(after, (id) => this.session.entities.get(id)),
     }, state.graphic, state.floorTexture, doors);
-    if (state.floorTexture &&
+    if (state.floorTexture && state.floorGrimeTexture &&
         isNativeFloorAssetId(after.material?.assetId))
-      this.drawNativeFloor(state, after, state.floorTexture, after);
+      this.drawNativeFloor(state, after, state.floorTexture,
+        state.floorGrimeTexture, after);
     if (state.shadow) {
       if (state.shadow.parent === state.container)
         this.drawTexturedWallMask(state.shadow, segments,
@@ -2028,6 +2054,7 @@ export class MapRenderer {
     if (state.shadow?.parent !== state.container) state.shadow?.destroy();
     state.container.destroy({ children: true });
     state.floorGeometry?.destroy();
+    state.floorShader?.destroy();
     for (const geometry of state.wallGeometries) geometry.destroy();
     for (const reference of state.assets) this.textures.release(reference);
     const source = this.visuals.get(state.sourceId);

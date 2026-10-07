@@ -4,6 +4,10 @@ import type { AssetDefinition, BinarySource } from "../../assets";
 export const NATIVE_PATH_PCK_SHA256 =
   "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 export const NATIVE_PATH_PACK_ID = "dungeondraft-builtin-1.2.0.1";
+/** Albedo of the material used by Dungeondraft's built-in floor tilesets. */
+export const NATIVE_FLOOR_GRIME_ID = [
+  "pack", NATIVE_PATH_PACK_ID, "material", "res://textures/wear/grime.png",
+].map(encodeURIComponent).join(":");
 
 /** Native paths use a dedicated namespace and must not change package-path rendering. */
 export function isNativePathAssetId(id: string | undefined): boolean {
@@ -246,6 +250,7 @@ export async function readNativePathCatalog(
   };
   for (const key of FLOOR_ORDER) floors.push(await design("tileset", key));
   for (const key of WALL_ORDER) walls.push(await design("wall", key));
+  await imageDetails("res://textures/wear/grime.png", NATIVE_FLOOR_GRIME_ID);
   return {
     textures, floors, walls,
     image(assetId: string): Blob | undefined {
