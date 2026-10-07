@@ -4155,6 +4155,21 @@
           ],
           "finding": "24 Galeriestile und ihre Standardfarben werden durch die UI gezeichnet, texturiert angezeigt und frisch geöffnet; kleine Atlas- und Randpixel bleiben Diagnosewerte.",
           "remaining": "Unabhängiger Sichtentscheid zu Sofort-/Ladebild und fünf Concrete-Randvarianten."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "24 Original- und Host-Galeriepfade samt Standardfarben und erkennbarem Motiv; geladenes Vollfeld und 22 Sofortbilder sind ungefähr gleichwertig. Kleine Atlasvarianten ändern die Werkzeugwirkung nicht.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/native-gallery24-final-reopen/runs/20261007-135017-1790651/evidence/maps/final-reopen.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-floor/evidence/1791405523152-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-floor/evidence/1791405560715-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -4538,6 +4553,22 @@
           ],
           "finding": "18 Wood-Vertical-/Diamond-2-Farb- und Alpha-Werte überstehen UI-Zug, Save und Neustart; normale und weitere Custom-Color-Familien sind in früheren Original-/Host-Matrizen belegt.",
           "remaining": "Der helle Host-Kartenhintergrund erzeugt bei Alpha 128 sichtbar andere Mischfarben als das dunkle Original; unabhängiger Gleichwertigkeitsentscheid erforderlich."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Wood/Diamond 2 mit 18 ARGB-Werten, weitere normale und Custom-Color-Stile zuvor geprüft. Aktuelles Optionsbild: 35 belegte Innenzellen im Mittel 7,736 RGB-Stufen Abweichung, halbtransparentes Diamond 2 8,782 statt 93,262 auf dem älteren Build; Farb- und Alphaeffekt erkennbar gleichwertig.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-floor-tint-resume/runs/20261007-152548-1843130/evidence/maps/17.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-floor-tint/evidence/1791405762038-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-floor-tint/evidence/1791405775965-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/current-options-visual-audit.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -5109,6 +5140,22 @@
           ],
           "finding": "Neun Positionen mit X/None, Stilen, Farben, Bevel, Alt-Radierung, Ellipse, Polygonpunkt und Türanker wurden in einer Hostkarte gespeichert und frisch geöffnet.",
           "remaining": "Original-/Host-Sichtentscheid zu halbtransparentem Boden und direkte Bevel-/Paketwand-Mutationspaare fehlen."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "open",
+          "finding": "Die neunfache Optionskarte und ergänzenden Formen überstehen Save/Neuöffnung; für die vollständige Bevel-Verbindung und jede QAWall01-Konturmutation fehlen direkte Gegenpaare (DD-015.04/.05).",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/semantic-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406041597-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406229929-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
+          "remaining": "Im getrennten Nachbesserungsplan direkte Original-/Host-Paare für Bevel und QAWall01-Konturmutationen festlegen; danach umsetzen und unabhängig reviewen."
         }
       },
       {
@@ -5256,6 +5303,24 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Bodenfarb-Reset setzt den gewählten Stilwert für spätere Züge; bestehende Fläche bleibt und Neuöffnung erhält beide.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/floor-style-reset-third-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/09-floor-reset.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375858073-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375974372-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374490906-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -5529,6 +5594,24 @@
           ],
           "finding": "14 Building-Farbfeldpositionen liefern Original-Hexwerte; Wall/Cave-Kontexte, Accept, Undo/Redo, Save und Neuöffnung funktionieren.",
           "remaining": "Unabhängiger Review der gemeinsamen Kontextwirkung; keine bestätigte Feld-Abweichung."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Vierzehn Original-Farbfeldpositionen treffen im aktuellen Host die Hexwerte; Wall-/Cave-Kontext, Accept, Undo/Redo und Neuöffnung bestehen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/field-matrix-reference.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-field/evidence/1791405795363-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-field/evidence/1791405832406-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-shared-picker/evidence/1791405928067-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-shared-picker/evidence/1791405948299-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -5714,6 +5797,20 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Hue-Gesten setzen dieselben Originalwerte für Floor und Wall und werden auf dem aktuellen Build frisch geöffnet.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407132356-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407153229-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -5917,6 +6014,19 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Gezielte RGBA-Kanäle samt Alpha speichern Floor 80112233 und Wall 80445566 und öffnen frisch.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407132356-parity-phase3-building-edit/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -6122,6 +6232,19 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Sechsstellige Hexwerte setzen Alpha 255, achtstellige ARGB-Werte behalten Alpha; beide Originalpaare sind im aktuellen Host wiederholt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407132356-parity-phase3-building-edit/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -6316,6 +6439,19 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Accept, Außenklick und Escape bewahren die live gewählte Werkzeugfarbe ohne Änderung vorhandener Buildings; neuer Zug und Neuöffnung bestehen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407132356-parity-phase3-building-edit/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -6615,6 +6751,23 @@
           ],
           "finding": "Building-, Wall- und Cave-Pipette lesen eine Bildschirmzeile über dem Klick und übernehmen den jeweils dargestellten Pixel.",
           "remaining": "Absolute Holz-Kantenfarbe und gleicher Kartenhintergrund sind nicht gepaart. Neue Galeriekarten-Probe zweimal durch fehlende QA-Fixture vor Picker blockiert; kein Produktfehler nachgewiesen."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Building-, Wall- und Cave-Pipette lesen wie das Original den sichtbaren Bildpunkt eine Bildschirmzeile oberhalb und übernehmen ihn in die folgende Form. Die alte Holz-Kantenabweichung betrifft den bereits zuvor unterschiedlich dargestellten Pixel, nicht den Abtastweg.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-remaining-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-shared-picker/evidence/1791405928067-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-shared-picker/evidence/1791405948299-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/host-picker/evidence/1791407132356-parity-phase3-building-edit/07-pipette-sample.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -8024,6 +8177,21 @@
           ],
           "finding": "Zehn eingebaute Wandstile sind auswählbar, sichtbar verschieden und nach Neustart erhalten; QAWall01 und Portal sind zusätzlich in getrennten Paaren belegt.",
           "remaining": "Kurven, Schatten, Fugen, Enden und Portalanschlüsse als ungefähr gleichwertige Gesamtwirkung unabhängig entscheiden."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Zehn eingebaute Wandstile und QAWall01 bleiben als gewählte Textur erhalten; Geraden, erkennbare Ecken, Schatten, Kurve und Portalöffnung sind ungefähr gleichwertig sichtbar.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-gallery/runs/20261007-150442-1832003/evidence/maps/wall-09.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-wall/evidence/1791405594793-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-wall/evidence/1791405625665-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -8233,6 +8401,24 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "X/None zeichnet Boden ohne Wandring oder Wandschatten; spätere Radierung und Neuöffnung entsprechen der Originalregel.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope-report.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375858073-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375974372-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374490906-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -8585,6 +8771,24 @@
           ],
           "finding": "Battlements und QAWall01 zeigen je neun UI-gewählte ARGB-Werte mit erkennbaren Alpha-Stufen und identischem gespeichertem Zustand nach Neustart.",
           "remaining": "Unabhängiger Sichtentscheid an Fugen, Kappen und Schatten; Pixelmittel allein kein Abnahmehindernis."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Battlements und QAWall01 speichern je neun Original-ARGB-Werte; Alpha 0/128/255 und Farben wirken sichtbar gleichartig, kleine Fugen-/Kappenpixel bleiben Diagnosewerte.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/native-battlements-reopen/runs/20261007-185534-1980226/evidence/maps/reopened.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/native-reopen/runs/20261007-194319-2024193/evidence/maps/reopened.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-wall-tint/evidence/1791405654144-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-wall-tint/evidence/1791405674765-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-qa-wall-tint/evidence/1791405713810-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-qa-wall-tint/evidence/1791405734546-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -8945,6 +9149,22 @@
           ],
           "finding": "Bevel an/aus, Wandpfad, Türanker und eine geänderte Kontur bleiben in der Optionskarte erhalten.",
           "remaining": "Vier Richtungen, Innen-/Außenecke, Ring, Portalspalt und Kurve sind noch nicht auf demselben finalen Build direkt bildlich gepaart."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "open",
+          "finding": "Bevel an/aus und eine Portalwand sind belegt; vier Richtungen, beide Eckarten, Ring, Portalspalt und Kurve sind auf dem aktuellen Endbuild nicht paarweise nach Originalgesten sichtbar geprüft.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406041597-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406229929-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
+          "remaining": "Bevel an/aus für vier Richtungen, Innen-/Außenecke, Ring, Portalspalt und Kurve direkt paaren."
         }
       },
       {
@@ -9184,6 +9404,26 @@
           ],
           "finding": "Paketwand folgt dem Polygonpunkt; Phase-2-Gesten belegen Ziehen, Einfügen, Entfernen und Ellipsenpunkt mit Portal-/Key-Stabilität auf demselben Build.",
           "remaining": "Direkte Original-/Host-Bildpaare der QAWall01-Wand nach allen Punktarten und Alt-Radierung fehlen."
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "open",
+          "finding": "Aktueller Host erhält QAWall01 bei Alt-Radierung und Eckpunktzug samt Portal, Raum-ID und Key-Bytes; Original-QAWall01-Ellipsenpunkt und Host-Punktfolge sind nicht für Ziehen, Einfügen, Entfernen, Ellipse und Radierung direkt paarweise belegt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/semantic-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406041597-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406229929-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-phase2/evidence/1791406386586-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-phase2/evidence/1791406436401-parity-phase2-points-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-phase3-regression/evidence/1791406911536-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-phase3-regression/evidence/1791406981160-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
+          "remaining": "QAWall01 nach Ziehen, Einfügen, Entfernen, Ellipsenpunkt und Alt-Radierung direkt paaren; Portal und Key prüfen."
         }
       },
       {
@@ -9328,6 +9568,24 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Wandstilwechsel verändert nur spätere Züge; vorherige Wand und beide Stile bleiben nach Neuöffnung erhalten.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-after-gallery-switch-before-next-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-after-switch-new.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375858073-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375974372-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374490906-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -9475,6 +9733,24 @@
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "strictAcceptance": "verified"
+        },
+        "phase3WearIndependentReview": {
+          "date": "2026-10-07",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateCommit": "51453e4",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "state": "verified",
+          "finding": "Wandfarb-Reset stellt den gewählten Stilwert für spätere Züge her, bestehende Wand bleibt erhalten.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/wall-reset-sixth-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/16-wall-reset.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375858073-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375974372-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374490906-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json"
         }
       },
       {
@@ -52341,6 +52617,39 @@
         "DD-015.05"
       ],
       "remaining": "Sichtentscheid zu Alpha über Kartenhintergrund sowie direkte Bevel-/Paketwand-Mutationsbildpaare; alle neun Fälle bis zum unabhängigen Review formal offen."
+    },
+    "phase3WearIndependentReview": {
+      "date": "2026-10-07",
+      "state": "gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateCommit": "51453e4",
+      "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+      "verifiedCases": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.16",
+        "DD-011.17",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.02",
+        "DD-015.03",
+        "DD-015.06",
+        "DD-015.07"
+      ],
+      "openCases": [
+        "DD-011.15",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
+      "visualAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/current-options-visual-audit.json",
+      "coreTestsPassed": 142,
+      "next": "Getrennter Nachbesserungsplan für DD-015.04/.05 und DD-011.15; danach eigene Umsetzung und unabhängiger Review."
     }
   }
 }

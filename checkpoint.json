@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 3: Wear-Modus und restliche Building-Optionen als Umsetzungskandidat geprüft; unabhängiger 17-Fälle-Review steht aus",
+  "phase": "Phase 3: unabhängiger Wear-/Building-Review abgeschlossen, 14/17 Unterfälle verifiziert; Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -111,7 +111,8 @@
     "Build 5cb98617: dieselbe neunfache Optionskarte besteht Host-Bedienung, Undo/Redo, Speicherung und frische Öffnung; neun Wandstile und 35 belegte Boden-Innenzellen sind semantisch gleich, Ellipsenpunkte höchstens 0,004414 Felder verschieden. 139 Tests sowie Phase-1-/2-/3-Hostregressionen bestehen; Bildgleichheit und 17-Fälle-Review offen.",
     "Unabhängiger Phase-3-Endbuild-Review: 8 von 17 eng formulierten Unterfällen mit direkten Original- und Hostbelegen geschlossen; Picker-Host Edit/Frischstart und 139 Kerntests, Typprüfung, Build bestehen. Neun Bild- oder Gegenprobenlücken bleiben offen; produktiver Vault unverändert.",
     "Phase 3 auf isoliertem Build 27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc: 24 Bodenstile, 14 Building-Feldklicks, 10 Wandstile und 18 Wood-/Diamond-2-Farbwerte direkt gepaart; Typprüfung, 140 Kernprüfungen, Build sowie jeweilige Host-Edit-/Neuöffnung bestanden. Phase-1-/2- und Neun-Optionen-Neuöffnung bestanden. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
-    "Original Dungeondraft 1.2.0.1: zwei UI-Karten mit Wear an/aus, vier gleichen 2×2-Buildings und einer QA-Tür gespeichert und frisch geöffnet; Boden und eingebaute wie Paketwände ändern sich, Hintergrund bleibt gleich. Isolierter Host: beide Modi mit Battlements, QA-Wand und verankerter Tür gezeichnet, Undo/Redo, Save und Neustart bestanden; eine bestehende V2-Karte öffnet mit unverändertem Zahlenwert. Typprüfung, 142 Kerntests und Build bestehen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md"
+    "Original Dungeondraft 1.2.0.1: zwei UI-Karten mit Wear an/aus, vier gleichen 2×2-Buildings und einer QA-Tür gespeichert und frisch geöffnet; Boden und eingebaute wie Paketwände ändern sich, Hintergrund bleibt gleich. Isolierter Host: beide Modi mit Battlements, QA-Wand und verankerter Tür gezeichnet, Undo/Redo, Save und Neustart bestanden; eine bestehende V2-Karte öffnet mit unverändertem Zahlenwert. Typprüfung, 142 Kerntests und Build bestehen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+    "Unabhängiger Phase-3-Wear-/Building-Review auf Commit 51453e4 und Build 1d76c8cc: 14 von 17 Unterfällen verifiziert. Elf Host-Edit-/Frischöffnungs-Paare, zusätzlicher QAWall01-/Portal-/Key-Fall und siebenteiliger Pickerlauf bestanden. Aktuelles Wear-Optionsbild: 35 Innenfelder im Mittel 7,736 RGB-Stufen vom Original, Diamond 2 bei Alpha 128 8,782; Bedienung und Wirkung ungefähr gleichwertig. Typprüfung, 142 Tests und Build bestanden. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md"
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -173,7 +174,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Eigener unabhängiger Phase-3-Review auf Build 1d76c8cc: alle 17 Unterfälle einzeln gegen Originalbedienung, gespeicherte Wirkung, Save/Neuöffnung und ungefähr gleichwertige Grafik entscheiden. Besonders Alpha 128 über verschiedenem Kartenhintergrund sowie Bevel-/Paketwand-Punktmutationen kritisch prüfen; Pipetten-Fixture-Fehlschläge nicht als Produktfehler werten. Bei offenem Fall separaten Nachbesserungsplan erstellen. Produktiven Vault und installierten Build unberührt lassen.",
+  "next": "Eigener Phase-3-Nachbesserungsplan für DD-015.04/.05 und den abhängigen DD-011.15-Fall: direkte Original-/Host-Paare für Bevel und QAWall01-Konturmutationen konkret festlegen. Danach getrennte Umsetzung und unabhängiger Review; erst bei geschlossenem Fachphasentor Aufräumphase planen. Produktiven Vault und installierten Build unberührt lassen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -185,7 +186,8 @@
     "Phase 3 auf Build d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31: Wall und Cave nutzen den gemeinsamen ARGB-Picker. Gleiche Feldpunkte liefern im Original und Host ff74591d und ff73581d. Beide Original-Pipetten lesen ff726658 eine Bildzeile oberhalb; der Host folgt der Abtastregel, zeigt dort aber schon vor dem Klick #ebe4d6. Original- und Host-Neuöffnung sowie Cave-Undo/Redo bestehen; 14 Building-Feldfälle und Phase-2-Punktbearbeitung mit neun Edit- und drei Neuöffnungs-Checks bleiben grün. Alle neun Phase-3-Unterfälle bleiben bis zur vollständigen Bildpaarung und unabhängigem Review offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
     "Phase 3 auf unverändertem Build d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31: Zehn Original-/Host-Wandgaleriestile und neun Battlements-ARGB-Werte sind roh gepaart und frisch geöffnet. Die zehn Ladebilder weichen im Mittel oben 12,043, links 11,581 und an der oberen Ecke 14,675 RGB-Stufen ab; Bodeninnenflächen 2,507. Bei deckendem Battlements fehlt im Host die schwarze Innenkante (Original 70,83–72,92 Prozent, Host 4,17 Prozent in Zeile +3). Breiten- und UV-Versatzexperimente wurden wegen anderer verschlechterter Reihen vollständig verworfen. QAWall01, Enden/Schatten/Kurven/Portal und unabhängiger Review bleiben offen; alle neun Phase-3-Unterfälle offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/wall-matrix-implementation.md",
     "Phase 3 auf unverändertem Build d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31: Neun QAWall01-ARGB-Werte sind nach Original-UI-Zug, Save und beidseitiger frischer Neuöffnung gepaart. Der deckende Wandkern trifft für Rot und 445566 bis auf 0,010 RGB-Stufen, Weiß weicht oben 16,153 und links 16,866 ab. Die Originalkarten mit building_wear=grime.png und die Hostkarten mit buildingWear=0 sind nicht gleich eingestellt. Eine kontrollierte Original-Rohkartenkopie mit building_wear=null trifft Weiß exakt, verschiebt aber den Bodeninnenflächenfehler von 2,565 auf 21,954 Stufen. Eine globale Weiß-Grime-Regel brach die frühere pixelgleiche Portalwand und wurde verworfen. Alle neun Phase-3-Unterfälle und der unabhängige Review bleiben offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
-    "Phase 3: Wear-Modus und Building-Optionsfolge auf demselben isolierten Build 1d76c8cc geprüft: elf Edit-/Frischöffnungs-Paare bestanden, darunter 24 Boden-, zehn Wandstile, 18 Boden- und je neun Battlements-/QAWall01-ARGB-Werte, 14 Farbfeldpunkte, Wall/Cave-Picker, neunfache Optionskarte sowie Phase-1-/2-/3-Regressionen. Zwei Pipettenstarts scheiterten vor der UI an fehlender QA-Karte. Halbtransparentes Diamond 2 wirkt wegen hellem Host- statt dunklem Originalhintergrund sichtbar anders; Bevel-/Paketwand-Mutationsbildpaare fehlen. Alle neun Unterfälle und der unabhängige 17-Fälle-Review bleiben formal offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md"
+    "Phase 3: Wear-Modus und Building-Optionsfolge auf demselben isolierten Build 1d76c8cc geprüft: elf Edit-/Frischöffnungs-Paare bestanden, darunter 24 Boden-, zehn Wandstile, 18 Boden- und je neun Battlements-/QAWall01-ARGB-Werte, 14 Farbfeldpunkte, Wall/Cave-Picker, neunfache Optionskarte sowie Phase-1-/2-/3-Regressionen. Zwei Pipettenstarts scheiterten vor der UI an fehlender QA-Karte. Halbtransparentes Diamond 2 wirkt wegen hellem Host- statt dunklem Originalhintergrund sichtbar anders; Bevel-/Paketwand-Mutationsbildpaare fehlen. Alle neun Unterfälle und der unabhängige 17-Fälle-Review bleiben formal offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md",
+    "Phase-3-Review: DD-011.15, DD-015.04 und DD-015.05 bleiben offen, weil vollständige direkte Original-/Host-Paare für Bevel-Richtungen, Eckarten, Ring, Portalspalt, Kurve sowie QAWall01-Punktmutationen fehlen. Keine bestätigte neue Produktabweichung. Das Fachphasentor bleibt offen; als Nächstes eigener Nachbesserungsplan. Review: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md"
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -809,12 +811,12 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase3_image_matrix_partial_implementation_gate_open",
+    "status": "phase3_wear_independent_review_14_verified_3_open_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Weiterer eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md; danach eigenständiger Review.",
+    "nextRun": "Eigener Phase-3-Nachbesserungsplan für DD-015.04/.05 und DD-011.15; danach getrennte Umsetzung und unabhängiger Review.",
     "note": "Host-Screenshots enthalten ein Skia-ICC-Profil, Originalbilder sRGB-Chromatizität. Nach Umrechnung und Entfernen des falschen Faktors 0,9091 stimmt deckendes QAWall01-Rot auf zwei 1152-Pixel-Streifen im Mittel auf 0,85/1,26 Stufen; Alpha 128 hat außen Original/Host-Deckkraft 0,5013/0,5000. Building-Optionen, kombinierter Portal-/Key-Fall sowie Phase 1/2 bestanden auf dem Build mit frischer Neuöffnung. Bevel-Rest, originales QAWall01-Portalbild, weitere Farben und Alpha-Werte, unmittelbare Zeichenfolge und vollständige Original-Optionsrohkarte bleiben offen.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "29ae6d03039cbea4bde3ac0b96921eeb87869dbe51abeb4491a0af9908cd3bff",
@@ -871,7 +873,7 @@
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Neun Phase-3-Unterfälle bleiben offen; konkreter Nachbesserungsplan liegt vor. Umsetzung, erneuter Review und Fachphasen-Aufräumen stehen aus; produktive Installation unverändert.",
+    "open": "Drei Phase-3-Unterfälle bleiben offen: DD-015.04 Bevel-Gegenpaare, DD-015.05 vollständige QAWall01-Punktmutationen und davon abhängig DD-011.15. Nachbesserungsplan, getrennte Umsetzung, unabhängiger Review und Fachphasen-Aufräumen stehen aus; produktive Installation unverändert.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -1204,6 +1206,20 @@
     "phase3WearSecondImplementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md",
     "phase3WearSecondImplementationBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
     "phase3WearSecondImplementationState": "eleven_host_edit_reopen_pairs_passed_nine_cases_pending_independent_review",
-    "phase3WearSecondImplementationOptionsReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406229929-parity-phase3-building-reopen/result.json"
+    "phase3WearSecondImplementationOptionsReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/host-options/evidence/1791406229929-parity-phase3-building-reopen/result.json",
+    "phase3WearIndependentReview": {
+      "date": "2026-10-07",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
+      "candidateCommit": "51453e4",
+      "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+      "verifiedCases": 14,
+      "openCases": [
+        "DD-011.15",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "gate": "open"
+    }
   }
 }
