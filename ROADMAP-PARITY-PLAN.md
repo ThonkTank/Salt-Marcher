@@ -40,7 +40,7 @@ Der eigene Planlauf vom 07.10.2026 hat den [konkreten Phase-2-Plan](ROADMAP-PARI
 
 ## Phase 3 – Boden- und Gebäudewandgestaltung
 
-**Aktueller Nachbesserungsplan:** [Neun offene Bild- und Pickerfälle](ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md) nach dem unabhängigen Review vom 07.10.2026. Die acht dort belegten Unterfälle bleiben als Endstand-Regression erhalten.
+**Aktueller Nachbesserungsplan:** [Bildmatrix für die neun offenen Phase-3-Fälle](ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md) nach dem [unabhängigen Endbuild-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md). Der [vorige Nachbesserungsplan](ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md) bleibt als abgeschlossener Planlauf erhalten; die acht verifizierten Unterfälle bleiben Endstand-Regressionen.
 
 **Offene Punkte:** `DD-011.11–.12` betreffen Bodengalerie, bestehende versus spätere Flächen und Tint. `.15` verlangt die Neuöffnung aller Building-Optionen einschließlich der in Phase 1 geprüften Grundformen. `.16–.22` betreffen Farbknopf, Sättigung/Helligkeit, Hue, RGBA, Hex, Accept/Abbruch und das zunächst zu identifizierende kleine Symbol. `DD-015.01–.07` betreffen Paketwand, Stil ohne Wand, Wandfarbe, Bevel Corners, Wand-Follow nach Punktänderung, möglichen nachträglichen Stilwechsel und Farbknopf. Die genaue Originalwirkung von Pipette, Wandstilwechsel und einigen Farbgrenzen muss vor dem Coding nachgemessen werden.
 
