@@ -927,6 +927,174 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       JSON.stringify(names, null, 2));
     checks.push("All 24 native floor styles render in original saved-map order");
   }
+  async function pickerPair(restart) {
+    const file = "Dungeons/Parity/Building-Picker-Pair.dungeon";
+    const saved = path.join(qa, "parity-phase3-picker-pair-saved.json");
+    if (!restart) {
+      await page.evaluate(async ({ file, pckPath }) => {
+        const plugin = app.plugins.getPlugin("dungeon-editor");
+        await plugin.useNativeAssetArchive(pckPath);
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        await app.vault.create(file, JSON.stringify({
+          format: "dungeon-map", version: 3, id: "phase3-picker-pair",
+          settings: { name: "Building Picker Pair", width: 20, height: 12,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: true, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+            ambient: 1 }],
+          entities: [], content: { definitions: [], occurrences: [],
+            routes: [], archive: [] },
+        }));
+      }, { file, pckPath });
+    }
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    if (restart) {
+      const actual = (await state()).document;
+      const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
+      assert.deepEqual(actual, expected);
+      checks.push("The seven Building picker comparison rooms reopen byte-equivalent");
+      return;
+    }
+    await chooseTool("Raum");
+    const snapshot = async label => {
+      const current = await state();
+      fs.writeFileSync(path.join(out, label + ".json"),
+        JSON.stringify({ document: current.document,
+          settings: await page.evaluate(() => app.workspace.activeLeaf.view.editor.settings) }, null, 2));
+      await page.screenshot({ path: path.join(out, label + ".png") });
+      return current.document.entities;
+    };
+    const openPicker = kind => page.getByRole("button", {
+      name: kind === "floor" ? "Bodenfarbe RGBA" : "Wandfarbe RGBA",
+      exact: true,
+    }).click();
+    const label = kind => kind === "floor" ? "Bodenfarbe" : "Wandfarbe";
+    const setHex = async (kind, hex) => {
+      await openPicker(kind);
+      await page.getByRole("textbox", { name: label(kind) + " Hex ARGB" }).fill(hex);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    };
+    const drawNext = async (index, a, b, name) => {
+      await draw(a, b, index);
+      const entities = await snapshot(name);
+      return entities.at(-1);
+    };
+    for (const [kind, values] of [["floor", [17, 34, 51, 128]],
+      ["wall", [68, 85, 102, 128]]]) {
+      await openPicker(kind);
+      for (const [channel, value] of ["R", "G", "B", "A"].map((c, i) =>
+        [c, values[i]]))
+        await page.getByRole("spinbutton", { name: label(kind) + " " + channel })
+          .fill(String(value));
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    }
+    const numeric = await drawNext(1, { x: 2, y: 2 }, { x: 4, y: 4 }, "01-numeric");
+    assert.equal(numeric.fill, 0x112233);
+    assert.equal(numeric.floorAlpha, 128);
+    assert.equal(numeric.wall, 0x445566);
+    assert.equal(numeric.wallAlpha, 128);
+    await setHex("floor", "a1b2c3");
+    await setHex("wall", "d4e5f6");
+    const six = await drawNext(2, { x: 6, y: 2 }, { x: 8, y: 4 }, "02-six-hex");
+    assert.equal(six.fill, 0xa1b2c3);
+    assert.equal(six.floorAlpha, 255);
+    assert.equal(six.wall, 0xd4e5f6);
+    assert.equal(six.wallAlpha, 255);
+    await setHex("floor", "7f102030");
+    await setHex("wall", "40112233");
+    const eight = await drawNext(3, { x: 10, y: 2 }, { x: 12, y: 4 }, "03-eight-hex");
+    assert.equal(eight.fill, 0x102030);
+    assert.equal(eight.floorAlpha, 127);
+    assert.equal(eight.wall, 0x112233);
+    assert.equal(eight.wallAlpha, 64);
+    await openPicker("floor");
+    await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" })
+      .fill("7f88a0b8");
+    await page.locator(".dn-tool-rail").click({ position: { x: 5, y: 5 } });
+    assert.equal(await page.getByRole("dialog", { name: "Bodenfarbe" }).count(), 0);
+    await openPicker("floor");
+    assert.equal(await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" })
+      .inputValue(), "7f88a0b8");
+    await page.getByRole("dialog", { name: "Bodenfarbe" }).press("Escape");
+    await openPicker("wall");
+    await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" })
+      .fill("408fa9c2");
+    await page.locator(".dn-tool-rail").click({ position: { x: 5, y: 5 } });
+    assert.equal(await page.getByRole("dialog", { name: "Wandfarbe" }).count(), 0);
+    await openPicker("wall");
+    assert.equal(await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" })
+      .inputValue(), "408fa9c2");
+    await page.getByRole("dialog", { name: "Wandfarbe" }).press("Escape");
+    const outside = await drawNext(4, { x: 14, y: 2 }, { x: 16, y: 4 },
+      "04-outside-escape");
+    assert.equal(outside.fill, 0x88a0b8);
+    assert.equal(outside.floorAlpha, 127);
+    assert.equal(outside.wall, 0x8fa9c2);
+    assert.equal(outside.wallAlpha, 64);
+    await setHex("floor", "b89f88");
+    await setHex("wall", "726e65");
+    for (const [kind, y] of [["floor", .273], ["wall", .238]]) {
+      await openPicker(kind);
+      const field = page.locator(".dn-building-color-field");
+      const box = await field.boundingBox();
+      assert(box);
+      await page.mouse.click(box.x + box.width * .262, box.y + box.height * y);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    }
+    const field = await drawNext(5, { x: 2, y: 6 }, { x: 4, y: 8 },
+      "05-field");
+    assert.notEqual(field.fill, 0xb89f88);
+    assert.notEqual(field.wall, 0x726e65);
+    await setHex("floor", "b89f88");
+    await setHex("wall", "c2b38f");
+    for (const [kind, fraction] of [["floor", .569], ["wall", .637]]) {
+      await openPicker(kind);
+      const hue = page.getByRole("slider", { name: label(kind) + " Farbton" });
+      const box = await hue.boundingBox();
+      assert(box);
+      await page.mouse.click(box.x + box.width * fraction, box.y + box.height / 2);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    }
+    const hue = await drawNext(6, { x: 6, y: 6 }, { x: 8, y: 8 }, "06-hue");
+    assert.equal(hue.fill, 0x88a4b8);
+    assert.equal(hue.wall, 0x8f98c2);
+    const samplePoint = await world({ x: 3, y: 3 });
+    const expectedSample = await page.evaluate(point => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer;
+      return renderer.sampleRenderedPixel(renderer.local({
+        clientX: point.x, clientY: point.y,
+      }));
+    }, samplePoint);
+    assert(expectedSample);
+    for (const kind of ["floor", "wall"]) {
+      await openPicker(kind);
+      await page.getByRole("button", { name: "Pipette", exact: true }).click();
+      await page.mouse.click(samplePoint.x, samplePoint.y);
+      const actualHex = await page.getByRole("textbox", {
+        name: label(kind) + " Hex ARGB",
+      }).inputValue();
+      const expectedHex = (expectedSample.alphaByte === 255 ? "" :
+        expectedSample.alphaByte.toString(16).padStart(2, "0")) +
+        expectedSample.color.toString(16).padStart(6, "0");
+      assert.equal(actualHex, expectedHex);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    }
+    fs.writeFileSync(path.join(out, "07-pipette-sample.json"),
+      JSON.stringify({ screenPoint: samplePoint, expectedSample }, null, 2));
+    const pipette = await drawNext(7, { x: 10, y: 6 }, { x: 12, y: 8 },
+      "07-pipette");
+    assert.equal(pipette.fill, expectedSample.color);
+    assert.equal(pipette.wall, expectedSample.color);
+    assert.equal(pipette.floorAlpha, expectedSample.alphaByte);
+    assert.equal(pipette.wallAlpha, expectedSample.alphaByte);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const document = (await state()).document;
+    fs.writeFileSync(saved, JSON.stringify(document));
+    checks.push("Numeric, six/eight-digit Hex, outside/Escape, field, Hue and sampled floor/wall pixels persist as seven separate Buildings");
+  }
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
-    floorVariant, floorMosaic };
+    floorVariant, floorMosaic, pickerPair };
 };

@@ -128,6 +128,32 @@ export function mountBuildingColorPicker(
   hex.addEventListener("change", finishHex);
   hue.addEventListener("input", () =>
     replaceRgb(patternWithHue(rgb(), Number(hue.value) / 1000)));
+  let huePointer: number | null = null;
+  const updateHueFromPointer = (event: PointerEvent) => {
+    const bounds = hue.getBoundingClientRect();
+    if (!bounds.width) return;
+    const position = Math.max(0, Math.min(1,
+      (event.clientX - bounds.left) / bounds.width));
+    hue.value = String(Math.round(position * 1000));
+    replaceRgb(patternWithHue(rgb(), Number(hue.value) / 1000));
+  };
+  hue.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    huePointer = event.pointerId;
+    hue.setPointerCapture(event.pointerId);
+    updateHueFromPointer(event);
+  });
+  hue.addEventListener("pointermove", (event) => {
+    if (huePointer === event.pointerId) updateHueFromPointer(event);
+  });
+  hue.addEventListener("pointerup", (event) => {
+    if (huePointer !== event.pointerId) return;
+    updateHueFromPointer(event);
+    huePointer = null;
+    hue.releasePointerCapture(event.pointerId);
+  });
+  hue.addEventListener("pointercancel", () => { huePointer = null; });
   field.addEventListener("pointerdown", (event) => {
     const bounds = field.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;

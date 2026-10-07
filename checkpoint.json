@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-3-Portal-Wandumlauf nachgebessert, Bevel-Innenbild und Fachphasentor offen",
+  "phase": "Folge-Roadmap: Phase-3-Hue-Parität hergestellt, Feld/Pipette/Bevel und Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -99,7 +99,10 @@
     "Phase-3-Nachbesserungskandidat 020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a: Bevel-Default, künftig wirkende Wandgalerie, Feldvarianten und maskierte Texturwand; neun Building-Optionsstände, numerische RGBA, sechsstellige Hexwerte, Hue/Farbfläche, Außenklick und Wandpipette im isolierten Host gespeichert und frisch geöffnet. Phase-1-Hauptlauf und Phase-2-Punkt-/Portal-/Key-Folgen mit frischem Prozess auf demselben Build bestanden; 131 Kerntests, Typprüfung und Build bestanden. Bild-/Originalpaar und Phase-3-Tor offen.",
     "Phase-3-Nachbesserungskandidat 8ce7ded759114566ab05c4c8fa6dc9a93dfba1195394c65894e1d989aa5611d5: Dungeondraft-Boden-Rohfarben nach R=0, sechsstelliger Hexeingabe mit Außenklick, Hue und Farbfläche direkt gesichert; bei Boden und Wand setzt sechsstellige Hexeingabe nach Accept Alpha 128 auf 255. Isolierter Host speichert und öffnet neun Options-Buildings sowie QAWall01-Raum mit Portal, Alt-Radierung, Punktzug und bytegleichem Key frisch; Phase-1-/2-Folgen bestehen auf demselben Build, 131 Kerntests, Typprüfung und Build bestehen. Fachphasentor offen.",
     "Direkte QAWall01-Zwei-Türen-Originalfolge mit Undo/Redo und frischer Öffnung; Host-Paketwand-Endkappen treffen je 257–261/272 Pixel, gerade weiße Streifen 1.440/1.440 je Seite. Erzwungene sRGB-Hostaufnahme trifft rote Streifen 908/960 und 888/928 Pixel. Building-Optionen, kombinierter Portal-/Key-Fall sowie Phase-1-/2-Regressionen bestehen auf Build 3dde1aa2 jeweils mit frischem Prozess; Typprüfung, 138 Tests und Build bestehen.",
-    "Portalbedingte Konturgrenze in der Zeichenmaske geschlossen: QAWall01-Bevel-an-Ecke oben links 175→203/256 exakte Pixel bei unveränderten geraden Wand-/Türkappenbildern, Bevel-aus oben beidseits 256/256. Building-Optionen, kombinierter Portal-/Key-Fall, Phase-1-/2-Hostfolgen mit frischen Prozessen sowie Typprüfung, 138 Tests und Build bestehen auf SHA 7fbe503f; produktiver Vault-Build unverändert."
+    "Portalbedingte Konturgrenze in der Zeichenmaske geschlossen: QAWall01-Bevel-an-Ecke oben links 175→203/256 exakte Pixel bei unveränderten geraden Wand-/Türkappenbildern, Bevel-aus oben beidseits 256/256. Building-Optionen, kombinierter Portal-/Key-Fall, Phase-1-/2-Hostfolgen mit frischen Prozessen sowie Typprüfung, 138 Tests und Build bestehen auf SHA 7fbe503f; produktiver Vault-Build unverändert.",
+    "Direkte Original-Building-Farbpicker-Rohpaare für Feld, Hue, RGBA, sechs-/achtstellige Hexeingabe sowie Außenklick/Escape gesichert; Boden-Pipette speichert ff726658, Wand-Pipette zeigt denselben UI-Wert ohne neuen Wand-Rohdatensatz. Exakter Host-Paarlauf und unabhängiger Phase-3-Review bleiben offen.",
+    "Gezielter sieben Räume umfassender Host-UI-Paarlauf mit frischem Prozess bestanden: RGBA, sechs-/achtstellige Hexeingabe sowie Außenklick/Escape sind zu den Original-Rohkarten exakt; Feldfarbe weicht höchstens 1 Kanalstufe, Hue im Grünkanal 5/9 Stufen ab. Beide Host-Pipetten speichern denselben gerenderten Pixel mit Alpha 255.",
+    "Building-Hue-Zeigereingabe auf die volle Leistenbreite abgebildet: Boden ff88a4b8 und Wand ff8f98c2 treffen jetzt die nativen Rohwerte exakt. Sieben Host-Buildings mit Picker-Eingaben bestehen Edit und bytegleichen Frischstart auf SHA c2480249; TypeScript, 138 Tests und Build bestehen."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -158,7 +161,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Gesonderter Phase-3-Nachbesserungslauf: die fehlenden direkten Original-Rohbelege für vollständige Building-Optionen, Picker und Farb-/Alpha-Stufen priorisieren. Die inneren Bevel-25/222-Pixel bleiben offen; Masken-, Nearest- und einzelne Godot-V-UV-Hypothesen sind verworfen. Danach eigener Review aller 17 Unterfälle und nur bei bestandenem Fachphasentor die gesonderte Aufräumphase.",
+  "next": "Gesonderter Phase-3-Nachbesserungslauf: Farbflächen-Abweichungen anhand exakt gleicher Picker-Ausgangslage und UI-Geometrie isolieren; Original-Wand-Pipetten-Rohkarte und vollständige Building-Optionsrohkarte ergänzen. Innere Bevel-25/222-Pixel bleiben offen; verworfene Masken-, Nearest- und einzelne Godot-V-UV-Hypothesen nicht wiederholen. Danach eigener Review aller 17 Unterfälle und nur bei bestandenem Fachphasentor die gesonderte Aufräumphase.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -166,7 +169,8 @@
     "Phase-6-Spielansicht einschließlich Key-Liste, rechter Detailansicht, Gliederung, Marker und Auswertung ist isoliert und nach frischem Start geprüft; die produktive Spielansicht und Übersichtslink-Navigation bestehen nach frischem Start. Physische Eingabe bleibt auf Nutzerwunsch offen; allgemeine RAM-Ersparnis ist nicht isoliert belegt.",
     "Breiter Gleichwertigkeitstest scheitert reproduzierbar vor dem Auswahlteil am Dach-Polygon: drei statt vier Eckpunkte in zwei Läufen. Dach erst in seiner Werkzeugreihenfolge untersuchen; keine bestandene Gesamtregression behaupten.",
     "DD-026 bleibt trotz Phase-3-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen und physische Eingabe bleiben offen.",
-    "Phase 3: 24 gespeicherte Bodenstile mit Weiß und Standardfarben, QAWall01-Weiß/Rot, Alpha-128-Wandprobe und zwei direkt per Original-UI gesetzte Türen wurden verglichen. Host-Portalkappen treffen je 257–261/272 Pixel, gerade weiße Streifen pixelgleich; sRGB-erzwungenes Rot trifft 908/960 und 888/928 Pixel. Die portalbedingte Bevel-Maskenlücke wurde geschlossen (obere linke Ecke 175→203/256); Bevel aus trifft oben 256/256. Innere Bevel-Textur (25/222 exakt graue Pixel), andere Winkel/Assets, weitere Farb-/Alpha-Werte, unmittelbare Original-Zeichenfolge und vollständige 17-Fälle-Optionsmatrix bleiben offen. Building- und Phase-1-/2-Hostfolgen sowie kombinierter Portal-/Key-Fall bestanden auf demselben Build mit frischem Prozess; unabhängiger Review und Aufräumphase stehen aus."
+    "Phase 3: 24 gespeicherte Bodenstile mit Weiß und Standardfarben, QAWall01-Weiß/Rot, Alpha-128-Wandprobe und zwei direkt per Original-UI gesetzte Türen wurden verglichen. Host-Portalkappen treffen je 257–261/272 Pixel, gerade weiße Streifen pixelgleich; sRGB-erzwungenes Rot trifft 908/960 und 888/928 Pixel. Die portalbedingte Bevel-Maskenlücke wurde geschlossen (obere linke Ecke 175→203/256); Bevel aus trifft oben 256/256. Innere Bevel-Textur (25/222 exakt graue Pixel), andere Winkel/Assets, weitere Farb-/Alpha-Werte, unmittelbare Original-Zeichenfolge und vollständige 17-Fälle-Optionsmatrix bleiben offen. Building- und Phase-1-/2-Hostfolgen sowie kombinierter Portal-/Key-Fall bestanden auf demselben Build mit frischem Prozess; unabhängiger Review und Aufräumphase stehen aus.",
+    "Phase 3: Die Original-Picker-Eingaben DD-011.18–.21 besitzen exakte Boden-/Wand-Host-Rohpaare; DD-011.17 weicht bei Feldklicks höchstens eine Kanalstufe ab, und DD-011.22 braucht weiterhin den gespeicherten Original-Wand-Pipettenwert beziehungsweise einen selben-Szenen-Pixelvergleich. Vollständige Building-Optionsrohkarte und innere Bevel-Textur bleiben offen."
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -539,7 +543,10 @@
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/wood-stone-boundary-comparison.json",
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md",
     "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-review.md",
-    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md"
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md",
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/picker-pair-review.md",
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",
@@ -1034,6 +1041,12 @@
     "phase3WrapMaskState": "partial_repair_gate_open",
     "phase3GodotUvProbeReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.md",
     "phase3GodotUvProbeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-godot-bevel-uv-20261007/bevel-uv-probe.json",
-    "phase3GodotUvProbeState": "rejected_restored"
+    "phase3GodotUvProbeState": "rejected_restored",
+    "phase3PickerPairReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/picker-pair-review.md",
+    "phase3PickerPairNativeRun": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence",
+    "phase3PickerPairState": "host_hue_repaired_partial_field_and_wall_pipette_gate_open",
+    "phase3PickerPairHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+    "phase3PickerPairHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json",
+    "phase3PickerPairBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
   }
 }
