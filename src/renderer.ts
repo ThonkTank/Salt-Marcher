@@ -514,7 +514,8 @@ export class MapRenderer {
         uvs: new Float32Array(uvs), indices: new Uint32Array(indices),
       }),
       shader = nativeFloorShader(texture, grime,
-        isNativeCustomColorFloorAssetId(building.material?.assetId)),
+        isNativeCustomColorFloorAssetId(building.material?.assetId),
+        this.settings.nativeBuildingWear !== false),
       mesh = new Mesh({ geometry, texture, shader }),
       layer = new Container(), mask = new Graphics(),
       underlay = new Graphics();
@@ -1024,14 +1025,12 @@ export class MapRenderer {
     alpha = 1,
     bevel = false,
   ): void {
-    const useNativeAlbedo = visual.entity.kind === "building" &&
-      (isNativeWallAssetId(visual.entity.wallAssetId) ||
-        (isNativeFloorAssetId(visual.entity.material?.assetId) &&
-          visual.entity.wall !== 0xffffff));
+    const useNativeAlbedo = visual.entity.kind === "building";
     void Promise.all([
       this.acquireAsset(visual, reference),
       useNativeAlbedo
         ? this.acquireAsset(visual, NATIVE_FLOOR_GRIME_ID + "\0image")
+          .catch(() => undefined)
         : Promise.resolve(undefined),
     ]).then(([texture, grime]) => {
         if (this.visuals.get(visual.entity.id) !== visual || this.closed)
@@ -1074,7 +1073,8 @@ export class MapRenderer {
             uvs: new Float32Array(band.uvs),
             indices: new Uint32Array(band.indices),
           });
-          const shader = grime ? nativeWallShader(texture, grime) : undefined;
+          const shader = grime ? nativeWallShader(texture, grime,
+            this.settings.nativeBuildingWear !== false) : undefined;
           const mesh = new Mesh({ geometry, texture, shader });
           mesh.tint = tint;
           mesh.alpha = alpha;
@@ -2004,16 +2004,11 @@ export class MapRenderer {
       if (after.wallAssetId && after.wallWidth > 0) {
         const reference = after.wallAssetId + "\0image";
         created.assets.push(reference);
-        const needsWallGrime = isNativeWallAssetId(after.wallAssetId) ||
-          (isNativeFloorAssetId(after.material?.assetId) &&
-            after.wall !== 0xffffff);
         const grimeReference = NATIVE_FLOOR_GRIME_ID + "\0image";
-        if (needsWallGrime) created.assets.push(grimeReference);
+        created.assets.push(grimeReference);
         void Promise.all([
           this.textures.acquire(reference),
-          needsWallGrime
-            ? this.textures.acquire(grimeReference)
-            : Promise.resolve(undefined),
+          this.textures.acquire(grimeReference).catch(() => undefined),
         ]).then(([texture, grime]) => {
           if (this.buildingPreview !== created || this.closed) return;
           created.wallTexture = texture;
@@ -2095,7 +2090,8 @@ export class MapRenderer {
         if (!mesh) {
           const geometry = new MeshGeometry({ positions, uvs, indices });
           const shader = state.wallGrimeTexture
-            ? nativeWallShader(state.wallTexture, state.wallGrimeTexture)
+            ? nativeWallShader(state.wallTexture, state.wallGrimeTexture,
+              this.settings.nativeBuildingWear !== false)
             : undefined;
           mesh = new Mesh({ geometry, texture: state.wallTexture, shader });
           state.wallGeometries.push(geometry);

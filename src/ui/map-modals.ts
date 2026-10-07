@@ -416,7 +416,7 @@ export class MapSettingsModal extends Modal {
         objectShadows = toggle.setValue(current.objectShadows);
       });
     new Setting(this.contentEl)
-      .setName("Gebäudeabnutzung")
+      .setName("Zusätzliche Gebäudeabnutzung")
       .addSlider((slider) => {
         buildingWear = slider
           .setLimits(0, 100, 5)
@@ -741,7 +741,7 @@ export class CreateDungeonModal extends Modal {
       builtInAssets = catalog.builtIns,
       wallShadows = true,
       objectShadows = true,
-      buildingWear = 0,
+      disableBuildingWear = this.plugin.disableBuildingWearForNewMap,
       startKind: GeneratorKind | "empty" = "empty",
       generatorSeed = 1,
       generatorAmount = 12;
@@ -842,14 +842,12 @@ export class CreateDungeonModal extends Modal {
           .onChange((value) => (objectShadows = value)),
       );
     new Setting(this.contentEl)
-      .setName("Gebäudeabnutzung")
-      .setDesc("0 ist sauber, 100 deutlich verwittert.")
-      .addSlider((slider) =>
-        slider
-          .setLimits(0, 100, 5)
-          .setValue(0)
-          .setDynamicTooltip()
-          .onChange((value) => (buildingWear = value / 100)),
+      .setName("Gebäudeabnutzung deaktivieren")
+      .addToggle((toggle) =>
+        toggle.setValue(disableBuildingWear).onChange((value) => {
+          disableBuildingWear = value;
+          this.plugin.disableBuildingWearForNewMap = value;
+        }),
       );
     new Setting(this.contentEl)
       .setName("Startinhalt")
@@ -913,7 +911,8 @@ export class CreateDungeonModal extends Modal {
                     seed: generatorSeed,
                     amount: generatorAmount,
                   },
-              { wallShadows, objectShadows, buildingWear },
+              { wallShadows, objectShadows, buildingWear: 0,
+                nativeBuildingWear: !disableBuildingWear },
             );
             this.close();
           } catch (error) {

@@ -4122,6 +4122,23 @@
           ],
           "remaining": "Original-Gebäudeabnutzung per UI/Save und Host-Einstellungsmodell paaren; Bodenstile und Atlasränder danach erneut bildlich prüfen.",
           "strictAcceptance": "open"
+        },
+        "phase3WearBehaviorImplementation": {
+          "date": "2026-10-07",
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Disable Building Wear bei Neuanlage an/aus; gleiche vier 2×2-Buildings samt Tür zeichnen, speichern und frisch öffnen.",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "finding": "Original speichert null oder grime.png; Wood Vertical ist nur bei aktivem Wear sichtbar abgenutzt. Host speichert den binären Modus, zeichnet beide Zustände und öffnet sie frisch; der Kartenhintergrund bleibt gleich.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-on/runs/20261007-211035-2073307/evidence/maps/04-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-off-final/runs/20261007-211637-2077294/evidence/maps/04-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403004274-parity-phase3-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403104035-parity-phase3-wear-reopen/result.json"
+          ],
+          "remaining": "Weitere Bodenstile, Farben, Alpha und Atlasrandwirkung sowie der unabhängige Phase-3-Review bleiben offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4473,6 +4490,21 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-no-wear-audit.json"
           ],
           "remaining": "Gebäudeabnutzung und Farbstufen bei gleichem Original-/Host-Kartenzustand prüfen; unabhängiger Review offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3WearBehaviorImplementation": {
+          "date": "2026-10-07",
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Neuanlage mit Disable Building Wear an/aus, Wood Vertical und vier gleich große Buildings, Save und echte Neuöffnung.",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "finding": "Der binäre Modus beeinflusst den nativen Boden im Original und Host; die alte numerische Zusatzabnutzung bleibt für vorhandene Karten erhalten. Beide Hostmodi und eine ältere V2-Karte öffnen frisch.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403004274-parity-phase3-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403104035-parity-phase3-wear-reopen/result.json"
+          ],
+          "remaining": "Farb-/Alpha-Matrix auf gleich gewählten Wear-Modi und unabhängiger Review offen.",
           "strictAcceptance": "open"
         }
       },
@@ -7875,6 +7907,23 @@
           ],
           "remaining": "Gebäudeabnutzung in beiden Programmen gleich setzen; QAWall01-Enden, Ecken, Kurven, Schatten und Portale bildlich auf demselben Zustand prüfen; unabhängiger Review offen.",
           "strictAcceptance": "open"
+        },
+        "phase3WearBehaviorImplementation": {
+          "date": "2026-10-07",
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Battlements und QAWall01 mit Disable Building Wear an/aus wählen, zeichnen, Tür setzen, speichern und frisch öffnen.",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "finding": "Beide Wandfamilien reagieren im Original und Host auf denselben binären Wear-Modus; die QA-Tür bleibt verankert. Host-Neuanlage, Undo/Redo, Save und Neuöffnung bestehen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-on-reopen/runs/20261007-212017-2081239/evidence/screens/final-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-off-reopen/runs/20261007-211922-2080049/evidence/screens/final-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403004274-parity-phase3-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403104035-parity-phase3-wear-reopen/result.json"
+          ],
+          "remaining": "Weitere Stile, Fugen, Kappen, Ecken, Schatten, Kurven und unabhängiger Review bleiben offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8400,6 +8449,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-matrix-20261007/host-portal-candidate/evidence/1791394402304-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Original-Gebäudeabnutzung per UI und beide Hostzustände modellieren; gleiche Farb-/Alpha-, Fugen-, Kappen- und Schattenbilder wiederholen; unabhängiger Review offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3WearBehaviorImplementation": {
+          "date": "2026-10-07",
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Weiße und rote Wandvarianten auf den zwei Wear-Neuanlagen zeichnen, Door 00 verankern, speichern und frisch öffnen.",
+          "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+          "finding": "Die weiße QAWall01-Wand dunkelt im Original bei Wear an ab; Host-Paketwand nutzt nun denselben Modus. Türöffnung und gespeicherte Wandfarbe bleiben erhalten.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-on/runs/20261007-211035-2073307/evidence/maps/04-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/native-off-final/runs/20261007-211637-2077294/evidence/maps/04-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/host/evidence/1791403104035-parity-phase3-wear-reopen/result.json"
+          ],
+          "remaining": "Farb-/Alpha-Matrix, Fugen, Kappen, Ecke, Schatten und unabhängiger Review offen.",
           "strictAcceptance": "open"
         }
       },
@@ -52081,6 +52146,25 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "next": "Original an/aus auf gleich gezeichneten Karten mit Save/Neustart paaren; Host-Modus und Bestandskarten festlegen, separat umsetzen und unabhängig reviewen."
+    },
+    "phase3WearBehaviorImplementation": {
+      "date": "2026-10-07",
+      "state": "implementation_candidate_pending_independent_review",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
+      "casesAdvanced": ["DD-011.11", "DD-011.12", "DD-015.01", "DD-015.03"],
+      "originalPairedBuildings": 4,
+      "originalPairedPortals": 1,
+      "originalFreshReopenBothModes": true,
+      "hostFreshReopenBothModes": true,
+      "existingV2CardOpened": true,
+      "checks": "TypeScript, 142 Kerntests, Build, isolierter Host-Edit und frischer Hostprozess bestanden.",
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Übrige Phase-3-Unterfälle nach dem getrennten Verhaltensplan umsetzen; anschließend unabhängiger 17-Fälle-Review. Produktiver Vault und installierter Build bleiben unverändert."
     }
   }
 }

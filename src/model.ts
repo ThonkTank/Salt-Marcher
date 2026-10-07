@@ -250,6 +250,7 @@ export interface Settings {
   readonly wallShadows: boolean;
   readonly objectShadows: boolean;
   readonly buildingWear: number;
+  readonly nativeBuildingWear?: boolean;
 }
 export type FeatureKind = "feature" | "creature" | "loot" | "trap";
 export interface FeatureDefinition {
@@ -326,8 +327,9 @@ export function newDocument(
   assets?: Pick<Settings, "assetPacks" | "builtInAssets">,
   appearance: Pick<
     Settings,
-    "wallShadows" | "objectShadows" | "buildingWear"
-  > = { wallShadows: true, objectShadows: true, buildingWear: 0 },
+    "wallShadows" | "objectShadows" | "buildingWear" | "nativeBuildingWear"
+  > = { wallShadows: true, objectShadows: true, buildingWear: 0,
+    nativeBuildingWear: true },
   version: 3 | 4 = 4,
 ): MapDocument {
   const result: MapDocument = {
@@ -371,6 +373,8 @@ export function validateSettings(s: Settings): void {
     !Number.isFinite(s.buildingWear) ||
     s.buildingWear < 0 ||
     s.buildingWear > 1 ||
+    (s.nativeBuildingWear !== undefined &&
+      typeof s.nativeBuildingWear !== "boolean") ||
     ![s.width, s.height].every(
       (n) => Number.isFinite(n) && n > 0 && n <= 10000,
     ) ||

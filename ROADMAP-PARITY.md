@@ -41,6 +41,8 @@ Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners 
 
 **Phasentor:** Stil, Farbe, Kontur und Wandverbindung zeigen die belegte Wirkung und bleiben nach Bearbeitung, Undo/Redo, Speichern und Neuöffnung erhalten. `DD-011.15` umfasst danach alle Building-Optionen einschließlich der bereits in Phase 1 geprüften Formen.
 
+**Umsetzungslauf 1:** Der Originalschalter „Disable Building Wear“ wurde an zwei gleich gezeichneten, gespeicherten und frisch geöffneten Karten mit Wood Vertical, Battlements, QAWall01 und einer verankerten Tür gepaart. Der isolierte Host bietet und speichert jetzt denselben binären Modus; Boden, eingebaute und Paketwände sowie Vorschau verwenden ihn. Beide Hostmodi bestehen Zeichnen, Undo/Redo, Save und frische Neuöffnung; eine bestehende V2-Karte öffnet mit unverändertem Zahlenwert. [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md). Der zweite Umsetzungslauf für die übrigen neun offenen Fälle und der danach getrennte unabhängige 17-Fälle-Review stehen aus. Installierter Build und produktiver Vault bleiben unverändert.
+
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
 **Unterfälle:** `DD-026.01` bis `.08`, `.17`, `.30` und `DD-047`.

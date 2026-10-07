@@ -129,8 +129,10 @@ interface CreationAppearance {
   readonly wallShadows: boolean;
   readonly objectShadows: boolean;
   readonly buildingWear: number;
+  readonly nativeBuildingWear: boolean;
 }
 export default class DungeonPlugin extends Plugin {
+  disableBuildingWearForNewMap = false;
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   private assetLibrary = new PackAssetLibrary();

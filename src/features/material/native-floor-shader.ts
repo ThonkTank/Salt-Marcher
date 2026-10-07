@@ -6,7 +6,7 @@ import { Shader, type Texture } from "pixi.js";
  */
 function nativeAlbedoShader(
   atlas: Texture, grime: Texture, customColor: boolean,
-  periodFields: number,
+  periodFields: number, wearEnabled: boolean,
 ): Shader {
   // TilesetCustomColor.shader replaces only the red-marked parts with the
   // selected color; all remaining source pixels keep their original color.
@@ -50,7 +50,8 @@ function nativeAlbedoShader(
         out vec4 finalColor;
         void main(void) {
           vec4 tile = texture(uTexture, vUV);
-          vec3 wear = texture(uGrime, vGrimeUV).rgb;
+          vec3 wear = ${wearEnabled
+            ? "texture(uGrime, vGrimeUV).rgb" : "vec3(1.0)"};
           ${color}
         }
       `,
@@ -61,11 +62,14 @@ function nativeAlbedoShader(
 
 export function nativeFloorShader(
   atlas: Texture, grime: Texture, customColor: boolean,
+  wearEnabled = true,
 ): Shader {
-  return nativeAlbedoShader(atlas, grime, customColor, 16);
+  return nativeAlbedoShader(atlas, grime, customColor, 16, wearEnabled);
 }
 
 /** Wall.material uses the same albedo image, with an eight-field period. */
-export function nativeWallShader(atlas: Texture, grime: Texture): Shader {
-  return nativeAlbedoShader(atlas, grime, false, 8);
+export function nativeWallShader(
+  atlas: Texture, grime: Texture, wearEnabled = true,
+): Shader {
+  return nativeAlbedoShader(atlas, grime, false, 8, wearEnabled);
 }

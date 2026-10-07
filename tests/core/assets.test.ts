@@ -1,12 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { isRoom } from "../../src/model";
+import { isRoom, parseDocument } from "../../src/model";
 import { Session } from "../../src/session";
 import { createDoor, createObject, createLight, createPortal, createWall, duplicateFloor, resizeMap, createReferenceImage, editNote } from "../../src/commands";
 import { AssetCatalog, discoverPackAssets, PackAssetLibrary, readDungeondraftPack, type AssetCatalogStore, type BinarySource } from "../../src/assets";
 import { generateLayout } from "../../src/generators";
 import { newDocument, fixture } from "./fixtures";
+
+test("native building wear is binary and older numeric maps retain their mode", () => {
+  const enabled = newDocument("Wear on", 8, 8),
+    disabled = newDocument("Wear off", 8, 8, undefined, {
+      wallShadows: true, objectShadows: true, buildingWear: 0,
+      nativeBuildingWear: false,
+    });
+  assert.equal(enabled.settings.nativeBuildingWear, true);
+  assert.equal(parseDocument(JSON.stringify(disabled)).settings.nativeBuildingWear,
+    false);
+  const old = { ...enabled, settings: { ...enabled.settings,
+    nativeBuildingWear: undefined, buildingWear: 0.55 } };
+  const parsed = parseDocument(JSON.stringify(old));
+  assert.equal(parsed.settings.nativeBuildingWear, undefined);
+  assert.equal(parsed.settings.buildingWear, 0.55);
+  assert.throws(() => parseDocument(JSON.stringify({ ...enabled,
+    settings: { ...enabled.settings, nativeBuildingWear: "off" } })));
+});
 
 
 test("Dungeondraft packages keep image payloads lazy and expose stable assets", async () => {
