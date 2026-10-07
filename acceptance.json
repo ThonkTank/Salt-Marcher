@@ -3980,6 +3980,23 @@
           "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-audit.json",
           "finding": "Nach Host-ICC-Umrechnung nach sRGB sinkt der mittlere Pixelfehler der 24 Standardfarben von 9,83 auf 8,67 RGB-Stufen; größte Kanalabweichung eines Stil-Farbmittels 4,76 statt 9,09. Atlaszellen wurden nicht neu zugeordnet.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "24 gespeicherte Stile teilweise bildlich gepaart; unmittelbare Zeichenfolge, Varianten und vollständige Galeriebedienung offen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/floor-style-second-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/07-two-floor-styles.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4085,7 +4102,7 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
           "strictAcceptance": "open",
           "originalEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/07-floor-six-outside.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/maps/07-floor-six-outside.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/27-floor-six-reopen.png"
           ],
           "hostEvidence": [
@@ -4204,6 +4221,23 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-review.md",
           "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-audit.json",
           "finding": "Nach Host-ICC-Umrechnung nach sRGB sinkt der mittlere Pixelfehler der 24 Standardfarben von 9,83 auf 8,67 RGB-Stufen; größte Kanalabweichung eines Stil-Farbmittels 4,76 statt 9,09. Atlaszellen wurden nicht neu zugeordnet.",
+          "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Gespeicherte ARGB/Alpha-Werte stimmen; flächige Bildabweichung und nicht getrennte Atlas-/Hintergrundanteile bleiben.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/floor-alpha-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/05-floor-rectangle.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         }
       },
@@ -4680,6 +4714,22 @@
           "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
           "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Neunfache Rohkarte, Undo/Redo und Neuöffnung bestehen; offene Boden-/Wand-/Pickerbildwirkung verhindert Gesamtfreigabe.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4793,6 +4843,23 @@
           ],
           "remaining": "Vorheriger enger Original-/Host-Resetbeleg besteht; Endstandsreview offen.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Stilgebundener Floor-Reset wirkt auf nächsten Zug und lässt bestehende Fläche unverändert.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/floor-style-reset-third-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/09-floor-reset.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -4913,7 +4980,7 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
           "strictAcceptance": "open",
           "originalEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/12-floor-field.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/maps/12-floor-field.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/19-wall-field-after-A128.png"
           ],
           "hostEvidence": [
@@ -4935,12 +5002,31 @@
           "observation": "Floor ffb89f88, Wall ffc2b38f directly saved after color-field clicks.",
           "remaining": "Host Field/Hue small color difference and independent Phase-3 review remain open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/05-field.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/05-field.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Floor ffb9a088 vs original ffb89f88; Wall ffc2b28f vs original ffc2b38f. At most one RGB channel step; original initial Floor color before click remains uncaptured.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Farbflächenwerte weichen je höchstens einen Kanalwert ab; nativer initialer Floor-Wert ist ungemessen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/03-floor-field.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/01-floor-field.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/08-wall-field.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/02-wall-field.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -5060,7 +5146,7 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
           "strictAcceptance": "open",
           "originalEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/10-floor-hue.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/maps/10-floor-hue.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/18-wall-hue-after-A128.png"
           ],
           "hostEvidence": [
@@ -5082,12 +5168,31 @@
           "observation": "Floor ff88a4b8, Wall ff8f98c2 directly saved after Hue-bar clicks.",
           "remaining": "Independent Phase-3 review remains open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/06-hue.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/06-hue.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Exact saved Floor ff88a4b8 and Wall ff8f98c2 at matching normalized Hue positions after the Host pointer-coordinate repair.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Hue-Klick speichert Floor ff88a4b8 und Wall ff8f98c2 in beiden Programmen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/11-floor-hue.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/03-floor-hue.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/18-wall-hue-direct.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/04-wall-hue.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -5210,7 +5315,7 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
           "strictAcceptance": "open",
           "originalEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/04-floor-R0.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/maps/04-floor-R0.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/13-wall-A128-again.png",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/24-floor-A128.png"
           ],
@@ -5247,12 +5352,31 @@
           "observation": "Numeric RGBA: Floor 80112233, Wall 80445566 directly saved.",
           "remaining": "Independent Phase-3 review remains open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/01-numeric.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/01-numeric.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Exact saved Floor 80112233 and Wall 80445566 in original and Host.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Numerische RGBA-Eingabe speichert Floor 80112233 und Wall 80445566 in beiden Programmen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/21-floor-rgba.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/05-floor-rgba.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/23-wall-rgba.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/06-wall-rgba.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -5375,7 +5499,7 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
           "strictAcceptance": "open",
           "originalEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/07-floor-six-outside.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-picker-complete/runs/20261007-042753-1337167/evidence/maps/07-floor-six-outside.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/14-wall-six-hex-after-A128.png",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/16-wall-six-reopen.png",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/native-wall/runs/20261007-042921-1338165/evidence/screens/25-floor-six-typed.png",
@@ -5405,13 +5529,36 @@
           "observation": "Six-digit Hex produced opaque Floor ffa1b2c3 and Wall ffd4e5f6 after alpha 128; eight-digit ARGB produced Floor 7f102030 and Wall 40112233.",
           "remaining": "Independent Phase-3 review remains open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/02-six-hex.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/03-eight-hex.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/02-six-hex.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/03-eight-hex.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Exact six-digit Floor ffa1b2c3 / Wall ffd4e5f6 and eight-digit Floor 7f102030 / Wall 40112233 in original and Host.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Sechsstellige und achtstellige Hex-Eingabe speichern dieselben vier ARGB-Werte in beiden Programmen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/26-floor-six-hex-draft-settled.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/07-floor-six-hex.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/30-floor-eight-hex-draft.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/09-floor-eight-hex.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/28-wall-six-hex-draft.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/08-wall-six-hex.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/32-wall-eight-hex-draft.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/11-wall-eight-hex-top-row.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -5558,12 +5705,33 @@
           "observation": "Outside click closed picker; reopen and Escape preserved live color. Saved Floor 7f88a0b8, Wall 408fa9c2. Accept is also exercised by the field/Hue/RGBA/Hex raw rows.",
           "remaining": "Independent Phase-3 review remains open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/04-outside-escape.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/04-outside-escape.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Exact saved Floor 7f88a0b8 and Wall 408fa9c2 after outside click, reopen, and Escape in original and Host.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Accept, Außenklick und Escape ergeben dieselben gespeicherten Floor-/Wall-Werte ohne Mutation bestehender Fläche.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/35-floor-outside-before.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/37-floor-outside-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/12-floor-outside-reopen-escape.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/39-wall-outside-before.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/41-wall-outside-reopened.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/13-wall-outside-reopen-escape.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -5713,10 +5881,10 @@
           "observation": "Both pickers sampled the map pixel as RGB(114,102,88) and alpha 255; Floor saved ff726658. Wall swatch changed but saturated map did not yield a new wall color record; full Wall raw pair remains open.",
           "remaining": "Same-scene Host/original pixel comparison and independent Phase-3 review remain open.",
           "hostEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/07-pipette-sample.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/07-pipette.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/07-pipette-sample.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/07-pipette.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json"
           ],
           "hostComparison": "Both Host pickers sampled the same rendered map pixel, saved as ff6f6b64. Original Floor saved ff726658; original Wall picker displayed that color but no new raw wall record was obtained. Different scene pixels prevent an exact-color comparison.",
           "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
@@ -5736,6 +5904,30 @@
           ],
           "observation": "Building Wall pipette sampled screen point (400,230) as RGB(114,102,88), A255; a new Battlements wall saved ff726658 and reopened with exact shapes/walls. Floor pipette previously saved the same value at the same original screen point.",
           "remaining": "Host and original did not sample an identical rendered scene pixel; independent Phase-3 review remains open."
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Original- und Hostpipette speichern den jeweiligen dargestellten Pixel; identischer gerenderter Bildpunkt fehlt.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/43-floor-pipette-armed.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/44-floor-pipette-sampled.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/14-floor-pipette.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/46-wall-pipette-armed.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/screens/47-wall-pipette-sampled.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/native/runs/20261007-102205-1616544/evidence/maps/17-wall-pipette-settled.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/native/runs/20261007-111004-1667061/evidence/screens/02-wall-sampled.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/native/runs/20261007-111004-1667061/evidence/maps/01-wall-pipette.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/native-reopen/runs/20261007-111121-1668645/evidence/maps/01-wall-pipette-reopened.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7007,6 +7199,24 @@
           "finding": "Direct QAWall01 two-door original UI map, undo/redo and fresh original reopening verified. Host loads package _end.png and native door_00; four opening caps match 257–261/272 pixels each after ICC conversion, straight white wall strips 1440/1440 each.",
           "remaining": "Other package walls, corner/bevel pixels and full Building options matrix remain open.",
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "QAWall01-Geradstücke und Türkappen eng gepaart; übrige Wandassets und Verbindungen nicht vollständig verglichen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-first-rectangle.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package-reopen/runs/20261007-031322-1274954/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package-reopen/runs/20261007-031322-1274954/evidence/screens/05-QAWall-hover.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7182,6 +7392,23 @@
           "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
           "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "X/None zeichnet Boden ohne Wand oder Schatten; Alt-Radierung erneuert zwei getrennte X/None-Wände wie im Original.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope-report.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -7396,6 +7623,23 @@
           "finding": "Native white QAWall01 straight wall is pixel-identical between Bevel on/off (1400 and 1820 sampled pixels); current host white straight strips match original exactly. A separate host with Chromium --force-color-profile=srgb matches native red strips at 908/960 and 888/928 exact pixels (RGB MAE 0.018/0.014). The default host Skia-ICC conversion produced a misleading large full-RGB difference.",
           "remaining": "Other tints and alpha values, default display color management and complete Building options matrix remain open.",
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "ARGB/Alpha und deckendes QAWall01-Geradstück gepaart; weitere Farben, Alpha-Stufen und Fugenbilder offen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/wall-alpha-bevel-off.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/14-wall-alpha-bevel-off-rect.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7675,6 +7919,23 @@
           ],
           "finding": "One-vertex Godot-style UV substitution worsened each Bevel-on corner 203/256 to 81/256 exact pixels and straight wall 1440/1440 to 928/1440. Product source and build restored.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Bevel an/aus speichert richtige Joint-Werte; innere Eckverbindung und andere Winkel/Assets offen.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/26-bevel-click.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/bevel-label-seventh.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7833,6 +8094,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Punktzug mit Paketwand, Portal und bytegenauem Key im Host und Frischprozess bestanden; Original-/Host-Bildpaar für den gezogenen Zustand fehlt."
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Konturdaten folgen Punktzug und Radierung; gleich ausgerichtetes Bildpaar nach identischem Punktzug fehlt.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-first-rectangle.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7943,6 +8220,23 @@
           ],
           "remaining": "Altes Paketwand-Feld entfernt; native Galerie und Kandidat vorbereiten nur nächste Züge. Endstandsreview offen.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Galeriewechsel wirkt nur auf den nächsten Wandzug; bestehende Wand bleibt erhalten.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-after-gallery-switch-before-next-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/evidence/maps/QAWall-after-switch-new.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -8056,6 +8350,23 @@
           ],
           "remaining": "Vorheriger enger Original-/Host-Wandresetbeleg besteht; Endstandsreview offen.",
           "strictAcceptance": "open"
+        },
+        "phase3OptionsReview": {
+          "date": "2026-10-07",
+          "state": "verified",
+          "finding": "Stilgebundener Wall-Reset wirkt auf nächsten Zug und lässt bestehende Wand unverändert.",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/maps/wall-reset-sixth-draw.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native/runs/20261007-024631-1239692/evidence/screens/16-wall-reset.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368545964-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -50568,6 +50879,41 @@
       "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
       "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
       "strictAcceptance": "open"
+    },
+    "phase3OptionsReview": {
+      "date": "2026-10-07",
+      "state": "gate_open_repair_required",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
+      "evidenceAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/evidence-audit.json",
+      "verifiedCases": [
+        "DD-011.16",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-015.02",
+        "DD-015.06",
+        "DD-015.07"
+      ],
+      "openCases": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "originalCard": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
+      "hostCardEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+      "hostCardReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json",
+      "hostPickerEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369128740-parity-phase3-building-edit/result.json",
+      "hostPickerReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json",
+      "remaining": "Bodenbild und unmittelbare Stile, vollständige Building-Neuöffnung, Farbfläche/Pipette unter gleichen Startbedingungen, Paketwandbilder, innere Bevel-Verbindung und Punktzugbild in eigenem Nachbesserungszyklus."
     }
   }
 }
