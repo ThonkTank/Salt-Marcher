@@ -435,5 +435,82 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "visual-match-64px.png") });
     checks.push("Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
   }
-  return { edit, reopen, combined, verifyCombined, visualMatch };
+  async function floorVariant(restart) {
+    const file = "Dungeons/Parity/Floor-Variants.dungeon";
+    assert.equal(hash(fs.readFileSync(pckPath)),
+      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    await page.evaluate(async ({ file, pckPath, restart }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (!restart) {
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        const building = (id, x0, x1, fill, assetId) => ({
+          id, kind: "building", floorId: "floor-1",
+          polygons: [{ outer: [
+            { x: x0, y: 1 }, { x: x1, y: 1 },
+            { x: x1, y: 4 }, { x: x0, y: 4 },
+          ], holes: [] }], layer: 200, fill, floorAlpha: 255,
+          wall: 0xffffff, wallAlpha: 255, wallWidth: 0,
+          material: { assetId, assetPart: "image", tileSize: 8,
+            tint: fill, rotation: 0 },
+        });
+        const document = {
+          format: "dungeon-map", version: 3, id: "phase3-floor-variants",
+          settings: { name: "Floor Variants", width: 8, height: 8,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: false, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+            ambient: 1 }],
+          entities: [
+            building("wood", 1, 4, 0xb28f6f,
+              "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png"),
+            building("stone", 4, 7, 0x7f7e71,
+              "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart_double%2Ftileset_stone.png"),
+          ], content: { definitions: [], occurrences: [], routes: [], archive: [] },
+        };
+        const existing = app.vault.getAbstractFileByPath(file);
+        if (existing) await app.vault.modify(existing, JSON.stringify(document));
+        else await app.vault.create(file, JSON.stringify(document));
+      }
+      await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
+    }, { file, pckPath, restart });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.waitForFunction(() => {
+      const visuals = app.workspace.activeLeaf?.view?.editor?.renderer?.visuals;
+      return visuals?.size === 2 && [...visuals.values()]
+        .every((visual) => visual.floorGeometry?.positions.length === 72);
+    }, null, { timeout: 30000 });
+    const actual = await page.evaluate(() => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer,
+        box = renderer.canvas.getBoundingClientRect();
+      renderer.camera.scale = 64;
+      renderer.camera.x = box.width / 2 - 4 * 64;
+      renderer.camera.y = box.height / 2 - 4 * 64;
+      renderer.zoom(1);
+      return Object.fromEntries([...renderer.visuals].map(([id, visual]) => {
+        const geometry = visual.floorGeometry,
+          columns = id === "stone" ? 8 : 4,
+          width = columns * 256,
+          height = visual.floorLayer.children[0].texture.height,
+          indices = [];
+        for (let offset = 0; offset < geometry.positions.length; offset += 8) {
+          const x = geometry.positions[offset], y = geometry.positions[offset + 1],
+            u = geometry.uvs[offset], v = geometry.uvs[offset + 1];
+          indices.push({ x, y,
+            atlas: Math.floor(v * height / 256) * columns +
+              Math.floor(u * width / 256) });
+        }
+        return [id, indices];
+      }));
+    });
+    assert.deepEqual(actual.wood.map(({ atlas }) => atlas),
+      [4, 1, 4, 3, 1, 11, 14, 2, 12]);
+    assert.deepEqual(actual.stone.map(({ atlas }) => atlas),
+      [29, 15, 18, 10, 25, 14, 7, 21, 0]);
+    fs.writeFileSync(path.join(out, "floor-variants.json"),
+      JSON.stringify(actual, null, 2));
+    await page.screenshot({ path: path.join(out, "floor-variants-64px.png") });
+    checks.push("Native saved wood/stone map uses the exact 18 atlas cells in a fresh Obsidian process");
+  }
+  return { edit, reopen, combined, verifyCombined, visualMatch, floorVariant };
 };

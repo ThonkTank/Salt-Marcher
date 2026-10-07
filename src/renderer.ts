@@ -48,6 +48,8 @@ import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
 import { buildingWallBands } from "./features/bau/building-wall-band";
+import { nativeFloorCells, nativeFloorVariants } from
+  "./features/material/native-floor-tiles";
 import { ComputeClient } from "./worker-client";
 import {
   compactObjectVisible,
@@ -73,6 +75,9 @@ export interface Visual {
   pathMesh?: Mesh;
   pathGeometry?: MeshGeometry;
   wallGeometries?: MeshGeometry[];
+  floorLayer?: Container;
+  floorMask?: Graphics;
+  floorGeometry?: MeshGeometry;
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -91,6 +96,9 @@ interface BuildingPreview {
   wallGeometries: MeshGeometry[];
   shadow?: Graphics;
   floorTexture?: Texture;
+  floorLayer?: Container;
+  floorMask?: Graphics;
+  floorGeometry?: MeshGeometry;
   wallTexture?: Texture;
   assets: string[];
   portals: readonly { before: Door; after: Door | null }[];
@@ -148,6 +156,8 @@ export class MapRenderer {
   private compareAlpha = 0.2;
   private currentAlpha = 1;
   private visuals = new Map<Id, Visual>();
+  private nativeFloorCache = new Map<Id,
+    { revision: number; variants: Uint8Array }>();
   private resize?: ResizeObserver;
   private unsub?: () => void;
   private frame = 0;
@@ -361,6 +371,10 @@ export class MapRenderer {
           (e?.kind === "surface" && e.category === "cave")
         );
       });
+      const buildingChanged = [...event.ids].some((id) => {
+        const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
+        return e?.kind === "building";
+      });
       if (event.floors) this.rebuild();
       else {
         let rebuiltVisual = false;
@@ -375,6 +389,13 @@ export class MapRenderer {
           this.sync(id);
           if (before !== this.visuals.get(id)) rebuiltVisual = true;
         }
+        if (buildingChanged)
+          for (const [id, visual] of [...this.visuals])
+            if (!event.ids.has(id) && visual.entity.kind === "building" &&
+                isNativeFloorAssetId(visual.entity.material?.assetId)) {
+              this.sync(id);
+              rebuiltVisual = true;
+            }
         if (event.entityOrder || rebuiltVisual) this.syncVisualOrder();
         if (blockers)
           for (const v of this.visuals.values())
@@ -400,6 +421,7 @@ export class MapRenderer {
       if (v.shadow?.parent !== v.container) v.shadow?.destroy();
       v.container.destroy({ children: true });
       v.pathGeometry?.destroy();
+      v.floorGeometry?.destroy();
       for (const geometry of v.wallGeometries ?? []) geometry.destroy();
       v.label?.destroy();
       v.featureBadge?.destroy({ children: true });
@@ -408,12 +430,94 @@ export class MapRenderer {
       this.visuals.delete(id);
     }
   }
-  private acquireAsset(visual: Visual, reference: string): Promise<Texture> {
-    (visual.assets ??= []).push(reference);
-    return this.textures.acquire(reference);
+  private acquireAsset(
+    visual: Visual, reference: string, rawNativeFloor = false,
+  ): Promise<Texture> {
+    (visual.assets ??= []).push(rawNativeFloor ? reference + "\0raw" : reference);
+    return this.textures.acquire(reference, rawNativeFloor);
+  }
+  private floorVariants(floorId: Id, replacement?: Building): Uint8Array {
+    const cached = this.nativeFloorCache.get(floorId);
+    if (!replacement && cached?.revision === this.session.revision)
+      return cached.variants;
+    const cells = nativeFloorCells(
+      [...this.session.entities.values()].filter(
+        (entity): entity is Building => entity.kind === "building"),
+      floorId, this.settings.width, this.settings.height, replacement,
+    );
+    const variants = nativeFloorVariants(
+      cells, this.settings.width, this.settings.height);
+    if (!replacement)
+      this.nativeFloorCache.set(floorId,
+        { revision: this.session.revision, variants });
+    return variants;
+  }
+  private drawNativeFloor(
+    target: Visual | BuildingPreview,
+    building: Building,
+    texture: Texture,
+    replacement?: Building,
+  ): void {
+    target.floorLayer?.destroy({ children: true });
+    target.floorMask?.destroy();
+    target.floorGeometry?.destroy();
+    target.floorLayer = undefined;
+    target.floorMask = undefined;
+    target.floorGeometry = undefined;
+    if (texture.width % 256 || texture.height % 256 ||
+        !building.polygons.length) return;
+    const columns = texture.width / 256,
+      variants = this.floorVariants(building.floorId, replacement),
+      positions: number[] = [], uvs: number[] = [], indices: number[] = [];
+    for (const polygon of building.polygons) {
+      const xs = polygon.outer.map((point) => point.x),
+        ys = polygon.outer.map((point) => point.y);
+      const minX = Math.max(0, Math.floor(Math.min(...xs))),
+        maxX = Math.min(this.settings.width, Math.ceil(Math.max(...xs))),
+        minY = Math.max(0, Math.floor(Math.min(...ys))),
+        maxY = Math.min(this.settings.height, Math.ceil(Math.max(...ys)));
+      for (let y = minY; y < maxY; y++)
+        for (let x = minX; x < maxX; x++) {
+          const variant = variants[y * this.settings.width + x]!;
+          if (variant === 255) continue;
+          const column = variant % columns, row = Math.floor(variant / columns),
+            u0 = (column * 256 + 0.5) / texture.width,
+            u1 = ((column + 1) * 256 - 0.5) / texture.width,
+            v0 = (row * 256 + 0.5) / texture.height,
+            v1 = ((row + 1) * 256 - 0.5) / texture.height,
+            base = positions.length / 2;
+          positions.push(x, y, x + 1, y, x + 1, y + 1, x, y + 1);
+          uvs.push(u0, v0, u1, v0, u1, v1, u0, v1);
+          indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+        }
+    }
+    if (!indices.length) return;
+    const geometry = new MeshGeometry({
+        positions: new Float32Array(positions),
+        uvs: new Float32Array(uvs), indices: new Uint32Array(indices),
+      }),
+      mesh = new Mesh({ geometry, texture }),
+      layer = new Container(), mask = new Graphics();
+    mesh.tint = building.fill;
+    mesh.alpha = (building.floorAlpha ?? 255) / 255;
+    for (const polygon of building.polygons) {
+      mask.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
+        .fill(0xffffff);
+      for (const hole of polygon.holes)
+        mask.poly(hole.flatMap((point) => [point.x, point.y]), true)
+          .cut();
+    }
+    layer.addChild(mesh);
+    layer.mask = mask;
+    target.container.addChildAt(layer, 0);
+    target.container.addChild(mask);
+    target.floorLayer = layer;
+    target.floorMask = mask;
+    target.floorGeometry = geometry;
   }
   private rebuild(): void {
     this.clearBuildingPreview();
+    this.nativeFloorCache.clear();
     for (const id of this.visuals.keys()) this.clearVisual(id);
     for (const e of this.session.entities.values())
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
@@ -832,12 +936,18 @@ export class MapRenderer {
       const reference = e.material.assetId
         ? e.material.assetId + "\0" + (e.material.assetPart ?? "image")
         : e.material.asset!;
-      void this.acquireAsset(visual, reference)
+      const rawNativeFloor = e.kind === "building" &&
+        isNativeFloorAssetId(e.material.assetId);
+      void this.acquireAsset(visual, reference, rawNativeFloor)
         .then((texture) => {
           if (this.visuals.get(id) !== visual || this.closed) return;
           if (e.kind === "path") drawPath(visual, g, texture);
           else if (e.kind === "roof") drawRoof(visual, g, texture);
-          else this.drawSurface(visual, g, texture);
+          else {
+            if (e.kind === "building" && rawNativeFloor)
+              this.drawNativeFloor(visual, e, texture);
+            this.drawSurface(visual, g, texture);
+          }
           this.invalidate();
         })
         .catch((error) => {
@@ -939,6 +1049,8 @@ export class MapRenderer {
     if (e.kind !== "building" && e.kind !== "surface") return;
     g.clear();
     const floorAlpha = e.kind === "building" ? (e.floorAlpha ?? 255) / 255 : 1;
+    const nativeFloor = e.kind === "building" && !!texture &&
+      isNativeFloorAssetId(e.material?.assetId);
     const fill =
       texture && e.material
         ? {
@@ -959,17 +1071,18 @@ export class MapRenderer {
         : { color: e.kind === "building" ? e.fill : e.color,
             alpha: floorAlpha };
     const polygons = e.polygons;
-    for (const p of polygons) {
-      g.poly(
-        p.outer.flatMap((q) => [q.x, q.y]),
-        true,
-      ).fill(fill);
-      for (const hole of p.holes)
+    if (!nativeFloor)
+      for (const p of polygons) {
         g.poly(
-          hole.flatMap((q) => [q.x, q.y]),
+          p.outer.flatMap((q) => [q.x, q.y]),
           true,
-        ).cut();
-    }
+        ).fill(fill);
+        for (const hole of p.holes)
+          g.poly(
+            hole.flatMap((q) => [q.x, q.y]),
+            true,
+          ).cut();
+      }
     if (e.kind === "building") {
       if (this.settings.buildingWear > 0) {
         const outerPoints = e.polygons.flatMap((polygon) => polygon.outer),
@@ -1784,8 +1897,9 @@ export class MapRenderer {
         const reference = after.material.assetId
           ? after.material.assetId + "\0" + (after.material.assetPart ?? "image")
           : after.material.asset!;
-        created.assets.push(reference);
-        void this.textures.acquire(reference).then((texture) => {
+        const rawNativeFloor = isNativeFloorAssetId(after.material.assetId);
+        created.assets.push(rawNativeFloor ? reference + "\0raw" : reference);
+        void this.textures.acquire(reference, rawNativeFloor).then((texture) => {
           if (this.buildingPreview !== created || this.closed) return;
           created.floorTexture = texture;
           this.drawBuildingPreview(created);
@@ -1843,6 +1957,9 @@ export class MapRenderer {
       entity: after, container: state.container,
       bounds: entityBounds(after, (id) => this.session.entities.get(id)),
     }, state.graphic, state.floorTexture, doors);
+    if (state.floorTexture &&
+        isNativeFloorAssetId(after.material?.assetId))
+      this.drawNativeFloor(state, after, state.floorTexture, after);
     if (state.shadow) {
       if (state.shadow.parent === state.container)
         this.drawTexturedWallMask(state.shadow, segments,
@@ -1910,6 +2027,7 @@ export class MapRenderer {
     }
     if (state.shadow?.parent !== state.container) state.shadow?.destroy();
     state.container.destroy({ children: true });
+    state.floorGeometry?.destroy();
     for (const geometry of state.wallGeometries) geometry.destroy();
     for (const reference of state.assets) this.textures.release(reference);
     const source = this.visuals.get(state.sourceId);

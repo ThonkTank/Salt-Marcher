@@ -101,8 +101,9 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
       }));
       fs.writeFileSync(path.join(out, "ellipse-wall-allocations.json"),
         JSON.stringify(sample, null, 2));
-      assert.equal(sample.initial, 32);
-      assert.equal(sample.final, 32);
+      // The textured wall is one joined band, reused during point movement.
+      assert.equal(sample.initial, 1);
+      assert.equal(sample.final, 1);
       assert.equal(sample.added, 0);
       assert.equal(sample.removed, 0);
     } else await page.mouse.move(b.x, b.y, { steps: 8 });

@@ -3917,6 +3917,27 @@
           "finding": "Bei direkter Zwei-Stil-Zeichnung und selbst bei einer isolierten Smart-Wood-Zelle passen alle gemessenen Holzfelder zu oberen Innenzellen des Atlas, nicht zu den unteren Randzellen der PCK-Vorlage. Der direkte Zeichenstand ändert nach Neuöffnung 17/18 belegte Felder; zwei weitere frische Öffnungen derselben Rohkarte sind vollständig pixelgleich. Eine entfernte Tile-Zelle ändert 61/63 weitere belegte Felder; msi.seed und Shape-Anzahl erklären die Auswahl nicht.",
           "remaining": "Die tatsächliche Laufzeitkopie und Initialisierung der Smart-Tiles klären; direkte Edit-Folge und stabile Neuöffnung aus aktueller Tile-Belegung abbilden. Kandidat nutzt noch pfadabhängiges periodisches 8×8-Canvas; ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
           "strictAcceptance": "open"
+        },
+        "phase3FloorImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "2663db1cc5230a79205be0900194d36ed232a32c0ff0a69a5b517059fe02d7a0",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/floor-implementation.md",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style-reopen2/runs/20261007-063220-1413426/evidence/screens/01-reopen2-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348334496-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348363923-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348363923-parity-phase3-building-reopen/floor-variants.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host-options/evidence/1791348563953-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host-options/evidence/1791348669586-parity-phase3-building-reopen/result.json"
+          ],
+          "finding": "Der belegungsabhängige Godot-PCG-Ladeweg trifft 64/64 Holz- und 18/18 Holz/Stein-Atlaszellen; der isolierte Host zeichnet dieselben 18 Zellen und erhält sie im frischen Prozess.",
+          "remaining": "Die unmittelbare native Zeichenfolge unterscheidet sich vom Ladezustand. Bodenhelligkeit, Tint/Alpha-Bildpaare und alle 24 Stilbilder sind nicht abschließend ausgerichtet; Fachphasentor offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4063,6 +4084,28 @@
           ],
           "finding": "Bei direkter Zwei-Stil-Zeichnung und selbst bei einer isolierten Smart-Wood-Zelle passen alle gemessenen Holzfelder zu oberen Innenzellen des Atlas, nicht zu den unteren Randzellen der PCK-Vorlage. Der direkte Zeichenstand ändert nach Neuöffnung 17/18 belegte Felder; zwei weitere frische Öffnungen derselben Rohkarte sind vollständig pixelgleich. Eine entfernte Tile-Zelle ändert 61/63 weitere belegte Felder; msi.seed und Shape-Anzahl erklären die Auswahl nicht.",
           "remaining": "Die tatsächliche Laufzeitkopie und Initialisierung der Smart-Tiles klären; direkte Edit-Folge und stabile Neuöffnung aus aktueller Tile-Belegung abbilden. Kandidat nutzt noch pfadabhängiges periodisches 8×8-Canvas; ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "strictAcceptance": "open"
+        },
+        "phase3FloorImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "2663db1cc5230a79205be0900194d36ed232a32c0ff0a69a5b517059fe02d7a0",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/floor-implementation.md",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style-reopen2/runs/20261007-063220-1413426/evidence/screens/01-reopen2-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348334496-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348363923-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host/evidence/1791348363923-parity-phase3-building-reopen/floor-variants.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host-options/evidence/1791348563953-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/host-options/evidence/1791348669586-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-implementation-20261007/floor-pixel-comparison.json"
+          ],
+          "finding": "Die Holz/Stein-Stilgrenze und alle 18 gespeicherten Atlaszellen stimmen nach frischer Neuöffnung; die Rohkarte hält die beiden nativen Farbwerte.",
+          "remaining": "Der ausgerichtete Screenshot ist beim Boden heller als Dungeondraft; die Ursache sowie transparente und anders gefärbte Bildpaare sind offen.",
           "strictAcceptance": "open"
         }
       },

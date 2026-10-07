@@ -22,8 +22,9 @@ export class TexturePool {
     private url: (path: string) => string,
     private budget = 384 * 1024 * 1024,
   ) {}
-  acquire(path: string): Promise<Texture> {
-    let entry = this.entries.get(path);
+  acquire(path: string, rawNativeFloor = false): Promise<Texture> {
+    const key = rawNativeFloor ? path + "\0raw" : path;
+    let entry = this.entries.get(key);
     if (!entry) {
       const image = new Image();
       image.src = this.url(path);
@@ -39,7 +40,7 @@ export class TexturePool {
         .then(() => {
           if (this.closed) throw new Error("Bildansicht geschlossen.");
           let resource: HTMLImageElement | HTMLCanvasElement = image;
-          if (isNativeFloorAssetId(path.split("\0", 1)[0]) &&
+          if (!rawNativeFloor && isNativeFloorAssetId(path.split("\0", 1)[0]) &&
               image.width % 256 === 0 && image.height % 256 === 0) {
             // Native floors choose a variant for each field. Smart atlases
             // keep their repeatable cells above the edge/corner rows.
@@ -70,7 +71,7 @@ export class TexturePool {
           }
           const source = new ImageSource({
             resource,
-            addressMode: "repeat",
+            ...(rawNativeFloor ? {} : { addressMode: "repeat" as const }),
             scaleMode: "linear",
           });
           owned.texture = new Texture({ source });
@@ -79,7 +80,7 @@ export class TexturePool {
           return owned.texture;
         })
         .catch((error) => {
-          this.entries.delete(path);
+          this.entries.delete(key);
           throw new Error(
             "Bildressource konnte nicht geladen werden: " +
               path +
@@ -88,7 +89,7 @@ export class TexturePool {
               ")",
           );
         });
-      this.entries.set(path, entry);
+      this.entries.set(key, entry);
     }
     entry.refs++;
     entry.lastUsed = ++this.clock;
