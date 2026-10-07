@@ -1270,13 +1270,27 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       app.vault.getAbstractFileByPath(file)), file);
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    const waitForFloors = async count => {
+      await page.waitForFunction(count => {
+        const renderer = app.workspace.activeLeaf?.view?.editor?.renderer;
+        if (!renderer) return false;
+        const floors = [...renderer.visuals.values()].filter(
+          visual => visual.entity.kind === "building");
+        return floors.length === count && floors.every(visual => !!visual.floorLayer);
+      }, count, { timeout: 45000 });
+      await page.evaluate(() => new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    };
     if (restart) {
       const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
       const actual = (await state()).document;
       assert.deepEqual(actual, expected);
       assert.equal(actual.entities.length, 24);
+      await waitForFloors(24);
       await page.screenshot({ path: path.join(out, "gallery24-reopen.png") });
-      checks.push("All 24 UI-chosen floor styles and colors reopen byte-equivalent");
+      await page.getByRole("button", { name: "Raster", exact: true }).click();
+      await page.screenshot({ path: path.join(out, "gallery24-reopen-grid-off.png") });
+      checks.push("All 24 UI-chosen floor styles and colors reopen with identical parsed data and loaded textures");
       return;
     }
     await chooseTool("Raum");
@@ -1300,6 +1314,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
         name: asset.name, exact: true }).getAttribute("aria-pressed"), "true");
       const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
       await draw({ x, y }, { x: x + 2, y: y + 2 }, index + 1);
+      await waitForFloors(index + 1);
       const building = (await state()).document.entities[index];
       assert.equal(building.material.assetId, asset.id);
       assert.equal(building.fill, Number.parseInt(asset.color, 16));

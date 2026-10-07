@@ -4062,12 +4062,29 @@
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
-          "finding": "24 Pfade/Standardfarben exakt; volle 64×64-Ladebilder im Mittel 1,824, maximal 3,831 RGB-Stufen nach ICC.",
+          "finding": "24 Pfade/Standardfarben exakt. Der damalige Vollaudit mit 1,824 RGB-Stufen Mittelwert verwendete einen Host-Screenshot eines älteren Builds; der verlinkte Endbuild-Screenshot wurde vor dem asynchronen Texturladen aufgenommen. Der aktuelle Endbuild-Bildbeleg steht unter phase3ImmediateGalleryImplementation.",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/floor-full-audit.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-floor-gallery-final/evidence/1791383152244-parity-phase3-building-reopen/result.json"
           ],
-          "remaining": "Sofortbilder und fünf Concrete-Atlaszellen einzeln entscheiden.",
+          "remaining": "Sofortbilder und fünf Concrete-Atlaszellen einzeln entscheiden; bisheriger Vollaudit ist kein Endbuild-Bildbeleg.",
+          "strictAcceptance": "open"
+        },
+        "phase3ImmediateGalleryImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/immediate-gallery-implementation.md",
+          "finding": "Texturladebereitschaft im Host-Probenhelfer abgewartet. Aktueller Build: 24/24 gleiche Stilpfade und Standardfarben; volle 64×64-Ladeflächen im Mittel 1,455, maximal 3,699 RGB-Stufen Fehler. 22 rohe Original-Sofortbilder mit gleichem Pfad/ARGB zum Host gepaart: Median 7,264, Maximum 17,902 RGB-Stufen in Innenfenstern; Motive ändern in beiden Programmen teils Varianten bis zur Neuöffnung. Vier mehrdeutige Concrete-Large-Atlaspaare unterscheiden sich im PCK nur an den äußeren 16 Quellpixeln; das fünfte Concrete-Paar unterscheidet sich auch innen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/full-tile-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/immediate-gallery-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/concrete-atlas-source-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/host-gallery24/evidence/1791387797765-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/host-gallery24/evidence/1791388010853-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Sofortzug an Platz 0/6 korrekt paaren, unmittelbare Variantenfolge sowie native Atlaswahl und sichtbare Randwirkung der fünf Concrete-Zellen entscheiden; unabhängiger Review fehlt.",
           "strictAcceptance": "open"
         }
       },
@@ -51805,6 +51822,23 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Sofort-/Atlasrandbilder, weitere auffällige Stile, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
+    },
+    "phase3ImmediateGalleryImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/immediate-gallery-implementation.md",
+      "casesAdvanced": ["DD-011.11"],
+      "pairedImmediateCases": 22,
+      "loadedFullTileCases": 24,
+      "meanLoadedFullTileRgbError": 1.455,
+      "maxLoadedFullTileRgbError": 3.699,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Original-Sofortzug für Wood Vertical und Diamond korrekt paaren; Variantenfolge, native Atlaswahl und Randwirkung der fünf Concrete-Zellen klären; übrige Phase-3-Matrizen und unabhängiger Review offen."
     }
   }
 }

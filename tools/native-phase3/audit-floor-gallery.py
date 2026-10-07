@@ -36,7 +36,7 @@ def full_tile_pixels(image, origin, index):
 
 
 def audit(native_map, native_image, host_manifest, host_image,
-          native_grid_off_image=None):
+          native_grid_off_image=None, host_forced_srgb=False):
     level = json.loads(native_map.read_text())["world"]["levels"]["0"]
     ids = cell_ids(level)
     host = json.loads(host_manifest.read_text())
@@ -46,10 +46,15 @@ def audit(native_map, native_image, host_manifest, host_image,
     original = Image.open(native_image).convert("RGB")
     host_png = Image.open(host_image)
     assert "chromaticity" in Image.open(native_image).info
-    assert "icc_profile" in host_png.info
-    editor = ImageCms.profileToProfile(
-        host_png, ImageCms.ImageCmsProfile(BytesIO(host_png.info["icc_profile"])),
-        ImageCms.createProfile("sRGB"), outputMode="RGB")
+    if "icc_profile" in host_png.info:
+        editor = ImageCms.profileToProfile(
+            host_png, ImageCms.ImageCmsProfile(BytesIO(host_png.info["icc_profile"])),
+            ImageCms.createProfile("sRGB"), outputMode="RGB")
+        host_profile = "embedded Skia ICC converted to sRGB"
+    else:
+        assert host_forced_srgb, "Unprofiled Host screenshot requires --host-forced-srgb"
+        editor = host_png.convert("RGB")
+        host_profile = "Chromium --force-color-profile=srgb"
     grid_off = (Image.open(native_grid_off_image).convert("RGB")
                 if native_grid_off_image else None)
     if grid_off:
@@ -90,7 +95,7 @@ def audit(native_map, native_image, host_manifest, host_image,
     result = {"reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
             "nativeMap": str(native_map), "nativeScreenshot": str(native_image),
             "hostManifest": str(host_manifest), "hostScreenshot": str(host_image),
-            "colorManagement": "Original sRGB chromaticity; Host embedded Skia ICC converted to sRGB",
+            "colorManagement": f"Original sRGB chromaticity; Host {host_profile}",
             "shapeCount": 24, "wallCount": 0,
             "uniqueTexturePaths": 24, "exactDefaultColors": 24,
             "meanImageMae": round(sum(row["imageMae"] for row in rows) / 24, 3),
@@ -115,10 +120,11 @@ if __name__ == "__main__":
     parser.add_argument("host_image", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--native-grid-off-image", type=Path)
+    parser.add_argument("--host-forced-srgb", action="store_true")
     args = parser.parse_args()
     result = audit(args.native_map, args.native_image,
                    args.host_manifest, args.host_image,
-                   args.native_grid_off_image)
+                   args.native_grid_off_image, args.host_forced_srgb)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({key: result[key] for key in
                       ("shapeCount", "uniqueTexturePaths", "exactDefaultColors",
