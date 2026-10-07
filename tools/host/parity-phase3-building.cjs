@@ -389,9 +389,11 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
   }
   async function visualMatch(wallTintPair = false, wallAlphaZero = false,
-    wallNoShadow = false, wallBlendProbe = false, bevelMaskProbe = false) {
+    wallNoShadow = false, wallBlendProbe = false, bevelMaskProbe = false,
+    wallGlProbe = false) {
     if (wallBlendProbe) assert(wallTintPair);
     if (bevelMaskProbe) assert(!wallBlendProbe);
+    if (wallGlProbe) assert(wallBlendProbe);
     const pack = fs.readFileSync(packPath);
     assert.equal(hash(pack),
       "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
@@ -519,6 +521,49 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
           renderer.invalidate();
         }, alpha);
         await page.waitForTimeout(100);
+        if (wallGlProbe) {
+          const glState = await page.evaluate(() => {
+            const renderer = app.workspace.activeLeaf.view.editor.renderer;
+            const visual = renderer.visuals.get("visual-on");
+            const mesh = visual.container.children.flatMap(child => child.children ?? [])
+              .find(child => child.geometry === visual.wallGeometries[0]);
+            renderer.app.render();
+            const pixi = renderer.app.renderer;
+            const gl = pixi.gl;
+            if (!gl) throw new Error("WebGL context missing");
+            const box = renderer.canvas.getBoundingClientRect();
+            const read = (globalX, globalY) => {
+              const x = Math.floor((globalX - box.left) * gl.drawingBufferWidth / box.width);
+              const y = gl.drawingBufferHeight - 1 -
+                Math.floor((globalY - box.top) * gl.drawingBufferHeight / box.height);
+              const rgba = new Uint8Array(4);
+              gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+              return [...rgba];
+            };
+            return {
+              meshAlpha: mesh.alpha,
+              groupColorAlpha: mesh.groupColorAlpha,
+              textureAlphaMode: mesh.texture.source.alphaMode,
+              blendMode: mesh.state.blendMode,
+              gl: {
+                blend: gl.getParameter(gl.BLEND),
+                srcRgb: gl.getParameter(gl.BLEND_SRC_RGB),
+                dstRgb: gl.getParameter(gl.BLEND_DST_RGB),
+                srcAlpha: gl.getParameter(gl.BLEND_SRC_ALPHA),
+                dstAlpha: gl.getParameter(gl.BLEND_DST_ALPHA),
+                framebuffer: !!gl.getParameter(gl.FRAMEBUFFER_BINDING),
+                size: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+              },
+              pixels: {
+                outside: read(800, 300),
+                outer: read(864, 355),
+                inner: read(864, 363),
+              },
+            };
+          });
+          fs.writeFileSync(path.join(out, `wall-gl-${name}.json`),
+            JSON.stringify(glState, null, 2));
+        }
         await page.screenshot({ path: path.join(out, `wall-blend-${name}.png`) });
       }
       await page.evaluate(() => {

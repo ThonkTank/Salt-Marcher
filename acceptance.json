@@ -7000,7 +7000,7 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-tint-20261007/host-regression/evidence/1791354594045-parity-phase3-building-reopen/result.json"
           ],
           "strictAcceptance": "open",
-          "remaining": "Deckende rote Wandstreifen stimmen bis höchstens zwei Kanalstufen; bei Alpha 128 weicht die Host-Deckkraft ohne Schatten von der nativen Hälfte ab. Weitere Farben und Original-UI-Folge offen."
+          "remaining": "Historischer Vergleich unbereinigter PNG-RGB-Zahlen; Wandfaktor und Alpha-Abweichung durch phase3IccCorrection überholt. Weitere Farben und Original-UI-Folge offen."
         },
         "phase3WallAlphaProbe": {
           "date": "2026-10-07",
@@ -7009,7 +7009,19 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-blend-20261007/wall-blend-probe.md",
           "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-blend-20261007/wall-blend-audit.json",
           "finding": "Gleiche Host-Wand im selben Prozess: Alpha 0,5 mischt schwarze Shaderausgabe mit 0,5, roten Shaderausgang außen mit rund 0,55. Maskenentfernung ändert acht Prüfstellen nicht; genaue Farb-/Blendursache offen.",
-          "strictAcceptance": "open"
+          "strictAcceptance": "open",
+          "supersededBy": "phase3IccCorrection"
+        },
+        "phase3IccCorrection": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "29ae6d03039cbea4bde3ac0b96921eeb87869dbe51abeb4491a0af9908cd3bff",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/wall-icc-repair.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/wall-icc-audit.json",
+          "finding": "Host-ICC nach sRGB umgerechnet: deckende rote QAWall01-Streifen MAE 0,85/1,26, maximal sechs Kanalstufen; Alpha-128-Deckkraft außen Original 0,50127, Host 0,50000. Der unbegründete Wandkanalfaktor 0,9091 ist entfernt.",
+          "strictAcceptance": "open",
+          "remaining": "Weitere Wandfarben und Alpha-Werte, unmittelbare Original-Bedienfolge sowie übrige Phase-3-Fälle offen."
         }
       },
       {

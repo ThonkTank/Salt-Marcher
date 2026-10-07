@@ -685,7 +685,8 @@ async function workflow() {
         process.argv.includes("--wall-zero-alpha"),
         process.argv.includes("--wall-no-shadow"),
         process.argv.includes("--wall-blend-probe"),
-        process.argv.includes("--bevel-mask-probe"));
+        process.argv.includes("--bevel-mask-probe"),
+        process.argv.includes("--wall-gl-probe"));
     else if (process.argv.includes("--verify-combined")) await scenario.verifyCombined();
     else if (process.argv.includes("--combined")) await scenario.combined();
     else if (restart) await scenario.reopen();

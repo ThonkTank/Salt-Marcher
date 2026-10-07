@@ -6,7 +6,7 @@ import { Shader, type Texture } from "pixi.js";
  */
 function nativeAlbedoShader(
   atlas: Texture, grime: Texture, customColor: boolean,
-  periodFields: number, channelGain = 1,
+  periodFields: number,
 ): Shader {
   // TilesetCustomColor.shader replaces only the red-marked parts with the
   // selected color; all remaining source pixels keep their original color.
@@ -18,7 +18,7 @@ function nativeAlbedoShader(
             ? mix(tile.rgb, tint * tile.r, intensity) : tile.rgb;
           finalColor = vec4(texel * wear * vColor.a, tile.a * vColor.a);
         ` : `
-          finalColor = vec4(tile.rgb * wear * ${channelGain.toFixed(4)}, tile.a) * vColor;
+          finalColor = vec4(tile.rgb * wear, tile.a) * vColor;
         `;
   return Shader.from({
     gl: {
@@ -67,7 +67,5 @@ export function nativeFloorShader(
 
 /** Wall.material uses the same albedo image, with an eight-field period. */
 export function nativeWallShader(atlas: Texture, grime: Texture): Shader {
-  // The Pixi mesh output was 1.10× the native QAWall01 wall samples; this
-  // measured channel correction brings full-opacity red bands within 2/255.
-  return nativeAlbedoShader(atlas, grime, false, 8, 0.9091);
+  return nativeAlbedoShader(atlas, grime, false, 8);
 }
