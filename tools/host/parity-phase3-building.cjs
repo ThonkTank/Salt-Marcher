@@ -388,5 +388,52 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, "combined-fresh-reopen.png") });
     checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
   }
-  return { edit, reopen, combined, verifyCombined };
+  async function visualMatch() {
+    const file = "Dungeons/Parity/Visual-Match.dungeon";
+    const bytes = fs.readFileSync(path.join(__dirname,
+      "../fixtures/phase3-qawall-visual-match.dungeon"));
+    assert.equal(hash(bytes), "65d8f9e5c2a7658c2fbb2fb3ff4935e8cbff9eff05a550bcb95d55bc88e45a0d");
+    await page.evaluate(async ({ file, content }) => {
+      await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+      const existing = app.vault.getAbstractFileByPath(file);
+      if (existing) await app.vault.modify(existing, content);
+      else await app.vault.create(file, content);
+      await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
+    }, { file, content: bytes.toString("utf8") });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await chooseTool("Raum");
+    const grid = page.getByRole("button", { name: "Raster", exact: true });
+    if (await grid.getAttribute("aria-pressed") === "true") await grid.click();
+    const layout = await page.evaluate(() => {
+      const editor = app.workspace.activeLeaf.view.editor,
+        renderer = editor.renderer,
+        box = renderer.canvas.getBoundingClientRect();
+      renderer.camera.scale = 64;
+      renderer.camera.x = box.width / 2 - 4.5 * 64;
+      renderer.camera.y = box.height / 2 - 3 * 64;
+      renderer.zoom(1);
+      return {
+        box: box.toJSON(), camera: { ...renderer.camera },
+        wallShadows: editor.session.settings.wallShadows,
+        entities: editor.session.document().entities.map(entity => ({
+          id: entity.id, fill: entity.fill, floorAlpha: entity.floorAlpha,
+          wall: entity.wall, wallAlpha: entity.wallAlpha, wallWidth: entity.wallWidth,
+          wallAssetId: entity.wallAssetId, wallBevel: entity.wallBevel,
+          material: entity.material, polygons: entity.polygons,
+        })),
+      };
+    });
+    assert.equal(layout.entities.length, 2);
+    assert(layout.entities.every(entity => entity.wallAssetId?.includes("QAWall01")));
+    assert.deepEqual(layout.entities.map(entity => entity.wallBevel), [false, true]);
+    fs.writeFileSync(path.join(out, "visual-match-layout.json"), JSON.stringify(layout, null, 2));
+    await page.waitForFunction(() => {
+      const renderer = app.workspace.activeLeaf?.view?.editor?.renderer;
+      return renderer?.visuals.size === 2 &&
+        [...renderer.visuals.values()].every(visual => visual.container.children.length >= 2);
+    });
+    await page.screenshot({ path: path.join(out, "visual-match-64px.png") });
+    checks.push("Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
+  }
+  return { edit, reopen, combined, verifyCombined, visualMatch };
 };

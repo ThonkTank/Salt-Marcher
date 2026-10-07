@@ -394,7 +394,7 @@ export class MapRenderer {
   private clearVisual(id: Id): void {
     const v = this.visuals.get(id);
     if (v) {
-      v.shadow?.destroy();
+      if (v.shadow?.parent !== v.container) v.shadow?.destroy();
       v.container.destroy({ children: true });
       v.pathGeometry?.destroy();
       v.label?.destroy();
@@ -571,32 +571,43 @@ export class MapRenderer {
     if (e.kind === "building") {
       this.roomLayer.addChild(container);
       container.zIndex = e.layer;
+      const doors = [...this.session.dependents(e.id)]
+        .map((dependent) => this.session.entities.get(dependent))
+        .filter((door): door is Door => door?.kind === "door");
+      const segments = wallSegments(e, doors);
       if (this.settings.wallShadows && e.wallWidth > 0) {
         const shadow = new Graphics();
-        for (const polygon of e.polygons) {
-          shadow
-            .poly(
-              polygon.outer.flatMap((point) => [
-                point.x + 0.22,
-                point.y + 0.22,
-              ]),
-              true,
-            )
-            .fill({ color: 0x17191a, alpha: 0.22 });
-          for (const hole of polygon.holes)
+        if (e.wallAssetId) {
+          this.drawTexturedWallMask(shadow, segments,
+            Math.max(e.wallWidth, 0.25) + 0.25, e.wallBevel ?? false,
+            0x000000, 0.14);
+          container.addChild(shadow);
+        } else {
+          for (const polygon of e.polygons) {
             shadow
               .poly(
-                hole.flatMap((point) => [
+                polygon.outer.flatMap((point) => [
                   point.x + 0.22,
                   point.y + 0.22,
                 ]),
                 true,
               )
-              .cut();
+              .fill({ color: 0x17191a, alpha: 0.22 });
+            for (const hole of polygon.holes)
+              shadow
+                .poly(
+                  hole.flatMap((point) => [
+                    point.x + 0.22,
+                    point.y + 0.22,
+                  ]),
+                  true,
+                )
+                .cut();
+          }
+          shadow.alpha = container.alpha;
+          shadow.tint = container.tint;
+          this.areaShadowLayer.addChild(shadow);
         }
-        shadow.alpha = container.alpha;
-        shadow.tint = container.tint;
-        this.areaShadowLayer.addChild(shadow);
         visual.shadow = shadow;
       }
       this.drawSurface(visual, g);
@@ -612,12 +623,9 @@ export class MapRenderer {
         this.addLabel(visual, e.number, p);
       }
       if (e.wallAssetId && e.wallWidth > 0) {
-        const doors = [...this.session.dependents(e.id)]
-          .map((dependent) => this.session.entities.get(dependent))
-          .filter((door): door is Door => door?.kind === "door");
         this.drawTexturedBoundary(
           visual,
-          wallSegments(e, doors),
+          segments,
           e.wallWidth,
           e.wallAssetId + "\0image",
           e.wall,
@@ -867,8 +875,12 @@ export class MapRenderer {
           this.invalidate();
           return;
         }
+        const paintedWidth = Math.max(width, texture.height / 256);
         const mask = new Graphics();
-        this.drawTexturedWallMask(mask, segments, width, bevel);
+        this.drawTexturedWallMask(mask, segments, paintedWidth, bevel);
+        if (visual.shadow?.parent === visual.container)
+          this.drawTexturedWallMask(visual.shadow, segments,
+            paintedWidth + 0.25, bevel, 0x000000, 0.14);
         layer.mask = mask;
         for (const segment of segments) {
           const dx = segment.b.x - segment.a.x,
@@ -876,13 +888,14 @@ export class MapRenderer {
             length = Math.hypot(dx, dy);
           if (!length) continue;
           const sprite = TilingSprite.from(texture, {
-            width: length + width,
-            height: width,
-            tileScale: { x: 1 / 64, y: width / texture.height },
+            width: length + paintedWidth,
+            height: paintedWidth,
+            tileScale: { x: 1 / 256, y: paintedWidth / texture.height },
           });
           sprite.anchor.set(0, 0.5);
-          sprite.position.set(segment.a.x - dx / length * width / 2,
-            segment.a.y - dy / length * width / 2);
+          sprite.position.set(segment.a.x - dx / length * paintedWidth / 2,
+            segment.a.y - dy / length * paintedWidth / 2);
+          sprite.tilePosition.x = paintedWidth / 2;
           sprite.rotation = Math.atan2(dy, dx);
           sprite.tint = tint;
           sprite.alpha = alpha;
@@ -900,6 +913,8 @@ export class MapRenderer {
     segments: readonly { a: Point; b: Point }[],
     width: number,
     bevel: boolean,
+    color = 0xffffff,
+    alpha = 1,
   ): void {
     mask.clear();
     let previous: Point | undefined;
@@ -916,7 +931,7 @@ export class MapRenderer {
     }
     if (start && previous?.x === start.x && previous.y === start.y)
       mask.closePath();
-    mask.stroke({ color: 0xffffff, width, cap: "butt",
+    mask.stroke({ color, alpha, width, cap: "butt",
       join: bevel ? "bevel" : "miter" });
   }
   private drawSurface(v: Visual, g: Graphics, texture?: Texture, previewDoors?: readonly Door[]): void {
@@ -1757,9 +1772,12 @@ export class MapRenderer {
       if (source.shadow) source.shadow.visible = false;
       if (this.settings.wallShadows && after.wallWidth > 0) {
         state.shadow = new Graphics();
-        state.shadow.alpha = container.alpha;
-        state.shadow.tint = container.tint;
-        this.areaShadowLayer.addChild(state.shadow);
+        if (after.wallAssetId) container.addChildAt(state.shadow, 1);
+        else {
+          state.shadow.alpha = container.alpha;
+          state.shadow.tint = container.tint;
+          this.areaShadowLayer.addChild(state.shadow);
+        }
       }
       if (after.material) {
         const reference = after.material.assetId
@@ -1816,25 +1834,33 @@ export class MapRenderer {
   }
   private drawBuildingPreview(state: BuildingPreview): void {
     const after = state.entity, doors = this.buildingPreviewDoors(state);
+    const segments = after.wallWidth > 0 ? wallSegments(after, doors) : [];
+    const paintedWidth = state.wallTexture
+      ? Math.max(after.wallWidth, state.wallTexture.height / 256)
+      : after.wallWidth;
     this.drawSurface({
       entity: after, container: state.container,
       bounds: entityBounds(after, (id) => this.session.entities.get(id)),
     }, state.graphic, state.floorTexture, doors);
     if (state.shadow) {
-      state.shadow.clear();
-      for (const polygon of after.wallWidth > 0 ? after.polygons : []) {
-        state.shadow.poly(polygon.outer.flatMap((point) =>
-          [point.x + 0.22, point.y + 0.22]), true)
-          .fill({ color: 0x17191a, alpha: 0.22 });
-        for (const hole of polygon.holes)
-          state.shadow.poly(hole.flatMap((point) =>
-            [point.x + 0.22, point.y + 0.22]), true).cut();
+      if (state.shadow.parent === state.container)
+        this.drawTexturedWallMask(state.shadow, segments,
+          paintedWidth + 0.25, after.wallBevel ?? false, 0x000000, 0.14);
+      else {
+        state.shadow.clear();
+        for (const polygon of after.wallWidth > 0 ? after.polygons : []) {
+          state.shadow.poly(polygon.outer.flatMap((point) =>
+            [point.x + 0.22, point.y + 0.22]), true)
+            .fill({ color: 0x17191a, alpha: 0.22 });
+          for (const hole of polygon.holes)
+            state.shadow.poly(hole.flatMap((point) =>
+              [point.x + 0.22, point.y + 0.22]), true).cut();
+        }
       }
     }
     let used = 0;
-    const segments = after.wallWidth > 0 ? wallSegments(after, doors) : [];
     this.drawTexturedWallMask(state.wallMask, segments,
-      after.wallWidth, after.wallBevel ?? false);
+      paintedWidth, after.wallBevel ?? false);
     if (state.wallTexture && after.wallWidth > 0)
       for (const segment of segments) {
         const dx = segment.b.x - segment.a.x,
@@ -1847,12 +1873,13 @@ export class MapRenderer {
           sprite.anchor.set(0, 0.5);
           state.wallLayer.addChild(sprite);
         } else sprite.texture = state.wallTexture;
-        sprite.position.set(segment.a.x - dx / length * after.wallWidth / 2,
-          segment.a.y - dy / length * after.wallWidth / 2);
+        sprite.position.set(segment.a.x - dx / length * paintedWidth / 2,
+          segment.a.y - dy / length * paintedWidth / 2);
         sprite.rotation = Math.atan2(dy, dx);
-        sprite.width = length + after.wallWidth;
-        sprite.height = after.wallWidth;
-        sprite.tileScale.set(1 / 64, after.wallWidth / state.wallTexture.height);
+        sprite.width = length + paintedWidth;
+        sprite.height = paintedWidth;
+        sprite.tileScale.set(1 / 256, paintedWidth / state.wallTexture.height);
+        sprite.tilePosition.x = paintedWidth / 2;
         sprite.tint = after.wall;
         sprite.alpha = (after.wallAlpha ?? 255) / 255;
         used++;
@@ -1877,8 +1904,8 @@ export class MapRenderer {
       visual.container.position.set(pose.x, pose.y);
       visual.container.rotation = pose.angle + (current.flip ? Math.PI : 0);
     }
+    if (state.shadow?.parent !== state.container) state.shadow?.destroy();
     state.container.destroy({ children: true });
-    state.shadow?.destroy();
     for (const reference of state.assets) this.textures.release(reference);
     const source = this.visuals.get(state.sourceId);
     if (source) {

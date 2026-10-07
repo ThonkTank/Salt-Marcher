@@ -1,0 +1,120 @@
+{
+  "format": "dungeon-map",
+  "version": 3,
+  "id": "phase3-visual-match",
+  "settings": {
+    "name": "QAWall Visual Match Shadow",
+    "width": 20,
+    "height": 12,
+    "feetPerField": 5,
+    "assetPacks": [
+      "QAWall01"
+    ],
+    "builtInAssets": true,
+    "wallShadows": true,
+    "objectShadows": false,
+    "buildingWear": 0
+  },
+  "floors": [
+    {
+      "id": "floor-1",
+      "name": "Erdgeschoss",
+      "elevation": 0,
+      "ambient": 1
+    }
+  ],
+  "entities": [
+    {
+      "id": "visual-off",
+      "kind": "building",
+      "floorId": "floor-1",
+      "polygons": [
+        {
+          "outer": [
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 4
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "layer": 200,
+      "fill": 11702127,
+      "floorAlpha": 255,
+      "wall": 16777215,
+      "wallAlpha": 255,
+      "wallBevel": false,
+      "wallWidth": 0.2,
+      "wallAssetId": "pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall",
+      "material": {
+        "assetId": "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png",
+        "assetPart": "image",
+        "tileSize": 8,
+        "tint": 11702127,
+        "rotation": 0
+      }
+    },
+    {
+      "id": "visual-on",
+      "kind": "building",
+      "floorId": "floor-1",
+      "polygons": [
+        {
+          "outer": [
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "layer": 200,
+      "fill": 11702127,
+      "floorAlpha": 255,
+      "wall": 16777215,
+      "wallAlpha": 255,
+      "wallBevel": true,
+      "wallWidth": 0.2,
+      "material": {
+        "assetId": "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png",
+        "assetPart": "image",
+        "tileSize": 8,
+        "tint": 11702127,
+        "rotation": 0
+      },
+      "wallAssetId": "pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall"
+    }
+  ],
+  "content": {
+    "definitions": [],
+    "occurrences": [],
+    "routes": [],
+    "archive": []
+  }
+}
