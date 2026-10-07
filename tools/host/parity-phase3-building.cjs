@@ -389,8 +389,9 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
   }
   async function visualMatch(wallTintPair = false, wallAlphaZero = false,
-    wallNoShadow = false, wallBlendProbe = false) {
+    wallNoShadow = false, wallBlendProbe = false, bevelMaskProbe = false) {
     if (wallBlendProbe) assert(wallTintPair);
+    if (bevelMaskProbe) assert(!wallBlendProbe);
     const pack = fs.readFileSync(packPath);
     assert.equal(hash(pack),
       "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
@@ -468,6 +469,29 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       : wallAlphaZero ? "wall-tint-zero-64px.png"
       : "wall-tint-pair-64px.png";
     await page.screenshot({ path: path.join(out, screenshot) });
+    if (bevelMaskProbe) {
+      const geometry = await page.evaluate(() => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer;
+        const visual = renderer.visuals.get("visual-on");
+        const layer = visual.container.children.find(child =>
+          child.children?.some(item => item.geometry === visual.wallGeometries[0]));
+        const value = {
+          positions: [...visual.wallGeometries[0].positions],
+          uvs: [...visual.wallGeometries[0].uvs],
+          indices: [...visual.wallGeometries[0].indices],
+        };
+        const mask = layer.mask;
+        layer.mask = null;
+        mask.visible = false;
+        renderer.invalidate();
+        return value;
+      });
+      fs.writeFileSync(path.join(out, "bevel-wall-geometry.json"),
+        JSON.stringify(geometry));
+      await page.waitForTimeout(100);
+      await page.screenshot({ path: path.join(out, "bevel-unmasked-64px.png") });
+      checks.push("Bevel wall was captured with and without its mask in one scene");
+    }
     if (wallBlendProbe) {
       const layers = await page.evaluate(() => {
         const renderer = app.workspace.activeLeaf.view.editor.renderer;
