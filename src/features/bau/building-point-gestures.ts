@@ -5,6 +5,7 @@ import {
   buildingContourEntries,
   nearestBuildingVertex,
   replaceBuildingContour,
+  type BuildingContourEdit,
 } from "../../geometry";
 
 export interface BuildingVertexGrip {
@@ -21,6 +22,25 @@ export interface BuildingEdgeGrip {
   readonly start: Point;
   readonly end: Point;
   readonly midpoint: Point;
+}
+export type BuildingPointGrip = BuildingVertexGrip | BuildingEdgeGrip;
+export interface BuildingPointProposal {
+  readonly after: Building;
+  readonly edit: BuildingContourEdit;
+}
+
+/** Vertex movement is relative to the grip; edge insertion uses the cursor position. */
+export function buildingPointDragDestination(
+  grip: BuildingPointGrip,
+  start: Point,
+  pointer: Point,
+  snap: boolean,
+): Point {
+  return "point" in grip
+    ? { x: grip.point.x + (snap ? Math.round(pointer.x - start.x) : pointer.x - start.x),
+        y: grip.point.y + (snap ? Math.round(pointer.y - start.y) : pointer.y - start.y) }
+    : snap ? { x: Math.round(pointer.x), y: Math.round(pointer.y) }
+      : { x: pointer.x, y: pointer.y };
 }
 
 /** Native Edit Points hover reaches roughly 16 screen pixels at 75% and 100%. */
@@ -85,7 +105,7 @@ export function previewBuildingVertexDrag(
   grip: BuildingVertexGrip,
   destination: Point,
 ): Building | null {
-  return before.locked ? null : moveVertex(before, grip, destination);
+  return proposeBuildingPointDrag(before, grip, destination)?.after ?? null;
 }
 
 /** Commit the exact previewed contour only after pointer release. */
@@ -96,18 +116,17 @@ export function planBuildingVertexDrag(
   destination: Point,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
-  const after = moveVertex(before, grip, destination);
-  if (!after) return { status: "stale", command: null };
+  const proposal = proposeBuildingPointDrag(before, grip, destination);
+  if (!proposal) return { status: "stale", command: null };
   if (samePoint(grip.point, destination))
     return { status: "unchanged", command: null };
   const command = planBuildingContourMutation({
     entities,
     before,
-    after,
-    edit: { kind: "move", contour: grip.contour, index: grip.index },
+    ...proposal,
   });
   return command
-    ? { status: "command", command, after }
+    ? { status: "command", command, after: proposal.after }
     : { status: "unchanged", command: null };
 }
 
@@ -200,13 +219,30 @@ function insertAtEdge(
   return replaceBuildingContour(before, grip.contour, next);
 }
 
+/** One geometry/edit pair feeds both transient preview and the validated command. */
+export function proposeBuildingPointDrag(
+  before: Building,
+  grip: BuildingPointGrip,
+  destination: Point,
+): BuildingPointProposal | null {
+  if (before.locked) return null;
+  if ("point" in grip) {
+    const after = moveVertex(before, grip, destination);
+    return after ? { after, edit: { kind: "move", contour: grip.contour,
+      index: grip.index } } : null;
+  }
+  const after = insertAtEdge(before, grip, destination);
+  return after ? { after, edit: { kind: "insert", contour: grip.contour,
+    index: grip.index + 1 } } : null;
+}
+
 /** Preview has no document or history effect; commit uses the same geometry. */
 export function previewBuildingEdgeDrag(
   before: Building,
   grip: BuildingEdgeGrip,
   destination: Point,
 ): Building | null {
-  return before.locked ? null : insertAtEdge(before, grip, destination);
+  return proposeBuildingPointDrag(before, grip, destination)?.after ?? null;
 }
 
 export function planBuildingEdgeDrag(
@@ -216,15 +252,14 @@ export function planBuildingEdgeDrag(
   destination: Point,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
-  const after = insertAtEdge(before, grip, destination);
-  if (!after) return { status: "stale", command: null };
+  const proposal = proposeBuildingPointDrag(before, grip, destination);
+  if (!proposal) return { status: "stale", command: null };
   const command = planBuildingContourMutation({
     entities,
     before,
-    after,
-    edit: { kind: "insert", contour: grip.contour, index: grip.index + 1 },
+    ...proposal,
   });
   return command
-    ? { status: "command", command, after }
+    ? { status: "command", command, after: proposal.after }
     : { status: "stale", command: null };
 }

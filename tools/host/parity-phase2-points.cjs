@@ -22,6 +22,20 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
   });
   const building = async (id) => (await state()).document.entities.find(
     entity => entity.id === id);
+  const previewResources = (id) => page.evaluate((id) => {
+    const editor = app.workspace.activeLeaf.view.editor,
+      renderer = editor.renderer,
+      building = editor.session.entities.get(id),
+      reference = building?.wallAssetId + "\0image";
+    return {
+      preview: !!renderer.buildingPreview,
+      sourceVisible: renderer.visuals.get(id)?.container.visible,
+      wallRefs: renderer.textures.entries.get(reference)?.refs ?? 0,
+      portals: [...editor.session.dependents(id)]
+        .filter(doorId => editor.session.entities.get(doorId)?.kind === "door")
+        .map(doorId => [doorId, renderer.visuals.get(doorId)?.container.visible]),
+    };
+  }, id);
   const world = (point) => page.evaluate((point) => {
     const renderer = app.workspace.activeLeaf.view.editor.renderer,
       box = renderer.canvas.getBoundingClientRect(),
@@ -57,9 +71,41 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
   }
   async function drag(from, to, id, label, cancel = false) {
     const a = await world(from), b = await world(to), before = await state();
+    const resourcesBefore = await previewResources(id);
     await page.mouse.move(a.x, a.y);
     await page.mouse.down();
-    await page.mouse.move(b.x, b.y, { steps: 8 });
+    if (label === "ellipse-point") {
+      await page.mouse.move(a.x + (b.x - a.x) / 8, a.y + (b.y - a.y) / 8);
+      await page.waitForFunction(() =>
+        app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPreview?.wallLayer.children.length > 0);
+      await page.evaluate(() => {
+        const layer = app.workspace.activeLeaf.view.editor.renderer.buildingPreview.wallLayer;
+        window.__wallPreviewCounts = { added: 0, removed: 0, initial: layer.children.length };
+        const add = layer.addChild.bind(layer), remove = layer.removeChildren.bind(layer);
+        layer.addChild = (...children) => {
+          window.__wallPreviewCounts.added += children.length;
+          return add(...children);
+        };
+        layer.removeChildren = (...args) => {
+          const children = remove(...args);
+          window.__wallPreviewCounts.removed += children.length;
+          return children;
+        };
+      });
+      for (let step = 2; step <= 8; step++)
+        await page.mouse.move(a.x + (b.x - a.x) * step / 8,
+          a.y + (b.y - a.y) * step / 8);
+      const sample = await page.evaluate(() => ({
+        ...window.__wallPreviewCounts,
+        final: app.workspace.activeLeaf.view.editor.renderer.buildingPreview.wallLayer.children.length,
+      }));
+      fs.writeFileSync(path.join(out, "ellipse-wall-allocations.json"),
+        JSON.stringify(sample, null, 2));
+      assert.equal(sample.initial, 32);
+      assert.equal(sample.final, 32);
+      assert.equal(sample.added, 0);
+      assert.equal(sample.removed, 0);
+    } else await page.mouse.move(b.x, b.y, { steps: 8 });
     await page.waitForFunction(id =>
       app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPreview?.sourceId === id,
     id);
@@ -80,9 +126,11 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
         await page.locator(".dn-canvas canvas").evaluate(canvas =>
           canvas.dispatchEvent(new PointerEvent("pointercancel", {
             bubbles: true, pointerId: 1, pointerType: "mouse" })));
+      else if (cancel === "tool-switch")
+        await page.evaluate(() => app.workspace.activeLeaf.view.editor.setTool("select"));
       else await page.keyboard.press("Escape");
       await page.mouse.up();
-      if (cancel === "pointercancel") {
+      if (cancel === "pointercancel" || cancel === "tool-switch") {
         assert.deepEqual((await state()).document, before.document);
         assert.equal((await state()).history, before.history);
       } else {
@@ -90,6 +138,12 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
         assert.equal((await state()).history, before.history + 1);
         assert.equal((await state()).tool, "select");
       }
+      const resourcesAfter = await previewResources(id);
+      assert.equal(resourcesAfter.preview, false);
+      assert.equal(resourcesAfter.sourceVisible, resourcesBefore.sourceVisible);
+      assert.equal(resourcesAfter.wallRefs, resourcesBefore.wallRefs);
+      if (cancel === "pointercancel" || cancel === "tool-switch")
+        assert.deepEqual(resourcesAfter.portals, resourcesBefore.portals);
     } else {
       await page.mouse.up();
       await page.waitForFunction(id =>
@@ -165,6 +219,18 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
 
     await select({ x: 4, y: 4 }, "rect");
     await hover({ x: 2, y: 2 }, 0, 0);
+    const unchangedBefore = await state(), at = await world({ x: 2, y: 2 });
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x + 3, at.y + 3, { steps: 3 });
+    await page.mouse.up();
+    assert.deepEqual((await state()).document, unchangedBefore.document);
+    assert.equal((await state()).history, unchangedBefore.history);
+    assert.equal((await state()).dirty, unchangedBefore.dirty);
+    checks.push("A sub-field point drag creates no history command");
+
+    await select({ x: 4, y: 4 }, "rect");
+    await hover({ x: 2, y: 2 }, 0, 0);
     const rectBefore = await building("rect");
     await drag({ x: 2, y: 2 }, { x: 1, y: 1 }, "rect", "rectangle-point");
     const rectAfter = await building("rect");
@@ -181,6 +247,10 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
     await select({ x: 4, y: 4 }, "rect");
     await drag({ x: 2, y: 6 }, { x: 1, y: 7 }, "rect", "rectangle-pointercancel", "pointercancel");
     assert.deepEqual(await building("rect"), rectAfter);
+    await select({ x: 4, y: 4 }, "rect");
+    await drag({ x: 1, y: 1 }, { x: 1.8, y: 1.2 }, "rect",
+      "rectangle-tool-switch", "tool-switch");
+    await chooseTool("Punkte");
     checks.push("Building mode moves one rectangle grip with transient floor/wall preview and one undo step");
 
     await select({ x: 12, y: 4 }, "ellipse");
@@ -196,6 +266,10 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
     await undoRedo("ellipse", ellipseBefore, ellipseAfter);
     checks.push("32-point ellipse changes exactly one grip, with held preview, undo and redo");
 
+    await select({ x: 5, y: 11 }, "triangle");
+    await hover({ x: 4, y: 10 }, 0, 0, "edge");
+    await drag({ x: 4, y: 10 }, { x: 4, y: 9 }, "triangle",
+      "edge-pointercancel", "pointercancel");
     await select({ x: 5, y: 11 }, "triangle");
     await hover({ x: 4, y: 10 }, 0, 0, "edge");
     const triangleBefore = await building("triangle"),

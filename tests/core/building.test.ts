@@ -11,7 +11,8 @@ import {
   buildingPointGripPixels, buildingVertexGrip, buildingEdgeMidpointGrip,
   previewBuildingVertexDrag, planBuildingVertexDrag,
   previewBuildingEdgeDrag, planBuildingEdgeDrag,
-  planBuildingBackspacePoint,
+  planBuildingBackspacePoint, buildingPointDragDestination,
+  proposeBuildingPointDrag,
 } from "../../src/features/bau/building-point-gestures";
 import { previewBuildingMutationWithPortals } from "../../src/features/bau/building-edge-portal-preview";
 
@@ -1343,6 +1344,34 @@ test("Building point grips edit a rectangle and sampled ellipse in one history s
     session.redo();
     assert.deepEqual(session.entities.get(building.id), preview);
   }
+});
+
+test("one point proposal keeps vertex-relative and edge-absolute snap behavior", () => {
+  const document = newDocument("Punktvorschlag", 12, 12),
+    building: Building = { id: "proposal-building", kind: "building",
+      floorId: document.floors[0]!.id,
+      polygons: [{ outer: rectangle({ x: 2, y: 2 }, { x: 6, y: 6 }), holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2 },
+    vertex = buildingVertexGrip(building, { x: 2, y: 2 }, 0.2),
+    edge = buildingEdgeMidpointGrip(building, { x: 4, y: 2 }, 0.2);
+  assert.ok(vertex);
+  assert.ok(edge);
+  const start = { x: 2.1, y: 2.1 }, pointer = { x: 1.51, y: 1.49 };
+  assert.deepEqual(buildingPointDragDestination(vertex!, start, pointer, true),
+    { x: 1, y: 1 });
+  assert.deepEqual(buildingPointDragDestination(vertex!, start, pointer, false),
+    { x: 1.41, y: 1.39 });
+  const corner = proposeBuildingPointDrag(building, vertex!, { x: 1, y: 1 });
+  assert.deepEqual(corner?.edit, { kind: "move", contour: 0, index: 0 });
+  assert.deepEqual(corner?.after, previewBuildingVertexDrag(building, vertex!, { x: 1, y: 1 }));
+  const edgePointer = { x: 4.49, y: 1.49 };
+  assert.deepEqual(buildingPointDragDestination(edge!, start, edgePointer, true),
+    { x: 4, y: 1 });
+  assert.deepEqual(buildingPointDragDestination(edge!, start, edgePointer, false),
+    edgePointer);
+  const inserted = proposeBuildingPointDrag(building, edge!, { x: 4, y: 1 });
+  assert.deepEqual(inserted?.edit, { kind: "insert", contour: 0, index: 1 });
+  assert.deepEqual(inserted?.after, previewBuildingEdgeDrag(building, edge!, { x: 4, y: 1 }));
 });
 
 test("edge preview and commit remove a portal on the replaced wall without a premature document edit", () => {

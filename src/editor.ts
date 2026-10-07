@@ -68,15 +68,13 @@ import {
   buildingPointGripPixels,
   buildingVertexGrip,
   buildingEdgeMidpointGrip,
-  previewBuildingVertexDrag,
-  planBuildingVertexDrag,
-  planBuildingEdgeDrag,
+  buildingPointDragDestination,
+  proposeBuildingPointDrag,
   planBuildingBackspacePoint,
   type BuildingVertexGrip,
   type BuildingEdgeGrip,
 } from "./features/bau/building-point-gestures";
 import {
-  previewBuildingEdgeWithPortals,
   previewBuildingMutationWithPortals,
 } from "./features/bau/building-edge-portal-preview";
 import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
@@ -131,6 +129,7 @@ interface Gesture {
   ridge?: number;
   buildingVertex?: BuildingVertexGrip;
   buildingEdge?: BuildingEdgeGrip;
+  buildingPreviewDestination?: Point;
   moved: boolean;
   curve?: boolean;
   points: Point[];
@@ -2011,30 +2010,8 @@ export class DungeonEditor {
       if (!g.temporaryPan || this.space)
         this.renderer.pan(local.x - g.last.x, local.y - g.last.y);
     }
-    else if (g.tool === "edit-points" && g.entity?.kind === "building") {
-      if (g.buildingEdge && g.moved) {
-        const preview = previewBuildingEdgeWithPortals(
-          [...this.session.entities.values()], g.entity, g.buildingEdge,
-          this.snap(point));
-        if (preview) this.renderer.previewBuildingShape(preview.building,
-          g.buildingEdge.contour, preview.portals);
-      } else if (g.buildingVertex && g.moved) {
-        const grip = g.buildingVertex,
-          destination = {
-            x: grip.point.x + (this.snapEnabled
-              ? Math.round(point.x - g.start.x) : point.x - g.start.x),
-            y: grip.point.y + (this.snapEnabled
-              ? Math.round(point.y - g.start.y) : point.y - g.start.y),
-          },
-          after = previewBuildingVertexDrag(g.entity, grip, destination);
-        if (after) {
-          const preview = previewBuildingMutationWithPortals(
-            [...this.session.entities.values()], g.entity, after,
-            { kind: "move", contour: grip.contour, index: grip.index });
-          this.renderer.previewBuildingShape(after, grip.contour, preview.portals);
-        }
-      }
-    }
+    else if (g.tool === "edit-points" && g.entity?.kind === "building" && g.moved)
+      this.previewBuildingPointGesture(g, point);
     else if (g.tool === "select" && g.groupTransform &&
       g.groupTransform.action.mode !== "move") {
       const { sources, frame, action } = g.groupTransform,
@@ -2272,23 +2249,45 @@ export class DungeonEditor {
     }
     return false;
   }
+  private buildingPointDestination(g: Gesture, point: Point): Point | undefined {
+    const grip = g.buildingVertex ?? g.buildingEdge;
+    return grip
+      ? buildingPointDragDestination(grip, g.start, point, this.snapEnabled)
+      : undefined;
+  }
+  private previewBuildingPointGesture(g: Gesture, point: Point): void {
+    const before = g.entity,
+      grip = g.buildingVertex ?? g.buildingEdge,
+      destination = this.buildingPointDestination(g, point);
+    if (before?.kind !== "building" || !grip || !destination) return;
+    if (g.buildingPreviewDestination?.x === destination.x &&
+        g.buildingPreviewDestination.y === destination.y) return;
+    const proposal = proposeBuildingPointDrag(before, grip, destination);
+    if (!proposal) return;
+    const portals = [...this.session.dependents(before.id)]
+        .map((id) => this.session.entities.get(id))
+        .filter((entity): entity is Entity =>
+          entity?.kind === "door" && entity.anchor?.boundaryId === before.id),
+      preview = previewBuildingMutationWithPortals(portals, before,
+        proposal.after, proposal.edit);
+    this.renderer.previewBuildingShape(preview.building, grip.contour, preview.portals);
+    g.buildingPreviewDestination = destination;
+  }
   private commitBuildingPointGesture(g: Gesture, point: Point): void {
     if (!g.moved || g.entity?.kind !== "building") return;
-    const entities = [...this.session.entities.values()];
-    if (g.buildingEdge) {
-      const result = planBuildingEdgeDrag(entities, g.entity,
-        g.buildingEdge, this.snap(point));
-      if (result.command) this.session.execute(result.command);
-    } else if (g.buildingVertex) {
-      const grip = g.buildingVertex,
-        destination = {
-          x: grip.point.x + (this.snapEnabled
-            ? Math.round(point.x - g.start.x) : point.x - g.start.x),
-          y: grip.point.y + (this.snapEnabled
-            ? Math.round(point.y - g.start.y) : point.y - g.start.y),
-        },
-        result = planBuildingVertexDrag(entities, g.entity, grip, destination);
-      if (result.command) this.session.execute(result.command);
+    const grip = g.buildingVertex ?? g.buildingEdge,
+      destination = this.buildingPointDestination(g, point),
+      proposal = grip && destination
+        ? proposeBuildingPointDrag(g.entity, grip, destination) : null;
+    if (proposal && !(g.buildingVertex &&
+        destination?.x === g.buildingVertex.point.x &&
+        destination.y === g.buildingVertex.point.y)) {
+      const command = planBuildingContourMutation({
+        entities: [...this.session.entities.values()],
+        before: g.entity,
+        ...proposal,
+      });
+      if (command) this.session.execute(command);
     }
     this.hoveredBuildingVertex = undefined;
     this.renderer.setBuildingPointHover();

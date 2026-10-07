@@ -1747,21 +1747,30 @@ export class MapRenderer {
             [point.x + 0.22, point.y + 0.22]), true).cut();
       }
     }
-    for (const child of state.wallLayer.removeChildren()) child.destroy();
+    let used = 0;
     if (state.wallTexture && after.wallWidth > 0)
       for (const segment of wallSegments(after, doors)) {
         const dx = segment.b.x - segment.a.x,
           dy = segment.b.y - segment.a.y,
           length = Math.hypot(dx, dy);
         if (!length) continue;
-        const sprite = new Sprite(state.wallTexture);
-        sprite.anchor.set(0, 0.5);
+        let sprite = state.wallLayer.children[used] as Sprite | undefined;
+        if (!sprite) {
+          sprite = new Sprite(state.wallTexture);
+          sprite.anchor.set(0, 0.5);
+          state.wallLayer.addChild(sprite);
+        } else sprite.texture = state.wallTexture;
         sprite.position.set(segment.a.x, segment.a.y);
         sprite.rotation = Math.atan2(dy, dx);
         sprite.width = length + 0.02;
         sprite.height = after.wallWidth;
-        state.wallLayer.addChild(sprite);
+        used++;
       }
+    while (state.wallLayer.children.length > used) {
+      const child = state.wallLayer.children.at(-1)!;
+      state.wallLayer.removeChild(child);
+      child.destroy();
+    }
     this.invalidate();
   }
   private clearBuildingPreview(): void {

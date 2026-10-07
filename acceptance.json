@@ -48470,6 +48470,22 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json",
       "next": "Eigener Phase-2-Aufräumplanlauf; Umsetzung und Review getrennt."
     },
+    "phase2CleanupImplementation": {
+      "date": "2026-10-07",
+      "state": "candidate_ready_for_separate_cleanup_review",
+      "baseCommit": "fabdef1",
+      "candidateBuildSha256": "0c597d4b6a0cd2d49d26938da7310e107bed0d962577595bbd418a480153226c",
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/cleanup-implementation.md",
+      "benchmarkBefore": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/baseline-benchmark/full-building-points.json",
+      "benchmarkAfter": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/after-benchmark/local-building-points.json",
+      "baselineWallAllocation": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/baseline-host/evidence/1791332933217-parity-phase2-points-edit/ellipse-wall-allocations.json",
+      "candidateWallAllocation": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/host-resource-final/evidence/1791333281974-parity-phase2-points-edit/ellipse-wall-allocations.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/host-resource-final/evidence/1791333281974-parity-phase2-points-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/host-resource-final/evidence/1791333327607-parity-phase2-points-reopen/result.json",
+      "verification": "Typprüfung, 129 Kerntests und Build bestehen. Isolierter Obsidian-Edit-/Frischprozess prüft alle Phase-2-Folgen, Portal-Zwischenkarte, Mehrteil/Loch, QAWall01, Nullzug, Pointer-Cancel und Werkzeugwechsel mit Ressourcenrückgabe; Raum-Key-Bytes unverändert. Produktiver Build unverändert.",
+      "decision": "Aufräum-Umsetzungskandidat; die acht Fachfall-Abnahmen des vorherigen Builds bleiben historische Belege. Das Aufräumtor und Phase 3 warten auf einen eigenen unabhängigen Review."
+    },
     "phase2CleanupPlan": {
       "date": "2026-10-07",
       "state": "plan_ready_for_separate_implementation",

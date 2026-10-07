@@ -1,7 +1,7 @@
 import type { Building, Door, Entity, Point } from "../../model";
 import { followPortalAfterContourEdit, type BuildingContourEdit } from "../../geometry";
 import {
-  previewBuildingEdgeDrag,
+  proposeBuildingPointDrag,
   type BuildingEdgeGrip,
 } from "./building-point-gestures";
 
@@ -37,12 +37,9 @@ export function previewBuildingEdgeWithPortals(
   grip: BuildingEdgeGrip,
   destination: Point,
 ): BuildingEdgePortalPreview | null {
-  const building = previewBuildingEdgeDrag(before, grip, destination);
-  if (!building) return null;
-  const edit = {
-    kind: "insert" as const,
-    contour: grip.contour,
-    index: grip.index + 1,
-  };
-  return previewBuildingMutationWithPortals(entities, before, building, edit);
+  const proposal = proposeBuildingPointDrag(before, grip, destination);
+  return proposal
+    ? previewBuildingMutationWithPortals(entities, before,
+      proposal.after, proposal.edit)
+    : null;
 }

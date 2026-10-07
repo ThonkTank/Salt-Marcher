@@ -434,22 +434,47 @@ export interface BuildingContourMutationRequest {
   readonly after: Building;
   readonly edit: BuildingContourEdit;
 }
+function assertCurrentBuildingContour(
+  entities: readonly Entity[], before: Building, message: string,
+): void {
+  if (before.locked ||
+      !recordsEqual(entities.find((entity) => entity.id === before.id), before))
+    throw new Error(message);
+}
+function validateBuildingContourAfter(after: Building | null): void {
+  if (!after) return;
+  validatePolygons(after.polygons);
+  assertBuildingTopology(after.polygons);
+}
+function buildingContourChanges(
+  entities: readonly Entity[], before: Building, after: Building | null,
+  follow: (door: Door) => Door | null,
+): RecordChange<Entity>[] {
+  const changes: RecordChange<Entity>[] = [{ id: before.id, before, after }];
+  for (const entity of entities) {
+    if (entity.kind !== "door" || entity.anchor?.boundaryId !== before.id)
+      continue;
+    const next = follow(entity);
+    if (!recordsEqual(entity, next))
+      changes.push({ id: entity.id, before: entity, after: next });
+  }
+  return changes;
+}
 export function planBuildingContourMutation(
   request: BuildingContourMutationRequest,
 ): Command | null {
   const { before, after, edit } = request,
-    current = request.entities.find((entity) => entity.id === before.id),
     { polygons: _beforePolygons, ...beforeMetadata } = before,
     { polygons: _afterPolygons, ...afterMetadata } = after,
     beforeContours = buildingContourEntries(before),
     afterContours = buildingContourEntries(after),
     beforeContour = beforeContours[edit.contour],
     afterContour = afterContours[edit.contour];
+  assertCurrentBuildingContour(request.entities, before,
+    "Ungültige oder veraltete Gebäudekontur.");
   if (
-    before.locked ||
     before.id !== after.id ||
     before.floorId !== after.floorId ||
-    !recordsEqual(current, before) ||
     !recordsEqual(beforeMetadata, afterMetadata) ||
     before.polygons.length !== after.polygons.length ||
     before.polygons.some(
@@ -491,22 +516,10 @@ export function planBuildingContourMutation(
         !recordsEqual(without(beforePoints, edit.index), afterPoints)))
   )
     throw new Error("Ungültige Punktbearbeitung.");
-  validatePolygons(after.polygons);
-  assertBuildingTopology(after.polygons);
+  validateBuildingContourAfter(after);
   if (recordsEqual(before, after)) return null;
-  const changes: RecordChange<Entity>[] = [
-    { id: before.id, before, after },
-  ];
-  for (const entity of request.entities) {
-    if (
-      entity.kind !== "door" ||
-      entity.anchor?.boundaryId !== before.id
-    )
-      continue;
-    const next = followPortalAfterContourEdit(entity, before, after, edit);
-    if (!recordsEqual(entity, next))
-      changes.push({ id: entity.id, before: entity, after: next });
-  }
+  const changes = buildingContourChanges(request.entities, before, after,
+    (door) => followPortalAfterContourEdit(door, before, after, edit));
   return {
     label:
       edit.kind === "move"
@@ -531,10 +544,10 @@ export function planBuildingOutlineRemoval(
   request: BuildingOutlineRemovalRequest,
 ): BuildingOutlineRemovalPlan {
   const { before, contour } = request,
-    current = request.entities.find((entity) => entity.id === before.id),
     entry = buildingContourEntries(before)[contour];
-  if (before.locked || !recordsEqual(current, before) ||
-      !Number.isInteger(contour) || !entry || entry.points.length !== 3)
+  assertCurrentBuildingContour(request.entities, before,
+    "Ungültiger oder veralteter Gebäudeumriss.");
+  if (!Number.isInteger(contour) || !entry || entry.points.length !== 3)
     throw new Error("Ungültiger oder veralteter Gebäudeumriss.");
   const polygons = entry.hole === undefined
       ? before.polygons.filter((_, index) => index !== entry.polygon)
@@ -544,18 +557,9 @@ export function planBuildingOutlineRemoval(
     after: Building | null = polygons.length ? { ...before, polygons } : null;
   if (!after && isRoom(before))
     throw new Error("Der letzte Umriss eines nummerierten Raums benötigt den Archivierungsablauf.");
-  if (after) {
-    validatePolygons(after.polygons);
-    assertBuildingTopology(after.polygons);
-  }
-  const changes: RecordChange<Entity>[] = [{ id: before.id, before, after }];
-  for (const entity of request.entities) {
-    if (entity.kind !== "door" || entity.anchor?.boundaryId !== before.id)
-      continue;
-    const next = after ? reanchorPortal(entity, before, after, "survive") : null;
-    if (!recordsEqual(entity, next))
-      changes.push({ id: entity.id, before: entity, after: next });
-  }
+  validateBuildingContourAfter(after);
+  const changes = buildingContourChanges(request.entities, before, after,
+    (door) => after ? reanchorPortal(door, before, after, "survive") : null);
   return { command: { label: "Gebäudeumriss entfernen", entities: changes }, after };
 }
 export function createMapPath(
