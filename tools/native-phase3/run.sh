@@ -23,8 +23,14 @@ for number in $(seq 12 29); do
 done
 test -n "${display:-}" || exit 75
 cp --reflink=auto "$source_map" "$run/map/phase3-package.dungeondraft_map"
-cp --reflink=auto "$source_pack" "$run/assets/qa-wall-pack.dungeondraft_pack"
-sha256sum "$source_app/Dungeondraft.x86_64" "$source_app/Dungeondraft.pck" "$source_map" "$source_pack" > "$run/source.sha256"
+asset_pack_selection='[ "QAWall01" ]'
+if [ "${DUNGEON_PHASE3_NO_CUSTOM_PACK:-0}" = 1 ]; then
+  asset_pack_selection='[  ]'
+  sha256sum "$source_app/Dungeondraft.x86_64" "$source_app/Dungeondraft.pck" "$source_map" > "$run/source.sha256"
+else
+  cp --reflink=auto "$source_pack" "$run/assets/qa-wall-pack.dungeondraft_pack"
+  sha256sum "$source_app/Dungeondraft.x86_64" "$source_app/Dungeondraft.pck" "$source_map" "$source_pack" > "$run/source.sha256"
+fi
 cat > "$run/data/Dungeondraft/config.ini" <<INI
 [Display]
 current_screen=0
@@ -35,7 +41,7 @@ window_position_x=0
 window_position_y=0
 
 [Assets]
-active_asset_packs=[ "QAWall01" ]
+active_asset_packs=$asset_pack_selection
 custom_assets_directory="$run/assets"
 disable_default_assets=false
 

@@ -160,9 +160,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     const samplePoint = await world({ x: 3, y: 3 });
     const expectedSample = await page.evaluate((point) => {
       const renderer = app.workspace.activeLeaf.view.editor.renderer;
-      return renderer.sampleRenderedPixel(renderer.local({
-        clientX: point.x, clientY: point.y,
-      }));
+      const local = renderer.local({ clientX: point.x, clientY: point.y });
+      return renderer.sampleRenderedPixel({ x: local.x, y: local.y - 1 });
     }, samplePoint);
     assert(expectedSample);
     await page.mouse.click(samplePoint.x, samplePoint.y);
@@ -1063,9 +1062,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     const samplePoint = await world({ x: 3, y: 3 });
     const expectedSample = await page.evaluate(point => {
       const renderer = app.workspace.activeLeaf.view.editor.renderer;
-      return renderer.sampleRenderedPixel(renderer.local({
-        clientX: point.x, clientY: point.y,
-      }));
+      const local = renderer.local({ clientX: point.x, clientY: point.y });
+      return renderer.sampleRenderedPixel({ x: local.x, y: local.y - 1 });
     }, samplePoint);
     assert(expectedSample);
     for (const kind of ["floor", "wall"]) {
@@ -1094,6 +1092,204 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     const document = (await state()).document;
     fs.writeFileSync(saved, JSON.stringify(document));
     checks.push("Numeric, six/eight-digit Hex, outside/Escape, field, Hue and sampled floor/wall pixels persist as seven separate Buildings");
+  }
+  async function fieldKnownStart(restart) {
+    const file = "Dungeons/Parity/Building-Field-Known-Start.dungeon";
+    const saved = path.join(qa, "parity-phase3-field-known-start-saved.json");
+    if (!restart) {
+      await page.evaluate(async ({ file, pckPath }) => {
+        const plugin = app.plugins.getPlugin("dungeon-editor");
+        await plugin.useNativeAssetArchive(pckPath);
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        await app.vault.create(file, JSON.stringify({
+          format: "dungeon-map", version: 3, id: "phase3-field-known-start",
+          settings: { name: "Building Field Known Start", width: 8, height: 8,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: true, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+          entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
+        }));
+      }, { file, pckPath });
+    }
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    if (restart) {
+      const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
+      assert.deepEqual((await state()).document, expected);
+      checks.push("Known-start Floor/Wall field Buildings reopen byte-equivalent");
+      return;
+    }
+    await chooseTool("Raum");
+    const setHex = async (kind, value) => {
+      const label = kind === "floor" ? "Bodenfarbe" : "Wandfarbe";
+      await page.getByRole("button", { name: label + " RGBA", exact: true }).click();
+      await page.getByRole("textbox", { name: label + " Hex ARGB" }).fill(value);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    };
+    const clickField = async (kind, initial) => {
+      const label = kind === "floor" ? "Bodenfarbe" : "Wandfarbe";
+      await setHex(kind, initial);
+      await page.getByRole("button", { name: label + " RGBA", exact: true }).click();
+      const input = page.getByRole("textbox", { name: label + " Hex ARGB" });
+      const before = await input.inputValue();
+      assert.equal(before, initial.slice(2));
+      const field = page.locator(".dn-building-color-field");
+      const box = await field.boundingBox();
+      assert(box);
+      const yFraction = kind === "floor" ? 141 / 256 : 140 / 256;
+      await page.mouse.click(box.x + box.width * .75,
+        box.y + box.height * yFraction);
+      const after = await input.inputValue();
+      await page.screenshot({ path: path.join(out, kind + "-field-known-start.png") });
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+      return { before, after, fieldBox: box, fraction: [.75, yFraction] };
+    };
+    const floor = await clickField("floor", "ffb28f6f");
+    assert.equal(floor.after, "73461d");
+    await draw({ x: 1, y: 1 }, { x: 2, y: 2 }, 1);
+    const first = (await state()).document.entities[0];
+    const wall = await clickField("wall", "ff726e65");
+    assert.equal(wall.after, "74591d");
+    await draw({ x: 3, y: 1 }, { x: 4, y: 2 }, 2);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const document = (await state()).document;
+    fs.writeFileSync(saved, JSON.stringify(document));
+    fs.writeFileSync(path.join(out, "field-known-start.json"),
+      JSON.stringify({ floor, wall, first: { fill: first.fill, wall: first.wall },
+        buildings: document.entities.filter(entity => entity.kind === "building")
+          .map(entity => ({ fill: entity.fill, floorAlpha: entity.floorAlpha,
+            wall: entity.wall, wallAlpha: entity.wallAlpha })) }, null, 2));
+    checks.push("Known ARGB starts and matched field fractions persist on two Buildings");
+  }
+  async function floorGallery24(restart) {
+    const file = "Dungeons/Parity/Floor-Gallery-24.dungeon";
+    const saved = path.join(qa, "parity-phase3-floor-gallery-24-saved.json");
+    const names = [
+      "tileset_wood_vertical", "tileset_stone", "tileset_brick_running",
+      "tileset_brick_worn", "tileset_concrete_large", "tileset_brick_basketweave",
+      "tileset_diamond", "tileset_concrete_slab", "tileset_carpet",
+      "tileset_cave", "tileset_diamond_2", "tileset_concrete",
+      "tileset_straw", "tileset_cobble", "tileset_cut_stone",
+      "tileset_plank_45", "tileset_wood_damaged", "tileset_ornate",
+      "tileset_sewers", "tileset_herringbone", "tileset_roman_worn",
+      "tileset_roman_tiles", "tileset_wood_interlaced", "tileset_worn_cobble",
+    ];
+    if (!restart) {
+      await page.evaluate(async ({ file, pckPath }) => {
+        const plugin = app.plugins.getPlugin("dungeon-editor");
+        await plugin.useNativeAssetArchive(pckPath);
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        await app.vault.create(file, JSON.stringify({
+          format: "dungeon-map", version: 3, id: "phase3-floor-gallery-24",
+          settings: { name: "Floor Gallery 24", width: 18, height: 12,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: false, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+          entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
+        }));
+      }, { file, pckPath });
+    }
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    if (restart) {
+      const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
+      const actual = (await state()).document;
+      assert.deepEqual(actual, expected);
+      assert.equal(actual.entities.length, 24);
+      await page.screenshot({ path: path.join(out, "gallery24-reopen.png") });
+      checks.push("All 24 UI-chosen floor styles and colors reopen byte-equivalent");
+      return;
+    }
+    await chooseTool("Raum");
+    await page.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    const catalog = await page.evaluate(() => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      return plugin.listAssets([], true)
+        .filter(asset => asset.kind === "tileset")
+        .map(asset => ({ id: asset.id, name: asset.name, image: asset.files.image,
+          color: plugin.nativePathCatalog.floors.find(
+            style => style.files.image === asset.files.image)?.color }));
+    });
+    const rows = [];
+    for (let index = 0; index < names.length; index++) {
+      const asset = catalog.find(item => item.image?.endsWith("/" + names[index] + ".png"));
+      assert(asset, "Bodenstil fehlt: " + names[index]);
+      const gallery = page.getByRole("group", { name: "Bodenstil" });
+      await gallery.getByRole("button", { name: asset.name, exact: true }).click();
+      assert.equal(await gallery.getByRole("button", {
+        name: asset.name, exact: true }).getAttribute("aria-pressed"), "true");
+      const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
+      await draw({ x, y }, { x: x + 2, y: y + 2 }, index + 1);
+      const building = (await state()).document.entities[index];
+      assert.equal(building.material.assetId, asset.id);
+      assert.equal(building.fill, Number.parseInt(asset.color, 16));
+      assert.equal(building.floorAlpha, 255);
+      assert.equal(building.wallWidth, 0);
+      rows.push({ index, image: asset.image, color: asset.color,
+        storedColor: building.fill.toString(16).padStart(6, "0") });
+      await page.screenshot({ path: path.join(out,
+        "gallery24-" + String(index).padStart(2, "0") + ".png") });
+    }
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const document = (await state()).document;
+    fs.writeFileSync(saved, JSON.stringify(document));
+    fs.writeFileSync(path.join(out, "gallery24.json"), JSON.stringify(rows, null, 2));
+    checks.push("All 24 floor styles were chosen through the Host gallery and drawn separately");
+  }
+  async function galleryPipette() {
+    const file = "Dungeons/Parity/Floor-Gallery-24.dungeon";
+    await page.evaluate(async ({ file, pckPath }) => {
+      await app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath);
+      await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
+    }, { file, pckPath });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await chooseTool("Raum");
+    const rows = [];
+    for (const kind of ["floor", "wall"])
+      for (const sample of [
+        { name: "concrete", point: { x: 3 + 12 / 32, y: 3 + 12 / 32 } },
+        { name: "wood", point: { x: 17 / 32, y: 21 / 32 } },
+        { name: "concrete-edge", point: { x: 3 + 15 / 32, y: 3 + 13 / 32 } },
+        { name: "wood-edge", point: { x: 18 / 32, y: 21 / 32 } },
+      ]) {
+        const label = kind === "floor" ? "Bodenfarbe" : "Wandfarbe";
+        const at = await world(sample.point);
+        const shot = PNG.sync.read(await page.screenshot());
+        const offset = (Math.floor(at.y) * shot.width + Math.floor(at.x)) * 4;
+        const screenshotRgb = [shot.data[offset], shot.data[offset + 1],
+          shot.data[offset + 2]].map(value => value.toString(16).padStart(2, "0")).join("");
+        const rendered = await page.evaluate(point => {
+          const renderer = app.workspace.activeLeaf.view.editor.renderer;
+          const local = renderer.local({ clientX: point.x, clientY: point.y });
+          return { at: renderer.sampleRenderedPixel(local),
+            above: renderer.sampleRenderedPixel({ x: local.x, y: local.y - 1 }) };
+        }, at);
+        await page.getByRole("button", { name: label + " RGBA", exact: true }).click();
+        await page.getByRole("button", { name: "Pipette", exact: true }).click();
+        await page.mouse.click(at.x, at.y);
+        const pickerHex = await page.getByRole("textbox", {
+          name: label + " Hex ARGB" }).inputValue();
+        assert.equal(pickerHex,
+          rendered.above.color.toString(16).padStart(6, "0"));
+        if (sample.name === "concrete" || sample.name === "concrete-edge")
+          assert.equal(pickerHex, "7f7d79");
+        if (sample.name === "wood") assert.equal(pickerHex, "937457");
+        await page.screenshot({ path: path.join(out,
+          `gallery-pipette-${kind}-${sample.name}.png`) });
+        rows.push({ kind, sample: sample.name, point: sample.point,
+          screen: at, screenshotRgb, rendered, pickerHex });
+        await page.getByRole("button", { name: "Accept", exact: true }).click();
+      }
+    fs.writeFileSync(path.join(out, "gallery-pipette.json"),
+      JSON.stringify(rows, null, 2));
+    checks.push("Floor and Wall eyedroppers sampled concrete and wood UI pixels");
   }
   async function sameCard(restart) {
     const file = "Dungeons/Parity/Native-Options-Card.dungeon",
@@ -1332,5 +1528,6 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("All nine native positions, styles, colors, ellipse, polygon point and bound door persist");
   }
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
-    floorVariant, floorMosaic, pickerPair, sameCard };
+    floorVariant, floorMosaic, pickerPair, fieldKnownStart, floorGallery24,
+    galleryPipette, sameCard };
 };

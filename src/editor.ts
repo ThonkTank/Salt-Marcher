@@ -742,7 +742,9 @@ export class DungeonEditor {
         event.preventDefault();
         event.stopImmediatePropagation();
         try {
-          finish(this.renderer.sampleRenderedPixel(this.renderer.local(event)));
+          const point = this.renderer.local(event);
+          // Dungeondraft's picker reads the screen row above the click.
+          finish(this.renderer.sampleRenderedPixel({ x: point.x, y: point.y - 1 }));
         } catch (error) {
           this.host.notice(String(error));
           finish(null);

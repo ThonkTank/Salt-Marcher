@@ -680,6 +680,9 @@ async function workflow() {
   if (parityPhase3Building) {
     const scenario = require("./host/parity-phase3-building.cjs")(scenarioContext);
     if (process.argv.includes("--same-card")) await scenario.sameCard(restart);
+    else if (process.argv.includes("--field-known-start")) await scenario.fieldKnownStart(restart);
+    else if (process.argv.includes("--gallery-pipette")) await scenario.galleryPipette();
+    else if (process.argv.includes("--floor-gallery-24")) await scenario.floorGallery24(restart);
     else if (process.argv.includes("--picker-pair")) await scenario.pickerPair(restart);
     else if (process.argv.includes("--floor-mosaic"))
       await scenario.floorMosaic(restart, process.argv.includes("--default-tint"));

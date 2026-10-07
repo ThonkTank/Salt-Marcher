@@ -66,7 +66,10 @@ function unit(value: number): number {
   return value;
 }
 
-export function patternRgbFromHsv({ hue, saturation, value }: PatternHsv): number {
+export function patternRgbFromHsv(
+  { hue, saturation, value }: PatternHsv,
+  quantize: "floor" | "nearest" = "floor",
+): number {
   unit(hue);
   unit(saturation);
   unit(value);
@@ -82,7 +85,9 @@ export function patternRgbFromHsv({ hue, saturation, value }: PatternHsv): numbe
       : sextant === 3 ? [0, secondary, chroma]
       : sextant === 4 ? [secondary, 0, chroma]
       : [chroma, 0, secondary]
-  ).map((channel) => Math.floor((channel + low) * 255 + 1e-9));
+  ).map((channel) => quantize === "nearest"
+    ? Math.round((channel + low) * 255)
+    : Math.floor((channel + low) * 255 + 1e-9));
   return (r! << 16) | (g! << 8) | b!;
 }
 
@@ -95,12 +100,13 @@ export function patternWithSaturationValue(
   color: number,
   saturation: number,
   value: number,
+  quantize: "floor" | "nearest" = "floor",
 ): number {
   return patternRgbFromHsv({
     ...patternHsv(color),
     saturation: unit(saturation),
     value: unit(value),
-  });
+  }, quantize);
 }
 
 /** A sampled rendered pixel supplies its own alpha; opaque floor sampling set A=255. */

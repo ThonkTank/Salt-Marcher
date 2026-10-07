@@ -1,4 +1,5 @@
 import "./material-pattern.test";
+import "./building-color-field.test";
 import "./core/selection.test";
 import "./core/building.test";
 import "./core/building-wall-band.test";

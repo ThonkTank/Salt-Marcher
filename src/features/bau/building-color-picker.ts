@@ -161,7 +161,7 @@ export function mountBuildingColorPicker(
       (event.clientX - bounds.left) / bounds.width));
     const value = Math.max(0, Math.min(1,
       1 - (event.clientY - bounds.top) / bounds.height));
-    replaceRgb(patternWithSaturationValue(rgb(), saturation, value));
+    replaceRgb(patternWithSaturationValue(rgb(), saturation, value, "nearest"));
   });
   pipette.addEventListener("click", async () => {
     if (!hooks.sampleMapColor) return;
