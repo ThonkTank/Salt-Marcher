@@ -4597,6 +4597,29 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Kombinierter Hostzustand mit Raum, Portal, Punktzug und Key erneut bestanden; vollständige Original-Optionsrohkarte weiterhin offen."
+        },
+        "phase3WrapMaskRegression": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "7fbe503fc18db25f01aad163ca9aed86a07c8a73a0744c8c1a8c9eab8ea127a3",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-review.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-audit.json",
+          "strictAcceptance": "open",
+          "finding": "After the portal-mask change, eleven Building option checks, the combined QAWall01/portal/Alt/point/room-key flow and fresh reopen all pass. Phase-1 shape and Phase-2 point edit/reopen regressions pass on the same build.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-regression/evidence/1791360324965-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-regression/evidence/1791360431325-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-regression/evidence/1791360557795-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase1/evidence/1791360647325-parity-phase1-shapes-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase1/evidence/1791360685634-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase2/evidence/1791360707199-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-phase2/evidence/1791360762569-parity-phase2-points-reopen/result.json"
+          ],
+          "remaining": "The complete Original Building options raw map and side-by-side redraw/reopen matrix are still missing; the full persistence case remains open."
         }
       },
       {
@@ -7358,6 +7381,28 @@
           "finding": "Direct original joint 1/0 white QAWall01 comparison changes corner, not straight strips. Host portal end caps now nearly match original at both openings; layer-only probe changed zero portal pixels.",
           "remaining": "Bevel corner still differs at 25/228 classified pixels; other angles and wall assets remain open.",
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
+        },
+        "phase3WrapMaskRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "7fbe503fc18db25f01aad163ca9aed86a07c8a73a0744c8c1a8c9eab8ea127a3",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-review.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/wrap-mask-audit.json",
+          "strictAcceptance": "open",
+          "finding": "Portal gaps split the ordered wall segment list across the contour seam. Joining last and first in the render mask raises the upper-left Bevel-on corner from 175/256 to 203/256 exact pixels, matching the other three corners; Bevel-off upper corners are 256/256 exact. Straight walls and door caps are unchanged.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-white-off/runs/20261007-094511-1574330/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-two/evidence/1791360059405-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-two/evidence/1791360082507-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-one-off/evidence/1791360146189-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-wrap-mask-20261007/host-one-off/evidence/1791360163425-parity-phase3-building-reopen/result.json"
+          ],
+          "rejectedProbe": "Nearest wall filtering worsens the Bevel-on corner from 203/256 to 197/256 exact pixels and was not adopted.",
+          "remaining": "25/222 exact-gray pixels at the current Bevel corner still differ; previous broader classification 25/228. Other angles, assets and complete option matrix remain open."
         }
       },
       {

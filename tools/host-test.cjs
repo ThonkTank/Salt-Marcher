@@ -684,7 +684,8 @@ async function workflow() {
     else if (process.argv.includes("--floor-variant")) await scenario.floorVariant(restart);
     else if (process.argv.includes("--portal-visual"))
       await scenario.portalVisual(process.argv.includes("--portal-two-doors"),
-        process.argv.includes("--portal-layer-probe"));
+        process.argv.includes("--portal-layer-probe"),
+        process.argv.includes("--portal-bevel-off"));
     else if (process.argv.includes("--visual-match"))
       await scenario.visualMatch(process.argv.includes("--wall-tint-pair"),
         process.argv.includes("--wall-zero-alpha"),

@@ -1089,9 +1089,22 @@ export class MapRenderer {
     alpha = 1,
   ): void {
     mask.clear();
+    const last = segments.at(-1);
+    const first = segments[0];
+    // A portal gap can split the list while the last wall still joins the first.
+    // Start at a gap so the wrapped corner remains one stroked path.
+    const gap = last && first && last.b.x === first.a.x &&
+      last.b.y === first.a.y
+      ? segments.findIndex((segment, index) => index > 0 &&
+          (segments[index - 1]!.b.x !== segment.a.x ||
+            segments[index - 1]!.b.y !== segment.a.y))
+      : -1;
+    const ordered = gap > 0
+      ? [...segments.slice(gap), ...segments.slice(0, gap)]
+      : segments;
     let previous: Point | undefined;
     let start: Point | undefined;
-    for (const segment of segments) {
+    for (const segment of ordered) {
       if (!previous || previous.x !== segment.a.x || previous.y !== segment.a.y) {
         if (start && previous?.x === start.x && previous.y === start.y)
           mask.closePath();

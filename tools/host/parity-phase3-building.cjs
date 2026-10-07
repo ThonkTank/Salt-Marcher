@@ -586,7 +586,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       ? `Two QAWall01 rooms render red at full and ${wallAlphaZero ? "zero" : "half"} wall opacity with bevel off and on${wallNoShadow ? ", without wall shadow" : ""}`
       : "Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
   }
-  async function portalVisual(twoDoors = false, layerProbe = false) {
+  async function portalVisual(twoDoors = false, layerProbe = false,
+    bevelOff = false) {
     const pack = fs.readFileSync(packPath);
     assert.equal(hash(pack),
       "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
@@ -608,7 +609,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
           polygons: [{ outer: [{ x: 2, y: 2 }, { x: 7, y: 2 },
             { x: 7, y: 5 }, { x: 2, y: 5 }], holes: [] }],
           layer: 200, fill: 0xb28f6f, floorAlpha: 255,
-          wall: 0xffffff, wallAlpha: 255, wallBevel: true, wallWidth: 0.2,
+          wall: 0xffffff, wallAlpha: 255, wallBevel: !bevelOff, wallWidth: 0.2,
           wallAssetId: "pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall",
           material: { assetId: "pack:dungeondraft-builtin-1.2.0.1:tileset:" +
             encodeURIComponent("res://textures/tilesets/smart/tileset_wood_vertical.png"),
