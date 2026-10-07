@@ -4137,6 +4137,20 @@
           "finding": "PCK-Tileset.material multipliziert Atlas und weltkoordinatenbasierte grime.png; der Host übernimmt dieselbe Periode von 16 Feldern. 18/18 Atlaszellen erhalten; ausgerichteter RGB-MAE Holz 21,86→4,35 und Stein 18,84→2,11.",
           "remaining": "Tint-/Alpha-Bildpaare, alle 24 Stilbilder und direkter nativer Zeichenstand offen; gesonderter Review nach den übrigen Phase-3-Nachbesserungen.",
           "strictAcceptance": "open"
+        },
+        "phase3Alpha128Probe": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "28b5589b09293fc36948d30642e3e9cb26d8982cad3502c56f6dd15e538f833a",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/phase3-floor-alpha-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/floor-alpha-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host/evidence/1791351200819-parity-phase3-building-reopen/result.json"
+          ],
+          "finding": "Gespeicherte Bodenfarbe mit Alpha 128 mischt im Original mit 0,5017/0,5027 und im Host mit 0,4982/0,5019 Deckkraft über den jeweils direkt aufgenommenen Hintergrund; 18/18 Atlaszellen bleiben erhalten.",
+          "remaining": "Dieser Lauf injizierte gespeicherte QA-Werte und wiederholte nicht die Original-Pickerfolge. Andere Alpha-Werte und 22 weitere Stile offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -5025,6 +5039,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791340696363-parity-phase3-building-edit/result.json"
           ],
           "remaining": "Wandkanäle noch nicht vollständig als einzelne gespeicherte Originalfälle gepaart; weitere Picker-Kontexte später."
+        },
+        "phase3Alpha128Probe": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "28b5589b09293fc36948d30642e3e9cb26d8982cad3502c56f6dd15e538f833a",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/phase3-floor-alpha-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/floor-alpha-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host/evidence/1791351200819-parity-phase3-building-reopen/result.json"
+          ],
+          "finding": "Gespeicherte Bodenfarbe mit Alpha 128 mischt im Original mit 0,5017/0,5027 und im Host mit 0,4982/0,5019 Deckkraft über den jeweils direkt aufgenommenen Hintergrund; 18/18 Atlaszellen bleiben erhalten.",
+          "remaining": "Dieser Lauf injizierte gespeicherte QA-Werte und wiederholte nicht die Original-Pickerfolge. Andere Alpha-Werte und 22 weitere Stile offen.",
+          "strictAcceptance": "open"
         }
       },
       {

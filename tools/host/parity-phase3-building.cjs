@@ -529,6 +529,14 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     fs.writeFileSync(path.join(out, "floor-material.json"),
       JSON.stringify(colors, null, 2));
     await page.screenshot({ path: path.join(out, "floor-variants-64px.png") });
+    await page.evaluate(() => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer;
+      for (const visual of renderer.visuals.values())
+        visual.floorLayer.visible = false;
+      renderer.invalidate();
+    });
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: path.join(out, "floor-background-64px.png") });
     checks.push("Native saved wood/stone map uses the exact 18 atlas cells in a fresh Obsidian process");
   }
   return { edit, reopen, combined, verifyCombined, visualMatch, floorVariant };

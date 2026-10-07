@@ -243,3 +243,7 @@ Der unmittelbare native Zeichenstand weicht von der stabilen Neuöffnung ab. Im 
 Der folgende Kandidat `28b5589b09293fc36948d30642e3e9cb26d8982cad3502c56f6dd15e538f833a` übernimmt die direkt im PCK belegte Multiplikation mit `grime.png` bei einer Periode von 16 Weltfeldern. Lighting- und Baked-Lighting-Schalter änderten die native Bodenprobe nicht. Der ausgerichtete RGB-Fehler sinkt für Holz von 21,86 auf 4,35 und für Stein von 18,84 auf 2,11; die 18/18 Atlaszellen bleiben korrekt. Building-Optionen mit frischer Neuöffnung sowie Phase-1-/2-Regressionen bestanden im isolierten Host, Typprüfung, 137 Tests und Build ebenso. Messdaten und Einzelbelege: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/phase3-floor-brightness-repair.md`.
 
 Tint-/Alpha-Paare, alle 24 Stilbilder und die übrigen offenen Phase-3-Bildpaare benötigen weitere Prüfungen. Das Fachphasentor bleibt offen und der produktive Vault unverändert.
+
+## Phase 3: gespeicherte Boden-Deckkraft bei 128 verglichen
+
+Ein getrenntes Bildpaar mit gleicher gespeicherter Holz/Stein-Karte und Alpha 128 ergibt im Original die Deckkraft 0,5017/0,5027 und im Host 0,4982/0,5019. Jeweilige leere Hintergrundbilder trennen die unterschiedliche Kartenfläche beider Programme vom Alpha-Effekt. Die 18 Atlaszellen bleiben korrekt; der Host wurde frisch geöffnet. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/phase3-floor-alpha-probe.md`. Weitere Alpha-Werte, Pickerfolge und 22 Stilbilder bleiben offen; keine Fachphasenfreigabe.

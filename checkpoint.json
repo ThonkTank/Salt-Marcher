@@ -780,13 +780,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase3_floor_brightness_repaired_gate_open",
+    "status": "phase3_floor_alpha128_pair_measured_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Gesonderter Phase-3-Nachbesserungslauf für Tint-/Alpha-Bildpaare aller Bodenstile, Bevel-Restpixel, Portal-/Wandfarbe und vollständige Original-Optionsrohkarte; danach unabhängiger Review aller 17 Unterfälle. Aufräumen erst nach bestandenem Fachphasentor.",
-    "note": "PCK-Tileset.material/grime.png erklärt die ortsabhängige Bodenhelligkeit. Der Kandidat multipliziert Atlas und Grime alle 16 Weltfelder; 18/18 Atlaszellen und Host-Neuöffnung stimmen. Ausgerichteter RGB-MAE Holz 21,86→4,35, Stein 18,84→2,11. Building-Optionen und Phase-1-/2-Regressionen mit frischem Prozess bestanden; Farb-/Stilpaare weiter offen. Produktiver Build unverändert; Fachphasentor offen.",
+    "nextRun": "Gesonderter Phase-3-Nachbesserungslauf für weitere Boden-Tint-/Alpha-Werte und alle 24 Stilbilder, Bevel-Restpixel, Portal-/Wandfarbe und vollständige Original-Optionsrohkarte; danach unabhängiger Review aller 17 Unterfälle. Aufräumen erst nach bestandenem Fachphasentor.",
+    "note": "Native und Host-Bodenbilder für gespeichertes Alpha 128 mit eigenen leeren Hintergründen verglichen: Original Deckkraft 0,5017/0,5027, Host 0,4982/0,5019 bei Holz/Stein; 18/18 Atlaszellen erhalten. Weitere Farbwerte/Stile und übrige Phase-3-Bildpaare offen. Produktiver Build unverändert; Fachphasentor offen.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "28b5589b09293fc36948d30642e3e9cb26d8982cad3502c56f6dd15e538f833a",
     "candidateCoreTests": 137,
@@ -952,6 +952,9 @@
     "phase3BrightnessPhase1Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host-phase1/evidence/1791350388627-parity-phase1-edit/result.json",
     "phase3BrightnessPhase1Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host-phase1/evidence/1791350527282-parity-phase1-reopen/result.json",
     "phase3BrightnessPhase2Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host-phase2/evidence/1791350534689-parity-phase2-points-edit/result.json",
-    "phase3BrightnessPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host-phase2/evidence/1791350623334-parity-phase2-points-reopen/result.json"
+    "phase3BrightnessPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host-phase2/evidence/1791350623334-parity-phase2-points-reopen/result.json",
+    "phase3Alpha128Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/phase3-floor-alpha-probe.md",
+    "phase3Alpha128Audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-alpha-20261007/floor-alpha-audit.json",
+    "phase3Alpha128HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/host/evidence/1791351200819-parity-phase3-building-reopen/result.json"
   }
 }
