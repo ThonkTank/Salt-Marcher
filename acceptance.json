@@ -4662,6 +4662,24 @@
           "state": "plan_ready_for_separate_implementation",
           "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
           "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
+        },
+        "phase3RepairOptionsImplementation": {
+          "date": "2026-10-07",
+          "state": "candidate_semantic_match_independent_review_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalSequence": "Zwei getrennte X/None-Flächen, Alt-Radierung an dritter Form, aktuelle Wandfarbe/Alpha/Bevel, Undo/Redo und frische Originalöffnung; danach dieselbe neunfache Optionskarte über Host-UI, Undo/Redo, Save und frische Hostöffnung.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope-report.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/semantic-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/image-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/options-repair-implementation.md"
+          ],
+          "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
+          "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -7146,6 +7164,24 @@
           "state": "plan_ready_for_separate_implementation",
           "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
           "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
+        },
+        "phase3RepairOptionsImplementation": {
+          "date": "2026-10-07",
+          "state": "candidate_semantic_match_independent_review_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+          "originalSequence": "Zwei getrennte X/None-Flächen, Alt-Radierung an dritter Form, aktuelle Wandfarbe/Alpha/Bevel, Undo/Redo und frische Originalöffnung; danach dieselbe neunfache Optionskarte über Host-UI, Undo/Redo, Save und frische Hostöffnung.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope-report.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/semantic-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/image-comparison.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/options-repair-implementation.md"
+          ],
+          "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
+          "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -50508,6 +50544,30 @@
       ],
       "openOriginalQuestions": "Reichweite der Wandneuerzeugung nach Alt-Radierung, aktive Wandfarbe/Alpha/Bevel und Verhalten mehrerer X/None-Formen.",
       "decision": "Zuerst Originalregel eingrenzen, danach gleich aufgebaute neunfache Host-Optionsfolge und atomare Nachbesserung; unabhängiger Review aller 17 Phase-3-Unterfälle folgt in eigenem Lauf."
+    },
+    "phase3RepairOptionsImplementation": {
+      "date": "2026-10-07",
+      "state": "implementation_verified_independent_review_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
+      "sequence": "Zwei getrennte X/None-Flächen, Alt-Radierung an dritter Form, aktuelle Wandfarbe/Alpha/Bevel, Undo/Redo und frische Originalöffnung; danach dieselbe neunfache Optionskarte über Host-UI, Undo/Redo, Save und frische Hostöffnung.",
+      "originalEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope-report.md",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-scope/runs/20261007-114313-1700333/evidence/maps/04-two-none-custom-alpha-bevel-off.dungeondraft_map",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/native-reopen/runs/20261007-115013-1706324/evidence/maps/01-fresh-resaved.dungeondraft_map"
+      ],
+      "hostEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368167573-parity-phase3-building-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-card/evidence/1791368361625-parity-phase3-building-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/semantic-comparison.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/image-comparison.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368647452-parity-phase3-building-reopen/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/host-final-phase3/evidence/1791368771442-parity-phase3-building-reopen/result.json"
+      ],
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-repair-20261007/options-repair-implementation.md",
+      "finding": "Zwei getrennte X/None-Formen erhalten beim Alt-Radieren einer anderen Form die aktuelle Wand; die bearbeitete Form wird neu gestylt, fünf fremde Wände bleiben unverändert. Der Host bildet dies atomar ab. Die neunfache Rohkarte stimmt bei Kontur, neun Wandpfaden/ARGB/Bevel, 35 belegten Boden-Innenzellen und door_00-Portal semantisch überein; 139 Tests und Phase-1-/2-/3-Hostregressionen bestehen.",
+      "remaining": "Bildwirkung bleibt trotz gleicher Rohdaten offen: 17,39 mittlere absolute RGB-Kanalstufen in 35 Innenzellen bei sRGB und 64 px/Feld, besonders halbtransparentes Diamond 2 über verschiedenem Hintergrund; innere Bevel-Textur und übrige 17 Phase-3-Unterfälle benötigen eigenen unabhängigen Review. Aktuell gewähltes X/None beim Radieren und leere Radiergeste im Original ungemessen.",
+      "strictAcceptance": "open"
     }
   }
 }

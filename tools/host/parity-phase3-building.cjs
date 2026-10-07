@@ -1095,6 +1095,242 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     fs.writeFileSync(saved, JSON.stringify(document));
     checks.push("Numeric, six/eight-digit Hex, outside/Escape, field, Hue and sampled floor/wall pixels persist as seven separate Buildings");
   }
+  async function sameCard(restart) {
+    const file = "Dungeons/Parity/Native-Options-Card.dungeon",
+      saved = path.join(qa, "parity-phase3-native-options-card-saved.json");
+    assert.equal(hash(fs.readFileSync(pckPath)),
+      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    await page.evaluate(async ({ file, pckPath, restart }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (!restart) {
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        await app.vault.create(file, JSON.stringify({
+          format: "dungeon-map", version: 3, id: "native-options-card",
+          settings: { name: "Native Options Card", width: 18, height: 12,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: true, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+            ambient: 1 }],
+          entities: [], content: { definitions: [], occurrences: [],
+            routes: [], archive: [] },
+        }));
+      }
+      await app.workspace.getLeaf(false).openFile(
+        app.vault.getAbstractFileByPath(file));
+    }, { file, pckPath, restart });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    if (restart) {
+      const expected = JSON.parse(fs.readFileSync(saved, "utf8")),
+        actual = (await state()).document;
+      assert.deepEqual(actual, expected);
+      assert.equal(actual.entities.filter(entity => entity.kind === "building").length, 9);
+      assert.equal(actual.entities.filter(entity => entity.kind === "door").length, 1);
+      await page.screenshot({ path: path.join(out, "fresh-options-card.png") });
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await page.getByRole("button", { name: "Raster", exact: true }).click();
+      await page.evaluate(() => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer,
+          box = renderer.canvas.getBoundingClientRect();
+        renderer.camera.scale = 64;
+        renderer.camera.x = box.width / 2 - 9 * 64;
+        renderer.camera.y = box.height / 2 - 6 * 64;
+        renderer.zoom(1);
+      });
+      await page.screenshot({ path: path.join(out, "fresh-options-card-64px-grid-off.png") });
+      checks.push("The original nine-option card and bound door survive a fresh Host process");
+      return;
+    }
+    const assets = await page.evaluate(() => app.plugins
+      .getPlugin("dungeon-editor").listAssets([], true)
+      .filter(asset => asset.kind === "tileset" || asset.kind === "wall")
+      .map(({ id, kind, name, files }) => ({ id, kind, name,
+        image: files.image })));
+    fs.writeFileSync(path.join(out, "native-gallery.json"),
+      JSON.stringify(assets, null, 2));
+    const pick = async (kind, suffix) => {
+      const asset = assets.find(item => item.kind === kind &&
+        item.image?.endsWith("/" + suffix + ".png"));
+      assert(asset, "Native style missing: " + suffix);
+      const gallery = page.getByRole("group", {
+        name: kind === "tileset" ? "Bodenstil" : "Wandstil" });
+      await gallery.getByRole("button", { name: asset.name, exact: true }).click();
+      assert.equal(await gallery.getByRole("button", {
+        name: asset.name, exact: true }).getAttribute("aria-pressed"), "true");
+      return asset;
+    };
+    const setHex = async (kind, hex) => {
+      const label = kind === "floor" ? "Bodenfarbe" : "Wandfarbe";
+      await page.getByRole("button", { name: label + " RGBA", exact: true }).click();
+      await page.getByRole("textbox", { name: label + " Hex ARGB" }).fill(hex);
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    };
+    const capture = async name => {
+      const current = await state();
+      fs.writeFileSync(path.join(out, name + ".json"),
+        JSON.stringify(current, null, 2));
+      await page.screenshot({ path: path.join(out, name + ".png") });
+      return current;
+    };
+    await chooseTool("Raum");
+    const slots = [
+      { floor: "tileset_wood_vertical", wall: "battlements",
+        fill: "b28f6f", tint: "726e65", a: [7, 2], b: [9, 4] },
+      { floor: "tileset_stone", wall: null,
+        fill: "7f7e71", a: [11, 2], b: [13, 4] },
+      { floor: "tileset_brick_running", wall: "cobble",
+        fill: "965f50", tint: "7c7c7c", a: [15, 2], b: [17, 4] },
+      { floor: "tileset_diamond_2", wall: "cobble",
+        fill: "80ff0000", tint: "7c7c7c", bevel: false,
+        a: [7, 6], b: [9, 8] },
+      { floor: "tileset_carpet", wall: "wood_03",
+        fill: "7993ab", tint: "80445566", bevel: true,
+        a: [11, 6], b: [13, 8] },
+      { floor: "tileset_wood_vertical", wall: "wood_04",
+        fill: "b28f6f", tint: "705e4b", a: [15, 6], b: [17, 8] },
+      { floor: "tileset_wood_vertical", wall: "wood_04",
+        fill: "b28f6f", tint: "705e4b", a: [7, 10], b: [9, 12] },
+      { floor: "tileset_stone", wall: "wood_04",
+        fill: "7f7e71", tint: "705e4b", a: [11, 10], b: [13, 12] },
+      { floor: "tileset_stone", wall: "wood_04",
+        fill: "7f7e71", tint: "705e4b", a: [15, 10], b: [17, 12] },
+    ];
+    for (let index = 0; index < 7; index++) {
+      const item = slots[index];
+      const floor = await pick("tileset", item.floor);
+      const wall = item.wall ? await pick("wall", item.wall) : null;
+      if (!wall)
+        await page.getByRole("group", { name: "Wandstil" })
+          .getByRole("button", { name: "Keine Wand", exact: true }).click();
+      await setHex("floor", item.fill);
+      if (item.tint) await setHex("wall", item.tint);
+      if (item.bevel === false)
+        await page.getByRole("checkbox", { name: "Bevel Corners" }).uncheck();
+      if (item.bevel === true)
+        await page.getByRole("checkbox", { name: "Bevel Corners" }).check();
+      await draw({ x: item.a[0], y: item.a[1] },
+        { x: item.b[0], y: item.b[1] }, index + 1);
+      const current = await capture(String(index + 1).padStart(2, "0") + "-room");
+      const building = current.document.entities[index];
+      assert.equal(building.material.assetId, floor.id);
+      assert.equal(building.wallWidth > 0, !!wall);
+      if (wall) assert.equal(building.wallAssetId, wall.id);
+      if (index === 1) {
+        assert.equal(current.document.entities.filter(e => e.kind === "building").length, 2);
+        assert.equal(current.document.entities.filter(e => e.kind === "building" &&
+          e.wallWidth > 0).length, 1);
+        checks.push("Original room 2 uses the selected Smart Stone and X/None controls");
+      }
+    }
+    const beforeErase = await capture("08-before-erase");
+    const room2 = beforeErase.document.entities[1], room7 = beforeErase.document.entities[6];
+    const from = await world({ x: 7, y: 10 }),
+      to = await world({ x: 8, y: 11 });
+    await page.keyboard.down("Alt");
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    await page.mouse.up();
+    await page.keyboard.up("Alt");
+    await page.waitForFunction(history => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return editor && !editor.paintWorker && editor.session.historySize === history + 1;
+    }, beforeErase.history, { timeout: 45000 });
+    const erased = await capture("09-after-erase");
+    assert.equal(erased.document.entities.length, 7);
+    assert.equal(erased.document.entities[1].wallAssetId,
+      erased.document.entities[6].wallAssetId);
+    assert.equal(erased.document.entities[1].wall, 0x705e4b);
+    assert.equal(erased.document.entities[1].wallWidth, 0.2);
+    assert.equal(erased.document.entities[1].fill, room2.fill);
+    assert.equal(erased.document.entities[6].polygons[0].outer.length, 6);
+    for (const index of [0, 2, 3, 4, 5])
+      assert.deepEqual(erased.document.entities[index], beforeErase.document.entities[index]);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    assert.deepEqual((await state()).document, beforeErase.document);
+    await page.keyboard.press("Control+y");
+    assert.deepEqual((await state()).document, erased.document);
+    checks.push("One Alt erase revives X/None room 2 and restyles room 7 in one undoable command");
+    for (let index = 7; index < 9; index++) {
+      const item = slots[index];
+      await pick("tileset", item.floor);
+      await pick("wall", item.wall);
+      await setHex("floor", item.fill);
+      await setHex("wall", item.tint);
+      if (index === 7) {
+        await chooseTool("Ellipsenraum");
+        await draw({ x: item.a[0], y: item.a[1] },
+          { x: item.b[0], y: item.b[1] }, 8);
+        assert.equal((await state()).document.entities[7].polygons[0].outer.length, 28);
+      } else {
+        await chooseTool("Polygonraum");
+        for (const point of [[15, 10], [17, 10], [17, 12]]) {
+          const at = await world({ x: point[0], y: point[1] });
+          await page.mouse.click(at.x, at.y);
+        }
+        const last = await world({ x: 15, y: 12 });
+        await page.mouse.dblclick(last.x, last.y, { delay: 90 });
+        await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor
+          ?.session.entities.size === 9, null, { timeout: 45000 });
+      }
+      await capture(String(index + 3).padStart(2, "0") + "-shape");
+    }
+    await chooseTool("Tür");
+    const doorAsset = await page.evaluate(() => app.plugins
+      .getPlugin("dungeon-editor").listAssets([], true)
+      .find(asset => asset.kind === "portal" &&
+        asset.files.image?.endsWith("/door_00.png"))?.id);
+    assert(doorAsset);
+    await page.getByRole("combobox", { name: "Paketportal" })
+      .selectOption(doorAsset);
+    const portal = await world({ x: 9, y: 3 });
+    await page.mouse.click(portal.x, portal.y);
+    await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor
+      ?.session.entities.size === 10, null, { timeout: 45000 });
+    await capture("12-door");
+    await chooseTool("Punkte");
+    await page.getByRole("button", { name: "Snap", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Snap", exact: true })
+      .getAttribute("aria-pressed"), "false");
+    const lastBuilding = (await state()).document.entities[8];
+    await page.evaluate(async id => {
+      await app.workspace.activeLeaf.view.editor.select(id);
+    }, lastBuilding.id);
+    const oldPoint = await world({ x: 17, y: 10 }),
+      newPoint = await world({ x: 17.5, y: 9.5 });
+    await page.mouse.move(oldPoint.x + 10, oldPoint.y + 10);
+    await page.mouse.move(oldPoint.x, oldPoint.y);
+    await page.waitForFunction(() => {
+      const hover = app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPointHover;
+      return hover?.kind === "vertex" && hover.contour === 0 && hover.index === 1;
+    });
+    await page.mouse.down();
+    await page.mouse.move(newPoint.x, newPoint.y, { steps: 8 });
+    await page.mouse.up();
+    await capture("13-point-probe");
+    await page.waitForFunction(id => app.workspace.activeLeaf?.view?.editor
+      ?.session.entities.get(id)?.polygons[0].outer[1].x === 17.5,
+    lastBuilding.id, { timeout: 45000 });
+    const final = await capture("13-point-final");
+    const door = final.document.entities.find(entity => entity.kind === "door");
+    assert.equal(door.anchor.boundaryId, final.document.entities[0].id);
+    assert.equal(door.assetId, doorAsset);
+    assert.equal(final.document.entities[6].wallAssetId,
+      final.document.entities[1].wallAssetId);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await capture("14-undo-point");
+    await page.keyboard.press("Control+y");
+    assert.deepEqual((await state()).document, final.document);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const persisted = (await state()).document;
+    fs.writeFileSync(saved, JSON.stringify(persisted, null, 2));
+    await capture("15-saved");
+    checks.push("All nine native positions, styles, colors, ellipse, polygon point and bound door persist");
+  }
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
-    floorVariant, floorMosaic, pickerPair };
+    floorVariant, floorMosaic, pickerPair, sameCard };
 };

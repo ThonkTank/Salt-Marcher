@@ -302,6 +302,8 @@ export interface BuildingMutationRequest {
   readonly expectedRevision: number;
   readonly currentRevision: number;
   readonly newBuilding?: Building;
+  readonly eraseWallStyle?: Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">;
 }
 export interface BuildingMutationPlan {
   readonly command: Command | null;
@@ -411,15 +413,37 @@ export function planBuildingMutation(
       );
   }
   let selectedId: string | undefined;
+  const wallStyle = request.eraseWallStyle;
+  const withCurrentWall = (building: Building): Building => wallStyle
+    ? {
+        ...building,
+        wall: wallStyle.wall,
+        wallAlpha: wallStyle.wallAlpha,
+        wallBevel: wallStyle.wallBevel,
+        wallWidth: wallStyle.wallWidth,
+        wallAssetId: wallStyle.wallAssetId,
+      }
+    : building;
   for (const before of changed) {
     const polygons = geometryById.get(before.id)!,
       after: Building | null = polygons.length
-        ? { ...before, polygons }
+        ? withCurrentWall({ ...before, polygons })
         : null;
     if (!recordsEqual(before, after))
       changes.push({ id: before.id, before, after });
     reconcilePortals(new Map([[before.id, before]]), after);
     if (after) selectedId = after.id;
+  }
+  // Dungeondraft reassigns the selected wall to every unlocked, previously
+  // wall-less Building on this floor when a Building is actually erased.
+  if (changed.length && wallStyle?.wallWidth) {
+    for (const before of orderedBuildings) {
+      if (before.locked || before.wallWidth || geometryById.has(before.id))
+        continue;
+      const after = withCurrentWall(before);
+      if (!recordsEqual(before, after))
+        changes.push({ id: before.id, before, after });
+    }
   }
   return {
     command: changes.length

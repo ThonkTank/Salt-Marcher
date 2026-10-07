@@ -705,6 +705,66 @@ test("building planner creates and fully erases an unnumbered building with ordi
   assert.equal(session.entities.has(fresh.id), false);
 });
 
+test("Building Alt erase renews both separated None walls in the same history step", () => {
+  const document = newDocument("Wandneuerzeugung", 20, 20),
+    floorId = document.floors[0]!.id,
+    make = (id: string, x: number, wallWidth: number): Building => ({
+      id, kind: "building", floorId,
+      polygons: [{ outer: rectangle({ x, y: 2 }, { x: x + 2, y: 4 }), holes: [] }],
+      layer: 200, fill: 0x7f7e71, floorAlpha: 255,
+      wall: 0x726e65, wallAlpha: 255, wallBevel: true, wallWidth,
+      ...(wallWidth ? { wallAssetId: "pack:old-wall" } : {}),
+    }),
+    edited = { ...make("edited", 2, 0.2), number: "7", name: "Raum 7",
+      note: { path: "QA/Räume/07.md" } },
+    noneA = make("none-a", 7, 0),
+    noneB = make("none-b", 12, 0),
+    existing = make("existing", 17, 0.2),
+    locked = { ...make("locked-none", 7, 0), locked: true },
+    session = new Session({ ...document,
+      entities: [edited, noneA, noneB, existing, locked] }),
+    keyBytes = "# 7 Raum 7\r\n\r\nWortlaut bleibt!\r\n";
+  session.loadNote(edited.note.path, keyBytes);
+  const before = session.document().entities,
+    geometry = composeBuilding({
+      kind: "compose-building",
+      sources: [edited, noneA, noneB, existing].map(({ id, polygons }) =>
+        ({ id, polygons })),
+      shape: [{ outer: rectangle({ x: 2, y: 2 }, { x: 3, y: 3 }), holes: [] }],
+      erase: true,
+    }),
+    plan = planBuildingMutation({
+      entities: [...session.entities.values()], floorId, result: geometry,
+      expectedRevision: 0, currentRevision: 0,
+      eraseWallStyle: { wall: 0x445566, wallAlpha: 128,
+        wallBevel: false, wallWidth: 0.2, wallAssetId: "pack:battlements" },
+    });
+  assert.ok(plan.command);
+  assert.deepEqual(plan.command!.entities?.map(change => change.id),
+    [edited.id, noneA.id, noneB.id]);
+  session.execute(plan.command!);
+  assert.equal(session.historySize, 1);
+  for (const id of [edited.id, noneA.id, noneB.id]) {
+    const after = session.entities.get(id) as Building;
+    assert.equal(after.wall, 0x445566);
+    assert.equal(after.wallAlpha, 128);
+    assert.equal(after.wallBevel, false);
+    assert.equal(after.wallWidth, 0.2);
+    assert.equal(after.wallAssetId, "pack:battlements");
+    assert.equal(after.fill, 0x7f7e71);
+  }
+  assert.deepEqual(session.entities.get(existing.id), existing);
+  assert.deepEqual(session.entities.get(locked.id), locked);
+  assert.equal(session.note(edited.note.path), keyBytes);
+  const after = session.document().entities;
+  assert.deepEqual(parseDocument(JSON.stringify(session.document())).entities, after);
+  session.undo();
+  assert.deepEqual(session.document().entities, before);
+  session.redo();
+  assert.deepEqual(session.document().entities, after);
+  assert.equal(session.note(edited.note.path), keyBytes);
+});
+
 test("building erase removes only unsupported portals in the same undo step", () => {
   const document = newDocument("Portalradierer", 20, 20),
     floorId = document.floors[0]!.id,

@@ -2764,6 +2764,11 @@ export class DungeonEditor {
     const floorId = this.renderer.floorId,
       defaults = this.settings.surfaces[category],
       material = this.settings.material,
+      roomStyle = {
+        wallAssetId: this.settings.room.wallAssetId,
+        wallAlpha: this.settings.room.wallAlpha ?? 255,
+        wallBevel: this.settings.room.wallBevel ?? true,
+      },
       styleKey = (source: Surface | Building) =>
         source.kind === "building"
           ? JSON.stringify([
@@ -2790,9 +2795,9 @@ export class DungeonEditor {
       desiredStyle = JSON.stringify(category === "floor" ? [
         defaults.layer, defaults.color, defaults.wallColor,
         defaults.wallWidth, (defaults.opacity ?? 1), "none", material ?? null,
-        this.settings.room.wallAssetId ?? null,
-        this.settings.room.wallAlpha ?? 255,
-        this.settings.room.wallBevel ?? true,
+        roomStyle.wallAssetId ?? null,
+        roomStyle.wallAlpha,
+        roomStyle.wallBevel,
       ] : [
         defaults.layer, defaults.color, defaults.wallColor,
         defaults.wallWidth, defaults.opacity ?? 1,
@@ -2864,11 +2869,11 @@ export class DungeonEditor {
                   fill: defaults.color,
                   floorAlpha: Math.round((defaults.opacity ?? 1) * 255),
                   wall: defaults.wallColor,
-                  wallAlpha: this.settings.room.wallAlpha ?? 255,
-                  wallBevel: this.settings.room.wallBevel ?? true,
+                  wallAlpha: roomStyle.wallAlpha,
+                  wallBevel: roomStyle.wallBevel,
                   wallWidth: defaults.wallWidth,
-                  ...(this.settings.room.wallAssetId
-                    ? { wallAssetId: this.settings.room.wallAssetId } : {}),
+                  ...(roomStyle.wallAssetId
+                    ? { wallAssetId: roomStyle.wallAssetId } : {}),
                   ...(material ? { material } : {}),
                 }
               : undefined,
@@ -2879,6 +2884,15 @@ export class DungeonEditor {
             expectedRevision: revision,
             currentRevision: this.session.revision,
             ...(newBuilding ? { newBuilding } : {}),
+            ...(erase && defaults.wallWidth > 0 ? {
+              eraseWallStyle: {
+                wall: defaults.wallColor,
+                wallAlpha: roomStyle.wallAlpha,
+                wallBevel: roomStyle.wallBevel,
+                wallWidth: defaults.wallWidth,
+                wallAssetId: roomStyle.wallAssetId,
+              },
+            } : {}),
           });
         if (!plan.command) return;
         this.session.execute(plan.command);
