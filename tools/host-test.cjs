@@ -379,6 +379,25 @@ function prepare() {
       ],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     }, null, 2));
+    fs.writeFileSync(vault + "/Dungeons/Parity/Punkte-Konturen.dungeon", JSON.stringify({
+      format: "dungeon-map", version: 3, id: "parity-phase2-outlines",
+      settings: { name: "Mehrteil und Innenloch", width: 20, height: 12,
+        feetPerField: 5, wallShadows: true, objectShadows: false, buildingWear: 0 },
+      floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+      entities: [
+        { id: "multipart", kind: "building", floorId: "floor-1",
+          polygons: [
+            { outer: [{ x: 2, y: 2 }, { x: 4, y: 2 }, { x: 3, y: 4 }], holes: [] },
+            { outer: [{ x: 6, y: 2 }, { x: 8, y: 2 }, { x: 7, y: 4 }], holes: [] },
+          ], layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2 },
+        { id: "hole", kind: "building", floorId: "floor-1",
+          polygons: [{ outer: [{ x: 11, y: 2 }, { x: 17, y: 2 },
+            { x: 17, y: 8 }, { x: 11, y: 8 }],
+            holes: [[{ x: 13, y: 4 }, { x: 15, y: 4 }, { x: 14, y: 6 }]] }],
+          layer: 200, fill: 0xaba08c, wall: 0x403e39, wallWidth: 0.2 },
+      ],
+      content: { definitions: [], occurrences: [], routes: [], archive: [] },
+    }, null, 2));
     const note = vault + "/Dungeons/Parity/Räume/01 Punktraum.md";
     fs.mkdirSync(path.dirname(note), { recursive: true });
     fs.writeFileSync(note, "# 01 Punktraum\r\n\r\nUnveränderter QA-Text.\r\n");

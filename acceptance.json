@@ -4697,6 +4697,24 @@
       },
       {
         "id": "DD-012.01",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hit-refined/runs/20261007-020806-1180547/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -4803,6 +4821,26 @@
       },
       {
         "id": "DD-012.02",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014225-1138596/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape/runs/20261007-020441-1175903/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -4913,6 +4951,25 @@
       },
       {
         "id": "DD-012.03",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape/runs/20261007-020441-1175903/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape-edge/runs/20261007-020539-1177395/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -5012,6 +5069,25 @@
       },
       {
         "id": "DD-013.01",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-default/runs/20261007-015440-1162738/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-backspace/runs/20261007-015520-1163118/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -5109,6 +5185,25 @@
       },
       {
         "id": "DD-013.02",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-backspace/runs/20261007-015520-1163118/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-empty-reopen/runs/20261007-021114-1184552/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -5209,6 +5304,28 @@
       },
       {
         "id": "DD-013.03",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-multipart/runs/20261007-015722-1164779/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-multipart-reopen/runs/20261007-015805-1165326/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hole/runs/20261007-021652-1191200/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-hole-reopen/runs/20261007-021756-1192459/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-empty-reopen/runs/20261007-021114-1184552/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Der letzte Umriss eines nummerierten Raums bleibt wegen des geschützten Markdown-Keys gesperrt; Dungeondraft hat keinen entsprechenden Key."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -5314,6 +5431,26 @@
       },
       {
         "id": "DD-014.01",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-original-20261007/runs/20261007-014158-1138237/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-escape-edge/runs/20261007-020539-1177395/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -5436,6 +5573,26 @@
       },
       {
         "id": "DD-014.02",
+        "phase2SecondReview": {
+          "state": "accepted_phase2",
+          "reviewedCommit": "d51c6bb",
+          "reviewedBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/bau/qa/groups/BAU-01-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-two-portals/runs/20261007-021350-1187253/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-20261007/native-two-portals-reopen/runs/20261007-021733-1191934/evidence/result.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
+          ],
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md"
+          ],
+          "remaining": "Keine offene Nachbesserung innerhalb der Phase-2-Unterfälle."
+        },
         "phase2Repair": {
           "state": "candidate_repaired_review_pending",
           "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
@@ -48291,6 +48448,27 @@
       "verification": "npm run check, 119/119 Kerntests und npm run build bestanden. Sechs vollständige Host-/Frischstartläufe und die zusätzliche Off-Canvas-Capture-Probe bestanden; Raum-ID, Key-Bytes, Portal, Konturen und Undo/Redo enthalten. Produktiver Build unverändert.",
       "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3.",
       "next": "Eigener Aufräum-Reviewlauf: Diff, Performance, vollständige Hostbelege und Listener-Lebensdauer prüfen und erst dort das Aufräumtor entscheiden."
+    },
+    "phase2SecondReview": {
+      "date": "2026-10-07",
+      "result": "gate_passed",
+      "reviewedCommit": "d51c6bb",
+      "candidateBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
+      "acceptedCases": [
+        "DD-012.01",
+        "DD-012.02",
+        "DD-012.03",
+        "DD-013.01",
+        "DD-013.02",
+        "DD-013.03",
+        "DD-014.01",
+        "DD-014.02"
+      ],
+      "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md",
+      "nativeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json",
+      "next": "Eigener Phase-2-Aufräumplanlauf; Umsetzung und Review getrennt."
     },
     "phase2Plan": {
       "date": "2026-10-07",

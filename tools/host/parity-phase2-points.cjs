@@ -1,6 +1,8 @@
 module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks,
   chooseTool, waitForFileAbsent }) => {
   const mapPath = "Dungeons/Parity/Punkte.dungeon";
+  const portalPath = "Dungeons/Parity/Punkte-Portal.dungeon";
+  const contoursPath = "Dungeons/Parity/Punkte-Konturen.dungeon";
   const notePath = "Dungeons/Parity/Räume/01 Punktraum.md";
   const savedState = path.join(qa, "parity-phase2-points-saved.json");
   const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -30,10 +32,10 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
       throw new Error("Point outside canvas: " + JSON.stringify(point));
     return screen;
   }, point);
-  async function open() {
+  async function open(file = mapPath) {
     await page.evaluate(async (file) => {
       await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
-    }, mapPath);
+    }, file);
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
   }
   async function select(point, id) {
@@ -210,6 +212,12 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
     assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), portalBefore);
     await page.keyboard.press("Control+y");
     assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), portalAfter);
+    const portalSnapshot = (await state()).document;
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await waitForFileAbsent(path.join(vault, mapPath + ".draft"));
+    await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor?.session.dirty === false);
+    fs.copyFileSync(path.join(vault, mapPath), path.join(vault, portalPath));
+    const portalHash = digest(fs.readFileSync(path.join(vault, portalPath)));
     await select({ x: 5, y: 11 }, "triangle");
     await hover({ x: 3, y: 9.5 }, 0, 0, "edge");
     await drag({ x: 3, y: 9.5 }, { x: 3, y: 8.5 }, "triangle", "edge-escape", "escape");
@@ -270,8 +278,37 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
       mapHash = digest(fs.readFileSync(path.join(vault, mapPath)));
     fs.writeFileSync(savedState, JSON.stringify({ final, mapHash, keyHash,
       rect: rectThree, ellipse: ellipseAfter,
-      triangle: null, portals: [] }, null, 2));
+      triangle: null, portals: [], portalSnapshot, portalHash, portalAfter }, null, 2));
     checks.push("Phase-2 point map saves with unchanged room-key bytes");
+
+    await open(contoursPath);
+    await chooseTool("Punkte");
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await select({ x: 7, y: 2.7 }, "multipart");
+    await hover({ x: 6, y: 2 }, 1, 0);
+    const multiBefore = await building("multipart");
+    await page.keyboard.press("Backspace");
+    const multiAfter = await building("multipart");
+    assert.equal(multiAfter.polygons.length, 1);
+    assert.deepEqual(multiAfter.polygons[0], multiBefore.polygons[0]);
+    await undoRedo("multipart", multiBefore, multiAfter);
+    await select({ x: 12, y: 3 }, "hole");
+    await hover({ x: 13, y: 4 }, 1, 0);
+    const holeBefore = await building("hole");
+    await page.keyboard.press("Delete");
+    const holeAfter = await building("hole");
+    assert.deepEqual(holeAfter.polygons[0].outer, holeBefore.polygons[0].outer);
+    assert.deepEqual(holeAfter.polygons[0].holes, []);
+    await undoRedo("hole", holeBefore, holeAfter);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await waitForFileAbsent(path.join(vault, contoursPath + ".draft"));
+    await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor?.session.dirty === false);
+    const contoursFinal = (await state()).document;
+    const contoursHash = digest(fs.readFileSync(path.join(vault, contoursPath)));
+    const persisted = JSON.parse(fs.readFileSync(savedState));
+    fs.writeFileSync(savedState, JSON.stringify({ ...persisted,
+      contoursFinal, contoursHash, multiAfter, holeAfter }, null, 2));
+    checks.push("Three-point Backspace removes only the selected multipart ring; Delete removes only the selected hole");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(savedState));
@@ -284,6 +321,18 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
     assert.deepEqual(await building("ellipse"), saved.ellipse);
     assert.equal(await building("triangle"), undefined);
     assert.deepEqual(current.document.entities.filter(e => e.id.startsWith("triangle-door")), []);
+    assert.equal(digest(fs.readFileSync(path.join(vault, portalPath))), saved.portalHash);
+    await open(portalPath);
+    assert.deepEqual((await state()).document, saved.portalSnapshot);
+    assert.deepEqual((await state()).document.entities.filter(e => e.id.startsWith("triangle-door")), saved.portalAfter);
+    checks.push("Fresh Obsidian process restores the distant surviving portal after edge insertion");
+    assert.equal(digest(fs.readFileSync(path.join(vault, contoursPath))), saved.contoursHash);
+    await open(contoursPath);
+    assert.deepEqual((await state()).document, saved.contoursFinal);
+    assert.deepEqual(await building("multipart"), saved.multiAfter);
+    assert.deepEqual(await building("hole"), saved.holeAfter);
+    checks.push("Fresh Obsidian process restores selected multipart and hole removal");
+    await open();
     await chooseTool("Punkte");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     await select({ x: 4, y: 4 }, "rect");
