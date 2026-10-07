@@ -516,17 +516,23 @@ export class MapRenderer {
       shader = nativeFloorShader(texture, grime,
         isNativeCustomColorFloorAssetId(building.material?.assetId)),
       mesh = new Mesh({ geometry, texture, shader }),
-      layer = new Container(), mask = new Graphics();
+      layer = new Container(), mask = new Graphics(),
+      underlay = new Graphics();
     mesh.tint = building.fill;
     mesh.alpha = (building.floorAlpha ?? 255) / 255;
     for (const polygon of building.polygons) {
+      underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
+        .fill(0x252525);
+      for (const hole of polygon.holes)
+        underlay.poly(hole.flatMap((point) => [point.x, point.y]), true)
+          .cut();
       mask.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
         .fill(0xffffff);
       for (const hole of polygon.holes)
         mask.poly(hole.flatMap((point) => [point.x, point.y]), true)
           .cut();
     }
-    layer.addChild(mesh);
+    layer.addChild(underlay, mesh);
     layer.mask = mask;
     target.container.addChildAt(layer, 0);
     target.container.addChild(mask);

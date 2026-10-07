@@ -28,7 +28,15 @@ def tile_pixels(image, origin, index):
     ])
 
 
-def audit(native_map, native_image, host_manifest, host_image):
+def full_tile_pixels(image, origin, index):
+    left = origin[0] + index % 6 * 96
+    top = origin[1] + index // 6 * 96
+    return np.asarray(image.crop((left, top, left + 64, top + 64)),
+                      dtype=np.int16)
+
+
+def audit(native_map, native_image, host_manifest, host_image,
+          native_grid_off_image=None):
     level = json.loads(native_map.read_text())["world"]["levels"]["0"]
     ids = cell_ids(level)
     host = json.loads(host_manifest.read_text())
@@ -42,6 +50,10 @@ def audit(native_map, native_image, host_manifest, host_image):
     editor = ImageCms.profileToProfile(
         host_png, ImageCms.ImageCmsProfile(BytesIO(host_png.info["icc_profile"])),
         ImageCms.createProfile("sRGB"), outputMode="RGB")
+    grid_off = (Image.open(native_grid_off_image).convert("RGB")
+                if native_grid_off_image else None)
+    if grid_off:
+        assert grid_off.size == original.size
     rows = []
     for index, item in enumerate(host):
         x, y = index % 6 * 3, index // 6 * 3
@@ -57,15 +69,25 @@ def audit(native_map, native_image, host_manifest, host_image):
         assert colors[0].lower() == "ff" + item["storedColor"].lower()
         difference = np.abs(tile_pixels(original, (352, 288), index) -
                             tile_pixels(editor, (512, 234), index))
-        rows.append({"index": index, "texturePath": path,
+        row = {"index": index, "texturePath": path,
                      "nativeColor": colors[0], "hostColor": item["storedColor"],
                      "nativeTileId": tile_id,
                      "imageMae": round(float(difference.mean()), 3),
                      "imageP95": round(float(np.percentile(difference, 95)), 3),
                      "channelMae": [round(float(value), 3)
-                                    for value in difference.mean(axis=0)]})
+                                    for value in difference.mean(axis=0)]}
+        if grid_off:
+            full_diff = np.abs(full_tile_pixels(grid_off, (352, 288), index) -
+                               full_tile_pixels(editor, (512, 234), index))
+            edge = np.ones((64, 64), dtype=bool)
+            edge[3:61, 3:61] = False
+            row["fullTileMae"] = round(float(full_diff.mean()), 3)
+            row["outerThreePixelMae"] = round(float(full_diff[edge].mean()), 3)
+            row["innerFiftyEightPixelMae"] = round(float(full_diff[~edge].mean()), 3)
+            row["fullTileP95"] = round(float(np.percentile(full_diff, 95)), 3)
+        rows.append(row)
     assert len({row["texturePath"] for row in rows}) == 24
-    return {"reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+    result = {"reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
             "nativeMap": str(native_map), "nativeScreenshot": str(native_image),
             "hostManifest": str(host_manifest), "hostScreenshot": str(host_image),
             "colorManagement": "Original sRGB chromaticity; Host embedded Skia ICC converted to sRGB",
@@ -74,6 +96,15 @@ def audit(native_map, native_image, host_manifest, host_image):
             "meanImageMae": round(sum(row["imageMae"] for row in rows) / 24, 3),
             "maximumImageMae": max(row["imageMae"] for row in rows),
             "styles": rows}
+    if grid_off:
+        result["nativeGridOffScreenshot"] = str(native_grid_off_image)
+        result["meanFullTileMae"] = round(
+            sum(row["fullTileMae"] for row in rows) / 24, 3)
+        result["maximumFullTileMae"] = max(row["fullTileMae"] for row in rows)
+        result["fullTileScope"] = (
+            "Each 64x64 two-by-two shape, including its outer three pixel border; "
+            "blank map background is excluded.")
+    return result
 
 
 if __name__ == "__main__":
@@ -83,10 +114,13 @@ if __name__ == "__main__":
     parser.add_argument("host_manifest", type=Path)
     parser.add_argument("host_image", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--native-grid-off-image", type=Path)
     args = parser.parse_args()
     result = audit(args.native_map, args.native_image,
-                   args.host_manifest, args.host_image)
+                   args.host_manifest, args.host_image,
+                   args.native_grid_off_image)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({key: result[key] for key in
                       ("shapeCount", "uniqueTexturePaths", "exactDefaultColors",
-                       "meanImageMae", "maximumImageMae")}))
+                       "meanImageMae", "maximumImageMae", "meanFullTileMae",
+                       "maximumFullTileMae") if key in result}))

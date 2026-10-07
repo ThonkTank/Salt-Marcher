@@ -4055,6 +4055,20 @@
           "reviewFinding": "24 UI-Wahlen, Pfade, Standardfarben und Innenpixel im Ladebild gepaart (MAE 0,929; max. 2,393). Direkter Vergleich der Sofortbilder, Randzellen und aller Atlasvarianten fehlt.",
           "requiredProof": "24 Stilpfade: Sofort-/Ladebilder samt Rändern, Ecken und Concrete-Atlasvarianten auf gleichem Kartenstand.",
           "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "24 Pfade/Standardfarben exakt; volle 64×64-Ladebilder im Mittel 1,824, maximal 3,831 RGB-Stufen nach ICC.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/floor-full-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-floor-gallery-final/evidence/1791383152244-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Sofortbilder und fünf Concrete-Atlaszellen einzeln entscheiden.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4345,6 +4359,22 @@
           "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "reviewFinding": "Standardfarben gepaart; Tint-/Alpha-Matrix mit Weiß, abweichender Farbe und 0/128/255 einschließlich Custom Color und isoliertem Hintergrund fehlt.",
           "requiredProof": "Gleiche Weiß-/Standard-/Abweichungsfarbe und Alpha 0/128/255 für Materialfamilien; Hintergrund getrennt.",
+          "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "18 Original-ARGB-Werte für Wood Vertical/Diamond 2 bei Weiß/Standard/Rot und Alpha 0/128/255 exakt; #252525-Unterlage im Host ergänzt. Mit erzwungenem Host-sRGB: sechs Alpha-0-Felder exakt, größter Alpha-128-Anteilunterschied 0,0108 und größter Fehler deckender Stil-/Farbmittel 1,121 RGB-Stufen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-floor-tint-resume/runs/20261007-152548-1843130/evidence/maps/17.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/floor-tint-audit-srgb.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-floor-tint-srgb/evidence/1791383499973-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-floor-tint-srgb/evidence/1791383542894-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Weitere Stilfamilien und vier Custom-Color-Stile mit Weiß/Standard/Abweichungsfarbe und Alpha 0/128/255 offen.",
           "strictAcceptance": "open"
         }
       },
@@ -4888,6 +4918,19 @@
           "reviewFinding": "Neun Optionen als Rohkarte und nach Neustart vorhanden; vollständige Bildwirkung von Boden, Wand, Bevel und Punktmutation nicht belegt.",
           "requiredProof": "Neun Optionen und Grundformen samt Punktmutation sichtbar und roh nach Undo/Redo, Save und Frischstart.",
           "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Neun-Optionen-Karte öffnet auf dem Endbuild bytegleich.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791382802989-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Finale Karte noch nicht vollständig bildlich mit dem Original gepaart.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -5255,6 +5298,21 @@
           "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "reviewFinding": "Ein identischer Startwert und ein Feldklick liefern Floor ff73461d und Wall ff74591d nach Neustart; weitere Feldpositionen und Wall-/Cave-Kontexte fehlen.",
           "requiredProof": "Mehrere normierte Feldpunkte aus gleichem ARGB mit HSV/Rundung und Building-Neuöffnung; genannte gemeinsame Pickerkontexte gegengeprüft.",
+          "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Sieben Floor- und sieben Wall-Feldklicks aus festen ARGB-Starts stimmen bei Original-Hexanzeige und Host-Hex/RGB; Host Edit/Neuöffnung auf Endbuild.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/field-matrix-reference.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-field-matrix-final/evidence/1791383005672-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-field-matrix-final/evidence/1791383043293-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Sieben Original-Wall-Rohfarben nur als Screenshots; Wall-Tool und Cave-Override fehlen.",
           "strictAcceptance": "open"
         }
       },
@@ -6295,6 +6353,17 @@
           "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "reviewFinding": "Eine Bildschirmzeile oberhalb wird korrekt aufgenommen; Beton und ruhiges Holz paaren sich. Holz-Kantenprobe bleibt Original 433528 gegen Host 503f30; weitere gemeinsame Pickerkontexte fehlen.",
           "requiredProof": "Einfarbiger und strukturierter gleicher Bildpixel, Framebuffer/Pickwert/ARGB; Holz-Kantenabweichung erklärt oder behoben.",
+          "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Kein neuer Pipettenvergleich auf dem geänderten Bodenbild.",
+          "evidence": [],
+          "remaining": "Strukturierte Kante samt Framebuffer, Picker und Building; Wall-/Cave-Kontexte fehlen.",
           "strictAcceptance": "open"
         }
       },
@@ -7623,6 +7692,21 @@
           "reviewFinding": "QAWall01-Geradstrecken/Endkappen belegt; zehn native Stile samt Ecken, Schatten, Enden und Kurven nicht paarweise bildlich abgenommen.",
           "requiredProof": "Zehn native Wandstile plus QAWall01, Geometrie-, Anschluss-, Schatten- und Neuöffnungsbilder.",
           "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Zehn eingebaute Original-Wandpfade/Standardfarben gespeichert und per Hostgalerie auf Endbuild bytegleich neu geöffnet.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-gallery/runs/20261007-150442-1832003/evidence/maps/wall-09.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-wall-gallery-final/evidence/1791383063413-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-wall-gallery-final/evidence/1791383091596-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Wandstreifen, Schatten, Enden, Ecken, Kurven und QAWall01 bildlich ausrichten.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8100,6 +8184,19 @@
           "reviewFinding": "ARGB und weißes/rotes QAWall01-Geradstück belegt; weitere Farben und Alpha 0/128/255 an Fugen/Ecken und anderen Assets fehlen.",
           "requiredProof": "Wandfarb-/Alpha-Matrix an Strecke, Fuge, Endkappe, Ecke und Schatten auf QAWall01 und nativer Wand.",
           "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Original-Battlements-Rohkarte enthält neun Wände: Weiß, Rot und 445566 bei Alpha 0/128/255.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-tint/runs/20261007-154304-1852444/evidence/maps/08.dungeondraft_map"
+          ],
+          "remaining": "QAWall01, Host-Bildpaar und Fugen-/Kappen-/Schattenanalyse fehlen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8433,6 +8530,17 @@
           "reviewFinding": "Joint-Werte und Bevel-aus-Bild belegt; innere Bevel-Ecke weicht noch ab, weitere Winkel/Assets/Ring/Portal/Kurve fehlen.",
           "requiredProof": "Bevel an/aus für vier Ausrichtungen, Innen-/Außenecke, Ring, Portal und Kurve ohne sichtbaren Anschlussfehler.",
           "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Keine neue Bevel-Verbindungsmessung in diesem Umsetzungsteil.",
+          "evidence": [],
+          "remaining": "Vier Richtungen, Eckarten, Ring, Portalspalt und Kurve mit Bevel an/aus paaren.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8642,6 +8750,17 @@
           "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
           "reviewFinding": "Paketwand folgt gespeicherter Kontur im Host; ausgerichtetes Original-/Host-Bildpaar nach denselben Punktmutationen fehlt.",
           "requiredProof": "Ausgerichtete Original-/Host-Bildpaare nach identischem Punktzug, Einfügen, Entfernen, Ellipse und Radierung samt Portal/Key.",
+          "strictAcceptance": "open"
+        },
+        "phase3ImageMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+          "finding": "Keine neue gleich ausgerichtete Punktmutationsbildfolge.",
+          "evidence": [],
+          "remaining": "Ziehen, Einfügen, Entfernen, Ellipsenpunkt und Alt-Radierung mit Vorschau/History/Key/Neuöffnung paaren.",
           "strictAcceptance": "open"
         }
       },
@@ -51591,6 +51710,37 @@
         "Neun-Optionen-Gesamtfall und Phase-1-/2-Regression"
       ],
       "next": "Eigener Umsetzungslauf; danach getrennter unabhängiger Review aller 17 Unterfälle. Phase-3-Aufräumen bleibt bis zum bestandenen Fachphasentor gesperrt."
+    },
+    "phase3ImageMatrixImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
+      "verifiedRegressionCases": [
+        "DD-011.16",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-015.02",
+        "DD-015.06",
+        "DD-015.07"
+      ],
+      "openCases": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "productChange": "Native Building-Bodenunterlage #252525 vor Alpha-Komposition.",
+      "remaining": "Sofort-/Atlasbilder, Custom-Color-Matrizen, gemeinsame Picker/Pipette, QAWall01, Wandbild-/Bevel-/Punktmutationsmatrizen und finale Optionskarte; unabhängiger Review ausstehend.",
+      "next": "Verbliebene Bildpaare und Pickerkontexte in einem weiteren Umsetzungslauf; danach getrennter Review aller 17 Phase-3-Unterfälle."
     }
   }
 }
