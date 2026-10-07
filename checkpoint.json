@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 3: Bevel-/QAWall01-Umsetzungskandidat vollständig; unabhängiger 17-Fälle-Review offen",
+  "phase": "Phase 3: 17 Unterfälle unabhängig verifiziert, Fachphasentor bestanden; getrennte Aufräumplanung folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -162,7 +162,8 @@
     "Building-Radierung verwendet den zu Gestenbeginn gewählten Wandstil für die bearbeitete Restkontur und zuvor wandlose ungesperrte Buildings desselben Geschosses in einem History-Befehl; andere Wände, Boden und Raum-Key bleiben erhalten.",
     "Gemessene native Building-Bodenunterlage #252525 unter maskierten Bodenatlas gelegt; Alpha 0 zeigt diese Fläche, Alpha 128 mischt mit ihr. Kein produktiver Vault-Edit.",
     "Neue Karten speichern nativeBuildingWear binär und bieten die Originalaktion Gebäudeabnutzung deaktivieren; Boden, Building-Wände und gehaltene Vorschau verwenden denselben Modus. Der bisherige numerische Zusatzwert bleibt für bestehende Karten getrennt. Produktiver Vault und installierter Build unverändert.",
-    "Phase-3-Umsetzungskandidat aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2: Bevel-/QA-Konturpaare bestehen acht semantische Original-/Hostchecks, fünf Edit-/Frischöffnungs-Paare, sechs Bevel-Matrix-Paare und vier Punktstil-Paare. Diagonale Bodenrandzellen werden maskiert texturiert; Typprüfung, 145 Kerntests, Build und die Phase-1-/2-/Building-Regressionen bestehen. Unabhängiger Review bleibt offen."
+    "Phase-3-Umsetzungskandidat aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2: Bevel-/QA-Konturpaare bestehen acht semantische Original-/Hostchecks, fünf Edit-/Frischöffnungs-Paare, sechs Bevel-Matrix-Paare und vier Punktstil-Paare. Diagonale Bodenrandzellen werden maskiert texturiert; Typprüfung, 145 Kerntests, Build und die Phase-1-/2-/Building-Regressionen bestehen. Unabhängiger Review bleibt offen.",
+    "Getrennter Phase-3-Endbuild-Review auf Commit 7afb942: alle 17 Unterfälle und das Fachphasentor verifiziert. Eigene Host-Edit-/Frischöffnungs-Paare für Konturen 5+5, Bevel 6+6 und Punktstil 4+4 sowie elf Building-Optionen bestanden; fünf Original-Endkarten öffneten bytegleich. Der Rohdatenaudit bestätigt Bevel, QA-Konturen, Portal und Endbuild-Regressionen. Phase-3-Aufräumplanung folgt getrennt."
   ],
   "performance": {
     "entities": 4293,
@@ -175,7 +176,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Getrennten unabhängigen Phase-3-Review aller 17 Unterfälle auf Build aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2 durchführen; DD-011.15, DD-015.04 und DD-015.05 samt Original-/Host- und Neuöffnungsbelegen einzeln entscheiden. Bei Lücken separaten Nachbesserungsplan starten, sonst Phase-3-Aufräumphase eigenständig planen. Produktiven Vault und installierten Build unberührt lassen.",
+  "next": "In einem eigenen Arbeitslauf die Phase-3-Aufräumphase planen: Building-Modelle, Werkzeugzustände, Punktbefehle, Renderer-Ressourcen und QA-Hilfen auf konkrete technische Schwächen prüfen und einen begrenzten Plan neben ROADMAP-PARITY.md ablegen. Danach Umsetzung und Review in getrennten Läufen; Phase 4 erst nach bestandenem Aufräum-Review beginnen. Produktiven Vault und installierten Build unberührt lassen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -189,7 +190,7 @@
     "Phase 3 auf unverändertem Build d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31: Neun QAWall01-ARGB-Werte sind nach Original-UI-Zug, Save und beidseitiger frischer Neuöffnung gepaart. Der deckende Wandkern trifft für Rot und 445566 bis auf 0,010 RGB-Stufen, Weiß weicht oben 16,153 und links 16,866 ab. Die Originalkarten mit building_wear=grime.png und die Hostkarten mit buildingWear=0 sind nicht gleich eingestellt. Eine kontrollierte Original-Rohkartenkopie mit building_wear=null trifft Weiß exakt, verschiebt aber den Bodeninnenflächenfehler von 2,565 auf 21,954 Stufen. Eine globale Weiß-Grime-Regel brach die frühere pixelgleiche Portalwand und wurde verworfen. Alle neun Phase-3-Unterfälle und der unabhängige Review bleiben offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
     "Phase 3: Wear-Modus und Building-Optionsfolge auf demselben isolierten Build 1d76c8cc geprüft: elf Edit-/Frischöffnungs-Paare bestanden, darunter 24 Boden-, zehn Wandstile, 18 Boden- und je neun Battlements-/QAWall01-ARGB-Werte, 14 Farbfeldpunkte, Wall/Cave-Picker, neunfache Optionskarte sowie Phase-1-/2-/3-Regressionen. Zwei Pipettenstarts scheiterten vor der UI an fehlender QA-Karte. Halbtransparentes Diamond 2 wirkt wegen hellem Host- statt dunklem Originalhintergrund sichtbar anders; Bevel-/Paketwand-Mutationsbildpaare fehlen. Alle neun Unterfälle und der unabhängige 17-Fälle-Review bleiben formal offen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md",
     "Phase-3-Review: DD-011.15, DD-015.04 und DD-015.05 bleiben offen, weil vollständige direkte Original-/Host-Paare für Bevel-Richtungen, Eckarten, Ring, Portalspalt, Kurve sowie QAWall01-Punktmutationen fehlen. Keine bestätigte neue Produktabweichung. Das Fachphasentor bleibt offen; als Nächstes eigener Nachbesserungsplan. Review: /home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
-    "Phase-3-Nachbesserungsplan für DD-015.04/.05 und DD-011.15 liegt unter ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md. Direkte Original-/Host-Paare für Bevel und QAWall01-Konturmutationen und der Umsetzungskandidat auf Build aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2 liegen vor. Der unabhängige 17-Fälle-Review und das Fachphasen-Aufräumen stehen aus; die drei Fälle und das Fachphasentor bleiben offen."
+    "Phase 3: alle 17 Unterfälle und das Fachphasentor sind im unabhängigen Endbuild-Review verifiziert. Offen ist die getrennte Phase-3-Aufräumphase mit Plan, Umsetzung und Review; Phase 4 bleibt bis zu deren Freigabe gesperrt. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md"
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -875,7 +876,7 @@
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Drei Phase-3-Unterfälle bleiben offen: DD-015.04 Bevel-Gegenpaare, DD-015.05 vollständige QAWall01-Punktmutationen und davon abhängig DD-011.15. Der Nachbesserungsplan liegt vor; getrennte Umsetzung, unabhängiger Review und Fachphasen-Aufräumen stehen aus. Produktive Installation unverändert.",
+    "open": "Die 17 Phase-3-Unterfälle sind verifiziert. Phase-3-Aufräumplanung, getrennte Umsetzung und unabhängiger Aufräum-Review stehen aus; Phase 4 bleibt gesperrt. Produktive Installation unverändert.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -1255,6 +1256,18 @@
       "coreTestsPassed": 145,
       "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
       "gate": "open"
+    },
+    "phase3FinalIndependentReview": {
+      "date": "2026-10-08",
+      "state": "verified",
+      "candidateCommit": "7afb942",
+      "candidateBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/review-raw-audit.json",
+      "verifiedCases": 17,
+      "openCases": [],
+      "gate": "passed",
+      "next": "Getrennter Planlauf für Phase-3-Aufräumen; danach eigene Umsetzung und eigener Review vor Phase 4."
     }
   }
 }
