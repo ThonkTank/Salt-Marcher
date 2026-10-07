@@ -977,6 +977,8 @@
     "phase3BevelPortalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-probe-20261007/bevel-portal-audit.json",
     "phase3WallIccRepair": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/wall-icc-repair.md",
     "phase3WallIccAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/wall-icc-audit.json",
-    "phase3WallIccCombinedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/host-regression/evidence/1791356553173-parity-phase3-building-reopen/result.json"
+    "phase3WallIccCombinedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/host-regression/evidence/1791356553173-parity-phase3-building-reopen/result.json",
+    "phase3MosaicIccReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-review.md",
+    "phase3MosaicIccAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-audit.json"
   }
 }

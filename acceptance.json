@@ -3972,6 +3972,14 @@
           "finding": "Alle 24 gespeicherten Bodenmotive in Weiß und PCK-Standardfarbe paarweise abgebildet. Vier custom_color-Stile nutzen jetzt die native Rotmaskenformel; 91/96 Atlasindizes stimmen direkt, die fünf übrigen sind bildlich bis 0,36 RGB-Stufen gleichwertig. Mittlerer Pixelfehler bei Standardfarben 9,83 RGB-Stufen.",
           "remaining": "Synthetisch aufgebaute gespeicherte Originalkarte belegt die Bildwirkung, nicht 24 einzelne Galeriegesten. Weitere Tint-/Alpha-Werte, unmittelbarer Zeichenstand und übrige Phase-3-Bildpaare offen.",
           "strictAcceptance": "open"
+        },
+        "phase3IccReaudit": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-review.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-audit.json",
+          "finding": "Nach Host-ICC-Umrechnung nach sRGB sinkt der mittlere Pixelfehler der 24 Standardfarben von 9,83 auf 8,67 RGB-Stufen; größte Kanalabweichung eines Stil-Farbmittels 4,76 statt 9,09. Atlaszellen wurden nicht neu zugeordnet.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4188,6 +4196,14 @@
           ],
           "finding": "Alle 24 gespeicherten Bodenmotive in Weiß und PCK-Standardfarbe paarweise abgebildet. Vier custom_color-Stile nutzen jetzt die native Rotmaskenformel; 91/96 Atlasindizes stimmen direkt, die fünf übrigen sind bildlich bis 0,36 RGB-Stufen gleichwertig. Mittlerer Pixelfehler bei Standardfarben 9,83 RGB-Stufen.",
           "remaining": "Synthetisch aufgebaute gespeicherte Originalkarte belegt die Bildwirkung, nicht 24 einzelne Galeriegesten. Weitere Tint-/Alpha-Werte, unmittelbarer Zeichenstand und übrige Phase-3-Bildpaare offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3IccReaudit": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-review.md",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-mosaic-icc-20261007/mosaic-icc-audit.json",
+          "finding": "Nach Host-ICC-Umrechnung nach sRGB sinkt der mittlere Pixelfehler der 24 Standardfarben von 9,83 auf 8,67 RGB-Stufen; größte Kanalabweichung eines Stil-Farbmittels 4,76 statt 9,09. Atlaszellen wurden nicht neu zugeordnet.",
           "strictAcceptance": "open"
         }
       },
