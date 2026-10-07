@@ -5156,6 +5156,18 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "Im getrennten Nachbesserungsplan direkte Original-/Host-Paare für Bevel und QAWall01-Konturmutationen festlegen; danach umsetzen und unabhängig reviewen."
+        },
+        "phase3BevelPointsRepairPlan": {
+          "date": "2026-10-07",
+          "state": "plan_ready_for_separate_implementation",
+          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
+          "baseCommit": "9cca426",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "focus": "Nach den Wandfällen alle Building-Optionen auf demselben finalen Build gemeinsam prüfen.",
+          "originalToCollect": "Neunfache Optionskarte und ergänzende Formen, Bevel- und QAWall01-Gesten, Save und Original-Neuöffnung.",
+          "hostToCollect": "Vollständige Optionskarte, Phase-1-/2-Regressionen, Save, frische Hostöffnung und geschützte Key-Bytes.",
+          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -9165,6 +9177,18 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "Bevel an/aus für vier Richtungen, Innen-/Außenecke, Ring, Portalspalt und Kurve direkt paaren."
+        },
+        "phase3BevelPointsRepairPlan": {
+          "date": "2026-10-07",
+          "state": "plan_ready_for_separate_implementation",
+          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
+          "baseCommit": "9cca426",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "focus": "Bevel an/aus mit Battlements und QAWall01 an vier Außenrichtungen, konkaver Ecke, Innenring, Portalspalt und Kurve direkt paaren.",
+          "originalToCollect": "Bild, gespeichertes joint, Boden-/Wandkontur, Portal und Schatten je Geste, Undo/Redo und Original-Neuöffnung.",
+          "hostToCollect": "Gleiche UI-Folge, Vorschau und Bild auf dem finalen isolierten Build mit frischer Hostöffnung.",
+          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -9424,6 +9448,18 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "QAWall01 nach Ziehen, Einfügen, Entfernen, Ellipsenpunkt und Alt-Radierung direkt paaren; Portal und Key prüfen."
+        },
+        "phase3BevelPointsRepairPlan": {
+          "date": "2026-10-07",
+          "state": "plan_ready_for_separate_implementation",
+          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
+          "baseCommit": "9cca426",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "focus": "QAWall01 nach Eckzug, Kantenpunkt-Einfügen, Entfernen, Ellipsenzug, Alt-Radierung, Innenring- und Mehrteiländerung direkt paaren.",
+          "originalToCollect": "Paketpfad, Geometrie, Vorschau, erhaltenes/entferntes Portal, Undo/Redo und Original-Neuöffnung.",
+          "hostToCollect": "Paketpfad, Wandfolge, atomare History, Portalbindung, Raum-ID und exakte Key-Bytes mit Host-Neuöffnung.",
+          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -52650,6 +52686,20 @@
       "visualAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/current-options-visual-audit.json",
       "coreTestsPassed": 142,
       "next": "Getrennter Nachbesserungsplan für DD-015.04/.05 und DD-011.15; danach eigene Umsetzung und unabhängiger Review."
+    },
+    "phase3BevelPointsRepairPlan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
+      "baseCommit": "9cca426",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "openCases": [
+        "DD-011.15",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
+      "next": "Getrennter Umsetzungslauf: direkte Original-/Host-Paare, nur bestätigte Abweichungen patchen, finalen Build regressieren; danach eigener unabhängiger Review."
     }
   }
 }
