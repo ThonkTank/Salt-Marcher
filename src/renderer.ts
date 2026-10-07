@@ -815,11 +815,23 @@ export class MapRenderer {
           .moveTo(e.width / 2, -0.15)
           .lineTo(e.width / 2, 0.15)
           .stroke({ width: 0.08, color: 0x403e39 });
-      if (e.assetId) {
-        const reference = e.assetId + "\0image";
-        void this.acquireAsset(visual, reference)
-          .then((texture) => {
-            if (this.visuals.get(id) !== visual || this.closed) return;
+      const boundary = e.anchor
+        ? this.session.entities.get(e.anchor.boundaryId) : undefined;
+      const endReference = boundary?.kind === "building" &&
+        boundary.wallWidth > 0 && boundary.wallAssetId &&
+        !isNativeWallAssetId(boundary.wallAssetId)
+        ? boundary.wallAssetId + "\0end" : undefined;
+      if (e.assetId || endReference) {
+        void Promise.all([
+          e.assetId
+            ? this.acquireAsset(visual, e.assetId + "\0image")
+            : Promise.resolve(undefined),
+          endReference
+            ? this.acquireAsset(visual, endReference)
+            : Promise.resolve(undefined),
+        ]).then(([texture, endTexture]) => {
+          if (this.visuals.get(id) !== visual || this.closed) return;
+          if (texture) {
             const sprite = new Sprite(texture);
             sprite.anchor.set(0.5);
             sprite.width = e.width;
@@ -828,11 +840,25 @@ export class MapRenderer {
               Math.min(e.width, (e.width * texture.height) / texture.width),
             );
             container.addChild(sprite);
-            this.invalidate();
-          })
-          .catch((error) => {
-            if (!this.closed) this.onError(String(error));
-          });
+          }
+          if (endTexture && boundary?.kind === "building") {
+            for (const side of [-1, 1]) {
+              const cap = new Sprite(endTexture);
+              cap.anchor.set(0.5);
+              cap.width = endTexture.width / 256;
+              cap.height = endTexture.height / 256;
+              cap.position.x = side * e.width / 2 * (e.flip ? -1 : 1);
+              cap.rotation = e.flip ? Math.PI : 0;
+              if (side > 0) cap.scale.x *= -1;
+              cap.tint = boundary.wall;
+              cap.alpha = (boundary.wallAlpha ?? 255) / 255;
+              container.addChild(cap);
+            }
+          }
+          this.invalidate();
+        }).catch((error) => {
+          if (!this.closed) this.onError(String(error));
+        });
       }
     } else if (e.kind === "surface") {
       this.roomLayer.addChild(container);
@@ -990,8 +1016,9 @@ export class MapRenderer {
     bevel = false,
   ): void {
     const useNativeAlbedo = visual.entity.kind === "building" &&
-      (isNativeFloorAssetId(visual.entity.material?.assetId) ||
-        isNativeWallAssetId(visual.entity.wallAssetId));
+      (isNativeWallAssetId(visual.entity.wallAssetId) ||
+        (isNativeFloorAssetId(visual.entity.material?.assetId) &&
+          visual.entity.wall !== 0xffffff));
     void Promise.all([
       this.acquireAsset(visual, reference),
       useNativeAlbedo
@@ -1954,8 +1981,9 @@ export class MapRenderer {
       if (after.wallAssetId && after.wallWidth > 0) {
         const reference = after.wallAssetId + "\0image";
         created.assets.push(reference);
-        const needsWallGrime = isNativeFloorAssetId(after.material?.assetId) ||
-          isNativeWallAssetId(after.wallAssetId);
+        const needsWallGrime = isNativeWallAssetId(after.wallAssetId) ||
+          (isNativeFloorAssetId(after.material?.assetId) &&
+            after.wall !== 0xffffff);
         const grimeReference = NATIVE_FLOOR_GRIME_ID + "\0image";
         if (needsWallGrime) created.assets.push(grimeReference);
         void Promise.all([

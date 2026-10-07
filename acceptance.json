@@ -6724,7 +6724,51 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357487853-parity-phase3-building-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357498222-parity-phase3-building-reopen/result.json"
           ],
-          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open."
+          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open.",
+          "supersededBy": "phase3PortalUi closes the original QAWall01 UI placement gap; wall-cap visual gap remains."
+        },
+        "phase3PortalUi": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "296bc8a8b3003d35d832f9f7d51c5ad72f39fb437bd371debe2f0e68b1a2763b",
+          "finding": "Direct original QAWall01 UI click creates a second anchored Door 00 on the 5x3 wall. Save/Undo/Redo/fresh reopen preserve exact two-portal array. Host two-door render and fresh reopen pass; bright native wall end caps and posts remain visually different.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/screens/08-bottom-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/screens/09-bottom-placed.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-undo-one-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-redo-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/screens/02-fresh-two-doors.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/maps/QAWall-two-doors-fresh.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/host-two/evidence/1791358385139-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/host-two/evidence/1791358396160-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/portal-ui-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/portal-ui-audit.json",
+          "open": "Portal wall end-cap and post rendering differs; full Phase-3 review and remaining Bevel, color and complete-options cases are open."
+        },
+        "phase3PortalCapRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "3dde1aa22daa9a1fd63b26fbcde5a90d797694bdd48d35c31e43ad749ec65a2d",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-redo-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/maps/QAWall-two-doors-fresh.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791358978340-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791359064166-parity-phase3-building-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "finding": "Direct QAWall01 two-door original UI map, undo/redo and fresh original reopening verified. Host loads package _end.png and native door_00; four opening caps match 257–261/272 pixels each after ICC conversion, straight white wall strips 1440/1440 each.",
+          "remaining": "Other package walls, corner/bevel pixels and full Building options matrix remain open.",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
         }
       },
       {
@@ -7053,6 +7097,28 @@
           "finding": "Host-ICC nach sRGB umgerechnet: deckende rote QAWall01-Streifen MAE 0,85/1,26, maximal sechs Kanalstufen; Alpha-128-Deckkraft außen Original 0,50127, Host 0,50000. Der unbegründete Wandkanalfaktor 0,9091 ist entfernt.",
           "strictAcceptance": "open",
           "remaining": "Weitere Wandfarben und Alpha-Werte, unmittelbare Original-Bedienfolge sowie übrige Phase-3-Fälle offen."
+        },
+        "phase3PortalCapRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "3dde1aa22daa9a1fd63b26fbcde5a90d797694bdd48d35c31e43ad749ec65a2d",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-redo-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/maps/QAWall-two-doors-fresh.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-white-off/runs/20261007-094511-1574330/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791358978340-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791359064166-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-red-srgb/evidence/1791359774289-parity-phase3-building-edit/result.json"
+          ],
+          "strictAcceptance": "open",
+          "finding": "Native white QAWall01 straight wall is pixel-identical between Bevel on/off (1400 and 1820 sampled pixels); current host white straight strips match original exactly. A separate host with Chromium --force-color-profile=srgb matches native red strips at 908/960 and 888/928 exact pixels (RGB MAE 0.018/0.014). The default host Skia-ICC conversion produced a misleading large full-RGB difference.",
+          "remaining": "Other tints and alpha values, default display color management and complete Building options matrix remain open.",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
         }
       },
       {
@@ -7246,7 +7312,52 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357487853-parity-phase3-building-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357498222-parity-phase3-building-reopen/result.json"
           ],
-          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open."
+          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open.",
+          "supersededBy": "phase3PortalUi closes the original QAWall01 UI placement gap; wall-cap visual gap remains."
+        },
+        "phase3PortalUi": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "296bc8a8b3003d35d832f9f7d51c5ad72f39fb437bd371debe2f0e68b1a2763b",
+          "finding": "Direct original QAWall01 UI click creates a second anchored Door 00 on the 5x3 wall. Save/Undo/Redo/fresh reopen preserve exact two-portal array. Host two-door render and fresh reopen pass; bright native wall end caps and posts remain visually different.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/screens/08-bottom-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/screens/09-bottom-placed.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-undo-one-door.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-redo-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/screens/02-fresh-two-doors.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/maps/QAWall-two-doors-fresh.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/host-two/evidence/1791358385139-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/host-two/evidence/1791358396160-parity-phase3-building-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/portal-ui-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/portal-ui-audit.json",
+          "open": "Portal wall end-cap and post rendering differs; full Phase-3 review and remaining Bevel, color and complete-options cases are open."
+        },
+        "phase3PortalCapRepair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "3dde1aa22daa9a1fd63b26fbcde5a90d797694bdd48d35c31e43ad749ec65a2d",
+          "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-audit.json",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native/runs/20261007-092906-1557296/evidence/maps/QAWall-redo-two-doors.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-ui-20261007/native-reopen/runs/20261007-093139-1561378/evidence/maps/QAWall-two-doors-fresh.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-grid-off/runs/20261007-094316-1572198/evidence/screens/03-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/native-white-off/runs/20261007-094511-1574330/evidence/screens/03-grid-off.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791358978340-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/host-two/evidence/1791359064166-parity-phase3-building-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "finding": "Direct original joint 1/0 white QAWall01 comparison changes corner, not straight strips. Host portal end caps now nearly match original at both openings; layer-only probe changed zero portal pixels.",
+          "remaining": "Bevel corner still differs at 25/228 classified pixels; other angles and wall assets remain open.",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-endcaps-20261007/portal-endcap-repair.md"
         }
       },
       {

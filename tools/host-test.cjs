@@ -528,6 +528,8 @@ async function main() {
       "--remote-debugging-address=127.0.0.1",
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
+      ...(process.argv.includes("--force-srgb")
+        ? ["--force-color-profile=srgb"] : []),
     ],
     { stdio: "inherit" },
   );
@@ -680,7 +682,9 @@ async function workflow() {
     if (process.argv.includes("--floor-mosaic"))
       await scenario.floorMosaic(restart, process.argv.includes("--default-tint"));
     else if (process.argv.includes("--floor-variant")) await scenario.floorVariant(restart);
-    else if (process.argv.includes("--portal-visual")) await scenario.portalVisual();
+    else if (process.argv.includes("--portal-visual"))
+      await scenario.portalVisual(process.argv.includes("--portal-two-doors"),
+        process.argv.includes("--portal-layer-probe"));
     else if (process.argv.includes("--visual-match"))
       await scenario.visualMatch(process.argv.includes("--wall-tint-pair"),
         process.argv.includes("--wall-zero-alpha"),

@@ -586,14 +586,17 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       ? `Two QAWall01 rooms render red at full and ${wallAlphaZero ? "zero" : "half"} wall opacity with bevel off and on${wallNoShadow ? ", without wall shadow" : ""}`
       : "Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
   }
-  async function portalVisual() {
+  async function portalVisual(twoDoors = false, layerProbe = false) {
     const pack = fs.readFileSync(packPath);
     assert.equal(hash(pack),
       "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
     assert.equal(hash(fs.readFileSync(pckPath)),
       "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
-    const file = "Dungeons/Parity/QAWall-Portal-Visual.dungeon";
-    const savedPortal = path.join(qa, "parity-phase3-portal-saved.json");
+    const file = twoDoors
+      ? "Dungeons/Parity/QAWall-Two-Portals.dungeon"
+      : "Dungeons/Parity/QAWall-Portal-Visual.dungeon";
+    const savedPortal = path.join(qa, twoDoors
+      ? "parity-phase3-two-portals-saved.json" : "parity-phase3-portal-saved.json");
     const content = {
       format: "dungeon-map", version: 3, id: "phase3-qawall-portal-visual",
       settings: { name: "QAWall Portal Visual", width: 12, height: 9,
@@ -615,6 +618,12 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
             encodeURIComponent("res://textures/portals/door_00.png"),
           anchor: { boundaryId: "portal-room", contour: 0,
             at: 0.15625 } },
+        ...(twoDoors ? [{ id: "portal-door-bottom", kind: "door",
+          floorId: "floor-1", width: 1, variant: "door",
+          assetId: "pack:dungeondraft-builtin-1.2.0.1:portal:" +
+            encodeURIComponent("res://textures/portals/door_00.png"),
+          anchor: { boundaryId: "portal-room", contour: 0,
+            at: 0.65625 } }] : []),
       ],
       content: { definitions: [], occurrences: [], routes: [], archive: [] },
     };
@@ -640,13 +649,15 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await chooseTool("Raum");
     const grid = page.getByRole("button", { name: "Raster", exact: true });
     if (await grid.getAttribute("aria-pressed") === "true") await grid.click();
-    await page.waitForFunction(() => {
+    await page.waitForFunction((twoDoors) => {
       const visuals = app.workspace.activeLeaf?.view?.editor?.renderer?.visuals;
       const room = visuals?.get("portal-room");
-      return visuals?.size === 2 && room?.wallGeometries?.length > 0 &&
+      return visuals?.size === (twoDoors ? 3 : 2) &&
+        room?.wallGeometries?.length > 0 &&
         room?.floorGeometry?.positions.length > 0 &&
-        visuals.get("portal-door")?.container.children.length > 1;
-    });
+        visuals.get("portal-door")?.container.children.length > 1 &&
+        (!twoDoors || visuals.get("portal-door-bottom")?.container.children.length > 1);
+    }, twoDoors);
     const catalog = await page.evaluate(() => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       return plugin.listAssets(["QAWall01"], true).filter(asset =>
@@ -671,12 +682,43 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     fs.writeFileSync(path.join(out, "portal-valid-style-layout.json"),
       JSON.stringify(layout, null, 2));
     await page.screenshot({ path: path.join(out, "portal-valid-style-64px.png") });
+    if (layerProbe) {
+      const hierarchy = await page.evaluate((twoDoors) => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer,
+          visuals = renderer.visuals,
+          room = visuals.get("portal-room"),
+          wall = room.container.children.find(child => child.children?.some(
+            mesh => room.wallGeometries.includes(mesh.geometry)));
+        if (!wall) throw new Error("Wandebene fehlt.");
+        const before = room.container.children.map(child => ({
+          type: child.constructor.name,
+          children: child.children?.length ?? 0,
+          wall: child === wall,
+        }));
+        const ids = twoDoors ? ["portal-door", "portal-door-bottom"] : ["portal-door"];
+        for (const id of ids)
+          room.container.addChildAt(visuals.get(id).container,
+            room.container.getChildIndex(wall));
+        renderer.invalidate();
+        return { before, after: room.container.children.map(child => ({
+          type: child.constructor.name,
+          children: child.children?.length ?? 0,
+          wall: child === wall,
+        })) };
+      }, twoDoors);
+      fs.writeFileSync(path.join(out, "portal-layer-hierarchy.json"),
+        JSON.stringify(hierarchy, null, 2));
+      await page.waitForTimeout(120);
+      await page.screenshot({ path: path.join(out, "portal-under-wall.png") });
+      checks.push("Portal sprite layering was probed without changing the saved map");
+    }
     if (!restart) {
       await page.getByRole("button", { name: "Speichern", exact: true }).click();
       await page.waitForFunction(() =>
         !app.workspace.activeLeaf.view.editor.session.dirty);
     }
-    checks.push("QAWall01 5×3 room and bound one-field original door texture render at 64 screen pixels per field" +
+    checks.push("QAWall01 5×3 room and " + (twoDoors ? "two bound" : "one bound") +
+      " one-field original door texture render at 64 screen pixels per field" +
       (restart ? " after a fresh process" : " and save"));
   }
   async function floorVariant(restart) {
