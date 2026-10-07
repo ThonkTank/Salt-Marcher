@@ -34,12 +34,12 @@ def set_hex(rfb, value):
     rfb.click(265, 852)
 
 
-def probe(run, resume, button):
+def probe(run, resume, button, styles, layout):
     info = metadata(run)
     rfb = Rfb(int(info["rfb_port"]))
     rows = []
     try:
-        for style_index, (style, expected_path) in enumerate(STYLES):
+        for style_index, (style, expected_path) in enumerate(styles):
             if style_index * 9 + 8 < resume:
                 continue
             rfb.click(*button)
@@ -56,8 +56,11 @@ def probe(run, resume, button):
                         continue
                     argb = alpha + rgb
                     set_hex(rfb, argb)
-                    col, row = index % 6, index // 6
-                    x0, y0 = 352 + col * 96 + 8, 288 + row * 96 + 8
+                    if layout == "interior":
+                        col, row = 1 + index % 5 * 3, 1 + index // 5 * 3
+                    else:
+                        col, row = index % 6 * 3, index // 6 * 3
+                    x0, y0 = 352 + col * 32 + 8, 288 + row * 32 + 8
                     rfb.pointer(0, x0, y0)
                     time.sleep(0.55)
                     rfb.drag((x0, y0), (x0 + 64, y0 + 64))
@@ -84,7 +87,7 @@ def probe(run, resume, button):
                     item = {"index": index, "style": style, "tint": tint,
                             "alpha": alpha_name, "requestedArgb": argb,
                             "storedArgb": actual, "path": path,
-                            "cell": [col * 3, row * 3], "drawn": drawn,
+                            "cell": [col, row], "drawn": drawn,
                             "savedMap": str(saved)}
                     rows.append(item)
                     print(json.dumps({"index": index, "requested": argb,
@@ -100,5 +103,12 @@ if __name__ == "__main__":
     parser.add_argument("run", type=Path)
     parser.add_argument("--resume", type=int, default=0)
     parser.add_argument("--button", type=int, nargs=2, required=True)
+    parser.add_argument("--style", choices=("all", "battlements", "qa-wall"),
+                        default="all")
+    parser.add_argument("--layout", choices=("edge", "interior"), default="edge")
     args = parser.parse_args()
-    probe(args.run, args.resume, args.button)
+    if args.layout == "interior" and args.style == "all":
+        parser.error("interior layout needs one style")
+    styles = STYLES if args.style == "all" else [
+        item for item in STYLES if item[0] == args.style]
+    probe(args.run, args.resume, args.button, styles, args.layout)

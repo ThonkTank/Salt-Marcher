@@ -9,6 +9,8 @@ from PIL import Image
 
 ORIGINS = {"native": (352, 288), "host": (512, 234)}
 REGIONS = {
+    "topWallCore": (slice(0, 4), slice(8, 56)),
+    "leftWallCore": (slice(8, 56), slice(0, 4)),
     "topStrip": (slice(0, 10), slice(8, 56)),
     "leftStrip": (slice(8, 56), slice(0, 10)),
     "upperCorner": (slice(0, 12), slice(0, 12)),
@@ -17,9 +19,16 @@ REGIONS = {
 }
 
 
-def cell(image, origin, index):
-    x = origin[0] + index % 6 * 96
-    y = origin[1] + index // 6 * 96
+def position(index, layout):
+    if layout == "interior":
+        return 1 + index % 5 * 3, 1 + index // 5 * 3
+    return index % 6 * 3, index // 6 * 3
+
+
+def cell(image, origin, index, layout):
+    col, row = position(index, layout)
+    x = origin[0] + col * 32
+    y = origin[1] + row * 32
     return image[y:y + 64, x:x + 64]
 
 
@@ -29,6 +38,7 @@ def audit(args):
     host_data = json.loads(args.host_manifest.read_text())
     rows = host_data["reference"] if args.kind == "tint" else host_data
     assert len(walls) == len(rows) == (9 if args.kind == "tint" else 10)
+    assert args.layout == "edge" or args.kind == "tint"
     native = np.asarray(Image.open(args.native_image).convert("RGB"), dtype=np.int16)
     host_source = Image.open(args.host_image)
     assert not host_source.info.get("icc_profile"), "Use a forced-sRGB Host image"
@@ -40,8 +50,10 @@ def audit(args):
             "ff" + format(row["hostWall"], "06x"))
         if args.kind == "gallery":
             assert wall["texture"] == row["image"]
-        a = cell(native, ORIGINS["native"], index)
-        b = cell(host, ORIGINS["host"], index)
+        else:
+            assert (row["x"], row["y"]) == position(index, args.layout)
+        a = cell(native, ORIGINS["native"], index, args.layout)
+        b = cell(host, ORIGINS["host"], index, args.layout)
         scores = {}
         for name, (ys, xs) in REGIONS.items():
             diff = np.abs(a[ys, xs] - b[ys, xs])
@@ -62,6 +74,7 @@ def audit(args):
         })
     output = {
         "kind": args.kind,
+        "layout": args.layout,
         "nativeMap": str(args.native_map),
         "nativeImage": str(args.native_image),
         "hostManifest": str(args.host_manifest),
@@ -81,6 +94,7 @@ def audit(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--kind", choices=("gallery", "tint"), required=True)
+    parser.add_argument("--layout", choices=("edge", "interior"), default="edge")
     parser.add_argument("--native-map", type=Path, required=True)
     parser.add_argument("--native-image", type=Path, required=True)
     parser.add_argument("--host-manifest", type=Path, required=True)

@@ -4103,6 +4103,21 @@
           ],
           "remaining": "Stabilen Wood-Erstzug und Ursache der Original-Varianz im Sofortbild getrennt klären; fünf Concrete-Atlas-/Randzellen und unabhängiger Review bleiben offen. Zwei Originalversuche derselben Probe sind ausgeschöpft.",
           "strictAcceptance": "open"
+        },
+        "phase3WearModeDiagnostic": {
+          "date": "2026-10-07",
+          "state": "confirmed_setting_gap",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
+          "finding": "Eine Rohkartenkopie mit nur world.building_wear von grime.png auf null geändert verschiebt die mittlere Bodeninnenflächen-Abweichung zum unveränderten Host von 2,565 auf 21,954 RGB-Stufen. Der Host rendert native Boden-Grime trotz buildingWear: 0. Frühere Bodenbildpaare belegen daher noch keine Gleichheit des Kartenoption-Zustands.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/native/runs/20261007-193849-2021377/evidence/maps/08.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/diagnostic-no-wear.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-interior-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-no-wear-audit.json"
+          ],
+          "remaining": "Original-Gebäudeabnutzung per UI/Save und Host-Einstellungsmodell paaren; Bodenstile und Atlasränder danach erneut bildlich prüfen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4441,6 +4456,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/host-stone-concrete/evidence/1791387052544-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Sofort-/Atlasrandbilder, weitere Stile mit auffälligen Rändern, Host-Pickerfolge und unabhängiger Review bleiben offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3WearModeDiagnostic": {
+          "date": "2026-10-07",
+          "state": "confirmed_setting_gap",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
+          "finding": "Original-Building-Wear-Pfad beziehungsweise null verändern die Bodenbildwirkung stark; der Host-ARGB-Vergleich auf buildingWear: 0 rendert trotzdem das native Grime-Material. Farbe/Alpha erst auf gleicher Kartenoption erneut abnehmen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/diagnostic-no-wear.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-no-wear-audit.json"
+          ],
+          "remaining": "Gebäudeabnutzung und Farbstufen bei gleichem Original-/Host-Kartenzustand prüfen; unabhängiger Review offen.",
           "strictAcceptance": "open"
         }
       },
@@ -7826,6 +7854,23 @@
           ],
           "remaining": "Wandstreifen, Endstücke, beide Eckarten, Schatten, Kurve, Portalöffnung und QAWall01 direkt entscheiden; unabhängiger Review und Fachphasentor offen.",
           "strictAcceptance": "open"
+        },
+        "phase3QAWallMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
+          "finding": "Neun QAWall01-Paketpfade/ARGB-Werte wurden nach echter Original-Galeriewahl in zwei Karten gespeichert. Die Innenmatrix wurde im Original und Host frisch geöffnet; Wandkerne, Boden und Schatten sind bildlich getrennt. Eine abweichende Original-Gebäudeabnutzungsoption verhindert die Bildabnahme; der Versuch einer globalen Weiß-Grime-Regel verschlechterte die vorher pixelgleiche Portalwand und wurde verworfen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/native/runs/20261007-193849-2021377/evidence/maps/08.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/native-reopen/runs/20261007-194319-2024193/evidence/screens/02-reopen-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/host/evidence/1791395154050-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/host/evidence/1791395194334-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-interior-audit.json"
+          ],
+          "remaining": "Gebäudeabnutzung in beiden Programmen gleich setzen; QAWall01-Enden, Ecken, Kurven, Schatten und Portale bildlich auf demselben Zustand prüfen; unabhängiger Review offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8334,6 +8379,23 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/tint-uv2-audit.json"
           ],
           "remaining": "Battlements-Wandbildursache, QAWall01-Farb-/Alpha-Matrix sowie Fugen, Kappen, Ecke und Schatten bleiben offen; unabhängiger Review ausstehend.",
+          "strictAcceptance": "open"
+        },
+        "phase3QAWallMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
+          "finding": "Neun QAWall01-Originalwerte Weiß, Rot und 445566 bei Alpha 0/128/255 sind per UI, Save, frischer Originalöffnung und Hostdialog/Neuöffnung gepaart. Mit Original-grime.png/Host-buildingWear: 0 treffen deckendes Rot und 445566 im vier Pixel breiten Wandkern innerhalb 0,010 RGB-Stufen, Weiß weicht um 16,153 oben und 16,866 links ab. Eine kontrollierte Original-Rohkartenkopie mit building_wear: null trifft Weiß exakt, verändert farbige Wände und Boden jedoch stark. Eine pauschale Produktkorrektur wurde nach Portalregression verworfen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/native/runs/20261007-193849-2021377/evidence/maps/08.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/diagnostic-no-wear.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-interior-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qa-wall-no-wear-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-matrix-20261007/host-portal-candidate/evidence/1791394402304-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Original-Gebäudeabnutzung per UI und beide Hostzustände modellieren; gleiche Farb-/Alpha-, Fugen-, Kappen- und Schattenbilder wiederholen; unabhängiger Review offen.",
           "strictAcceptance": "open"
         }
       },
@@ -51979,6 +52041,24 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Wandtextur-Fugen, Enden, Schatten, Ecken, Kurven, Portalöffnung und QAWall01; übrige offene Bildmatrizen und unabhängiger Review."
+    },
+    "phase3QAWallWearDiagnostic": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
+      "casesAdvanced": ["DD-011.11", "DD-011.12", "DD-015.01", "DD-015.03"],
+      "qaWallArgbValuesPaired": 9,
+      "originalFreshReopen": true,
+      "hostFreshReopen": true,
+      "controlledRawWearToggle": true,
+      "productPatchRetained": false,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Original-Gebäudeabnutzung per UI/Save erheben und gleiches Host-Einstellungsmodell planen; danach Boden- und Wandbildmatrizen auf beiden Zuständen wiederholen, übrige Phase-3-Lücken und unabhängiger Review offen."
     }
   }
 }

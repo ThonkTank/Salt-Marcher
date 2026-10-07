@@ -1429,38 +1429,58 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Ten native built-in wall paths and colors were selected and drawn through the Host gallery");
   }
   async function wallTintMatrix(restart) {
-    const file = "Dungeons/Parity/Wall-Tint-Matrix.dungeon";
-    const saved = path.join(qa, "parity-phase3-wall-tint-matrix-saved.json");
+    const qaWall = process.env.DUNGEON_WALL_TINT_STYLE === "qa-wall";
+    const interior = process.env.DUNGEON_WALL_TINT_LAYOUT === "interior";
+    const file = "Dungeons/Parity/Wall-Tint-Matrix" +
+      (qaWall ? "-QAWall" : "") + (interior ? "-Interior" : "") + ".dungeon";
+    const saved = path.join(qa, "parity-phase3-wall-tint-matrix" +
+      (qaWall ? "-qa-wall" : "") +
+      (interior ? "-interior" : "") + "-saved.json");
     const nativeMap = process.env.DUNGEON_WALL_TINT_NATIVE;
     assert(nativeMap, "DUNGEON_WALL_TINT_NATIVE is required");
     const native = JSON.parse(fs.readFileSync(nativeMap, "utf8"));
     const walls = native.world.levels["0"].walls.slice(0, 9);
     assert.equal(walls.length, 9);
+    const expectedPath = qaWall
+      ? "res://packs/QAWall01/textures/walls/QA Wall.png"
+      : "res://textures/walls/battlements.png";
     const reference = walls.map((wall, index) => {
-      assert.equal(wall.texture, "res://textures/walls/battlements.png");
+      assert.equal(wall.texture, expectedPath);
       assert.equal(wall.color.length, 8);
       return { index, argb: wall.color,
-        x: index % 6 * 3, y: Math.floor(index / 6) * 3 };
+        x: interior ? 1 + index % 5 * 3 : index % 6 * 3,
+        y: interior ? 1 + Math.floor(index / 5) * 3
+          : Math.floor(index / 6) * 3 };
     });
     assert.deepEqual(reference.map(item => item.argb), [
       "00ffffff", "80ffffff", "ffffffff",
       "00ff0000", "80ff0000", "ffff0000",
       "00445566", "80445566", "ff445566",
     ]);
-    if (!restart) await page.evaluate(async ({ file, pckPath }) => {
-      await app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath);
+    const pack = qaWall ? fs.readFileSync(packPath) : null;
+    if (pack) assert.equal(hash(pack),
+      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
+    if (!restart) await page.evaluate(async ({ file, pckPath, pack }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (pack) {
+        const bytes = Uint8Array.from(atob(pack), char => char.charCodeAt(0));
+        await plugin.assets.add([new Blob([bytes])]);
+        await plugin.reloadAssets();
+      }
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(file, JSON.stringify({
         format: "dungeon-map", version: 3, id: "phase3-wall-tint-matrix",
         settings: { name: "Wall Tint Matrix", width: 18, height: 12,
-          feetPerField: 5, assetPacks: [], builtInAssets: true,
+          feetPerField: 5, assetPacks: pack ? ["QAWall01"] : [],
+          builtInAssets: true,
           wallShadows: true, objectShadows: false, buildingWear: 0 },
         floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
           ambient: 1 }],
         entities: [], content: { definitions: [], occurrences: [],
           routes: [], archive: [] },
       }));
-    }, { file, pckPath });
+    }, { file, pckPath, pack: pack?.toString("base64") ?? null });
     await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
       app.vault.getAbstractFileByPath(file)), file);
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
@@ -1471,7 +1491,13 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     } else {
       await chooseTool("Raum");
       await page.getByRole("group", { name: "Wandstil" })
-        .getByRole("button", { name: "Battlements", exact: true }).click();
+        .getByRole("button", { name: qaWall ? "QA Wall" : "Battlements",
+          exact: true }).click();
+      const qaWallId = qaWall ? await page.evaluate(() =>
+        app.plugins.getPlugin("dungeon-editor")
+          .listAssets(["QAWall01"], true)
+          .find(asset => asset.kind === "wall" && asset.name === "QA Wall")?.id) : null;
+      if (qaWall) assert(qaWallId);
       for (const item of reference) {
         await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
         await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" })
@@ -1484,6 +1510,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
           Number.parseInt(item.argb.slice(2), 16));
         assert.equal(building.wallAlpha,
           Number.parseInt(item.argb.slice(0, 2), 16));
+        if (qaWall) assert.equal(building.wallAssetId, qaWallId);
       }
       await page.getByRole("button", { name: "Speichern", exact: true }).click();
       await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
@@ -1504,7 +1531,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.screenshot({ path: path.join(out, screenshot) });
     fs.writeFileSync(path.join(out, "wall-tint-matrix.json"),
       JSON.stringify({ nativeMap, reference, document: (await state()).document }, null, 2));
-    checks.push("Nine original Battlements ARGB values render with loaded walls" +
+    checks.push("Nine original " + (qaWall ? "QAWall01" : "Battlements") +
+      " ARGB values render with loaded walls" +
       (restart ? " after fresh reopen" : " after UI drawing and save"));
   }
   async function floorTintMatrix(restart) {
