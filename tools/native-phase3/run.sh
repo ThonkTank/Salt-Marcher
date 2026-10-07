@@ -6,6 +6,9 @@ source_app=/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64
 source_map=${DUNGEON_PHASE3_SOURCE_MAP:-/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/C00-empty.dungeondraft_map}
 source_pack=/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd015-pair-native/runs/20261006-150801-600270/assets/qa-wall-pack.dungeondraft_pack
 xvnc=/home/aaron/.cache/dungeon-native-qa/xvnc/usr/bin/Xvnc
+window_width=${DUNGEON_PHASE3_WINDOW_WIDTH:-1280}
+window_height=${DUNGEON_PHASE3_WINDOW_HEIGHT:-960}
+[[ "$window_width" =~ ^[0-9]+$ && "$window_height" =~ ^[0-9]+$ ]] || exit 2
 run="$qa_root/runs/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$run"/{config,data/Dungeondraft,cache,map,assets,evidence/screens,evidence/maps}
 exec 9>"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/dungeon-editor-test.lock"
@@ -15,7 +18,7 @@ if pgrep -af '[D]ungeondraft\.x86_64|[X]vnc .*-[r]fbport|[Oo]bsidian.*dungeon-na
   exit 75
 fi
 for number in $(seq 12 29); do
-  if [ ! -e "/tmp/.X11-unix/X$number" ] && ! ss -ltn "sport = :$((5900+number))" | rg -q LISTEN; then
+  if [ ! -e "/tmp/.X11-unix/X$number" ] && ! ss -ltn "sport = :$((5900+number))" | grep -q LISTEN; then
     display=:$number
     rfb_port=$((5900+number))
     break
@@ -34,8 +37,8 @@ fi
 cat > "$run/data/Dungeondraft/config.ini" <<INI
 [Display]
 current_screen=0
-window_width=1280
-window_height=960
+window_width=$window_width
+window_height=$window_height
 window_maximized=false
 window_position_x=0
 window_position_y=0
@@ -63,10 +66,10 @@ cleanup() {
   printf 'exit_status=%s\n' "$status" >> "$run/session.txt"
 }
 trap cleanup EXIT INT TERM
-"$xvnc" "$display" -geometry 1280x960 -depth 24 -SecurityTypes None -localhost yes -rfbport "$rfb_port" -ac > "$run/xvnc.log" 2>&1 &
+"$xvnc" "$display" -geometry "${window_width}x${window_height}" -depth 24 -SecurityTypes None -localhost yes -rfbport "$rfb_port" -ac > "$run/xvnc.log" 2>&1 &
 xvnc_pid=$!
 for _ in $(seq 1 100); do
-  ss -ltn "sport = :$rfb_port" | rg -q LISTEN && break
+  ss -ltn "sport = :$rfb_port" | grep -q LISTEN && break
   kill -0 "$xvnc_pid"
   sleep 0.1
 done

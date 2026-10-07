@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { Building } from "../../src/model";
 import { nativeDesignId, isNativeCustomColorFloorAssetId } from
   "../../src/features/material/native-path-catalog";
-import { nativeFloorCells, nativeFloorVariants } from
+import { floorPolygonTouchesCell, nativeFloorCells, nativeFloorVariants } from
   "../../src/features/material/native-floor-tiles";
 
 const wood = nativeDesignId("tileset",
@@ -69,4 +69,14 @@ test("native floor cells follow Building geometry and hole masks", () => {
   assert.equal(cells[1 * 5 + 1], wood);
   const preview = nativeFloorCells([], "ground", 5, 5, building);
   assert.deepEqual(preview, cells);
+});
+
+test("diagonal edge receives a clipped texture tile without filling its distant bounding box", () => {
+  const right = [
+    { x: 4, y: 4 }, { x: 6, y: 4 },
+    { x: 7, y: 7 }, { x: 4, y: 7 },
+  ];
+  assert.equal(floorPolygonTouchesCell(right, 6, 5), true);
+  assert.equal(floorPolygonTouchesCell(right, 7, 5), false);
+  assert.equal(floorPolygonTouchesCell(right, 2, 5), false);
 });

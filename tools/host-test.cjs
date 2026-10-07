@@ -685,6 +685,12 @@ async function workflow() {
     return;
   }
   if (parityPhase3Building) {
+    if (process.argv.includes("--contour-extensions")) {
+      const scenario = require("./host/parity-phase3-contour-extensions.cjs")(scenarioContext);
+      if (restart) await scenario.reopen();
+      else await scenario.edit();
+      return;
+    }
     if (process.argv.includes("--bevel-matrix")) {
       const scenario = require("./host/parity-phase3-bevel-matrix.cjs")(scenarioContext);
       if (restart) await scenario.reopen();

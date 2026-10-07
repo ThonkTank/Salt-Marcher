@@ -1,4 +1,4 @@
-import type { Building, Id } from "../../model";
+import type { Building, Id, Point } from "../../model";
 import { inside } from "../../geometry";
 import { isNativeFloorAssetId } from "./native-path-catalog";
 
@@ -105,4 +105,31 @@ export function nativeFloorCells(
     }
   }
   return cells;
+}
+
+/** Include only cells with a visible piece of a clipped diagonal floor. */
+export function floorPolygonTouchesCell(
+  outer: readonly Point[], x: number, y: number,
+): boolean {
+  if (inside({ x: x + 0.5, y: y + 0.5 }, outer)) return true;
+  if (outer.some((p) => p.x >= x && p.x <= x + 1 &&
+      p.y >= y && p.y <= y + 1)) return true;
+  for (const corner of [
+    { x, y }, { x: x + 1, y }, { x: x + 1, y: y + 1 }, { x, y: y + 1 },
+  ]) if (inside(corner, outer)) return true;
+  for (let i = 0; i < outer.length; i++) {
+    const a = outer[i]!, b = outer[(i + 1) % outer.length]!,
+      dx = b.x - a.x, dy = b.y - a.y;
+    let low = 0, high = 1;
+    for (const [p, q] of [
+      [-dx, a.x - x], [dx, x + 1 - a.x],
+      [-dy, a.y - y], [dy, y + 1 - a.y],
+    ] as const) {
+      if (p === 0 && q < 0) { low = 2; break; }
+      if (p < 0) low = Math.max(low, q / p);
+      if (p > 0) high = Math.min(high, q / p);
+    }
+    if (low <= high) return true;
+  }
+  return false;
 }

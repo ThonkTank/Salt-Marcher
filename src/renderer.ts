@@ -54,7 +54,7 @@ import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
 import { buildingWallBands } from "./features/bau/building-wall-band";
-import { nativeFloorCells, nativeFloorVariants } from
+import { floorPolygonTouchesCell, nativeFloorCells, nativeFloorVariants } from
   "./features/material/native-floor-tiles";
 import { ComputeClient } from "./worker-client";
 import {
@@ -495,8 +495,12 @@ export class MapRenderer {
         maxY = Math.min(this.settings.height, Math.ceil(Math.max(...ys)));
       for (let y = minY; y < maxY; y++)
         for (let x = minX; x < maxX; x++) {
-          const variant = variants[y * this.settings.width + x]!;
-          if (variant === 255) continue;
+          const storedVariant = variants[y * this.settings.width + x]!;
+          // A diagonal can cover part of a cell while its center is outside.
+          // The polygon mask clips this fallback tile to the occupied part.
+          if (storedVariant === 255 &&
+              !floorPolygonTouchesCell(polygon.outer, x, y)) continue;
+          const variant = storedVariant === 255 ? 0 : storedVariant;
           const column = variant % columns, row = Math.floor(variant / columns),
             u0 = (column * 256 + 0.5) / texture.width,
             u1 = ((column + 1) * 256 - 0.5) / texture.width,

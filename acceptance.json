@@ -5168,6 +5168,33 @@
           "hostToCollect": "Vollständige Optionskarte, Phase-1-/2-Regressionen, Save, frische Hostöffnung und geschützte Key-Bytes.",
           "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3BevelPointsImplementation": {
+          "date": "2026-10-08",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "state": "implementation_candidate_pending_independent_review",
+          "candidateBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md",
+          "strictAcceptance": "open",
+          "originalSequence": "Building-Optionskarte, Bevel an ausgewählter Form, Innen-/Mehrteilpunkt, Portal-Randschnitt und unnummerierte 4→3→0-Folge; Save, Undo/Redo und frische Originalöffnung.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-selected-fresh-20261008/runs/20261008-012105-2245602/evidence/maps/01-fresh-open.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-inner-fresh-20261008/runs/20261008-012201-2246922/evidence/maps/01-fresh-open.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-multipart-fresh-final-20261008/runs/20261008-005644-2223682/evidence/maps/01-fresh-open.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-zero-fresh-20261008/runs/20261008-005825-2226823/evidence/maps/01-fresh-open.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791414764335-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791414836502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791415046788-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791415173909-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414645761-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-phase1-regression-final-20261008/evidence/1791414940761-parity-phase1-shapes-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-phase2-regression-final-20261008/evidence/1791415020114-parity-phase2-points-reopen/result.json"
+          ],
+          "finding": "Elf Building-Optionen, fünf zusätzliche Konturkarten, Raum mit QA-Wand/Tür und bytegleichem Key sowie Phase-1-/2-Regressionen bestehen auf demselben Endbuild nach frischer Öffnung.",
+          "remaining": "Getrennter unabhängiger 17-Fälle-Review und danach gegebenenfalls Nachbesserung; Fachphasentor offen."
         }
       },
       {
@@ -9189,6 +9216,32 @@
           "hostToCollect": "Gleiche UI-Folge, Vorschau und Bild auf dem finalen isolierten Build mit frischer Hostöffnung.",
           "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3BevelPointsImplementation": {
+          "date": "2026-10-08",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "state": "implementation_candidate_pending_independent_review",
+          "candidateBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md",
+          "strictAcceptance": "open",
+          "originalSequence": "Bevel an/aus vor Rechteck, konkavem L, Innenring, Portalspalt und Ellipse; Bevel aus bei bereits gewählter QAWall01-Form wirkt erst auf den nächsten Zug.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-bevel-matrix/runs/20261007-234856-2176098/evidence/maps/10-qa-ring-off-portal.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-selected-wide-retry-20261008/runs/20261008-003739-2208146/evidence/maps/01-selected-bevel-off-new-shape.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-selected-fresh-20261008/runs/20261008-012105-2245602/evidence/screens/02-loaded.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-final-build-20261008/evidence/1791415470148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-final-build-20261008/evidence/1791415489655-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414617965-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414645761-parity-phase3-building-reopen/result.json"
+          ],
+          "semanticEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-aligned-20261008/bevel-matrix-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/contour-extensions-audit.json"
+          ],
+          "finding": "Vier Außenrichtungen, konkave/konvexe Ecke, Innenring, Portalspalt und Kurve sowie Schalterwirkung auf den nächsten Zug sind direkt gepaart; Wandanschlüsse ungefähr gleichwertig.",
+          "remaining": "Getrennter unabhängiger 17-Fälle-Review; Fachphasentor offen."
         }
       },
       {
@@ -9460,6 +9513,32 @@
           "hostToCollect": "Paketpfad, Wandfolge, atomare History, Portalbindung, Raum-ID und exakte Key-Bytes mit Host-Neuöffnung.",
           "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "strictAcceptance": "open"
+        },
+        "phase3BevelPointsImplementation": {
+          "date": "2026-10-08",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "state": "implementation_candidate_pending_independent_review",
+          "candidateBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md",
+          "strictAcceptance": "open",
+          "originalSequence": "QA-Wand nach Eck-/Ellipsenpunktzug, Kantenpunkt-Einfügen, Delete/Rücktaste, Innenpunkt, Alt-Trennung, Portal-Randschnitt und unnummeriertem 4→3→0; Undo/Redo, Save und frische Öffnung.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-selected-wide-retry-20261008/runs/20261008-003739-2208146/evidence/maps/02-inner-point-moved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-selected-wide-retry-20261008/runs/20261008-003739-2208146/evidence/maps/03-portal-edge-erased.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-minpoints-20261008/runs/20261008-004204-2210430/evidence/maps/03-zero-points.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-minpoints-20261008/runs/20261008-004204-2210430/evidence/maps/09-multipart-redo.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-multipart-fresh-final-20261008/runs/20261008-005644-2223682/evidence/screens/02-fresh-loaded.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-point-style-final-build-20261008/evidence/1791415620679-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-point-style-final-build-20261008/evidence/1791415637650-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414617965-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414645761-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-phase2-regression-final-20261008/evidence/1791415020114-parity-phase2-points-reopen/result.json"
+          ],
+          "semanticEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/contour-extensions-audit.json",
+          "finding": "QA-Paketpfad, Punkt-/Wandkonturen, Bevel, erhaltene und entfernte Tür sowie atomare History stimmen in den direkten Paaren; ein dunkler Bodentexturkeil an schräger Kante ist behoben.",
+          "remaining": "Getrennter unabhängiger 17-Fälle-Review; Fachphasentor offen."
         }
       },
       {
@@ -52703,27 +52782,31 @@
     },
     "phase3BevelPointsImplementation": {
       "date": "2026-10-08",
-      "state": "partial_implementation_three_cases_open",
+      "state": "implementation_candidate_pending_independent_review",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "referenceSha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
       "pckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
       "qaPackSha256": "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9",
-      "candidateBuildSha256": "688b825bc91cb290155641290c062faa870f2c05431403a4200946bfe649b98d",
+      "candidateBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md",
       "originalBevelPortalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-bevel-matrix/runs/20261007-234856-2176098/evidence/maps/10-qa-ring-off-portal.dungeondraft_map",
       "originalEllipsePointReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-ellipse-fresh/runs/20261008-000126-2185440/evidence/maps/01-fresh-open.dungeondraft_map",
       "originalSelectedWallRemoval": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-remove-controlled/runs/20261007-233644-2162777/evidence/maps/01-qa-selected-remove.dungeondraft_map",
-      "hostPointEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-point-style-final/evidence/1791410860419-parity-phase3-building-edit/result.json",
-      "hostPointReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-point-style-final/evidence/1791410880146-parity-phase3-building-reopen/result.json",
-      "hostOptionsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-options-final/evidence/1791411138780-parity-phase3-building-edit/result.json",
-      "hostOptionsFinalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-options-final/evidence/1791411472754-parity-phase3-building-reopen/result.json",
-      "hostBevelMatrixEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-aligned-20261008/evidence/1791412092460-parity-phase3-building-edit/result.json",
-      "hostBevelMatrixReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-aligned-20261008/evidence/1791412110566-parity-phase3-building-reopen/result.json",
+      "hostPointEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-point-style-final-build-20261008/evidence/1791415620679-parity-phase3-building-edit/result.json",
+      "hostPointReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-point-style-final-build-20261008/evidence/1791415637650-parity-phase3-building-reopen/result.json",
+      "hostOptionsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791414764335-parity-phase3-building-edit/result.json",
+      "hostOptionsFinalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791414836502-parity-phase3-building-reopen/result.json",
+      "hostBevelMatrixEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-final-build-20261008/evidence/1791415470148-parity-phase3-building-edit/result.json",
+      "hostBevelMatrixReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-final-build-20261008/evidence/1791415489655-parity-phase3-building-reopen/result.json",
       "bevelMatrixSemanticAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-aligned-20261008/bevel-matrix-audit.json",
+      "contourSemanticAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/contour-extensions-audit.json",
+      "hostContourEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414617965-parity-phase3-building-edit/result.json",
+      "hostContourReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414645761-parity-phase3-building-reopen/result.json",
+      "hostCombinedFresh": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791415173909-parity-phase3-building-reopen/result.json",
       "observedRule": "Punktverschiebung erhält die vorhandene Wand; Einfügen und Entfernen wenden die aktuell gewählte Wand in einem Undo-Schritt an.",
-      "checks": "TypeScript, 144 Kerntests, Build, Punktstil-Edit 4/4 und Neuöffnung 4/4, Phase-2-Punktregression 9/9 und 3/3, Building-Optionskarte 11/11, Bevel-Matrix 6/6 und sechs frische Neuöffnungen sowie 14 semantische Original-/Hostchecks bestanden.",
+      "checks": "TypeScript, 145 Kerntests und Build bestanden. Auf demselben Endbuild bestanden Punktstil-Edit und Neuöffnung je 4/4, Bevel-Matrix-Edit und Neuöffnung je 6/6, Kontur-Edit und Neuöffnung je 5/5, Building-Optionskarte 11/11, Phase-1- und Phase-2-Regressionen sowie acht semantische Original-/Host-Konturchecks.",
       "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
-      "remaining": "Bevel-Schalter an bestehender ausgewählter Originalform prüfen; Innen-/Mehrteil-Punktmutationen, Alt-Kürzung, Portalentfernungskante und unnummerierte 4→3→0-Folge paaren; danach getrennter 17-Fälle-Review."
+      "remaining": "Unabhängigen Review aller 17 Phase-3-Unterfälle auf dem Endbuild getrennt durchführen; die drei Unterfälle und das Fachphasentor bleiben bis dahin offen."
     }
   }
 }
