@@ -8,6 +8,10 @@ export const NATIVE_PATH_PACK_ID = "dungeondraft-builtin-1.2.0.1";
 export const NATIVE_FLOOR_GRIME_ID = [
   "pack", NATIVE_PATH_PACK_ID, "material", "res://textures/wear/grime.png",
 ].map(encodeURIComponent).join(":");
+/** Door texture used by the original anchored-door map. */
+export const NATIVE_PORTAL_DOOR_00_ID = [
+  "pack", NATIVE_PATH_PACK_ID, "portal", "res://textures/portals/door_00.png",
+].map(encodeURIComponent).join(":");
 
 /** Native paths use a dedicated namespace and must not change package-path rendering. */
 export function isNativePathAssetId(id: string | undefined): boolean {
@@ -31,6 +35,7 @@ export interface NativePathCatalog {
   readonly textures: readonly NativePathTexture[];
   readonly floors: readonly AssetDefinition[];
   readonly walls: readonly AssetDefinition[];
+  readonly portals: readonly AssetDefinition[];
   /** Returns a directly displayable WebP slice; undefined for foreign IDs. */
   image(assetId: string): Blob | undefined;
 }
@@ -182,6 +187,7 @@ export async function readNativePathCatalog(
   const textures: NativePathTexture[] = [];
   const floors: AssetDefinition[] = [];
   const walls: AssetDefinition[] = [];
+  const portals: AssetDefinition[] = [];
   const images = new Map<string, DirectoryEntry>();
   const imageDetails = async (sourcePath: string, id: string) => {
     const metadata = entries.get(sourcePath + ".import");
@@ -263,8 +269,13 @@ export async function readNativePathCatalog(
   for (const key of FLOOR_ORDER) floors.push(await design("tileset", key));
   for (const key of WALL_ORDER) walls.push(await design("wall", key));
   await imageDetails("res://textures/wear/grime.png", NATIVE_FLOOR_GRIME_ID);
+  const doorPath = "res://textures/portals/door_00.png";
+  await imageDetails(doorPath, NATIVE_PORTAL_DOOR_00_ID);
+  portals.push({ id: NATIVE_PORTAL_DOOR_00_ID,
+    packId: NATIVE_PATH_PACK_ID, kind: "portal", name: "Standard Door",
+    files: { image: doorPath } });
   return {
-    textures, floors, walls,
+    textures, floors, walls, portals,
     image(assetId: string): Blob | undefined {
       const entry = images.get(assetId);
       return (

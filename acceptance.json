@@ -6710,6 +6710,21 @@
           ],
           "strictAcceptance": "open",
           "remaining": "QAWall01-Wandmaterial und deckende Rotfärbung im geraden Bildpaar ausgerichtet; Alpha, Portal- und Bevel-Pixel sowie vollständige Original-UI-Folge offen."
+        },
+        "phase3PortalVisual": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "buildSha256": "296bc8a8b3003d35d832f9f7d51c5ad72f39fb437bd371debe2f0e68b1a2763b",
+          "originalSource": "Valid original UI anchored door on standard 5×3 wall; isolated map copy changes only the wall texture to QAWall01 and wall color to white.",
+          "hostResult": "The same one-field gap and native door_00 texture render after save and fresh Obsidian process. Central door texture matches 268/360 pixels; wall cap/portal posts remain visibly different.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/portal-visual-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/portal-visual-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357487853-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357498222-parity-phase3-building-reopen/result.json"
+          ],
+          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open."
         }
       },
       {
@@ -7217,6 +7232,21 @@
           "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-probe-20261007/bevel-portal-audit.json",
           "finding": "Entfernung der Wandmaske ändert keinen Bildpixel. Zwei Eckabschluss-Proben erhöhten die Abweichung von 25/228 auf 105/228 beziehungsweise 60/222; beide Produktproben wurden verworfen. Synthetische Original-Portalrohwerte zeigten nur einen X-Platzhalter, UI-Versuche speicherten kein Portal.",
           "strictAcceptance": "open"
+        },
+        "phase3PortalVisual": {
+          "date": "2026-10-07",
+          "state": "partial_evidence",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "buildSha256": "296bc8a8b3003d35d832f9f7d51c5ad72f39fb437bd371debe2f0e68b1a2763b",
+          "originalSource": "Valid original UI anchored door on standard 5×3 wall; isolated map copy changes only the wall texture to QAWall01 and wall color to white.",
+          "hostResult": "The same one-field gap and native door_00 texture render after save and fresh Obsidian process. Central door texture matches 268/360 pixels; wall cap/portal posts remain visibly different.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/portal-visual-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/portal-visual-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357487853-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-portal-native-texture-final-20261007/host/evidence/1791357498222-parity-phase3-building-reopen/result.json"
+          ],
+          "open": "Direct QAWall01 portal placement through original UI and matching end-cap visual are still required; Bevel residual also remains open."
         }
       },
       {

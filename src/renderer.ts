@@ -796,7 +796,7 @@ export class MapRenderer {
       const p = portalPose(e, (id) => this.session.entities.get(id));
       container.position.set(p.x, p.y);
       container.rotation = p.angle + (e.flip ? Math.PI : 0);
-      if (e.variant === "door")
+      if (e.variant === "door" && !e.assetId)
         g.rect(-e.width / 2, -0.14, e.width, 0.28)
           .fill(0x9e7047)
           .stroke({ width: 0.065, color: 0x262829 });

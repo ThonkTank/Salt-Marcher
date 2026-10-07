@@ -1,4 +1,5 @@
 module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
+  restart,
   chooseTool }) => {
   const mapPath = "Dungeons/Parity/Building-Styles.dungeon";
   const savedState = path.join(qa, "parity-phase3-building-saved.json");
@@ -585,6 +586,99 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       ? `Two QAWall01 rooms render red at full and ${wallAlphaZero ? "zero" : "half"} wall opacity with bevel off and on${wallNoShadow ? ", without wall shadow" : ""}`
       : "Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
   }
+  async function portalVisual() {
+    const pack = fs.readFileSync(packPath);
+    assert.equal(hash(pack),
+      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
+    assert.equal(hash(fs.readFileSync(pckPath)),
+      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    const file = "Dungeons/Parity/QAWall-Portal-Visual.dungeon";
+    const savedPortal = path.join(qa, "parity-phase3-portal-saved.json");
+    const content = {
+      format: "dungeon-map", version: 3, id: "phase3-qawall-portal-visual",
+      settings: { name: "QAWall Portal Visual", width: 12, height: 9,
+        feetPerField: 5, assetPacks: ["QAWall01"], builtInAssets: true,
+        wallShadows: true, objectShadows: false, buildingWear: 0 },
+      floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+      entities: [
+        { id: "portal-room", kind: "building", floorId: "floor-1",
+          polygons: [{ outer: [{ x: 2, y: 2 }, { x: 7, y: 2 },
+            { x: 7, y: 5 }, { x: 2, y: 5 }], holes: [] }],
+          layer: 200, fill: 0xb28f6f, floorAlpha: 255,
+          wall: 0xffffff, wallAlpha: 255, wallBevel: true, wallWidth: 0.2,
+          wallAssetId: "pack:QAWall01:wall:data%2Fwalls%2FQA%20Wall.dungeondraft_wall",
+          material: { assetId: "pack:dungeondraft-builtin-1.2.0.1:tileset:" +
+            encodeURIComponent("res://textures/tilesets/smart/tileset_wood_vertical.png"),
+            assetPart: "image", tileSize: 8, tint: 0xb28f6f, rotation: 0 } },
+        { id: "portal-door", kind: "door", floorId: "floor-1", width: 1,
+          variant: "door", assetId: "pack:dungeondraft-builtin-1.2.0.1:portal:" +
+            encodeURIComponent("res://textures/portals/door_00.png"),
+          anchor: { boundaryId: "portal-room", contour: 0,
+            at: 0.15625 } },
+      ],
+      content: { definitions: [], occurrences: [], routes: [], archive: [] },
+    };
+    await page.evaluate(async ({ file, content, pckPath, pack, restart }) => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      await plugin.useNativeAssetArchive(pckPath);
+      if (!plugin.listAssets(["QAWall01"], true)
+        .some(asset => asset.kind === "wall" && asset.name === "QA Wall")) {
+        const bytes = Uint8Array.from(atob(pack), char => char.charCodeAt(0));
+        await plugin.assets.add([new Blob([bytes])]);
+        await plugin.reloadAssets();
+      }
+      if (!restart) {
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        const existing = app.vault.getAbstractFileByPath(file);
+        if (existing) await app.vault.modify(existing, JSON.stringify(content));
+        else await app.vault.create(file, JSON.stringify(content));
+      }
+      await app.workspace.getLeaf(false).openFile(
+        app.vault.getAbstractFileByPath(file));
+    }, { file, content, pckPath, pack: pack.toString("base64"), restart });
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await chooseTool("Raum");
+    const grid = page.getByRole("button", { name: "Raster", exact: true });
+    if (await grid.getAttribute("aria-pressed") === "true") await grid.click();
+    await page.waitForFunction(() => {
+      const visuals = app.workspace.activeLeaf?.view?.editor?.renderer?.visuals;
+      const room = visuals?.get("portal-room");
+      return visuals?.size === 2 && room?.wallGeometries?.length > 0 &&
+        room?.floorGeometry?.positions.length > 0 &&
+        visuals.get("portal-door")?.container.children.length > 1;
+    });
+    const catalog = await page.evaluate(() => {
+      const plugin = app.plugins.getPlugin("dungeon-editor");
+      return plugin.listAssets(["QAWall01"], true).filter(asset =>
+        asset.kind === "portal" && asset.name === "Standard Door");
+    });
+    assert.equal(catalog.length, 1);
+    assert.equal(catalog[0].id, content.entities[1].assetId);
+    const layout = await page.evaluate(() => {
+      const editor = app.workspace.activeLeaf.view.editor,
+        renderer = editor.renderer, box = renderer.canvas.getBoundingClientRect();
+      renderer.camera.scale = 64;
+      renderer.camera.x = 0;
+      renderer.camera.y = 176;
+      renderer.zoom(1);
+      return { box: box.toJSON(), camera: { ...renderer.camera },
+        entities: editor.session.document().entities };
+    });
+    if (restart)
+      assert.deepEqual(layout.entities, JSON.parse(fs.readFileSync(savedPortal, "utf8")));
+    else
+      fs.writeFileSync(savedPortal, JSON.stringify(layout.entities, null, 2));
+    fs.writeFileSync(path.join(out, "portal-valid-style-layout.json"),
+      JSON.stringify(layout, null, 2));
+    await page.screenshot({ path: path.join(out, "portal-valid-style-64px.png") });
+    if (!restart) {
+      await page.getByRole("button", { name: "Speichern", exact: true }).click();
+      await page.waitForFunction(() =>
+        !app.workspace.activeLeaf.view.editor.session.dirty);
+    }
+    checks.push("QAWall01 5×3 room and bound one-field original door texture render at 64 screen pixels per field" +
+      (restart ? " after a fresh process" : " and save"));
+  }
   async function floorVariant(restart) {
     const file = "Dungeons/Parity/Floor-Variants.dungeon";
     assert.equal(hash(fs.readFileSync(pckPath)),
@@ -790,6 +884,6 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       JSON.stringify(names, null, 2));
     checks.push("All 24 native floor styles render in original saved-map order");
   }
-  return { edit, reopen, combined, verifyCombined, visualMatch,
+  return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
     floorVariant, floorMosaic };
 };

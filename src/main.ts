@@ -331,7 +331,8 @@ export default class DungeonPlugin extends Plugin {
           count: this.nativePathCatalog
             ? this.nativePathCatalog.textures.length +
               this.nativePathCatalog.floors.length +
-              this.nativePathCatalog.walls.length : 0,
+              this.nativePathCatalog.walls.length +
+              this.nativePathCatalog.portals.length : 0,
           error: this.nativePathError,
         }),
         choose: (path) => this.useNativeAssetArchive(path),
@@ -554,7 +555,8 @@ export default class DungeonPlugin extends Plugin {
       : assets;
     return builtInAssets && this.nativePathCatalog
       ? [...packed, ...this.nativePathCatalog.textures.map((item) => item.asset),
-          ...this.nativePathCatalog.floors, ...this.nativePathCatalog.walls]
+          ...this.nativePathCatalog.floors, ...this.nativePathCatalog.walls,
+          ...this.nativePathCatalog.portals]
       : packed;
   }
   colorableObjectSource(
