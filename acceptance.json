@@ -48502,6 +48502,17 @@
       "verification": "Diff gegen alle vier Aufräumpunkte, Baseline-/Kandidaten-Quellhashes, unabhängiger Benchmark samt Streuung, 130 Kerntests, Typprüfung, Build, Sprite-Differenz, Texturreferenzen, isolierter Obsidian-Edit- und Frischprozess sowie vier gespeicherte Rohdateihashes bestanden. Produktiver Build unverändert.",
       "next": "Eigener Phase-3-Planlauf; erst danach Umsetzung, Review und Aufräumen in getrennten Läufen."
     },
+    "phase3Plan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE3-PLAN.md",
+      "baseCommit": "9bb412e",
+      "baseBuildSha256": "0c597d4b6a0cd2d49d26938da7310e107bed0d962577595bbd418a480153226c",
+      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "assignedCases": ["DD-011.11", "DD-011.12", "DD-011.15", "DD-011.16", "DD-011.17", "DD-011.18", "DD-011.19", "DD-011.20", "DD-011.21", "DD-011.22", "DD-015.01", "DD-015.02", "DD-015.03", "DD-015.04", "DD-015.05", "DD-015.06", "DD-015.07"],
+      "openOriginalQuestions": "Boden-/Wandgalerie und Defaults; Stilwechsel vor/nach Zeichnen; Building-Farbpicker mit RGBA, Alpha, Hex, Accept/Abbruch und Pipette; QAWall01 im isolierten Original laden; Bevel, Wand-None/Schatten und vollständige Optionen-Neuöffnung.",
+      "decision": "Dieser Plan nimmt keinen Pflicht-Unterfall ab. Originalmessung, Umsetzung und Hostprüfung folgen im eigenen Umsetzungslauf; unabhängiger Review und gegebenenfalls Nachbesserung bleiben getrennt."
+    },
     "phase2CleanupPlan": {
       "date": "2026-10-07",
       "state": "plan_ready_for_separate_implementation",

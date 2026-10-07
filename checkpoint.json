@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-2-Aufräumtor bestanden; Phase-3-Planung als nächster eigener Lauf",
+  "phase": "Folge-Roadmap: Phase-3-Plan abgelegt; eigener Umsetzungslauf als Nächstes",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -153,7 +153,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 3 in einem eigenen Lauf gegen die zugeordneten Dungeondraft-Originalfälle planen; danach getrennte Umsetzung, Review und Aufräumung gemäß ROADMAP-PARITY.md.",
+  "next": "Phase 3 in einem eigenen Lauf nach ROADMAP-PARITY-PHASE3-PLAN.md umsetzen: unbekannte Originalwirkungen zuerst direkt messen, danach Boden-/Wandstil, Farbwähler und Bevel angleichen und isoliert prüfen; eigener Review folgt.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -773,13 +773,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase2_cleanup_review_passed_phase3_plan_next",
+    "status": "phase3_plan_ready_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-3-Planlauf: zugeordnete Originalfälle, direkte Belege, vorhandenen Kandidatenstand und Abnahmetore festlegen; Umsetzung, Review und Aufräumung folgen getrennt.",
-    "note": "Phase-2-Aufräum-Review bestanden: vier Diffpunkte, Quellhashes, Benchmark samt Streuung, 130 Kerntests, Typprüfung, Build, Sprite-Differenz und Texturreferenzen sowie isolierter Editlauf und frischer Prozess geprüft. Kandidat und CRLF-Key bytegleich, produktiver Build unverändert. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/cleanup-review.md.",
+    "nextRun": "Eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-PLAN.md: Originalmatrix messen, bestätigte Abweichungen bei Boden-/Wandstil, Farbe und Bevel beheben, isoliert editieren und frisch öffnen. Danach eigener Reviewlauf.",
+    "note": "Phase-3-Plan ordnet 17 Pflichtfälle zu. Offene Originalwirkungen bei Galerie, Building-Farbpicker/Alpha/Pipette, QAWall01-Aktivierung, Stilwechsel, Wand-None/Schatten und Bevel werden vor dem Coding gemessen. Kein Fall durch den Plan abgenommen; Kandidat und produktiver Build unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "0c597d4b6a0cd2d49d26938da7310e107bed0d962577595bbd418a480153226c",
     "candidateCoreTests": 129,
@@ -799,6 +799,10 @@
     "phase2CleanupResult": "gate_passed",
     "phase2CleanupReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/cleanup-review.md",
     "phase2CleanupReviewResult": "gate_passed",
+    "phase3Plan": "ROADMAP-PARITY-PHASE3-PLAN.md",
+    "phase3PlanBaseCommit": "9bb412e",
+    "phase3PlanState": "plan_ready_for_separate_implementation",
+    "phase3AssignedCases": 17,
     "phase2CleanupReviewCoreTests": 130,
     "phase2CleanupReviewHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333603538-parity-phase2-points-edit/result.json",
     "phase2CleanupReviewHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333672439-parity-phase2-points-reopen/result.json",
@@ -821,7 +825,7 @@
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Phase-2-Aufräumtor bestanden; als Nächstes Phase 3 getrennt planen. Produktive Installation unverändert. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7.",
+    "open": "Phase 3: 17 Pflichtfälle noch ohne Fachabnahme; Originalmatrix und Umsetzung stehen aus. Produktive Installation unverändert. DD-011.15 vollständig Phase 3, physische Eingabe Phase 7.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
