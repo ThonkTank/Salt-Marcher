@@ -5,6 +5,7 @@ import {
   recolorColorableObjectRgba,
   type ColorableObjectSettings,
 } from "./features/objekte/colorable-pixels";
+import { isNativeFloorAssetId } from "./features/material/native-path-catalog";
 interface Entry {
   refs: number;
   bytes: number;
@@ -37,13 +38,28 @@ export class TexturePool {
         .decode()
         .then(() => {
           if (this.closed) throw new Error("Bildansicht geschlossen.");
+          let resource: HTMLImageElement | HTMLCanvasElement = image;
+          if (isNativeFloorAssetId(path.split("\0", 1)[0]) &&
+              (path.includes("tileset_wood_vertical") ||
+               path.includes("tileset_stone"))) {
+            // The lower half of these two native atlases contains edge and
+            // corner pieces. The upper half contains repeatable floor cells.
+            const canvas = document.createElement("canvas");
+            canvas.width = image.width;
+            canvas.height = image.height / 2;
+            const context = canvas.getContext("2d");
+            if (!context) throw new Error("Kein Bildkontext für Bodenstil.");
+            context.drawImage(image, 0, 0, canvas.width, canvas.height,
+              0, 0, canvas.width, canvas.height);
+            resource = canvas;
+          }
           const source = new ImageSource({
-            resource: image,
+            resource,
             addressMode: "repeat",
             scaleMode: "linear",
           });
           owned.texture = new Texture({ source });
-          owned.bytes = image.width * image.height * 4;
+          owned.bytes = resource.width * resource.height * 4;
           this.evict();
           return owned.texture;
         })

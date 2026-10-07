@@ -22,11 +22,20 @@ import {
 import { newPathLibrarySearchState } from "./features/material/path-library-search";
 import { mountPathLibraryView } from "./features/material/path-library-view";
 import { mountPatternColorPicker } from "./features/material/pattern-color-picker";
+import {
+  mountBuildingColorPicker,
+  type BuildingColorSample,
+  type MountedBuildingColorPicker,
+} from "./features/bau/building-color-picker";
 import { mountLightColorPalette } from "./features/objekte/light-color-palette";
 import {
   nativePathDimensions,
   nativePathWidthFactor,
 } from "./features/material/native-path-scale";
+import {
+  isNativeFloorAssetId,
+  isNativeWallAssetId,
+} from "./features/material/native-path-catalog";
 import {
   mountObjectColorPicker,
   type MountedObjectColorPicker,
@@ -67,7 +76,12 @@ export interface ToolSettings {
   material?: Material;
   layer: number;
   light: Pick<Light, "radius" | "intensity" | "color" | "shadows" | "assetId">;
-  room: Pick<import("./model").Room, "wallAssetId">;
+  room: {
+    wallAssetId?: string;
+    wallAlpha?: number;
+    wallBevel?: boolean;
+    styleReady?: boolean;
+  };
   wall: {
     smooth: boolean;
     width: number;
@@ -231,10 +245,16 @@ export const toolSettings = (): ToolSettings => ({
   },
 });
 
+export function buildingStyleDefaultColor(asset: AssetDefinition | undefined): number {
+  const hex = asset?.color?.replace(/^#/, "") ?? "ffffff";
+  return /^[0-9a-f]{6}$/i.test(hex) ? Number.parseInt(hex, 16) : 0xffffff;
+}
+
 /** Small DOM inspector. Values commit through the same history as canvas edits. */
 export class Properties {
   private pathLibrarySearch = newPathLibrarySearchState();
   private objectPicker?: MountedObjectColorPicker;
+  private buildingPicker?: MountedBuildingColorPicker;
   private objectLibraryPreview?: ObjectLibraryTilePreview;
   constructor(
     private root: HTMLElement,
@@ -248,6 +268,7 @@ export class Properties {
     private previewObjectColor: (id: string, color: number, alpha: number) => void = () => {},
     private clearObjectColorPreview: (id: string) => void = () => {},
     private colorableObjectSource: (id: string) => ColorableObjectSource | undefined = () => undefined,
+    private sampleMapColor: () => Promise<BuildingColorSample | null> = async () => null,
   ) {}
   private field(
     label: string,
@@ -401,6 +422,175 @@ export class Properties {
       if (this.objectLibraryPreview === preview)
         this.notice("Objektvorschau konnte nicht geladen werden: " + String(error));
     });
+  }
+  private renderBuildingGallery(
+    label: string,
+    assets: readonly AssetDefinition[],
+    selectedId: string | undefined,
+    choose: (id: string | undefined) => void,
+    none = false,
+  ): void {
+    const heading = document.createElement("h3");
+    heading.textContent = label;
+    this.root.append(heading);
+    const gallery = document.createElement("div");
+    gallery.className = "dn-building-gallery";
+    gallery.setAttribute("role", "group");
+    gallery.setAttribute("aria-label", label);
+    const entries = none
+      ? [{ id: "", name: "Keine Wand" } as Pick<AssetDefinition, "id" | "name">,
+          ...assets]
+      : assets;
+    for (const asset of entries) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "dn-building-style";
+      button.title = asset.name;
+      button.setAttribute("aria-label", asset.name);
+      button.setAttribute("aria-pressed", String(asset.id === (selectedId ?? "")));
+      if (asset.id) {
+        const image = document.createElement("img");
+        image.alt = "";
+        image.loading = "lazy";
+        image.src = this.assetUrl(asset.id + "\0image");
+        button.append(image);
+      } else button.textContent = "×";
+      button.addEventListener("click", () => {
+        const before = JSON.stringify(this.defaults);
+        choose(asset.id || undefined);
+        if (before !== JSON.stringify(this.defaults)) this.defaultsChanged();
+      });
+      gallery.append(button);
+    }
+    this.root.append(gallery);
+  }
+  private renderBuildingStyleControls(tool: Tool, selected: string | undefined,
+    floorId: string, floorTool: boolean): void {
+    if (!floorTool) return;
+    const all = this.assets(),
+      floors = all.filter((asset) => asset.kind === "tileset"),
+      walls = all.filter((asset) => asset.kind === "wall"),
+      nativeFloors = floors.filter((asset) => isNativeFloorAssetId(asset.id)),
+      nativeWalls = walls.filter((asset) => isNativeWallAssetId(asset.id));
+    if (!this.defaults.material?.assetId && nativeFloors.length) {
+      const first = nativeFloors[0]!;
+      const color = buildingStyleDefaultColor(first);
+      this.defaults.material = { assetId: first.id, assetPart: "image",
+        tileSize: first.nativeTileSizeFields ?? 4, tint: color, rotation: 0 };
+      this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor, color };
+      this.defaultsChanged();
+    }
+    if (!this.defaults.room.styleReady && nativeWalls.length) {
+      const first = nativeWalls[0]!;
+      this.defaults.room = { ...this.defaults.room,
+        wallAssetId: first.id, wallAlpha: 255, wallBevel: false,
+        styleReady: true };
+      this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+        wallColor: buildingStyleDefaultColor(first), wallWidth: 0.2 };
+      this.defaultsChanged();
+    }
+    const refresh = () => this.render(tool, selected, floorId);
+    if (floors.length) this.renderBuildingGallery("Bodenstil", floors,
+      this.defaults.material?.assetId, (id) => {
+        const asset = floors.find((item) => item.id === id);
+        if (!asset) return;
+        const color = buildingStyleDefaultColor(asset);
+        this.defaults.material = { assetId: asset.id,
+          assetPart: asset.files.image ? "image" : "tiles",
+          tileSize: asset.nativeTileSizeFields ?? 4, tint: color, rotation: 0 };
+        this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+          color, opacity: 1 };
+        refresh();
+      });
+    if (walls.length) this.renderBuildingGallery("Wandstil", walls,
+      this.defaults.room.wallAssetId, (id) => {
+        const asset = walls.find((item) => item.id === id);
+        this.defaults.room = { ...this.defaults.room, wallAssetId: id,
+          wallAlpha: 255, styleReady: true };
+        this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+          wallWidth: id ? 0.2 : 0,
+          ...(asset ? { wallColor: buildingStyleDefaultColor(asset) } : {}) };
+        refresh();
+      }, true);
+    const floorReset = document.createElement("button");
+    floorReset.type = "button";
+    floorReset.textContent = "Bodenfarbe zurücksetzen";
+    floorReset.addEventListener("click", () => {
+      const asset = floors.find((item) => item.id === this.defaults.material?.assetId);
+      if (!asset?.color) return;
+      const color = buildingStyleDefaultColor(asset);
+      this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+        color, opacity: 1 };
+      if (this.defaults.material)
+        this.defaults.material = { ...this.defaults.material, tint: color };
+      this.defaultsChanged();
+      refresh();
+    });
+    this.root.append(floorReset);
+    const wallReset = document.createElement("button");
+    wallReset.type = "button";
+    wallReset.textContent = "Wandfarbe zurücksetzen";
+    wallReset.addEventListener("click", () => {
+      const asset = walls.find((item) => item.id === this.defaults.room.wallAssetId);
+      if (!asset?.color) return;
+      this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+        wallColor: buildingStyleDefaultColor(asset) };
+      this.defaults.room = { ...this.defaults.room, wallAlpha: 255 };
+      this.defaultsChanged();
+      refresh();
+    });
+    this.root.append(wallReset);
+    const floorColor = document.createElement("button");
+    floorColor.type = "button";
+    floorColor.textContent = "Bodenfarbe RGBA";
+    floorColor.style.borderColor = "#" +
+      this.defaults.surfaces.floor.color.toString(16).padStart(6, "0");
+    floorColor.addEventListener("click", () => {
+      this.buildingPicker?.close();
+      const floor = this.defaults.surfaces.floor;
+      this.buildingPicker = mountBuildingColorPicker(this.root,
+        floor.color, alphaByteFromOpacity(floor.opacity ?? 1),
+        "Bodenfarbe", {
+          onCommit: (color, alpha) => {
+            this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+              color, opacity: opacityFromAlphaByte(alpha) };
+            if (this.defaults.material)
+              this.defaults.material = { ...this.defaults.material, tint: color };
+            this.defaultsChanged();
+            refresh();
+          },
+          sampleMapColor: this.sampleMapColor,
+          onClose: () => { this.buildingPicker = undefined; },
+        });
+    });
+    this.root.append(floorColor);
+    const wallColor = document.createElement("button");
+    wallColor.type = "button";
+    wallColor.textContent = "Wandfarbe RGBA";
+    wallColor.style.borderColor = "#" +
+      this.defaults.surfaces.floor.wallColor.toString(16).padStart(6, "0");
+    wallColor.addEventListener("click", () => {
+      this.buildingPicker?.close();
+      this.buildingPicker = mountBuildingColorPicker(this.root,
+        this.defaults.surfaces.floor.wallColor,
+        this.defaults.room.wallAlpha ?? 255,
+        "Wandfarbe", {
+          onCommit: (color, alpha) => {
+            this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
+              wallColor: color };
+            this.defaults.room = { ...this.defaults.room, wallAlpha: alpha };
+            this.defaultsChanged();
+            refresh();
+          },
+          sampleMapColor: this.sampleMapColor,
+          onClose: () => { this.buildingPicker = undefined; },
+        });
+    });
+    this.root.append(wallColor);
+    this.field("Bevel Corners", "checkbox",
+      String(this.defaults.room.wallBevel ?? false),
+      (input) => { this.defaults.room = { ...this.defaults.room,
+        wallBevel: input.checked }; });
   }
   private renderFloorControls(tool: Tool, e: Entity | undefined, floorTool: boolean): void {
     if (floorTool) {
@@ -1721,6 +1911,9 @@ export class Properties {
     );
   }
   render(tool: Tool, selected: string | undefined, floorId: string): void {
+    const buildingPicker = this.buildingPicker;
+    this.buildingPicker = undefined;
+    buildingPicker?.close();
     const activePicker = this.objectPicker;
     this.objectPicker = undefined;
     activePicker?.close("escape");
@@ -1740,6 +1933,7 @@ export class Properties {
       tool === "ellipse" ||
       tool === "corridor";
     this.renderFloorControls(tool, e, floorTool);
+    this.renderBuildingStyleControls(tool, selected, floorId, floorTool);
     this.renderPortalControls(tool, e);
     this.renderSurfaceControls(tool, e, floorTool);
     this.renderSurfaceAndPathControls(tool, e, floorTool, selected, floorId);

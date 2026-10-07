@@ -31,11 +31,12 @@ const restart = process.argv.includes("--restart"),
   parityPhase1Shapes = process.argv.includes("--parity-phase1-shapes"),
   parityPhase1Repair = process.argv.includes("--parity-phase1-repair"),
   parityPhase2Points = process.argv.includes("--parity-phase2-points"),
+  parityPhase3Building = process.argv.includes("--parity-phase3-building"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -482,7 +483,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -562,13 +563,26 @@ async function workflow() {
     if (e.type() === "error")
       fs.appendFileSync(out + "/console.log", e.text() + "\n");
   });
-  await page.waitForFunction(
-    (expected) =>
-      typeof app !== "undefined" &&
-      app.vault?.adapter?.basePath === expected &&
-      app.workspace?.layoutReady,
-    vault,
-    { timeout: 30000 },
+  if (parityPhase3Building) {
+    let ready = false, observed;
+    for (let attempt = 0; attempt < 120; attempt++) {
+      try {
+        observed = await page.evaluate(() => typeof app === "undefined" ? null : ({
+          vault: app.vault?.adapter?.basePath,
+          layoutReady: app.workspace?.layoutReady,
+        }));
+        if (observed?.vault === vault && observed.layoutReady) {
+          ready = true;
+          break;
+        }
+      } catch {}
+      await sleep(500);
+    }
+    assert(ready, `Obsidian startup: ${JSON.stringify({ expected: vault, observed })}`);
+  } else await page.waitForFunction(
+    (expected) => typeof app !== "undefined" &&
+      app.vault?.adapter?.basePath === expected && app.workspace?.layoutReady,
+    vault, { timeout: 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -657,6 +671,12 @@ async function workflow() {
   }
   if (parityPhase2Points) {
     const scenario = require("./host/parity-phase2-points.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityPhase3Building) {
+    const scenario = require("./host/parity-phase3-building.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

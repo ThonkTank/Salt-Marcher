@@ -53,6 +53,8 @@ export interface AssetDefinition {
   readonly tintable?: boolean;
   readonly colorableSettings?: ColorableObjectSettings;
   readonly color?: string;
+  /** Width of a built-in 256px-per-field tileset atlas, in fields. */
+  readonly nativeTileSizeFields?: number;
   readonly pathTexturePixels?: { readonly width: number; readonly height: number };
 }
 

@@ -1665,3 +1665,26 @@ test("point grips address a hole and a second Building part without changing the
   session.undo();
   assert.deepEqual(session.entities.get(building.id), building);
 });
+
+test("Building floor and wall alpha and bevel survive parsing without altering older records", () => {
+  const document = newDocument("Stilwerte", 12, 12);
+  const original: Building = {
+    id: "building-style", kind: "building", floorId: document.floors[0]!.id,
+    polygons: [{ outer: rectangle({ x: 1, y: 1 }, { x: 4, y: 4 }), holes: [] }],
+    layer: 200, fill: 0xff0000, floorAlpha: 128,
+    wall: 0xff00ff, wallAlpha: 64, wallWidth: 0.2, wallBevel: true,
+  };
+  const parsed = parseDocument(JSON.stringify({ ...document, entities: [original] }));
+  assert.deepEqual(parsed.entities[0], original);
+  const legacy: Record<string, unknown> = { ...original };
+  delete legacy.floorAlpha;
+  delete legacy.wallAlpha;
+  delete legacy.wallBevel;
+  assert.deepEqual(parseDocument(JSON.stringify({ ...document, entities: [legacy] })).entities[0], legacy);
+  for (const broken of [
+    { floorAlpha: -1 }, { floorAlpha: 256 }, { wallAlpha: 3.5 },
+    { wallBevel: "yes" },
+  ]) assert.throws(() => parseDocument(JSON.stringify({
+    ...document, entities: [{ ...original, ...broken }],
+  })));
+});

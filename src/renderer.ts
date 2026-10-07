@@ -43,6 +43,7 @@ import {
   type Bounds,
 } from "./geometry";
 import { TexturePool } from "./textures";
+import { isNativeFloorAssetId } from "./features/material/native-path-catalog";
 import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
@@ -568,7 +569,7 @@ export class MapRenderer {
     if (e.kind === "building") {
       this.roomLayer.addChild(container);
       container.zIndex = e.layer;
-      if (this.settings.wallShadows) {
+      if (this.settings.wallShadows && e.wallWidth > 0) {
         const shadow = new Graphics();
         for (const polygon of e.polygons) {
           shadow
@@ -608,7 +609,7 @@ export class MapRenderer {
           );
         this.addLabel(visual, e.number, p);
       }
-      if (e.wallAssetId) {
+      if (e.wallAssetId && e.wallWidth > 0) {
         const doors = [...this.session.dependents(e.id)]
           .map((dependent) => this.session.entities.get(dependent))
           .filter((door): door is Door => door?.kind === "door");
@@ -617,6 +618,8 @@ export class MapRenderer {
           wallSegments(e, doors),
           e.wallWidth,
           e.wallAssetId + "\0image",
+          e.wall,
+          (e.wallAlpha ?? 255) / 255,
         );
       }
     } else if (e.kind === "wall") {
@@ -832,6 +835,8 @@ export class MapRenderer {
     segments: readonly { a: Point; b: Point }[],
     width: number,
     reference: string,
+    tint = 0xffffff,
+    alpha = 1,
   ): void {
     void this.acquireAsset(visual, reference)
       .then((texture) => {
@@ -849,6 +854,8 @@ export class MapRenderer {
           sprite.rotation = Math.atan2(dy, dx);
           sprite.width = length + 0.02;
           sprite.height = width;
+          sprite.tint = tint;
+          sprite.alpha = alpha;
           layer.addChild(sprite);
         }
         visual.container.addChild(layer);
@@ -862,20 +869,25 @@ export class MapRenderer {
     const e = v.entity;
     if (e.kind !== "building" && e.kind !== "surface") return;
     g.clear();
+    const floorAlpha = e.kind === "building" ? (e.floorAlpha ?? 255) / 255 : 1;
     const fill =
       texture && e.material
         ? {
             texture,
-            color: e.material.tint,
+            color: e.kind === "building" &&
+              isNativeFloorAssetId(e.material.assetId) ? e.fill : e.material.tint,
+            alpha: floorAlpha,
             textureSpace: "global" as const,
             matrix: new Matrix()
               .scale(
                 e.material.tileSize / texture.width,
-                e.material.tileSize / texture.height,
+                e.material.tileSize / (isNativeFloorAssetId(e.material.assetId)
+                  ? texture.width : texture.height),
               )
               .rotate(e.material.rotation),
           }
-        : { color: e.kind === "building" ? e.fill : e.color };
+        : { color: e.kind === "building" ? e.fill : e.color,
+            alpha: floorAlpha };
     const polygons = e.polygons;
     for (const p of polygons) {
       g.poly(
@@ -930,14 +942,17 @@ export class MapRenderer {
           (d): d is Door =>
             d?.kind === "door" && d.anchor?.boundaryId === e.id,
         );
-      for (const s of wallSegments(e, doors))
-        g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
-      g.stroke({
-        color: e.wall,
-        width: e.wallWidth,
-        cap: "round",
-        join: "round",
-      });
+      if (e.wallWidth > 0) {
+        for (const s of wallSegments(e, doors))
+          g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
+        g.stroke({
+          color: e.wall,
+          alpha: (e.wallAlpha ?? 255) / 255,
+          width: e.wallWidth,
+          cap: "round",
+          join: e.wallBevel ? "bevel" : "round",
+        });
+      }
     } else if (e.wallWidth > 0) {
       for (const s of polygonSegments(e.polygons))
         g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
@@ -1357,6 +1372,19 @@ export class MapRenderer {
     const r = this.canvas.getBoundingClientRect();
     return { x: event.clientX - r.left, y: event.clientY - r.top };
   }
+  sampleRenderedPixel(point: Point): { color: number; alphaByte: number } | null {
+    const x = Math.floor(point.x), y = Math.floor(point.y);
+    if (x < 0 || y < 0 || x >= this.canvas.clientWidth ||
+        y >= this.canvas.clientHeight) return null;
+    const data = this.app.renderer.extract.pixels({
+      target: this.app.stage,
+      frame: new Rectangle(x, y, 1, 1),
+    });
+    const [r, g, b, a] = data.pixels;
+    if (r === undefined || g === undefined || b === undefined || a === undefined)
+      return null;
+    return { color: (r << 16) | (g << 8) | b, alphaByte: a };
+  }
   roomLabelAt(p: Point, padding = 5): Room | undefined {
     const visuals = [...this.session.entities.keys()]
       .map((id) => this.visuals.get(id))
@@ -1671,7 +1699,7 @@ export class MapRenderer {
       this.buildingPreview = state;
       source.container.visible = false;
       if (source.shadow) source.shadow.visible = false;
-      if (this.settings.wallShadows) {
+      if (this.settings.wallShadows && after.wallWidth > 0) {
         state.shadow = new Graphics();
         state.shadow.alpha = container.alpha;
         state.shadow.tint = container.tint;
@@ -1738,7 +1766,7 @@ export class MapRenderer {
     }, state.graphic, state.floorTexture, doors);
     if (state.shadow) {
       state.shadow.clear();
-      for (const polygon of after.polygons) {
+      for (const polygon of after.wallWidth > 0 ? after.polygons : []) {
         state.shadow.poly(polygon.outer.flatMap((point) =>
           [point.x + 0.22, point.y + 0.22]), true)
           .fill({ color: 0x17191a, alpha: 0.22 });
@@ -1764,6 +1792,8 @@ export class MapRenderer {
         sprite.rotation = Math.atan2(dy, dx);
         sprite.width = length + 0.02;
         sprite.height = after.wallWidth;
+        sprite.tint = after.wall;
+        sprite.alpha = (after.wallAlpha ?? 255) / 255;
         used++;
       }
     while (state.wallLayer.children.length > used) {

@@ -40,7 +40,11 @@ export interface Building extends BaseEntity {
   readonly polygons: readonly Polygon[];
   readonly layer: number;
   readonly fill: number;
+  /** Optional for maps saved before Building RGBA controls existed. */
+  readonly floorAlpha?: number;
   readonly wall: number;
+  readonly wallAlpha?: number;
+  readonly wallBevel?: boolean;
   readonly wallWidth: number;
   readonly wallAssetId?: Id;
   readonly material?: Material;
@@ -418,7 +422,12 @@ export function validateEntity(
       isV4Room = e.key !== undefined;
     if (
       !Number.isInteger(e.fill) ||
+      (e.floorAlpha !== undefined &&
+        (!Number.isInteger(e.floorAlpha) || e.floorAlpha < 0 || e.floorAlpha > 255)) ||
       !Number.isInteger(e.wall) ||
+      (e.wallAlpha !== undefined &&
+        (!Number.isInteger(e.wallAlpha) || e.wallAlpha < 0 || e.wallAlpha > 255)) ||
+      (e.wallBevel !== undefined && typeof e.wallBevel !== "boolean") ||
       !Number.isFinite(e.wallWidth) ||
       e.wallWidth < 0 ||
       !Number.isFinite(e.layer) ||

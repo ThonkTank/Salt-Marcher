@@ -472,6 +472,7 @@ export class DungeonEditor {
       (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
       (id) => this.renderer.clearObjectColorPreview(id),
       host.colorableObjectSource,
+      () => this.sampleMapColor(),
     );
 
     this.selectionPanel = element(
@@ -725,6 +726,40 @@ export class DungeonEditor {
     });
     this.setTool("select");
     this.refresh();
+  }
+  private sampleMapColor(): Promise<{ color: number; alphaByte: number } | null> {
+    const canvas = this.renderer.canvas,
+      doc = canvas.ownerDocument;
+    return new Promise((resolve) => {
+      const finish = (value: { color: number; alphaByte: number } | null) => {
+        canvas.removeEventListener("pointerdown", sample, true);
+        doc.removeEventListener("keydown", key, true);
+        doc.removeEventListener("pointerdown", outside, true);
+        resolve(value);
+      };
+      const sample = (event: PointerEvent) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        try {
+          finish(this.renderer.sampleRenderedPixel(this.renderer.local(event)));
+        } catch (error) {
+          this.host.notice(String(error));
+          finish(null);
+        }
+      };
+      const key = (event: KeyboardEvent) => {
+        if (event.key === "Escape") finish(null);
+      };
+      const outside = (event: PointerEvent) => {
+        if (!canvas.contains(event.target as Node) &&
+            !(event.target as Element).closest(".dn-building-color-picker"))
+          finish(null);
+      };
+      canvas.addEventListener("pointerdown", sample, true);
+      doc.addEventListener("keydown", key, true);
+      doc.addEventListener("pointerdown", outside, true);
+    });
   }
   private button(
     label: string,
@@ -2736,9 +2771,12 @@ export class DungeonEditor {
               source.fill,
               source.wall,
               source.wallWidth,
-              1,
+              (source.floorAlpha ?? 255) / 255,
               "none",
               source.material ?? null,
+              source.wallAssetId ?? null,
+              source.wallAlpha ?? 255,
+              source.wallBevel ?? false,
             ])
           : JSON.stringify([
               source.layer,
@@ -2749,14 +2787,16 @@ export class DungeonEditor {
               source.effect ?? "none",
               source.material ?? null,
             ]),
-      desiredStyle = JSON.stringify([
-        defaults.layer,
-        defaults.color,
-        defaults.wallColor,
-        defaults.wallWidth,
-        defaults.opacity ?? 1,
-        defaults.effect ?? "none",
-        material ?? null,
+      desiredStyle = JSON.stringify(category === "floor" ? [
+        defaults.layer, defaults.color, defaults.wallColor,
+        defaults.wallWidth, (defaults.opacity ?? 1), "none", material ?? null,
+        this.settings.room.wallAssetId ?? null,
+        this.settings.room.wallAlpha ?? 255,
+        this.settings.room.wallBevel ?? false,
+      ] : [
+        defaults.layer, defaults.color, defaults.wallColor,
+        defaults.wallWidth, defaults.opacity ?? 1,
+        defaults.effect ?? "none", material ?? null,
       ]),
       sources = [...this.session.entities.values()].filter(
         (entity): entity is Surface | Building => {
@@ -2822,8 +2862,13 @@ export class DungeonEditor {
                   polygons: result.polygons,
                   layer: defaults.layer,
                   fill: defaults.color,
+                  floorAlpha: Math.round((defaults.opacity ?? 1) * 255),
                   wall: defaults.wallColor,
+                  wallAlpha: this.settings.room.wallAlpha ?? 255,
+                  wallBevel: this.settings.room.wallBevel ?? false,
                   wallWidth: defaults.wallWidth,
+                  ...(this.settings.room.wallAssetId
+                    ? { wallAssetId: this.settings.room.wallAssetId } : {}),
                   ...(material ? { material } : {}),
                 }
               : undefined,
