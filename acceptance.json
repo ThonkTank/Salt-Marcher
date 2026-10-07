@@ -3857,6 +3857,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Stilwahl und künftige Züge belegt; alle 24 Bodenbilder und native Kantenvarianten nicht ausgerichtet verglichen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Native Rand-/Eckzellen fehlen in der Bodenzeichnung; alle 24 Bildwirkungen offen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -3928,6 +3940,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "ARGB und Alpha belegt; gesamte native Farbbedienung noch nicht gepaart.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Boden-ARGB gespeichert, aber Textur-/Tint-Wirkung und übrige Building-Farbeingaben offen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4245,6 +4269,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Sechs Optionen frisch geöffnet; Radierung, Portal und Punktänderung nicht zusammen auf derselben Optionskarte.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Radierung, Portal und Punktzug fehlen auf der gemeinsamen Sechs-Optionen-Karte.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4333,6 +4369,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Stilgebundener Reset nur für zukünftige Flächen belegt; unabhängiger Review offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "candidate_pass",
+          "finding": "Stilgebundener Reset für künftige Züge beidseitig mit neuer Fläche belegt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4418,6 +4466,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Farbflächenklick im Building-Picker noch nicht beidseitig mit gespeicherten Werten gepaart.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Direkter Building-Floor-/Wall-Farbflächen-Paarlauf mit Rohwert fehlt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4502,6 +4562,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Hue-Eingabe im Building-Picker noch nicht beidseitig mit gespeicherten Werten gepaart.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Direkter Building-Floor-/Wall-Hue-Paarlauf mit Rohwert fehlt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4589,6 +4661,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Alpha aus Hex belegt; numerische RGBA-Kanäle noch nicht als vollständiger Paarlauf.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Numerische RGBA-Kanäle und Vorschau fehlen als Building-Paarlauf.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4676,6 +4760,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Sechs-/achtstellige Hex-Eingabe und Speicherung belegt; unabhängiger Review offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Achtstellige ARGB-Eingabe belegt; sechsstellige Eingabe und beide Kontexte unvollständig.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4763,6 +4859,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Escape behält live geänderte Farbe; Außenklick nur originalseitig geprüft.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Host-Außenklick und Werkzeugwechsel fehlen trotz Accept-/Escape-Beleg.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4849,6 +4957,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Pipette liest den sichtbaren Pixel; unabhängiger Review offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Host-Wall-Pipette und unabhängiger Screenshotpixel fehlen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -5965,6 +6085,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Paketpfad und Neuöffnung belegt; Anschlüsse/Bildwirkung bei gleicher Skala noch offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "QAWall01 geladen und neu geöffnet; Texturanschlüsse/Bild bei gleicher Skala offen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6076,6 +6208,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "X/None speichert nur Boden; Schatten im Host entfällt. Unabhängiger Review offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "candidate_pass",
+          "finding": "X/None erzeugt Boden ohne Wandring oder Wandschatten und öffnet erneut.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6165,6 +6309,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Wand-ARGB gespeichert; gerenderte native Tint-/Alpha-Bildwirkung nicht ausgerichtet verglichen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Textur-Sprite und farbiger Grundstrich überlagern sich mit je eigenem Alpha; Bildwirkung offen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6251,6 +6407,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Original-Bevel-Schalter blieb verdeckt; eine belastbare On-/Off-Wirkung fehlt.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Original-On/Off-Rohvergleich fehlt; Bevel wirkt im Kandidaten nur auf Grundstrich.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6336,6 +6504,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Ellipse/Kurve und separater QAWall01-Punkt-/Portal-Hostlauf bestehen; direkte gleichgeometrische Original-/Hostfolge offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Punkt-/Portalfall und Stil-/Bevelfall nicht als gemeinsame Original-/Hostfolge geprüft.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6421,6 +6601,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Galerie wirkt nur auf spätere Buildings; älteres zusätzliches Paketmaterialfeld im Review prüfen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "repair_required",
+          "finding": "Altes Paketwandfeld ändert ausgewähltes Building und verwirft wallAlpha/wallBevel/styleReady.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6509,6 +6701,18 @@
           "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
           "open": "Wandfarbe auf Stilwert zurückgesetzt; unabhängiger Review offen.",
           "review": "pending"
+        },
+        "phase3Review": {
+          "date": "2026-10-07",
+          "state": "candidate_pass",
+          "finding": "Stilgebundener Wandreset für künftige Züge beidseitig belegt.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
+          ],
+          "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -48832,6 +49036,17 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/host-options/evidence/1791336309979-parity-phase3-building-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/host-options/evidence/1791336360439-parity-phase3-building-reopen/result.json",
       "open": "17 Pflicht-Unterfälle bleiben bis zum unabhängigen Review offen; Bild-/Bevel-/Picker-/Optionsmatrix-Lücken im Bericht."
+    },
+    "phase3Review": {
+      "date": "2026-10-07",
+      "state": "gate_open",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/phase3-review.md",
+      "evidenceAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/evidence-audit.json",
+      "catalogAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json",
+      "reviewHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337051338-parity-phase3-building-edit/result.json",
+      "reviewHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337109785-parity-phase3-building-reopen/result.json",
+      "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+      "next": "Gesonderter Phase-3-Nachbesserungslauf und danach erneuter unabhängiger Review."
     }
   }
 }
