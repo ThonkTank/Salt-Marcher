@@ -683,7 +683,8 @@ async function workflow() {
     else if (process.argv.includes("--visual-match"))
       await scenario.visualMatch(process.argv.includes("--wall-tint-pair"),
         process.argv.includes("--wall-zero-alpha"),
-        process.argv.includes("--wall-no-shadow"));
+        process.argv.includes("--wall-no-shadow"),
+        process.argv.includes("--wall-blend-probe"));
     else if (process.argv.includes("--verify-combined")) await scenario.verifyCombined();
     else if (process.argv.includes("--combined")) await scenario.combined();
     else if (restart) await scenario.reopen();

@@ -389,7 +389,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
   }
   async function visualMatch(wallTintPair = false, wallAlphaZero = false,
-    wallNoShadow = false) {
+    wallNoShadow = false, wallBlendProbe = false) {
+    if (wallBlendProbe) assert(wallTintPair);
     const pack = fs.readFileSync(packPath);
     assert.equal(hash(pack),
       "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
@@ -414,7 +415,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     if (wallTintPair) {
       for (const entity of content.entities) {
         entity.wall = 0xff0000;
-        entity.wallAlpha = entity.wallBevel ? wallAlphaZero ? 0 : 128 : 255;
+        entity.wallAlpha = entity.wallBevel ? (wallAlphaZero ? 0 : 128) : 255;
         for (const polygon of entity.polygons)
           for (const point of polygon.outer) {
             point.x -= 1;
@@ -467,6 +468,50 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       : wallAlphaZero ? "wall-tint-zero-64px.png"
       : "wall-tint-pair-64px.png";
     await page.screenshot({ path: path.join(out, screenshot) });
+    if (wallBlendProbe) {
+      const layers = await page.evaluate(() => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer;
+        const visual = renderer.visuals.get("visual-on");
+        return visual.container.children.map(child => ({
+          type: child.constructor.name,
+          alpha: child.alpha,
+          visible: child.visible,
+          children: child.children?.map(item => ({
+            type: item.constructor.name, alpha: item.alpha,
+            visible: item.visible,
+            blendMode: item.state?.blendMode,
+          })),
+        }));
+      });
+      fs.writeFileSync(path.join(out, "wall-blend-layers.json"),
+        JSON.stringify(layers, null, 2));
+      for (const [name, alpha] of [["zero", 0], ["half", 0.5], ["full", 1]]) {
+        await page.evaluate(value => {
+          const renderer = app.workspace.activeLeaf.view.editor.renderer;
+          const visual = renderer.visuals.get("visual-on");
+          const mesh = visual.container.children.flatMap(child => child.children ?? [])
+            .find(child => child.geometry === visual.wallGeometries[0]);
+          mesh.alpha = value;
+          renderer.invalidate();
+        }, alpha);
+        await page.waitForTimeout(100);
+        await page.screenshot({ path: path.join(out, `wall-blend-${name}.png`) });
+      }
+      await page.evaluate(() => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer;
+        const visual = renderer.visuals.get("visual-on");
+        const layer = visual.container.children.find(child =>
+          child.children?.some(item => item.geometry === visual.wallGeometries[0]));
+        const mask = layer.mask;
+        layer.mask = null;
+        mask.visible = false;
+        layer.children[0].alpha = 0.5;
+        renderer.invalidate();
+      });
+      await page.waitForTimeout(100);
+      await page.screenshot({ path: path.join(out, "wall-blend-half-unmasked.png") });
+      checks.push("One loaded wall mesh was sampled at zero, half and full alpha in one process");
+    }
     checks.push(wallTintPair
       ? `Two QAWall01 rooms render red at full and ${wallAlphaZero ? "zero" : "half"} wall opacity with bevel off and on${wallNoShadow ? ", without wall shadow" : ""}`
       : "Two equal QAWall01 rooms render at 64 screen pixels per field with bevel off and on");
