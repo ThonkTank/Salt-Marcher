@@ -223,6 +223,8 @@ export function createWall(
   assetId?: string,
   layer = 700,
   shadow = true,
+  color = 0x403e39,
+  alpha = 255,
 ): Wall {
   const wall: Wall = {
     id: uid(),
@@ -231,7 +233,8 @@ export function createWall(
     points,
     smooth,
     closed,
-    color: 0x403e39,
+    color,
+    alpha,
     width,
     layer,
     shadow,
@@ -253,6 +256,7 @@ export function createSurface(
     | "layer"
     | "color"
     | "wallColor"
+    | "wallAlpha"
     | "wallWidth"
     | "opacity"
     | "effect"

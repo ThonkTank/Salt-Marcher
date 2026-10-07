@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDocument, type Door, type Building, type Polygon, isRoom } from "../../src/model";
+import { parseDocument, type Door, type Building, type Polygon,
+  type Wall, type Surface, isRoom } from "../../src/model";
 import { Session } from "../../src/session";
 import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation } from "../../src/commands";
 import { boundarySegments, alignedPortalAt, portalPose, rectangle, buildingEllipse, reanchorPortal, buildingContourEntries, buildingPolygonPoints, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
@@ -1747,4 +1748,30 @@ test("Building floor and wall alpha and bevel survive parsing without altering o
   ]) assert.throws(() => parseDocument(JSON.stringify({
     ...document, entities: [{ ...original, ...broken }],
   })));
+});
+
+test("Wall and Cave picker alpha survive parsing while old records remain opaque", () => {
+  const document = newDocument("Gemeinsamer Picker", 8, 8),
+    floorId = document.floors[0]!.id;
+  const wall: Wall = {
+    id: "wall-picker", kind: "wall", floorId,
+    points: [{ x: 1, y: 1 }, { x: 3, y: 1 }], closed: false,
+    smooth: false, color: 0x74591d, alpha: 128, width: .22,
+  };
+  const cave: Surface = {
+    id: "cave-picker", kind: "surface", floorId, category: "cave",
+    polygons: [{ outer: rectangle({ x: 3, y: 3 }, { x: 5, y: 5 }), holes: [] }],
+    layer: -300, color: 0xafa99b, wallColor: 0x73581d,
+    wallAlpha: 128, wallWidth: .3,
+  };
+  for (const entities of [[wall, cave], [
+    { ...wall, alpha: undefined }, { ...cave, wallAlpha: undefined },
+  ]]) assert.deepEqual(parseDocument(JSON.stringify({ ...document, entities })).entities,
+    JSON.parse(JSON.stringify(entities)));
+  for (const [key, value] of [["alpha", -1], ["alpha", 256],
+    ["wallAlpha", 3.5]] as const) {
+    const entities = key === "alpha" ? [{ ...wall, alpha: value }, cave]
+      : [wall, { ...cave, wallAlpha: value }];
+    assert.throws(() => parseDocument(JSON.stringify({ ...document, entities })));
+  }
 });

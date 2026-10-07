@@ -99,6 +99,7 @@ export interface Wall extends BaseEntity {
   readonly closed: boolean;
   readonly smooth: boolean;
   readonly color: number;
+  readonly alpha?: number;
   readonly width: number;
   readonly layer?: number;
   readonly shadow?: boolean;
@@ -176,6 +177,7 @@ export interface Surface extends BaseEntity {
   readonly effect?: "none" | "ripples";
   readonly material?: Material;
   readonly wallColor: number;
+  readonly wallAlpha?: number;
   readonly wallWidth: number;
 }
 export interface MapPath extends BaseEntity {
@@ -467,6 +469,8 @@ export function validateEntity(
       !Number.isFinite(e.width) ||
       e.width <= 0 ||
       !Number.isInteger(e.color) ||
+      (e.alpha !== undefined &&
+        (!Number.isInteger(e.alpha) || e.alpha < 0 || e.alpha > 255)) ||
       (e.layer !== undefined && !Number.isFinite(e.layer)) ||
       (e.shadow !== undefined && typeof e.shadow !== "boolean")
     )
@@ -550,6 +554,8 @@ export function validateEntity(
       !Number.isFinite(e.layer) ||
       !Number.isInteger(e.color) ||
       !Number.isInteger(e.wallColor) ||
+      (e.wallAlpha !== undefined &&
+        (!Number.isInteger(e.wallAlpha) || e.wallAlpha < 0 || e.wallAlpha > 255)) ||
       !Number.isFinite(e.wallWidth) ||
       e.wallWidth < 0 ||
       (e.opacity !== undefined &&

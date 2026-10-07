@@ -1678,6 +1678,139 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       JSON.stringify(rows, null, 2));
     checks.push("Floor and Wall eyedroppers sampled concrete and wood UI pixels");
   }
+  async function sharedPickerContexts(restart) {
+    const file = "Dungeons/Parity/Shared-Picker-Contexts.dungeon";
+    const saved = path.join(qa, "parity-phase3-shared-picker-saved.json");
+    if (!restart) await page.evaluate(async ({ file, pckPath }) => {
+      await app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath);
+      await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+      await app.vault.create(file, JSON.stringify({
+        format: "dungeon-map", version: 3, id: "phase3-shared-picker",
+        settings: { name: "Shared Picker Contexts", width: 8, height: 8,
+          feetPerField: 5, assetPacks: [], builtInAssets: true,
+          wallShadows: true, objectShadows: false, buildingWear: 0 },
+        floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0, ambient: 1 }],
+        entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
+      }));
+    }, { file, pckPath });
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    if (restart) {
+      assert.deepEqual((await state()).document,
+        JSON.parse(fs.readFileSync(saved, "utf8")));
+      await page.screenshot({ path: path.join(out, "shared-picker-reopen.png") });
+      checks.push("Wall and Cave picker colors and alpha reopen byte-equivalent");
+      return;
+    }
+    const rows = [];
+    const picker = async (button, label, action) => {
+      await page.getByRole("button", { name: button, exact: true }).click();
+      const input = page.getByRole("textbox", { name: label + " Hex ARGB" });
+      if (action.kind === "start") {
+        await input.fill("ff726e65");
+        await page.getByRole("button", { name: "Accept", exact: true }).click();
+        return;
+      }
+      if (action.kind === "field") {
+        assert.equal(await input.inputValue(), "726e65");
+        const box = await page.locator(".dn-building-color-field").boundingBox();
+        assert(box);
+        await page.mouse.click(box.x + box.width * .75,
+          box.y + box.height * action.yFraction);
+        const hex = await input.inputValue();
+        await page.screenshot({ path: path.join(out, action.name + "-field.png") });
+        assert.equal(hex, action.expected);
+        rows.push({ name: action.name, kind: "field", fraction: [.75, action.yFraction],
+          box, hex });
+      } else {
+        const at = await world({ x: .25, y: .1 });
+        const before = PNG.sync.read(await page.screenshot({
+          path: path.join(out, action.name + "-before-pipette.png") }));
+        const offset = (Math.floor(at.y) * before.width + Math.floor(at.x)) * 4;
+        const screenshotRgb = [...before.data.subarray(offset, offset + 3)];
+        const sample = await page.evaluate(at => {
+          const renderer = app.workspace.activeLeaf.view.editor.renderer;
+          const point = renderer.local({ clientX: at.x, clientY: at.y });
+          return { at: renderer.sampleRenderedPixel(point),
+            above: renderer.sampleRenderedPixel({ x: point.x, y: point.y - 1 }) };
+        }, at);
+        await page.getByRole("button", { name: "Pipette", exact: true }).click();
+        await page.mouse.click(at.x, at.y);
+        const hex = await input.inputValue();
+        assert.equal(hex, sample.above.color.toString(16).padStart(6, "0"));
+        await page.screenshot({ path: path.join(out, action.name + "-pipette.png") });
+        rows.push({ name: action.name, kind: "pipette", world: [.25, .1],
+          point: at, screenshotRgb, sample, hex });
+      }
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+    };
+    const wallLine = async (y, count) => {
+      const a = await world({ x: 1, y }), b = await world({ x: 3, y });
+      await page.mouse.click(a.x, a.y);
+      await page.mouse.click(b.x, b.y);
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(count =>
+        [...app.workspace.activeLeaf.view.editor.session.entities.values()]
+          .filter(item => item.kind === "wall").length === count,
+      count);
+    };
+    await chooseTool("Wand");
+    await page.getByRole("combobox", { name: "Paketwand" })
+      .selectOption({ label: "Battlements" });
+    await picker("Wandfarbe RGBA", "Wandfarbe", { kind: "start" });
+    await picker("Wandfarbe RGBA", "Wandfarbe", {
+      kind: "field", name: "wall", yFraction: 140 / 256, expected: "74591d" });
+    await wallLine(1, 1);
+    assert.equal((await state()).document.entities.find(item => item.kind === "wall").color,
+      0x74591d);
+    await chooseTool("Wand");
+    await picker("Wandfarbe RGBA", "Wandfarbe", {
+      kind: "pipette", name: "wall" });
+    await wallLine(2, 2);
+    const wallSample = rows.find(item => item.name === "wall" && item.kind === "pipette");
+    assert.equal((await state()).document.entities.filter(item => item.kind === "wall")[1].color,
+      Number.parseInt(wallSample.hex, 16));
+    await chooseTool("Höhle");
+    await picker("Höhlenwandfarbe RGBA", "Höhlenwandfarbe", { kind: "start" });
+    await picker("Höhlenwandfarbe RGBA", "Höhlenwandfarbe", {
+      kind: "field", name: "cave", yFraction: 141 / 256, expected: "73581d" });
+    const a = await world({ x: 4.5, y: 5 }), b = await world({ x: 5.5, y: 5 });
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForFunction(() =>
+      [...app.workspace.activeLeaf.view.editor.session.entities.values()]
+        .some(item => item.kind === "surface" && item.category === "cave"));
+    assert.equal((await state()).document.entities.find(item =>
+      item.kind === "surface" && item.category === "cave").wallColor, 0x73581d);
+    const cavePolygons = (await state()).document.entities.find(item =>
+      item.kind === "surface" && item.category === "cave").polygons;
+    await chooseTool("Höhle");
+    await picker("Höhlenwandfarbe RGBA", "Höhlenwandfarbe", {
+      kind: "pipette", name: "cave" });
+    const caveSample = rows.find(item => item.name === "cave" && item.kind === "pipette");
+    assert.equal((await state()).document.entities.find(item =>
+      item.kind === "surface" && item.category === "cave").wallColor,
+    Number.parseInt(caveSample.hex, 16));
+    assert.deepEqual((await state()).document.entities.find(item =>
+      item.kind === "surface" && item.category === "cave").polygons, cavePolygons);
+    const beforeUndo = (await state()).document;
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    assert.equal((await state()).document.entities.find(item =>
+      item.kind === "surface" && item.category === "cave").wallColor, 0x73581d);
+    await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    assert.deepEqual((await state()).document, beforeUndo);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    await waitForFileAbsent(path.join(vault, file + ".draft"));
+    fs.writeFileSync(saved, JSON.stringify((await state()).document));
+    fs.writeFileSync(path.join(out, "shared-picker-contexts.json"),
+      JSON.stringify({ rows, document: (await state()).document }, null, 2));
+    checks.push("Wall and Cave field and pipette actions persist through undo, redo and save");
+  }
   async function sameCard(restart) {
     const file = "Dungeons/Parity/Native-Options-Card.dungeon",
       saved = path.join(qa, "parity-phase3-native-options-card-saved.json");
@@ -1917,5 +2050,5 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
     floorVariant, floorMosaic, pickerPair, fieldKnownStart, fieldMatrix, floorGallery24,
     wallGallery10, floorTintMatrix, customFloorMatrix,
-    galleryPipette, sameCard };
+    galleryPipette, sharedPickerContexts, sameCard };
 };

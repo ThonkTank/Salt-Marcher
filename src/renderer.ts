@@ -789,13 +789,16 @@ export class MapRenderer {
       }
       for (const segment of boundarySegments(e, doors))
         g.moveTo(segment.a.x, segment.a.y).lineTo(segment.b.x, segment.b.y);
-      g.stroke({ color: e.color, width: e.width, cap: "round", join: "round" });
+      g.stroke({ color: e.color, alpha: (e.alpha ?? 255) / 255,
+        width: e.width, cap: "round", join: "round" });
       if (e.assetId)
         this.drawTexturedBoundary(
           visual,
           boundarySegments(e, doors),
           e.width,
           e.assetId + "\0image",
+          e.color,
+          (e.alpha ?? 255) / 255,
         );
     } else if (e.kind === "door") {
       this.detailLayer.addChild(container);
@@ -1222,6 +1225,7 @@ export class MapRenderer {
         g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
       g.stroke({
         color: e.wallColor,
+        alpha: (e.wallAlpha ?? 255) / 255,
         width: e.wallWidth,
         cap: "round",
         join: "round",

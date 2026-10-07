@@ -3299,6 +3299,8 @@ export class DungeonEditor {
           this.settings.wall.assetId,
           this.settings.wall.layer,
           this.settings.wall.shadow,
+          this.settings.wall.color,
+          this.settings.wall.alpha,
         );
         void this.select(wall.id);
       }

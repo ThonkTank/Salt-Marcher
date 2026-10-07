@@ -87,6 +87,8 @@ export interface ToolSettings {
     width: number;
     layer: number;
     shadow: boolean;
+    color: number;
+    alpha: number;
     assetId?: string;
   };
   surfaceShape: "rectangle" | "ellipse" | "polygon";
@@ -97,6 +99,7 @@ export interface ToolSettings {
       layer: number;
       color: number;
       wallColor: number;
+      wallAlpha?: number;
       wallWidth: number;
       opacity?: number;
       effect?: "none" | "ripples";
@@ -145,7 +148,8 @@ export const toolSettings = (): ToolSettings => ({
   layer: 100,
   light: { radius: 8, intensity: 1, color: 0xffc979, shadows: true },
   room: { wallBevel: true },
-  wall: { smooth: false, width: 0.22, layer: 700, shadow: true },
+  wall: { smooth: false, width: 0.22, layer: 700, shadow: true,
+    color: 0x403e39, alpha: 255 },
   surfaceShape: "rectangle",
   waterShape: "brush",
   surfaces: {
@@ -161,6 +165,7 @@ export const toolSettings = (): ToolSettings => ({
       layer: -300,
       color: 0xafa99b,
       wallColor: 0x454443,
+      wallAlpha: 255,
       wallWidth: 0.3,
       opacity: 1,
       effect: "none",
@@ -592,7 +597,8 @@ export class Properties {
       (input) => { this.defaults.room = { ...this.defaults.room,
         wallBevel: input.checked }; });
   }
-  private renderFloorControls(tool: Tool, e: Entity | undefined, floorTool: boolean): void {
+  private renderFloorControls(tool: Tool, e: Entity | undefined,
+    floorTool: boolean, selected: string | undefined, floorId: string): void {
     if (floorTool) {
       this.choice(
         "Modus",
@@ -687,6 +693,24 @@ export class Properties {
           (assetId) => update({ assetId: assetId || undefined }),
           true,
         );
+      const color = document.createElement("button");
+      color.type = "button";
+      color.textContent = "Wandfarbe RGBA";
+      color.style.borderColor = "#" + wall.color.toString(16).padStart(6, "0");
+      color.addEventListener("click", () => {
+        this.buildingPicker?.close();
+        this.buildingPicker = mountBuildingColorPicker(this.root,
+          wall.color, wall.alpha ?? 255, "Wandfarbe", {
+            onCommit: (nextColor, alpha) => {
+              update({ color: nextColor, alpha });
+              this.defaultsChanged();
+              this.render(tool, selected, floorId);
+            },
+            sampleMapColor: this.sampleMapColor,
+            onClose: () => { this.buildingPicker = undefined; },
+          });
+      });
+      this.root.append(color);
     }
   }
   private renderPortalControls(tool: Tool, e: Entity | undefined): void {
@@ -858,7 +882,8 @@ export class Properties {
       }
     }
   }
-  private renderSurfaceControls(tool: Tool, e: Entity | undefined, floorTool: boolean): void {
+  private renderSurfaceControls(tool: Tool, e: Entity | undefined,
+    floorTool: boolean): void {
     if (
       tool === "cave" ||
       tool === "material" ||
@@ -1087,6 +1112,39 @@ export class Properties {
           "#" + surface.wallColor.toString(16).padStart(6, "0"),
           (i) => update({ wallColor: parseInt(i.value.slice(1), 16) }),
         );
+        if (category === "cave") {
+          const caveColor = document.createElement("button");
+          caveColor.type = "button";
+          caveColor.textContent = "Höhlenwandfarbe RGBA";
+          caveColor.style.borderColor = "#" + surface.wallColor.toString(16).padStart(6, "0");
+          caveColor.addEventListener("click", () => {
+            this.buildingPicker?.close();
+            this.buildingPicker = mountBuildingColorPicker(this.root,
+              surface.wallColor, surface.wallAlpha ?? 255,
+              "Höhlenwandfarbe", {
+                onCommit: (wallColor, wallAlpha) => {
+                  this.defaults.surfaces.cave = {
+                    ...this.defaults.surfaces.cave, wallColor, wallAlpha };
+                  const entities = [...this.session.entities.values()]
+                    .filter((item): item is Surface =>
+                      item.kind === "surface" && item.category === "cave" &&
+                      item.floorId === floorId &&
+                      (item.wallColor !== wallColor ||
+                        (item.wallAlpha ?? 255) !== wallAlpha))
+                    .map((item) => ({ id: item.id, before: item,
+                      after: { ...item, wallColor, wallAlpha } }));
+                  if (entities.length) this.session.execute({
+                    label: "Höhlenwandfarbe ändern", entities,
+                  });
+                  this.defaultsChanged();
+                  this.render(tool, selected, floorId);
+                },
+                sampleMapColor: this.sampleMapColor,
+                onClose: () => { this.buildingPicker = undefined; },
+              });
+          });
+          this.root.append(caveColor);
+        }
         if (category === "water")
           this.choice(
             "Wassereffekt",
@@ -1913,7 +1971,7 @@ export class Properties {
       tool === "polygon" ||
       tool === "ellipse" ||
       tool === "corridor";
-    this.renderFloorControls(tool, e, floorTool);
+    this.renderFloorControls(tool, e, floorTool, selected, floorId);
     this.renderBuildingStyleControls(tool, selected, floorId, floorTool);
     this.renderPortalControls(tool, e);
     this.renderSurfaceControls(tool, e, floorTool);

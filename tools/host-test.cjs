@@ -682,6 +682,7 @@ async function workflow() {
     if (process.argv.includes("--same-card")) await scenario.sameCard(restart);
     else if (process.argv.includes("--field-known-start")) await scenario.fieldKnownStart(restart);
     else if (process.argv.includes("--field-matrix")) await scenario.fieldMatrix(restart);
+    else if (process.argv.includes("--shared-picker-contexts")) await scenario.sharedPickerContexts(restart);
     else if (process.argv.includes("--gallery-pipette")) await scenario.galleryPipette();
     else if (process.argv.includes("--floor-gallery-24")) await scenario.floorGallery24(restart);
     else if (process.argv.includes("--floor-gallery-pair")) await scenario.floorGallery24(restart, true);

@@ -5380,6 +5380,24 @@
           ],
           "remaining": "Sieben Original-Wall-Rohfarben nur als Screenshots; Wall-Tool und Cave-Override fehlen.",
           "strictAcceptance": "open"
+        },
+        "phase3SharedPickerImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
+          "finding": "Wall Tool und Cave Wall Override starten aus ff726e65; gleiche normierte Feldpunkte ergeben Original und Host ff74591d an der Wand sowie ff73581d am Cave-Rand. Beide Feldwerte stehen in Original-Zwischenkarten; die spätere Pipette ersetzt den Cave-Wert. Die finale Originalrohkarte und der Host öffnen frisch; Host Edit/Undo/Redo bestehen. Die 14 Building-Feldfälle bleiben auf demselben Build grün.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native/runs/20261007-182226-1955014/evidence/maps/01-wall-field.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native/runs/20261007-182226-1955014/evidence/maps/04-cave-painted.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native-reopen/runs/20261007-184202-1966024/evidence/shared-picker-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/host-undo-final/evidence/1791391269095-parity-phase3-building-edit/shared-picker-contexts.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/host-undo-final/evidence/1791391293859-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/host-building-regression/evidence/1791391073865-parity-phase3-building-edit/result.json"
+          ],
+          "remaining": "Alpha-128-Bildwirkung in Wall/Cave und unabhängiger Review fehlen; DD-011.17 und Fachphasentor offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6430,6 +6448,24 @@
           "finding": "Kein neuer Pipettenvergleich auf dem geänderten Bodenbild.",
           "evidence": [],
           "remaining": "Strukturierte Kante samt Framebuffer, Picker und Building; Wall-/Cave-Kontexte fehlen.",
+          "strictAcceptance": "open"
+        },
+        "phase3SharedPickerImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
+          "finding": "Wall- und Cave-Pipette lesen im Original beide am Weltpunkt (0,25;0,1) den Bildpixel eine Zeile über dem Klick als ff726658. Der Host liest dort in beiden Kontexten ebenso den dargestellten oberen Pixel, aber dessen Kartenhintergrund ist schon vor dem Klick #ebe4d6. Original- und Hostwerte werden korrekt gespeichert und frisch geöffnet; das Hintergrundbild ist nicht gleich.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native/runs/20261007-182226-1955014/evidence/screens/08-wall-pipette-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native/runs/20261007-182226-1955014/evidence/screens/19-cave-pipette-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native/runs/20261007-182226-1955014/evidence/maps/05-cave-pipette.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/native-reopen/runs/20261007-184202-1966024/evidence/shared-picker-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/host-undo-final/evidence/1791391269095-parity-phase3-building-edit/shared-picker-contexts.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/host-undo-final/evidence/1791391293859-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Gleiche dargestellte Kartenbasis, strukturierte Holz-Pipettenkante, Alpha-Bildwirkung und unabhängiger Review fehlen; DD-011.22 und Fachphasentor offen.",
           "strictAcceptance": "open"
         }
       },
@@ -51872,6 +51908,23 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Wood-Erstzug-Bildbereitschaft und unmittelbare Variantenfolge, Concrete-Atlasränder, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
+    },
+    "phase3SharedPickerImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
+      "casesAdvanced": ["DD-011.17", "DD-011.22"],
+      "pairedFieldContexts": 2,
+      "pairedPipetteRuleContexts": 2,
+      "originalFreshReopen": true,
+      "hostFreshReopen": true,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Abweichender Kartenhintergrund für Pipette, Holz-Kantenprobe, Wall-/Cave-Alpha-Bildwirkung, Wandstil-/Farbmatrix, Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     }
   }
 }
