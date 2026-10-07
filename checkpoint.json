@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 3: zwei Nachbesserungskandidaten, drei Teilbefunde und vier noch nicht bearbeitete Fälle; unabhängiger Review offen",
+  "phase": "Phase 3: unabhängiger Nachbesserungsreview abgeschlossen; acht von 17 Unterfällen verifiziert, neun offen; Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -169,7 +169,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Tint-/Alpha-Matrix, native Wandstile, Bevel- und Punktmutationsbilder gegen gleiche Hostkarte prüfen; danach die Neun-Optionen-Gesamtkarte und einen getrennten unabhängigen Review aller 17 Phase-3-Unterfälle ausführen.",
+  "next": "Eigener Planlauf für die neun offenen Phase-3-Unterfälle: Tint-/Alpha-Matrix, sofortige Bodenbilder samt Rändern/Varianten, weitere Farbflächenpunkte und Pipetten-Holzkante, native Wandstile, Bevel- und Punktmutationsbilder; danach getrennte Umsetzung und erneuter Review.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -177,9 +177,7 @@
     "Phase-6-Spielansicht einschließlich Key-Liste, rechter Detailansicht, Gliederung, Marker und Auswertung ist isoliert und nach frischem Start geprüft; die produktive Spielansicht und Übersichtslink-Navigation bestehen nach frischem Start. Physische Eingabe bleibt auf Nutzerwunsch offen; allgemeine RAM-Ersparnis ist nicht isoliert belegt.",
     "Breiter Gleichwertigkeitstest scheitert reproduzierbar vor dem Auswahlteil am Dach-Polygon: drei statt vier Eckpunkte in zwei Läufen. Dach erst in seiner Werkzeugreihenfolge untersuchen; keine bestandene Gesamtregression behaupten.",
     "DD-026 bleibt trotz Phase-3-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen und physische Eingabe bleiben offen.",
-    "Phase 3: 24 gespeicherte Bodenstile mit Weiß und Standardfarben, QAWall01-Weiß/Rot, Alpha-128-Wandprobe und zwei direkt per Original-UI gesetzte Türen wurden verglichen. Host-Portalkappen treffen je 257–261/272 Pixel, gerade weiße Streifen pixelgleich; sRGB-erzwungenes Rot trifft 908/960 und 888/928 Pixel. Die portalbedingte Bevel-Maskenlücke wurde geschlossen (obere linke Ecke 175→203/256); Bevel aus trifft oben 256/256. Innere Bevel-Textur (25/222 exakt graue Pixel), andere Winkel/Assets, weitere Farb-/Alpha-Werte, unmittelbare Original-Zeichenfolge und vollständige 17-Fälle-Optionsmatrix bleiben offen. Building- und Phase-1-/2-Hostfolgen sowie kombinierter Portal-/Key-Fall bestanden auf demselben Build mit frischem Prozess; unabhängiger Review und Aufräumphase stehen aus.",
-    "Phase 3: Die gleich aufgebaute neunfache Host-Optionskarte stimmt semantisch mit dem Original überein und öffnet frisch. Der ausgerichtete sRGB-Bildvergleich zeigt weiterhin Unterschiede, besonders Diamond 2 mit Alpha über verschiedenem Kartenhintergrund. Innere Bevel-Textur, übrige Picker-/Pipetten-Bildpaare und unabhängiger Review aller 17 Pflicht-Unterfälle bleiben offen.",
-    "Phase-3-Review auf Build 5cb98617: DD-011.11/.12/.15/.17/.22 sowie DD-015.01/.03/.04/.05 offen. Bildabweichungen bei Boden/Bevel; gleiche Picker-Startwerte, identischer Pipettenbildpunkt und Paketwand-Punktzugbild fehlen. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md"
+    "Phase 3 auf Build c1801018: DD-011.11/.12/.15/.17/.22 und DD-015.01/.03/.04/.05 offen. 24 Standardbodenstile und ein Floor-/Wall-Feldpunkt gepaart; Pipetten-Holzkante Original 433528, Host 503f30. Tint-/Alpha-, zehn Wandstil-, Bevel- und Punktmutationsbilder fehlen. Acht zuvor verifizierte Fälle ohne beobachtete Regression. Bericht: /home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md"
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -803,12 +801,12 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase3_remaining_repair_plan_ready",
+    "status": "phase3_remaining_review_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-3-Umsetzungslauf nach ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md: direkte Original-/Host-Gegenproben für Boden, Picker und Wandverbindungen, nur bestätigte Unterschiede beheben, isolierten Host mit Neuöffnung und Regression prüfen; danach unabhängiger Review aller 17 Unterfälle.",
+    "nextRun": "Eigener Phase-3-Nachbesserungsplan aus dem unabhängigen Review für neun offene Unterfälle; erst danach getrennter Umsetzungslauf und erneuter Review.",
     "note": "Host-Screenshots enthalten ein Skia-ICC-Profil, Originalbilder sRGB-Chromatizität. Nach Umrechnung und Entfernen des falschen Faktors 0,9091 stimmt deckendes QAWall01-Rot auf zwei 1152-Pixel-Streifen im Mittel auf 0,85/1,26 Stufen; Alpha 128 hat außen Original/Host-Deckkraft 0,5013/0,5000. Building-Optionen, kombinierter Portal-/Key-Fall sowie Phase 1/2 bestanden auf dem Build mit frischer Neuöffnung. Bevel-Rest, originales QAWall01-Portalbild, weitere Farben und Alpha-Werte, unmittelbare Zeichenfolge und vollständige Original-Optionsrohkarte bleiben offen.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "29ae6d03039cbea4bde3ac0b96921eeb87869dbe51abeb4491a0af9908cd3bff",
@@ -865,7 +863,7 @@
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Phase 3 bleibt bis zu vollständigen direkten Original-/Host-Belegen und eigenem Review offen. QAWall01-Miter ist in normalisierten Eckklassen deckungsgleich; Bevel, Boden, Farbe und Portalbild bleiben offen. Produktive Installation unverändert; physische Eingabe Phase 7.",
+    "open": "Phase 3 bleibt bei neun Unterfällen offen; Fachphasen-Aufräumen und nächste Fachphase warten auf getrennte Nachbesserung und Review. Produktive Installation unverändert.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -1104,6 +1102,16 @@
     "phase3RemainingPhase1Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase1-final/evidence/1791374793426-parity-phase1-edit/result.json",
     "phase3RemainingPhase1Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase1-final/evidence/1791374924603-parity-phase1-reopen/result.json",
     "phase3RemainingPhase2Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase2-final/evidence/1791374938194-parity-phase2-points-edit/result.json",
-    "phase3RemainingPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase2-final/evidence/1791374994350-parity-phase2-points-reopen/result.json"
+    "phase3RemainingPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase2-final/evidence/1791374994350-parity-phase2-points-reopen/result.json",
+    "phase3RemainingReviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
+    "phase3RemainingReviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-audit.json",
+    "phase3RemainingReviewBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
+    "phase3RemainingReviewState": "8_verified_9_open",
+    "phase3RemainingReviewFloorAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-gallery24-final/gallery-audit.json",
+    "phase3RemainingReviewGalleryEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-gallery24-final/evidence/1791375478655-parity-phase3-building-edit/result.json",
+    "phase3RemainingReviewGalleryReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-gallery24-final/evidence/1791375708207-parity-phase3-building-reopen/result.json",
+    "phase3RemainingReviewOptionsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375858073-parity-phase3-building-edit/result.json",
+    "phase3RemainingReviewOptionsReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-default-final/evidence/1791375974372-parity-phase3-building-reopen/result.json",
+    "phase3RemainingReviewCoreTests": 140
   }
 }
