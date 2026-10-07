@@ -2,6 +2,8 @@
 
 Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ROADMAP.md). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Hier werden das **Building Tool** und das **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ in ihren vollständigen Werkzeugabläufen nacheinander abgeglichen. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
 
+Für alle Phasen gilt: Bedienung und Funktion müssen mit dem Vorbild übereinstimmen; eine ungefähr gleichwertige grafische Darstellung genügt. Pixelwerte sind nur Diagnosemittel für sichtbare oder funktionale Abweichungen.
+
 Der verbindliche Unterfallkatalog steht in `acceptance.json`. Die Phasen decken `DD-011` bis `DD-015`, `DD-026` und die für dessen Bibliothek nötigen Tags und Sets aus `DD-047` ab. Farbwahl, Assetpakete und Auswahl werden nur für Abläufe dieser beiden Werkzeuge einbezogen. Die vollständige Parität anderer Werkzeuge bleibt offen. Raum-Key und Feature-Verknüpfung haben kein Dungeondraft-Vorbild; sie werden als Projektablauf gegen die bestehenden Anforderungen geprüft.
 
 ## Regel für jede Phase
@@ -30,6 +32,8 @@ Punktbearbeitung aktivieren, Eck- und Ellipsenpunkte ziehen, Punkte an Kanten ei
 **Phasentor:** Einfügen, Ziehen und Entfernen liefern die belegte Konturwirkung; Undo/Redo und Neuöffnung erhalten Geometrie, Portalbindung und Raumzuordnung.
 
 ## Phase 3 – Boden und Gebäudewand gestalten
+
+Aktueller getrennter Nachbesserungsplan: [Gebäudeabnutzung und Building-Verhalten](ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md). Bedienung und Funktion müssen dem Original entsprechen; die Grafik genügt ungefähr gleichwertig. Pixelmessungen dienen der Diagnose sichtbarer Fehler.
 
 **Unterfälle:** `DD-011.11`, `.12`, `.15`, `.16` bis `.22` sowie `DD-015`.
 

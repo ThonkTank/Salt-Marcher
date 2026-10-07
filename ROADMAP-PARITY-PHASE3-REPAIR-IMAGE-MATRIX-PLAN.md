@@ -2,6 +2,8 @@
 
 Stand: 07.10.2026. Dieser **eigene Planlauf** folgt auf den [unabhängigen Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md) von Commit `a9fa2cb` und konkretisiert [ROADMAP-PARITY.md](ROADMAP-PARITY.md). Referenz: Dungeondraft 1.2.0.1 „Opulent Kirin“, Binärdatei SHA-256 `9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438`, PCK SHA-256 `f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60`. Kandidatenbuild `c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a`; produktiver Vault-Build `2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790`. Acht der 17 Unterfälle sind im belegten Umfang verifiziert. Dieser Lauf plant die neun offenen Fälle, ändert keine Produktfunktion und gibt Phase 3 nicht frei.
 
+Präzisierung vom 07.10.2026: Für die Abnahme sind gleiche Bedienung und Funktion sowie ungefähr gleichwertige Grafik maßgeblich. Die nachstehenden Pixel- und Farbmittelmessungen helfen, **sichtbare** Fehler zu lokalisieren; geringe Messdifferenzen allein halten keinen Unterfall offen. Die Gebäudeabnutzung wird zuerst nach [dem eigenen Verhaltensplan](ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md) als Originalschalter und gespeicherter Zustand geklärt.
+
 ## Ausgangsbefunde und fehlende Entscheidungen
 
 | Unterfall | Aktueller direkter Beleg | Nötiger Endstandsbeleg |

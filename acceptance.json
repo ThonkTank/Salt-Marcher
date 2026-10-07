@@ -210,7 +210,7 @@
     {
       "id": "DD-007",
       "requirement": "Gebäudeabnutzung bei Neuanlage abschalten",
-      "priorRequirementDetails": "Eigene explizite Wahl Keine/Staub/Schmutz/Rauschen/Kratzer. Alle fünf Formular-/Speicherwerte isoliert geprüft; Keine und Schmutz im echten Host mit Mauszeichnung/Neustart. Physische Touchpadabnahme bleibt offen. Nativer Abschaltschalter hatte im geprüften Paar keine gespeicherte Wirkung.",
+      "priorRequirementDetails": "Eigene explizite Wahl Keine/Staub/Schmutz/Rauschen/Kratzer. Alle fünf Formular-/Speicherwerte isoliert geprüft; Keine und Schmutz im echten Host mit Mauszeichnung/Neustart. Physische Touchpadabnahme bleibt offen. Im älteren Originalpaar war keine gespeicherte Wirkung erkannt worden; die neue UI-Neuanlage speichert null beziehungsweise grime.png. Sichtbare Building-Wirkung und strikte Hostparität bleiben offen.",
       "status": "verified",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/evidence/1790988528974-edit/result.json",
@@ -232,13 +232,17 @@
         ],
         "observations": [
           "Das Originalwerkzeug wurde einzeln gegen denselben Nutzerablauf im nativen Editor geprüft.",
-          "Bedienung, gespeichertes Ergebnis, Undo und frisches Wiederöffnen sind im angegebenen Umfang abgenommen."
+          "Bedienung, gespeichertes Ergebnis, Undo und frisches Wiederöffnen sind im angegebenen Umfang abgenommen.",
+          "Neuer UI-Nachweis vom 07.10.2026: Disable Building Wear speichert bei Neuanlage null, ohne Abschalten res://textures/wear/grime.png; leere Aus-Karte im frischen Originalprozess geöffnet. Wirkung auf gleich gezeichneten Buildings bleibt offen."
         ],
         "directEvidence": [
-          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wear-start-unchecked.png"
+          "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-wear-start-unchecked.png",
+          "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-off.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-on.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-off-reopen/runs/20261007-201704-2055204/evidence/screens/02-reopened-map.png"
         ]
       },
-      "verifiedScope": "Gebäudeabnutzung startet bei 0 und lässt sich bei der Neuanlage abschalten. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
+      "verifiedScope": "Eigene stufenlose Gebäudeabnutzung und Neuanlage im früheren Hostlauf geprüft. Die native Neuanlage speichert den binären Aus-/An-Zustand als null beziehungsweise grime.png; gleiche sichtbare Wirkung und strikte Hostparität sind offen. Details in TOOL-PARITY.md.",
       "verifiedAt": "2026-10-03"
     },
     {
@@ -52059,6 +52063,24 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Original-Gebäudeabnutzung per UI/Save erheben und gleiches Host-Einstellungsmodell planen; danach Boden- und Wandbildmatrizen auf beiden Zuständen wiederholen, übrige Phase-3-Lücken und unabhängiger Review offen."
+    },
+    "phase3WearBehaviorPlan": {
+      "date": "2026-10-07",
+      "state": "plan_ready_for_separate_implementation",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "originalBinarySha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
+      "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
+      "file": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md",
+      "uiSavedWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-off.dungeondraft_map",
+      "uiSavedWearOn": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-on.dungeondraft_map",
+      "originalFreshReopenWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-off-reopen/runs/20261007-201704-2055204/evidence/screens/02-reopened-map.png",
+      "observedValues": {"disabled": null, "enabled": "res://textures/wear/grime.png"},
+      "acceptanceRule": "Gleiche Bedienung und Funktion, ungefähr gleichwertige Grafik; geringe Pixel- und Farbmittelabweichungen allein sperren die Abnahme nicht.",
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "next": "Original an/aus auf gleich gezeichneten Karten mit Save/Neustart paaren; Host-Modus und Bestandskarten festlegen, separat umsetzen und unabhängig reviewen."
     }
   }
 }
