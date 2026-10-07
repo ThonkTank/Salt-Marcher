@@ -1377,6 +1377,14 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     if (restart) {
       const expected = JSON.parse(fs.readFileSync(saved, "utf8"));
       assert.deepEqual((await state()).document, expected);
+      await page.waitForFunction(() => {
+        const visuals = [...app.workspace.activeLeaf.view.editor.renderer.visuals.values()]
+          .filter(visual => visual.entity.kind === "building");
+        return visuals.length === 10 && visuals.every(visual =>
+          visual.wallGeometries?.length > 0);
+      }, null, { timeout: 30000 });
+      await page.evaluate(() => new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))));
       await page.getByRole("button", { name: "Raster", exact: true }).click();
       await page.screenshot({ path: path.join(out, "wall-gallery10-reopen.png") });
       checks.push("Ten UI-chosen built-in wall styles reopen byte-equivalent");
@@ -1419,6 +1427,85 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.getByRole("button", { name: "Raster", exact: true }).click();
     await page.screenshot({ path: path.join(out, "wall-gallery10-grid-off.png") });
     checks.push("Ten native built-in wall paths and colors were selected and drawn through the Host gallery");
+  }
+  async function wallTintMatrix(restart) {
+    const file = "Dungeons/Parity/Wall-Tint-Matrix.dungeon";
+    const saved = path.join(qa, "parity-phase3-wall-tint-matrix-saved.json");
+    const nativeMap = process.env.DUNGEON_WALL_TINT_NATIVE;
+    assert(nativeMap, "DUNGEON_WALL_TINT_NATIVE is required");
+    const native = JSON.parse(fs.readFileSync(nativeMap, "utf8"));
+    const walls = native.world.levels["0"].walls.slice(0, 9);
+    assert.equal(walls.length, 9);
+    const reference = walls.map((wall, index) => {
+      assert.equal(wall.texture, "res://textures/walls/battlements.png");
+      assert.equal(wall.color.length, 8);
+      return { index, argb: wall.color,
+        x: index % 6 * 3, y: Math.floor(index / 6) * 3 };
+    });
+    assert.deepEqual(reference.map(item => item.argb), [
+      "00ffffff", "80ffffff", "ffffffff",
+      "00ff0000", "80ff0000", "ffff0000",
+      "00445566", "80445566", "ff445566",
+    ]);
+    if (!restart) await page.evaluate(async ({ file, pckPath }) => {
+      await app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath);
+      await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+      await app.vault.create(file, JSON.stringify({
+        format: "dungeon-map", version: 3, id: "phase3-wall-tint-matrix",
+        settings: { name: "Wall Tint Matrix", width: 18, height: 12,
+          feetPerField: 5, assetPacks: [], builtInAssets: true,
+          wallShadows: true, objectShadows: false, buildingWear: 0 },
+        floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+          ambient: 1 }],
+        entities: [], content: { definitions: [], occurrences: [],
+          routes: [], archive: [] },
+      }));
+    }, { file, pckPath });
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    if (restart) {
+      assert.deepEqual((await state()).document,
+        JSON.parse(fs.readFileSync(saved, "utf8")));
+    } else {
+      await chooseTool("Raum");
+      await page.getByRole("group", { name: "Wandstil" })
+        .getByRole("button", { name: "Battlements", exact: true }).click();
+      for (const item of reference) {
+        await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+        await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" })
+          .fill(item.argb);
+        await page.getByRole("button", { name: "Accept", exact: true }).click();
+        await draw({ x: item.x, y: item.y },
+          { x: item.x + 2, y: item.y + 2 }, item.index + 1);
+        const building = (await state()).document.entities[item.index];
+        assert.equal(building.wall,
+          Number.parseInt(item.argb.slice(2), 16));
+        assert.equal(building.wallAlpha,
+          Number.parseInt(item.argb.slice(0, 2), 16));
+      }
+      await page.getByRole("button", { name: "Speichern", exact: true }).click();
+      await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+      await waitForFileAbsent(path.join(vault, file + ".draft"));
+      fs.writeFileSync(saved, JSON.stringify((await state()).document));
+    }
+    await page.waitForFunction(() => {
+      const visuals = [...app.workspace.activeLeaf.view.editor.renderer.visuals.values()]
+        .filter(visual => visual.entity.kind === "building");
+      return visuals.length === 9 && visuals.every(visual =>
+        visual.wallGeometries?.length > 0);
+    }, null, { timeout: 30000 });
+    await page.evaluate(() => new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.getByRole("button", { name: "Raster", exact: true }).click();
+    const screenshot = restart ? "wall-tint-reopen-grid-off.png"
+      : "wall-tint-edit-grid-off.png";
+    await page.screenshot({ path: path.join(out, screenshot) });
+    fs.writeFileSync(path.join(out, "wall-tint-matrix.json"),
+      JSON.stringify({ nativeMap, reference, document: (await state()).document }, null, 2));
+    checks.push("Nine original Battlements ARGB values render with loaded walls" +
+      (restart ? " after fresh reopen" : " after UI drawing and save"));
   }
   async function floorTintMatrix(restart) {
     const file = "Dungeons/Parity/Floor-Tint-Matrix.dungeon";
@@ -2049,6 +2136,6 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   }
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
     floorVariant, floorMosaic, pickerPair, fieldKnownStart, fieldMatrix, floorGallery24,
-    wallGallery10, floorTintMatrix, customFloorMatrix,
+    wallGallery10, wallTintMatrix, floorTintMatrix, customFloorMatrix,
     galleryPipette, sharedPickerContexts, sameCard };
 };

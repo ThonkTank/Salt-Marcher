@@ -7809,6 +7809,23 @@
           ],
           "remaining": "Wandstreifen, Schatten, Enden, Ecken, Kurven und QAWall01 bildlich ausrichten.",
           "strictAcceptance": "open"
+        },
+        "phase3WallMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/wall-matrix-implementation.md",
+          "finding": "Alle zehn eingebauten Wandpfade und Standardfarben wurden auf demselben aktuellen Host-Build per Galerie gezeichnet und frisch neu geöffnet. Ausgerichtete 64×64-Ladebilder zeigen im Mittel 12,043 RGB-Stufen Abweichung am oberen Wandstreifen und 11,581 links; Bodeninnenflächen 2,507. Enden, Ecken, Schatten und QAWall01 sind damit nicht abgenommen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-gallery/runs/20261007-150442-1832003/evidence/maps/wall-09.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-gallery-reopen/runs/20261007-151219-1836417/evidence/screens/01-reopen-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/host-gallery-current/evidence/1791392792304-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/host-gallery-current/evidence/1791393166945-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/gallery-current-audit.json"
+          ],
+          "remaining": "Wandstreifen, Endstücke, beide Eckarten, Schatten, Kurve, Portalöffnung und QAWall01 direkt entscheiden; unabhängiger Review und Fachphasentor offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -8298,6 +8315,25 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-tint/runs/20261007-154304-1852444/evidence/maps/08.dungeondraft_map"
           ],
           "remaining": "QAWall01, Host-Bildpaar und Fugen-/Kappen-/Schattenanalyse fehlen.",
+          "strictAcceptance": "open"
+        },
+        "phase3WallMatrixImplementation": {
+          "date": "2026-10-07",
+          "state": "partial_implementation",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/wall-matrix-implementation.md",
+          "finding": "Die neun Battlements-Originalwerte Weiß, Rot und 445566 bei Alpha 0/128/255 sind mit Host-Dialog, Save und frischer Neuöffnung roh gepaart. Im deckenden oberen Streifen ist die schwarze Innenkante im Original auf 70,83–72,92 Prozent, im Host auf 4,17 Prozent der geprüften Pixel sichtbar. Breiten- und UV-Versatzproben trafen die Kante teilweise, verschlechterten aber andere Reihen und wurden zurückgenommen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-wall-tint/runs/20261007-154304-1852444/evidence/maps/08.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/native-battlements-reopen/runs/20261007-185534-1980226/evidence/screens/03-reopen-grid-off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/host-battlements/evidence/1791392054372-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/host-battlements/evidence/1791392082846-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/tint-baseline-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/tint-width64-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/tint-uv2-audit.json"
+          ],
+          "remaining": "Battlements-Wandbildursache, QAWall01-Farb-/Alpha-Matrix sowie Fugen, Kappen, Ecke und Schatten bleiben offen; unabhängiger Review ausstehend.",
           "strictAcceptance": "open"
         }
       },
@@ -51925,6 +51961,24 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Abweichender Kartenhintergrund für Pipette, Holz-Kantenprobe, Wall-/Cave-Alpha-Bildwirkung, Wandstil-/Farbmatrix, Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
+    },
+    "phase3WallMatrixImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/wall-matrix-implementation.md",
+      "casesAdvanced": ["DD-015.01", "DD-015.03"],
+      "galleryStylesPaired": 10,
+      "battlementsArgbValuesPaired": 9,
+      "originalFreshReopen": true,
+      "hostFreshReopen": true,
+      "productPatchRetained": false,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Wandtextur-Fugen, Enden, Schatten, Ecken, Kurven, Portalöffnung und QAWall01; übrige offene Bildmatrizen und unabhängiger Review."
     }
   }
 }
