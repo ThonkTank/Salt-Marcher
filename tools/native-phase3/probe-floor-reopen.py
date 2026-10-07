@@ -37,11 +37,13 @@ def probe(run):
         rfb.click(56, 120)
         rfb.click(648, 904)
         rfb.click(609, 800)  # 50%; 32 px per map cell
-        before_grid = capture(run, info["display"], "01-reopened-before-grid")
-        indicator = Image.open(before_grid).convert("RGB").getpixel((291, 904))[0]
-        if indicator > 100:
-            rfb.click(291, 904)
         after = capture(run, info["display"], "01-reopened-grid-off")
+        for _ in range(2):
+            if Image.open(after).convert("RGB").getpixel((291, 904))[0] <= 100:
+                break
+            rfb.click(291, 904)
+            time.sleep(0.6)
+            after = capture(run, info["display"], "01-reopened-grid-off")
         image = np.asarray(Image.open(after).convert("RGB"))
         alpha_zero = image[300:340, 364:404]
         if image[904, 291, 0] > 100 or not np.all(alpha_zero == 37):

@@ -1,4 +1,4 @@
-"""Compare Custom Color tint/alpha cards after fresh Original and Host reopen."""
+"""Compare floor tint/alpha cards after fresh Original and Host reopen."""
 import argparse
 import json
 from io import BytesIO

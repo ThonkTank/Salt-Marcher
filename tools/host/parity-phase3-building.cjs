@@ -1502,30 +1502,34 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Eighteen exact native Wood/Diamond 2 ARGB values render with a separate background sample" +
       (restart ? " after fresh reopen" : ""));
   }
-  async function customFloorMatrix(restart) {
-    const nativeMap = process.env.DUNGEON_CUSTOM_FLOOR_NATIVE;
-    const label = process.env.DUNGEON_CUSTOM_FLOOR_LABEL;
+  async function customFloorMatrix(restart, normal = false) {
+    const nativeMap = process.env[normal ? "DUNGEON_NORMAL_FLOOR_NATIVE"
+      : "DUNGEON_CUSTOM_FLOOR_NATIVE"];
+    const label = process.env[normal ? "DUNGEON_NORMAL_FLOOR_LABEL"
+      : "DUNGEON_CUSTOM_FLOOR_LABEL"];
     assert(nativeMap && label && /^[a-z0-9-]+$/.test(label),
-      "DUNGEON_CUSTOM_FLOOR_NATIVE and a lowercase label are required");
-    const file = `Dungeons/Parity/Custom-Floor-${label}.dungeon`;
-    const saved = path.join(qa, `parity-phase3-custom-floor-${label}-saved.json`);
+      "Floor matrix native map and a lowercase label are required");
+    const category = normal ? "Normal" : "Custom";
+    const file = `Dungeons/Parity/${category}-Floor-${label}.dungeon`;
+    const saved = path.join(qa, `parity-phase3-${category.toLowerCase()}-floor-${label}-saved.json`);
     const native = JSON.parse(fs.readFileSync(nativeMap, "utf8"));
     const level = native.world.levels["0"], tiles = level.tiles;
     const ids = (tiles.cells.match(/-?\d+/g) ?? []).map(Number);
     const count = level.shapes.polygons.length;
     assert(count === 9 || count === 18);
-    const customStems = new Set(["tileset_diamond", "tileset_diamond_2", "tileset_ornate",
-      "tileset_wood_damaged"]);
+    const allowedStems = new Set(normal ? ["tileset_stone", "tileset_concrete"]
+      : ["tileset_diamond", "tileset_diamond_2", "tileset_ornate",
+        "tileset_wood_damaged"]);
     const reference = Array.from({ length: count }, (_, index) => {
       const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
       const cell = y * 18 + x, argb = tiles.colors[cell];
       const image = tiles.lookup[String(ids[cell])];
-      assert(customStems.has(image?.split("/").at(-1)?.replace(".png", "")));
+      assert(allowedStems.has(image?.split("/").at(-1)?.replace(".png", "")));
       assert.equal(argb.length, 8);
       return { index, x, y, argb, image };
     });
     if (!restart) {
-      await page.evaluate(async ({ file, pckPath, reference, label }) => {
+      await page.evaluate(async ({ file, pckPath, reference, label, category }) => {
         const plugin = app.plugins.getPlugin("dungeon-editor");
         await plugin.useNativeAssetArchive(pckPath);
         await app.vault.createFolder("Dungeons/Parity").catch(() => {});
@@ -1545,15 +1549,15 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
           };
         });
         await app.vault.create(file, JSON.stringify({
-          format: "dungeon-map", version: 3, id: `custom-floor-${label}`,
-          settings: { name: `Custom Floor ${label}`, width: 18, height: 12,
+          format: "dungeon-map", version: 3, id: `${category.toLowerCase()}-floor-${label}`,
+          settings: { name: `${category} Floor ${label}`, width: 18, height: 12,
             feetPerField: 5, assetPacks: [], builtInAssets: true,
             wallShadows: false, objectShadows: false, buildingWear: 0 },
           floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
             ambient: 1 }], entities,
           content: { definitions: [], occurrences: [], routes: [], archive: [] },
         }));
-      }, { file, pckPath, reference, label });
+      }, { file, pckPath, reference, label, category });
     }
     await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
       app.vault.getAbstractFileByPath(file)), file);
@@ -1599,7 +1603,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     });
     await page.waitForTimeout(150);
     await page.screenshot({ path: path.join(out, "custom-floor-background.png") });
-    checks.push(`${count} Original Custom Color ARGB values and paths render` +
+    checks.push(`${count} Original ${normal ? "normal" : "Custom Color"} floor ARGB values and paths render` +
       (restart ? " after fresh reopen" : ""));
   }
   async function galleryPipette() {

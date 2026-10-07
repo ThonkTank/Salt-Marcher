@@ -4392,6 +4392,22 @@
           ],
           "remaining": "Gewöhnliche Bodenfamilien und deren Sofort-/Randbilder; Host-Farbpickerfolge für diese Matrix und unabhängiger Review fehlen.",
           "strictAcceptance": "open"
+        },
+        "phase3NormalFloorImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/normal-floor-implementation.md",
+          "finding": "Stone (smart_double) und Concrete (simple) mit Weiß, Galerie-Standard 7f7e71 und Rot bei Alpha 0/128/255: 18/18 Originalpfade und ARGB-Werte in vier Zellen sowie 2×2-Konturen vor/nach Originalneustart korrekt. Host Edit/Neuöffnung auf Endbuild bytegleich; sechs Alpha-0-Felder exakt #252525, größte Alpha-128-Anteilsdifferenz 0,0086, größter Fehler eines deckenden RGB-Mittels 1,300 Stufen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/stone-concrete-raw-validation.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/stone-concrete-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/host-stone-concrete/evidence/1791387017945-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/host-stone-concrete/evidence/1791387052544-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Sofort-/Atlasrandbilder, weitere Stile mit auffälligen Rändern, Host-Pickerfolge und unabhängiger Review bleiben offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -51773,6 +51789,22 @@
         "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
       ],
       "remaining": "Gewöhnliche Tint-/Alpha-Familien, Sofort-/Randbilder, gemeinsame Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
+    },
+    "phase3NormalFloorImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/normal-floor-implementation.md",
+      "casesAdvanced": ["DD-011.12"],
+      "rawOriginalCases": 18,
+      "maxHalfAlphaFractionDifference": 0.0086,
+      "maxOpaqueMeanRgbError": 1.3,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Sofort-/Atlasrandbilder, weitere auffällige Stile, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     }
   }
 }

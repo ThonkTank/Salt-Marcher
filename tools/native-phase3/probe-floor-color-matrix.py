@@ -1,4 +1,4 @@
-"""Draw up to two nine-case Custom Color floor matrices through Original UI."""
+"""Draw up to two nine-case floor tint/alpha matrices through Original UI."""
 import argparse
 import json
 import re
@@ -14,10 +14,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "native-phase1-snap
 from probe import CTRL, Rfb, metadata
 
 STYLES = {
-    "diamond": ("tileset_diamond", "5b797a"),
-    "diamond_2": ("tileset_diamond_2", "e8c4a0"),
-    "ornate": ("tileset_ornate", "9f8888"),
-    "wood_damaged": ("tileset_wood_damaged", "b28f6f"),
+    "diamond": ("simple", "tileset_diamond", "5b797a"),
+    "diamond_2": ("simple", "tileset_diamond_2", "e8c4a0"),
+    "ornate": ("simple", "tileset_ornate", "9f8888"),
+    "wood_damaged": ("simple", "tileset_wood_damaged", "b28f6f"),
+    "stone": ("smart_double", "tileset_stone", "7f7e71"),
+    "concrete": ("simple", "tileset_concrete", "7f7e71"),
 }
 
 
@@ -91,10 +93,10 @@ def probe(run, style_names):
         shutil.copy2(source, run / "evidence/maps/00-baseline.dungeondraft_map")
         style_names = sorted(style_names, key=lambda name: next(
             int(index) for index, path in lookup.items()
-            if path == f"res://textures/tilesets/simple/{STYLES[name][0]}.png"))
+            if path == f"res://textures/tilesets/{STYLES[name][0]}/{STYLES[name][1]}.png"))
         for style_index, style_name in enumerate(style_names):
-            stem, default_rgb = STYLES[style_name]
-            expected_path = f"res://textures/tilesets/simple/{stem}.png"
+            directory, stem, default_rgb = STYLES[style_name]
+            expected_path = f"res://textures/tilesets/{directory}/{stem}.png"
             gallery_index = next(int(index) for index, path in lookup.items()
                                  if path == expected_path)
             lower = gallery_index >= 12
@@ -156,10 +158,13 @@ def probe(run, style_names):
                         "savedMap": str(saved)})
                     print(json.dumps({"index": index, "style": style_name,
                         "argb": actual, "path": path}), flush=True)
-        before_grid = capture(run, info["display"], "final-before-grid")
-        if Image.open(before_grid).convert("RGB").getpixel((291, 904))[0] > 100:
-            rfb.click(291, 904)
         final = capture(run, info["display"], "final-grid-off")
+        for _ in range(2):
+            if Image.open(final).convert("RGB").getpixel((291, 904))[0] <= 100:
+                break
+            rfb.click(291, 904)
+            time.sleep(0.6)
+            final = capture(run, info["display"], "final-grid-off")
         image = Image.open(final).convert("RGB")
         if image.getpixel((291, 904))[0] > 100 or any(
             image.getpixel((x, y)) != (37, 37, 37)

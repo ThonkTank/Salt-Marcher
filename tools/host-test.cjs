@@ -687,6 +687,7 @@ async function workflow() {
     else if (process.argv.includes("--wall-gallery-10")) await scenario.wallGallery10(restart);
     else if (process.argv.includes("--floor-tint-matrix")) await scenario.floorTintMatrix(restart);
     else if (process.argv.includes("--custom-floor-matrix")) await scenario.customFloorMatrix(restart);
+    else if (process.argv.includes("--normal-floor-matrix")) await scenario.customFloorMatrix(restart, true);
     else if (process.argv.includes("--picker-pair")) await scenario.pickerPair(restart);
     else if (process.argv.includes("--floor-mosaic"))
       await scenario.floorMosaic(restart, process.argv.includes("--default-tint"));
