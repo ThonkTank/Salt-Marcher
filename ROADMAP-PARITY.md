@@ -47,6 +47,8 @@ Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners 
 
 **Unabhängiger Review 08.10.2026:** Der [getrennte 17-Fälle-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md) verifiziert auch `DD-011.15`, `DD-015.04` und `DD-015.05`. Eigene isolierte Hostläufe auf demselben Endbuild bestehen mit 5+5 Kontur-, 6+6 Bevel-, 4+4 Punktstilprüfungen und elf Building-Optionen samt frischer Neuöffnung. Der [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/review-raw-audit.json) bestätigt Original-Neuöffnungen, Punkte, Bevel und Portalwirkung; die Grafik ist ungefähr gleichwertig. Damit sind alle 17 Unterfälle und das Phase-3-Fachphasentor bestanden. Als nächster eigener Arbeitslauf folgt der **Plan** für die Phase-3-Aufräumphase; Phase 4 beginnt erst nach deren getrennter Umsetzung und Prüfung. Installation und produktiver Vault blieben unverändert.
 
+**Aufräumplan 08.10.2026:** Der [getrennte Phase-3-Aufräumplan](ROADMAP-PARITY-CLEANUP-3-PLAN.md) legt Bodenvorschau-Ressourcen, Rasterarbeit, Building-Wandstilpfade und Hostfixtures als begrenzten Umfang fest. Die Fachabnahme bleibt bestanden; Aufräumumsetzung und eigener Aufräum-Review stehen aus. Phase 4 beginnt erst nach bestandenem Aufräumtor.
+
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
 **Unterfälle:** `DD-026.01` bis `.08`, `.17`, `.30` und `DD-047`.

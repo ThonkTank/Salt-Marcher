@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 3: 17 Unterfälle unabhängig verifiziert, Fachphasentor bestanden; getrennte Aufräumplanung folgt",
+  "phase": "Phase 3: 17 Unterfälle unabhängig verifiziert, Fachphasentor bestanden; getrennter Aufräumplan abgelegt, Umsetzung folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -176,7 +176,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "In einem eigenen Arbeitslauf die Phase-3-Aufräumphase planen: Building-Modelle, Werkzeugzustände, Punktbefehle, Renderer-Ressourcen und QA-Hilfen auf konkrete technische Schwächen prüfen und einen begrenzten Plan neben ROADMAP-PARITY.md ablegen. Danach Umsetzung und Review in getrennten Läufen; Phase 4 erst nach bestandenem Aufräum-Review beginnen. Produktiven Vault und installierten Build unberührt lassen.",
+  "next": "In einem eigenen Arbeitslauf ROADMAP-PARITY-CLEANUP-3-PLAN.md umsetzen: Ausgangsmessung, Bodenvorschau-Ressourcen, nur bei belegtem Gewinn Rasterarbeit, gemeinsame Wandstilregel und Phase-3-Hostfixtures. Danach ein eigener Aufräum-Review mit Edit-/Neustartbelegen; Phase 4 erst nach bestandenem Tor beginnen. Produktiven Vault und installierten Build unberührt lassen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -1256,6 +1256,16 @@
       "coreTestsPassed": 145,
       "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
       "gate": "open"
+    },
+    "phase3CleanupPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-3-PLAN.md",
+      "baseCommit": "2747cf9",
+      "baseBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+      "scope": "Bodenvorschau-Ressourcen, gemessene Rasterarbeit, gemeinsame Building-Wandstilregel und reproduzierbare Phase-3-Hostfixtures; keine neue Werkzeugwirkung.",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md",
+      "decision": "Alle 17 Phase-3-Unterfälle bleiben nach dem Fachreview abgenommen. Aufräum-Umsetzung und eigener Aufräum-Review stehen aus; Phase 4 bleibt gesperrt."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",

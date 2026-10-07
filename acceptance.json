@@ -2771,7 +2771,7 @@
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
-  "updated": "2026-10-07",
+  "updated": "2026-10-08",
   "strictParity": {
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
@@ -53223,6 +53223,16 @@
       "checks": "TypeScript, 145 Kerntests und Build bestanden. Auf demselben Endbuild bestanden Punktstil-Edit und Neuöffnung je 4/4, Bevel-Matrix-Edit und Neuöffnung je 6/6, Kontur-Edit und Neuöffnung je 5/5, Building-Optionskarte 11/11, Phase-1- und Phase-2-Regressionen sowie acht semantische Original-/Host-Konturchecks.",
       "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
       "remaining": "Unabhängigen Review aller 17 Phase-3-Unterfälle auf dem Endbuild getrennt durchführen; die drei Unterfälle und das Fachphasentor bleiben bis dahin offen."
+    },
+    "phase3CleanupPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-3-PLAN.md",
+      "baseCommit": "2747cf9",
+      "baseBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md",
+      "scope": "Ressourcen der gehaltenen Bodenvorschau, gemessene Rasterarbeit, Building-Wandstilpfade und Phase-3-Hostfixtures.",
+      "decision": "Dieser Plan ändert keine der 17 bestandenen Fachabnahmen. Umsetzung und unabhängiger Aufräum-Review folgen in eigenen Läufen; Phase 4 bleibt gesperrt."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
