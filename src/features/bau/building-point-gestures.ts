@@ -135,6 +135,8 @@ export function planBuildingBackspacePoint(
   entities: readonly Entity[],
   before: Building,
   grip: BuildingVertexGrip,
+  wallStyle?: Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
   const contour = buildingContourEntries(before)[grip.contour];
@@ -153,12 +155,14 @@ export function planBuildingBackspacePoint(
   }
   if (contour.points.length < 3) return { status: "stale", command: null };
   const points = contour.points.filter((_, index) => index !== grip.index),
-    after = replaceBuildingContour(before, grip.contour, points),
+    shapeAfter = replaceBuildingContour(before, grip.contour, points),
+    after = wallStyle ? { ...shapeAfter, ...wallStyle } : shapeAfter,
     command = planBuildingContourMutation({
       entities,
       before,
-      after,
+      after: shapeAfter,
       edit: { kind: "remove", contour: grip.contour, index: grip.index },
+      ...(wallStyle ? { wallStyle } : {}),
     });
   return command
     ? { status: "command", command, after }
@@ -241,8 +245,11 @@ export function previewBuildingEdgeDrag(
   before: Building,
   grip: BuildingEdgeGrip,
   destination: Point,
+  wallStyle?: Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
 ): Building | null {
-  return proposeBuildingPointDrag(before, grip, destination)?.after ?? null;
+  const after = proposeBuildingPointDrag(before, grip, destination)?.after;
+  return after ? wallStyle ? { ...after, ...wallStyle } : after : null;
 }
 
 export function planBuildingEdgeDrag(
@@ -250,6 +257,8 @@ export function planBuildingEdgeDrag(
   before: Building,
   grip: BuildingEdgeGrip,
   destination: Point,
+  wallStyle?: Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
   const proposal = proposeBuildingPointDrag(before, grip, destination);
@@ -258,8 +267,10 @@ export function planBuildingEdgeDrag(
     entities,
     before,
     ...proposal,
+    ...(wallStyle ? { wallStyle } : {}),
   });
   return command
-    ? { status: "command", command, after: proposal.after }
+    ? { status: "command", command,
+      after: wallStyle ? { ...proposal.after, ...wallStyle } : proposal.after }
     : { status: "stale", command: null };
 }

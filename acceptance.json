@@ -52700,6 +52700,27 @@
       ],
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
       "next": "Getrennter Umsetzungslauf: direkte Original-/Host-Paare, nur bestätigte Abweichungen patchen, finalen Build regressieren; danach eigener unabhängiger Review."
+    },
+    "phase3BevelPointsImplementation": {
+      "date": "2026-10-08",
+      "state": "partial_implementation_three_cases_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "referenceSha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
+      "pckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
+      "qaPackSha256": "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9",
+      "candidateBuildSha256": "688b825bc91cb290155641290c062faa870f2c05431403a4200946bfe649b98d",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md",
+      "originalBevelPortalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-bevel-matrix/runs/20261007-234856-2176098/evidence/maps/10-qa-ring-off-portal.dungeondraft_map",
+      "originalEllipsePointReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-ellipse-fresh/runs/20261008-000126-2185440/evidence/maps/01-fresh-open.dungeondraft_map",
+      "originalSelectedWallRemoval": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/native-qa-remove-controlled/runs/20261007-233644-2162777/evidence/maps/01-qa-selected-remove.dungeondraft_map",
+      "hostPointEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-point-style-final/evidence/1791410860419-parity-phase3-building-edit/result.json",
+      "hostPointReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-point-style-final/evidence/1791410880146-parity-phase3-building-reopen/result.json",
+      "hostOptionsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-options-final/evidence/1791411138780-parity-phase3-building-edit/result.json",
+      "hostOptionsFinalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/host-options-final/evidence/1791411472754-parity-phase3-building-reopen/result.json",
+      "observedRule": "Punktverschiebung erhält die vorhandene Wand; Einfügen und Entfernen wenden die aktuell gewählte Wand in einem Undo-Schritt an.",
+      "checks": "TypeScript, 144 Kerntests, Build, Punktstil-Edit 4/4 und Neuöffnung 4/4, Phase-2-Punktregression 9/9 und 3/3, Building-Optionskarte 11/11 und frische Neuöffnungen bestanden.",
+      "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
+      "remaining": "Direkte Host-Bildpaare der ganzen Bevel-Matrix; Innen-/Mehrteil-Punktmutationen, Alt-Kürzung, Portalentfernungskante und unnummerierte 4→3→0-Folge paaren; danach getrennter 17-Fälle-Review."
     }
   }
 }

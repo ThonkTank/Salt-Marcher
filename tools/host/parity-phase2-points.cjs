@@ -256,6 +256,8 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
           return { id, before, after: { ...before, wallAssetId: asset.id } }; }) });
     }, pack.toString("base64"));
     await chooseTool("Punkte");
+    await page.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "QA Wall", exact: true }).click();
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     assert.equal((await state()).tool, "edit-points");
     const keyHash = digest(fs.readFileSync(path.join(vault, notePath)));

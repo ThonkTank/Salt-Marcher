@@ -1610,6 +1610,75 @@ test("native delete action removes one point and then the final three-point outl
   assert.equal(session.entities.has(building.id), false);
 });
 
+test("removing a Building point applies the selected wall in the same undo step", () => {
+  const document = newDocument("Paketwand Punkt entfernen", 8, 8),
+    building: Building = {
+      id: "qa-wall", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: [
+        { x: 3, y: 3 }, { x: 1, y: 3 }, { x: 1, y: 1 },
+        { x: 2, y: 1 }, { x: 4, y: 1 },
+      ], holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0xffffff, wallAlpha: 255,
+      wallBevel: true, wallWidth: 0.2, wallAssetId: "pack:QAWall01",
+    },
+    session = new Session({ ...document, entities: [building] }),
+    grip = buildingVertexGrip(building, { x: 2, y: 1 }, 0.2)!,
+    battlements = { wall: 0x726e65, wallAlpha: 255, wallBevel: true,
+      wallWidth: 0.2, wallAssetId: "pack:battlements" },
+    result = planBuildingBackspacePoint(
+      [...session.entities.values()], building, grip, battlements);
+  assert.equal(result.status, "command");
+  if (result.status !== "command") return;
+  session.execute(result.command);
+  assert.equal(result.after.polygons[0]!.outer.length, 4);
+  assert.equal(result.after.wallAssetId, battlements.wallAssetId);
+  assert.equal(result.after.wall, battlements.wall);
+  assert.deepEqual(session.entities.get(building.id), result.after);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), building);
+  session.redo();
+  assert.deepEqual(session.entities.get(building.id), result.after);
+
+  const selectedQa = planBuildingBackspacePoint(
+    [building], building, grip, { ...battlements, wall: building.wall,
+      wallAssetId: building.wallAssetId });
+  assert.equal(selectedQa.status, "command");
+  if (selectedQa.status === "command")
+    assert.equal(selectedQa.after.wallAssetId, building.wallAssetId);
+});
+
+test("inserting a Building point previews and commits the selected wall", () => {
+  const document = newDocument("Paketwand Punkt einfügen", 8, 8),
+    building: Building = {
+      id: "qa-wall-insert", kind: "building", floorId: document.floors[0]!.id,
+      polygons: [{ outer: [
+        { x: 3, y: 3 }, { x: 1, y: 3 }, { x: 1, y: 1 }, { x: 4, y: 1 },
+      ], holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0xffffff, wallAlpha: 255,
+      wallBevel: true, wallWidth: 0.2, wallAssetId: "pack:QAWall01",
+    },
+    session = new Session({ ...document, entities: [building] }),
+    grip = buildingEdgeMidpointGrip(building, { x: 2.5, y: 1 }, 0.2)!,
+    battlements = { wall: 0x726e65, wallAlpha: 255, wallBevel: true,
+      wallWidth: 0.2, wallAssetId: "pack:battlements" },
+    destination = { x: 2.5, y: 0.75 },
+    preview = previewBuildingEdgeDrag(building, grip, destination, battlements),
+    result = planBuildingEdgeDrag([...session.entities.values()], building,
+      grip, destination, battlements);
+  assert.equal(result.status, "command");
+  if (result.status !== "command") return;
+  assert.deepEqual(preview, result.after);
+  assert.equal(result.after.polygons[0]!.outer.length, 5);
+  assert.equal(result.after.wallAssetId, battlements.wallAssetId);
+  assert.equal(result.after.wall, battlements.wall);
+  session.execute(result.command);
+  assert.deepEqual(session.entities.get(building.id), result.after);
+  session.undo();
+  assert.deepEqual(session.entities.get(building.id), building);
+  session.redo();
+  assert.deepEqual(session.entities.get(building.id), result.after);
+});
+
 test("three-point removal changes only its part and reanchors or removes its portals atomically", () => {
   const document = newDocument("Zwei Umrisse", 30, 15),
     building: Building = {

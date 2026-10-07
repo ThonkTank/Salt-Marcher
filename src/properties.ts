@@ -1972,7 +1972,8 @@ export class Properties {
       tool === "ellipse" ||
       tool === "corridor";
     this.renderFloorControls(tool, e, floorTool, selected, floorId);
-    this.renderBuildingStyleControls(tool, selected, floorId, floorTool);
+    this.renderBuildingStyleControls(tool, selected, floorId,
+      floorTool || tool === "edit-points");
     this.renderPortalControls(tool, e);
     this.renderSurfaceControls(tool, e, floorTool);
     this.renderSurfaceAndPathControls(tool, e, floorTool, selected, floorId);

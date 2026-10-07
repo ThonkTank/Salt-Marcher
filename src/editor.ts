@@ -2292,6 +2292,16 @@ export class DungeonEditor {
       ? buildingPointDragDestination(grip, g.start, point, this.snapEnabled)
       : undefined;
   }
+  private currentBuildingWallStyle(): Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId"> {
+    return {
+      wall: this.settings.surfaces.floor.wallColor,
+      wallAlpha: this.settings.room.wallAlpha ?? 255,
+      wallBevel: this.settings.room.wallBevel ?? true,
+      wallWidth: this.settings.surfaces.floor.wallWidth,
+      wallAssetId: this.settings.room.wallAssetId,
+    };
+  }
   private previewBuildingPointGesture(g: Gesture, point: Point): void {
     const before = g.entity,
       grip = g.buildingVertex ?? g.buildingEdge,
@@ -2305,8 +2315,11 @@ export class DungeonEditor {
         .map((id) => this.session.entities.get(id))
         .filter((entity): entity is Entity =>
           entity?.kind === "door" && entity.anchor?.boundaryId === before.id),
+      after = g.buildingEdge
+        ? { ...proposal.after, ...this.currentBuildingWallStyle() }
+        : proposal.after,
       preview = previewBuildingMutationWithPortals(portals, before,
-        proposal.after, proposal.edit);
+        after, proposal.edit);
     this.renderer.previewBuildingShape(preview.building, grip.contour, preview.portals);
     g.buildingPreviewDestination = destination;
   }
@@ -2323,6 +2336,8 @@ export class DungeonEditor {
         entities: [...this.session.entities.values()],
         before: g.entity,
         ...proposal,
+        ...(g.buildingEdge
+          ? { wallStyle: this.currentBuildingWallStyle() } : {}),
       });
       if (command) this.session.execute(command);
     }
@@ -3474,7 +3489,8 @@ export class DungeonEditor {
       if (building?.kind !== "building") return;
       const result = planBuildingBackspacePoint(
         [...this.session.entities.values()], building,
-        this.hoveredBuildingVertex);
+        this.hoveredBuildingVertex,
+        this.currentBuildingWallStyle());
       if (result.command) {
         this.session.execute(result.command);
         this.hoveredBuildingVertex = undefined;

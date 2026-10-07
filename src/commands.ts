@@ -461,6 +461,9 @@ export interface BuildingContourMutationRequest {
   readonly before: Building;
   readonly after: Building;
   readonly edit: BuildingContourEdit;
+  /** Native point insertion and removal apply the selected Building wall. */
+  readonly wallStyle?: Pick<Building,
+    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">;
 }
 function assertCurrentBuildingContour(
   entities: readonly Entity[], before: Building, message: string,
@@ -544,10 +547,13 @@ export function planBuildingContourMutation(
         !recordsEqual(without(beforePoints, edit.index), afterPoints)))
   )
     throw new Error("Ungültige Punktbearbeitung.");
-  validateBuildingContourAfter(after);
-  if (recordsEqual(before, after)) return null;
-  const changes = buildingContourChanges(request.entities, before, after,
-    (door) => followPortalAfterContourEdit(door, before, after, edit));
+  const finalAfter = request.wallStyle && edit.kind !== "move"
+    ? { ...after, ...request.wallStyle }
+    : after;
+  validateBuildingContourAfter(finalAfter);
+  if (recordsEqual(before, finalAfter)) return null;
+  const changes = buildingContourChanges(request.entities, before, finalAfter,
+    (door) => followPortalAfterContourEdit(door, before, finalAfter, edit));
   return {
     label:
       edit.kind === "move"

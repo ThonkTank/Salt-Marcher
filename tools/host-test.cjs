@@ -685,6 +685,12 @@ async function workflow() {
     return;
   }
   if (parityPhase3Building) {
+    if (process.argv.includes("--point-style")) {
+      const scenario = require("./host/parity-phase3-point-style.cjs")(scenarioContext);
+      if (restart) await scenario.reopen();
+      else await scenario.edit();
+      return;
+    }
     const scenario = require("./host/parity-phase3-building.cjs")(scenarioContext);
     if (process.argv.includes("--same-card")) await scenario.sameCard(restart);
     else if (process.argv.includes("--field-known-start")) await scenario.fieldKnownStart(restart);
