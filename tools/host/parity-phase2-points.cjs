@@ -121,6 +121,49 @@ module.exports = ({ page, fs, path, assert, crypto, root, qa, vault, out, checks
     assert.equal(held.history, before.history);
     assert.equal(held.dirty, before.dirty);
     await page.screenshot({ path: path.join(out, label + "-held.png") });
+    if (label === "edge-pointercancel") {
+      const sample = await page.evaluate(() => {
+        const editor = app.workspace.activeLeaf.view.editor,
+          renderer = editor.renderer,
+          original = editor.session.entities.get("triangle"),
+          doors = ["triangle-door", "triangle-door-2"].map(id =>
+            editor.session.entities.get(id)),
+          layer = renderer.buildingPreview.wallLayer,
+          counts = { added: 0, removed: 0 },
+          add = layer.addChild.bind(layer), remove = layer.removeChild.bind(layer);
+        layer.addChild = (...children) => {
+          counts.added += children.length;
+          return add(...children);
+        };
+        layer.removeChild = child => {
+          counts.removed++;
+          return remove(child);
+        };
+        const draw = (first) => {
+          const previous = layer.children.length,
+            beforeCounts = { ...counts };
+          renderer.previewBuildingShape(original, 0, [
+            { before: doors[0], after: first ? doors[0] : null },
+            { before: doors[1], after: doors[1] },
+          ]);
+          return { previous, next: layer.children.length,
+            added: counts.added - beforeCounts.added,
+            removed: counts.removed - beforeCounts.removed };
+        };
+        return { both: draw(true), one: draw(false), restored: draw(true),
+          unchanged: draw(true) };
+      });
+      fs.writeFileSync(path.join(out, "portal-wall-delta.json"),
+        JSON.stringify(sample, null, 2));
+      for (const part of Object.values(sample)) {
+        assert.equal(part.added, Math.max(0, part.next - part.previous));
+        assert.equal(part.removed, Math.max(0, part.previous - part.next));
+      }
+      assert.ok(sample.one.next < sample.both.next);
+      assert.equal(sample.restored.next, sample.both.next);
+      assert.equal(sample.unchanged.added, 0);
+      assert.equal(sample.unchanged.removed, 0);
+    }
     if (cancel) {
       if (cancel === "pointercancel")
         await page.locator(".dn-canvas canvas").evaluate(canvas =>

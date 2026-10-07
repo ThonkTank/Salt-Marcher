@@ -1374,6 +1374,65 @@ test("one point proposal keeps vertex-relative and edge-absolute snap behavior",
   assert.deepEqual(inserted?.after, previewBuildingEdgeDrag(building, edge!, { x: 4, y: 1 }));
 });
 
+test("local portal dependents match the full preview scan across contours", () => {
+  const document = newDocument("Lokale Portale", 30, 20),
+    floorId = document.floors[0]!.id,
+    makeBuilding = (id: string, polygons: Polygon[]): Building => ({
+      id, kind: "building", floorId, polygons, layer: 200,
+      fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    }),
+    triangle = makeBuilding("edge", [{ outer: [
+      { x: 2, y: 10 }, { x: 6, y: 10 }, { x: 6, y: 14 },
+    ], holes: [] }]),
+    hole = makeBuilding("hole", [{
+      outer: rectangle({ x: 1, y: 1 }, { x: 12, y: 9 }),
+      holes: [[{ x: 4, y: 4 }, { x: 6, y: 4 }, { x: 4, y: 6 }]],
+    }]),
+    multi = makeBuilding("multi", [
+      { outer: [{ x: 15, y: 1 }, { x: 20, y: 1 }, { x: 15, y: 6 }], holes: [] },
+      { outer: [{ x: 22, y: 1 }, { x: 27, y: 1 }, { x: 22, y: 6 }], holes: [] },
+    ]),
+    cases = [
+      { building: triangle, contour: 0, at: { x: 4, y: 10 },
+        destination: { x: 4, y: 9 }, edge: true, anchors: [0.15, 0.6] },
+      { building: hole, contour: 1, at: { x: 4, y: 4 },
+        destination: { x: 4, y: 3.5 }, edge: false, anchors: [0.2] },
+      { building: multi, contour: 1, at: { x: 27, y: 1 },
+        destination: { x: 27, y: 0.5 }, edge: false, anchors: [0.2] },
+    ];
+  for (const item of cases) {
+    const doors: Door[] = item.anchors.map((at, index) => ({
+        id: `${item.building.id}-door-${index}`, kind: "door", floorId,
+        anchor: { boundaryId: item.building.id, contour: item.contour, at },
+        width: 0.7, variant: "door",
+      })),
+      foreign = makeBuilding("foreign", [{
+        outer: rectangle({ x: 15, y: 10 }, { x: 19, y: 14 }), holes: [],
+      }]),
+      foreignDoor: Door = { id: "foreign-door", kind: "door", floorId,
+        anchor: { boundaryId: foreign.id, contour: 0, at: 0.2 },
+        width: 0.7, variant: "door" },
+      session = new Session({ ...document,
+        entities: [item.building, ...doors, foreign, foreignDoor] }),
+      grip = item.edge
+        ? buildingEdgeMidpointGrip(item.building, item.at, 0.2)
+        : buildingVertexGrip(item.building, item.at, 0.2);
+    assert.ok(grip);
+    const proposal = proposeBuildingPointDrag(item.building, grip!, item.destination);
+    assert.ok(proposal);
+    const local = [...session.dependents(item.building.id)]
+      .map(id => session.entities.get(id))
+      .filter((entity): entity is Door =>
+        entity?.kind === "door" && entity.anchor?.boundaryId === item.building.id),
+      full = [...session.entities.values()];
+    assert.equal(local.length, doors.length);
+    assert.deepEqual(previewBuildingMutationWithPortals(local, item.building,
+      proposal!.after, proposal!.edit),
+    previewBuildingMutationWithPortals(full, item.building,
+      proposal!.after, proposal!.edit));
+  }
+});
+
 test("edge preview and commit remove a portal on the replaced wall without a premature document edit", () => {
   const document = newDocument("Kantenpunkt", 12, 12),
     building: Building = {
