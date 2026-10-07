@@ -156,7 +156,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 3 im nächsten gesonderten Nachbesserungslauf: Bevel-UV-Restabweichung anhand Originalpixeln klären, Bodenvarianten und Farbhelligkeit angleichen, Portal- und Wand-Tint/Alpha-Bildpaare sowie vollständige Original-Optionsrohkarte belegen; danach eigener unabhängiger Review.",
+  "next": "Phase 3 im nächsten gesonderten Nachbesserungslauf: Smart-Tile-Bitmasken und Prioritäten aus dem geladenen Originalressourcenstand bestimmen und die Bodendarstellung aus der aktuellen Tile-Belegung statt dem pfadabhängigen 8×8-Repeat ableiten. Danach Bevel-UV-Restabweichung, Boden-/Wandfarbe und Alpha, Portalbildpaare sowie vollständige Optionsrohkarte abgleichen; eigener unabhängiger Review erst nach dem Fachphasentor.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -164,7 +164,7 @@
     "Phase-6-Spielansicht einschließlich Key-Liste, rechter Detailansicht, Gliederung, Marker und Auswertung ist isoliert und nach frischem Start geprüft; die produktive Spielansicht und Übersichtslink-Navigation bestehen nach frischem Start. Physische Eingabe bleibt auf Nutzerwunsch offen; allgemeine RAM-Ersparnis ist nicht isoliert belegt.",
     "Breiter Gleichwertigkeitstest scheitert reproduzierbar vor dem Auswahlteil am Dach-Polygon: drei statt vier Eckpunkte in zwei Läufen. Dach erst in seiner Werkzeugreihenfolge untersuchen; keine bestandene Gesamtregression behaupten.",
     "DD-026 bleibt trotz Phase-3-Erfolg nur teilweise abgenommen: native All/Used/Tags-Bibliothek, gleicher Original-/Host-Assetvergleich, weitere Objektoptionen und physische Eingabe bleiben offen.",
-    "Phase 3: QAWall01-Wandbreite, Texturperiode und Schattenlage sind ausgerichtet. Im normalisierten 16×16-Eckvergleich stimmt Miter in fünf Klassen 256/256; Bevel weicht bei 25/228 Pixeln ab. Exakte Farbhelligkeit, Bodenvarianten, Portal- und Wand-Tint/Alpha-Bildpaare sowie vollständige Original-Optionsfolge fehlen. Kombinierter Hostfall mit Key und Frischprozess besteht. Unabhängiger Review und Aufräumphase stehen aus."
+    "Phase 3: QAWall01-Wandbreite, Texturperiode und Schattenlage sind ausgerichtet. Im normalisierten 16×16-Eckvergleich stimmt Miter in fünf Klassen 256/256; beim Bevel weichen innerhalb der Wandsilhouette 17/220 Pixel ab. Smart-Wood-Originalprobe: Neuöffnung und Änderung von msi.seed pixelgleich; bei gleicher Belegung stimmen 16/16 Atlasvarianten unabhängig von den Shapes, aber eine entfernte Kachel ändert 61/63 weitere belegte Felder. Kandidat nutzt noch ein pfadabhängiges periodisches 8×8-Canvas. Exakte Farbhelligkeit, Bodenvarianten, Portal- und Wand-Tint/Alpha-Bildpaare sowie vollständige Original-Optionsfolge fehlen. Kombinierter Hostfall mit Key und Frischprozess besteht. Unabhängiger Review und Aufräumphase stehen aus."
   ],
   "nativeRun": {
     "edit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json",
@@ -531,7 +531,8 @@
     "/home/aaron/.cache/dungeon-native-qa/evidence/1791305504762-compact-edit/result.json",
     "/home/aaron/.cache/dungeon-native-qa/evidence/phase5-protected-result.json",
     "/home/aaron/.cache/dungeon-native-qa/evidence/1791305474881-phase4-key-edit/result.json",
-    "/home/aaron/.cache/dungeon-native-qa/evidence/1791305491851-phase4-key-reopen/result.json"
+    "/home/aaron/.cache/dungeon-native-qa/evidence/1791305491851-phase4-key-reopen/result.json",
+    "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md"
   ],
   "dragonCaveBackup": "/home/aaron/.cache/drachenhoehle-native-backup-20261003-111826",
   "featureLetterBackup": "/home/aaron/.cache/dungeon-native-qa/backups/20261003-161334-feature-letters",

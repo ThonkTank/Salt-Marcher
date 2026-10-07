@@ -3900,6 +3900,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344337916-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Boden-Atlaszellen und Hintergrundwirkung weichen im ausgerichteten Bild weiterhin ab."
+        },
+        "phase3FloorProbe": {
+          "date": "2026-10-07",
+          "state": "evidence_only",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json"
+          ],
+          "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern.",
+          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; native Tile-Bitmasken, Prioritäten und Auswahlfolge sowie ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4030,6 +4042,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344337916-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Boden-Tint/Alpha-Wirkung noch nicht in gleichwertigem Pixelpaar belegt; Variantenwahl und Helligkeit offen."
+        },
+        "phase3FloorProbe": {
+          "date": "2026-10-07",
+          "state": "evidence_only",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-investigation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/floor-variant-comparison.json"
+          ],
+          "finding": "Smart-Wood-Varianten sind bei frischer Neuöffnung bildgleich, unabhängig von msi.seed und Shape-Anzahl bei gleicher Tile-Belegung; eine entfernte Tile-Zelle ändert 61 von 63 weiteren belegten Feldern.",
+          "remaining": "Kandidat nutzt ein pfadabhängiges periodisches 8×8-Canvas; native Tile-Bitmasken, Prioritäten und Auswahlfolge sowie ausgerichtete Tint-/Alpha-Bildpaare fehlen.",
+          "strictAcceptance": "open"
         }
       },
       {
