@@ -144,7 +144,7 @@ export const toolSettings = (): ToolSettings => ({
   floorMode: "draw",
   layer: 100,
   light: { radius: 8, intensity: 1, color: 0xffc979, shadows: true },
-  room: {},
+  room: { wallBevel: true },
   wall: { smooth: false, width: 0.22, layer: 700, shadow: true },
   surfaceShape: "rectangle",
   waterShape: "brush",
@@ -483,7 +483,7 @@ export class Properties {
     if (!this.defaults.room.styleReady && nativeWalls.length) {
       const first = nativeWalls[0]!;
       this.defaults.room = { ...this.defaults.room,
-        wallAssetId: first.id, wallAlpha: 255, wallBevel: false,
+        wallAssetId: first.id, wallAlpha: 255,
         styleReady: true };
       this.defaults.surfaces.floor = { ...this.defaults.surfaces.floor,
         wallColor: buildingStyleDefaultColor(first), wallWidth: 0.2 };
@@ -588,7 +588,7 @@ export class Properties {
     });
     this.root.append(wallColor);
     this.field("Bevel Corners", "checkbox",
-      String(this.defaults.room.wallBevel ?? false),
+      String(this.defaults.room.wallBevel ?? true),
       (input) => { this.defaults.room = { ...this.defaults.room,
         wallBevel: input.checked }; });
   }
@@ -644,25 +644,6 @@ export class Properties {
       this.root.append(button);
     }
     const packageWalls = this.assets().filter((asset) => asset.kind === "wall");
-    if (packageWalls.length && (e?.kind === "building" || floorTool))
-      this.choice(
-        "Paketwand für Räume",
-        e?.kind === "building"
-          ? (e.wallAssetId ?? "")
-          : (this.defaults.room.wallAssetId ?? ""),
-        [
-          ["", "Lesbare Grundwand"],
-          ...packageWalls.map(
-            (asset) => [asset.id, asset.name] as [string, string],
-          ),
-        ],
-        (assetId) => {
-          this.defaults.room = { wallAssetId: assetId || undefined };
-          if (e?.kind === "building")
-            this.change(e, { wallAssetId: assetId || undefined });
-        },
-        true,
-      );
     if (e?.kind === "wall" || tool === "wall") {
       const wall = e?.kind === "wall" ? e : this.defaults.wall;
       const update = (patch: Partial<ToolSettings["wall"]>) => {

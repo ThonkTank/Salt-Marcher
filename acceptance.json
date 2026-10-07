@@ -3869,6 +3869,20 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/floor-cell-correlation.json"
+          ],
+          "remaining": "Vier Smart-Wood-Innenzellen direkt identifiziert; exakte native Variantenauswahl, Übergänge und Bildvergleich aller 24 Stile offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -3951,6 +3965,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Tint/Alpha im Host gespeichert; Original-Building-Farben und gleichgeometrischer Bildvergleich offen.",
           "strictAcceptance": "open"
         }
       },
@@ -4281,6 +4308,21 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339794921-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339853185-parity-phase2-points-reopen/result.json"
+          ],
+          "remaining": "Neun Stil-/Farb-/Wandkombinationen im frischen Host erhalten; Radierung, Portal, Punktzug und Raum-Key-Bytes auf derselben Optionskarte offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4381,6 +4423,19 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "repair_candidate_review_pending",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Vorheriger enger Original-/Host-Resetbeleg besteht; Endstandsreview offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4478,6 +4533,20 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-picker/runs/20261007-035903-1315230/evidence/screens/02-floor-picker-ready.png"
+          ],
+          "remaining": "Farbfläche im Host bedient und gespeichert; Original-Floor-/Wall-Rohpaar fehlt.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4573,6 +4642,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-picker/runs/20261007-035903-1315230/evidence/screens/02-floor-picker-ready.png"
+          ],
+          "remaining": "Hue im Host bedient und gespeichert; Original-Floor-/Wall-Rohpaar fehlt.",
           "strictAcceptance": "open"
         }
       },
@@ -4673,6 +4756,20 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-picker/runs/20261007-035903-1315230/evidence/screens/02-floor-picker-ready.png"
+          ],
+          "remaining": "Numerische R/G/B/A-Werte im Host gespeichert; Original-Floor-/Wall-Rohpaar fehlt.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4771,6 +4868,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-picker/runs/20261007-035903-1315230/evidence/screens/02-floor-picker-ready.png"
+          ],
+          "remaining": "Sechsstellige Hexeingabe im Host und achtstellige ARGB-Eingabe im früheren Lauf gespeichert; vollständiges Originalpaar fehlt.",
           "strictAcceptance": "open"
         }
       },
@@ -4871,6 +4982,19 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Accept und Außenklick im Host belegt; Original-Außenklick sowie tatsächlicher Werkzeugwechsel im Paarlauf offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -4968,6 +5092,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/wall-pipette-pixel.json"
+          ],
+          "remaining": "Wall-Pipette im Host gegen Screenshot-Pixel und auf neuem Building gespeichert; Original-Wall-Abschluss und Abbruch im Rohpaar offen.",
           "strictAcceptance": "open"
         }
       },
@@ -6097,6 +6235,19 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "QAWall01 in beiden Programmen geladen; gleiche Geometrie/Zoomstufe, Wandkappen, Portale, Kurven und Schattenbild offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6220,6 +6371,19 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "repair_candidate_review_pending",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Vorheriger enger X/None-Beleg besteht; Endstandsreview offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6321,6 +6485,19 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Flächiger Alpha-Doppelauftrag entfernt; Original-/Host-Wandbild mit Tint und Alpha sowie Fugen offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6419,6 +6596,21 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/02-QAWall-off.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map"
+          ],
+          "remaining": "Original-QAWall01 speichert OFF joint 0 und ON joint 1; Kandidat startet ON und maskiert Textur-Ecken. Gleichgeometrische Pixelwirkung an Ecke, Portal und Kurve offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6516,6 +6708,21 @@
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
           "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339794921-parity-phase2-points-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339853185-parity-phase2-points-reopen/result.json"
+          ],
+          "remaining": "Phase-2-Punkt-/Portalregression auf aktuellem Build bestanden; identischer Original-/Host-Stilfall auf derselben Optionskarte offen.",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -6612,6 +6819,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "repair_candidate_review_pending",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Altes Paketwand-Feld entfernt; native Galerie und Kandidat vorbereiten nur nächste Züge. Endstandsreview offen.",
           "strictAcceptance": "open"
         }
       },
@@ -6712,6 +6932,19 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json"
           ],
           "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
+          "strictAcceptance": "open"
+        },
+        "phase3Repair": {
+          "date": "2026-10-07",
+          "state": "repair_candidate_review_pending",
+          "candidateBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Vorheriger enger Original-/Host-Wandresetbeleg besteht; Endstandsreview offen.",
           "strictAcceptance": "open"
         }
       },

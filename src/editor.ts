@@ -2792,7 +2792,7 @@ export class DungeonEditor {
         defaults.wallWidth, (defaults.opacity ?? 1), "none", material ?? null,
         this.settings.room.wallAssetId ?? null,
         this.settings.room.wallAlpha ?? 255,
-        this.settings.room.wallBevel ?? false,
+        this.settings.room.wallBevel ?? true,
       ] : [
         defaults.layer, defaults.color, defaults.wallColor,
         defaults.wallWidth, defaults.opacity ?? 1,
@@ -2865,7 +2865,7 @@ export class DungeonEditor {
                   floorAlpha: Math.round((defaults.opacity ?? 1) * 255),
                   wall: defaults.wallColor,
                   wallAlpha: this.settings.room.wallAlpha ?? 255,
-                  wallBevel: this.settings.room.wallBevel ?? false,
+                  wallBevel: this.settings.room.wallBevel ?? true,
                   wallWidth: defaults.wallWidth,
                   ...(this.settings.room.wallAssetId
                     ? { wallAssetId: this.settings.room.wallAssetId } : {}),

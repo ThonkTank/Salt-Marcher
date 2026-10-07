@@ -1,4 +1,4 @@
-module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
+module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
   chooseTool }) => {
   const mapPath = "Dungeons/Parity/Building-Styles.dungeon";
   const savedState = path.join(qa, "parity-phase3-building-saved.json");
@@ -82,6 +82,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     }, { mapPath, pckPath, pack: pack.toString("base64") });
     await open();
     await chooseTool("Raum");
+    assert.equal(await page.getByRole("checkbox", { name: "Bevel Corners" }).isChecked(), true);
+    assert.equal(await page.getByText("Paketwand für Räume").count(), 0);
     const catalog = await page.evaluate(() => {
       const plugin = app.plugins.getPlugin("dungeon-editor"),
         assets = plugin.listAssets(["QAWall01"], true);
@@ -107,6 +109,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     assert.equal(building.floorAlpha, 128);
     assert.equal(building.wallAssetId, catalog.walls.find(item => item.name === "QA Wall").id);
     assert.equal(building.wallAlpha, 255);
+    assert.equal(building.wallBevel, true);
     assert.equal(building.material.assetId, catalog.floors[0].id);
     await page.screenshot({ path: path.join(out, "qa-wall-first.png") });
     checks.push("The first Building stores ARGB floor tint and the selected QAWall01 path");
@@ -120,6 +123,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     checks.push("Wall None affects only the next Building and omits its shadow");
     await page.getByRole("button", { name: "Smart Stone", exact: true }).click();
     await page.getByRole("button", { name: "Battlements", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Bevel Corners" }).uncheck();
     await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
     await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" }).fill("80ff00ff");
     await page.getByRole("dialog", { name: "Wandfarbe" }).press("Escape");
@@ -207,6 +211,72 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     const polygon = (await state()).document.entities[5];
     assert(polygon.polygons[0].outer.length > 4);
     assert.equal(polygon.wallAssetId, building.wallAssetId);
+    await chooseTool("Raum");
+    await page.getByRole("button", { name: "Bodenfarbe RGBA", exact: true }).click();
+    for (const [channel, value] of [["R", "17"], ["G", "34"],
+      ["B", "51"], ["A", "128"]])
+      await page.getByRole("spinbutton", { name: "Bodenfarbe " + channel }).fill(value);
+    assert.equal(await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" }).inputValue(), "80112233");
+    await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" }).fill("3366cc");
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+    await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" }).fill("abcdef");
+    await page.getByRole("spinbutton", { name: "Wandfarbe A" }).fill("96");
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await draw({ x: 14, y: 6 }, { x: 16, y: 8 }, 7);
+    const numeric = (await state()).document.entities[6];
+    assert.equal(numeric.fill, 0x3366cc);
+    assert.equal(numeric.floorAlpha, 128);
+    assert.equal(numeric.wall, 0xabcdef);
+    assert.equal(numeric.wallAlpha, 96);
+    checks.push("Building floor and wall numeric RGBA, six-digit Hex and Accept are stored together");
+    const afterNumeric = await state();
+    await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+    await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" }).fill("60224466");
+    await page.getByRole("button", { name: "Bauwerk", exact: true }).first().click();
+    assert.deepEqual((await state()).document, afterNumeric.document);
+    assert.equal((await page.evaluate(() => app.workspace.activeLeaf.view.editor.settings)).surfaces.floor.wallColor, 0x224466);
+    await page.getByRole("button", { name: "Bodenfarbe RGBA", exact: true }).click();
+    const hue = page.getByRole("slider", { name: "Bodenfarbe Farbton" });
+    const hueBox = await hue.boundingBox();
+    assert(hueBox);
+    await page.mouse.click(hueBox.x + hueBox.width * .7, hueBox.y + hueBox.height / 2);
+    const colorField = page.locator(".dn-building-color-field");
+    const fieldBox = await colorField.boundingBox();
+    assert(fieldBox);
+    await page.mouse.click(fieldBox.x + fieldBox.width * .7,
+      fieldBox.y + fieldBox.height * .4);
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await draw({ x: 17, y: 6 }, { x: 19, y: 8 }, 8);
+    const picked = (await state()).document.entities[7];
+    assert.notEqual(picked.fill, numeric.fill);
+    assert.equal(picked.floorAlpha, 128);
+    assert.equal(picked.wall, 0x224466);
+    checks.push("Hue and color-field gestures change a later Building; outside click retains the wall draft");
+    await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+    await page.getByRole("button", { name: "Pipette", exact: true }).click();
+    const wallSamplePoint = await world({ x: 5.25, y: 5.25 });
+    const sampleImage = path.join(out, "wall-pipette-source.png");
+    await page.screenshot({ path: sampleImage });
+    const pixels = PNG.sync.read(fs.readFileSync(sampleImage));
+    const offset = (Math.round(wallSamplePoint.y) * pixels.width +
+      Math.round(wallSamplePoint.x)) * 4;
+    const sampledRgb = (pixels.data[offset] << 16) |
+      (pixels.data[offset + 1] << 8) | pixels.data[offset + 2];
+    await page.mouse.click(wallSamplePoint.x, wallSamplePoint.y);
+    const wallSampleHex = await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" }).inputValue();
+    const pipetteRgb = parseInt(wallSampleHex.slice(-6), 16);
+    const channelDifference = [16, 8, 0].map(shift =>
+      Math.abs(((pipetteRgb >> shift) & 255) - ((sampledRgb >> shift) & 255)));
+    fs.writeFileSync(path.join(out, "wall-pipette-pixel.json"), JSON.stringify({
+      point: wallSamplePoint, screenshotRgb: sampledRgb, pipetteRgb,
+      channelDifference,
+    }, null, 2));
+    assert(channelDifference.every(delta => delta <= 2));
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await draw({ x: 14, y: 9 }, { x: 16, y: 11 }, 9);
+    assert.equal((await state()).document.entities[8].wall, pipetteRgb);
+    checks.push("Wall pipette reads an independently captured map pixel and stores it on the next Building");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
     const allShapes = await state();
@@ -219,9 +289,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     const expected = JSON.parse(fs.readFileSync(savedState, "utf8"));
     const actual = await state();
     assert.deepEqual(actual.document, expected.document);
-    assert.equal(actual.document.entities.length, 6);
+    assert.equal(actual.document.entities.length, 9);
     await page.screenshot({ path: path.join(out, "fresh-reopen.png") });
-    checks.push("A fresh Obsidian process reopens all six Building style and color records");
+    checks.push("A fresh Obsidian process reopens all nine Building style and color records");
   }
   return { edit, reopen };
 };

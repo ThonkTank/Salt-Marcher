@@ -9,6 +9,7 @@ import {
   Texture,
   FillGradient,
   Sprite,
+  TilingSprite,
   type Mesh,
   MeshGeometry,
 } from "pixi.js";
@@ -84,6 +85,7 @@ interface BuildingPreview {
   container: Container;
   graphic: Graphics;
   wallLayer: Container;
+  wallMask: Graphics;
   shadow?: Graphics;
   floorTexture?: Texture;
   wallTexture?: Texture;
@@ -620,6 +622,7 @@ export class MapRenderer {
           e.wallAssetId + "\0image",
           e.wall,
           (e.wallAlpha ?? 255) / 255,
+          e.wallBevel ?? false,
         );
       }
     } else if (e.kind === "wall") {
@@ -837,33 +840,84 @@ export class MapRenderer {
     reference: string,
     tint = 0xffffff,
     alpha = 1,
+    bevel = false,
   ): void {
     void this.acquireAsset(visual, reference)
       .then((texture) => {
         if (this.visuals.get(visual.entity.id) !== visual || this.closed)
           return;
         const layer = new Container();
+        if (visual.entity.kind === "wall") {
+          for (const segment of segments) {
+            const dx = segment.b.x - segment.a.x,
+              dy = segment.b.y - segment.a.y,
+              length = Math.hypot(dx, dy);
+            if (!length) continue;
+            const sprite = new Sprite(texture);
+            sprite.anchor.set(0, 0.5);
+            sprite.position.set(segment.a.x, segment.a.y);
+            sprite.rotation = Math.atan2(dy, dx);
+            sprite.width = length + 0.02;
+            sprite.height = width;
+            sprite.tint = tint;
+            sprite.alpha = alpha;
+            layer.addChild(sprite);
+          }
+          visual.container.addChild(layer);
+          this.invalidate();
+          return;
+        }
+        const mask = new Graphics();
+        this.drawTexturedWallMask(mask, segments, width, bevel);
+        layer.mask = mask;
         for (const segment of segments) {
           const dx = segment.b.x - segment.a.x,
             dy = segment.b.y - segment.a.y,
             length = Math.hypot(dx, dy);
           if (!length) continue;
-          const sprite = new Sprite(texture);
+          const sprite = TilingSprite.from(texture, {
+            width: length + width,
+            height: width,
+            tileScale: { x: 1 / 64, y: width / texture.height },
+          });
           sprite.anchor.set(0, 0.5);
-          sprite.position.set(segment.a.x, segment.a.y);
+          sprite.position.set(segment.a.x - dx / length * width / 2,
+            segment.a.y - dy / length * width / 2);
           sprite.rotation = Math.atan2(dy, dx);
-          sprite.width = length + 0.02;
-          sprite.height = width;
           sprite.tint = tint;
           sprite.alpha = alpha;
           layer.addChild(sprite);
         }
-        visual.container.addChild(layer);
+        visual.container.addChild(layer, mask);
         this.invalidate();
       })
       .catch((error) => {
         if (!this.closed) this.onError(String(error));
       });
+  }
+  private drawTexturedWallMask(
+    mask: Graphics,
+    segments: readonly { a: Point; b: Point }[],
+    width: number,
+    bevel: boolean,
+  ): void {
+    mask.clear();
+    let previous: Point | undefined;
+    let start: Point | undefined;
+    for (const segment of segments) {
+      if (!previous || previous.x !== segment.a.x || previous.y !== segment.a.y) {
+        if (start && previous?.x === start.x && previous.y === start.y)
+          mask.closePath();
+        mask.moveTo(segment.a.x, segment.a.y);
+        start = segment.a;
+      }
+      mask.lineTo(segment.b.x, segment.b.y);
+      previous = segment.b;
+    }
+    if (start && previous?.x === start.x && previous.y === start.y)
+      mask.closePath();
+    mask.stroke({ color: 0xffffff, width, cap: "butt",
+      join: bevel ? "bevel" : "miter" });
   }
   private drawSurface(v: Visual, g: Graphics, texture?: Texture, previewDoors?: readonly Door[]): void {
     const e = v.entity;
@@ -880,9 +934,10 @@ export class MapRenderer {
             textureSpace: "global" as const,
             matrix: new Matrix()
               .scale(
-                e.material.tileSize / texture.width,
-                e.material.tileSize / (isNativeFloorAssetId(e.material.assetId)
-                  ? texture.width : texture.height),
+                (isNativeFloorAssetId(e.material.assetId) ? 8 : e.material.tileSize) /
+                  texture.width,
+                (isNativeFloorAssetId(e.material.assetId) ? 8 : e.material.tileSize) /
+                  texture.height,
               )
               .rotate(e.material.rotation),
           }
@@ -942,7 +997,7 @@ export class MapRenderer {
           (d): d is Door =>
             d?.kind === "door" && d.anchor?.boundaryId === e.id,
         );
-      if (e.wallWidth > 0) {
+      if (e.wallWidth > 0 && !e.wallAssetId) {
         for (const s of wallSegments(e, doors))
           g.moveTo(s.a.x, s.a.y).lineTo(s.b.x, s.b.y);
         g.stroke({
@@ -1684,8 +1739,9 @@ export class MapRenderer {
     let state = this.buildingPreview;
     if (!state) {
       const container = new Container(), graphic = new Graphics(),
-        wallLayer = new Container();
-      container.addChild(graphic, wallLayer);
+        wallLayer = new Container(), wallMask = new Graphics();
+      wallLayer.mask = wallMask;
+      container.addChild(graphic, wallLayer, wallMask);
       container.zIndex = after.layer;
       container.alpha = source.container.alpha;
       container.tint = source.container.tint;
@@ -1693,7 +1749,7 @@ export class MapRenderer {
       state = {
         sourceId: after.id, sourceVisible: source.container.visible,
         shadowVisible: source.shadow?.visible, entity: after,
-        container, graphic, wallLayer, assets: [], portals: [],
+        container, graphic, wallLayer, wallMask, assets: [], portals: [],
       };
       const created = state;
       this.buildingPreview = state;
@@ -1776,22 +1832,27 @@ export class MapRenderer {
       }
     }
     let used = 0;
+    const segments = after.wallWidth > 0 ? wallSegments(after, doors) : [];
+    this.drawTexturedWallMask(state.wallMask, segments,
+      after.wallWidth, after.wallBevel ?? false);
     if (state.wallTexture && after.wallWidth > 0)
-      for (const segment of wallSegments(after, doors)) {
+      for (const segment of segments) {
         const dx = segment.b.x - segment.a.x,
           dy = segment.b.y - segment.a.y,
           length = Math.hypot(dx, dy);
         if (!length) continue;
-        let sprite = state.wallLayer.children[used] as Sprite | undefined;
+        let sprite = state.wallLayer.children[used] as TilingSprite | undefined;
         if (!sprite) {
-          sprite = new Sprite(state.wallTexture);
+          sprite = TilingSprite.from(state.wallTexture);
           sprite.anchor.set(0, 0.5);
           state.wallLayer.addChild(sprite);
         } else sprite.texture = state.wallTexture;
-        sprite.position.set(segment.a.x, segment.a.y);
+        sprite.position.set(segment.a.x - dx / length * after.wallWidth / 2,
+          segment.a.y - dy / length * after.wallWidth / 2);
         sprite.rotation = Math.atan2(dy, dx);
-        sprite.width = length + 0.02;
+        sprite.width = length + after.wallWidth;
         sprite.height = after.wallWidth;
+        sprite.tileScale.set(1 / 64, after.wallWidth / state.wallTexture.height);
         sprite.tint = after.wall;
         sprite.alpha = (after.wallAlpha ?? 255) / 255;
         used++;

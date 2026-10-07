@@ -1,5 +1,5 @@
 {
-  "phase": "Folge-Roadmap: Phase-3-Review abgeschlossen, Fachphasentor offen",
+  "phase": "Folge-Roadmap: Phase-3-Nachbesserung teilweise umgesetzt, Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -94,7 +94,9 @@
     "Phase 1: Rechteck, Ellipse, Polygon per Doppelklick, ein Feld breiter polygonaler Gang, Raum 16 samt neuem Key, Undo/Redo sowie Speichern und frischer Obsidian-Prozess auf isolierter Drachenhöhlenkopie bestanden; installierter Build 94d22bc2561faad55c7db38fb040f514f35955ba45adeed51f46eb0816d165c6.",
     "Phase 2: qa_chest im neuen Raum 16 bei (4, 3) gewählt, als Cursorbild ohne Karten- oder Historyänderung angezeigt und mit einem Klick als raumgebundenes Objekt platziert. Undo/Redo, V3-Speicherung und frischer Obsidian-Prozess bestanden auf isolierter Drachenhöhlenkopie mit installiertem Build 4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74; 108 Kernprüfungen, Typprüfung und Build bestanden. Alle 89 produktiven Dungeondateien blieben bytegleich.",
     "Phase 4: V4-Raum ohne .md, zwei Markdown-Abschnitte mit formatierter Vorschau, Undo/Redo, Speicherung und frischer Obsidian-Start im isolierten Vault bestanden; 111 Kernprüfungen, Typprüfung und Build bestanden. 89 produktive Dungeondateien bytegleich.",
-    "Phase 5: Feature-Dialog und rechter Key bearbeiten denselben V4-Markdown-Abschnitt; Objektzug mit verknüpftem Feature, stabilem Abschnitt, Undo/Redo, Speicherung und frischer Neuöffnung im installierten Build bestanden. V3-Drachenhöhlenansicht bestanden; 114 Kernprüfungen, Typprüfung und Build bestanden. 89 produktive Dungeondateien bytegleich."
+    "Phase 5: Feature-Dialog und rechter Key bearbeiten denselben V4-Markdown-Abschnitt; Objektzug mit verknüpftem Feature, stabilem Abschnitt, Undo/Redo, Speicherung und frischer Neuöffnung im installierten Build bestanden. V3-Drachenhöhlenansicht bestanden; 114 Kernprüfungen, Typprüfung und Build bestanden. 89 produktive Dungeondateien bytegleich.",
+    "Dungeondraft 1.2.0.1 direkt: Bevel ist standardmäßig ON; QAWall01 speichert bei OFF joint 0 und bei ON joint 1. Vier Smart-Wood-Innenfelder entsprechen oberen Atlaszellen mit Korrelation 0,968–0,977; die native Gesamt-Zellwahl bleibt offen.",
+    "Phase-3-Nachbesserungskandidat 020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a: Bevel-Default, künftig wirkende Wandgalerie, Feldvarianten und maskierte Texturwand; neun Building-Optionsstände, numerische RGBA, sechsstellige Hexwerte, Hue/Farbfläche, Außenklick und Wandpipette im isolierten Host gespeichert und frisch geöffnet. Phase-1-Hauptlauf und Phase-2-Punkt-/Portal-/Key-Folgen mit frischem Prozess auf demselben Build bestanden; 131 Kerntests, Typprüfung und Build bestanden. Bild-/Originalpaar und Phase-3-Tor offen."
   ],
   "implemented": [
     "Versioniertes JSON-Modell, stabile IDs, gemeinsame Text-/Kartenhistorie, Journal, Konfliktschutz und Entwürfe",
@@ -153,7 +155,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase 3 in einem gesonderten Nachbesserungslauf gemäß Review reparieren: native Boden-Randzellen, Texturwand-Joints/Alpha/Bevel, Wand-Werkzeugzustand und vollständige Picker-/Optionsmatrix; danach unabhängigen Review wiederholen.",
+  "next": "Phase 3 in einem weiteren gesonderten Nachbesserungslauf schließen: Original-Building-Picker mit gespeicherten Floor-/Wall-Rohwerten, gleiche Geometrie/Zoomstufe für Boden/Wand/Bevel, Portal/Kurve/Radierung/Punktzug samt Raum-Key-Bytes auf einer Optionskarte; danach eigener unabhängiger Review.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -835,7 +837,7 @@
     "phase1OriginalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-implementation-20261006/native-phase1-evidence.md",
     "phase1HostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323591881-parity-phase1-edit/result.json",
     "phase1HostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323807892-parity-phase1-reopen/result.json",
-    "open": "Phase 3: Fachphasentor offen. 14 Unterfälle erfordern Nachbesserung oder stärkere Original-/Hostbelege; drei enge Kandidatenfälle sind belegt, aber keine Endstandsfreigabe. Produktive Installation unverändert; physische Eingabe Phase 7.",
+    "open": "Phase 3: 17 Unterfälle bleiben bis zum vollständigen Original-/Host-Bild- und Optionspaar sowie unabhängigem Review offen. Der aktuelle Nachbesserungslauf schloss Wandzustand und enge Host-Picker-Belege; exakte native Bodenvariantenauswahl und kombinierter Portal-/Punkt-/Key-Fall fehlen. Produktive Installation unverändert; physische Eingabe Phase 7.",
     "phase1ShapeEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323512321-parity-phase1-shapes-edit/result.json",
     "phase1ShapeReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-final-ui-20261006/evidence/1791323585083-parity-phase1-shapes-reopen/result.json",
     "reviewDate": "2026-10-07",
@@ -883,6 +885,18 @@
     "cleanupPhase1BuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
     "cleanupPhase1Verification": "npm run check, 119/119 Kerntests, npm run build; Benchmark vor/nach; drei isolierte Phase-1-Hostfolgen und je frischer Prozess; Capture-Verlust außerhalb Canvas mit genau einem Abschluss, Escape und Pointer-Cancel.",
     "cleanupPhase1Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-review-20261007/cleanup-review.md",
-    "cleanupPhase1ReviewResult": "gate_passed"
+    "cleanupPhase1ReviewResult": "gate_passed",
+    "phase3Repair": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/phase3-repair.md",
+    "phase3RepairState": "partial_repair_next_measurement_required",
+    "phase3RepairBuildSha256": "020145307c3ceeb6d8645834096125413b80bb7a2297fa73a239ed0afc8ff65a",
+    "phase3RepairNativeBevelOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/02-QAWall-off.dungeondraft_map",
+    "phase3RepairNativeBevelOn": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map",
+    "phase3RepairFloorCorrelation": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/floor-cell-correlation.json",
+    "phase3RepairHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339595148-parity-phase3-building-edit/result.json",
+    "phase3RepairHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-scoped-final/evidence/1791339698502-parity-phase3-building-reopen/result.json",
+    "phase3RepairPhase1Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase1-final/evidence/1791339435067-parity-phase1-edit/result.json",
+    "phase3RepairPhase1Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase1-final/evidence/1791339538071-parity-phase1-reopen/result.json",
+    "phase3RepairPhase2Edit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339794921-parity-phase2-points-edit/result.json",
+    "phase3RepairPhase2Reopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/host-phase2-scoped/evidence/1791339853185-parity-phase2-points-reopen/result.json"
   }
 }

@@ -40,17 +40,32 @@ export class TexturePool {
           if (this.closed) throw new Error("Bildansicht geschlossen.");
           let resource: HTMLImageElement | HTMLCanvasElement = image;
           if (isNativeFloorAssetId(path.split("\0", 1)[0]) &&
-              (path.includes("tileset_wood_vertical") ||
-               path.includes("tileset_stone"))) {
-            // The lower half of these two native atlases contains edge and
-            // corner pieces. The upper half contains repeatable floor cells.
+              image.width % 256 === 0 && image.height % 256 === 0) {
+            // Native floors choose a variant for each field. Smart atlases
+            // keep their repeatable cells above the edge/corner rows.
+            const columns = image.width / 256;
+            const smart = path.includes("tileset_wood_vertical") ||
+              path.includes("tileset_stone");
+            const rows = smart ? image.height / 512 : image.height / 256;
+            const variants: Array<[number, number]> = [];
+            for (let y = 0; y < rows; y++)
+              for (let x = 0; x < columns; x++)
+                if (!(smart && y === rows - 1 && x % 4 === 3))
+                  variants.push([x, y]);
             const canvas = document.createElement("canvas");
-            canvas.width = image.width;
-            canvas.height = image.height / 2;
+            canvas.width = 8 * 256;
+            canvas.height = 8 * 256;
             const context = canvas.getContext("2d");
             if (!context) throw new Error("Kein Bildkontext für Bodenstil.");
-            context.drawImage(image, 0, 0, canvas.width, canvas.height,
-              0, 0, canvas.width, canvas.height);
+            let seed = [...path].reduce((value, character) =>
+              (Math.imul(value, 33) + character.charCodeAt(0)) >>> 0, 5381);
+            for (let y = 0; y < 8; y++)
+              for (let x = 0; x < 8; x++) {
+                seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+                const [column, row] = variants[seed % variants.length]!;
+                context.drawImage(image, column * 256, row * 256, 256, 256,
+                  x * 256, y * 256, 256, 256);
+              }
             resource = canvas;
           }
           const source = new ImageSource({
