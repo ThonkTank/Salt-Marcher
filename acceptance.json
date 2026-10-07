@@ -4367,7 +4367,7 @@
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md",
-          "finding": "18 Original-ARGB-Werte für Wood Vertical/Diamond 2 bei Weiß/Standard/Rot und Alpha 0/128/255 exakt; #252525-Unterlage im Host ergänzt. Mit erzwungenem Host-sRGB: sechs Alpha-0-Felder exakt, größter Alpha-128-Anteilunterschied 0,0108 und größter Fehler deckender Stil-/Farbmittel 1,121 RGB-Stufen.",
+          "finding": "18 Original-ARGB-Werte für Wood Vertical bei Weiß/Standard/Rot und Diamond 2 bei Weiß/e5d38b/Rot mit Alpha 0/128/255 exakt; e5d38b ist ein abweichender Diamond-2-Tint, nicht dessen Galerie-Standard e8c4a0. #252525-Unterlage im Host ergänzt. Mit erzwungenem Host-sRGB: sechs Alpha-0-Felder exakt, größter Alpha-128-Anteilunterschied 0,0108 und größter Fehler deckender Stil-/Farbmittel 1,121 RGB-Stufen.",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/native-floor-tint-resume/runs/20261007-152548-1843130/evidence/maps/17.dungeondraft_map",
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/floor-tint-audit-srgb.json",
@@ -4375,6 +4375,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/host-floor-tint-srgb/evidence/1791383542894-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Weitere Stilfamilien und vier Custom-Color-Stile mit Weiß/Standard/Abweichungsfarbe und Alpha 0/128/255 offen.",
+          "strictAcceptance": "open"
+        },
+        "phase3CustomColorImplementation": {
+          "date": "2026-10-07",
+          "state": "partial",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/custom-color-implementation.md",
+          "finding": "Alle vier Custom-Color-Stile mit Weiß, echtem Galerie-Standard und Rot bei Alpha 0/128/255: 36/36 Originalpfade und ARGB-Werte in je vier Zellen sowie 2×2-Konturen vor/nach Originalneustart korrekt. Drei Hostkarten auf demselben Build editiert und frisch geöffnet; zwölf Alpha-0-Innenfenster exakt #252525, größte Alpha-128-Anteilsdifferenz 0,0085, größter Fehler eines deckenden RGB-Mittels 3,302 Stufen.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/custom-floor-raw-validation.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/diamond-ornate-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/wood-damaged-fixed-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/diamond-2-fixed-audit.json"
+          ],
+          "remaining": "Gewöhnliche Bodenfamilien und deren Sofort-/Randbilder; Host-Farbpickerfolge für diese Matrix und unabhängiger Review fehlen.",
           "strictAcceptance": "open"
         }
       },
@@ -51741,6 +51757,22 @@
       "productChange": "Native Building-Bodenunterlage #252525 vor Alpha-Komposition.",
       "remaining": "Sofort-/Atlasbilder, Custom-Color-Matrizen, gemeinsame Picker/Pipette, QAWall01, Wandbild-/Bevel-/Punktmutationsmatrizen und finale Optionskarte; unabhängiger Review ausstehend.",
       "next": "Verbliebene Bildpaare und Pickerkontexte in einem weiteren Umsetzungslauf; danach getrennter Review aller 17 Phase-3-Unterfälle."
+    },
+    "phase3CustomColorImplementation": {
+      "date": "2026-10-07",
+      "state": "partial_implementation_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/custom-color-implementation.md",
+      "casesAdvanced": ["DD-011.12"],
+      "rawOriginalCases": 36,
+      "maxHalfAlphaFractionDifference": 0.0085,
+      "maxOpaqueMeanRgbError": 3.302,
+      "openCases": [
+        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
+        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+      ],
+      "remaining": "Gewöhnliche Tint-/Alpha-Familien, Sofort-/Randbilder, gemeinsame Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     }
   }
 }

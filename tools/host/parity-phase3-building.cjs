@@ -1502,6 +1502,106 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     checks.push("Eighteen exact native Wood/Diamond 2 ARGB values render with a separate background sample" +
       (restart ? " after fresh reopen" : ""));
   }
+  async function customFloorMatrix(restart) {
+    const nativeMap = process.env.DUNGEON_CUSTOM_FLOOR_NATIVE;
+    const label = process.env.DUNGEON_CUSTOM_FLOOR_LABEL;
+    assert(nativeMap && label && /^[a-z0-9-]+$/.test(label),
+      "DUNGEON_CUSTOM_FLOOR_NATIVE and a lowercase label are required");
+    const file = `Dungeons/Parity/Custom-Floor-${label}.dungeon`;
+    const saved = path.join(qa, `parity-phase3-custom-floor-${label}-saved.json`);
+    const native = JSON.parse(fs.readFileSync(nativeMap, "utf8"));
+    const level = native.world.levels["0"], tiles = level.tiles;
+    const ids = (tiles.cells.match(/-?\d+/g) ?? []).map(Number);
+    const count = level.shapes.polygons.length;
+    assert(count === 9 || count === 18);
+    const customStems = new Set(["tileset_diamond", "tileset_diamond_2", "tileset_ornate",
+      "tileset_wood_damaged"]);
+    const reference = Array.from({ length: count }, (_, index) => {
+      const x = index % 6 * 3, y = Math.floor(index / 6) * 3;
+      const cell = y * 18 + x, argb = tiles.colors[cell];
+      const image = tiles.lookup[String(ids[cell])];
+      assert(customStems.has(image?.split("/").at(-1)?.replace(".png", "")));
+      assert.equal(argb.length, 8);
+      return { index, x, y, argb, image };
+    });
+    if (!restart) {
+      await page.evaluate(async ({ file, pckPath, reference, label }) => {
+        const plugin = app.plugins.getPlugin("dungeon-editor");
+        await plugin.useNativeAssetArchive(pckPath);
+        await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+        const entities = reference.map(item => {
+          const fill = Number.parseInt(item.argb.slice(2), 16);
+          return { id: `custom-${item.index}`, kind: "building",
+            floorId: "floor-1", layer: 200, fill,
+            polygons: [{ outer: [
+              { x: item.x, y: item.y }, { x: item.x + 2, y: item.y },
+              { x: item.x + 2, y: item.y + 2 }, { x: item.x, y: item.y + 2 },
+            ], holes: [] }],
+            floorAlpha: Number.parseInt(item.argb.slice(0, 2), 16),
+            wall: 0xffffff, wallAlpha: 255, wallWidth: 0,
+            material: { assetId: "pack:dungeondraft-builtin-1.2.0.1:tileset:" +
+              encodeURIComponent(item.image), assetPart: "image",
+              tileSize: 4, tint: fill, rotation: 0 },
+          };
+        });
+        await app.vault.create(file, JSON.stringify({
+          format: "dungeon-map", version: 3, id: `custom-floor-${label}`,
+          settings: { name: `Custom Floor ${label}`, width: 18, height: 12,
+            feetPerField: 5, assetPacks: [], builtInAssets: true,
+            wallShadows: false, objectShadows: false, buildingWear: 0 },
+          floors: [{ id: "floor-1", name: "Erdgeschoss", elevation: 0,
+            ambient: 1 }], entities,
+          content: { definitions: [], occurrences: [], routes: [], archive: [] },
+        }));
+      }, { file, pckPath, reference, label });
+    }
+    await page.evaluate(async file => app.workspace.getLeaf(false).openFile(
+      app.vault.getAbstractFileByPath(file)), file);
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await page.waitForFunction(count => {
+      const visuals = app.workspace.activeLeaf.view.editor.renderer.visuals;
+      return visuals.size === count && [...visuals.values()]
+        .every(visual => !!visual.floorLayer);
+    }, count, { timeout: 30000 });
+    const document = (await state()).document;
+    assert.equal(document.entities.length, count);
+    for (const item of reference) {
+      const entity = document.entities[item.index];
+      assert.equal(entity.fill, Number.parseInt(item.argb.slice(2), 16));
+      assert.equal(entity.floorAlpha,
+        Number.parseInt(item.argb.slice(0, 2), 16));
+      assert(entity.material.assetId.includes(encodeURIComponent(item.image)));
+    }
+    if (restart)
+      assert.deepEqual(document, JSON.parse(fs.readFileSync(saved, "utf8")));
+    else fs.writeFileSync(saved, JSON.stringify(document));
+    await page.getByRole("button", { name: "Raster", exact: true }).click();
+    await page.screenshot({ path: path.join(out, "custom-floor-grid-off.png") });
+    const samples = [];
+    for (const item of reference) {
+      const point = await world({ x: item.x + 1, y: item.y + 1 });
+      const sample = await page.evaluate(point => {
+        const renderer = app.workspace.activeLeaf.view.editor.renderer;
+        return renderer.sampleRenderedPixel(renderer.local({
+          clientX: point.x, clientY: point.y }));
+      }, point);
+      if (item.index % 3 === 0) assert.equal(sample.color, 0x252525);
+      samples.push({ index: item.index, color: sample.color });
+    }
+    fs.writeFileSync(path.join(out, "custom-floor-samples.json"),
+      JSON.stringify(samples, null, 2));
+    await page.evaluate(() => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer;
+      for (const visual of renderer.visuals.values())
+        visual.floorLayer.visible = false;
+      renderer.invalidate();
+    });
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: path.join(out, "custom-floor-background.png") });
+    checks.push(`${count} Original Custom Color ARGB values and paths render` +
+      (restart ? " after fresh reopen" : ""));
+  }
   async function galleryPipette() {
     const file = "Dungeons/Parity/Floor-Gallery-24.dungeon";
     await page.evaluate(async ({ file, pckPath }) => {
@@ -1789,6 +1889,6 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   }
   return { edit, reopen, combined, verifyCombined, visualMatch, portalVisual,
     floorVariant, floorMosaic, pickerPair, fieldKnownStart, fieldMatrix, floorGallery24,
-    wallGallery10, floorTintMatrix,
+    wallGallery10, floorTintMatrix, customFloorMatrix,
     galleryPipette, sameCard };
 };
