@@ -9,8 +9,7 @@ import {
   Texture,
   FillGradient,
   Sprite,
-  TilingSprite,
-  type Mesh,
+  Mesh,
   MeshGeometry,
 } from "pixi.js";
 import {
@@ -48,6 +47,7 @@ import { isNativeFloorAssetId } from "./features/material/native-path-catalog";
 import { drawPath, drawRoof } from "./render-drawing";
 import { objectAlphaOpacity } from "./features/objekte/color-alpha";
 import { type ColorableObjectSettings } from "./features/objekte/colorable-pixels";
+import { buildingWallBands } from "./features/bau/building-wall-band";
 import { ComputeClient } from "./worker-client";
 import {
   compactObjectVisible,
@@ -72,6 +72,7 @@ export interface Visual {
   shadow?: Graphics;
   pathMesh?: Mesh;
   pathGeometry?: MeshGeometry;
+  wallGeometries?: MeshGeometry[];
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -86,6 +87,8 @@ interface BuildingPreview {
   graphic: Graphics;
   wallLayer: Container;
   wallMask: Graphics;
+  wallMeshes: Mesh[];
+  wallGeometries: MeshGeometry[];
   shadow?: Graphics;
   floorTexture?: Texture;
   wallTexture?: Texture;
@@ -397,6 +400,7 @@ export class MapRenderer {
       if (v.shadow?.parent !== v.container) v.shadow?.destroy();
       v.container.destroy({ children: true });
       v.pathGeometry?.destroy();
+      for (const geometry of v.wallGeometries ?? []) geometry.destroy();
       v.label?.destroy();
       v.featureBadge?.destroy({ children: true });
       v.gradient?.destroy();
@@ -875,6 +879,7 @@ export class MapRenderer {
           this.invalidate();
           return;
         }
+        if (visual.entity.kind !== "building") return;
         const paintedWidth = Math.max(width, texture.height / 256);
         const mask = new Graphics();
         this.drawTexturedWallMask(mask, segments, paintedWidth, bevel);
@@ -882,24 +887,19 @@ export class MapRenderer {
           this.drawTexturedWallMask(visual.shadow, segments,
             paintedWidth + 0.25, bevel, 0x000000, 0.14);
         layer.mask = mask;
-        for (const segment of segments) {
-          const dx = segment.b.x - segment.a.x,
-            dy = segment.b.y - segment.a.y,
-            length = Math.hypot(dx, dy);
-          if (!length) continue;
-          const sprite = TilingSprite.from(texture, {
-            width: length + paintedWidth,
-            height: paintedWidth,
-            tileScale: { x: 1 / 256, y: paintedWidth / texture.height },
+        visual.wallGeometries = [];
+        for (const band of buildingWallBands(visual.entity, segments,
+          paintedWidth, texture.width, texture.height, bevel)) {
+          const geometry = new MeshGeometry({
+            positions: new Float32Array(band.positions),
+            uvs: new Float32Array(band.uvs),
+            indices: new Uint32Array(band.indices),
           });
-          sprite.anchor.set(0, 0.5);
-          sprite.position.set(segment.a.x - dx / length * paintedWidth / 2,
-            segment.a.y - dy / length * paintedWidth / 2);
-          sprite.tilePosition.x = paintedWidth / 2;
-          sprite.rotation = Math.atan2(dy, dx);
-          sprite.tint = tint;
-          sprite.alpha = alpha;
-          layer.addChild(sprite);
+          const mesh = new Mesh({ geometry, texture });
+          mesh.tint = tint;
+          mesh.alpha = alpha;
+          layer.addChild(mesh);
+          visual.wallGeometries.push(geometry);
         }
         visual.container.addChild(layer, mask);
         this.invalidate();
@@ -1764,7 +1764,8 @@ export class MapRenderer {
       state = {
         sourceId: after.id, sourceVisible: source.container.visible,
         shadowVisible: source.shadow?.visible, entity: after,
-        container, graphic, wallLayer, wallMask, assets: [], portals: [],
+        container, graphic, wallLayer, wallMask,
+        wallMeshes: [], wallGeometries: [], assets: [], portals: [],
       };
       const created = state;
       this.buildingPreview = state;
@@ -1862,32 +1863,35 @@ export class MapRenderer {
     this.drawTexturedWallMask(state.wallMask, segments,
       paintedWidth, after.wallBevel ?? false);
     if (state.wallTexture && after.wallWidth > 0)
-      for (const segment of segments) {
-        const dx = segment.b.x - segment.a.x,
-          dy = segment.b.y - segment.a.y,
-          length = Math.hypot(dx, dy);
-        if (!length) continue;
-        let sprite = state.wallLayer.children[used] as TilingSprite | undefined;
-        if (!sprite) {
-          sprite = TilingSprite.from(state.wallTexture);
-          sprite.anchor.set(0, 0.5);
-          state.wallLayer.addChild(sprite);
-        } else sprite.texture = state.wallTexture;
-        sprite.position.set(segment.a.x - dx / length * paintedWidth / 2,
-          segment.a.y - dy / length * paintedWidth / 2);
-        sprite.rotation = Math.atan2(dy, dx);
-        sprite.width = length + paintedWidth;
-        sprite.height = paintedWidth;
-        sprite.tileScale.set(1 / 256, paintedWidth / state.wallTexture.height);
-        sprite.tilePosition.x = paintedWidth / 2;
-        sprite.tint = after.wall;
-        sprite.alpha = (after.wallAlpha ?? 255) / 255;
+      for (const band of buildingWallBands(after, segments, paintedWidth,
+        state.wallTexture.width, state.wallTexture.height,
+        after.wallBevel ?? false)) {
+        let mesh = state.wallMeshes[used];
+        const positions = new Float32Array(band.positions),
+          uvs = new Float32Array(band.uvs),
+          indices = new Uint32Array(band.indices);
+        if (!mesh) {
+          const geometry = new MeshGeometry({ positions, uvs, indices });
+          mesh = new Mesh({ geometry, texture: state.wallTexture });
+          state.wallGeometries.push(geometry);
+          state.wallMeshes.push(mesh);
+          state.wallLayer.addChild(mesh);
+        } else {
+          const geometry = state.wallGeometries[used]!;
+          geometry.positions = positions;
+          geometry.uvs = uvs;
+          geometry.indices = indices;
+          mesh.texture = state.wallTexture;
+        }
+        mesh.tint = after.wall;
+        mesh.alpha = (after.wallAlpha ?? 255) / 255;
         used++;
       }
-    while (state.wallLayer.children.length > used) {
-      const child = state.wallLayer.children.at(-1)!;
-      state.wallLayer.removeChild(child);
-      child.destroy();
+    while (state.wallMeshes.length > used) {
+      const mesh = state.wallMeshes.pop()!;
+      state.wallLayer.removeChild(mesh);
+      mesh.destroy();
+      state.wallGeometries.pop()!.destroy();
     }
     this.invalidate();
   }
@@ -1906,6 +1910,7 @@ export class MapRenderer {
     }
     if (state.shadow?.parent !== state.container) state.shadow?.destroy();
     state.container.destroy({ children: true });
+    for (const geometry of state.wallGeometries) geometry.destroy();
     for (const reference of state.assets) this.textures.release(reference);
     const source = this.visuals.get(state.sourceId);
     if (source) {

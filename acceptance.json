@@ -4406,6 +4406,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual3-20261007/host-combined/evidence/1791344248923-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Kombinierter Hostzustand mit Key und Portal besteht; vollständige Original-Optionsrohfolge fehlt."
+        },
+        "phase3Repair4": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
+          "strictAcceptance": "open",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345527393-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Kombinierter Hostzustand mit Raum, Portal, Punktzug und Key erneut bestanden; vollständige Original-Optionsrohkarte weiterhin offen."
         }
       },
       {
@@ -6465,6 +6481,26 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344337916-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "QAWall01-Wiederholung, sichtbare Breite und Schattenlage angeglichen; Ecktextur, Farbhelligkeit und weitere Wandstile offen."
+        },
+        "phase3Repair4": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
+          "strictAcceptance": "open",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual3-20261007/native/runs/20261007-050044-1358598/evidence/screens/04-pipette-click.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/visual-match-64px.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "QAWall01-Ecktextur deutlich angenähert; Bevel-Restabweichung, weitere Stile und volle Farb-/Bodenbildwirkung offen.",
+          "comparisonEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json"
+          ]
         }
       },
       {
@@ -6882,6 +6918,26 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344337916-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "OFF/ON-Eckumriss vorhanden; Texturverbindung beider Eckmodi weicht sichtbar ab."
+        },
+        "phase3Repair4": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
+          "strictAcceptance": "open",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual3-20261007/native/runs/20261007-050044-1358598/evidence/screens/04-pipette-click.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/visual-match-64px.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Miter-Testeck in fünf Klassen deckungsgleich; am Bevel-Eck bleiben 25/228 klassifizierte Pixel verschieden. Exakte Bildparität und andere Winkel offen.",
+          "comparisonEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json"
+          ]
         }
       },
       {
@@ -7024,6 +7080,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual3-20261007/host-combined/evidence/1791344248923-parity-phase3-building-reopen/result.json"
           ],
           "remaining": "Kombinierter Host-Punktzug mit QAWall01, Portal und Key bestanden; unabhängiger Review und Eckbild weiterhin offen."
+        },
+        "phase3Repair4": {
+          "date": "2026-10-07",
+          "state": "partial_repair",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
+          "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
+          "strictAcceptance": "open",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair-20261007/native-wide2/runs/20261007-034804-1304817/evidence/maps/04-QAWall-on.dungeondraft_map"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345527393-parity-phase3-building-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json"
+          ],
+          "remaining": "Punktzug mit Paketwand, Portal und bytegenauem Key im Host und Frischprozess bestanden; Original-/Host-Bildpaar für den gezogenen Zustand fehlt."
         }
       },
       {
@@ -49654,6 +49726,22 @@
       ],
       "next": "Ecktextur, Bodenvarianten, Helligkeit, Portalbild und Original-Optionsrohkarte in gesondertem Nachbesserungslauf; danach unabhängiger Review.",
       "fixtureVisualHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344522199-parity-phase3-building-reopen/result.json"
+    },
+    "phase3Repair4": {
+      "state": "partial_repair_gate_open",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
+      "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
+      "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json",
+      "visualHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/result.json",
+      "combinedHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345527393-parity-phase3-building-reopen/result.json",
+      "combinedReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json",
+      "updatedCases": [
+        "DD-011.15",
+        "DD-015.01",
+        "DD-015.04",
+        "DD-015.05"
+      ],
+      "next": "Bevel-UV, Bodenvarianten/Farbhelligkeit, Portal- und Tint/Alpha-Bildpaare sowie vollständige Original-Optionsrohkarte in gesondertem Lauf; danach unabhängiger Review."
     }
   }
 }
