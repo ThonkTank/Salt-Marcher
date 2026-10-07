@@ -111,9 +111,21 @@ export function mountBuildingColorPicker(
     channels.set(key, input);
   }
   hex.addEventListener("input", () => {
-    if (controller.setHex(hex.value)) sync(hex);
+    const draft = hex.value;
+    if (controller.setHex(draft)) {
+      // onPreview synchronizes the other fields; keep the user's hex draft.
+      hex.value = draft;
+      sync(hex);
+    }
   });
-  hex.addEventListener("change", () => { hex.value = controller.hexDisplay; });
+  const finishHex = () => {
+    const draft = hex.value.trim().replace(/^#/, "");
+    // The Building dialog previews six-digit RGB with the current alpha, then
+    // interprets the completed value as opaque when the field is left.
+    if (/^[0-9a-f]{6}$/i.test(draft)) controller.setHex("ff" + draft);
+    hex.value = controller.hexDisplay;
+  };
+  hex.addEventListener("change", finishHex);
   hue.addEventListener("input", () =>
     replaceRgb(patternWithHue(rgb(), Number(hue.value) / 1000)));
   field.addEventListener("pointerdown", (event) => {
@@ -140,22 +152,26 @@ export function mountBuildingColorPicker(
       sync();
     }
   });
-  accept.addEventListener("click", () => controller.close("accept"));
+  const close = (reason: "accept" | "escape") => {
+    if (doc.activeElement === hex) finishHex();
+    controller.close(reason);
+  };
+  accept.addEventListener("click", () => close("accept"));
   dialog.addEventListener("keydown", (event) => {
     event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
-      controller.close("escape");
+      close("escape");
     }
   });
   const outside = (event: PointerEvent) => {
     if (!sampling && !dialog.contains(event.target as Node))
-      controller.close("escape");
+      close("escape");
   };
   dialog.append(field, hue, preview, channelRows, hexRow, actions);
   host.append(dialog);
   doc.addEventListener("pointerdown", outside, true);
   sync();
   dialog.focus();
-  return { element: dialog, close: () => controller.close("escape") };
+  return { element: dialog, close: () => close("escape") };
 }

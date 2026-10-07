@@ -677,7 +677,9 @@ async function workflow() {
   }
   if (parityPhase3Building) {
     const scenario = require("./host/parity-phase3-building.cjs")(scenarioContext);
-    if (restart) await scenario.reopen();
+    if (process.argv.includes("--verify-combined")) await scenario.verifyCombined();
+    else if (process.argv.includes("--combined")) await scenario.combined();
+    else if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
   }

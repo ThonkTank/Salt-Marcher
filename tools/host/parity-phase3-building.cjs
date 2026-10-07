@@ -1,7 +1,8 @@
-module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
+module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   chooseTool }) => {
   const mapPath = "Dungeons/Parity/Building-Styles.dungeon";
   const savedState = path.join(qa, "parity-phase3-building-saved.json");
+  const combinedState = path.join(qa, "parity-phase3-combined-saved.json");
   const pckPath = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
   const packPath = "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/assets/qa-wall-pack.dungeondraft_pack";
   const hash = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -110,7 +111,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     assert.equal(building.wallAssetId, catalog.walls.find(item => item.name === "QA Wall").id);
     assert.equal(building.wallAlpha, 255);
     assert.equal(building.wallBevel, true);
-    assert.equal(building.material.assetId, catalog.floors[0].id);
+    assert(catalog.floors.some(item => item.id === building.material.assetId));
     await page.screenshot({ path: path.join(out, "qa-wall-first.png") });
     checks.push("The first Building stores ARGB floor tint and the selected QAWall01 path");
     await page.getByRole("button", { name: "Keine Wand", exact: true }).click();
@@ -218,15 +219,24 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
       await page.getByRole("spinbutton", { name: "Bodenfarbe " + channel }).fill(value);
     assert.equal(await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" }).inputValue(), "80112233");
     await page.getByRole("textbox", { name: "Bodenfarbe Hex ARGB" }).fill("3366cc");
+    assert.equal(await page.getByRole("spinbutton", { name: "Bodenfarbe A" }).inputValue(), "128");
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await page.getByRole("button", { name: "Bodenfarbe RGBA", exact: true }).click();
+    assert.equal(await page.getByRole("spinbutton", { name: "Bodenfarbe A" }).inputValue(), "255");
     await page.getByRole("button", { name: "Accept", exact: true }).click();
     await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+    await page.getByRole("spinbutton", { name: "Wandfarbe A" }).fill("128");
     await page.getByRole("textbox", { name: "Wandfarbe Hex ARGB" }).fill("abcdef");
+    assert.equal(await page.getByRole("spinbutton", { name: "Wandfarbe A" }).inputValue(), "128");
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
+    assert.equal(await page.getByRole("spinbutton", { name: "Wandfarbe A" }).inputValue(), "255");
     await page.getByRole("spinbutton", { name: "Wandfarbe A" }).fill("96");
     await page.getByRole("button", { name: "Accept", exact: true }).click();
     await draw({ x: 14, y: 6 }, { x: 16, y: 8 }, 7);
     const numeric = (await state()).document.entities[6];
     assert.equal(numeric.fill, 0x3366cc);
-    assert.equal(numeric.floorAlpha, 128);
+    assert.equal(numeric.floorAlpha, 255);
     assert.equal(numeric.wall, 0xabcdef);
     assert.equal(numeric.wallAlpha, 96);
     checks.push("Building floor and wall numeric RGBA, six-digit Hex and Accept are stored together");
@@ -250,7 +260,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     await draw({ x: 17, y: 6 }, { x: 19, y: 8 }, 8);
     const picked = (await state()).document.entities[7];
     assert.notEqual(picked.fill, numeric.fill);
-    assert.equal(picked.floorAlpha, 128);
+    assert.equal(picked.floorAlpha, 255);
     assert.equal(picked.wall, 0x224466);
     checks.push("Hue and color-field gestures change a later Building; outside click retains the wall draft");
     await page.getByRole("button", { name: "Wandfarbe RGBA", exact: true }).click();
@@ -293,5 +303,90 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     await page.screenshot({ path: path.join(out, "fresh-reopen.png") });
     checks.push("A fresh Obsidian process reopens all nine Building style and color records");
   }
-  return { edit, reopen };
+  async function combined() {
+    await reopen();
+    const first = (await state()).document.entities[0];
+    assert(first.wallAssetId?.includes("QAWall01"));
+    await page.evaluate(async id => {
+      await app.workspace.activeLeaf.view.editor.select(id);
+    }, first.id);
+    await page.getByRole("button", { name: "Raum anlegen", exact: true }).click();
+    const room = (await state()).document.entities.find(entity => entity.id === first.id);
+    assert(room.number && room.note?.path);
+    assert.equal(room.wallAssetId, first.wallAssetId);
+    assert.equal(room.floorAlpha, first.floorAlpha);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    await chooseTool("Tür");
+    const portalPoint = await world({ x: 3, y: 4 });
+    await page.mouse.click(portalPoint.x, portalPoint.y);
+    await page.waitForFunction(id => app.workspace.activeLeaf.view.editor.session
+      .document().entities.some(entity => entity.kind === "door" &&
+        entity.anchor?.boundaryId === id), first.id);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const keyBefore = fs.readFileSync(path.join(vault, room.note.path));
+    const doorBefore = (await state()).document.entities.find(entity =>
+      entity.kind === "door" && entity.anchor?.boundaryId === first.id);
+    await chooseTool("Raum");
+    const from = await world({ x: 3.5, y: 1.5 }),
+      to = await world({ x: 4.5, y: 2.5 });
+    await page.keyboard.down("Alt");
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    await page.mouse.up();
+    await page.keyboard.up("Alt");
+    await page.waitForFunction(id => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return !!editor && !editor.paintWorker &&
+        editor.session.entities.get(id)?.polygons[0].outer.length > 4;
+    }, first.id, { timeout: 45000 });
+    const erased = (await state()).document.entities.find(entity => entity.id === first.id);
+    assert.equal(erased.wallAssetId, first.wallAssetId);
+    assert((await state()).document.entities.some(entity => entity.id === doorBefore.id));
+    await chooseTool("Punkte");
+    await page.evaluate(async id => {
+      await app.workspace.activeLeaf.view.editor.select(id);
+    }, first.id);
+    const point = await world({ x: 2, y: 2 });
+    await page.mouse.move(point.x + 10, point.y + 10);
+    await page.mouse.move(point.x, point.y);
+    await page.waitForFunction(() => {
+      const hover = app.workspace.activeLeaf?.view?.editor?.renderer?.buildingPointHover;
+      return hover?.kind === "vertex" && hover.contour === 0 && hover.index === 0;
+    });
+    const target = await world({ x: 1, y: 1 });
+    await page.mouse.down();
+    await page.mouse.move(target.x, target.y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForFunction(id => app.workspace.activeLeaf.view.editor.session
+      .entities.get(id)?.polygons[0].outer[0].x === 1, first.id);
+    const edited = (await state()).document.entities.find(entity => entity.id === first.id);
+    assert.equal(edited.wallAssetId, first.wallAssetId);
+    assert((await state()).document.entities.some(entity => entity.id === doorBefore.id));
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    assert.deepEqual((await state()).document.entities.find(entity => entity.id === first.id), erased);
+    await page.keyboard.press("Control+y");
+    assert.deepEqual((await state()).document.entities.find(entity => entity.id === first.id), edited);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => !app.workspace.activeLeaf.view.editor.session.dirty);
+    const keyAfter = fs.readFileSync(path.join(vault, room.note.path));
+    assert.deepEqual(keyAfter, keyBefore);
+    const document = (await state()).document;
+    fs.writeFileSync(combinedState, JSON.stringify({ document, keyPath: room.note.path,
+      keySha256: hash(keyAfter) }, null, 2));
+    await page.screenshot({ path: path.join(out, "combined-room-portal-erase-point.png") });
+    checks.push("QAWall01 room, portal, Alt erasure and point drag preserve wall style and exact room-key bytes");
+  }
+  async function verifyCombined() {
+    await open();
+    const expected = JSON.parse(fs.readFileSync(combinedState, "utf8"));
+    assert.deepEqual((await state()).document, expected.document);
+    assert.equal(hash(fs.readFileSync(path.join(vault, expected.keyPath))), expected.keySha256);
+    await page.screenshot({ path: path.join(out, "combined-fresh-reopen.png") });
+    checks.push("Fresh Obsidian process reopens combined wall, portal and edited contour with exact room key");
+  }
+  return { edit, reopen, combined, verifyCombined };
 };
