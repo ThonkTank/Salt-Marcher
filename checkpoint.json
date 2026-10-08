@@ -17,7 +17,7 @@
   },
   "hexAtlasRoadmap": {
     "date": "2026-10-08",
-    "state": "hex00_implementation_partial_dungeon_goal_active",
+    "state": "hex00_implementation_partial_inventory_next",
     "plan": "ROADMAP-HEX-ATLAS.md",
     "activePhasePlan": "ROADMAP-HEX-00-PLAN.md",
     "architecture": "ARCHITECTURE.md#vereinbarte-hex-atlas-erweiterung",
@@ -36,15 +36,19 @@
     "referencePlan": "WONDERDRAFT-PARITY.md",
     "referenceCatalog": "acceptance.json.wonderdraftParity",
     "referenceMapping": {
-      "state": "direct_runtime_partial_67_ui_entries_32_tools_gate_open",
+      "state": "direct_original_partial_546_entries_479_pinned_local_67_imported",
       "version": "Wonderdraft 1.1.8.2",
       "groups": 36,
-      "initialProbes": 79,
+      "initialProbes": 82,
       "packageHintsMapped": 96,
       "inventoryComplete": false,
       "gate": "HEX-00-A/B/C vor HEX-01",
-      "verified": "Wonderdraft 1.1.8.2 direkt gestartet; 67 UI-Oberflächeneinträge, darunter 32 Werkzeugschaltflächen, mit Originalbildern erfasst; isolierte 800×512-Rohkarte gespeichert. Strukturvalidator im Teilstandsmodus bestanden.",
-      "open": "Einzelne Regler, Wertebereiche, Wirkungen und Kontextzustände fehlen; 96 Pakethinweise unklassifiziert; Neustart/Öffnung und separater Fachreview stehen aus."
+      "verified": "479 neue Originalregler/Bedienelemente in 98 echten Frames erfasst, 67 eingegangene Kennungen unverändert erhalten; drei neue Unterfälle. Eigene Frame-/Prozessprovenienz bestanden. Kleine originale Rohkarte gespeichert; keine vollständige Startfolgen-/Paritätsabnahme.",
+      "open": "Kontextzustände, Dropdowns, Wertebereiche, Pakethinweis-Klassifikation und Original-Startfolgen fehlen. Eingegangene 67 UI-Einträge referenzieren auf diesem Rechner fehlende externe Belege; Gesamtkatalog meldet die Lücke.",
+      "uiEntries": 546,
+      "localPinnedUiEntries": 479,
+      "importedUiEntries": 67,
+      "classifiedPackageHints": 0
     },
     "phaseRange": "HEX-00 bis HEX-28",
     "earlyMilestones": {
@@ -52,35 +56,37 @@
       "HEX-05": "Zusammenhängender Hex-Ort-Dungeon-Raum-Key-Ablauf mit räumlicher Rückkehr.",
       "HEX-10": "Mehrstufige Welt, Ooke-Bildvorlagen und erste PNG-Ausgabe."
     },
-    "verification": "HEX-00-I01 ist ein Teilstand: geschützte Dateien unverändert, isolierter V4-Key-/Undo-/Save-/Neustartlauf bestanden; verknüpfter Durchgang fehlt. Wonderdraft-Oberfläche teilweise direkt erfasst und kleine Rohkarte gespeichert. Inventartor, Hostpaare und Fachreview bleiben offen.",
-    "next": "HEX-00-I01 bei erneutem Hex-Fokus fortsetzen; vollständig direkte Inventur und Startfolgen vor HEX-01. Aktueller Nutzerfokus ist der Dungeon-Pfad."
+    "verification": "Dungeon-Kernweg mit gebundenem Eingang, Raum-Key, Undo/Redo, Save und frischem Obsidian-Prozess auf dem integrierten Build bestanden. Lokale Basisprüfungen bestanden; Testprovenienz enthält erhaltene fremde Teständerungen. Produktive Daten unverändert. Wonderdraft-Inventur ist ein belegter Teilstand; HEX-00-C, Hostpaare, physische Eingabe und Aufräumreview offen.",
+    "next": "HEX-00-I01b: verbliebene Original-Kontexte/Optionen und 96 Pakethinweise vervollständigen, importierte Belege über GitHub abgleichen. Danach HEX-00-I02 mit den 13 Startfolgen, eigener Fachreview und getrennte Aufräumläufe. Gesamtes Hex-/Stadtziel bleibt aktiv; HEX-01 erst nach Referenztor und Aufräumreview."
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "implementation_partial_dungeon_goal_active",
+    "state": "implementation_partial_inventory_continuation_next",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
       "id": "HEX-00-I01",
       "kind": "implementation",
-      "startedAt": "2026-10-08T19:05:15.442Z",
-      "endedAt": "2026-10-08T19:32:34.517Z",
-      "focus": "Geschützte Ausgangsbasis, isolierter V4-Kernweg, Wonderdraft-Originalsteuerung und direkte UI-Inventur.",
+      "startedAt": "2026-10-08T19:51:08.127115+02:00",
+      "endedAt": "2026-10-08T22:21:32.650647+02:00",
+      "focus": "gesicherter Dungeon-Kernweg und direkte Wonderdraft-Inventur",
       "state": "partial",
-      "result": "77 geschützte Vault-Dateien unverändert; V4-Key/Undo/Redo/Save/Neustart isoliert bestanden, Durchgangsprobe offen. Wonderdraft 1.1.8.2 isoliert bedient, 67 UI-Oberflächeneinträge/32 Werkzeuge und 800×512-Rohkarte belegt. Vollständigkeit, Pakethinweise und Review offen. Nutzerfokus wechselte danach zum Dungeon-Pfad.",
-      "baseCommit": "f1c90b5cb153dc65c64685923cfd5d38cb1029c3",
+      "result": "partial direct original inventory; no phase review or product approval; 479 pinned local UI observations added, incoming 67 retained; anchored dungeon baseline passed before and after repository integration.",
+      "baseCommit": "edf93504fcdfd13fb749d7325b30a7203ae1b5aa",
+      "integratedCommit": "27fa2c022de2e6e2e260a6ded60fe4ed7698c41b",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/host/evidence",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/session.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/input.jsonl",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/integrated-host/evidence/1791490682835-phase4-key-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/integrated-host/evidence/1791490747254-phase4-key-reopen/result.json"
       ]
     },
     "nextRun": {
       "id": "HEX-00-I01b",
       "kind": "implementation",
-      "focus": "Direkte Wonderdraft-Inventur bis auf Einzelregler/Kontexte/96 Pakethinweise vervollständigen; gebundenen Dungeon-Durchgang prüfen.",
-      "gate": "Nur bei erneuter Beauftragung des Hex-Pfads; HEX-00-C und Aufräumreview bleiben offen."
+      "focus": "Originalauswahl, begonnene/fertige Geometrie, Dropdowns, Wertebereiche, unbezeichnete Regler, Dialoge und 96 Pakethinweise vervollständigen; importierte Belege abgleichen.",
+      "gate": "Originaltor und Fach-/Aufräumreview bleiben offen; danach eigener Startfolgenlauf HEX-00-I02."
     },
     "review": {
       "state": "not_started",
@@ -91,13 +97,27 @@
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
     "open": [
-      "Vollständige Originaloberfläche einschließlich Einzelregler, Dialoge und Kontextzustände",
-      "96 Pakethinweise klassifizieren",
-      "Originale Startfolgen einschließlich Öffnen und Neustart",
-      "Isolierter gebundener Dungeon-Durchgang",
-      "Getrennter Fachreview und Aufräumreview",
-      "Eigener CITY-00-Ergebnisreferenzlauf"
-    ]
+      "Einzel-/Mehrfachauswahl, begonnene/fertige Geometrie, Clipboard, Text- und abweichende Kontextzustände direkt erfassen.",
+      "Noch geschlossene Dropdowns, Stil-/Assetpaletten, Zahlenbereiche und unbeschriftete Regler/Icons klären.",
+      "Regions-Werkzeugnamen und vollständigen SHIFT-Hinweis erfassen.",
+      "Extract/Repackage, Open/Help, Trace-Dateidialog, Themen- und Labelpreset-Save-As-Dialoge erfassen.",
+      "Alle 96 Pakethinweise mit direkter Zuordnung oder begründeter interner Einordnung klassifizieren.",
+      "13 frühe Originalfolgen einschließlich Rohkarte, A/B/A und vollständigem Prozessneustart im eigenen Umsetzungslauf.",
+      "HEX-00-C-Fachreview und getrennte Aufräumläufe; CITY-00-Ergebnisvorbilder im eigenen Referenzlauf.",
+      "Incoming original evidence paths from b772d8d are not locally available; preserve and revalidate them, no completion inferred."
+    ],
+    "coordination": {
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
+      "policy": "GitHub-Arbeiten vor Veröffentlichung integrieren; Dungeon- und Hex-Checkpoint getrennt erhalten; stabile fremde Kennungen und Originalbelege nicht überschreiben."
+    },
+    "verification": {
+      "check": "passed",
+      "tests": 163,
+      "build": "passed",
+      "host": "anchored room/key edit and exact fresh reopen passed",
+      "testProvenance": "Local tests include preserved foreign fixture-test edits; excluded from this commit. No claim that this count describes the clean published tree.",
+      "catalog": "479 local pinned entries passed; combined imported evidence check fails on unavailable external files. Inventory gate remains open."
+    }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",

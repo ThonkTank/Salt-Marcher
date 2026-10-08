@@ -246,6 +246,7 @@ async function phase5FeatureWorkflow() {
 }
 
 async function phase4KeyWorkflow() {
+  const atlasBaseline = process.argv.includes("--hex00-baseline");
   const mapPath = "Dungeons/Phase4QA/Karte.dungeon";
   const savedPath = qa + "/phase4-key-saved.json";
   const documentState = () => page.evaluate(() => {
@@ -260,6 +261,11 @@ async function phase4KeyWorkflow() {
     }, mapPath);
     await page.locator(".dn-canvas canvas").waitFor();
     assert.deepEqual(await documentState(), saved.document);
+    if (atlasBaseline) {
+      const portal = saved.document.entities.find(entity => entity.kind === "door");
+      assert(portal?.anchor?.boundaryId === saved.roomId);
+      checks.push("Fresh process preserves the entrance anchored to the keyed V4 room");
+    }
     await page.evaluate(async ({ mapId, roomId, sectionId }) => {
       await app.plugins.getPlugin("dungeon-editor").openRoomLink({
         map: mapId, room: roomId, section: sectionId,
@@ -307,6 +313,21 @@ async function phase4KeyWorkflow() {
   assert(room?.key?.sections?.length === 1);
   assert.equal(room.note, undefined);
   checks.push("Native room tool adopts a V4 room without creating Markdown");
+  if (atlasBaseline) {
+    await chooseTool("Tür");
+    const entrance = await at({ x: 5, y: 2 });
+    await page.mouse.click(entrance.x, entrance.y);
+    await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-pending")[0]
+      ?.view?.editor?.session?.document()?.entities?.some(entity => entity.kind === "door"));
+    const portal = (await documentState()).entities.find(entity => entity.kind === "door");
+    assert.equal(portal.anchor.boundaryId, room.id);
+    const withPortal = await documentState();
+    await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.session.undo());
+    assert.equal((await documentState()).entities.some(entity => entity.kind === "door"), false);
+    await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.session.redo());
+    assert.deepEqual(await documentState(), withPortal);
+    checks.push("Entrance gesture binds to the keyed room and survives exact Undo/Redo");
+  }
   await page.evaluate(async ({ path, roomId }) => {
     await app.plugins.getPlugin("dungeon-editor").openRoomKey(path, roomId);
   }, { path: mapPath, roomId: room.id });
