@@ -34,6 +34,7 @@ const restart = process.argv.includes("--restart"),
   parityPhase3Building = process.argv.includes("--parity-phase3-building"),
   parityPhase3Wear = process.argv.includes("--parity-phase3-wear"),
   parityPhase4Objects = process.argv.includes("--parity-phase4-objects"),
+  parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
@@ -194,7 +195,7 @@ function prepare() {
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
-    if (parityPhase4Objects)
+    if (parityPhase4Objects && !parityPhase4OwnMinimal)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets/object-tags.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
@@ -654,7 +655,8 @@ async function workflow() {
   const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep };
   if (parityPhase4Objects) {
     const scenario = require("./host/parity-phase4-objects.cjs")(scenarioContext);
-    if (restart) await scenario.reopen();
+    if (parityPhase4OwnMinimal) await scenario.ownMinimal(restart);
+    else if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
   }

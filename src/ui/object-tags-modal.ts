@@ -7,6 +7,8 @@ import {
 } from "../features/objekte/object-tags";
 
 export interface ObjectTagsModalOptions {
+  readonly initialMode: "default" | "override";
+  readonly onModeChange: (mode: "default" | "override") => void;
   readonly defaults: ObjectTagDocument;
   readonly override: ObjectTagDocument | null;
   readonly assets: readonly AssetDefinition[];
@@ -17,6 +19,7 @@ export interface ObjectTagsModalOptions {
 /** Dungeondraft's Default/Override, Edit Tags/Edit Sets and explicit Save boundary. */
 export class ObjectTagsModal extends Modal {
   private mode: "default" | "override";
+  private selectedMode: "default" | "override";
   private section: "tags" | "sets" = "tags";
   private draft: ObjectTagDocument | null;
   private selectedTag = "";
@@ -29,7 +32,8 @@ export class ObjectTagsModal extends Modal {
   constructor(app: App, private options: ObjectTagsModalOptions) {
     super(app);
     this.draft = options.override ? copyObjectTags(options.override) : null;
-    this.mode = this.draft ? "override" : "default";
+    this.selectedMode = options.initialMode;
+    this.mode = this.draft && this.selectedMode === "override" ? "override" : "default";
   }
 
   onOpen(): void {
@@ -73,8 +77,10 @@ export class ObjectTagsModal extends Modal {
       const choice = modes.createEl("label");
       const radio = choice.createEl("input", { type: "radio" });
       radio.name = "object-tag-mode";
-      radio.checked = this.mode === mode;
+      radio.checked = this.selectedMode === mode;
       radio.addEventListener("change", () => {
+        this.selectedMode = mode;
+        this.options.onModeChange(mode);
         if (mode === "override" && !this.draft) this.confirmingOverride = true;
         else this.mode = mode;
         this.render();
@@ -185,12 +191,21 @@ export class ObjectTagsModal extends Modal {
     this.contentEl.createEl("h3", { text: "Create Tag Overrides" });
     this.contentEl.createEl("p", { text: "Standard-Tags als bearbeitbaren Bestand übernehmen?" });
     const actions = this.contentEl.createDiv({ cls: "dn-object-tag-actions" });
-    const cancel = () => { this.confirmingOverride = false; this.mode = "default"; this.render(); };
-    this.button(actions, "×", cancel).setAttribute("aria-label", "Dialog schließen");
+    const cancel = () => {
+      this.confirmingOverride = false;
+      this.mode = this.selectedMode = "default";
+      this.options.onModeChange("default");
+      this.render();
+    };
+    this.button(actions, "×", () => {
+      this.confirmingOverride = false;
+      this.mode = "default";
+      this.render();
+    }).setAttribute("aria-label", "Dialog schließen");
     this.button(actions, "Cancel", cancel);
     this.button(actions, "OK", () => {
       this.draft = copyObjectTags(this.options.defaults);
-      this.mode = "override";
+      this.mode = this.selectedMode = "override";
       this.confirmingOverride = false;
       this.render();
     });

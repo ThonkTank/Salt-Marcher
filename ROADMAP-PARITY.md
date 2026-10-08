@@ -69,6 +69,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Nachbesserungsplan 08.10.2026:** Der [eigene Plan](ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md) ordnet die vier Abweichungen und fünf offenen Vergleichsfälle konkreten Originalproben, Codepfaden und Hostfolgen zu. Neue isolierte Originalproben klären das Fenster-X des Browsers und den vorläufigen Radiozustand nach Dialog-X. Erst der getrennte Umsetzungslauf darf Produktcode ändern; ein weiterer unabhängiger 28-Fälle-Review entscheidet das weiterhin offene Fachphasentor. Installation und Nutzervault blieben unverändert.
 
+**Nachbesserungskandidat 08.10.2026:** Der [getrennte Umsetzungslauf](/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md) gleicht normale und additive Tagwahl, Setmarkierungen, den prozesslokalen Browsermodus und das Dialog-X an. Direkte Originalproben zeigen Used auf zwei Geschossen und auf einer frischen zweiten Karte, die 16 `book`-Kacheln sowie das Laden eines vorhandenen eigenen Tag-/Setbestands. Der isolierte Host bestand Edit und Neustart auf Build `21ec88f4…`; ein zweites Profil bestand Laden, Save, Fenster-X und Neustart des Minimalbestands. Typprüfung, 152 Kerntests und Build bestanden. Original-Kartenwechsel im selben Prozess und Zweiwortsuche bleiben direkt offen; alle 28 Fälle brauchen den eigenen unabhängigen Endbuild-Review. **Das Fachphasentor bleibt offen.** Installierter Build und Nutzervault blieben unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.

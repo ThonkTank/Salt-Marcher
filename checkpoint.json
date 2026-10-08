@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: Nachbesserungsplan für neun offene Unterfälle abgelegt; eigener Umsetzungslauf folgt",
+  "phase": "Phase 4: Nachbesserungskandidat für neun offene Unterfälle umgesetzt; eigener unabhängiger Review folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,16 +814,16 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_repair_plan_ready_19_verified_9_open",
+    "status": "phase4_repair_candidate_pending_independent_review",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Phase-4-Nachbesserungsumsetzungslauf nach ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md; danach eigener unabhängiger 28-Fälle-Review.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 19 von 28 Pflicht-Unterfällen unabhängig verifiziert, vier direkte Abweichungen und fünf offene Belegpaare. Nachbesserungsplan liegt vor; das Fachphasentor ist offen und der Kandidatenbuild nicht installiert.",
+    "nextRun": "Getrennter unabhängiger Phase-4-Review aller 28 Unterfälle auf Build 21ec88f4…; Originalgrenzen zu Kartenwechsel im selben Prozess und Zweiwortsuche gezielt klären.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 19 Unterfälle im vorigen Review verifiziert; neun Nachbesserungsfälle besitzen neue Original-/Hostbelege, zwei direkte Originalgrenzen bleiben offen. Fachphasentor offen; Kandidatenbuild nicht installiert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
-    "candidateCoreTests": 151,
+    "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+    "candidateCoreTests": 152,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
     "phase2Repair": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
@@ -1354,6 +1354,23 @@
       "newOriginalProbeCases": ["DD-047.14", "DD-047.15", "DD-047.16"],
       "gate": "open",
       "next": "Eigener Umsetzungslauf: fehlende Originalregeln prüfen, Kandidat gezielt angleichen und neun Hostpaare auf finalem Build ausführen."
+    },
+    "phase4RepairImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_pending_independent_review",
+      "plan": "ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md",
+      "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426373559-parity-phase4-objects-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/result.json",
+      "hostOwnMinimalEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/result.json",
+      "hostOwnMinimalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426686203-parity-phase4-objects-reopen/result.json",
+      "coreTestsPassed": 152,
+      "repairCases": ["DD-026.03", "DD-026.04", "DD-026.05", "DD-026.17", "DD-047.02", "DD-047.03", "DD-047.14", "DD-047.15", "DD-047.16"],
+      "directOriginalGaps": ["DD-026.03: Kartenwechsel im selben Prozess", "DD-026.05: Zweiwortsuche und vollständige Originalpfade"],
+      "gate": "open",
+      "next": "Eigener unabhängiger Review aller 28 Phase-4-Unterfälle auf finalem Build; offene Originalgrenzen klären."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",

@@ -140,6 +140,7 @@ export default class DungeonPlugin extends Plugin {
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
+  private objectTagsBrowserMode: "default" | "override" = "default";
   private assetLibrary = new PackAssetLibrary();
   private nativePathCatalog?: NativePathCatalog;
   private nativePathAttempted?: string;
@@ -577,6 +578,8 @@ export default class DungeonPlugin extends Plugin {
   }
   openObjectTags(packIds?: readonly string[], builtInAssets = this.catalogBuiltIns): void {
     new ObjectTagsModal(this.app, {
+      initialMode: this.objectTagsBrowserMode,
+      onModeChange: (mode) => { this.objectTagsBrowserMode = mode; },
       defaults: this.nativePathCatalog?.defaultObjectTags ?? emptyObjectTags(),
       override: this.objectTagStore.current(),
       assets: this.listAssets(packIds, builtInAssets).filter((asset) => asset.kind === "object"),

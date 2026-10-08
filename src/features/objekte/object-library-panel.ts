@@ -1,7 +1,7 @@
 import type { AssetDefinition } from "../../assets";
 import type { Session } from "../../session";
 import {
-  applyObjectSearch, clearObjectSearchText, enterObjectLibraryTab,
+  applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
   newObjectLibraryState,
   resetObjectSearch, visibleObjectAssets, type ObjectLibraryState,
   type ObjectLibraryTab,
@@ -169,16 +169,17 @@ export class ObjectLibraryPanel {
     label.textContent = "Tags";
     const select = document.createElement("select");
     select.setAttribute("aria-label", "Custom Set");
-    const setNames = ["", ...Object.keys(this.tags.sets).sort((a, b) => a.localeCompare(b, "en"))];
+    const setNames = ["", "---", ...Object.keys(this.tags.sets).sort((a, b) => a.localeCompare(b, "en"))];
     for (const name of setNames) {
       const option = document.createElement("option");
       option.value = name;
       option.textContent = name || "Custom Set";
+      option.hidden = !name;
       select.append(option);
     }
     select.value = setNames.includes(this.state.set) ? this.state.set : "";
     select.addEventListener("change", () => {
-      this.state = { ...this.state, set: select.value, tags: new Set() };
+      this.state = chooseObjectSet(this.state, select.value, this.tags);
       this.render();
     });
     label.append(select);
@@ -189,17 +190,14 @@ export class ObjectLibraryPanel {
     controls.append(label, edit);
     const list = document.createElement("div");
     list.className = "dn-object-library-tags";
-    const names = this.state.set
-      ? this.tags.sets[this.state.set] ?? [] : Object.keys(this.tags.tags);
+    const names = Object.keys(this.tags.tags);
     for (const name of [...names].sort((a, b) => a.localeCompare(b, "en"))) {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = name;
       button.setAttribute("aria-pressed", String(this.state.tags.has(name)));
-      button.addEventListener("click", () => {
-        const selected = new Set(this.state.tags);
-        if (selected.has(name)) selected.delete(name); else selected.add(name);
-        this.state = { ...this.state, tags: selected };
+      button.addEventListener("click", (event) => {
+        this.state = chooseObjectTag(this.state, name, event.ctrlKey);
         this.render();
       });
       list.append(button);

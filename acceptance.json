@@ -23828,6 +23828,30 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "A: Used zeigt Globe und Book 02 auf Ground und Upper; frischer B-Prozess zeigt nur Book 02.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/used-A-ground.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/used-A-upper.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-040727-2414119/evidence/used-B-book-only.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "A→Upper: zwei IDs; B: nur Book 02; B→A: wieder zwei IDs.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/used-upper-two-assets.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/used-other-map-book.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/result.json"
+            ]
+          },
+          "remaining": "Original-Kartenwechsel A→B→A im selben Prozess wegen hängendem Dateidialog nicht direkt belegt.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -23928,6 +23952,28 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Normaler Tagklick ersetzt; erneuter Klick auf denselben Tag belässt ihn. Strg+Klick ergänzt oder entfernt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/tag-click-selected.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/tag-ctrl-add.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/tag-ctrl-remove.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Normal-/Strg-Folge markiert Administration und Alchemy wie Original.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426373559-parity-phase4-objects-edit/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -24047,6 +24093,30 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "atlas 19, atla Fuzzy 15/Exact 0; book zeigt 16 sichtbare Kacheln in Reihenfolge; Return wendet Text an.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/search-book.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/search-book-ordered/ordered.json",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/findings.md"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "book 16 geordnete Pfad-IDs; zzzzqa 0 nach Return, davor unveränderte Treffer; Zweiwort-IDs protokolliert.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/search-book-order.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/search-two-word-order.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/result.json"
+            ]
+          },
+          "remaining": "Zweiwortsuche und vollständige geordnete Originalpfade noch nicht unabhängig ausgelesen.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -25045,6 +25115,29 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Crafts & Trades markiert seine Mitglieder in vollständiger Tagliste; Combat ersetzt; --- leert; manueller Klick zeigt Custom Set.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/set-crafts-after-alchemy.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/set-combat-after-crafts.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/set-none-after-combat.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-035604-2410217/evidence/ctrl-tag-after-set.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Set-, Tag- und Rücksetzfolgen im Host mit Mitgliedschaften und Kachelmenge geprüft.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426373559-parity-phase4-objects-edit/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -34224,6 +34317,28 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Frischer Browser zeigt Default trotz gespeicherter Override-Datei; die gespeicherte Bibliothekszuordnung bleibt aktiv.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-040932-2415159/evidence/own-browser-initial.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-040932-2415159/evidence/own-browser-override.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Frischer Hostprozess zeigt Default; Override-Datei lädt Tag und Set und steuert Bibliotheksfilter.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426686203-parity-phase4-objects-reopen/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -34324,6 +34439,28 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Bewusste Wahl von Override bleibt bei Schließen und Wiederöffnen im selben Prozess erhalten.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-034600-2404664/evidence/repair-plan-reopen-after-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Prozesslokaler Browsermodus bleibt bei Neuöffnung Override; Neustart beginnt Default.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426373559-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426481500-parity-phase4-objects-reopen/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         }
       },
       {
@@ -35375,6 +35512,28 @@
           "date": "2026-10-08",
           "strictAcceptance": "open"
         },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Browser-Fenster-X verwirft ungespeicherten Tag; Override-Datei bleibt bytegleich.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-034600-2404664/evidence/repair-plan-tag-unsaved-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-034600-2404664/evidence/repair-plan-reopen-after-x.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Echter Klick auf Browser-X verwirft QA Unsaved Window X; Datei-SHA bleibt gleich.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/own-minimal.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
+        },
         "phase4RepairPlanProbe": {
           "date": "2026-10-08",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
@@ -35486,6 +35645,30 @@
           "date": "2026-10-08",
           "strictAcceptance": "open"
         },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Vorhandene minimale eigene Tag-/Setdatei öffnet ohne Kopierdialog und zeigt allein QA Own Tag/Set.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-040932-2415159/evidence/own-browser-initial.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-040932-2415159/evidence/own-browser-override.png",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-040932-2415159/evidence/own-browser-sets.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Isoliertes Profil lädt einen Tag und ein Set, speichert und lädt beides bei Neustart ohne Kopierdialog.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/own-minimal.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426686203-parity-phase4-objects-reopen/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
+        },
         "phase4RepairPlanProbe": {
           "date": "2026-10-08",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
@@ -35594,6 +35777,28 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairImplementation": {
+          "state": "candidate_pending_independent_review",
+          "date": "2026-10-08",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Dialog-X markiert Override vorläufig, hält Bearbeitung gesperrt und schreibt keine Datei; Default→Override fragt erneut, Cancel setzt Default.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-before-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-after-x.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-retry-after-x.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+            "sequence": "Dialog-X, erneute Wahl, Cancel und OK im Host getrennt geprüft.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host/evidence/1791426373559-parity-phase4-objects-edit/result.json"
+            ]
+          },
+          "remaining": "Unabhängiger Endbuild-Review aller 28 Fälle ausstehend.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md"
         },
         "phase4RepairPlanProbe": {
           "date": "2026-10-08",

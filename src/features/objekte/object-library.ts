@@ -35,7 +35,7 @@ export interface ObjectLibraryState {
 export function newObjectLibraryState(selectedId = ""): ObjectLibraryState {
   return { tab: "all", text: "", appliedQuery: null,
     strictness: 0.5, appliedStrictness: 0.5, selectedId,
-    set: "", tags: new Set(), usedIds: new Set() };
+    set: "---", tags: new Set(), usedIds: new Set() };
 }
 
 export function enterObjectLibraryTab(state: ObjectLibraryState,
@@ -43,6 +43,22 @@ export function enterObjectLibraryTab(state: ObjectLibraryState,
   if (state.tab === tab) return state;
   return { ...state, tab,
     usedIds: tab === "used" ? new Set(usedIds) : state.usedIds };
+}
+
+/** A plain click replaces the tag choice; Ctrl-click toggles an additional tag. */
+export function chooseObjectTag(state: ObjectLibraryState, name: string,
+  additive: boolean): ObjectLibraryState {
+  const tags = additive ? new Set(state.tags) : new Set<string>();
+  if (additive && tags.has(name)) tags.delete(name);
+  else tags.add(name);
+  return { ...state, set: "", tags };
+}
+
+/** The native set chooser replaces all checked tags, including the empty `---` set. */
+export function chooseObjectSet(state: ObjectLibraryState, name: string,
+  document: ObjectTagDocument): ObjectLibraryState {
+  return { ...state, set: name,
+    tags: new Set(name === "---" ? [] : document.sets[name] ?? []) };
 }
 
 export function applyObjectSearch(state: ObjectLibraryState): ObjectLibraryState {

@@ -7,7 +7,7 @@ import {
   parseObjectTags, parsePackageObjectTags, removeObjectTag, serializeObjectTags,
 } from "../../src/features/objekte/object-tags";
 import {
-  applyObjectSearch, clearObjectSearchText, enterObjectLibraryTab,
+  applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
   newObjectLibraryState, resetObjectSearch, visibleObjectAssets,
 } from "../../src/features/objekte/object-library";
 
@@ -62,6 +62,38 @@ test("tag filtering resolves full source paths, including package namespace", ()
     tags: new Set(["Globe"]) };
   assert.deepEqual(visibleObjectAssets(assets, packageTags, state).map((asset) => asset.id),
     [assets[3]!.id]);
+});
+
+test("native tag and set choices replace or extend checked tags", () => {
+  const document = { tags: {
+    Administration: [assets[0]!.files.image!],
+    Alchemy: [assets[1]!.files.image!],
+    Armor: [assets[2]!.files.image!],
+  }, sets: { Crafts: ["Administration", "Alchemy"], Combat: ["Armor"] } };
+  let state = enterObjectLibraryTab(newObjectLibraryState(), "tags");
+  state = chooseObjectTag(state, "Administration", false);
+  state = chooseObjectTag(state, "Administration", false);
+  assert.deepEqual([...state.tags], ["Administration"], "plain repeat stays selected");
+  state = chooseObjectTag(state, "Alchemy", false);
+  assert.deepEqual([...state.tags], ["Alchemy"], "plain click replaces choice");
+  state = chooseObjectTag(state, "Administration", true);
+  assert.deepEqual([...state.tags], ["Alchemy", "Administration"]);
+  assert.deepEqual(visibleObjectAssets(assets, document, state).map((item) => item.id),
+    [assets[0]!.id, assets[1]!.id]);
+  state = chooseObjectTag(state, "Administration", true);
+  assert.deepEqual([...state.tags], ["Alchemy"], "Ctrl-click removes an additional tag");
+  state = chooseObjectSet(state, "Crafts", document);
+  assert.equal(state.set, "Crafts");
+  assert.deepEqual([...state.tags], ["Administration", "Alchemy"]);
+  state = chooseObjectTag(state, "Armor", true);
+  assert.equal(state.set, "", "manual choice displays Custom Set");
+  assert.deepEqual([...state.tags], ["Administration", "Alchemy", "Armor"]);
+  state = chooseObjectSet(state, "Combat", document);
+  assert.deepEqual([...state.tags], ["Armor"], "set choice replaces previous tags");
+  state = chooseObjectSet(state, "---", document);
+  assert.equal(state.set, "---");
+  assert.equal(state.tags.size, 0);
+  assert.equal(visibleObjectAssets(assets, document, state).length, 0);
 });
 
 test("tag and set editing retains membership, rejects duplicates and cleans removed tag", () => {
