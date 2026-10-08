@@ -24,9 +24,12 @@ export class ObjectLibraryPanel {
   private active = false;
   private images?: LazyObjectImages;
   private controlsHost?: HTMLElement;
+  private controlsKey = "";
   private gallery?: HTMLElement;
   private entries: readonly ObjectAssetEntry[] = [];
   private assetsDirty = true;
+  private tileMetadataDirty = false;
+  private assetImagesChanged = false;
   private visibleIds: readonly string[] | null = null;
   private markedSelectedId = "";
   private tags: ObjectTagDocument = { tags: {}, sets: {} };
@@ -46,9 +49,12 @@ export class ObjectLibraryPanel {
       this.images?.disconnect();
       this.images = undefined;
       this.controlsHost = undefined;
+      this.controlsKey = "";
       this.gallery = undefined;
       this.visibleIds = null;
       this.markedSelectedId = "";
+      this.tileMetadataDirty = false;
+      this.assetImagesChanged = false;
       this.root.replaceChildren();
     }
   }
@@ -58,7 +64,6 @@ export class ObjectLibraryPanel {
     if (this.assetsDirty) {
       this.entries = sortedObjectAssetEntries(this.options.assets());
       this.assetsDirty = false;
-      this.visibleIds = null;
     }
     this.tags = this.options.tags();
     if (!this.options.selectedAsset() && this.entries.length)
@@ -66,9 +71,10 @@ export class ObjectLibraryPanel {
     this.render();
   }
 
-  refreshAssets(): void {
+  refreshAssets(reloadImages = false): void {
     this.assetsDirty = true;
-    this.visibleIds = null;
+    this.tileMetadataDirty = true;
+    this.assetImagesChanged ||= reloadImages;
     if (this.active) this.refresh();
   }
 
@@ -91,24 +97,49 @@ export class ObjectLibraryPanel {
       this.gallery.setAttribute("aria-label", "Objektkacheln");
       this.root.replaceChildren(this.controlsHost, this.gallery);
     }
-    this.controlsHost.replaceChildren();
-    const heading = document.createElement("h2");
-    heading.textContent = "Objektbibliothek";
-    this.controlsHost.append(heading);
-    const tabs = document.createElement("div");
-    tabs.className = "dn-object-library-tabs";
-    for (const [tab, label] of [["all", "All"], ["used", "Used"], ["tags", "Tags"]] as const) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.setAttribute("aria-pressed", String(this.state.tab === tab));
-      button.addEventListener("click", () => this.setTab(tab));
-      tabs.append(button);
+    const controlsKey = this.state.tab === "tags"
+      ? JSON.stringify([this.state.tab, this.state.set, [...this.state.tags].sort(),
+          Object.keys(this.tags.tags).sort(), Object.keys(this.tags.sets).sort()])
+      : this.state.tab;
+    if (controlsKey !== this.controlsKey) {
+      const focused = document.activeElement;
+      const focusedTab = focused?.tagName === "BUTTON" &&
+        focused.parentElement?.classList.contains("dn-object-library-tabs")
+        ? focused.textContent : null;
+      const focusedTag = focused?.tagName === "BUTTON" &&
+        focused.parentElement?.classList.contains("dn-object-library-tags")
+        ? focused.textContent : null;
+      const focusedSet = focused?.tagName === "SELECT" &&
+        this.controlsHost.contains(focused);
+      this.controlsHost.replaceChildren();
+      const heading = document.createElement("h2");
+      heading.textContent = "Objektbibliothek";
+      this.controlsHost.append(heading);
+      const tabs = document.createElement("div");
+      tabs.className = "dn-object-library-tabs";
+      for (const [tab, label] of [["all", "All"], ["used", "Used"], ["tags", "Tags"]] as const) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.setAttribute("aria-pressed", String(this.state.tab === tab));
+        button.addEventListener("click", () => this.setTab(tab));
+        tabs.append(button);
+      }
+      this.controlsHost.append(tabs);
+      if (this.state.tab === "all") this.renderSearch();
+      if (this.state.tab === "tags") this.renderTags();
+      this.controlsKey = controlsKey;
+      const focusTarget = focusedTab
+        ? [...this.controlsHost.querySelectorAll<HTMLButtonElement>(".dn-object-library-tabs button")]
+            .find((button) => button.textContent === focusedTab)
+        : focusedTag
+          ? [...this.controlsHost.querySelectorAll<HTMLButtonElement>(".dn-object-library-tags button")]
+              .find((button) => button.textContent === focusedTag)
+          : focusedSet
+            ? this.controlsHost.querySelector<HTMLSelectElement>("select[aria-label='Custom Set']")
+            : null;
+      focusTarget?.focus();
     }
-    this.controlsHost.append(tabs);
-
-    if (this.state.tab === "all") this.renderSearch();
-    if (this.state.tab === "tags") this.renderTags();
     this.renderTiles();
   }
 
@@ -232,7 +263,10 @@ export class ObjectLibraryPanel {
     const ids = visible.map((entry) => entry.asset.id);
     if (this.visibleIds && ids.length === this.visibleIds.length &&
         ids.every((id, index) => id === this.visibleIds![index])) {
+      if (this.tileMetadataDirty) this.refreshTileMetadata(visible);
       if (this.markedSelectedId !== this.state.selectedId) this.refreshTileMarks();
+      this.tileMetadataDirty = false;
+      this.assetImagesChanged = false;
       return;
     }
     this.images?.disconnect();
@@ -241,6 +275,8 @@ export class ObjectLibraryPanel {
     gallery.scrollTop = 0;
     this.visibleIds = ids;
     this.markedSelectedId = this.state.selectedId;
+    this.tileMetadataDirty = false;
+    this.assetImagesChanged = false;
     if (!visible.length) {
       const empty = gallery.ownerDocument.createElement("p");
       empty.textContent = "Keine Objekte";
@@ -269,6 +305,22 @@ export class ObjectLibraryPanel {
       gallery.append(button);
       this.images.observe(image, asset.id);
     }
+  }
+
+  private refreshTileMetadata(visible: readonly ObjectAssetEntry[]): void {
+    const tiles = this.gallery?.querySelectorAll<HTMLButtonElement>(".dn-object-library-tile");
+    if (!tiles) return;
+    visible.forEach(({ asset }, index) => {
+      const tile = tiles[index]!;
+      if (tile.title !== asset.name) tile.title = asset.name;
+      if (tile.getAttribute("aria-label") !== asset.name)
+        tile.setAttribute("aria-label", asset.name);
+      const image = tile.querySelector("img");
+      if (this.assetImagesChanged && image?.hasAttribute("src")) {
+        const currentUrl = this.options.assetUrl(asset.id + "\0image");
+        if (currentUrl && image.src !== currentUrl) image.src = currentUrl;
+      }
+    });
   }
 
   private refreshTileMarks(): void {

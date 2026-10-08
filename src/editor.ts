@@ -677,7 +677,7 @@ export class DungeonEditor {
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();
       this.refreshProperties();
-      this.objectLibrary.refreshAssets();
+      this.objectLibrary.refreshAssets(true);
     });
     this.objectTagUnsub = host.subscribeObjectTags?.(() => this.objectLibrary.refresh());
     this.keyDock = element("aside", "dn-key-dock", this.body);

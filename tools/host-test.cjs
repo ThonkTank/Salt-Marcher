@@ -35,6 +35,7 @@ const restart = process.argv.includes("--restart"),
   parityPhase3Wear = process.argv.includes("--parity-phase3-wear"),
   parityPhase4Objects = process.argv.includes("--parity-phase4-objects"),
   parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
+  parityPhase4CleanupMatrix = parityPhase4Objects && process.argv.includes("--parity-phase4-cleanup-matrix"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
@@ -658,6 +659,11 @@ async function workflow() {
     if (parityPhase4OwnMinimal) await scenario.ownMinimal(restart);
     else if (restart) await scenario.reopen();
     else await scenario.edit();
+    if (parityPhase4CleanupMatrix) {
+      const matrix = require("./host/parity-phase4-cleanup-matrix.cjs")(scenarioContext);
+      if (restart) await matrix.reopen();
+      else await matrix.edit();
+    }
     return;
   }
   if (parityPhase3Wear) {
