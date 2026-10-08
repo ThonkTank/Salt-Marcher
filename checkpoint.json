@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 5: Aufräumumsetzung als Kandidat; eigener unabhängiger Review folgt",
+  "phase": "Phase 5: Aufräumreview offen; Nachbesserungsplan für zwei Nachweislücken folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase5_cleanup_implementation_ready_review_pending",
+    "status": "phase5_cleanup_review_evidence_gaps",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener unabhängiger Phase-5-Aufräum-Review: Diff, Vorher/Nachher-Rohdaten, Lichtpolygone, Pickerfreigabe, Fixture-Hashes sowie acht Host-Edit-/Neuöffnungspaare prüfen; erst nach Torentscheidung Phase 6.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen. Fachphasentor bestanden. Fünf technische Aufräumpunkte sind als Kandidat umgesetzt; acht Hostpaare, 155 Tests und Build bestehen. Eigenes Aufräumreview und Tor offen. Installierter Build und Nutzervault unverändert.",
+    "nextRun": "Eigener begrenzter Nachbesserungsplan P5-CL-R1/R2: gezählte Textur-/Gradientressourcen und Renderzeiten sowie gepaarte Pfad-/Tür-Nahlichtbilder; danach getrennte QA-Umsetzung und erneuter unabhängiger Review vor Phase 6.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen. Fachphasentor bestanden. Aufräumreview bestätigt Kernwirkung, lässt aber zwei geplante Nachweise offen; kein Produktfehler bestätigt. Installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
     "candidateCoreTests": 155,
@@ -1784,6 +1784,19 @@
       "coreTestsPassed": 155,
       "gate": "open",
       "next": "Getrennter unabhängiger Aufräum-Review; bei Befunden Plan/Umsetzung/Review erneut trennen, vor Phase 6 Tor entscheiden."
+    },
+    "phase5CleanupReview": {
+      "date": "2026-10-08",
+      "state": "evidence_gaps_repair_plan_pending",
+      "candidateCommit": "fe340de",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/review-audit.json",
+      "confirmed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "gate": "open",
+      "next": "Getrennter Nachbesserungsplan für die zwei Nachweislücken; danach QA-Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 6."
     }
   }
 }
