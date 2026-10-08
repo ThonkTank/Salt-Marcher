@@ -38,7 +38,7 @@ export function createObject(
   settings: Pick<
     MapObject,
     "rotation" | "width" | "height" | "color" | "alpha" | "label" | "assetId"
-  > = {
+  > & Partial<Pick<MapObject, "flip">> = {
     rotation: 0,
     width: 1.6,
     height: 0.9,

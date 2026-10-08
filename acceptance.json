@@ -27270,9 +27270,11 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: Mausrad verändert den Platzierungswinkel in derselben Schrittfolge und der Klick speichert ihn.",
         "baseline": {
@@ -27299,24 +27301,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
-            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen."
+            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen.",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-MAUSRAD-DREHUNG.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": "90b3f9445f3c2ce89b7613e8faf1ab1e2815f831d56d5ae982ff07097c4d9bcc",
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272802418-objekte-01-edit/dd02622-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/dd02622-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02622-wheel-retry-20261006/evidence/1791272821239-objekte-01-reopen/dd02622-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Original-Kartenwert nach genau einem Wheel-Tick, Touchpad-Grenzen und installierter Endstand offen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "partial",
             "observation": "Isolierter Editier- und Frischstartlauf bestanden; Kamerazustand, Werkzeugwert, Platzierung, Undo/Redo und gespeicherte Karte geprüft.",
@@ -27344,9 +27352,11 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: Alt+Mausrad verändert den einheitlichen Scale des Vorschaubilds und der Klick speichert ihn.",
         "baseline": {
@@ -27373,24 +27383,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
-            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen."
+            "Native Werkzeug-Mausradgeste vor Kameranavigation an die Objektvorgaben und Cursorvorschau angeschlossen.",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-23-ALT-MAUSRAD-SCALE.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": "90b3f9445f3c2ce89b7613e8faf1ab1e2815f831d56d5ae982ff07097c4d9bcc",
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272950903-objekte-01-edit/dd02623-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/dd02623-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02623-alt-wheel-20261006/evidence/1791272970688-objekte-01-reopen/dd02623-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Original-Range-Grenzen und Original-Kartenwert nach genau einem Alt-Wheel-Tick sowie installierter Endstand offen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "partial",
             "observation": "Isolierter Editier- und Frischstartlauf bestanden; Kamerazustand, Werkzeugwert, Platzierung, Undo/Redo und gespeicherte Karte geprüft.",
@@ -27418,9 +27434,11 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-24-SHIFT-MAUSRAD-CYCLE.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-24-SHIFT-MAUSRAD-CYCLE.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Direkte native Atlas-Nachbar-IDs und Reihenfolge unter Exact-Suche sowie installierter Endstand offen."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: Umschalt+Mausrad wechselt das konkret gewählte Asset und der nächste Klick platziert genau dieses.",
         "baseline": {
@@ -27447,27 +27465,33 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
             "src/editor.ts",
             "src/properties.ts",
-            "src/features/objekte/object-shift-wheel-cycle.ts"
+            "src/features/objekte/object-shift-wheel-cycle.ts",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Direkte native Atlas-Nachbar-IDs und Reihenfolge unter Exact-Suche sowie installierter Endstand offen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "pass",
             "observation": "Exact-Atlas-Kacheln zyklisch gewechselt, letztes Asset platziert, Undo/Redo und Frischstart bestanden.",
@@ -27500,9 +27524,11 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Direktes Original-GUI-/Kartenpaar bei A-Halten."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: gehaltenes A spiegelt die Platzierungsvorschau und das neu gespeicherte Möbel in derselben Achse.",
         "baseline": {
@@ -27529,20 +27555,23 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
             "src/editor.ts",
-            "src/features/objekte/object-modifier-release.ts"
+            "src/features/objekte/object-modifier-release.ts",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
@@ -27550,9 +27579,12 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "pass",
             "observation": "A-down/up spiegelte nur die aktive Vorschau; bei gehaltenem A platziertes Objekt speichert flip=true. Undo/Redo und Frischstart bestanden.",
@@ -27587,9 +27619,11 @@
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-25-27-OBJECT-MODIFIERS.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Direktes Original-GUI-/Kartenpaar bei Rechtsklick."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: Rechtsklick dreht die Platzierung um 90° und der nächste Klick speichert diese Ausrichtung.",
         "baseline": {
@@ -27616,26 +27650,32 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
             "src/editor.ts",
-            "src/features/objekte/object-right-click-rotation.ts"
+            "src/features/objekte/object-right-click-rotation.ts",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": "25806d2f26328bb98e6e60f2aab7fd92eb92dade900763a787f845fd610d4051",
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-026-24-26-FOCUSED-HOST-20261006.md",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/group-cases.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274058277-objekte-01-edit/dd02624-26-steps.json",
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/group-cases.json",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd02624-26-modifiers-retry3-20261006/evidence/1791274087250-objekte-01-reopen/dd02624-26-steps.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Direktes Original-GUI-/Kartenpaar bei Rechtsklick und installiertem Endstand offen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "pass",
             "observation": "Rechtsklick +90°, Alt+Rechtsklick −90° ohne Karte/History bis Linksklick; platziertes Objekt speichert π/2. Undo/Redo und Frischstart bestanden.",
@@ -27667,9 +27707,11 @@
           "effect": null,
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/maps/object-gestures-original.dungeondraft_map"
           ],
-          "gap": "Native Speicherwirkung dieses Modifiers bzw."
+          "gap": "Physische Eingabe und Touchpad-Akkumulation bleiben für Phase 7 offen."
         },
         "target": "Nach Originalmessung: Z+Mausrad ändert den Winkel in kleineren Schritten als normales Mausrad und speichert ihn.",
         "baseline": {
@@ -27696,24 +27738,30 @@
           }
         },
         "implementation": {
-          "state": "candidate_partial_uninstalled",
+          "state": "phase6_candidate_implemented",
           "changes": [
             "src/editor.ts",
-            "src/features/objekte/object-modifier-release.ts"
+            "src/features/objekte/object-modifier-release.ts",
+            "Phase-6-Object-Tool-Geste im Canvas und in der Bibliothek an die direkt gemessene Originalfolge angeschlossen."
           ],
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
           ]
         },
         "hostCheck": {
-          "state": "partial",
-          "build": null,
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-22-27-MODIFIER-RECHECK-20261006.md",
-            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md"
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-MODIFIER-FOCUS-FIX.md",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
-          "gap": "Quellen-/Hostkandidat für Modifikatorfolge; Fokusfix bisher nur gezielt getestet. Direktes Original-/Hostkartenpaar, echtes Obsidian-Popout und installierter Endstand fehlen.",
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen.",
           "candidate": {
             "state": "open",
             "observation": "Z+Rad wurde im DD-026.22-Edit-/Frischstartlauf mit +5°-Platzierung und Speicherung technisch ausgeführt; ein eigener DD-026.27-Fallrecord fehlt.",
@@ -34840,15 +34888,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -34892,15 +34949,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -34944,15 +35010,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -34996,15 +35071,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -35048,15 +35132,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -35100,15 +35193,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-selection-grips.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -35152,15 +35254,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-selection-grips.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -35362,15 +35473,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -35622,15 +35742,24 @@
           }
         },
         "implementation": {
-          "state": "not_started",
-          "changes": [],
-          "evidence": []
+          "state": "existing_path_phase6_host_checked",
+          "changes": [
+            "Bestehender Auswahlpfad am Phase-6-Endbuild im objektbezogenen Hostfall geprüft; keine Auswahl-Produktänderung."
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+            "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/tools/host/parity-phase6-gestures.cjs"
+          ]
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "phase6_candidate_edit_reopen_passed",
+          "build": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
+          ],
+          "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
         }
       },
       {
@@ -59262,6 +59391,21 @@
       "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
       "gate": "open",
       "decision": "Nur Phase-6-Planung. Direkte Original-/Endbuildfolgen für sechs Objektgesten und neun objektbezogene Auswahlpositionen fehlen; erst danach belegte Unterschiede umsetzen und unabhängig reviewen. Physische Eingabe und gemeinsame Großkarte bleiben Phase 7."
+    },
+    "phase6Implementation": {
+      "date": "2026-10-08",
+      "state": "candidate_ready_for_separate_independent_review",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+      "originalGestureRecord": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+      "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "cases": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "coreTestsPassed": 155,
+      "gate": "open",
+      "decision": "Umsetzungskandidat mit direkter Original-Gestenkarte, bestandenem Host-Edit-/Neuöffnungspaar und Basisprüfungen; der unabhängige Fachreview entscheidet jede Position gesondert."
     }
   }
 }

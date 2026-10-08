@@ -43,13 +43,14 @@ const restart = process.argv.includes("--restart"),
   parityPhase5Light = process.argv.includes("--parity-phase5-light"),
   parityPhase5CleanupBenchmark = process.argv.includes("--parity-phase5-cleanup-benchmark"),
   parityPhase5CleanupRepair = process.argv.includes("--parity-phase5-cleanup-repair"),
+  parityPhase6Gestures = process.argv.includes("--parity-phase6-gestures"),
   parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
   parityPhase4CleanupMatrix = parityPhase4Objects && process.argv.includes("--parity-phase4-cleanup-matrix"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -219,7 +220,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha || pathLibrary)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
@@ -619,7 +620,7 @@ async function workflow() {
   } else await page.waitForFunction(
     (expected) => typeof app !== "undefined" &&
       app.vault?.adapter?.basePath === expected && app.workspace?.layoutReady,
-    vault, { timeout: parityPhase3Wear || parityPhase4Objects || parityPhase5Objects || parityPhase5Review || parityPhase5Repair || parityPhase5Repair2 || parityPhase5AlphaReview || parityPhase5Visual || parityPhase5Light ? 90000 : 30000 },
+    vault, { timeout: parityPhase6Gestures || parityPhase3Wear || parityPhase4Objects || parityPhase5Objects || parityPhase5Review || parityPhase5Repair || parityPhase5Repair2 || parityPhase5AlphaReview || parityPhase5Visual || parityPhase5Light ? 90000 : 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -683,6 +684,12 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (parityPhase6Gestures) {
+    const scenario = require("./host/parity-phase6-gestures.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityPhase5CleanupRepair) {
     await require("./host/parity-phase5-cleanup-repair.cjs")(scenarioContext).edit();
     return;

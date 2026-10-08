@@ -814,15 +814,15 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_plan_ready_implementation_pending",
+    "status": "phase6_implementation_candidate_review_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Phase-6-Umsetzungslauf: Original-/Hostpaare für DD-026.22–.27 und DD-030.19–.25/.29/.34; belegte Eingabe- und Auswahlabweichungen beheben, Edit-/Neuöffnungspaar und Basisprüfungen sichern.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen; Fach- und Aufräumtor bestanden. Phase 6: eigener Plan für 15 Gesten-/Auswahlpositionen liegt vor, Original-/Endbuildpaare und Fachreview offen. Produktkandidat, installierter Build und Nutzervault unverändert.",
+    "nextRun": "Getrennter unabhängiger Phase-6-Fachreview der 15 Positionen anhand Originalrohkarte, Endbuild-Edit-/Neuöffnungspaaren und offenen Auswahlgrenzen; bei Befunden eigenständigen Nachbesserungsplan anlegen.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen; Fach- und Aufräumtor bestanden. Phase 6: Umsetzungskandidat mit direkter Original-Gestenkarte, aktuellem Host-Edit-/Neuöffnungspaar und 155 Basistests liegt vor; unabhängiger Fachreview offen. Installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+    "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
     "candidateCoreTests": 155,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
@@ -1857,6 +1857,20 @@
       "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
       "gate": "open",
       "next": "Getrennte Umsetzung mit direkten Original-/Hostpaaren und nur belegten Produktänderungen; danach unabhängiger 15-Positionen-Review."
+    },
+    "phase6Implementation": {
+      "date": "2026-10-08",
+      "state": "candidate_ready_for_separate_independent_review",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
+      "original": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
+      "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "coreTestsPassed": 155,
+      "positions": 15,
+      "gate": "open",
+      "next": "Unabhängiger Fachreview; die Umsetzung selbst ist kein Paritätsurteil."
     }
   }
 }

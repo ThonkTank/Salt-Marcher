@@ -1705,19 +1705,22 @@ export class Properties {
       }, "-180", "180", "1", "input");
     rotation.addEventListener("change", () => { rotationSlider.value = rotation.value; });
     const setScale = (value: number) => {
-      if (!Number.isFinite(value) || value <= 0) return;
+      if (!Number.isFinite(value)) return;
+      value = Math.max(0.1, Math.min(4, value));
       const prior = this.defaults.objectScale || 1;
       const size = this.assets().find((asset) => asset.id === object.assetId)
         ?.objectSizeFields;
       this.defaults.objectScale = value;
       update({ width: (size?.width ?? this.defaults.object.width / prior) * value,
         height: (size?.height ?? this.defaults.object.height / prior) * value });
+      return value;
     };
     const scale = this.field("Scale", "number", String(this.defaults.objectScale),
-      (input) => setScale(input.valueAsNumber), "0.01", "100", "0.01");
+      (input) => { const applied = setScale(input.valueAsNumber);
+        if (applied !== undefined) input.value = String(applied); }, "0.1", "4", "0.01");
     const scaleSlider = this.field("Scale-Regler", "range", scale.value,
       (input) => { scale.value = input.value; setScale(input.valueAsNumber); },
-      "0.01", "5", "0.01", "input");
+      "0.1", "4", "0.01", "input");
     scale.addEventListener("change", () => { scaleSlider.value = scale.value; });
     this.field("Shadow", "checkbox", String(object.shadow ?? true),
       (input) => update({ shadow: input.checked }));

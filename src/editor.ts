@@ -64,6 +64,7 @@ import {
 } from "./properties";
 import { type AssetDefinition } from "./assets";
 import { ObjectLibraryPanel } from "./features/objekte/object-library-panel";
+import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./features/objekte/object-gestures";
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import {
@@ -318,6 +319,8 @@ export class DungeonEditor {
   private objectLibrary: ObjectLibraryPanel;
   private gesture?: Gesture;
   private objectPreviewPoint?: Point;
+  private objectMirrorHeld = false;
+  private objectSlowRotateHeld = false;
   private tool: Tool = "select";
   private previousTool?: Tool;
   private previousToolButton: HTMLButtonElement;
@@ -1143,6 +1146,32 @@ export class DungeonEditor {
       "wheel",
       (e) => {
         e.preventDefault();
+        if (this.tool === "object" && this.settings.object.assetId) {
+          const direction = objectWheelDirection(e.deltaY, e.shiftKey ? e.deltaX : 0);
+          if (direction) {
+            if (e.altKey) {
+              const scale = scaleObjectStep(this.settings.objectScale, direction);
+              if (scale !== this.settings.objectScale) {
+                const prior = this.settings.objectScale;
+                const size = this.host.assets?.().find((asset) =>
+                  asset.id === this.settings.object.assetId)?.objectSizeFields;
+                this.settings.objectScale = scale;
+                this.settings.object = { ...this.settings.object,
+                  width: (size?.width ?? this.settings.object.width / prior) * scale,
+                  height: (size?.height ?? this.settings.object.height / prior) * scale };
+                this.host.persistToolDefaults?.();
+                this.refreshProperties();
+                this.refreshObjectPreview();
+              }
+            } else if (e.shiftKey) {
+              this.objectLibrary.cycleSelection(direction === 1 ? -1 : 1);
+            } else {
+              const step = this.objectSlowRotateHeld || e.getModifierState("Z") ? 5 : 15;
+              this.rotateObject(direction * step);
+            }
+          }
+          return;
+        }
         const navigation = wheelNavigation(e);
         if (navigation.kind === "zoom")
           this.renderer.zoom(navigation.factor, this.renderer.local(e));
@@ -1171,10 +1200,15 @@ export class DungeonEditor {
       },
       { ...options, capture: true },
     );
-    this.root.addEventListener(
+    window.addEventListener(
       "keyup",
       (e) => {
         if (e.code === "Space") this.space = false;
+        if (e.key.toLowerCase() === "a" && this.objectMirrorHeld) {
+          this.objectMirrorHeld = false;
+          this.refreshObjectPreview();
+        }
+        if (e.key.toLowerCase() === "z") this.objectSlowRotateHeld = false;
       },
       options,
     );
@@ -1182,6 +1216,8 @@ export class DungeonEditor {
       "blur",
       () => {
         this.space = false;
+        this.objectMirrorHeld = false;
+        this.objectSlowRotateHeld = false;
         this.cancel();
         this.objectPreviewPoint = undefined;
         this.renderer.clearObjectPreview();
@@ -1249,7 +1285,15 @@ export class DungeonEditor {
   }
   private refreshObjectPreview(): void {
     if (this.tool === "object" && this.objectPreviewPoint)
-      this.renderer.previewObject(this.objectPreviewPoint, this.settings.object);
+      this.renderer.previewObject(this.objectPreviewPoint,
+        { ...this.settings.object, flip: this.objectMirrorHeld });
+  }
+  private rotateObject(degrees: number): void {
+    this.settings.object = { ...this.settings.object,
+      rotation: rotateObjectRadians(this.settings.object.rotation, degrees) };
+    this.host.persistToolDefaults?.();
+    this.refreshProperties();
+    this.refreshObjectPreview();
   }
   private refreshProperties(): void {
     if (this.tool === "object" && this.settings.object.assetId) {
@@ -1568,6 +1612,8 @@ export class DungeonEditor {
     this.cancel();
     this.objectPreviewPoint = undefined;
     this.renderer.clearObjectPreview();
+    this.objectMirrorHeld = false;
+    this.objectSlowRotateHeld = false;
     if (tool !== this.tool) this.previousTool = this.tool;
     this.tool = tool;
     this.hoveredBuildingVertex = undefined;
@@ -1725,6 +1771,13 @@ export class DungeonEditor {
       : best.wall;
   }
   private begin(e: PointerEvent): void {
+    if (!this.gesture && e.button === 2 && this.tool === "object" &&
+        this.settings.object.assetId) {
+      e.preventDefault();
+      this.renderer.canvas.focus();
+      this.rotateObject(e.altKey ? -90 : 90);
+      return;
+    }
     if (this.gesture || (e.button !== 0 && e.button !== 1))
       return;
     this.commitNote();
@@ -2586,7 +2639,7 @@ export class DungeonEditor {
         this.session,
         this.renderer.floorId,
         this.snap(point, 0.5),
-        this.settings.object,
+        { ...this.settings.object, flip: this.objectMirrorHeld },
         this.settings.objectSorting,
       );
       void this.select(o.id);
@@ -3469,13 +3522,12 @@ export class DungeonEditor {
     }
     if (this.tool === "object" && e.key.toLowerCase() === "a") {
       e.preventDefault();
-      this.settings.object = {
-        ...this.settings.object,
-        flip: !this.settings.object.flip,
-      };
-      this.host.persistToolDefaults?.();
-      this.refreshProperties();
+      this.objectMirrorHeld = true;
       this.refreshObjectPreview();
+      return;
+    }
+    if (this.tool === "object" && e.key.toLowerCase() === "z" && !command) {
+      this.objectSlowRotateHeld = true;
       return;
     }
     if (this.tool === "object" && (e.key === "[" || e.key === "]")) {
@@ -3691,6 +3743,8 @@ export class DungeonEditor {
   }
   destroy(): void {
     this.closed = true;
+    this.objectMirrorHeld = false;
+    this.objectSlowRotateHeld = false;
     this.cancelColorSample?.();
     this.unsub?.();
     this.properties?.dispose();

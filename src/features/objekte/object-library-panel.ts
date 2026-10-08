@@ -8,6 +8,7 @@ import {
 } from "./object-library";
 import { type ObjectTagDocument } from "./object-tags";
 import { LazyObjectImages } from "./lazy-object-images";
+import { cycledObjectId } from "./object-gestures";
 
 export interface ObjectLibraryPanelOptions {
   readonly assets: () => readonly AssetDefinition[];
@@ -85,6 +86,16 @@ export class ObjectLibraryPanel {
       this.state = { ...this.state, selectedId: selected };
       this.refreshTileMarks();
     }
+  }
+
+  cycleSelection(direction: -1 | 1): string | undefined {
+    if (!this.active) return undefined;
+    const next = cycledObjectId(this.visibleIds ?? [], this.state.selectedId, direction);
+    if (!next) return undefined;
+    this.state = { ...this.state, selectedId: next };
+    this.options.selectAsset(next);
+    this.refreshTileMarks();
+    return next;
   }
 
   private render(): void {
