@@ -59243,6 +59243,25 @@
       "coreTestsPassed": 155,
       "gate": "passed",
       "decision": "Eigener Code- und Rohdatenreview bestätigt direkte Textur-/Gradient-/Renderzeitmessung, gleiche Karten- und Aktionszustände, wirksame Objekt-/Pfad-/Tür-Bildwechsel und null entfernte Lichtaufträge bei lokalen Änderungen. P5-CL-R1/R2 geschlossen und Phase-5-Aufräumtor bestanden; Phase 6 startet mit getrenntem Planlauf."
+    },
+    "phase6Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-PHASE6-PLAN.md",
+      "referenceEvidence": [
+        "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+        "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/Dungeondraft-reference.dll",
+        "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-030-SELECT.md"
+      ],
+      "openOriginal": "Einzelne gespeicherte Gestenwerte, Scale-Grenzen, gefilterte Atlas-Nachbar-IDs sowie vollständige Auswahl-/Raum-/Historypaare auf definiertem Kartenstand.",
+      "baseCommit": "0b9479a5831945c6d288bcb908ae45067d7f7c35",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "objectGestures": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27"],
+      "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "gate": "open",
+      "decision": "Nur Phase-6-Planung. Direkte Original-/Endbuildfolgen für sechs Objektgesten und neun objektbezogene Auswahlpositionen fehlen; erst danach belegte Unterschiede umsetzen und unabhängig reviewen. Physische Eingabe und gemeinsame Großkarte bleiben Phase 7."
     }
   }
 }

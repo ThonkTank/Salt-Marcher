@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 5: Aufräumtor bestanden; getrennter Phase-6-Plan folgt",
+  "phase": "Phase 6: Gesten- und Auswahlplan liegt vor; getrennte Umsetzung folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -176,7 +176,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Eigenen Phase-6-Planlauf für Objektgesten und nötige Auswahl nach ROADMAP-PARITY.md erstellen; Umsetzung und unabhängigen Fachreview getrennt anschließen.",
+  "next": "Phase-6-Umsetzung nach ROADMAP-PARITY-PHASE6-PLAN.md: zuerst sechs Originalgesten und neun Auswahlkontexte direkt messen, dann belegte Unterschiede am isolierten Host korrigieren und prüfen.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase5_cleanup_gate_passed_phase6_plan_pending",
+    "status": "phase6_plan_ready_implementation_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Phase-6-Planlauf: DD-026.22–.27 und nötige DD-030-Auswahlfolgen am Original inventarisieren, offene Belege und konkrete Umsetzung planen.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen. Fachphasentor und nach unabhängigem P5-CL-R1/R2-Review auch Aufräumtor bestanden. Produktkandidat, installierter Build und Nutzervault unverändert.",
+    "nextRun": "Getrennter Phase-6-Umsetzungslauf: Original-/Hostpaare für DD-026.22–.27 und DD-030.19–.25/.29/.34; belegte Eingabe- und Auswahlabweichungen beheben, Edit-/Neuöffnungspaar und Basisprüfungen sichern.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen; Fach- und Aufräumtor bestanden. Phase 6: eigener Plan für 15 Gesten-/Auswahlpositionen liegt vor, Original-/Endbuildpaare und Fachreview offen. Produktkandidat, installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
     "candidateCoreTests": 155,
@@ -1843,6 +1843,20 @@
       "coreTestsPassed": 155,
       "gate": "passed",
       "next": "Getrennter Phase-6-Planlauf nach ROADMAP-PARITY.md; danach eigene Umsetzung und unabhängiger Fachreview."
+    },
+    "phase6Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE6-PLAN.md",
+      "baseCommit": "0b9479a5831945c6d288bcb908ae45067d7f7c35",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "positions": 15,
+      "objectGestures": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27"],
+      "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "gate": "open",
+      "next": "Getrennte Umsetzung mit direkten Original-/Hostpaaren und nur belegten Produktänderungen; danach unabhängiger 15-Positionen-Review."
     }
   }
 }

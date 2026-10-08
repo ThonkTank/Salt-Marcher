@@ -149,6 +149,8 @@ Mausrad, Alt+Mausrad, Umschalt+Mausrad, gehaltenes A, Rechtsklick und Z+Mausrad 
 
 **Phasentor:** Jede Geste verändert nur die belegte Eigenschaft und bewegt die Kamera nicht unbeabsichtigt. Auswahl, Raumzuordnung, Undo/Redo und frische Neuöffnung stimmen für die geprüften Objektfolgen.
 
+**Phase-6-Plan 08.10.2026:** Der [getrennte Plan](ROADMAP-PARITY-PHASE6-PLAN.md) inventarisiert sechs noch offene Object-Tool-Gesten und neun objektbezogene Auswahlpositionen. Die Original-Assembly belegt Radwinkel, Alt-Scale, Shift-Cycle, A-Halten und Rechtsklick statisch; direkte Originalkarten nach einzelnen Eingaben, konkrete Atlas-Nachbar-IDs und Endbuild-Hostpaare fehlen. Der aktuelle Editor routet jedes Canvas-Rad zur Kamera, schaltet A dauerhaft und ignoriert Rechtsklick. Der nächste eigene Lauf misst zuerst Original und unveränderten Host, schließt nur belegte Unterschiede an und prüft Auswahl, Raumwechsel, Undo/Redo und frische Neuöffnung. **Nur Plan, Phase-6-Fachphasentor offen.** Umsetzung, unabhängiger Review und danach die eigene Aufräumphase folgen getrennt; Produktcode, installierter Build und Nutzervault blieben unverändert.
+
 ## Phase 7 – Gemeinsamer Ablauf
 
 Auf einer isolierten Kopie einen Raum zeichnen und bearbeiten, mehrere Objekte auswählen und setzen, eines zwischen Räumen verschieben, ein Feature mit seinem wortgleichen Key-Abschnitt verbinden und den Abschnitt über die Karte öffnen. Danach Undo/Redo, Speichern und einen frischen Obsidian-Prozess prüfen. Die zuvor übersprungene physische Maus-/Touchpad-Probe und eine große kombinierte Testkarte erhalten eigene Ergebnisse; ohne diese Belege werden sie nicht als abgeschlossen markiert.
