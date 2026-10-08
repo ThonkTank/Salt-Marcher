@@ -1,4 +1,92 @@
 {
+  "repositoryWorkflow": {
+    "date": "2026-10-08",
+    "authorization": "Direkte Nutzeranweisung: beauftragten Fortschritt regelmäßig pushen und eingehende Repository-Änderungen lokal integrieren.",
+    "remote": "origin",
+    "branch": "active/installed-phase1",
+    "instructions": "AGENTS.md#fortsetzung-des-neuen-editors",
+    "plan": "ROADMAP-HEX-ATLAS.md#fortschritt-veröffentlichen-und-eingehende-änderungen-integrieren",
+    "cadence": {
+      "incoming": "Vor jedem Arbeitspaket und vor jedem Push abrufen und integrieren.",
+      "outgoing": "Nach jedem geprüften Plan-/Umsetzungs-/Review-/Nachbesserungs-/Aufräumpaket; bei langen Phasen spätestens am täglichen Arbeitsabschluss einen prüfbaren Zwischenstand."
+    },
+    "protection": "Eigene Paketänderungen veröffentlichen; lokale fremde Arbeit sichern und erhalten. Kein Force-Push, keine Umschreibung veröffentlichten Verlaufs.",
+    "verification": "Dokumentation statisch prüfen; Produktcode mit Basisprüfungen und passenden Regressionen. Nach Push Remote-Commit exakt vergleichen; offene Abnahmen nicht schließen.",
+    "installation": "Repository-Integration installiert keinen Produktbuild im Obsidian-Vault.",
+    "syncEvidence": "/home/aaron/.cache/dungeon-native-qa/backups/repo-sync-20261008-193556/sync-result.json"
+  },
+  "hexAtlasRoadmap": {
+    "date": "2026-10-08",
+    "state": "hex00_planned_not_implemented",
+    "plan": "ROADMAP-HEX-ATLAS.md",
+    "activePhasePlan": "ROADMAP-HEX-00-PLAN.md",
+    "architecture": "ARCHITECTURE.md#vereinbarte-hex-atlas-erweiterung",
+    "revision": "29_hex_phases_and_10_city_phases_in_one_mode_free_atlas",
+    "cityPlan": "ROADMAP-CITIES.md",
+    "cityCatalog": "acceptance.json.cityPlans",
+    "cityPlanning": {
+      "state": "planned_not_implemented",
+      "phases": "CITY-00 bis CITY-09",
+      "cases": 24,
+      "comparison": "Ergebnisvorbilder Canvas of Kings und Watabou; einfachere Bedienung eigenständig durch Nutzeraufgaben prüfen.",
+      "atlas": "Keine separaten Modi oder erforderlichen Kontextwechsel. Oberste Hex-Stufe bis Haus-Dungeon nur durch Zoom; direkte Bearbeitung im selben Editor.",
+      "earlySchedule": "CITY-00 im Referenzpaket HEX-00; CITY-01 bis CITY-04 nach HEX-05 und vor HEX-06. Spätere Stadtphasen an HEX-14/20/22; Endabnahme mit HEX-28.",
+      "open": "Direkte Ergebnisgalerie, aktuelle Referenzversionen, Stadtproduktcode und Host-/Bedienabnahme stehen aus."
+    },
+    "referencePlan": "WONDERDRAFT-PARITY.md",
+    "referenceCatalog": "acceptance.json.wonderdraftParity",
+    "referenceMapping": {
+      "state": "seed_catalog_saved_direct_runtime_inventory_pending",
+      "version": "Wonderdraft 1.1.8.2",
+      "groups": 36,
+      "initialProbes": 79,
+      "packageHintsMapped": 96,
+      "inventoryComplete": false,
+      "gate": "HEX-00-A/B/C vor HEX-01",
+      "verified": "Lokale Programm-/Paketprüfsummen und Paketpfade erfasst; offizieller Guide und Shortcuts als Suchhinweise geprüft.",
+      "open": "Direkte UI-Inventur, Original-Startfolgen, tiefe Wirkungsproben und Original-/Hostpaare stehen aus."
+    },
+    "phaseRange": "HEX-00 bis HEX-28",
+    "earlyMilestones": {
+      "HEX-02": "Bearbeitbarer und speicherbarer Hex-Editor mit Entwurfswiederherstellung.",
+      "HEX-05": "Zusammenhängender Hex-Ort-Dungeon-Raum-Key-Ablauf mit räumlicher Rückkehr.",
+      "HEX-10": "Mehrstufige Welt, Ooke-Bildvorlagen und erste PNG-Ausgabe."
+    },
+    "verification": "Plan und offener Wonderdraft-Ausgangskatalog gespeichert; noch keine Produktumsetzung oder direkte Original-/Hostabnahme. Vor HEX-01 vollständiges Original-Mapping und belegte Startfolgen; je Werkzeugphase konkrete Originalwirkung, Hostpaar und eigener Review. Nach je zwei Produktphasen geprüfter Teststand. Nutzbarkeit und Parität bleiben getrennte Nachweise.",
+    "next": "Eigener Umsetzungslauf HEX-00-I01 gemäß ROADMAP-HEX-00-PLAN.md: gesicherte Dungeon-Ausgangsbasis, isolierter Kernlauf, unterstützte Original-Teststeuerung und direkte Wonderdraft-Inventur. Danach separate Startfolgen, Fachreview/Nachbesserung und Aufräumläufe. CITY-00 bleibt eigener früher Ergebnisreferenzlauf. HEX-01 erst nach Originaltor und Aufräumreview; Stadtproduktcode erst nach CITY-00. Alle Übergänge und Bearbeitung im selben Atlas ohne separate Modi."
+  },
+  "hexAtlasExecution": {
+    "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
+    "phase": "HEX-00",
+    "state": "planning_complete_implementation_next",
+    "plan": "ROADMAP-HEX-00-PLAN.md",
+    "currentRun": {
+      "id": "HEX-00-P01",
+      "kind": "planning",
+      "startedAt": "2026-10-08T19:42:27.848506+02:00",
+      "endedAt": "2026-10-08T19:46:56.581997+02:00",
+      "focus": "Offene Punkte, technische Referenz-/Testbasis, direkte Originalinventur und getrennte Abnahme-/Aufräumläufe planen.",
+      "state": "complete",
+      "result": "Konkreter Plan gespeichert und statisch geprüft. Keine Produktumsetzung, direkte Originalaufnahme oder Fachfreigabe dieses Laufs.",
+      "baseCommit": "3cf41c876977e14a9444b4fb6fa768edcb80798d",
+      "evidence": ["/home/aaron/.cache/dungeon-native-qa/hex-00/planning-20261008-194227/plan-verification.json"]
+    },
+    "nextRun": {
+      "id": "HEX-00-I01",
+      "kind": "implementation",
+      "focus": "Ausgangsbasis sichern, Dungeon-Kernweg isoliert prüfen, unterstützte Original-Teststeuerung nachweisen und vollständige direkte Wonderdraft-Oberfläche zuordnen.",
+      "gate": "Originalinventar und Referenztor bleiben bis zum separaten Fachreview offen."
+    },
+    "review": {
+      "state": "not_started",
+      "next": "Eigener HEX-00-R01 nach Inventur und originalen Startfolgen; Pflichtlücken in eigenen Nachbesserungs-/Reviewläufen schließen."
+    },
+    "cleanup": {
+      "state": "not_started",
+      "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
+    },
+    "open": ["Direkte Original-Teststeuerung und Profilisolierung", "Vollständiges direktes UI-Inventar", "Originale Startfolgen mit Neustart", "Isolierter Dungeon-Kernweg", "Separater Fachreview und Aufräumreview", "Eigener CITY-00-Ergebnisreferenzlauf"]
+  },
   "phase": "Phase 6: Nachbesserungsumsetzung als Kandidat vorhanden; unabhängiger Review und Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",

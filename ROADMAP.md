@@ -65,3 +65,11 @@ Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platz
 ## Folge-Roadmap
 
 Die [Roadmap für Dungeondraft-Verhalten bei Grundrissen und Objekten](ROADMAP-PARITY.md) gliedert den anschließenden Verhaltensabgleich in sieben Phasen.
+
+Die [Roadmap für den Hex-Atlas mit Wonderdraft-Parität](ROADMAP-HEX-ATLAS.md) beschreibt die vereinbarte Erweiterung in 29 kleinen Phasen: erster bearbeitbarer Hex-Editor nach HEX-02, verbundener Ort-Dungeon-Raum-Key-Ablauf nach HEX-05 und laufende Praxistests im echten Obsidian. Hex-Stufen ab drei Meilen, ein gemeinsamer räumlicher Atlas und Wonderdraft-Parität bleiben das vollständige Ziel. Die Phasen sind geplant und noch nicht umgesetzt oder abgenommen.
+
+Der [Wonderdraft-Vergleichsplan](WONDERDRAFT-PARITY.md) verlangt vor HEX-01 ein vollständiges direktes Original-Mapping, belegte Startfolgen und einen eigenen Inventarreview. Stabile WD-Unterfälle in `acceptance.json.wonderdraftParity` ordnen die Originalfunktionen den kleinen Produktphasen zu; genaue Original-/Hostpaare werden je Werkzeugfamilie ergänzt.
+
+Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt zehn kleine Phasen mit Ergebnisvorbildern von Watabou und Canvas of Kings. Erste Stadt, Generation und Hausgrundriss-Bearbeitung folgen früh nach HEX-05. Welt, Stadt und Dungeon bleiben im selben Atlas ohne separate Modi unmittelbar bearbeitbar; alle räumlichen Detailstufen werden ausschließlich durch Zoom erreicht.
+
+Für alle Folgepakete gilt der [Repository-Rhythmus](ROADMAP-HEX-ATLAS.md#fortschritt-veröffentlichen-und-eingehende-änderungen-integrieren): vor der Arbeit und vor jedem Push eingehende Änderungen integrieren, nach jedem geprüften Arbeitspaket veröffentlichen und längere Phasen mit prüfbaren Zwischenständen sichern. Lokale fremde Arbeit bleibt erhalten; Repo-Synchronisation und Produktinstallation sind getrennte Schritte.
