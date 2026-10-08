@@ -4,39 +4,97 @@ const ORIGINAL_PACK_SHA = "df920080409feda5d15194cd8c998553f18a80292762da2f30735
 const UPDATED_PACK = "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-repair-20261008/qaobjasl-updated.dungeondraft_pack";
 const UPDATED_PACK_SHA = "bec2f21d79b50d358d0002956a79a0fc85c8e8a07f9dfe2fbb2382c64be1422e";
 
-module.exports = ({ page, fs, path, assert, crypto, out, checks, chooseTool }) => {
+module.exports = ({ page, fs, path, assert, crypto, out, checks, chooseTool,
+  resolveQaAppCgroup }) => {
   const matrix = { fixture: { map: MAP, originalPack: ORIGINAL_PACK,
     originalPackSha256: ORIGINAL_PACK_SHA, updatedPack: UPDATED_PACK,
     updatedPackSha256: UPDATED_PACK_SHA }, states: {}, actions: {},
-    timing: "Synchronous DOM event duration in renderer; memory samples are cumulative cgroup values, not per-action peaks" };
+    timing: "Renderer synchronous event time excludes a separate two-frame visible-image observation (or a recorded one-second timeout). Action memory.peak is reset through one open descriptor in the validated Obsidian cgroup scope." };
   const tiles = () => page.locator(".dn-object-library-tile");
   const tab = (name) => page.locator(".dn-object-library-tabs")
     .getByRole("button", { name, exact: true });
   const ids = () => tiles().evaluateAll((nodes) => nodes.map((node) => node.dataset.assetId));
   const record = async (name) => { matrix.states[name] = await ids(); };
   const save = (name) => fs.writeFileSync(path.join(out, name), JSON.stringify(matrix, null, 2));
-  const sample = () => {
-    try {
-      const cgroup = fs.readFileSync(`/proc/${process.pid}/cgroup`, "utf8")
-        .trim().split("\n")[0].split(":").at(-1);
-      const base = `/sys/fs/cgroup${cgroup}`;
-      return { currentBytes: Number(fs.readFileSync(`${base}/memory.current`, "utf8")),
-        cumulativePeakBytes: Number(fs.readFileSync(`${base}/memory.peak`, "utf8")) };
-    } catch { return { currentBytes: null, cumulativePeakBytes: null }; }
+  const readPeak = (fd) => {
+    const buffer = Buffer.alloc(64);
+    const count = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    const value = Number(buffer.subarray(0, count).toString("utf8").trim());
+    assert(Number.isFinite(value) && value > 0, "Invalid Obsidian memory.peak value");
+    return value;
   };
+  const measureMemory = async (action) => {
+    const target = resolveQaAppCgroup();
+    const current = () => Number(fs.readFileSync(target.currentPath, "utf8"));
+    const fd = fs.openSync(target.peakPath, "r+");
+    try {
+      const currentBeforeBytes = current();
+      const inheritedPeakBytes = readPeak(fd);
+      fs.writeSync(fd, Buffer.from("0"), 0, 1, 0);
+      const resetPeakBytes = readPeak(fd);
+      const currentAtResetBytes = current();
+      assert(Math.abs(resetPeakBytes - currentAtResetBytes) < 64 * 1048576,
+        `Obsidian memory.peak did not reset near current usage: ${JSON.stringify({
+          inheritedPeakBytes, resetPeakBytes, currentAtResetBytes })}`);
+      const result = await action();
+      const currentAfterBytes = current();
+      const actionPeakBytes = readPeak(fd);
+      assert(actionPeakBytes >= resetPeakBytes,
+        "Obsidian action peak fell below its reset value");
+      return { result, memory: { method: "cgroup-v2-memory.peak-reset-open-fd",
+        serviceName: target.serviceName, group: target.group, pids: target.pids,
+        currentBeforeBytes, inheritedPeakBytes, resetPeakBytes,
+        currentAtResetBytes, currentAfterBytes, actionPeakBytes } };
+    } finally { fs.closeSync(fd); }
+  };
+  const visible = async (modal) => page.evaluate((modal) => {
+    const root = document.querySelector(modal ? ".dn-object-tag-grid" : ".dn-object-library-tiles");
+    const capturedAtEpochMs = Date.now();
+    if (!root) return { capturedAtEpochMs, rootPresent: false,
+      visibleTileCount: 0, visibleWithSrcCount: 0, visibleDecodedCount: 0, tiles: [] };
+    const rootRect = root.getBoundingClientRect();
+    const viewport = { left: Math.max(0, rootRect.left), top: Math.max(0, rootRect.top),
+      right: Math.min(innerWidth, rootRect.right), bottom: Math.min(innerHeight, rootRect.bottom) };
+    const selector = modal ? ".dn-object-tag-tile" : ".dn-object-library-tile";
+    const tiles = [...root.querySelectorAll(selector)].flatMap((tile) => {
+      const rect = tile.getBoundingClientRect();
+      if (!(rect.bottom > viewport.top && rect.top < viewport.bottom &&
+          rect.right > viewport.left && rect.left < viewport.right)) return [];
+      const image = tile.querySelector("img");
+      return [{ id: modal ? null : tile.dataset.assetId ?? null,
+        name: tile.getAttribute("aria-label"),
+        src: image?.hasAttribute("src") ? image.src : null,
+        complete: image?.complete ?? null, naturalWidth: image?.naturalWidth ?? null,
+        box: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } }];
+    });
+    return { capturedAtEpochMs, rootPresent: true, viewport,
+      visibleTileCount: tiles.length, visibleWithSrcCount: tiles.filter((tile) => !!tile.src).length,
+      visibleDecodedCount: tiles.filter((tile) => tile.complete && tile.naturalWidth > 0).length,
+      tiles };
+  }, modal);
+  const settleImages = () => page.evaluate(() => new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve("timeout"), 1000);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      clearTimeout(timeout); resolve("two-animation-frames");
+    }));
+  }));
   const measure = async (kind, input) => {
-    const memoryBefore = sample();
-    const result = await page.evaluate(({ kind, input }) => {
+    const modal = kind === "modalOpen" || kind === "membership";
+    const visibleBefore = await visible(modal);
+    const { result, memory } = await measureMemory(() => page.evaluate(({ kind, input }) => {
       const editor = app.workspace.activeLeaf.view.editor;
-      const grid = document.querySelector(kind === "membership" ? ".dn-object-tag-grid" : ".dn-object-library-tiles");
-      const selector = kind === "membership" ? ".dn-object-tag-tile" : ".dn-object-library-tile";
-      const beforeButtons = new Set(grid.querySelectorAll(selector));
-      const beforeImages = new Set(grid.querySelectorAll(`${selector} img`));
+      const isModal = kind === "modalOpen" || kind === "membership";
+      const gridSelector = isModal ? ".dn-object-tag-grid" : ".dn-object-library-tiles";
+      const selector = isModal ? ".dn-object-tag-tile" : ".dn-object-library-tile";
+      const grid = document.querySelector(gridSelector);
+      const beforeButtons = new Set(grid?.querySelectorAll(selector) ?? []);
+      const beforeImages = new Set(grid?.querySelectorAll(`${selector} img`) ?? []);
+      const libraryBefore = new Set(document.querySelectorAll(".dn-object-library-tile"));
       const focused = document.activeElement;
-      const before = { scrollTop: grid.scrollTop, selectedId: editor.settings.object.assetId,
-        ids: [...beforeButtons].map((node) => node.dataset.assetId),
-        loadedUrls: [...beforeImages].filter((img) => img.hasAttribute("src"))
-          .slice(0, 12).map((img) => img.src),
+      const before = { rootPresent: !!grid, scrollTop: grid?.scrollTop ?? null,
+        selectedId: editor.settings.object.assetId,
+        ids: isModal ? null : [...beforeButtons].map((node) => node.dataset.assetId),
+        tileNames: isModal ? [...beforeButtons].map((node) => node.getAttribute("aria-label")) : null,
         heapBytes: performance.memory?.usedJSHeapSize ?? null };
       const start = performance.now();
       const click = (selector) => {
@@ -70,20 +128,24 @@ module.exports = ({ page, fs, path, assert, crypto, out, checks, chooseTool }) =
         else panel.refresh();
       } else throw new Error(`Unknown action ${kind}`);
       const elapsedMs = performance.now() - start;
-      const afterGrid = document.querySelector(kind === "membership" ? ".dn-object-tag-grid" : ".dn-object-library-tiles");
-      const buttons = [...afterGrid.querySelectorAll(selector)];
-      const images = [...afterGrid.querySelectorAll(`${selector} img`)];
+      const afterGrid = document.querySelector(gridSelector);
+      const buttons = [...(afterGrid?.querySelectorAll(selector) ?? [])];
+      const images = [...(afterGrid?.querySelectorAll(`${selector} img`) ?? [])];
       return { kind, input, elapsedMs, before,
-        after: { scrollTop: afterGrid.scrollTop, selectedId: editor.settings.object.assetId,
-          ids: buttons.map((node) => node.dataset.assetId),
-          loadedUrls: images.filter((img) => img.hasAttribute("src"))
-            .slice(0, 12).map((img) => img.src),
+        after: { rootPresent: !!afterGrid, scrollTop: afterGrid?.scrollTop ?? null,
+          selectedId: editor.settings.object.assetId,
+          ids: isModal ? null : buttons.map((node) => node.dataset.assetId),
+          tileNames: isModal ? buttons.map((node) => node.getAttribute("aria-label")) : null,
           heapBytes: performance.memory?.usedJSHeapSize ?? null },
         newButtons: buttons.filter((node) => !beforeButtons.has(node)).length,
         newImages: images.filter((node) => !beforeImages.has(node)).length,
+        libraryNewButtons: [...document.querySelectorAll(".dn-object-library-tile")]
+          .filter((node) => !libraryBefore.has(node)).length,
         sameFocusedNode: focused === document.activeElement };
-    }, { kind, input });
-    return { ...result, memoryBefore, memoryAfter: sample() };
+    }, { kind, input }));
+    const settledBy = await settleImages();
+    const visibleAfter = await visible(modal);
+    return { ...result, memory, visibleBefore, visibleAfter, settledBy };
   };
   const repeat = async (name, kind, input, beforeEach, afterEach) => {
     const trials = [];
@@ -129,6 +191,10 @@ module.exports = ({ page, fs, path, assert, crypto, out, checks, chooseTool }) =
     await picker.selectOption(""); await record("customSet");
     await repeat("modalOpen", "modalOpen", null, undefined,
       () => page.locator(".dn-object-tags-modal").getByRole("button", { name: "Close", exact: true }).click());
+    assert(matrix.actions.modalOpen.trials.every((trial) =>
+      !trial.before.rootPresent && trial.after.rootPresent &&
+      trial.newButtons === 1793 && trial.newImages === 1793 &&
+      trial.libraryNewButtons === 0 && trial.visibleAfter.visibleTileCount > 0));
     await page.getByRole("button", { name: "Tags bearbeiten" }).click();
     const modal = page.locator(".dn-object-tags-modal");
     await modal.locator('input[type="radio"]').nth(1).click();

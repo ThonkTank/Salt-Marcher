@@ -23,6 +23,39 @@ module.exports = ({ page, fs, path, assert, out, vault, sourceVault,
     return { x: box.x + renderer.camera.x + x * renderer.camera.scale,
       y: box.y + renderer.camera.y + y * renderer.camera.scale };
   }, { x, y });
+  const coldTrace = [];
+  async function traceColdStart(stage, commandReturn = null) {
+    if (process.env.DUNGEON_WEAR_COLD_TRACE !== "1") return;
+    const state = await page.evaluate(() => {
+      const activeLeaf = app.workspace.activeLeaf;
+      const documents = new Set([document, globalThis.activeDocument,
+        globalThis.activeWindow?.document].filter(Boolean));
+      app.workspace.iterateAllLeaves((leaf) => {
+        const owner = leaf.view?.containerEl?.ownerDocument;
+        if (owner) documents.add(owner);
+      });
+      return { activeFile: app.workspace.getActiveFile()?.path ?? null,
+        activeView: activeLeaf?.view?.getViewType?.() ?? null,
+        obsidianActiveDocumentUrl: globalThis.activeDocument?.URL ?? null,
+        obsidianActiveWindowUrl: globalThis.activeWindow?.location?.href ?? null,
+        activeDocumentUrl: activeLeaf?.view?.containerEl?.ownerDocument?.URL ?? null,
+        focusedDocumentUrl: globalThis.document.URL,
+        documents: [...documents].map((doc) => ({ url: doc.URL,
+          hasFocus: doc.hasFocus(), modals: [...doc.querySelectorAll(".modal")].map((modal) => {
+            const style = doc.defaultView.getComputedStyle(modal);
+            const rect = modal.getBoundingClientRect();
+            return { title: modal.querySelector(".modal-title")?.textContent ?? null,
+              textStart: modal.textContent?.slice(0, 120) ?? null,
+              connected: modal.isConnected, display: style.display,
+              visibility: style.visibility,
+              visible: style.display !== "none" && style.visibility !== "hidden" &&
+                rect.width > 0 && rect.height > 0,
+              width: rect.width, height: rect.height };
+          }) })) };
+    });
+    coldTrace.push({ stage, commandReturn, capturedAtEpochMs: Date.now(), ...state });
+    fs.writeFileSync(path.join(out, "wear-cold-trace.json"), JSON.stringify(coldTrace, null, 2));
+  }
   async function rectangle(x, y, expected) {
     const a = await point({ x, y }), b = await point({ x: x + 2, y: y + 2 });
     await page.mouse.move(a.x, a.y);
@@ -34,11 +67,25 @@ module.exports = ({ page, fs, path, assert, out, vault, sourceVault,
     expected);
   }
   async function create({ name, disabled }) {
-    assert.equal(await page.evaluate(() =>
-      app.commands.executeCommandById("dungeon-editor:create-dungeon")), true);
+    const cold = name === "Wear On" && process.env.DUNGEON_WEAR_COLD_TRACE === "1";
+    if (cold) await traceColdStart("before-command");
+    const commandReturn = await page.evaluate(() =>
+      app.commands.executeCommandById("dungeon-editor:create-dungeon"));
+    if (cold) await traceColdStart("after-command", commandReturn);
+    assert.equal(commandReturn, true);
     const modal = page.locator(".modal:visible").last();
-    await modal.getByText("Dungeon anlegen", { exact: true })
-      .waitFor({ timeout: 45000 });
+    if (cold) {
+      await page.waitForTimeout(1000);
+      await traceColdStart("after-one-second", commandReturn);
+    }
+    try {
+      await modal.getByText("Dungeon anlegen", { exact: true })
+        .waitFor({ timeout: 45000 });
+    } catch (error) {
+      if (cold) await traceColdStart("after-modal-timeout", commandReturn);
+      throw error;
+    }
+    if (cold) await traceColdStart("modal-ready", commandReturn);
     const wear = modal.locator(".setting-item")
       .filter({ hasText: "Gebäudeabnutzung deaktivieren" })
       .locator('input[type="checkbox"]');

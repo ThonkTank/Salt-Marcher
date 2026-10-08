@@ -156,6 +156,24 @@ function processes() {
       }
     });
 }
+function resolveQaAppCgroup() {
+  const matching = processes().filter((process) =>
+    process.args[0]?.startsWith("/app/obsidian") &&
+    process.args.some((arg) => arg === "--user-data-dir=" + qa + "/config/obsidian"));
+  const groups = [...new Set(matching.map((process) => process.group))];
+  assert.equal(groups.length, 1, `Expected one QA Obsidian cgroup: ${JSON.stringify({
+    pids: matching.map((process) => process.pid), groups })}`);
+  const group = groups[0];
+  const runnerGroup = fs.readFileSync(`/proc/${process.pid}/cgroup`, "utf8")
+    .trim().split(":").at(-1);
+  assert.notEqual(group, runnerGroup, "Obsidian cgroup must differ from QA runner cgroup");
+  const serviceName = group.split("/").at(-1);
+  const base = "/sys/fs/cgroup" + group;
+  assert(fs.existsSync(base + "/memory.current") && fs.existsSync(base + "/memory.peak"),
+    `Missing QA Obsidian memory counters: ${base}`);
+  return { group, serviceName, pids: matching.map((process) => process.pid),
+    currentPath: base + "/memory.current", peakPath: base + "/memory.peak" };
+}
 function telemetry() {
   const mem = fs.readFileSync("/proc/meminfo", "utf8"),
     psi = fs.readFileSync("/proc/pressure/memory", "utf8");
@@ -653,7 +671,7 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep };
+  const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (parityPhase4Objects) {
     const scenario = require("./host/parity-phase4-objects.cjs")(scenarioContext);
     if (parityPhase4OwnMinimal) await scenario.ownMinimal(restart);
