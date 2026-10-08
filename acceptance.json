@@ -96634,6 +96634,28 @@
       ],
       "gate": "open",
       "decision": "Nur technischer Aufräumplan für Objektliste und Auswahl-Zeigerzustand. Keine Produktänderung oder neue Fachabnahme; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
+    },
+    "phase6CleanupImplementation": {
+      "date": "2026-10-09",
+      "state": "candidate_pending_independent_cleanup_review",
+      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/cleanup-implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/implementation-audit.json",
+      "baseCommit": "94039ec08747d73f1fc8b85d35e0e7d47c5e9020",
+      "baseBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "items": [
+        "P6-CL-1",
+        "P6-CL-2",
+        "P6-CL-3",
+        "P6-CL-4"
+      ],
+      "measured": "1.792er All-Reihenfolge hashgleich; fünf Sortierungen 178.400→17.920 Pfadzerlegungen. Fünf Host-Edit-/Neuöffnungspaare bestanden, darunter acht Rahmen- und acht Cloth-Schritte, Phase-6-Raumgrenze und Phase-4-Paket-/Filterregression.",
+      "coreTestsPassed": 167,
+      "intermediateTimeout": "Erste Rahmen-Neuöffnung nach 240 Sekunden beendet; neuer 480-Sekunden-Lauf bestand alle acht Fälle.",
+      "gate": "open_pending_independent_review",
+      "next": "Eigener unabhängiger Phase-6-Aufräumreview vor Phase 7."
     }
   }
 }

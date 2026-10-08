@@ -971,15 +971,15 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_cleanup_plan_ready_implementation_next",
+    "status": "phase6_cleanup_implementation_candidate_review_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennte Phase-6-Aufräumumsetzung nach ROADMAP-PARITY-CLEANUP-6-PLAN.md; danach unabhängiger Aufräumreview vor Phase 7.",
-    "note": "Phase 6: alle 15 Pflichtpositionen fachlich bestanden. Der eigene Aufräumplan P6-CL-1 bis -4 liegt vor; Produktbuild unverändert, Aufräumtor offen und Phase 7 gesperrt. Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Eigener unabhängiger Phase-6-Aufräumreview von P6-CL-1 bis -4 auf Build b3211281…; Phase 7 bis zum Aufräumtor gesperrt.",
+    "note": "Phase-6-Fachphasentor mit 15 Fällen bestanden. Vier technische Aufräumänderungen als Umsetzungskandidat mit fünf Host-Edit-/Neuöffnungspaaren, 167 Tests und gleichem 1.792er ID-Hash belegt. Eigenes Aufräumreview und Tor offen; Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+    "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
@@ -2448,6 +2448,19 @@
       ],
       "gate": "open",
       "next": "Getrennte Umsetzung, dann unabhängiger Aufräumreview vor Phase 7."
+    },
+    "phase6CleanupImplementation": {
+      "date": "2026-10-09",
+      "state": "candidate_pending_independent_cleanup_review",
+      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/cleanup-implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/implementation-audit.json",
+      "baseCommit": "94039ec08747d73f1fc8b85d35e0e7d47c5e9020",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "hostPairsPassed": 5,
+      "coreTestsPassed": 167,
+      "gate": "open",
+      "next": "Eigener unabhängiger Aufräumreview vor Phase 7."
     }
   }
 }

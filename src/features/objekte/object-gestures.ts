@@ -19,8 +19,8 @@ export function scaleObjectStep(current: number, direction: -1 | 1): number {
 
 /** The GridMenu moves within its current item list and needs an active tile. */
 export function cycledObjectId(ids: readonly string[], selectedId: string,
-  direction: -1 | 1): string | undefined {
-  const index = ids.indexOf(selectedId);
+  direction: -1 | 1, selectedIndex = ids.indexOf(selectedId)): string | undefined {
+  const index = selectedIndex;
   if (index < 0) return undefined;
   return ids[(index + direction + ids.length) % ids.length];
 }

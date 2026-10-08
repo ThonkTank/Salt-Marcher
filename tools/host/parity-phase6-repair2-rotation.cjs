@@ -19,7 +19,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
       preview: visual && { rotation: visual.rotation, x: visual.position.x,
         y: visual.position.y },
       gesture: gesture && { moved: gesture.moved, start: gesture.start,
-        last: gesture.last, transformPrevious: gesture.transformPrevious,
+        last: gesture.last, processedPrevious: gesture.processedPrevious,
         action: gesture.transform?.action, groupAction: gesture.groupTransform?.action } };
   });
   const screen = (x, y) => page.evaluate(({ x, y }) => {

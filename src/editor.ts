@@ -118,8 +118,7 @@ interface Gesture {
   start: Point;
   startLocal: Point;
   last: Point;
-  marqueePrevious?: Point;
-  transformPrevious?: Point;
+  processedPrevious?: Point;
   entity?: Entity;
   transform?: {
     source: TransformSelection;
@@ -663,7 +662,7 @@ export class DungeonEditor {
       assetUrl: host.assetUrl,
       selectedAsset: () => this.settings.object.assetId,
       selectAsset: (id) => {
-        const asset = host.assets?.().find((entry) => entry.id === id);
+        const asset = this.objectLibrary.asset(id);
         const size = asset?.objectSizeFields;
         this.settings.object = { ...this.settings.object,
           assetId: id,
@@ -686,8 +685,8 @@ export class DungeonEditor {
     );
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();
-      this.refreshProperties();
       this.objectLibrary.refreshAssets(true);
+      this.refreshProperties();
     });
     this.objectTagUnsub = host.subscribeObjectTags?.(() => this.objectLibrary.refresh());
     this.keyDock = element("aside", "dn-key-dock", this.body);
@@ -1154,8 +1153,7 @@ export class DungeonEditor {
               const scale = scaleObjectStep(this.settings.objectScale, direction);
               if (scale !== this.settings.objectScale) {
                 const prior = this.settings.objectScale;
-                const size = this.host.assets?.().find((asset) =>
-                  asset.id === this.settings.object.assetId)?.objectSizeFields;
+                const size = this.objectLibrary.asset(this.settings.object.assetId)?.objectSizeFields;
                 this.settings.objectScale = scale;
                 this.settings.object = { ...this.settings.object,
                   width: (size?.width ?? this.settings.object.width / prior) * scale,
@@ -1298,8 +1296,7 @@ export class DungeonEditor {
   }
   private refreshProperties(): void {
     if (this.tool === "object" && this.settings.object.assetId) {
-      const size = this.host.assets?.().find((asset) =>
-        asset.id === this.settings.object.assetId)?.objectSizeFields;
+      const size = this.objectLibrary.asset(this.settings.object.assetId)?.objectSizeFields;
       if (size) {
         const scale = this.settings.objectScale || 1;
         const width = size.width * scale, height = size.height * scale;
@@ -2196,9 +2193,9 @@ export class DungeonEditor {
       g.transform.action.mode !== "move") {
       const { source, action, frame } = g.transform;
       if (action.mode === "rotate")
-        g.transformPrevious = this.renderer.toWorld(g.last);
+        g.processedPrevious = this.renderer.toWorld(g.last);
       const transformPoint = action.mode === "rotate"
-        ? g.transformPrevious! : point;
+        ? g.processedPrevious! : point;
       if (action.mode === "scale" && source.kind === "light" && frame) {
         const result = transformSelectionGroup([source], frame, action, g.start, point);
         this.renderer.previewTransform(source, result.entities[0]!, result.frame);
@@ -2208,7 +2205,7 @@ export class DungeonEditor {
             ? scaleBoxSelection(source, action.corner, g.start, point)
             : rotateBoxSelection(source, g.start, transformPoint));
     } else if (g.tool === "select" && !g.entity) {
-      g.marqueePrevious = this.renderer.toWorld(g.last);
+      g.processedPrevious = this.renderer.toWorld(g.last);
       this.renderer.previewMarquee(g.start, point);
     } else if (
       g.tool === "polygon" ||
@@ -2375,7 +2372,7 @@ export class DungeonEditor {
       }
       if (action.mode !== "move") {
         const transformPoint = action.mode === "rotate"
-          ? g.transformPrevious ?? g.start : point;
+          ? g.processedPrevious ?? g.start : point;
         const scaledLight = action.mode === "scale" && source.kind === "light" && frame
           ? transformSelectionGroup([source], frame, action, g.start, point)
           : undefined,
@@ -2396,7 +2393,7 @@ export class DungeonEditor {
       }
     }
     if (g.tool === "select" && !g.entity && g.moved) {
-      const previous = g.marqueePrevious ?? g.start,
+      const previous = g.processedPrevious ?? g.start,
         bounds = {
           x: Math.min(g.start.x, previous.x),
           y: Math.min(g.start.y, previous.y),

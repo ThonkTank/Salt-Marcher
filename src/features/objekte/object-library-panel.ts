@@ -28,10 +28,13 @@ export class ObjectLibraryPanel {
   private controlsKey = "";
   private gallery?: HTMLElement;
   private entries: readonly ObjectAssetEntry[] = [];
+  private assetById = new Map<string, AssetDefinition>();
   private assetsDirty = true;
   private tileMetadataDirty = false;
   private assetImagesChanged = false;
   private visibleIds: readonly string[] | null = null;
+  private visibleIndex = new Map<string, number>();
+  private tileById = new Map<string, HTMLButtonElement>();
   private markedSelectedId = "";
   private tags: ObjectTagDocument = { tags: {}, sets: {} };
 
@@ -53,6 +56,8 @@ export class ObjectLibraryPanel {
       this.controlsKey = "";
       this.gallery = undefined;
       this.visibleIds = null;
+      this.visibleIndex.clear();
+      this.tileById.clear();
       this.markedSelectedId = "";
       this.tileMetadataDirty = false;
       this.assetImagesChanged = false;
@@ -62,10 +67,7 @@ export class ObjectLibraryPanel {
 
   refresh(): void {
     if (!this.active) return;
-    if (this.assetsDirty) {
-      this.entries = sortedObjectAssetEntries(this.options.assets());
-      this.assetsDirty = false;
-    }
+    this.prepareAssets();
     this.tags = this.options.tags();
     if (!this.options.selectedAsset() && this.entries.length)
       this.options.selectAsset(this.entries[0]!.asset.id);
@@ -79,6 +81,18 @@ export class ObjectLibraryPanel {
     if (this.active) this.refresh();
   }
 
+  asset(id: string): AssetDefinition | undefined {
+    this.prepareAssets();
+    return this.assetById.get(id);
+  }
+
+  private prepareAssets(): void {
+    if (!this.assetsDirty) return;
+    this.entries = sortedObjectAssetEntries(this.options.assets());
+    this.assetById = new Map(this.entries.map(({ asset }) => [asset.id, asset]));
+    this.assetsDirty = false;
+  }
+
   syncSelection(): void {
     if (!this.active) return;
     const selected = this.options.selectedAsset() ?? "";
@@ -90,7 +104,8 @@ export class ObjectLibraryPanel {
 
   cycleSelection(direction: -1 | 1): string | undefined {
     if (!this.active) return undefined;
-    const next = cycledObjectId(this.visibleIds ?? [], this.state.selectedId, direction);
+    const next = cycledObjectId(this.visibleIds ?? [], this.state.selectedId,
+      direction, this.visibleIndex.get(this.state.selectedId) ?? -1);
     if (!next) return undefined;
     this.state = { ...this.state, selectedId: next };
     this.options.selectAsset(next);
@@ -285,6 +300,8 @@ export class ObjectLibraryPanel {
     gallery.replaceChildren();
     gallery.scrollTop = 0;
     this.visibleIds = ids;
+    this.visibleIndex = new Map(ids.map((id, index) => [id, index]));
+    this.tileById.clear();
     this.markedSelectedId = this.state.selectedId;
     this.tileMetadataDirty = false;
     this.assetImagesChanged = false;
@@ -314,6 +331,7 @@ export class ObjectLibraryPanel {
         this.refreshTileMarks();
       });
       gallery.append(button);
+      this.tileById.set(asset.id, button);
       this.images.observe(image, asset.id);
     }
   }
@@ -335,8 +353,8 @@ export class ObjectLibraryPanel {
   }
 
   private refreshTileMarks(): void {
-    for (const tile of this.gallery?.querySelectorAll<HTMLButtonElement>("button[data-asset-id]") ?? [])
-      tile.setAttribute("aria-pressed", String(tile.dataset.assetId === this.state.selectedId));
+    this.tileById.get(this.markedSelectedId)?.setAttribute("aria-pressed", "false");
+    this.tileById.get(this.state.selectedId)?.setAttribute("aria-pressed", "true");
     this.markedSelectedId = this.state.selectedId;
   }
 }

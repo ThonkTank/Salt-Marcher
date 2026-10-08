@@ -15,7 +15,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
       canvas: { x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height },
       gesture: gesture && { moved: gesture.moved, entity: gesture.entity?.id,
         start: gesture.start, last: gesture.last,
-        marqueePrevious: gesture.marqueePrevious } };
+        processedPrevious: gesture.processedPrevious } };
   });
   const screen = (point) => page.evaluate((point) => {
     const renderer = app.workspace.activeLeaf.view.editor.renderer;
@@ -80,6 +80,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     assert.equal(before.history, 0);
     const records = [];
     for (const entry of CASES) {
+      fs.appendFileSync(path.join(out, "case-progress.log"), `${phase} start ${entry.name}\n`);
       await clear();
       const result = await drag(entry.from, entry.held,
         entry.release || entry.held);
@@ -87,6 +88,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
       assert.deepEqual(result.after.document, before.document, entry.name);
       assert.equal(result.after.history, 0, entry.name);
       records.push({ name: entry.name, expected: entry.expected, ...result });
+      fs.appendFileSync(path.join(out, "case-progress.log"), `${phase} pass ${entry.name}\n`);
     }
     fs.writeFileSync(path.join(out, `marquee-${phase}.json`), JSON.stringify({
       phase, before, cases: records,

@@ -35,8 +35,7 @@ export function indexObjectAssets(assets: readonly AssetDefinition[]): readonly 
 }
 
 /** Dungeondraft's All list places child folders before files at each path level. */
-function nativeObjectPathOrder(left: string, right: string): number {
-  const a = left.split("/"), b = right.split("/");
+function nativeObjectPathOrder(a: readonly string[], b: readonly string[]): number {
   for (let index = 0; index < Math.min(a.length, b.length); index++) {
     if (a[index] === b[index]) continue;
     const aFolder = index < a.length - 1, bFolder = index < b.length - 1;
@@ -47,12 +46,12 @@ function nativeObjectPathOrder(left: string, right: string): number {
 }
 
 export function sortedObjectAssetEntries(assets: readonly AssetDefinition[]): readonly ObjectAssetEntry[] {
-  return [...indexObjectAssets(assets)].sort((a, b) => {
-    const ap = a.path ?? "", bp = b.path ?? "";
-    const an = ap.startsWith("res://textures/") ? 0 : 1;
-    const bn = bp.startsWith("res://textures/") ? 0 : 1;
-    return an - bn || nativeObjectPathOrder(ap, bp);
-  });
+  return indexObjectAssets(assets).map((entry) => {
+    const path = entry.path ?? "";
+    return { entry, native: path.startsWith("res://textures/") ? 0 : 1,
+      parts: path.split("/") };
+  }).sort((a, b) => a.native - b.native || nativeObjectPathOrder(a.parts, b.parts))
+    .map(({ entry }) => entry);
 }
 
 export interface ObjectLibraryState {
