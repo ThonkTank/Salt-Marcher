@@ -938,16 +938,16 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_repair2_implementation_in_progress",
+    "status": "phase6_repair2_partial_review_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "DD-026.25 braucht eine wirksame Host-Fokusroute. Danach eigener unabhängiger Review aller 15 Phase-6-Positionen.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun Positionen reviewt, DD-026.24/.27 und DD-030.19/.20/.24 direkte Umsetzungskandidaten. DD-026.25 bleibt für die externe Fokusfolge offen; Fachphasentor und unabhängiger Review offen. Raumgrenz-Invariante auf vorherigem Endbuild bestätigt; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "DD-026.25: wirksamen Host-Renderer-Fokusverlust planen und messen; danach Nachbesserung und eigener Review vor dem Phase-6-Fachphasentor.",
+    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun frühere und fünf neue Positionen getrennt reviewt; DD-026.25 bleibt für die externe Fokusfolge offen. Fachphasentor und Aufräumen offen. Raumgrenz-Invariante auf aktuellem Build bestanden; Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
-    "candidateCoreTests": 157,
+    "candidateCoreTests": 167,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
     "phase2Repair": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
@@ -2279,7 +2279,7 @@
     },
     "phase6Repair2Implementation": {
       "date": "2026-10-09",
-      "state": "in_progress_five_candidates_one_open",
+      "state": "in_progress_five_reviewed_one_open",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
       "candidate": [
@@ -2294,7 +2294,7 @@
       ],
       "productChange": "src/features/objekte/object-library.ts; src/editor.ts",
       "gate": "open",
-      "next": "DD-026.25 braucht eine wirksame Host-Fokusroute. Danach eigener unabhängiger Review aller 15 Phase-6-Positionen.",
+      "next": "DD-026.25: wirksamen Host-Renderer-Fokusverlust planen und messen; danach Nachbesserung und eigener Review vor dem Phase-6-Fachphasentor.",
       "partialEvidence": [
         "DD-026.25"
       ],
@@ -2343,6 +2343,36 @@
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791496787742-parity-phase6-repair-edit/result.json",
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791496977981-parity-phase6-repair-reopen/result.json"
       ]
+    },
+    "phase6Repair2Review": {
+      "date": "2026-10-09",
+      "state": "partial_review_complete_gate_open",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "verifiedNew": [
+        "DD-026.24",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
+      ],
+      "verifiedEarlier": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.26",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "open": [
+        "DD-026.25"
+      ],
+      "gate": "open",
+      "next": "DD-026.25: wirksamen Host-Renderer-Fokusverlust planen und messen; danach Nachbesserung und eigener Review vor dem Phase-6-Fachphasentor."
     }
   }
 }

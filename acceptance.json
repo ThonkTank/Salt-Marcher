@@ -60914,6 +60914,20 @@
           "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
           "productChange": "src/features/objekte/object-library.ts",
           "gate": "open"
+        },
+        "repair2Review": {
+          "date": "2026-10-09",
+          "state": "verified_scope_phase_gate_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "verifiedScope": "1.792 geordnete All-Pfade samt SHA-256 und acht Shift-Rad-Kontrollen an Anfang, Mitte und Ende stimmen; frische Neuöffnung erhält die Texturen.",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791497587557-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791497600960-reopen/result.json"
+          ],
+          "gap": "DD-026.25 verhindert das Phase-6-Fachphasentor; physische Maus-/Touchpad-Eingabe bleibt Phase 7 vorbehalten."
         }
       },
       {
@@ -61270,6 +61284,20 @@
           "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
           "productChange": "none",
           "gate": "open"
+        },
+        "repair2Review": {
+          "date": "2026-10-09",
+          "state": "verified_scope_phase_gate_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "verifiedScope": "Atlas Globe 01 speichert 95°, 85° und nach Z-Release 110° wie das Original; Original-Undo/Redo und beidseitige Neuöffnung belegt.",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791498406313-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791498587022-parity-phase6-repair-reopen/result.json"
+          ],
+          "gap": "DD-026.25 verhindert das Phase-6-Fachphasentor; physische Maus-/Touchpad-Eingabe bleibt Phase 7 vorbehalten."
         }
       },
       {
@@ -68421,6 +68449,20 @@
           "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
           "productChange": "none",
           "gate": "open"
+        },
+        "repair2Review": {
+          "date": "2026-10-09",
+          "state": "verified_scope_phase_gate_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "verifiedScope": "Beide Überlappungsreihenfolgen wählen nach getrennter Kontrolle das zuletzt gezeichnete Cloth; Originalkarten unverändert.",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791497691641-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791497704000-reopen/result.json"
+          ],
+          "gap": "DD-026.25 verhindert das Phase-6-Fachphasentor; physische Maus-/Touchpad-Eingabe bleibt Phase 7 vorbehalten."
         }
       },
       {
@@ -68513,6 +68555,20 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791495668159-parity-phase6-gestures-reopen/result.json"
           ],
           "gap": "Unabhängiger Fachreview und physische Eingabe stehen aus. Die ältere Auswahl-Sammelprobe erreichte nach den betroffenen Auswahlfällen einen separaten Vorlagen-Platzierungsfehler."
+        },
+        "repair2Review": {
+          "date": "2026-10-09",
+          "state": "verified_scope_phase_gate_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "verifiedScope": "Acht Rahmenfälle stimmen in beiden Zugrichtungen, bei Möbelbild und Licht sowie am verarbeiteten Rand überein; Dokument und History unverändert.",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791497806837-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791498005445-reopen/result.json"
+          ],
+          "gap": "DD-026.25 verhindert das Phase-6-Fachphasentor; physische Maus-/Touchpad-Eingabe bleibt Phase 7 vorbehalten."
         }
       },
       {
@@ -68849,6 +68905,20 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791496977981-parity-phase6-repair-reopen/result.json"
           ],
           "gap": "Unabhängiger Fachreview, physische Eingabe und nicht gemessene andere Elementarten bleiben offen. Die native gespeicherte Position weicht um ungefähr zwei Originalpixel vom Host ab."
+        },
+        "repair2Review": {
+          "date": "2026-10-09",
+          "state": "verified_scope_phase_gate_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "verifiedScope": "Acht Vorschauwinkel weichen höchstens 0,004103 rad ab; Release, Undo/Redo, Speichern und Neuöffnung bestehen. Mittelpunkt etwa zwei Originalpixel verschieden.",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791498303238-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/host/evidence/1791498318911-reopen/result.json"
+          ],
+          "gap": "DD-026.25 verhindert das Phase-6-Fachphasentor; physische Maus-/Touchpad-Eingabe bleibt Phase 7 vorbehalten."
         }
       },
       {
@@ -93499,7 +93569,7 @@
     },
     "phase6Repair2Implementation": {
       "date": "2026-10-09",
-      "state": "in_progress_five_candidates_one_open",
+      "state": "in_progress_five_reviewed_one_open",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
@@ -93516,16 +93586,10 @@
       "stillOpen": [
         "DD-026.25"
       ],
-      "reviewPending": [
-        "DD-026.24",
-        "DD-026.27",
-        "DD-030.19",
-        "DD-030.20",
-        "DD-030.24"
-      ],
+      "reviewPending": [],
       "productChange": "src/features/objekte/object-library.ts; src/editor.ts",
       "gate": "open",
-      "next": "DD-026.25 braucht eine wirksame Host-Fokusroute. Danach eigener unabhängiger Review aller 15 Phase-6-Positionen.",
+      "next": "DD-026.25 braucht einen echten Renderer-Fokusverlust im Hostvergleich. Danach erneuter unabhängiger Review des verbleibenden Falls und Fachphasentor.",
       "partialEvidence": [
         "DD-026.25"
       ],
@@ -93570,7 +93634,47 @@
       "phase6RotationBuildRegression": [
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791496787742-parity-phase6-repair-edit/result.json",
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791496977981-parity-phase6-repair-reopen/result.json"
+      ],
+      "reviewedInSeparateRun": [
+        "DD-026.24",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
       ]
+    },
+    "phase6Repair2IndependentReview": {
+      "date": "2026-10-09",
+      "state": "partial_review_complete_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "reviewOfCommit": "423bbe1ea04d3b402756ccdde5d552045c104bed",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/review-audit.json",
+      "verifiedNew": [
+        "DD-026.24",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
+      ],
+      "verifiedEarlier": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.26",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "open": [
+        "DD-026.25"
+      ],
+      "gate": "open",
+      "next": "Eigener Nachbesserungsplan für das Host-Renderer-Fokuspaar, danach Umsetzung und erneuter Review; Aufräumen bleibt gesperrt."
     }
   }
 }
