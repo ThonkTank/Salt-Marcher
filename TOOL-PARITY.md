@@ -559,3 +559,7 @@ Der [eigene Review](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-re
 ## Phase 6: zweiter Nachbesserungsplan
 
 Der [eigene Plan](ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md) ordnet den sechs offenen Positionen je eine konkrete Original-/Hostfolge und eine nachprüfbare Eingabespur zu. Live-Reihenfolge der All-Bibliothek, A-Fokus-/Kombinationsgesten, gleiche Z-Textur, überlagerte Auswahl-IDs, Rahmen-Zugrichtung und Cloth-Außendrehung bilden den begrenzten Umfang. Ein rein lesender Original-Helfer darf Zustände messen, aber keine Geste ersetzen. **Nur Planung; Fachphasentor offen.** Umsetzung und unabhängiger Review folgen in eigenen Läufen.
+
+## Phase 6: zweiter Nachbesserungslauf, Zwischenstand
+
+Der [Umsetzungszwischenstand](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md) und [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json) paaren `DD-026.27` mit derselben Atlas-Globe-01-Textur: native 95°/85° aus 90°, danach 110° ohne Z, jeweils wie im Host. Original-Undo/Redo, Speicherung und bytegleiche frische Öffnung sind belegt. **Reviewkandidat ohne Fachfreigabe; fünf weitere Positionen und unabhängiger Review offen.** Produktcode, installierter Build und Nutzervault blieben unverändert.

@@ -36648,6 +36648,18 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
           "gap": "90→95° und 90→85° belegt; native +5°-Karte und Host nutzen unterschiedliche Texturen."
+        },
+        "repair2Implementation": {
+          "state": "candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "observation": "Atlas Globe 01 aus 90°: Z+Rad auf/ab speichert 95°/85°; nach Loslassen normales Rad 110°. Original Undo/Redo, Speichern und bytegleiche frische Öffnung; Host auf demselben Asset und Build mit gleichen Winkeln und frischer Neuöffnung.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md"
+          ],
+          "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "productChange": "none",
+          "gate": "open"
         }
       },
       {
@@ -68816,6 +68828,32 @@
       "projectInvariant": "V4-Raumgrenzzug bleibt Regression.",
       "gate": "open",
       "decision": "Nur Planung für sechs ungepaarte Eingabefolgen; keine Produktänderung oder neue Fachabnahme. Eigene Umsetzung und unabhängiger Review folgen."
+    },
+    "phase6Repair2Implementation": {
+      "date": "2026-10-08",
+      "state": "in_progress_one_case_candidate",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
+      "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "candidate": [
+        "DD-026.27"
+      ],
+      "stillOpen": [
+        "DD-026.24",
+        "DD-026.25",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
+      ],
+      "reviewPending": [
+        "DD-026.27"
+      ],
+      "productChange": "none",
+      "gate": "open",
+      "next": "A-Fokus-/Kombinationsgesten, All-Kachelliste sowie drei Auswahl-/Cloth-Eingabepaare direkt messen; anschließend Hostpaare, Endbuild und getrennten Review."
     }
   }
 }
