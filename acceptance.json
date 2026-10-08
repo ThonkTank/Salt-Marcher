@@ -59425,6 +59425,21 @@
       "coreTestsPassed": 155,
       "gate": "open",
       "decision": "Vier begrenzte Auswahl-Kernfolgen belegt; elf Pflichtpositionen brauchen passende Original-/Endbuildpaare. Eigener Nachbesserungsplan vor Umsetzung und erneutem unabhängigem Review; Aufräumphase und Phase 7 bleiben gesperrt."
+    },
+    "phase6RepairPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md",
+      "baseCommit": "dbe03773d9091a5011ee7de123eb74e65cc55c2e",
+      "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
+      "regression": ["DD-030.21", "DD-030.23", "DD-030.29", "DD-030.34"],
+      "projectInvariant": "Raumgrenzzug mit roomId, Key-Bezug, Undo/Redo, Save und frischer Neuöffnung im Host.",
+      "gate": "open",
+      "decision": "Nur Nachbesserungsplanung. Gleiche Original-/Hoststartkarten und Eingabespuren klären elf offene Fälle; Produktänderung erst bei direkt gemessener Funktionsdifferenz. Getrennte Umsetzung und unabhängiger Review folgen."
     }
   }
 }
