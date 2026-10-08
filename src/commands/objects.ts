@@ -45,6 +45,7 @@ export function createObject(
     color: 0x795438,
     label: "",
   },
+  sorting: "over" | "under" = "over",
 ): MapObject {
   const room = roomAt(session, floorId, point);
   const object: MapObject = {
@@ -58,7 +59,8 @@ export function createObject(
   };
   session.execute({
     label: "Möbel platzieren",
-    entities: [{ id: object.id, before: null, after: object }],
+    entities: [{ id: object.id, before: null, after: object,
+      ...(sorting === "under" ? { afterIndex: 0 } : {}) }],
   });
   return object;
 }

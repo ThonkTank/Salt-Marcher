@@ -57,6 +57,8 @@ export interface AssetDefinition {
   readonly color?: string;
   /** Width of a built-in 256px-per-field tileset atlas, in fields. */
   readonly nativeTileSizeFields?: number;
+  /** Natural object texture size at Dungeondraft's 256 pixels per field. */
+  readonly objectSizeFields?: { readonly width: number; readonly height: number };
   readonly pathTexturePixels?: { readonly width: number; readonly height: number };
 }
 
@@ -245,12 +247,27 @@ export async function discoverPackAssets(
   for (const entry of relativeEntries)
     for (const [kind, pattern] of simple)
       if (pattern.test(entry.relative)) {
+        let objectSizeFields: AssetDefinition["objectSizeFields"];
+        if (kind === "object") {
+          const header = new DataView(await pack.asset(entry.relative)
+            .slice(0, 24).arrayBuffer());
+          if (header.byteLength >= 24 &&
+              header.getUint32(0, false) === 0x89504e47 &&
+              header.getUint32(4, false) === 0x0d0a1a0a &&
+              header.getUint32(12, false) === 0x49484452) {
+            const width = header.getUint32(16, false);
+            const height = header.getUint32(20, false);
+            if (width && height)
+              objectSizeFields = { width: width / 256, height: height / 256 };
+          }
+        }
         result.push({
           id: assetId(pack.metadata.id, kind, entry.relative),
           packId: pack.metadata.id,
           kind,
           name: displayName(entry.relative),
           files: { image: entry.relative },
+          ...(objectSizeFields ? { objectSizeFields } : {}),
           ...(kind === "pattern"
             ? { tintable: entry.relative.includes("/colorable/") }
             : {}),

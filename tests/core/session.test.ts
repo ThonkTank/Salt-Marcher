@@ -7,6 +7,29 @@ import { MapRepository, FileConflict } from "../../src/persistence";
 import { archiveEntities, createFeatureDefinition, createFeatureOccurrence, updateFeatureDefinition, updateFeatureOccurrence } from "../../src/content";
 import { newDocument, MemoryStore, mapPath, fixture } from "./fixtures";
 
+test("Object Tool Under prepends on one layer and undo restores exact order", async () => {
+  const store = new MemoryStore();
+  const path = "QA/Objekt-Sortierung.dungeon";
+  const repository = new MapRepository(store, path);
+  const session = new Session(newDocument("Sortierung", 8, 8));
+  const floor = session.floors.values().next().value!.id;
+  const settings = { rotation: 0, width: 87 / 256, height: 88 / 256,
+    color: 0x809dab, alpha: 255, label: "", layer: 100,
+    shadow: true, blocksLight: true };
+  const first = createObject(session, floor, { x: 3, y: 3 }, settings, "over");
+  const second = createObject(session, floor, { x: 3, y: 3 }, settings, "under");
+  assert.deepEqual([...session.entities.keys()], [second.id, first.id]);
+  assert.equal((session.entities.get(first.id) as MapObject).width, 87 / 256);
+  assert.equal((session.entities.get(first.id) as MapObject).blocksLight, true);
+  session.undo();
+  assert.deepEqual([...session.entities.keys()], [first.id]);
+  session.redo();
+  assert.deepEqual([...session.entities.keys()], [second.id, first.id]);
+  await repository.save(session);
+  const reopened = await new MapRepository(store, path).open();
+  assert.deepEqual([...reopened.entities.keys()], [second.id, first.id]);
+});
+
 
 test("V2 map and pending draft migrate to V3 without changing linked content or Markdown", async () => {
   const store = new MemoryStore(),

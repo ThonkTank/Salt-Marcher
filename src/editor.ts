@@ -488,7 +488,8 @@ export class DungeonEditor {
       (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
       (id) => this.renderer.clearObjectColorPreview(id),
       host.colorableObjectSource,
-      () => this.sampleMapColor(),
+      (onPreview) => this.sampleMapColor(onPreview),
+      () => this.refreshObjectPreview(),
     );
 
     this.selectionPanel = element(
@@ -657,8 +658,12 @@ export class DungeonEditor {
       assetUrl: host.assetUrl,
       selectedAsset: () => this.settings.object.assetId,
       selectAsset: (id) => {
+        const asset = host.assets?.().find((entry) => entry.id === id);
+        const size = asset?.objectSizeFields;
         this.settings.object = { ...this.settings.object,
-          assetId: id, color: 0xffffff };
+          assetId: id,
+          ...(size ? { width: size.width * this.settings.objectScale,
+            height: size.height * this.settings.objectScale } : {}) };
         host.persistToolDefaults?.();
         this.refreshProperties();
         this.refreshObjectPreview();
@@ -761,24 +766,39 @@ export class DungeonEditor {
     this.setTool("select");
     this.refresh();
   }
-  private sampleMapColor(): Promise<{ color: number; alphaByte: number } | null> {
+  private sampleMapColor(onPreview?: (sample: { color: number; alphaByte: number }) => void): Promise<{ color: number; alphaByte: number } | null> {
     const canvas = this.renderer.canvas,
       doc = canvas.ownerDocument;
+    if (onPreview && this.tool === "object") this.renderer.clearObjectPreview();
     return new Promise((resolve) => {
       const finish = (value: { color: number; alphaByte: number } | null) => {
         canvas.removeEventListener("pointerdown", sample, true);
+        canvas.removeEventListener("pointermove", hover, true);
         doc.removeEventListener("keydown", key, true);
         doc.removeEventListener("pointerdown", outside, true);
+        if (onPreview && this.tool === "object") this.refreshObjectPreview();
         resolve(value);
+      };
+      const read = (event: PointerEvent) => {
+        const point = this.renderer.local(event);
+        return this.renderer.sampleRenderedPixel({ x: point.x, y: point.y - 1 });
+      };
+      const hover = (event: PointerEvent) => {
+        if (!onPreview) return;
+        try {
+          if (this.tool === "object") this.renderer.clearObjectPreview();
+          const value = read(event);
+          if (value) onPreview(value);
+        }
+        catch (error) { this.host.notice(String(error)); }
       };
       const sample = (event: PointerEvent) => {
         if (event.button !== 0) return;
         event.preventDefault();
         event.stopImmediatePropagation();
         try {
-          const point = this.renderer.local(event);
           // Dungeondraft's picker reads the screen row above the click.
-          finish(this.renderer.sampleRenderedPixel({ x: point.x, y: point.y - 1 }));
+          finish(read(event));
         } catch (error) {
           this.host.notice(String(error));
           finish(null);
@@ -793,6 +813,7 @@ export class DungeonEditor {
           finish(null);
       };
       canvas.addEventListener("pointerdown", sample, true);
+      if (onPreview) canvas.addEventListener("pointermove", hover, true);
       doc.addEventListener("keydown", key, true);
       doc.addEventListener("pointerdown", outside, true);
     });
@@ -1223,6 +1244,18 @@ export class DungeonEditor {
       this.renderer.previewObject(this.objectPreviewPoint, this.settings.object);
   }
   private refreshProperties(): void {
+    if (this.tool === "object" && this.settings.object.assetId) {
+      const size = this.host.assets?.().find((asset) =>
+        asset.id === this.settings.object.assetId)?.objectSizeFields;
+      if (size) {
+        const scale = this.settings.objectScale || 1;
+        const width = size.width * scale, height = size.height * scale;
+        if (this.settings.object.width !== width || this.settings.object.height !== height) {
+          this.settings.object = { ...this.settings.object, width, height };
+          this.host.persistToolDefaults?.();
+        }
+      }
+    }
     this.properties?.render(this.tool, this.selected, this.floor.value);
     const libraryActive = this.tool === "object" || this.tool === "scatter";
     this.root.classList.toggle("dn-object-library-open", libraryActive);
@@ -2544,6 +2577,7 @@ export class DungeonEditor {
         this.renderer.floorId,
         this.snap(point),
         this.settings.object,
+        this.settings.objectSorting,
       );
       void this.select(o.id);
     } else if (g.tool === "scatter") {
@@ -3457,6 +3491,7 @@ export class DungeonEditor {
         width: Math.max(0.1, this.settings.object.width * factor),
         height: Math.max(0.1, this.settings.object.height * factor),
       };
+      this.settings.objectScale *= factor;
       this.host.persistToolDefaults?.();
       this.refreshProperties();
       this.refreshObjectPreview();
@@ -3558,6 +3593,10 @@ export class DungeonEditor {
         const leaveBuilding = isFloorTool(this.tool);
         this.cancel();
         if (leaveBuilding) this.setTool("select");
+        return;
+      }
+      if (this.tool === "object") {
+        this.refreshObjectPreview();
         return;
       }
       if (this.root.classList.contains("dn-maximized")) {

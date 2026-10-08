@@ -250,12 +250,14 @@ export async function readNativePathCatalog(
     const sourcePath = importPath.slice(0, -".import".length);
     const id = ["pack", NATIVE_PATH_PACK_ID, "object", sourcePath]
       .map(encodeURIComponent).join(":");
-    await imageDetails(sourcePath, id);
+    const dimensions = await imageDetails(sourcePath, id);
     const name = match[1]!.split("/").at(-1)!
       .replace(/_/g, " ")
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
     objects.push({ id, packId: NATIVE_PATH_PACK_ID,
-      kind: "object", name, files: { image: sourcePath } });
+      kind: "object", name, files: { image: sourcePath },
+      objectSizeFields: { width: dimensions.width / 256,
+        height: dimensions.height / 256 } });
   }
   if (!objects.length) invalid("Keine nativen Objekte gefunden.");
   const tagsEntry = entries.get("res://data/default.dungeondraft_tags");

@@ -1001,7 +1001,8 @@ export class MapRenderer {
             sprite.anchor.set(0.5);
             sprite.width = e.width;
             sprite.height = e.height;
-            sprite.tint = variant ? 0xffffff : e.color;
+            // Native non-colorable textures keep their authored colors.
+            sprite.tint = 0xffffff;
             sprite.alpha = variant ? 1 : objectAlphaOpacity(e.alpha ?? 255);
             g.visible = false;
             container.addChildAt(sprite, 0);
@@ -2312,7 +2313,7 @@ export class MapRenderer {
       this.objectPreviewSprite.width = settings.width;
       this.objectPreviewSprite.height = settings.height;
       const colorable = !!settings.assetId && !!this.colorableObject?.(settings.assetId);
-      this.objectPreviewSprite.tint = colorable ? 0xffffff : settings.color;
+      this.objectPreviewSprite.tint = 0xffffff;
       this.objectPreviewSprite.alpha = colorable ? 1 : objectAlphaOpacity(settings.alpha ?? 255);
     }
     const signature = settings.assetId

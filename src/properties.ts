@@ -38,6 +38,7 @@ import {
 } from "./features/material/native-path-catalog";
 import {
   mountObjectColorPicker,
+  NATIVE_OBJECT_PALETTE,
   type MountedObjectColorPicker,
   type ObjectColorPickerHooks,
 } from "./features/objekte/rgba-picker";
@@ -125,6 +126,8 @@ export interface ToolSettings {
     | "blocksLight"
     | "flip"
   >;
+  objectScale: number;
+  objectSorting: "over" | "under";
   objectPreset: "furniture" | "chest" | "pillar" | "marker";
   scatter: {
     spacing: number;
@@ -217,16 +220,18 @@ export const toolSettings = (): ToolSettings => ({
   roofShape: "rectangle",
   object: {
     rotation: 0,
-    width: 1.6,
-    height: 0.9,
-    color: 0x795438,
+    width: 1,
+    height: 1,
+    color: 0x6b3834,
     alpha: 255,
     label: "",
-    layer: 500,
+    layer: 100,
     shadow: true,
     blocksLight: false,
     flip: false,
   },
+  objectScale: 1,
+  objectSorting: "over",
   objectPreset: "furniture",
   scatter: {
     spacing: 2,
@@ -273,7 +278,8 @@ export class Properties {
     private previewObjectColor: (id: string, color: number, alpha: number) => void = () => {},
     private clearObjectColorPreview: (id: string) => void = () => {},
     private colorableObjectSource: (id: string) => ColorableObjectSource | undefined = () => undefined,
-    private sampleMapColor: () => Promise<BuildingColorSample | null> = async () => null,
+    private sampleMapColor: (onPreview?: (sample: BuildingColorSample) => void) => Promise<BuildingColorSample | null> = async () => null,
+    private previewToolObject: () => void = () => {},
   ) {}
   private field(
     label: string,
@@ -1656,24 +1662,141 @@ export class Properties {
       );
     }
   }
+  private renderNativeObjectControls(): void {
+    const object = this.defaults.object;
+    const update = (patch: Partial<MapObject>) => {
+      this.defaults.object = { ...this.defaults.object, ...patch };
+    };
+    this.choice("Layer", String(object.layer ?? 100), [
+      ["-400", "-400: Below Ground"], ["-100", "-100: Below Water"],
+      ["100", "100: User Layer 1"], ["200", "200: User Layer 2"],
+      ["300", "300: User Layer 3"], ["400", "400: User Layer 4"],
+      ["700", "700: Above Walls"], ["900", "900: Above Roofs"],
+    ], (value) => update({ layer: Number(value) }));
+    const sorting = document.createElement("div");
+    sorting.className = "dn-object-sorting";
+    sorting.setAttribute("role", "group");
+    sorting.setAttribute("aria-label", "Sorting");
+    for (const [value, label] of [["over", "↑ Over"], ["under", "↓ Under"]] as const) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.setAttribute("aria-pressed", String(this.defaults.objectSorting === value));
+      button.addEventListener("click", () => {
+        this.defaults.objectSorting = value;
+        for (const child of sorting.querySelectorAll("button"))
+          child.setAttribute("aria-pressed", String(child === button));
+        this.defaultsChanged();
+      });
+      sorting.append(button);
+    }
+    this.root.append(sorting);
+    const rotation = this.field("Rotation", "number",
+      String(Math.round(object.rotation * 180 / Math.PI)),
+      (input) => update({ rotation: input.valueAsNumber * Math.PI / 180 }),
+      "-360", "360", "1");
+    const rotationSlider = this.field("Rotation-Regler", "range",
+      rotation.value, (input) => {
+        rotation.value = input.value;
+        update({ rotation: input.valueAsNumber * Math.PI / 180 });
+      }, "-180", "180", "1");
+    rotation.addEventListener("change", () => { rotationSlider.value = rotation.value; });
+    const setScale = (value: number) => {
+      if (!Number.isFinite(value) || value <= 0) return;
+      const prior = this.defaults.objectScale || 1;
+      const size = this.assets().find((asset) => asset.id === object.assetId)
+        ?.objectSizeFields;
+      this.defaults.objectScale = value;
+      update({ width: (size?.width ?? this.defaults.object.width / prior) * value,
+        height: (size?.height ?? this.defaults.object.height / prior) * value });
+    };
+    const scale = this.field("Scale", "number", String(this.defaults.objectScale),
+      (input) => setScale(input.valueAsNumber), "0.01", "100", "0.01");
+    const scaleSlider = this.field("Scale-Regler", "range", scale.value,
+      (input) => { scale.value = input.value; setScale(input.valueAsNumber); },
+      "0.01", "5", "0.01");
+    scale.addEventListener("change", () => { scaleSlider.value = scale.value; });
+    this.field("Shadow", "checkbox", String(object.shadow ?? true),
+      (input) => update({ shadow: input.checked }));
+    this.field("Block Light", "checkbox", String(object.blocksLight ?? false),
+      (input) => update({ blocksLight: input.checked }));
+    const colorLabel = document.createElement("div");
+    colorLabel.textContent = "Custom Color";
+    this.root.append(colorLabel);
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.setAttribute("aria-label", "Objektfarbe RGBA öffnen");
+    swatch.style.cssText = "width:100%;height:32px;border:2px solid var(--background-modifier-border);";
+    const syncSwatch = () => {
+      const current = this.defaults.object;
+      swatch.style.backgroundColor = `rgba(${(current.color >> 16) & 255},${(current.color >> 8) & 255},${current.color & 255},${(current.alpha ?? 255) / 255})`;
+    };
+    const openPicker = () => {
+      if (this.objectPicker) return;
+      this.objectPicker = mountObjectColorPicker(this.root,
+        this.defaults.object.color, this.defaults.object.alpha ?? 255, {
+          onPreview: (color, alpha) => {
+            update({ color, alpha });
+            syncSwatch();
+            this.previewObjectLibraryColor(color, alpha);
+            this.previewToolObject();
+          },
+          onCommit: (color, alpha) => {
+            update({ color, alpha });
+            this.defaultsChanged();
+          },
+          sampleMapColor: this.sampleMapColor,
+          onClose: () => { this.objectPicker = undefined; },
+        });
+    };
+    swatch.addEventListener("click", openPicker);
+    syncSwatch();
+    this.root.append(swatch);
+    const palette = document.createElement("div");
+    palette.className = "dn-object-palette";
+    palette.style.cssText = "display:grid;grid-template-columns:repeat(6,1fr);gap:4px;";
+    for (const color of NATIVE_OBJECT_PALETTE) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.title = "#" + color.toString(16).padStart(6, "0");
+      button.setAttribute("aria-label", "Objektfarbe " + button.title);
+      button.style.cssText = `height:24px;border-radius:50%;background:#${color.toString(16).padStart(6, "0")};`;
+      button.addEventListener("click", () => {
+        update({ color, alpha: 255 });
+        syncSwatch();
+        this.previewObjectLibraryColor(color, 255);
+        this.defaultsChanged();
+      });
+      palette.append(button);
+    }
+    this.root.append(palette);
+  }
+
   private renderObjectControls(tool: Tool, e: Entity | undefined): void {
-    if (e?.kind === "object" || tool === "object" || tool === "scatter") {
-      let object = e?.kind === "object" ? e : this.defaults.object;
+    if (tool === "object") {
+      this.renderNativeObjectControls();
+      return;
+    }
+    if (e?.kind === "object" || tool === "scatter") {
+      const selectedObject = tool === "select" && e?.kind === "object" ? e : undefined;
+      let object = selectedObject ?? this.defaults.object;
       const update = (patch: Partial<MapObject>) => {
-        this.defaults.object = { ...this.defaults.object, ...patch };
-        if (e?.kind === "object") this.change(e, patch);
-        else if (patch.assetId === undefined &&
-                 (patch.color !== undefined || patch.alpha !== undefined))
-          this.previewObjectLibraryColor(
-            this.defaults.object.color,
-            this.defaults.object.alpha ?? 255,
-          );
+        if (selectedObject) this.change(selectedObject, patch);
+        else {
+          this.defaults.object = { ...this.defaults.object, ...patch };
+          if (patch.assetId === undefined &&
+              (patch.color !== undefined || patch.alpha !== undefined))
+            this.previewObjectLibraryColor(
+              this.defaults.object.color,
+              this.defaults.object.alpha ?? 255,
+            );
+        }
       };
       const packageObjects = this.assets().filter(
         (asset) => asset.kind === "object",
       );
       if (
-        e?.kind !== "object" &&
+        !selectedObject &&
         object.assetId &&
         !packageObjects.some((asset) => asset.id === object.assetId)
       )
@@ -1681,7 +1804,7 @@ export class Properties {
           ...this.defaults.object,
           assetId: undefined,
         };
-      const libraryTile = e?.kind === "object" && packageObjects.length
+      const libraryTile = selectedObject && packageObjects.length
         ? this.choice(
             "Paketobjekt",
             object.assetId ?? "",
@@ -1702,8 +1825,8 @@ export class Properties {
             },
             true,
             (image, assetId) => {
-              const current = e?.kind === "object"
-                ? this.session.entities.get(e.id)
+              const current = selectedObject
+                ? this.session.entities.get(selectedObject.id)
                 : undefined;
               this.bindObjectLibraryPreview(
                 image,
@@ -1715,7 +1838,7 @@ export class Properties {
             },
           )
         : undefined;
-      if (e?.kind !== "object")
+      if (!selectedObject)
         this.choice(
           "Möbelset",
           this.defaults.objectPreset,
@@ -1787,7 +1910,7 @@ export class Properties {
       pickerButton.textContent = "RGBA-Farbe wählen";
       pickerButton.setAttribute("aria-label", "Objektfarbe RGBA öffnen");
       pickerButton.addEventListener("click", () => {
-        const selectedId = e?.kind === "object" ? e.id : undefined;
+        const selectedId = selectedObject?.id;
         const selectedEntity = selectedId
           ? this.session.entities.get(selectedId) : undefined;
         const currentColor = selectedEntity?.kind === "object"
@@ -1804,9 +1927,11 @@ export class Properties {
               else this.previewObjectLibraryColor(color, alpha);
             },
             onCommit: (color, alpha) => {
-              this.defaults.object = { ...this.defaults.object, color, alpha };
-              this.defaultsChanged();
-              if (selectedId) this.change(e!, { color, alpha });
+              if (selectedObject) this.change(selectedObject, { color, alpha });
+              else {
+                this.defaults.object = { ...this.defaults.object, color, alpha };
+                this.defaultsChanged();
+              }
             },
             onClose: () => {
               if (selectedId) this.clearObjectColorPreview(selectedId);
