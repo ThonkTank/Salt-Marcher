@@ -59225,6 +59225,24 @@
       "open": ["P5-CL-R1", "P5-CL-R2"],
       "gate": "open",
       "decision": "QA-Nachweise für Texturpool, Gradienten, tatsächliche Renderaufrufe und gepaarte Nahlichtbilder liegen vor; Produktbuild blieb unverändert. Erst der getrennte unabhängige Aufräum-Review entscheidet P5-CL-R1/R2 und das Tor vor Phase 6."
+    },
+    "phase5CleanupRepairIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_passed",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "reviewOfCommit": "f53c78164fcfd6e74c6410161272914aa8597a25",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/phase5-cleanup-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/review-audit.json",
+      "confirmed": ["P5-CL-R1", "P5-CL-R2"],
+      "freshMapPairs": 6,
+      "pairedActions": 42,
+      "pairedImageStates": 60,
+      "hostEditReopenPairsRechecked": 8,
+      "coreTestsPassed": 155,
+      "gate": "passed",
+      "decision": "Eigener Code- und Rohdatenreview bestätigt direkte Textur-/Gradient-/Renderzeitmessung, gleiche Karten- und Aktionszustände, wirksame Objekt-/Pfad-/Tür-Bildwechsel und null entfernte Lichtaufträge bei lokalen Änderungen. P5-CL-R1/R2 geschlossen und Phase-5-Aufräumtor bestanden; Phase 6 startet mit getrenntem Planlauf."
     }
   }
 }
