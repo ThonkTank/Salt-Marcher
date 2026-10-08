@@ -63893,6 +63893,20 @@
           "hostDialogProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
           "hostX11Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
           "hostPopoutProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
+        },
+        "repair3Plan": {
+          "date": "2026-10-09",
+          "state": "plan_only_gate_open",
+          "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "focus": "X11-Zielfenster unter KWin mit direkt protokolliertem A-Release, tatsächlichem Renderer-Fokusstatus und nächster gespeicherter Platzierung.",
+          "priorEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
+          ],
+          "gate": "open"
         }
       },
       {
@@ -96508,6 +96522,19 @@
       ],
       "gate": "open",
       "next": "Eigener Nachbesserungsplan für das Host-Renderer-Fokuspaar, danach Umsetzung und erneuter Review; Aufräumen bleibt gesperrt."
+    },
+    "phase6Repair3Plan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
+      "baseCommit": "395b97911a2c4d2b2410102516ac6c0220ae107e",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "open": [
+        "DD-026.25"
+      ],
+      "gate": "open",
+      "decision": "Nur der Fokusvergleich ist geplant; kein Produktcode geändert oder Fachfall freigegeben. Umsetzung und eigener Review folgen getrennt."
     }
   }
 }
