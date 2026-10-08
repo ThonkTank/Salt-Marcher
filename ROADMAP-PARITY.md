@@ -193,6 +193,8 @@ Auf einer isolierten Kopie einen Raum zeichnen und bearbeiten, mehrere Objekte a
 
 **Phasentor:** Alle Pflicht-Unterfälle dieser Roadmap besitzen direkte Original- und Endstandsbelege. Der bestehende Raum–Objekt–Key-Ablauf, die Spielansicht, IDs, Links und geschützte Texte bestehen die Regression. Offene Fälle außerhalb dieser Roadmap werden nicht als erledigt ausgewiesen.
 
+**Phase-7-Plan 09.10.2026:** Der [eigene Plan](ROADMAP-PARITY-PHASE7-PLAN.md) trennt den gemeinsamen kleinen V4-Raum–Objekt–Feature–Key-Zug, wirkliche Maus-/Touchpad-Eingabe, eine große kombinierte Testkarte und die geschützte Spielansicht auf Vault-Kopie in vier Prüfstränge. Der frühere Dungeondraft-Abgleich bleibt Referenz für Building-/Object-/Auswahlgesten; Key-Verknüpfung wird gegen die Projektanforderung geprüft. Jeder Strang braucht Rohzustände, isolierten Hostlauf und frische Neuöffnung. **Nur Planung, Phase-7-Fachphasentor offen.** Die Umsetzung und der unabhängige Review folgen getrennt; erst danach kann die abschließende Aufräumphase beginnen. Produktcode, installierter Build und Nutzervault blieben unverändert.
+
 ## Aufräumphase nach jeder Fachphase
 
 Jede Aufräumphase prüft die gerade eingeführten Modelle, Zustände, Ereigniswege und Tests auf doppelte Logik, verdeckte Kopplung, unnötige Arbeit und nicht freigegebene Ressourcen. Der Planlauf legt die konkreten Schwächen und eine begrenzte Änderungsfolge fest; der Umsetzungslauf bereinigt sie ohne Änderung der belegten Werkzeugwirkung; der Reviewlauf prüft Diff, Basistests, passende Original-/Hostregression und frische Neuöffnung. Befunde bleiben offen, wenn die Wirkung nicht erneut belegt ist. Nach Phase 7 umfasst dieser Lauf zusätzlich den Gesamtabschluss der Roadmap.

@@ -971,13 +971,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_cleanup_gate_passed_phase7_plan_next",
+    "status": "phase7_plan_ready_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-7-Planlauf für den gemeinsamen Raum–Objekt–Feature–Key-Ablauf, physische Eingabe und Großkarte; Umsetzung und Review getrennt.",
-    "note": "Phase 6: alle 15 Pflichtpositionen und das eigene Aufräumtor P6-CL-1 bis -4 bestanden. Drei frische Hostpaare, zwei geprüfte breite Umsetzungspaare und 167 Tests auf Build b3211281…; Phase 7 beginnt mit Planlauf. Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Getrennter Phase-7-Umsetzungslauf nach ROADMAP-PARITY-PHASE7-PLAN.md: zuerst kleine zusammenhängende V4-Folge, danach Großkarte und Vault-Kopie; physische Eingabe bleibt eigene direkte Probe.",
+    "note": "Phase 6 samt Aufräumtor bestanden. Phase 7 hat einen eigenen Vier-Stränge-Plan für gemeinsamen Ablauf, physische Bedienung, große Karte und geschützte Spielansicht; Fachphasentor offen. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
@@ -2475,6 +2475,21 @@
       "coreTestsPassed": 167,
       "gate": "passed",
       "next": "Eigener Phase-7-Planlauf."
+    },
+    "phase7Plan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE7-PLAN.md",
+      "baseCommit": "cf3787ea1d5f71767e28af342827aa8f242d1c9a",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "strands": [
+        "P7-1",
+        "P7-2",
+        "P7-3",
+        "P7-4"
+      ],
+      "gate": "open",
+      "next": "Getrennte Phase-7-Umsetzung, danach unabhängiger Review und erst anschließend abschließende Aufräumphase."
     }
   }
 }

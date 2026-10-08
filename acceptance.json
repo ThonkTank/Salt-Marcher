@@ -96684,6 +96684,23 @@
       "coreTestsPassed": 167,
       "gate": "passed",
       "next": "Eigener Phase-7-Planlauf; physische Eingabe und kombinierte Großkarte bleiben offen."
+    },
+    "phase7Plan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE7-PLAN.md",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin for Building/Object/Select; project contract for room–feature–key",
+      "baseCommit": "cf3787ea1d5f71767e28af342827aa8f242d1c9a",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "strands": [
+        "P7-1 small V4 room-object-feature-key",
+        "P7-2 physical mouse and touchpad",
+        "P7-3 large combined map",
+        "P7-4 protected Vault-copy play view"
+      ],
+      "gate": "open",
+      "decision": "Nur eigener Phase-7-Plan. Physische Eingabe und große Karte besitzen noch keine Abnahme; Umsetzung und unabhängiger Review folgen getrennt vor dem abschließenden Aufräumen."
     }
   }
 }
