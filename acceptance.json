@@ -61042,7 +61042,8 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490325683-parity-phase6-repair2-focus-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
-          "gap": "External Host focus could not be measured: CDP Target.createTarget unsupported and window.open produced no popup. No product change or final parity decision; separate independent review pending."
+          "gap": "External Host focus could not be measured: CDP Target.createTarget unsupported and window.open produced no popup. No product change or final parity decision; separate independent review pending.",
+          "hostDialogProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json"
         }
       },
       {
