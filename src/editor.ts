@@ -1657,9 +1657,10 @@ export class DungeonEditor {
     else this.session.redo();
     void this.select(undefined);
   }
-  private snap(p: Point): Point {
+  private snap(p: Point, step = 1): Point {
     return this.snapEnabled
-      ? { x: Math.round(p.x), y: Math.round(p.y) }
+      ? { x: Math.round(p.x / step) * step,
+        y: Math.round(p.y / step) * step }
       : { x: p.x, y: p.y };
   }
   private isBrushTool(tool: Tool): boolean {
@@ -2069,6 +2070,7 @@ export class DungeonEditor {
       if (this.tool === "object") {
         this.objectPreviewPoint = this.snap(
           this.renderer.toWorld(this.renderer.local(e)),
+          0.5,
         );
         this.refreshObjectPreview();
         return;
@@ -2575,7 +2577,7 @@ export class DungeonEditor {
       const o = createObject(
         this.session,
         this.renderer.floorId,
-        this.snap(point),
+        this.snap(point, 0.5),
         this.settings.object,
         this.settings.objectSorting,
       );

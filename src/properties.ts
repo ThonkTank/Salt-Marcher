@@ -290,6 +290,7 @@ export class Properties {
     min?: string,
     max?: string,
     step?: string,
+    commitEvent: "change" | "input" = "change",
   ): HTMLInputElement {
     const row = document.createElement("label");
     row.className = "dn-field";
@@ -303,7 +304,7 @@ export class Properties {
     if (min !== undefined) input.min = min;
     if (max !== undefined) input.max = max;
     if (step !== undefined) input.step = step;
-    input.addEventListener("change", () => {
+    input.addEventListener(commitEvent, () => {
       try {
         const before = JSON.stringify(this.defaults);
         change(input);
@@ -1700,7 +1701,7 @@ export class Properties {
       rotation.value, (input) => {
         rotation.value = input.value;
         update({ rotation: input.valueAsNumber * Math.PI / 180 });
-      }, "-180", "180", "1");
+      }, "-180", "180", "1", "input");
     rotation.addEventListener("change", () => { rotationSlider.value = rotation.value; });
     const setScale = (value: number) => {
       if (!Number.isFinite(value) || value <= 0) return;
@@ -1715,7 +1716,7 @@ export class Properties {
       (input) => setScale(input.valueAsNumber), "0.01", "100", "0.01");
     const scaleSlider = this.field("Scale-Regler", "range", scale.value,
       (input) => { scale.value = input.value; setScale(input.valueAsNumber); },
-      "0.01", "5", "0.01");
+      "0.01", "5", "0.01", "input");
     scale.addEventListener("change", () => { scaleSlider.value = scale.value; });
     this.field("Shadow", "checkbox", String(object.shadow ?? true),
       (input) => update({ shadow: input.checked }));
