@@ -13,8 +13,11 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(mapPath)), MAP);
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
   };
-  const openTags = () => page.evaluate(() =>
-    app.plugins.getPlugin("dungeon-editor").openObjectTags(["QAObjASl"], true));
+  const openTags = async () => {
+    await page.locator(".dn-object-library-tabs")
+      .getByRole("button", { name: "Tags" }).click();
+    await page.getByRole("button", { name: "Tags bearbeiten" }).click();
+  };
   const world = (point) => page.evaluate((point) => {
     const renderer = app.workspace.activeLeaf.view.editor.renderer,
       box = renderer.canvas.getBoundingClientRect();
@@ -362,6 +365,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     }, MAP);
     await openMap();
     await chooseTool("Möbel");
+    await page.waitForFunction(() => !!document.querySelector(".dn-object-library-tile img[src]"));
     const tagFile = path.join(vault, ".obsidian/dungeon-editor-assets/object-tags.json");
     const before = fs.readFileSync(tagFile, "utf8");
     assert.deepEqual(Object.keys(JSON.parse(before).tags), ["QA Own Tag"]);

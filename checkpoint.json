@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: Nachbesserungskandidat für neun offene Unterfälle umgesetzt; eigener unabhängiger Review folgt",
+  "phase": "Phase 4: zweiter unabhängiger 28-Fälle-Review abgeschlossen; Kaltstart-Browseröffnung offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_repair_candidate_pending_independent_review",
+    "status": "phase4_second_review_27_verified_1_mismatch",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter unabhängiger Phase-4-Review aller 28 Unterfälle auf Build 21ec88f4…; Originalgrenzen zu Kartenwechsel im selben Prozess und Zweiwortsuche gezielt klären.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 19 Unterfälle im vorigen Review verifiziert; neun Nachbesserungsfälle besitzen neue Original-/Hostbelege, zwei direkte Originalgrenzen bleiben offen. Fachphasentor offen; Kandidatenbuild nicht installiert.",
+    "nextRun": "Eigener Nachbesserungsplan für DD-047.01: Kaltstart-Klick auf Tags bearbeiten erfassen und gezielt reparieren; danach getrennte Umsetzung und unabhängiger 28-Fälle-Review.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: Zweiter unabhängiger Endbuild-Review verifiziert 27 von 28 Unterfällen; DD-047.01 öffnet im ersten isolierten Kaltstart-Klick den Browser nicht. Fachphasentor offen; Kandidatenbuild nicht installiert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
     "candidateCoreTests": 152,
@@ -1371,6 +1371,21 @@
       "directOriginalGaps": ["DD-026.03: Kartenwechsel im selben Prozess", "DD-026.05: Zweiwortsuche und vollständige Originalpfade"],
       "gate": "open",
       "next": "Eigener unabhängiger Review aller 28 Phase-4-Unterfälle auf finalem Build; offene Originalgrenzen klären."
+    },
+    "phase4SecondIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_open",
+      "candidateCommit": "7da0721",
+      "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/phase4-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/review-audit.json",
+      "verifiedCases": 27,
+      "mismatchCases": ["DD-047.01"],
+      "evidenceOpenCases": [],
+      "coreTestsPassed": 152,
+      "gate": "open",
+      "next": "Eigener Nachbesserungsplanlauf für Kaltstart-Browseröffnung; danach getrennte Umsetzung und erneuter unabhängiger Review."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
