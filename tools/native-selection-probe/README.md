@@ -1,6 +1,6 @@
 # Native selection probe
 
-Read-only Dungeondraft 1.2.0.1 QA mod. Run it only in an isolated XDG profile with a temporary map. Activate `Codex.SelectionProbe`, then write `user://codex-selection-probe-request.json` with a unique request id, for example `{"id":"case-1","fixture":"pattern"}`. The process log prints one `CODEX_SELECTION_PROBE` snapshot containing the active filters, drag-box coordinates and selected entity types. The optional `fixture` is only a label.
+Read-only Dungeondraft 1.2.0.1 QA mod. Run it only in an isolated XDG profile with a temporary map. `DUNGEON_NATIVE_SELECTION_SOURCE_MAP=/absolute/path/to/map tools/native-selection-probe/run.sh` creates an isolated copy and activates `Codex.SelectionProbe`. Write `user://codex-selection-probe-request.json` with a unique request id, for example `{"id":"case-1","fixture":"pattern"}`. The process log prints one `CODEX_SELECTION_PROBE` snapshot containing the active filters, viewport mouse position, drag-box coordinates and selected entity types. The optional `fixture` is only a label. Create `stop` in the printed run directory to end the session.
 
 The probe does not perform input, change the selection or save maps. Compare its world-space box coordinates with the intended gesture before interpreting a negative selection result. On the software-rendered virtual display, synthetic pointer moves sometimes reach the application late or begin an object drag instead of a marquee.
 

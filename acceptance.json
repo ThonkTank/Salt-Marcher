@@ -64910,6 +64910,19 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
           "gap": "Überlappungspriorität mit umgekehrter Zeichenfolge im Original nicht verlässlich gewählt."
+        },
+        "repair2Implementation": {
+          "state": "candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "observation": "Zwei gleich positionierte Cloth-Objekte auf derselben Ebene werden in beiden Zeichenfolgen nach oberstem Eintrag gewählt: Blau→Rot wählt Rot, Rot→Blau wählt Blau. Getrennter Kontrollklick, zwei unveränderte Originalkarten und Host-Edit/Neuöffnung belegt. Im synthetischen X11-Lauf musste der Klick nach Zeigerwechsel wiederholt werden; die physische Eingabe bleibt Phase 7 vorbehalten.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/selection-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493749765-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493764637-reopen/result.json"
+          ],
+          "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
+          "productChange": "none",
+          "gate": "open"
         }
       },
       {
@@ -65293,6 +65306,15 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
           "gap": "Äußere Cloth-Drehung wirkt in beiden Hosts; Start-/Endzeiger und Anker nicht exakt gepaart (1,556139 gegen 1,570796 rad)."
+        },
+        "repair2Implementation": {
+          "state": "open_input_trace_inconclusive",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "observation": "Bei identischem Original-Start- und Zielzeiger hängt die Drehung von verarbeiteten Zwischenereignissen ab: acht synthetische Schritte ergeben 1,238273 rad, ein direkter Schritt aktiviert den Drehmodus ohne Winkeländerung. Ein gleich getaktetes Hostpaar fehlt; keine Produktentscheidung.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/selection-audit.json"
+          ],
+          "gate": "open"
         }
       },
       {
@@ -89943,7 +89965,7 @@
     },
     "phase6Repair2Implementation": {
       "date": "2026-10-08",
-      "state": "in_progress_two_cases_candidate_one_case_partial",
+      "state": "in_progress_three_candidates_three_open",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
@@ -89952,23 +89974,25 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "candidate": [
         "DD-026.24",
-        "DD-026.27"
+        "DD-026.27",
+        "DD-030.19"
       ],
       "stillOpen": [
         "DD-026.25",
-        "DD-030.19",
         "DD-030.20",
         "DD-030.24"
       ],
       "reviewPending": [
         "DD-026.24",
-        "DD-026.27"
+        "DD-026.27",
+        "DD-030.19"
       ],
       "productChange": "src/features/objekte/object-library.ts",
       "gate": "open",
-      "next": "DD-030.19/.20/.24 direkt als Original-/Hostpaare messen. DD-026.25 bleibt nach zwei erfolglosen Host-Fokusmethoden offen, bis eine neue Fokusroute vorliegt; danach eigener unabhängiger Review.",
+      "next": "DD-030.20 direkt mit nativen Auswahl-IDs und sichtbarem Rahmen messen; DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
       "partialEvidence": [
-        "DD-026.25"
+        "DD-026.25",
+        "DD-030.24"
       ],
       "rawAuditA": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
       "hostAEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490310539-parity-phase6-repair2-focus-edit/result.json",
@@ -89991,7 +90015,10 @@
       "phase5LightRegression": [
         "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-light-regression-20261008/evidence/1791492822498-parity-phase5-light-edit/result.json",
         "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-light-regression-20261008/evidence/1791492836261-parity-phase5-light-reopen/result.json"
-      ]
+      ],
+      "rawAuditSelection": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/selection-audit.json",
+      "hostOverlapEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493749765-edit/result.json",
+      "hostOverlapReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493764637-reopen/result.json"
     }
   }
 }
