@@ -971,13 +971,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_cleanup_implementation_candidate_review_next",
+    "status": "phase6_cleanup_gate_passed_phase7_plan_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener unabhängiger Phase-6-Aufräumreview von P6-CL-1 bis -4 auf Build b3211281…; Phase 7 bis zum Aufräumtor gesperrt.",
-    "note": "Phase-6-Fachphasentor mit 15 Fällen bestanden. Vier technische Aufräumänderungen als Umsetzungskandidat mit fünf Host-Edit-/Neuöffnungspaaren, 167 Tests und gleichem 1.792er ID-Hash belegt. Eigenes Aufräumreview und Tor offen; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Eigener Phase-7-Planlauf für den gemeinsamen Raum–Objekt–Feature–Key-Ablauf, physische Eingabe und Großkarte; Umsetzung und Review getrennt.",
+    "note": "Phase 6: alle 15 Pflichtpositionen und das eigene Aufräumtor P6-CL-1 bis -4 bestanden. Drei frische Hostpaare, zwei geprüfte breite Umsetzungspaare und 167 Tests auf Build b3211281…; Phase 7 beginnt mit Planlauf. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
@@ -2461,6 +2461,20 @@
       "coreTestsPassed": 167,
       "gate": "open",
       "next": "Eigener unabhängiger Aufräumreview vor Phase 7."
+    },
+    "phase6CleanupReview": {
+      "date": "2026-10-09",
+      "state": "gate_passed",
+      "reviewOfCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-review-20261009/cleanup-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-review-20261009/review-audit.json",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "verifiedItems": 4,
+      "newHostPairs": 3,
+      "auditedImplementationPairs": 2,
+      "coreTestsPassed": 167,
+      "gate": "passed",
+      "next": "Eigener Phase-7-Planlauf."
     }
   }
 }
