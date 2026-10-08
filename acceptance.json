@@ -61042,9 +61042,10 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490325683-parity-phase6-repair2-focus-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
-          "gap": "Externer Host-Fokusverlust nicht gepaart: Dialogversuche erzeugten kein Fenster; X11-Fokusziel und Electron BrowserWindow.blur() lieferten keinen Renderer-Blur. Keine Produktänderung oder finale Paritätsentscheidung; unabhängiger Review ausstehend.",
+          "gap": "Externer Host-Fokusverlust nicht gepaart: Dialogversuche erzeugten kein Fenster; X11-Fokusziel, Electron BrowserWindow.blur() und Obsidian-Popout lieferten keinen Renderer-Blur. Keine Produktänderung oder finale Paritätsentscheidung; unabhängiger Review ausstehend.",
           "hostDialogProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
-          "hostX11Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json"
+          "hostX11Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
+          "hostPopoutProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
         }
       },
       {

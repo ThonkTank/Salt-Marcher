@@ -2300,6 +2300,7 @@
       ],
       "focusDialogProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
       "focusX11Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
+      "focusPopoutProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json",
       "rawAuditA": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
       "hostAEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490310539-parity-phase6-repair2-focus-edit/result.json",
       "hostAReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490325683-parity-phase6-repair2-focus-reopen/result.json",
