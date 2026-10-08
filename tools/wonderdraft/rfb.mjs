@@ -12,7 +12,19 @@ const { values } = parseArgs({ options: {
   click: { type: 'string' }, move: { type: 'string' }, key: { type: 'string' },
   text: { type: 'string' }, drag: { type: 'string' }, wheel: { type: 'string' },
   button: { type: 'string', default: 'left' },
+  hold: { type: 'string' }, 'drag-key': { type: 'string' },
+  'settle-ms': { type: 'string' },
 } });
+const settleMs = values['settle-ms'] === undefined ? undefined : Number(values['settle-ms']);
+if (settleMs !== undefined && (!Number.isInteger(settleMs) || settleMs < 100 || settleMs > 5000))
+  throw new Error('Settle time must be 100..5000 milliseconds');
+const heldNames = values.hold?.split('+') || [];
+if (heldNames.some(k => !['Control', 'Shift', 'Alt', 'Space'].includes(k)) || new Set(heldNames).size !== heldNames.length)
+  throw new Error('Held pointer keys: Control, Shift, Alt, Space; no duplicates');
+if (values.hold && (!(values.click || values.drag || values.wheel) || values.key || values.text))
+  throw new Error('Hold requires pointer input and cannot combine with key/text');
+if (values['drag-key'] && (!values.drag || values['drag-key'] !== 'Escape'))
+  throw new Error('Drag interruption supports Escape during a drag only');
 const buttonMask = { left: 1, middle: 2, right: 4 }[values.button];
 if (!buttonMask) throw new Error('Mouse button must be left, middle or right');
 if (values.button !== 'left' && !values.click && !values.drag) throw new Error('Mouse button requires click or drag');
@@ -39,6 +51,7 @@ async function take(size) {
 }
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const actions = [];
+let heldCodes = [];
 const point = value => {
   const p = value.split(',').map(Number);
   if (p.length !== 2 || !p.every(Number.isInteger) || p[0] < 0 || p[1] < 0 || p[0] >= session.width || p[1] >= session.height)
@@ -67,6 +80,11 @@ try {
   for (const offset of [8, 10, 12]) format.writeUInt16BE(255, offset);
   format[14] = 16; format[15] = 8; socket.write(format);
   socket.write(Buffer.from([2, 0, 0, 1, 0, 0, 0, 0])); // raw rectangles only
+  if (heldNames.length) {
+    heldCodes = heldNames.map(k => keys[k]);
+    for (const k of heldCodes) key(k, true);
+    actions.push({ holdBegin: values.hold }); await pause(80);
+  }
   if (values.move) { pointer(point(values.move)); actions.push({ move: values.move }); }
   if (values.click) {
     const p = point(values.click); pointer(p); await pause(100); pointer(p, buttonMask); await pause(100); pointer(p);
@@ -75,14 +93,24 @@ try {
   if (values.drag) {
     const [a, b] = values.drag.split(':').map(point); if (!a || !b) throw new Error('drag start:end required');
     pointer(a); await pause(100); pointer(a, buttonMask);
-    for (let i = 1; i <= 16; i++) { pointer([Math.round(a[0] + (b[0] - a[0]) * i / 16), Math.round(a[1] + (b[1] - a[1]) * i / 16)], buttonMask); await pause(60); }
-    pointer(b); actions.push({ drag: values.drag, button: values.button });
+    for (let i = 1; i <= 16; i++) {
+      pointer([Math.round(a[0] + (b[0] - a[0]) * i / 16), Math.round(a[1] + (b[1] - a[1]) * i / 16)], buttonMask); await pause(60);
+      if (i === 8 && values['drag-key']) {
+        key(keys.Escape, true); await pause(80); key(keys.Escape, false);
+      }
+    }
+    pointer(b); actions.push({ drag: values.drag, button: values.button,
+      ...(values['drag-key'] ? { duringDrag: { key: 'Escape', afterStep: 8, totalSteps: 16 } } : {}) });
   }
   if (values.wheel) {
     const [position, ticks] = values.wheel.split(':'); const p = point(position), n = Number(ticks);
     if (!Number.isInteger(n) || Math.abs(n) > 20) throw new Error('Wheel range -20..20');
     for (let i = 0; i < Math.abs(n); i++) { pointer(p, n > 0 ? 8 : 16); pointer(p); await pause(100); }
     actions.push({ wheel: values.wheel });
+  }
+  if (heldCodes.length) {
+    for (const k of heldCodes.toReversed()) key(k, false);
+    heldCodes = []; actions.push({ holdEnd: values.hold }); await pause(80);
   }
   if (values.key) {
     const codes = values.key.split('+').map(k => keys[k] ?? (k.length === 1 ? k.codePointAt(0) : undefined));
@@ -95,9 +123,10 @@ try {
     for (const c of values.text) { const u = c.codePointAt(0); const k = u < 256 ? u : 0x01000000 + u; key(k, true); key(k, false); await pause(12); }
     actions.push({ text: values.text });
   }
-  await pause(actions.length ? 650 : 100);
+  const captureSettleMs = settleMs ?? (actions.length ? 650 : 100);
+  await pause(captureSettleMs);
   const record = { sessionId: session.id, role: session.role, executableSha256: session.executableSha256,
-    capturedAt: new Date().toISOString(), inputKind: session.inputKind, actions };
+    capturedAt: new Date().toISOString(), inputKind: session.inputKind, actions, captureSettleMs };
   if (values.shot) {
     if (!/^[A-Za-z0-9_-]+$/.test(values.shot)) throw new Error('Safe screenshot id required');
     const target = path.join(session.run, 'screens', values.shot + '.png');
@@ -128,4 +157,10 @@ try {
     console.log(target);
   }
   fs.appendFileSync(path.join(session.run, 'input.jsonl'), JSON.stringify(record) + '\n');
-} finally { socket.destroy(); }
+} finally {
+  if (heldCodes.length && !socket.destroyed) {
+    for (const k of heldCodes.toReversed()) key(k, false);
+    await pause(80);
+  }
+  socket.destroy();
+}

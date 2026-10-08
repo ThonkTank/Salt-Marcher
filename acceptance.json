@@ -973,7 +973,7 @@
   },
   "wonderdraftParity": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T00:27:36.889968+02:00",
+    "updated": "2026-10-09",
     "plan": "WONDERDRAFT-PARITY.md",
     "reference": {
       "product": "Wonderdraft",
@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "partial_direct_original_surface_inventory; contexts, selectors, numeric bounds, package classification and initial probes still open",
+    "inventoryStatus": "direct_surface_and_initial_sequences_partial_review_pending",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -1075,7 +1075,11 @@
           "state": "in_progress",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/manifest.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map"
           ]
         },
         {
@@ -2762,6 +2766,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/002-new-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/002-new-dialog.png",
+            "observation": "New Map im tatsächlichen Original geöffnet."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2789,6 +2800,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.png",
+            "observation": "Width 99999 wird nach Tab zu 8192; Minimum 512 separat in Frame 026."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2816,6 +2834,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.png",
+            "observation": "Height 99999 wird nach Tab zu 8192; Minimum 512 separat in Frame 028."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2843,6 +2868,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/003-template-list.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/003-template-list.png",
+            "observation": "Zehn Vorlagen; alle Maße in Frames 004–022 direkt angewendet."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2870,6 +2902,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/006-landscape.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/023-portrait.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/023-portrait.png",
+            "observation": "Portrait vertauscht 4096×2048 zu 2048×4096."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2907,6 +2946,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/043-theme-list.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/043-theme-list.png",
+            "observation": "Neun Themen in New Map sichtbar; zwei Anwendungen direkt gemessen."
           }
         ],
         "classification": "original_dialog_surface"
@@ -2934,6 +2980,13 @@
             "version": "1.1.8.2",
             "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
             "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/003-new-assets.png"
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/037-new-assets.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/037-new-assets.png",
+            "observation": "Fünf Default-Assetgruppen und leerer Custom-Bereich; OK/Cancel auf Assets-Tab nicht sichtbar."
           }
         ],
         "classification": "original_dialog_surface"
@@ -12720,6 +12773,13 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > HTML: bdbd8d."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/114-hex-red-enter-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/114-hex-red-enter-commit.png",
+            "observation": "Hexfeld benötigt Enter; Tab übernahm nur Text. Ungültiges gggggg wird Schwarz."
           }
         ],
         "classification": "user_function",
@@ -12805,6 +12865,13 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > [plus palette button]: visible."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/128-blue-palette-add.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/128-blue-palette-add.png",
+            "observation": "Plus ergänzt Picker-Preset, keine Groundpalettenkachel."
           }
         ],
         "classification": "user_function",
@@ -24816,6 +24883,13 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/014-zoom-cancel.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/014-zoom-cancel.png",
             "observation": "Cancel schließt den Dialog; Kamera bleibt im vorherigen Ausschnitt bei angezeigten 47 %."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.png",
+            "observation": "Tab validiert manuellen Zoomwert vor OK."
           }
         ],
         "classification": "user_function",
@@ -24896,6 +24970,13 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/010-zoom-dialog.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/010-zoom-dialog.png",
             "observation": "Enter Zoom Value zeigt Cancel, OK und Schließen. Cancel wurde betätigt; OK und Schließen nicht separat geprüft."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/080-zoom100-after-validation.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/080-zoom100-after-validation.png",
+            "observation": "OK nach Tab übernimmt 100 %."
           }
         ],
         "classification": "user_function",
@@ -25956,6 +26037,13 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/037-ground-color-eraser-tooltip.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/037-ground-color-eraser-tooltip.png",
             "observation": "Tooltip der ersten Kachel lautet wörtlich Eraser. Entfernen von Kartenfarbe wurde hier nicht ausgeführt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/130-ground-color-erased.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/130-ground-color-erased.png",
+            "observation": "Eraser entfernt Farbe teilweise und erhält Landform; Undo/Redo 131/132."
           }
         ],
         "classification": "user_function",
@@ -26827,6 +26915,242 @@
           }
         ],
         "classification": "program_service",
+        "observationLimits": []
+      },
+      {
+        "id": "WD-UI-0630",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > chain",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "chain",
+        "controlType": "toggle",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "Kopplung 2560×1440 nach Breitenänderung; vorher 1280×720.",
+        "gesture": {
+          "observed": "Kopplung 2560×1440 nach Breitenänderung; vorher 1280×720.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "Kopplung 2560×1440 nach Breitenänderung; vorher 1280×720.",
+        "stateScope": {
+          "observed": "New > New Map > Settings > chain",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-001.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/047-linked-width-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/047-linked-width-validated.png",
+            "observation": "Kopplung 2560×1440 nach Breitenänderung; vorher 1280×720."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": []
+      },
+      {
+        "id": "WD-UI-0631",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > OK",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "OK",
+        "controlType": "command",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "OK erzeugt vollständig geladene A-Karte; Ladeframes davor nicht als Endzustand gewertet.",
+        "gesture": {
+          "observed": "OK erzeugt vollständig geladene A-Karte; Ladeframes davor nicht als Endzustand gewertet.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "OK erzeugt vollständig geladene A-Karte; Ladeframes davor nicht als Endzustand gewertet.",
+        "stateScope": {
+          "observed": "New > New Map > Settings > OK",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-001.01"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.png",
+            "observation": "OK erzeugt vollständig geladene A-Karte; Ladeframes davor nicht als Endzustand gewertet."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": []
+      },
+      {
+        "id": "WD-UI-0632",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Cancel",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "Cancel",
+        "controlType": "command",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "Cancel erhält leeren Startzustand ohne Karte.",
+        "gesture": {
+          "observed": "Cancel erhält leeren Startzustand ohne Karte.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "Cancel erhält leeren Startzustand ohne Karte.",
+        "stateScope": {
+          "observed": "New > New Map > Settings > Cancel",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-001.01"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/035-new-cancelled.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/035-new-cancelled.png",
+            "observation": "Cancel erhält leeren Startzustand ohne Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": []
+      },
+      {
+        "id": "WD-UI-0633",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > Unsaved Changes > Save",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "Save",
+        "controlType": "command",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "Save angeboten; dieser Zweig noch nicht ausgeführt.",
+        "gesture": {
+          "observed": "Save angeboten; dieser Zweig noch nicht ausgeführt.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "Save angeboten; dieser Zweig noch nicht ausgeführt.",
+        "stateScope": {
+          "observed": "New > Unsaved Changes > Save",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-003.02"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/147-dirty-new-request.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/147-dirty-new-request.png",
+            "observation": "Save angeboten; dieser Zweig noch nicht ausgeführt."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [
+          "Save-Zweig noch auszuführen."
+        ]
+      },
+      {
+        "id": "WD-UI-0634",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > Unsaved Changes > Discard",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "Discard",
+        "controlType": "command",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "Discard öffnet New Map; bisherige Rohdateien unverändert.",
+        "gesture": {
+          "observed": "Discard öffnet New Map; bisherige Rohdateien unverändert.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "Discard öffnet New Map; bisherige Rohdateien unverändert.",
+        "stateScope": {
+          "observed": "New > Unsaved Changes > Discard",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-003.02"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/150-dirty-new-discard.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/150-dirty-new-discard.png",
+            "observation": "Discard öffnet New Map; bisherige Rohdateien unverändert."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": []
+      },
+      {
+        "id": "WD-UI-0635",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > Unsaved Changes > Cancel",
+        "context": "Frühe originale Kontrollfolge im privaten QA-Profil.",
+        "commandOrControl": "Cancel",
+        "controlType": "command",
+        "default": {
+          "value": null,
+          "evidenceScope": "Kein unbeobachteter globaler Default."
+        },
+        "rangeOrChoices": null,
+        "validation": "Cancel erhält zusätzliche ungespeicherte Kopieninsel.",
+        "gesture": {
+          "observed": "Cancel erhält zusätzliche ungespeicherte Kopieninsel.",
+          "operation": "Siehe tatsächliches Eingabeprotokoll."
+        },
+        "previewOrCommit": "Cancel erhält zusätzliche ungespeicherte Kopieninsel.",
+        "stateScope": {
+          "observed": "New > Unsaved Changes > Cancel",
+          "persistence": "Siehe zugeordneten Originalfall.",
+          "contextSwitch": "Siehe zugeordneten Originalfall."
+        },
+        "caseIds": [
+          "WD-003.02"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/148-dirty-new-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/148-dirty-new-cancel.png",
+            "observation": "Cancel erhält zusätzliche ungespeicherte Kopieninsel."
+          }
+        ],
+        "classification": "user_function",
         "observationLimits": []
       }
     ],
@@ -28458,41 +28782,117 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Alle Felder, Vorlagen und Startzustände des Neuanlagedialogs erfassen; eine kleine Karte anlegen und dieselbe Folge abbrechen.",
         "original": {
-          "state": "partial_direct_probe",
+          "state": "verified_direct_probe",
           "version": "1.1.8.2",
-          "path": "New > New Map",
-          "sequence": "New geöffnet; 800×512 eingestellt; OK; leere Karte sichtbar.",
+          "path": "New > New Map > Settings / Assets",
+          "sequence": "New öffnen; alle Tabs erfassen; Cancel kehrt ohne Karte zurück. Adventure-Karte A mit 1280×720 und Eastward-Karte B mit 512×512 anlegen; A/B/A öffnen; A im neuen Originalprozess öffnen.",
           "options": {
             "defaultWidthPx": 1920,
             "defaultHeightPx": 1080,
             "theme": "Eastward"
           },
-          "preview": null,
-          "effect": "Leere Karte im Original geöffnet.",
-          "savedEffect": "HEX00-F01.wonderdraft_map im isolierten Profil gespeichert.",
-          "reopen": null,
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "New öffnen; alle Tabs erfassen; Cancel kehrt ohne Karte zurück. Adventure-Karte A mit 1280×720 und Eastward-Karte B mit 512×512 anlegen; A/B/A öffnen; A im neuen Originalprozess öffnen.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
           "evidence": [
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/002-new-dialog.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/002-new-dialog.png",
+              "observation": "Neuanlage zeigt 1920×1080, Settings/Assets und OK/Cancel."
             },
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/map-start.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/035-new-cancelled.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/035-new-cancelled.png",
+              "observation": "Cancel schließt die erste Neuanlage ohne Karte."
             },
             {
-              "role": "original_saved_map",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
-              "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/037-new-assets.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/037-new-assets.png",
+              "observation": "Assets zeigt fünf Defaultgruppen und einen leeren Custom-Bereich."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.png",
+              "observation": "A ist vollständig geladen; Paper/Feudal und Hatch Pattern sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/158-B-Gothic-enabled.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/158-B-Gothic-enabled.png",
+              "observation": "B-Neuanlage aktiviert zusätzlich Gothic Horror."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.png",
+              "observation": "B ist vollständig geladen und leer; Worn/Worn und Irregular Blend."
             }
           ],
-          "gap": "Abbruchfolge und Wiederöffnung nach frischem Originalprozess fehlen."
+          "gap": null,
+          "previousProbe": {
+            "state": "partial_direct_probe",
+            "version": "1.1.8.2",
+            "path": "New > New Map",
+            "sequence": "New geöffnet; 800×512 eingestellt; OK; leere Karte sichtbar.",
+            "options": {
+              "defaultWidthPx": 1920,
+              "defaultHeightPx": 1080,
+              "theme": "Eastward"
+            },
+            "preview": null,
+            "effect": "Leere Karte im Original geöffnet.",
+            "savedEffect": "HEX00-F01.wonderdraft_map im isolierten Profil gespeichert.",
+            "reopen": null,
+            "evidence": [
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+              },
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/map-start.png"
+              },
+              {
+                "role": "original_saved_map",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+                "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+              }
+            ],
+            "gap": "Abbruchfolge und Wiederöffnung nach frischem Originalprozess fehlen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28539,40 +28939,207 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Erreichbare Größen-, Ausrichtungs- und Vorgabeoptionen einzeln auslösen; gültige Grenzen, ungültige Werte und Wiederverwendung direkt messen.",
         "original": {
-          "state": "partial_direct_probe",
+          "state": "verified_direct_probe",
           "version": "1.1.8.2",
-          "path": "New > New Map > Settings",
-          "sequence": "Breite 800 eingeben; Höhe 450 eingeben und 512 angezeigt; Orientierungsschaltfläche ausgelöst.",
+          "path": "New > New Map > Settings > Width / Height / Template / Landscape / Portrait / chain",
+          "sequence": "Jede der zehn Vorlagen anwenden; Portrait/Landscape vertauschen; 0, 99999 und abc mit Tab validieren; Kopplung 1280×720 → 2560×1440 → 1280×720; abbrechen und Dialog erneut öffnen.",
           "options": {
-            "observedDefault": "1920×1080 px",
-            "observedHeightMinimumPx": 512,
-            "observedOrientationSwap": "Klick auf Landscape vertauschte die beiden angezeigten Maße 800×512 zu 512×800."
+            "initialDefaultPx": [
+              1920,
+              1080
+            ],
+            "inputBoundsPx": [
+              512,
+              8192
+            ],
+            "inputValidation": "0/99999/abc mit Tab, jeweils direkt angezeigt; Grenzen im Dialog, keine 8192-Kartenallokation.",
+            "templatesPx": {
+              "HD (720p)": [
+                1280,
+                720
+              ],
+              "Full HD (1080p)": [
+                1920,
+                1080
+              ],
+              "4K Ultra HD": [
+                3840,
+                2160
+              ],
+              "A2 [300 dpi]": [
+                7016,
+                4960
+              ],
+              "A3 [300 dpi]": [
+                4960,
+                3508
+              ],
+              "A4 [300 dpi]": [
+                3508,
+                2480
+              ],
+              "A5 [300 dpi]": [
+                2480,
+                1754
+              ],
+              "A6 [300 dpi]": [
+                1754,
+                1240
+              ],
+              "US Letter [300 dpi]": [
+                3300,
+                2550
+              ],
+              "Equirectangular (4K)": [
+                4096,
+                2048
+              ]
+            },
+            "linkedRatio": "1280×720 → 2560×1440 → 1280×720; Ausrichtung vertauscht Maße.",
+            "coldDefault": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/002-cold-new-defaults.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/002-cold-new-defaults.png",
+              "observation": "Kopiertes QA-Profil zeigt im neuen Originalprozess die letzten New-Defaults 512×512/Eastward; keine Karte automatisch geladen."
+            }
           },
-          "preview": null,
-          "effect": "800×512 QA-Karte angelegt.",
-          "savedEffect": null,
-          "reopen": null,
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Jede der zehn Vorlagen anwenden; Portrait/Landscape vertauschen; 0, 99999 und abc mit Tab validieren; Kopplung 1280×720 → 2560×1440 → 1280×720; abbrechen und Dialog erneut öffnen.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
           "evidence": [
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/003-template-list.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/003-template-list.png",
+              "observation": "Zehn Vorlagen wörtlich sichtbar; jeder Eintrag in Frames 004–022 angewendet."
             },
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/023-portrait.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/023-portrait.png",
+              "observation": "Portrait zeigt 2048×4096."
             },
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/006-landscape.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/024-landscape.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/024-landscape.png",
+              "observation": "Landscape zeigt 4096×2048."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.png",
+              "observation": "Breite 0 wird nach Tab zu 512; Höhe 2048 bleibt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.png",
+              "observation": "Höhe 0 wird nach Tab zu 512."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.png",
+              "observation": "Breite 99999 wird nach Tab zu 8192."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.png",
+              "observation": "Höhe 99999 wird nach Tab zu 8192; keine solche Karte angelegt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.png",
+              "observation": "Breite abc wird nach Tab zu 512."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/036-new-after-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/036-new-after-cancel.png",
+              "observation": "Nach Cancel verwendet New die zuletzt eingegebenen Maße 512×8192 und Equirectangular/Portrait."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/047-linked-width-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/047-linked-width-validated.png",
+              "observation": "Gekoppelte Breite 2560 ergibt Höhe 1440."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/049-size-reset-linked.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/049-size-reset-linked.png",
+              "observation": "Gekoppelte Breite 1280 ergibt Höhe 720."
             }
           ],
-          "gap": "Weitere Größenlimits, Templateoptionen und Orientierung bei gespeicherter Karte offen."
+          "gap": null,
+          "previousProbe": {
+            "state": "partial_direct_probe",
+            "version": "1.1.8.2",
+            "path": "New > New Map > Settings",
+            "sequence": "Breite 800 eingeben; Höhe 450 eingeben und 512 angezeigt; Orientierungsschaltfläche ausgelöst.",
+            "options": {
+              "observedDefault": "1920×1080 px",
+              "observedHeightMinimumPx": 512,
+              "observedOrientationSwap": "Klick auf Landscape vertauschte die beiden angezeigten Maße 800×512 zu 512×800."
+            },
+            "preview": null,
+            "effect": "800×512 QA-Karte angelegt.",
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+              },
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+              },
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/006-landscape.png"
+              }
+            ],
+            "gap": "Weitere Größenlimits, Templateoptionen und Orientierung bei gespeicherter Karte offen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28617,17 +29184,97 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Dokumentierte Mitteltasten-/Leertastenbewegung, Strg-Rad, Einpassen und 100-Prozent-Ansicht auf derselben Karte direkt prüfen; Zoomanker messen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "verified_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Middle drag / Space+left drag / Control+wheel / magnifier / Control+0 / Control+1",
+          "sequence": "Bei 71 % Mitteltastenzug +60,+40; Space-Zug zurück. Strg-Rad am Inselzentrum 450,500 erhöht auf 75 %, Zentrum bleibt am Zeiger. Manueller Zoom benötigt Tab vor OK; Strg+0 passt ein, Strg+1 zeigt 100 %.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Bei 71 % Mitteltastenzug +60,+40; Space-Zug zurück. Strg-Rad am Inselzentrum 450,500 erhöht auf 75 %, Zentrum bleibt am Zeiger. Manueller Zoom benötigt Tab vor OK; Strg+0 passt ein, Strg+1 zeigt 100 %.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/068-middle-pan.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/068-middle-pan.png",
+              "observation": "Mitteltastenzug verschiebt Kartengrenzen und Insel um +60,+40."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/069-space-pan.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/069-space-pan.png",
+              "observation": "Space+linker Zug stellt den Ausschnitt wieder her; keine Landänderung."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/070-control-wheel-zoom.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/070-control-wheel-zoom.png",
+              "observation": "Strg-Rad: 71→75 %, Inselzentrum 450,500 bleibt unter dem Zeiger."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/071-fit-after-zoom.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/071-fit-after-zoom.png",
+              "observation": "Toolbar-Kreuzpfeil ist Pan Tool, keine Fit-Aktion; Dateiname fit ist keine Wirkungsbeschreibung."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/074-zoom100-committed.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/074-zoom100-committed.png",
+              "observation": "100 eingetippt und OK ohne Tab: Toolbar bleibt 75 %."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.png",
+              "observation": "Tab übernimmt 100 im Zoomfeld."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/080-zoom100-after-validation.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/080-zoom100-after-validation.png",
+              "observation": "OK nach Tab zeigt 100 %."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/081-fit-shortcut.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/081-fit-shortcut.png",
+              "observation": "Strg+0 zeigt eingepasste 71 %."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/082-reset100-shortcut.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/082-reset100-shortcut.png",
+              "observation": "Strg+1 zeigt 100 %."
+            }
+          ],
+          "gap": null,
           "surfaceObservations": [
             {
               "role": "actual_original_runtime",
@@ -28650,7 +29297,43 @@
               "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/014-zoom-cancel.png",
               "observation": "Cancel schließt den Dialog; Kamera bleibt im vorherigen Ausschnitt bei angezeigten 47 %."
             }
-          ]
+          ],
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+            "surfaceObservations": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/010-zoom-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/010-zoom-dialog.png",
+                "observation": "Lupe öffnet Enter Zoom Value. Manual Zoom zeigt 48 %, während die Toolbar zuvor 47 % zeigte."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/013-zoom-zero-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/013-zoom-zero-validated.png",
+                "observation": "Nach Eingabe 0 und Tab zeigt das Feld 0 %. Kein Commit ausgeführt; keine Untergrenze daraus abgeleitet."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/014-zoom-cancel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/014-zoom-cancel.png",
+                "observation": "Cancel schließt den Dialog; Kamera bleibt im vorherigen Ausschnitt bei angezeigten 47 %."
+              }
+            ]
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28695,17 +29378,82 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Kaltstart, Werkzeugwechsel, erstes Zeichnen nach Kameraaktion und Tastatureingabe in einem Dialog prüfen; Kamera und aktiven Werkzeugzustand protokollieren.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Kaltstart / New / Werkzeugwechsel / erste Eingabe / Dialogfeld",
+          "sequence": "Werkzeug z/g/p gewechselt; erster Landzug nach Kameraaktion ausgeführt; Zahlen- und Farbtexte im Dialog/Feld eingegeben. Einzelne erste Klicks nach Werkzeug-/Dateiwechsel zeigen noch keine Landänderung; nicht als gelungene Eingabe zählen.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Werkzeug z/g/p gewechselt; erster Landzug nach Kameraaktion ausgeführt; Zahlen- und Farbtexte im Dialog/Feld eingegeben. Einzelne erste Klicks nach Werkzeug-/Dateiwechsel zeigen noch keine Landänderung; nicht als gelungene Eingabe zählen.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/083-land-brush-shortcut.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/083-land-brush-shortcut.png",
+              "observation": "Landwerkzeug nach Kameraaktionen gewählt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/084-escape-during-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/084-escape-during-stroke.png",
+              "observation": "Erster zusammenhängender Landzug nach Kameraaktion zeichnet; Escape während des Zuges entfernt ihn nicht."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/163-B-island.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/163-B-island.png",
+              "observation": "Erster Klick nach B-Neuanlage zeigt nur Vorschau, noch keine Insel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/166-B-stroke32.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/166-B-stroke32.png",
+              "observation": "Folgender Zug zeichnet die Landzunge."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/191-close-dirty-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/191-close-dirty-click.png",
+              "observation": "Klick nach erneutem Öffnen/Werkzeugwechsel zeigt Vorschau, keine zusätzliche Insel."
+            }
+          ],
+          "gap": "Verlust des ersten Einzelklicks nach Werkzeug-/Dateiwechsel gezielt mit Fokus und stabilem Ladeende wiederholen; nicht aus den erfolgreichen späteren Zügen verallgemeinern.",
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28754,38 +29502,138 @@
         "original": {
           "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": "Save > Save Map",
-          "sequence": "Save geöffnet; HEX00-F01.wonderdraft_map eingegeben; Save angeklickt.",
+          "path": "Save > Save Map / Control+Shift+s / Open > Open Map / Control+s",
+          "sequence": "Erstes Save abbrechen; A speichern; Save As abbrechen; A-copy speichern. A und Kopie sind bytegleich. Kopie ungespeichert ändern und verwerfen. B speichern; A/B/A öffnen; neuer Prozess öffnet A und B. Geändertes B mit Strg+S ohne Dialog erneut speichern.",
           "options": null,
-          "preview": null,
-          "effect": "Dateidialog schloss; Rohkarte unter isoliertem XDG_DATA_HOME geschrieben.",
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Erstes Save abbrechen; A speichern; Save As abbrechen; A-copy speichern. A und Kopie sind bytegleich. Kopie ungespeichert ändern und verwerfen. B speichern; A/B/A öffnen; neuer Prozess öffnet A und B. Geändertes B mit Strg+S ohne Dialog erneut speichern.",
           "savedEffect": {
-            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
-            "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
           },
-          "reopen": null,
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
           "evidence": [
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-dialog.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/133-first-save-dialog.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/133-first-save-dialog.png",
+              "observation": "Erstes Save öffnet Save Map."
             },
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/134-save-dialog-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/134-save-dialog-cancel.png",
+              "observation": "Cancel erhält die ungespeicherte Karte."
             },
             {
-              "role": "original_saved_map",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
-              "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/139-save-a-committed.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/139-save-a-committed.png",
+              "observation": "Save schreibt A in das private QA-Kartenverzeichnis."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/140-save-as-dialog.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/140-save-as-dialog.png",
+              "observation": "Strg+Shift+S öffnet Save Map mit aktuellem Dateinamen."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/141-save-as-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/141-save-as-cancel.png",
+              "observation": "Save-As-Cancel erhält die Karte."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/144-save-copy-committed.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/144-save-copy-committed.png",
+              "observation": "A-copy gespeichert; SHA-256 identisch mit A."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/146-modify-copy-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/146-modify-copy-click.png",
+              "observation": "Nur ungespeicherte Kopie bekommt zusätzliche Insel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/173-A-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/173-A-ready.png",
+              "observation": "A geöffnet: gespeicherte Farben/Küste, keine zusätzliche Kopieninsel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/181-B-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/181-B-ready.png",
+              "observation": "B geöffnet: andere Gestaltung und Landzunge."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/026-existing-B-saved.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/026-existing-B-saved.png",
+              "observation": "Strg+S bei bestehendem B schließt ohne Dateidialog ab; Rohdateihash ändert sich von 19e6a3b4… zu d3257369…."
             }
           ],
-          "gap": "Save As, Abbruch und Wiederöffnung nach vollständigem Prozessneustart offen."
+          "gap": "Nach gewöhnlichem Speichern des geänderten B dessen aktualisierten Stand nochmals in einem neuen Originalprozess öffnen; alle sichtbaren Dirty-Zustände getrennt dokumentieren.",
+          "previousProbe": {
+            "state": "partial_direct_probe",
+            "version": "1.1.8.2",
+            "path": "Save > Save Map",
+            "sequence": "Save geöffnet; HEX00-F01.wonderdraft_map eingegeben; Save angeklickt.",
+            "options": null,
+            "preview": null,
+            "effect": "Dateidialog schloss; Rohkarte unter isoliertem XDG_DATA_HOME geschrieben.",
+            "savedEffect": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+              "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+            },
+            "reopen": null,
+            "evidence": [
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-dialog.png"
+              },
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+              },
+              {
+                "role": "original_saved_map",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+                "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+              }
+            ],
+            "gap": "Save As, Abbruch und Wiederöffnung nach vollständigem Prozessneustart offen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28832,17 +29680,69 @@
         "fixture": "WD-F07",
         "plannedOriginalProbe": "Kartenwechsel/Schließen mit ungespeicherter Arbeit und vorhandene Wiederherstellungsmöglichkeiten direkt erfassen; anschließend vollständig neuen Prozess öffnen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "New / Menu > Exit > Unsaved Changes",
+          "sequence": "Neue Karte bei geänderter Kopie fordert Save/Discard/Cancel. Cancel erhält Kopieninsel; Discard führt zur Neuanlage. Im neuen Prozess B ändern; Exit fordert Save/Discard/Cancel; Cancel erhält Änderung. Danach Strg+S und normaler Exit.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Neue Karte bei geänderter Kopie fordert Save/Discard/Cancel. Cancel erhält Kopieninsel; Discard führt zur Neuanlage. Im neuen Prozess B ändern; Exit fordert Save/Discard/Cancel; Cancel erhält Änderung. Danach Strg+S und normaler Exit.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/147-dirty-new-request.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/147-dirty-new-request.png",
+              "observation": "New bei geänderter Karte zeigt Save/Discard/Cancel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/148-dirty-new-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/148-dirty-new-cancel.png",
+              "observation": "Cancel kehrt mit ungespeicherter zusätzlicher Insel zurück."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/150-dirty-new-discard.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/150-dirty-new-discard.png",
+              "observation": "Discard führt in New Map; bisherige Rohdateien unverändert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/024-cold-dirty-exit.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/024-cold-dirty-exit.png",
+              "observation": "Exit nach sichtbarer Änderung zeigt Unsaved Changes mit Save/Discard/Cancel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/025-cold-dirty-exit-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/025-cold-dirty-exit-cancel.png",
+              "observation": "Exit-Cancel erhält zusätzliche ungespeicherte Landform."
+            }
+          ],
+          "gap": "Exit-Save und Exit-Discard sowie vorhandene Wiederherstellung getrennt ausführen. Der erste Launcher meldete UI-Exit als Fehler; dieser Beleg bleibt erhalten. Zweiter Prozess endet nach Save normal mit Code 0.",
           "surfaceObservations": [
             {
               "role": "actual_original_runtime",
@@ -28872,7 +29772,50 @@
               "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/052-generated-save-ready.png",
               "observation": "Nach Save As in QA-Verzeichnis öffnet Detail Map Wizard."
             }
-          ]
+          ],
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+            "surfaceObservations": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/034-quit-save-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/034-quit-save-dialog.png",
+                "observation": "Exit bei ungespeicherter Karte zeigt Save/Discard/Cancel."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/035-quit-cancel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/035-quit-cancel.png",
+                "observation": "Cancel kehrt zur Karte zurück."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/048-detail-map-wizard.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/048-detail-map-wizard.png",
+                "observation": "Create Detail Map fordert Speichern ungespeicherter Arbeit."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/052-generated-save-ready.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/052-generated-save-ready.png",
+                "observation": "Nach Save As in QA-Verzeichnis öffnet Detail Map Wizard."
+              }
+            ]
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28919,17 +29862,158 @@
         "fixture": "WD-F07",
         "plannedOriginalProbe": "Werkzeugwerte, Karteigenschaften, Paletten und Assetwahl bei Kartenwechsel und Prozessneustart als lokal, global oder flüchtig klassifizieren.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
-          "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "path": "Open A → B → A / fresh original process",
+          "sequence": "A (Adventure, 1280×720, Landgröße 128) und B (Eastward, 512×512, Landgröße 32) speichern und A/B/A öffnen. Neue Originalinstanz mit eigenem kopiertem QA-Profil startet ohne Karte; New-Defaults und A/B separat lesen.",
+          "options": {
+            "classificationScope": "Nur tatsächlich gemessene Werte; kein pauschaler global/lokal-Status.",
+            "mapLocalObserved": [
+              "Geometrie/Farbauftrag",
+              "Wasser-/Groundtextur",
+              "Küstenstil",
+              "Groundpalette"
+            ],
+            "resetOnOpenObserved": {
+              "Land Size": 64
+            },
+            "profileDefaultObserved": "New 512×512/Eastward nach Prozessneustart",
+            "assetGroupsObserved": "A kalt: Gothic aus; B danach: Gothic an; A warm nach B: Gothic bleibt an. Gespeicherte Kartenauswahl und bereits geladene Gruppe getrennt prüfen."
+          },
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "A (Adventure, 1280×720, Landgröße 128) und B (Eastward, 512×512, Landgröße 32) speichern und A/B/A öffnen. Neue Originalinstanz mit eigenem kopiertem QA-Profil startet ohne Karte; New-Defaults und A/B separat lesen.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/010-cold-A-land64.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/010-cold-A-land64.png",
+                "observation": "Landgröße nach kaltem A-Open ist 64."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/011-cold-A-ground.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/011-cold-A-ground.png",
+                "observation": "A-Groundpalette und Manual Color aus im frischen Prozess."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/012-cold-assets.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/012-cold-assets.png",
+                "observation": "Kaltes A zeigt Gothic Horror deaktiviert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/017-cold-B-ready.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/017-cold-B-ready.png",
+                "observation": "Gespeichertes B mit 512×512-Ausschnitt, schmaler Landzunge, Worn/Worn und Irregular Blend im neuen Originalprozess geöffnet. Danach wurde B verändert und erneut gespeichert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/018-cold-B-assets.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/018-cold-B-assets.png",
+                "observation": "Danach geöffnetes B zeigt Gothic Horror aktiviert."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.png",
+              "observation": "A-Gestaltung Paper/Feudal, Hatch Pattern."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.png",
+              "observation": "B-Gestaltung Worn/Worn, Irregular Blend."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/165-B-size32.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/165-B-size32.png",
+              "observation": "B-Werkzeugvorgabe Size 32 vor Save."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/174-A-land-default.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/174-A-land-default.png",
+              "observation": "Nach A-Open Landgröße 64, weder gespeicherte 128 noch zuletzt 32."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/175-A-ground-default.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/175-A-ground-default.png",
+              "observation": "A zeigt Adventure-Groundpalette; Manual Color aus, Eraser ausgewählt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/176-A-asset-choice.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/176-A-asset-choice.png",
+              "observation": "Warm A nach B zeigt Gothic Horror weiterhin aktiviert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/182-B-land-default.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/182-B-land-default.png",
+              "observation": "B erneut geöffnet: Landgröße ebenfalls 64."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/183-B-ground-palette.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/183-B-ground-palette.png",
+              "observation": "B zeigt eine andere Groundpalette."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/187-A-return-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/187-A-return-ready.png",
+              "observation": "Rückkehr A stellt A-Gestaltung und Landfarben wieder her."
+            }
+          ],
+          "gap": "Alle weiteren Werkzeugwerte, einzelne Symbol-/Assetwahl und selbst ergänzte Palettenvarianten gezielt klassifizieren. Assetgruppen sind gemischter Zustand: kaltes A deaktiviert Gothic, anschließendes B aktiviert es, warmes A nach B lässt es aktiviert; daraus keine pauschale globale/lokale Regel ableiten.",
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -28974,17 +30058,131 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Einzelklick, zusammenhängenden Pinselzug und mehrstufiges Zeichnen getrennt zurücknehmen/wiederholen; Kartenänderung und reine Werkzeugvorgabe unterscheiden.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "verified_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Land brush / Path Tool / Undo / Redo",
+          "sequence": "Landklick separat rücknehmen und per Toolbar wiederholen; Landzug als einen Befehl rücknehmen/wiederholen. Size 64→128 ändern und Undo: Zug verschwindet, Größe 128 bleibt. Mehrpunktpfad mit Rechtsklick abschließen; Toolbar Undo/Redo entfernt/restauriert gesamten Pfad.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Landklick separat rücknehmen und per Toolbar wiederholen; Landzug als einen Befehl rücknehmen/wiederholen. Size 64→128 ändern und Undo: Zug verschwindet, Größe 128 bleibt. Mehrpunktpfad mit Rechtsklick abschließen; Toolbar Undo/Redo entfernt/restauriert gesamten Pfad.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/056-land-single-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/056-land-single-click.png",
+              "observation": "Einzelklick erzeugt Insel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/057-single-undo.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/057-single-undo.png",
+              "observation": "Strg+Z entfernt Einzelklick."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/060-single-redo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/060-single-redo-button.png",
+              "observation": "Toolbar Redo stellt Insel wieder her; Strg+Shift+Z in Frame 058 zeigte keine Wirkung."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/061-land-continuous-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/061-land-continuous-stroke.png",
+              "observation": "Zusammenhängender Landzug erweitert Insel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/062-stroke-undo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/062-stroke-undo-button.png",
+              "observation": "Undo entfernt ganzen Zug und erhält Einzelklickinsel."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/063-stroke-redo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/063-stroke-redo-button.png",
+              "observation": "Redo stellt ganzen Zug wieder her."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/066-default-change-history.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/066-default-change-history.png",
+              "observation": "Nach Size 128 entfernt Undo Landzug; Werkzeuggröße bleibt 128."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/067-stroke-restored-size128.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/067-stroke-restored-size128.png",
+              "observation": "Redo stellt Zug mit weiterhin Size 128 wieder her."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/091-path-finished.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/091-path-finished.png",
+              "observation": "Rechtsklick schließt Mehrpunktpfad ab."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/094-path-resting.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/094-path-resting.png",
+              "observation": "Bewegung nach Abschluss verändert Pfadende nicht."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/095-path-undo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/095-path-undo-button.png",
+              "observation": "Toolbar Undo entfernt abgeschlossenen Pfad."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/096-path-redo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/096-path-redo-button.png",
+              "observation": "Toolbar Redo stellt abgeschlossenen Pfad wieder her."
+            }
+          ],
+          "gap": null,
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -29029,17 +30227,103 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Escape während Zeichnen, in ruhender Vorschau und bei offenem Dialog getrennt prüfen; keine einheitliche Escape-Regel voraussetzen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "verified_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Escape during Land drag / resting brush / Path draft / zoom dialog / tool change",
+          "sequence": "Escape bei gedrücktem Landzug, ruhender Vorschau, begonnenem Pfad und offenem Zoomdialog getrennt senden. Landzug bleibt und ist rücknehmbar; Pfadentwurf folgt nach Escape weiter dem Zeiger; Dialog schließt nach stabilem Frame; Werkzeugwechsel verwirft Pfadentwurf ohne neuen Befehl.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Escape bei gedrücktem Landzug, ruhender Vorschau, begonnenem Pfad und offenem Zoomdialog getrennt senden. Landzug bleibt und ist rücknehmbar; Pfadentwurf folgt nach Escape weiter dem Zeiger; Dialog schließt nach stabilem Frame; Werkzeugwechsel verwirft Pfadentwurf ohne neuen Befehl.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/084-escape-during-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/084-escape-during-stroke.png",
+              "observation": "Escape nach 8 von 16 Zugschritten bricht den Landzug nicht ab."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/085-interrupted-stroke-undo.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/085-interrupted-stroke-undo.png",
+              "observation": "Undo entfernt gesamten trotz Escape abgeschlossenen Zug."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/087-resting-brush-escape.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/087-resting-brush-escape.png",
+              "observation": "Escape lässt ruhende Landpinselvorschau sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/098-path-draft-escape.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/098-path-draft-escape.png",
+              "observation": "Escape entfernt Pfadentwurf nicht."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/101-dialog-settled.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/101-dialog-settled.png",
+              "observation": "Nach Escape und zusätzlichem stabilem Frame ist Zoomdialog geschlossen."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/103-path-after-escape-pointer.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/103-path-after-escape-pointer.png",
+              "observation": "Pfadentwurf folgt nach Escape erneut bewegtem Zeiger."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/104-path-toolchange.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/104-path-toolchange.png",
+              "observation": "Wechsel zum Landwerkzeug verwirft den uncommitteten Pfadentwurf."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/105-last-history-after-toolchange.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/105-last-history-after-toolchange.png",
+              "observation": "Nächster Undo entfernt zuvor fertigen Pfad; Werkzeugwechsel erzeugte keinen neuen Kartenbefehl."
+            }
+          ],
+          "gap": null,
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -29086,17 +30370,82 @@
         "fixture": "WD-F02",
         "plannedOriginalProbe": "Kleine Insel und Landzunge zeichnen; jeden erreichbaren Form-, Größen-, Stärke- und Küstenregler inventarisieren und einzeln variieren.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Land > Landmass Brush > Size / Map Effects",
+          "sequence": "Kleine Insel und Landzunge zeichnen; Size 64/128 vergleichen. Der Landpinsel zeigt nur Size; Küsteneinstellungen gehören zum Map-Effects-Bereich.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Kleine Insel und Landzunge zeichnen; Size 64/128 vergleichen. Der Landpinsel zeigt nur Size; Küsteneinstellungen gehören zum Map-Effects-Bereich.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/054-land-brush.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/054-land-brush.png",
+              "observation": "Landpinsel-Kontext zeigt Size 64."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/055-brush-preview.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/055-brush-preview.png",
+              "observation": "Pinselvorschau bei 71 %."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/056-land-single-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/056-land-single-click.png",
+              "observation": "Landinsel mit umgebender Küste."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/061-land-continuous-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/061-land-continuous-stroke.png",
+              "observation": "Zusammenhängender Zug bildet Landzunge."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/065-brush-size-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/065-brush-size-validated.png",
+              "observation": "Size 128 nach Tab."
+            }
+          ],
+          "gap": "Alle erreichbaren Küstenregler einzeln variieren; Form-/Stärkeoptionen nur bei tatsächlich vorhandenem Originalwerkzeug zuordnen. Size-Grenzen noch messen.",
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -29315,17 +30664,104 @@
         "fixture": "WD-F02",
         "plannedOriginalProbe": "Kontrollfarben auf Land und an Küsten auftragen, mischen und entfernen; erreichbare Pinsel-/Palettenoptionen und deren Zuständigkeit erfassen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Land > Ground Color Brush > Manual Color / palette > Eraser",
+          "sequence": "Manual Color einschalten; Rot mit Enter übernehmen und malen; ungültiges gggggg wird Schwarz; Blau mit Enter übernehmen und über Rot an Küste malen. Manual Color aus, Eraser-Zug entfernt Farbe teilweise; Undo/Redo prüft Erasure.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Manual Color einschalten; Rot mit Enter übernehmen und malen; ungültiges gggggg wird Schwarz; Blau mit Enter übernehmen und über Rot an Küste malen. Manual Color aus, Eraser-Zug entfernt Farbe teilweise; Undo/Redo prüft Erasure.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/106-ground-color-tool.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/106-ground-color-tool.png",
+              "observation": "Ground Color: drei Pinselbilder, Größe 128, Opacity 1, Velocity 1, Fill, Filter, Manual Color aus, Eraser und Groundpalette."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/115-red-committed-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/115-red-committed-stroke.png",
+              "observation": "Nach wirklichem Enter-Commit rote Farbe auf Land."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/116-red-stroke-undo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/116-red-stroke-undo-button.png",
+              "observation": "Undo entfernt roten Zug."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/117-red-stroke-redo-button.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/117-red-stroke-redo-button.png",
+              "observation": "Redo stellt roten Zug wieder her."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/124-blue-over-red.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/124-blue-over-red.png",
+              "observation": "Hier wurde Schwarz gemalt: Blau war noch nicht übernommen; Dateiname blue-over-red ist irreführend."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/127-blue-coast-stroke.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/127-blue-coast-stroke.png",
+              "observation": "Nach Enter-Commit Blau ergibt an Land/Küste blaue/violette Mischung; angrenzendes Wasser bleibt unverändert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/129-ground-palette-return.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/129-ground-palette-return.png",
+              "observation": "Manual Color aus führt zu Groundpalette und Eraser."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/130-ground-color-erased.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/130-ground-color-erased.png",
+              "observation": "Eraser entfernt einen Teil der roten Farbe; Landform bleibt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/131-color-eraser-undo.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/131-color-eraser-undo.png",
+              "observation": "Undo stellt entfernte Farbe wieder her."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/132-color-eraser-redo.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/132-color-eraser-redo.png",
+              "observation": "Redo entfernt Farbe wieder."
+            }
+          ],
+          "gap": "Die drei Pinsel, Opacity, Velocity, Fill, Filter und eigentliche Groundpalette einzeln variieren; Farbmischung nicht aus einem uncommitteten Hexfeld ableiten.",
           "surfaceObservations": [
             {
               "role": "actual_original_runtime",
@@ -29334,7 +30770,29 @@
               "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/037-ground-color-eraser-tooltip.png",
               "observation": "Tooltip der ersten Kachel lautet wörtlich Eraser. Entfernen von Kartenfarbe wurde hier nicht ausgeführt."
             }
-          ]
+          ],
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+            "surfaceObservations": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/037-ground-color-eraser-tooltip.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/037-ground-color-eraser-tooltip.png",
+                "observation": "Tooltip der ersten Kachel lautet wörtlich Eraser. Entfernen von Kartenfarbe wurde hier nicht ausgeführt."
+              }
+            ]
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -31222,17 +32680,103 @@
         "fixture": "WD-F07",
         "plannedOriginalProbe": "Jedes tatsächlich vorhandene Farbfeld, Palette, Farbfläche und Pipette getrennt erfassen; gültige/ungültige Eingabe, Livevorschau, Accept, Escape und Außenklick messen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Ground Color Brush > Manual Color > hex / RGBA / presets",
+          "sequence": "Hex ff0000 eingeben und Tab: nur Text ändert sich. Enter übernimmt Rot. gggggg plus Enter ergibt Schwarz. Eingabe 0000ff plus Escape lässt Text stehen, Farbe bleibt Schwarz. Späterer Enter übernimmt Blau; Plus fügt eine blaue Picker-Vorgabe hinzu.",
           "options": null,
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Hex ff0000 eingeben und Tab: nur Text ändert sich. Enter übernimmt Rot. gggggg plus Enter ergibt Schwarz. Eingabe 0000ff plus Escape lässt Text stehen, Farbe bleibt Schwarz. Späterer Enter übernimmt Blau; Plus fügt eine blaue Picker-Vorgabe hinzu.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/108-manual-color-fields.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/108-manual-color-fields.png",
+              "observation": "Inline-Picker zeigt RGBA, Hex, HSV-Schalter, Plus und Farbfläche; kein Acceptknopf sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/110-hex-red-validated.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/110-hex-red-validated.png",
+              "observation": "Tab nach ff0000 übernimmt Farbe nicht; Picker bleibt beige."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/114-hex-red-enter-commit.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/114-hex-red-enter-commit.png",
+              "observation": "Enter übernimmt Rot: R255 G0 B0 A255."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/119-invalid-hex-commit.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/119-invalid-hex-commit.png",
+              "observation": "Enter nach gggggg ergibt R0 G0 B0 A255 und Hex 000000."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/121-blue-entry-escape.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/121-blue-entry-escape.png",
+              "observation": "Escape nach Texteingabe 0000ff lässt Text stehen; Pickerfarbe bleibt Schwarz."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/122-blue-entry-outside.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/122-blue-entry-outside.png",
+              "observation": "Der vermeintliche Außenklick traf die Paneelklappe; keine allgemeine Außenklickregel daraus ableiten."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/126-blue-hex-actual-commit.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/126-blue-hex-actual-commit.png",
+              "observation": "Enter übernimmt Blau: R0 G0 B255 A255."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/128-blue-palette-add.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/128-blue-palette-add.png",
+              "observation": "Plus ergänzt blauen Picker-Preset; dies ist nicht die Groundpalette."
+            }
+          ],
+          "gap": "RGBA, HSV, Farbfläche, Pipette, tatsächlichen Außenklick und weitere Farbfeld-Kontexte getrennt messen. Kein gemeinsamer Accept/Escape-Mechanismus aus diesem Hexfeld ableiten.",
+          "previousProbe": {
+            "state": "awaiting_direct_probe",
+            "version": "1.1.8.2",
+            "path": null,
+            "sequence": null,
+            "options": null,
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [],
+            "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -31843,8 +33387,8 @@
         "original": {
           "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": "New > New Map > Settings > Theme; obere Leiste > Theme",
-          "sequence": null,
+          "path": "New > New Map > Theme",
+          "sequence": "Alle neun Themennamen im Neuanlagedialog erfassen. Adventure bei A und Eastward bei B anwenden; Komponenten, gespeicherte Wirkung, A/B/A und kaltes Öffnen vergleichen.",
           "options": [
             "Adventure",
             "Black & White",
@@ -31856,25 +33400,100 @@
             "Terra",
             "Worn"
           ],
-          "preview": null,
-          "effect": null,
-          "savedEffect": null,
-          "reopen": null,
+          "preview": "Vorher-/Vorschau-/Commit-/Abbruchframes mit tatsächlicher Eingabe im JSON-Beleg; Übergangsframes nicht als Abschluss gewertet.",
+          "effect": "Alle neun Themennamen im Neuanlagedialog erfassen. Adventure bei A und Eastward bei B anwenden; Komponenten, gespeicherte Wirkung, A/B/A und kaltes Öffnen vergleichen.",
+          "savedEffect": {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f",
+            "scope": "Gemeinsame kleine Kontrollkarte A; kein Wonderdraft-Formatimport und keine aus Binärdaten geratenen Felder."
+          },
+          "reopen": {
+            "state": "direct_fresh_original_process",
+            "effect": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+                "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+              }
+            ]
+          },
           "evidence": [
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/043-theme-list.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/043-theme-list.png",
+              "observation": "Adventure, Black & White, Eastward, Feudal, Imagination, Paper, Pastel, Terra, Worn sichtbar."
             },
             {
-              "role": "original_gui_screenshot",
-              "version": "1.1.8.2",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/theme-open.png"
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/044-adventure-selected.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/044-adventure-selected.png",
+              "observation": "Adventure in New ausgewählt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/053-map-a-theme-ready.png",
+              "observation": "Adventure erzeugt Paper-Wasser, Feudal-Ground und Hatch Pattern."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/156-B-Eastward.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/156-B-Eastward.png",
+              "observation": "Eastward in New ausgewählt."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/161-B-ready.png",
+              "observation": "Eastward erzeugt Worn-Wasser, Worn-Ground und Irregular Blend."
             }
           ],
-          "gap": "Themenwechsel und gespeicherte Wirkung noch nicht geprüft."
+          "gap": "Die sieben übrigen Neuanlagethemen mit Komponenten/Wirkung erfassen. Wechsel auf einer vorhandenen gestalteten Karte bleibt ausdrücklich HEX-24, nicht Voraussetzung dieser frühen Teilprobe.",
+          "previousProbe": {
+            "state": "partial_direct_probe",
+            "version": "1.1.8.2",
+            "path": "New > New Map > Settings > Theme; obere Leiste > Theme",
+            "sequence": null,
+            "options": [
+              "Adventure",
+              "Black & White",
+              "Eastward",
+              "Feudal",
+              "Imagination",
+              "Paper",
+              "Pastel",
+              "Terra",
+              "Worn"
+            ],
+            "preview": null,
+            "effect": null,
+            "savedEffect": null,
+            "reopen": null,
+            "evidence": [
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+              },
+              {
+                "role": "original_gui_screenshot",
+                "version": "1.1.8.2",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/theme-open.png"
+              }
+            ],
+            "gap": "Themenwechsel und gespeicherte Wirkung noch nicht geprüft."
+          }
         },
         "target": {
           "state": "pending_original_mapping",
@@ -36097,7 +37716,7 @@
     "inventoryRemaining": [
       "Weitere Auswahl-/Entwurfszustände, Dropdowns, Stil-/Assetpaletten, Zahlenbereiche, unbeschriftete Regler und vollständige Set-Liste im Fachreview auf verpflichtende Abdeckung prüfen.",
       "Mehrdeutige/bedingt sichtbare Pakethinweise im Fachreview gezielt klären: area_creator_dialog, inspect_dialog, news_dialog, update_dialog. Dokumentierte erfolglose Originalzustände erhalten.",
-      "13 frühe Originalfolgen einschließlich Rohkarte, A/B/A und vollständigem Prozessneustart im eigenen Umsetzungslauf HEX-00-I02.",
+      "Fünf frühe Originalfälle mit Rohkarte und neuem Prozess belegt. Restfolgen gezielt: erster Klick/Fokus, gewöhnliches Save kalt öffnen, Exit-/Wiederherstellungszweige, übrige Zustandswerte, Küstenregler, Farb-/Pinselvarianten und sieben übrige Neuanlagethemen.",
       "HEX-00-C-Fachreview und getrennte Aufräumläufe; CITY-00-Ergebnisvorbilder im eigenen Referenzlauf.",
       "Importierte Originalbelege aus b772d8d lokal nicht verfügbar: unverändert erhalten; neue Messungen ergänzen sie ausdrücklich und ersetzen keinen fehlenden Altbeleg."
     ],
@@ -36169,6 +37788,65 @@
           }
         ],
         "limits": "Keine vollständige Startfallabnahme, kein exportiertes Bild, kein Paste-Commit, keine Generator-/Box-/Windrose-Undo-Abnahme. Startfolgen bleiben HEX-00-I02."
+      },
+      {
+        "id": "WD-INITIAL-SEQUENCES-20261009-003824",
+        "fixtureIds": [
+          "WD-F01",
+          "WD-F02",
+          "WD-F07"
+        ],
+        "role": "actual_original_runtime",
+        "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+        "freshSession": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+        "savedMaps": [
+          {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f"
+          },
+          {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A-copy.wonderdraft_map",
+            "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f"
+          },
+          {
+            "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/B.wonderdraft_map",
+            "sha256": "d3257369be350d864bbc9f648972e39f9a3d43b29fdabef72bf83310c89435e2"
+          }
+        ],
+        "comparisonGeometry": {
+          "role": "planned_target_comparison_geometry",
+          "originalUnits": "pixels; 1280×720 A und 512×512 B",
+          "normalizedComparison": "Gleicher normierter Kartenbereich und Referenzpunkte; Kameraausschnitt separat, keine Bildschirmkoordinaten als Weltdaten speichern.",
+          "targetFixtureChoice": {
+            "A": {
+              "widthMeters": 384000,
+              "heightMeters": 216000
+            },
+            "B": {
+              "widthMeters": 153600,
+              "heightMeters": 153600
+            },
+            "hexNeighborSpacingMeters": 4828.032
+          },
+          "limits": "300 Meter pro Originalpixel ist ausschließlich die festgelegte QA-Vergleichszuordnung dieser Kontrollkarten. Es ist weder eine Wonderdraft-Einheit noch eine Produktgrößenbegrenzung. Spätere Hostpaare und Grafikvergleiche stehen aus."
+        },
+        "evidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/009-cold-A-stable.png",
+            "observation": "Vollständig neuer Originalprozess zeigt gespeichertes A: farbige Landform, Paper/Feudal und Hatch Pattern; vorherige Ladeframes 007/008 sind keine Endzustände."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/017-cold-B-ready.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/screens/017-cold-B-ready.png",
+            "observation": "Gespeichertes B mit 512×512-Ausschnitt, schmaler Landzunge, Worn/Worn und Irregular Blend im neuen Originalprozess geöffnet. Danach wurde B verändert und erneut gespeichert."
+          }
+        ],
+        "scope": "Kleine frühe Originalprobe; vollständige Landschaftsfixture WD-F02, Hostvergleich, physische Eingabe und Inventartor bleiben offen."
       }
     ]
   },

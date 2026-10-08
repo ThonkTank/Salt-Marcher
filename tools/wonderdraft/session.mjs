@@ -11,7 +11,9 @@ const { values } = parseArgs({ options: {
   run: { type: 'string' }, app: { type: 'string' }, xvnc: { type: 'string' }, wm: { type: 'string' },
   locked: { type: 'boolean', default: false },
   'first-run': { type: 'boolean', default: false },
+  'profile-from': { type: 'string' },
 } });
+if (values['first-run'] && values['profile-from']) throw new Error('First run cannot copy a previous profile');
 const required = name => {
   if (!values[name] || !path.isAbsolute(values[name])) throw new Error(`Absolute --${name} required`);
   return values[name];
@@ -30,6 +32,7 @@ if (!values.locked) {
   const child = spawn('flock', ['-n', '-E', '75', lock, process.execPath, fileURLToPath(import.meta.url),
     '--locked', '--run', run, '--app', app, '--xvnc', xvnc,
     ...(values['first-run'] ? ['--first-run'] : []),
+    ...(values['profile-from'] ? ['--profile-from', required('profile-from')] : []),
     ...(values.wm ? ['--wm', required('wm')] : [])], { stdio: 'inherit' });
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
   child.on('exit', code => { process.exitCode = code ?? 1; });
@@ -39,6 +42,31 @@ if (!values.locked) {
 
 async function main() {
   fs.accessSync(app, fs.constants.X_OK); fs.accessSync(xvnc, fs.constants.X_OK);
+  let profileSource;
+  if (values['profile-from']) {
+    const sourcePath = fs.realpathSync(required('profile-from'));
+    const qaRoot = '/home/aaron/.cache/dungeon-native-qa/';
+    const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+    // Older launchers classified a UI exit as an unexpected stop. Preserve that
+    // result while allowing its fully released private profile to be inspected.
+    const endedSource = source.endedAt && (source.state === 'stopped' ||
+      (source.state === 'failed' && source.failure === 'Original/display exited before explicit stop'));
+    if (!sourcePath.startsWith(qaRoot) || source.run !== path.dirname(sourcePath) ||
+        source.profile?.data !== path.join(source.run, 'data') ||
+        source.role !== 'actual_original_runtime' || source.product !== 'Wonderdraft' || !endedSource)
+      throw new Error('Profile source must be an ended isolated Wonderdraft QA session');
+    for (const p of source.processes) {
+      if (fs.existsSync(`/proc/${p.pid}/stat`) && startTicks(p.pid) === p.startTicks)
+        throw new Error('Profile source still has a live owned process');
+    }
+    if (source.executableSha256 !== hash(app) || source.packageSha256 !== hash(path.join(path.dirname(app), 'Wonderdraft.pck')))
+      throw new Error('Profile source original reference differs');
+    const directory = fs.realpathSync(path.join(source.profile.data, 'Wonderdraft'));
+    if (!directory.startsWith(source.run + '/')) throw new Error('Profile data escapes the isolated session');
+    profileSource = { session: sourcePath, sessionId: source.id, directory,
+      state: source.state, ...(source.failure ? { failure: source.failure } : {}),
+      configSha256: hash(path.join(directory, 'config.ini')) };
+  }
   if (fs.existsSync(run)) throw new Error('Use a new session directory; existing session not overwritten');
   fs.mkdirSync(run, { recursive: true });
   const foreign = fs.readdirSync('/proc').filter(id => /^\d+$/.test(id)).flatMap(id => {
@@ -57,7 +85,8 @@ async function main() {
   if (!displayNumber) throw new Error('No unused test display');
   for (const dir of ['config', 'data', 'cache', 'maps', 'screens']) fs.mkdirSync(path.join(run, dir));
   fs.mkdirSync(path.join(run, 'data', 'Wonderdraft'));
-  if (!values['first-run']) fs.writeFileSync(path.join(run, 'data', 'Wonderdraft', 'config.ini'),
+  if (profileSource) fs.cpSync(profileSource.directory, path.join(run, 'data', 'Wonderdraft'), { recursive: true });
+  else if (!values['first-run']) fs.writeFileSync(path.join(run, 'data', 'Wonderdraft', 'config.ini'),
     '[Display]\nfullscreen=false\nwindow_width=1280\nwindow_height=960\nwindow_maximized=false\nwindow_position_x=0\nwindow_position_y=0\n');
   // Unix socket paths are limited; QA evidence directories can be much longer.
   const busDirectory = fs.mkdtempSync(path.join(path.dirname(lock), 'wonderdraft-qa-bus-'));
@@ -71,7 +100,8 @@ async function main() {
     displayIsolation: { waylandDisplay: '', gdkBackend: 'x11', qtPlatform: 'xcb', gtkUsePortal: '0',
       sessionBus: path.join(busDirectory, 'bus'), busServiceActivation: false },
     profile: { config: path.join(run, 'config'), data: path.join(run, 'data'), cache: path.join(run, 'cache') },
-    profileInitialization: values['first-run'] ? 'first_run_defaults' : 'fixed_window_config',
+    profileInitialization: profileSource ? 'copied_stopped_qa_profile' : values['first-run'] ? 'first_run_defaults' : 'fixed_window_config',
+    ...(profileSource ? { profileSource } : {}),
     lock, processes: [], state: 'starting',
   };
   const save = () => fs.writeFileSync(path.join(run, 'session.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -150,7 +180,11 @@ async function main() {
       if (elapsed >= 2000) baseline = row;
       await pause(500);
     }
-    if (!stopping && !fs.existsSync(path.join(run, 'stop'))) throw new Error('Original/display exited before explicit stop');
+    if (!stopping && !fs.existsSync(path.join(run, 'stop'))) {
+      if (original.exitCode === 0 && alive(server))
+        manifest.originalExit = { kind: 'normal_process_exit', code: 0, observedAt: new Date().toISOString() };
+      else throw new Error('Original/display exited before explicit stop');
+    }
   } catch (error) {
     manifest.failure = error.message; process.exitCode = 1;
     console.error(error.message);
