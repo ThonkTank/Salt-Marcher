@@ -59150,6 +59150,18 @@
       "coreTestsPassed": 155,
       "gate": "passed",
       "next": "Getrennter Planlauf für Phase-5-Aufräumen; danach eigene Umsetzung und unabhängiger Aufräum-Review vor Phase 6."
+    },
+    "phase5CleanupPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-5-PLAN.md",
+      "baseCommit": "61e0491",
+      "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
+      "findings": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "gate": "open",
+      "decision": "Nur Aufräumplan für die fünf belegten technischen Schwächen. Keine Produktänderung oder neue Fachabnahme; getrennter Umsetzungslauf und unabhängiger Aufräum-Review vor Phase 6."
     }
   }
 }
