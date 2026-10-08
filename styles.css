@@ -474,6 +474,7 @@
   border-left: 1px solid var(--background-modifier-border);
 }
 .dn-object-library[hidden] { display: none !important; }
+.dn-object-library-controls { display: flex; flex-direction: column; gap: 8px; }
 .dn-object-library h2 { margin: 0; font-size: 17px; }
 .dn-object-library-tabs,
 .dn-object-library-search,

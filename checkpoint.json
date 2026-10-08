@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: Aufräumplan erstellt; getrennte Umsetzung folgt",
+  "phase": "Phase 4: Aufräum-Umsetzungskandidat; unabhängiger Review folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -176,7 +176,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Phase-4-Aufräumplan ROADMAP-PARITY-CLEANUP-4-PLAN.md in einem eigenen Umsetzungslauf ausführen: DOM-/Laufzeitbasis messen, Objektkachel-Neuaufbau begrenzen, Bildbeobachtung und Fixtureeingang bereinigen; anschließend eigener unabhängiger Aufräum-Review. Phase 5 bleibt gesperrt.",
+  "next": "Phase-4-Aufräumkandidat auf Build 2c9704ed… in einem eigenen unabhängigen Lauf gegen Plan, Diff, Messrohdaten, vollständige ID-Folgen, Beobachter-Lebensdauer, Fixture-Hashes und Host-Edit/Neuöffnung prüfen. Erst ein bestandenes Aufräumtor öffnet Phase 5.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -814,16 +814,16 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_cleanup_plan_ready_for_separate_implementation",
+    "status": "phase4_cleanup_candidate_pending_independent_review",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Umsetzungslauf nach ROADMAP-PARITY-CLEANUP-4-PLAN.md; danach eigener unabhängiger Phase-4-Aufräum-Review vor Phase 5.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: alle 28 Unterfälle unabhängig verifiziert; Fachphasentor bestanden. Der Aufräumplan liegt vor, Umsetzung und unabhängiger Aufräum-Review stehen aus. Kandidatenbuild nicht installiert; Phase 5 gesperrt.",
+    "nextRun": "Eigener unabhängiger Phase-4-Aufräum-Review des Umsetzungskandidaten; Phase 5 erst nach bestandenem Aufräumtor.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: alle 28 Unterfälle unabhängig verifiziert; Fachphasentor bestanden. Der Aufräumkandidat ist auf Build 2c9704ed… gemessen und im Host geprüft; der unabhängige Aufräum-Review steht aus. Kandidatenbuild nicht installiert; Phase 5 gesperrt.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "0bf988794648bc406e73fe029c15c1c29725ab4ce007d0d0bc3ae2633d83f934",
-    "candidateCoreTests": 152,
+    "candidateBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
+    "candidateCoreTests": 153,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
     "phase2Repair": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
@@ -1446,6 +1446,24 @@
       "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review3-20261008/phase4-independent-review.md",
       "gate": "open",
       "next": "Getrennter Aufräum-Umsetzungslauf; danach unabhängiger Aufräum-Review, bevor Phase 5 beginnt."
+    },
+    "phase4CleanupImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_pending_independent_cleanup_review",
+      "plan": "ROADMAP-PARITY-CLEANUP-4-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/phase4-cleanup-implementation.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/implementation-audit.json",
+      "candidateBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "allAssetIds": 1793,
+      "allAssetIdsIdentical": true,
+      "newTilesPerUnchangedRefreshBeforeAfter": [1793, 0],
+      "newTilesPerMembershipClickBeforeAfter": [1793, 0],
+      "hostResultsPassed": 8,
+      "imageObserversCreatedDisconnected": [6, 6],
+      "coreTestsPassed": 153,
+      "gate": "open",
+      "next": "Eigener unabhängiger Aufräum-Review von Diff, Messrohdaten, IDs, Observern, Fixture-Hashes und Edit-/Neuöffnungsbelegen; Phase 5 bleibt bis zur Freigabe gesperrt."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",

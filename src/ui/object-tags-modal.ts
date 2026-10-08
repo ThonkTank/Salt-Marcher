@@ -2,9 +2,11 @@ import { App, Modal, Notice } from "obsidian";
 import type { AssetDefinition } from "../assets";
 import {
   addObjectSet, addObjectTag, assignObjectTag, assignTagToSet,
-  copyObjectTags, objectPath, removeObjectSet, removeObjectTag,
+  copyObjectTags, removeObjectSet, removeObjectTag,
   type ObjectTagDocument,
 } from "../features/objekte/object-tags";
+import { indexObjectAssets, type ObjectAssetEntry } from "../features/objekte/object-library";
+import { LazyObjectImages } from "../features/objekte/lazy-object-images";
 
 export interface ObjectTagsModalOptions {
   readonly initialMode: "default" | "override";
@@ -27,13 +29,15 @@ export class ObjectTagsModal extends Modal {
   private naming: "tag" | "set" | null = null;
   private confirmingOverride = false;
   private busy = false;
-  private imageObserver?: IntersectionObserver;
+  private images?: LazyObjectImages;
+  private readonly entries: readonly ObjectAssetEntry[];
 
   constructor(app: App, private options: ObjectTagsModalOptions) {
     super(app);
     this.draft = options.override ? copyObjectTags(options.override) : null;
     this.selectedMode = options.initialMode;
     this.mode = this.draft && this.selectedMode === "override" ? "override" : "default";
+    this.entries = indexObjectAssets(options.assets);
   }
 
   onOpen(): void {
@@ -41,7 +45,7 @@ export class ObjectTagsModal extends Modal {
     this.render();
   }
   onClose(): void {
-    this.imageObserver?.disconnect();
+    this.images?.disconnect();
     this.contentEl.empty();
   }
 
@@ -64,8 +68,8 @@ export class ObjectTagsModal extends Modal {
   }
 
   private render(): void {
-    this.imageObserver?.disconnect();
-    this.imageObserver = undefined;
+    this.images?.disconnect();
+    this.images = undefined;
     this.setTitle("Objekt-Tags bearbeiten");
     this.contentEl.empty();
     this.contentEl.addClass("dn-object-tags-modal");
@@ -141,32 +145,22 @@ export class ObjectTagsModal extends Modal {
   private renderObjects(tag: string): void {
     const grid = this.contentEl.createDiv({ cls: "dn-object-tag-grid" });
     grid.setAttribute("aria-label", "Objektgitter-Zuordnung");
-    this.imageObserver = typeof IntersectionObserver === "function"
-      ? new IntersectionObserver((entries, observer) => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            const image = entry.target as HTMLImageElement;
-            image.src = this.options.assetUrl(image.dataset.assetId!);
-            observer.unobserve(image);
-          }
-        }, { root: grid, rootMargin: "250px" }) : undefined;
+    this.images = new LazyObjectImages(grid, "250px", this.options.assetUrl);
     const members = new Set(this.document().tags[tag] ?? []);
-    for (const asset of this.options.assets) {
-      const path = objectPath(asset);
+    for (const { asset, path } of this.entries) {
       if (!path) continue;
       const button = this.button(grid, "", () => {
         if (!this.draft || this.mode !== "override") return;
-        this.draft = assignObjectTag(this.draft, tag, path, !members.has(path));
-        this.render();
+        const enabled = !this.draft.tags[tag]?.includes(path);
+        this.draft = assignObjectTag(this.draft, tag, path, enabled);
+        button.setAttribute("aria-pressed", String(enabled));
       }, this.mode !== "override" || !tag || this.busy);
       button.className = "dn-object-tag-tile";
       button.title = asset.name;
       button.setAttribute("aria-label", asset.name);
       button.setAttribute("aria-pressed", String(members.has(path)));
       const image = button.createEl("img", { attr: { alt: "", loading: "lazy" } });
-      image.dataset.assetId = asset.id;
-      if (this.imageObserver) this.imageObserver.observe(image);
-      else image.src = this.options.assetUrl(asset.id);
+      this.images.observe(image, asset.id);
     }
   }
 

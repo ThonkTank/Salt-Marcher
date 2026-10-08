@@ -1,11 +1,19 @@
-const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
+const PCK = process.env.DUNGEON_PARITY4_PCK ||
+  "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
 const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
-const PACK = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd028/assets/own-object-color.dungeondraft_pack";
+const PACK = process.env.DUNGEON_PARITY4_PACK ||
+  "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd028/assets/own-object-color.dungeondraft_pack";
 const PACK_SHA = "df920080409feda5d15194cd8c998553f18a80292762da2f30735ea6b5649088";
 const MAP = "Dungeons/Parity/Object-Library.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
   chooseTool }) => {
+  const verifiedBytes = (file, expected) => {
+    const bytes = fs.readFileSync(file);
+    assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), expected,
+      `Fixture hash mismatch: ${file}`);
+    return bytes;
+  };
   const tileCount = () => page.locator(".dn-object-library-tile").count();
   const modal = () => page.locator(".dn-object-tags-modal");
   const openMap = async () => {
@@ -31,9 +39,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
   });
 
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
-    const packBytes = fs.readFileSync(PACK);
-    assert.equal(crypto.createHash("sha256").update(packBytes).digest("hex"), PACK_SHA);
+    verifiedBytes(PCK, PCK_SHA);
+    const packBytes = verifiedBytes(PACK, PACK_SHA);
     await page.evaluate(async (pckPath) =>
       app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath), PCK);
     await page.evaluate(async (encoded) => {
@@ -63,6 +70,30 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert((await image.getAttribute("src"))?.startsWith("blob:"));
     assert.equal(await page.locator('.dn-object-library-tile[aria-label="QA Object Color"]').count(), 1);
     checks.push("All exposes 1792 built-in and one enabled package tile with loadable images");
+    const cleanupBench = process.env.DUNGEON_CLEANUP_BENCH === "1" ? {} : null;
+    if (cleanupBench) cleanupBench.allIds = await page.locator(".dn-object-library-tile")
+      .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.assetId));
+    if (cleanupBench) cleanupBench.panel = await page.evaluate(() => {
+      const panel = app.workspace.activeLeaf.view.editor.objectLibrary;
+      const trials = [];
+      for (let i = 0; i < 4; i++) {
+        const grid = document.querySelector(".dn-object-library-tiles");
+        grid.scrollTop = 168;
+        const beforeButtons = new Set(grid.querySelectorAll(".dn-object-library-tile"));
+        const beforeImages = new Set(grid.querySelectorAll("img"));
+        const start = performance.now();
+        panel.refresh();
+        const elapsedMs = performance.now() - start;
+        const after = document.querySelector(".dn-object-library-tiles");
+        const buttons = [...after.querySelectorAll(".dn-object-library-tile")];
+        const images = [...after.querySelectorAll("img")];
+        trials.push({ elapsedMs,
+          newButtons: buttons.filter((item) => !beforeButtons.has(item)).length,
+          newImages: images.filter((item) => !beforeImages.has(item)).length,
+          count: buttons.length, scrollTop: after.scrollTop });
+      }
+      return trials;
+    });
     const search = page.getByRole("textbox", { name: "Objektbibliothek durchsuchen" });
     await search.fill("atlas");
     assert.equal(await tileCount(), 1793);
@@ -191,6 +222,31 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await modal().getByRole("button", { name: "Cancel" }).click();
     await modal().getByRole("combobox", { name: "Tag wählen" }).selectOption("Administration");
     await modal().getByRole("combobox", { name: "Tag wählen" }).selectOption("QA Phase4 Tag");
+    if (cleanupBench) {
+      cleanupBench.modal = await page.evaluate(() => {
+        const trials = [];
+        for (let i = 0; i < 4; i++) {
+          const grid = document.querySelector(".dn-object-tag-grid");
+          grid.scrollTop = 168;
+          const beforeButtons = new Set(grid.querySelectorAll(".dn-object-tag-tile"));
+          const beforeImages = new Set(grid.querySelectorAll("img"));
+          const tile = grid.querySelector('.dn-object-tag-tile[aria-label="Atlas Globe 01"]');
+          const start = performance.now();
+          tile.click();
+          const elapsedMs = performance.now() - start;
+          const after = document.querySelector(".dn-object-tag-grid");
+          const buttons = [...after.querySelectorAll(".dn-object-tag-tile")];
+          const images = [...after.querySelectorAll("img")];
+          trials.push({ elapsedMs,
+            newButtons: buttons.filter((item) => !beforeButtons.has(item)).length,
+            newImages: images.filter((item) => !beforeImages.has(item)).length,
+            count: buttons.length, scrollTop: after.scrollTop });
+        }
+        return trials;
+      });
+      fs.writeFileSync(path.join(out, "cleanup-benchmark.json"),
+        JSON.stringify(cleanupBench, null, 2));
+    }
     await modal().locator('.dn-object-tag-tile[aria-label="Atlas Globe 01"]').click();
     assert.equal(await modal().locator('.dn-object-tag-tile[aria-label="Atlas Globe 01"]').getAttribute("aria-pressed"), "true");
     await modal().locator('.dn-object-tag-tile[aria-label="Atlas Globe 01"]').click();
@@ -255,7 +311,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
   }
 
   async function reopen() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
+    verifiedBytes(PCK, PCK_SHA);
+    verifiedBytes(PACK, PACK_SHA);
     await openMap();
     await chooseTool("Möbel");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
@@ -349,7 +406,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
   }
 
   async function ownMinimal(restart) {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
+    verifiedBytes(PCK, PCK_SHA);
     await page.evaluate(async (pckPath) =>
       app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pckPath), PCK);
     if (!restart) await page.evaluate(async (mapPath) => {
@@ -364,6 +421,25 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       }));
     }, MAP);
     await openMap();
+    if (process.env.DUNGEON_CLEANUP_LIFECYCLE === "1") await page.evaluate(() => {
+      const NativeObserver = window.IntersectionObserver;
+      window.__qaObjectObservers = { created: 0, disconnected: 0 };
+      window.IntersectionObserver = class extends NativeObserver {
+        constructor(callback, options) {
+          super(callback, options);
+          this.qaActive = options?.root?.classList?.contains("dn-object-library-tiles") ||
+            options?.root?.classList?.contains("dn-object-tag-grid");
+          if (this.qaActive) window.__qaObjectObservers.created++;
+        }
+        disconnect() {
+          if (this.qaActive) {
+            window.__qaObjectObservers.disconnected++;
+            this.qaActive = false;
+          }
+          super.disconnect();
+        }
+      };
+    });
     await chooseTool("Möbel");
     const tagFile = path.join(vault, ".obsidian/dungeon-editor-assets/object-tags.json");
     const before = fs.readFileSync(tagFile, "utf8");
@@ -409,6 +485,15 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       afterHash: crypto.createHash("sha256").update(fs.readFileSync(tagFile)).digest("hex"),
       document: after,
     }, null, 2));
+    if (process.env.DUNGEON_CLEANUP_LIFECYCLE === "1") {
+      await chooseTool("Auswahl");
+      const observers = await page.evaluate(() => window.__qaObjectObservers);
+      fs.writeFileSync(path.join(out, "cleanup-observers.json"),
+        JSON.stringify(observers, null, 2));
+      assert(observers.created > 0);
+      assert.equal(observers.disconnected, observers.created,
+        "all object-gallery observers disconnect after modal and tool close");
+    }
     checks.push(restart ? "Fresh process loads one own tag and set without copy prompt" :
       "Existing own tag and set load without copy prompt and persist after Save");
   }

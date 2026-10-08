@@ -8,7 +8,8 @@ import {
 } from "../../src/features/objekte/object-tags";
 import {
   applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
-  newObjectLibraryState, resetObjectSearch, visibleObjectAssets,
+  newObjectLibraryState, resetObjectSearch,
+  sortedObjectAssetEntries, visibleObjectAssets, visibleObjectEntries,
 } from "../../src/features/objekte/object-library";
 
 const builtIn = (name: string, suffix: string): AssetDefinition => ({
@@ -23,6 +24,17 @@ const assets: AssetDefinition[] = [
     name: "Atlas Globe 01", files: { image: "textures/objects/atlas_globe_01.png" } },
 ];
 const empty = { tags: {}, sets: {} };
+
+test("prepared object list keeps native-first order and full package identity", () => {
+  const entries = sortedObjectAssetEntries([...assets].reverse());
+  assert.deepEqual(entries.map((entry) => entry.asset.id), [
+    assets[0]!.id, assets[1]!.id, assets[2]!.id, assets[3]!.id,
+  ]);
+  assert.deepEqual(visibleObjectEntries(entries, empty, newObjectLibraryState())
+    .map((entry) => entry.asset.id), entries.map((entry) => entry.asset.id));
+  assert.equal(entries[3]!.path,
+    "res://packs/pack-a/textures/objects/atlas_globe_01.png");
+});
 
 test("Fuzzy search, Exact search, search X and trash have separate observed effects", () => {
   let state = { ...newObjectLibraryState(assets[0]!.id), text: "atlas" };

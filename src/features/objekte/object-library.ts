@@ -13,11 +13,34 @@ export function objectWordSimilarity(left: string, right: string): number {
   return Math.fround((2 * matches) / (left.length + right.length - 2));
 }
 
-function words(asset: AssetDefinition): readonly string[] {
-  const source = objectPath(asset)?.split("textures/objects/").at(-1) ?? asset.name;
+function words(asset: AssetDefinition, path: string | undefined): readonly string[] {
+  const source = path?.split("textures/objects/").at(-1) ?? asset.name;
   return source.replace(/\.[^./\\]+$/, "")
     .split(/[_/\\ .]/).filter((word) => !!word && !/^[+-]?\d+$/.test(word))
     .map((word) => word.toLocaleLowerCase("en"));
+}
+
+export interface ObjectAssetEntry {
+  readonly asset: AssetDefinition;
+  readonly path: string | undefined;
+  readonly words: readonly string[];
+}
+
+/** Read-only asset data reused across search, tags and the browser grid. */
+export function indexObjectAssets(assets: readonly AssetDefinition[]): readonly ObjectAssetEntry[] {
+  return assets.filter((asset) => asset.kind === "object").map((asset) => {
+    const path = objectPath(asset);
+    return { asset, path, words: words(asset, path) };
+  });
+}
+
+export function sortedObjectAssetEntries(assets: readonly AssetDefinition[]): readonly ObjectAssetEntry[] {
+  return [...indexObjectAssets(assets)].sort((a, b) => {
+    const ap = a.path ?? "", bp = b.path ?? "";
+    const an = ap.startsWith("res://textures/") ? 0 : 1;
+    const bn = bp.startsWith("res://textures/") ? 0 : 1;
+    return an - bn || ap.localeCompare(bp, "en");
+  });
 }
 
 export interface ObjectLibraryState {
@@ -74,24 +97,26 @@ export function resetObjectSearch(state: ObjectLibraryState): ObjectLibraryState
   return { ...state, appliedQuery: null, selectedId: "" };
 }
 
-export function visibleObjectAssets(assets: readonly AssetDefinition[],
-  document: ObjectTagDocument, state: ObjectLibraryState): readonly AssetDefinition[] {
-  let visible = assets.filter((asset) => asset.kind === "object");
+export function visibleObjectEntries(entries: readonly ObjectAssetEntry[],
+  document: ObjectTagDocument, state: ObjectLibraryState): readonly ObjectAssetEntry[] {
+  let visible = entries;
   if (state.tab === "used")
-    visible = visible.filter((asset) => state.usedIds.has(asset.id));
+    visible = visible.filter((entry) => state.usedIds.has(entry.asset.id));
   else if (state.tab === "tags") {
     const paths = new Set([...state.tags].flatMap((tag) => document.tags[tag] ?? []));
-    visible = visible.filter((asset) => {
-      const path = objectPath(asset);
-      return !!path && paths.has(path);
-    });
+    visible = visible.filter((entry) => !!entry.path && paths.has(entry.path));
   } else if (state.appliedQuery !== null && state.appliedQuery.trim()) {
     const terms = state.appliedQuery.trim().split(/\s+/);
-    visible = visible.filter((asset) => {
-      const tokens = words(asset);
-      return terms.every((term) => tokens.some((token) =>
+    visible = visible.filter((entry) => {
+      return terms.every((term) => entry.words.some((token) =>
         objectWordSimilarity(token, term) >= state.appliedStrictness));
     });
   }
   return visible;
+}
+
+export function visibleObjectAssets(assets: readonly AssetDefinition[],
+  document: ObjectTagDocument, state: ObjectLibraryState): readonly AssetDefinition[] {
+  return visibleObjectEntries(indexObjectAssets(assets), document, state)
+    .map((entry) => entry.asset);
 }

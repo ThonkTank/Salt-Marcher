@@ -677,7 +677,7 @@ export class DungeonEditor {
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();
       this.refreshProperties();
-      this.objectLibrary.refresh();
+      this.objectLibrary.refreshAssets();
     });
     this.objectTagUnsub = host.subscribeObjectTags?.(() => this.objectLibrary.refresh());
     this.keyDock = element("aside", "dn-key-dock", this.body);
@@ -732,6 +732,7 @@ export class DungeonEditor {
     this.buildNavigation();
     this.unsub = session.subscribe((e) => {
       if (e.floors) this.refreshFloors();
+      if (e.settings) this.objectLibrary.refreshAssets();
       this.refresh();
       if (this.notePath && e.notes.has(this.notePath)) this.refreshText();
       const missingSelection = [...this.selection].some(
@@ -3649,6 +3650,7 @@ export class DungeonEditor {
     this.unsub?.();
     this.assetUnsub?.();
     this.objectTagUnsub?.();
+    this.objectLibrary.show(false);
     this.renderer.destroy();
     this.root.replaceChildren();
   }

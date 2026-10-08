@@ -2,11 +2,12 @@ import type { AssetDefinition } from "../../assets";
 import type { Session } from "../../session";
 import {
   applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
-  newObjectLibraryState,
-  resetObjectSearch, visibleObjectAssets, type ObjectLibraryState,
-  type ObjectLibraryTab,
+  newObjectLibraryState, resetObjectSearch,
+  sortedObjectAssetEntries, visibleObjectEntries, type ObjectAssetEntry,
+  type ObjectLibraryState, type ObjectLibraryTab,
 } from "./object-library";
-import { objectPath, type ObjectTagDocument } from "./object-tags";
+import { type ObjectTagDocument } from "./object-tags";
+import { LazyObjectImages } from "./lazy-object-images";
 
 export interface ObjectLibraryPanelOptions {
   readonly assets: () => readonly AssetDefinition[];
@@ -21,9 +22,13 @@ export interface ObjectLibraryPanelOptions {
 export class ObjectLibraryPanel {
   private state: ObjectLibraryState;
   private active = false;
-  private observer?: IntersectionObserver;
+  private images?: LazyObjectImages;
+  private controlsHost?: HTMLElement;
   private gallery?: HTMLElement;
-  private assets: readonly AssetDefinition[] = [];
+  private entries: readonly ObjectAssetEntry[] = [];
+  private assetsDirty = true;
+  private visibleIds: readonly string[] | null = null;
+  private markedSelectedId = "";
   private tags: ObjectTagDocument = { tags: {}, sets: {} };
 
   constructor(private root: HTMLElement, private session: Session,
@@ -37,22 +42,34 @@ export class ObjectLibraryPanel {
     this.active = active;
     this.root.hidden = !active;
     if (active) this.refresh();
-    else { this.observer?.disconnect(); this.root.replaceChildren(); }
+    else {
+      this.images?.disconnect();
+      this.images = undefined;
+      this.controlsHost = undefined;
+      this.gallery = undefined;
+      this.visibleIds = null;
+      this.markedSelectedId = "";
+      this.root.replaceChildren();
+    }
   }
 
   refresh(): void {
     if (!this.active) return;
-    this.assets = this.options.assets().filter((asset) => asset.kind === "object")
-      .sort((a, b) => {
-        const ap = objectPath(a) ?? "", bp = objectPath(b) ?? "";
-        const an = ap.startsWith("res://textures/") ? 0 : 1;
-        const bn = bp.startsWith("res://textures/") ? 0 : 1;
-        return an - bn || ap.localeCompare(bp, "en");
-      });
+    if (this.assetsDirty) {
+      this.entries = sortedObjectAssetEntries(this.options.assets());
+      this.assetsDirty = false;
+      this.visibleIds = null;
+    }
     this.tags = this.options.tags();
-    if (!this.options.selectedAsset() && this.assets.length)
-      this.options.selectAsset(this.assets[0]!.id);
+    if (!this.options.selectedAsset() && this.entries.length)
+      this.options.selectAsset(this.entries[0]!.asset.id);
     this.render();
+  }
+
+  refreshAssets(): void {
+    this.assetsDirty = true;
+    this.visibleIds = null;
+    if (this.active) this.refresh();
   }
 
   syncSelection(): void {
@@ -65,12 +82,19 @@ export class ObjectLibraryPanel {
   }
 
   private render(): void {
-    this.observer?.disconnect();
-    this.root.replaceChildren();
     const document = this.root.ownerDocument;
+    if (!this.controlsHost) {
+      this.controlsHost = document.createElement("div");
+      this.controlsHost.className = "dn-object-library-controls";
+      this.gallery = document.createElement("div");
+      this.gallery.className = "dn-object-library-tiles";
+      this.gallery.setAttribute("aria-label", "Objektkacheln");
+      this.root.replaceChildren(this.controlsHost, this.gallery);
+    }
+    this.controlsHost.replaceChildren();
     const heading = document.createElement("h2");
     heading.textContent = "Objektbibliothek";
-    this.root.append(heading);
+    this.controlsHost.append(heading);
     const tabs = document.createElement("div");
     tabs.className = "dn-object-library-tabs";
     for (const [tab, label] of [["all", "All"], ["used", "Used"], ["tags", "Tags"]] as const) {
@@ -81,14 +105,10 @@ export class ObjectLibraryPanel {
       button.addEventListener("click", () => this.setTab(tab));
       tabs.append(button);
     }
-    this.root.append(tabs);
+    this.controlsHost.append(tabs);
 
     if (this.state.tab === "all") this.renderSearch();
     if (this.state.tab === "tags") this.renderTags();
-    this.gallery = document.createElement("div");
-    this.gallery.className = "dn-object-library-tiles";
-    this.gallery.setAttribute("aria-label", "Objektkacheln");
-    this.root.append(this.gallery);
     this.renderTiles();
   }
 
@@ -158,7 +178,7 @@ export class ObjectLibraryPanel {
       this.state = { ...this.state, strictness: Number(slider.value) };
     });
     precision.append(slider, document.createTextNode("Exact"));
-    this.root.append(search, precision);
+    this.controlsHost!.append(search, precision);
   }
 
   private renderTags(): void {
@@ -202,31 +222,34 @@ export class ObjectLibraryPanel {
       });
       list.append(button);
     }
-    this.root.append(controls, list);
+    this.controlsHost!.append(controls, list);
   }
 
   private renderTiles(): void {
     const gallery = this.gallery;
     if (!gallery) return;
-    this.observer?.disconnect();
+    const visible = visibleObjectEntries(this.entries, this.tags, this.state);
+    const ids = visible.map((entry) => entry.asset.id);
+    if (this.visibleIds && ids.length === this.visibleIds.length &&
+        ids.every((id, index) => id === this.visibleIds![index])) {
+      if (this.markedSelectedId !== this.state.selectedId) this.refreshTileMarks();
+      return;
+    }
+    this.images?.disconnect();
+    this.images = undefined;
     gallery.replaceChildren();
-    const visible = visibleObjectAssets(this.assets, this.tags, this.state);
+    gallery.scrollTop = 0;
+    this.visibleIds = ids;
+    this.markedSelectedId = this.state.selectedId;
     if (!visible.length) {
       const empty = gallery.ownerDocument.createElement("p");
       empty.textContent = "Keine Objekte";
       gallery.append(empty);
       return;
     }
-    this.observer = typeof IntersectionObserver === "function"
-      ? new IntersectionObserver((entries, observer) => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            const image = entry.target as HTMLImageElement;
-            image.src = this.options.assetUrl(image.dataset.assetId! + "\0image");
-            observer.unobserve(image);
-          }
-        }, { root: gallery, rootMargin: "300px" }) : undefined;
-    for (const asset of visible) {
+    this.images = new LazyObjectImages(gallery, "300px",
+      (id) => this.options.assetUrl(id + "\0image"));
+    for (const { asset } of visible) {
       const button = gallery.ownerDocument.createElement("button");
       button.type = "button";
       button.className = "dn-object-library-tile";
@@ -237,7 +260,6 @@ export class ObjectLibraryPanel {
       const image = gallery.ownerDocument.createElement("img");
       image.alt = "";
       image.loading = "lazy";
-      image.dataset.assetId = asset.id;
       button.append(image);
       button.addEventListener("click", () => {
         this.state = { ...this.state, selectedId: asset.id };
@@ -245,13 +267,13 @@ export class ObjectLibraryPanel {
         this.refreshTileMarks();
       });
       gallery.append(button);
-      if (this.observer) this.observer.observe(image);
-      else image.src = this.options.assetUrl(asset.id + "\0image");
+      this.images.observe(image, asset.id);
     }
   }
 
   private refreshTileMarks(): void {
     for (const tile of this.gallery?.querySelectorAll<HTMLButtonElement>("button[data-asset-id]") ?? [])
       tile.setAttribute("aria-pressed", String(tile.dataset.assetId === this.state.selectedId));
+    this.markedSelectedId = this.state.selectedId;
   }
 }
