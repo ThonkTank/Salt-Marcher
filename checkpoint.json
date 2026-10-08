@@ -971,13 +971,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_fach_gate_passed_cleanup_plan_next",
+    "status": "phase6_cleanup_plan_ready_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener technischer Phase-6-Aufräumplan; Umsetzung und unabhängiger Aufräumreview bleiben vor Phase 7 getrennt.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: alle 15 Pflichtpositionen in getrennten Fachreviews auf Endbuild belegt, Fachphasentor bestanden. Externer A-KeyRelease und Hostwirkung direkt gepaart; kein DOM-Blur behauptet. Phase 7 bis zum Phase-6-Aufräumtor gesperrt; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Getrennte Phase-6-Aufräumumsetzung nach ROADMAP-PARITY-CLEANUP-6-PLAN.md; danach unabhängiger Aufräumreview vor Phase 7.",
+    "note": "Phase 6: alle 15 Pflichtpositionen fachlich bestanden. Der eigene Aufräumplan P6-CL-1 bis -4 liegt vor; Produktbuild unverändert, Aufräumtor offen und Phase 7 gesperrt. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
     "candidateCoreTests": 167,
@@ -2433,6 +2433,21 @@
       "productChange": "none",
       "gate": "passed",
       "next": "Eigener Phase-6-Aufräumplan; Phase 7 bleibt bis zum Aufräumreview gesperrt."
+    },
+    "phase6CleanupPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
+      "baseCommit": "8884b11cf9caa075cb3a07c575244108d3f421da",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "items": [
+        "P6-CL-1",
+        "P6-CL-2",
+        "P6-CL-3",
+        "P6-CL-4"
+      ],
+      "gate": "open",
+      "next": "Getrennte Umsetzung, dann unabhängiger Aufräumreview vor Phase 7."
     }
   }
 }

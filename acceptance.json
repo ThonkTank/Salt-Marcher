@@ -96618,6 +96618,22 @@
       "limit": "Kein DOM-Blur im Host beobachtet; physische Eingabe und kombinierte Großkarte folgen in Phase 7. Cloth-Mittelpunkt grafisch ungefähr gleichwertig.",
       "gate": "passed",
       "next": "Eigener technischer Phase-6-Aufräumplan; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
+    },
+    "phase6CleanupPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md",
+      "baseCommit": "8884b11cf9caa075cb3a07c575244108d3f421da",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "items": [
+        "P6-CL-1",
+        "P6-CL-2",
+        "P6-CL-3",
+        "P6-CL-4"
+      ],
+      "gate": "open",
+      "decision": "Nur technischer Aufräumplan für Objektliste und Auswahl-Zeigerzustand. Keine Produktänderung oder neue Fachabnahme; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
     }
   }
 }
