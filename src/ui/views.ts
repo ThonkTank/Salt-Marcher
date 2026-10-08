@@ -688,9 +688,10 @@ function editorHost(
       map.session.settings.builtInAssets,
     ),
     subscribeObjectTags: (listener) => plugin.subscribeObjectTags(listener),
-    manageObjectTags: () => plugin.openObjectTags(
+    manageObjectTags: (sourceDocument) => plugin.openObjectTags(
       map.session.settings.assetPacks,
       map.session.settings.builtInAssets,
+      sourceDocument,
     ),
     toolDefaults: () => plugin.toolDefaults(),
     persistToolDefaults: () => plugin.persistToolDefaults(),

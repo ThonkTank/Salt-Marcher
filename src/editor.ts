@@ -182,7 +182,7 @@ export interface EditorHost {
   subscribeAssets?: (listener: () => void) => () => void;
   objectTags?: () => ObjectTagDocument;
   subscribeObjectTags?: (listener: () => void) => () => void;
-  manageObjectTags?: () => void;
+  manageObjectTags?: (sourceDocument: Document) => void;
   toolDefaults?: () => ToolSettings;
   persistToolDefaults?: () => void;
   prefabs?: () => readonly Prefab[];
@@ -445,7 +445,8 @@ export class DungeonEditor {
         menuContent,
       );
     if (host.manageObjectTags)
-      this.button("Objekt-Tags bearbeiten", () => host.manageObjectTags!(), menuContent);
+      this.button("Objekt-Tags bearbeiten", () =>
+        host.manageObjectTags!(this.root.ownerDocument), menuContent);
     this.optionsToggle = this.button(
       "Optionen",
       () => {
@@ -662,7 +663,7 @@ export class DungeonEditor {
         this.refreshProperties();
         this.refreshObjectPreview();
       },
-      editTags: () => host.manageObjectTags?.(),
+      editTags: (sourceDocument) => host.manageObjectTags?.(sourceDocument),
     });
     const canvasHost = element("main", "dn-canvas", this.body);
     this.renderer = new MapRenderer(

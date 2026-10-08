@@ -14,7 +14,7 @@ export interface ObjectLibraryPanelOptions {
   readonly assetUrl: (reference: string) => string;
   readonly selectedAsset: () => string | undefined;
   readonly selectAsset: (id: string) => void;
-  readonly editTags: () => void;
+  readonly editTags: (sourceDocument: Document) => void;
 }
 
 /** A separate image gallery beside the Object Tool's placement controls. */
@@ -186,7 +186,7 @@ export class ObjectLibraryPanel {
     const edit = document.createElement("button");
     edit.type = "button";
     edit.textContent = "Tags bearbeiten";
-    edit.addEventListener("click", () => this.options.editTags());
+    edit.addEventListener("click", () => this.options.editTags(this.root.ownerDocument));
     controls.append(label, edit);
     const list = document.createElement("div");
     list.className = "dn-object-library-tags";

@@ -34475,6 +34475,30 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/phase4-independent-review.md",
           "strictAcceptance": "open",
           "remaining": "Erster Kaltstart-Klick auf Tags bearbeiten öffnet keinen Browser; Ursache und Reparatur in getrenntem Plan-/Umsetzungslauf."
+        },
+        "phase4ColdStartRepairImplementation": {
+          "date": "2026-10-08",
+          "state": "candidate_pending_independent_review",
+          "finding": "Beim ersten Hoststart blieb Obsidian activeDocument auf about:blank, obwohl die Kartenansicht fokussiert war. Das Modal öffnete in diesem anderen Dokument. Der angeklickte Editor übergibt nun sein ownerDocument; unmittelbar vor Modal-Konstruktion wird das fokussierte Fenster als activeWindow/activeDocument gesetzt. Erster Klick über Bibliothek und Menü besteht in frischen Hostprofilen.",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalSequence": "Menu > Edit Object Tags > Edit Object Tags beim ersten Programmstart",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/runs/20261008-045455-2442213/evidence/own-browser-first-menu-click.png"
+          ],
+          "hostBuildSha256": "0bf988794648bc406e73fe029c15c1c29725ab4ce007d0d0bc3ae2633d83f934",
+          "hostSequence": "Frischer Obsidian-Prozess mit eigenem Tag/Set: erster sichtbarer Klick über Tags-Register oder Editor-Menü; Default/Override, Save, Fenster-X, Neuöffnung und frischer Neustart. Zusätzlich frischer Prozess ohne eigene Tagdatei.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/diag-own4/evidence/1791428957382-parity-phase4-objects-edit/first-click-trace.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-own/evidence/1791429221617-parity-phase4-objects-edit/first-click-trace.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-own-clean2/evidence/1791429320198-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-own-clean2/evidence/1791429335033-parity-phase4-objects-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-empty/evidence/1791429433748-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-empty/evidence/1791429475636-parity-phase4-objects-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-menu2/evidence/1791429674239-parity-phase4-objects-edit/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/phase4-coldstart-implementation.md",
+          "strictAcceptance": "open",
+          "remaining": "Eigener unabhängiger Review aller 28 Phase-4-Unterfälle auf dem finalen Build; bis dahin keine Fachphasenfreigabe."
         }
       },
       {

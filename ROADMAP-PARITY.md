@@ -75,6 +75,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Kaltstart-Nachbesserungsplan 08.10.2026:** Der [getrennte Plan](ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md) begrenzt die Restarbeit auf `DD-047.01`. Der nächste Umsetzungslauf muss zuerst Ereignis, Handleraufruf und Modal-Lebenszyklus des ersten sichtbaren Klicks unterscheiden und nur den belegten Fehlerpfad korrigieren. Frische Profile mit und ohne eigene Tagdatei, Save/Abbruch, Neuöffnung und die 27 übrigen Unterfälle bleiben Prüfpflicht. Planlauf ohne Produktänderung; **Fachphasentor offen**. Installation und Nutzervault blieben unverändert.
 
+**Kaltstart-Nachbesserungskandidat 08.10.2026:** Der [getrennte Umsetzungslauf](/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/phase4-coldstart-implementation.md) belegt, dass Obsidian beim ersten Vaultstart das Tagbrowser-Modal in ein anderes `about:blank`-Dokument öffnete. Beide sichtbaren Editorzugänge übergeben nun das fokussierte Karten-Dokument an den Modal-Aufruf. Der erste Klick über Tags-Register und Editor-Menü bestand in frischen Profilen; eigene Tag-/Setdaten, Save, Fenster-X, Neuöffnung und Neustart ebenfalls. Das Profil ohne eigene Tagdatei bestand Bibliotheks-, Such-, Used- und Persistenzfolgen. Typprüfung, 152 Tests und Build bestanden auf `0bf98879…`. **Das Phase-4-Fachphasentor bleibt bis zum eigenen unabhängigen 28-Fälle-Review offen.** Installation und Nutzervault blieben unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.

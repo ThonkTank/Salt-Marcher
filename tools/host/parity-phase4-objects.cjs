@@ -365,11 +365,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     }, MAP);
     await openMap();
     await chooseTool("Möbel");
-    await page.waitForFunction(() => !!document.querySelector(".dn-object-library-tile img[src]"));
     const tagFile = path.join(vault, ".obsidian/dungeon-editor-assets/object-tags.json");
     const before = fs.readFileSync(tagFile, "utf8");
     assert.deepEqual(Object.keys(JSON.parse(before).tags), ["QA Own Tag"]);
-    await openTags();
+    if (!restart && process.argv.includes("--menu-first")) {
+      await page.locator(".dn-menu summary").click();
+      await page.getByRole("button", { name: "Objekt-Tags bearbeiten", exact: true }).click();
+    } else await openTags();
     assert.equal(await modal().locator('input[type="radio"]').first().isChecked(), true);
     assert.equal(await modal().getByRole("combobox", { name: "Tag wählen" }).locator("option").count(), 81);
     await modal().locator('input[type="radio"]').nth(1).click();
@@ -383,6 +385,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert.equal(await modal().getByRole("checkbox", { name: "QA Own Tag" }).isChecked(), true);
     if (!restart) {
       await modal().getByRole("button", { name: "Save" }).click();
+      await page.getByText("Objekt-Tags gespeichert.", { exact: true }).waitFor();
       const savedHash = crypto.createHash("sha256").update(fs.readFileSync(tagFile)).digest("hex");
       await modal().getByRole("button", { name: "Edit Tags" }).click();
       await modal().getByRole("button", { name: "Tag hinzufügen" }).click();

@@ -576,7 +576,16 @@ export default class DungeonPlugin extends Plugin {
       : emptyObjectTags();
     return mergeObjectTags(base, this.assetLibrary.objectTags(packIds));
   }
-  openObjectTags(packIds?: readonly string[], builtInAssets = this.catalogBuiltIns): void {
+  openObjectTags(packIds?: readonly string[], builtInAssets = this.catalogBuiltIns,
+    sourceDocument?: Document): void {
+    const targetDocument = sourceDocument ??
+      this.app.workspace.activeLeaf?.view.containerEl.ownerDocument;
+    if (targetDocument?.hasFocus() && targetDocument.defaultView) {
+      // A newly trusted vault can retain about:blank as Obsidian's active document.
+      // Modal uses that global at construction, so bind it to the clicked view.
+      window.activeWindow = targetDocument.defaultView;
+      window.activeDocument = targetDocument;
+    }
     new ObjectTagsModal(this.app, {
       initialMode: this.objectTagsBrowserMode,
       onModeChange: (mode) => { this.objectTagsBrowserMode = mode; },

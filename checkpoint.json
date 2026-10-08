@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: Nachbesserungsplan für DD-047.01 abgeschlossen; getrennte Umsetzung folgt",
+  "phase": "Phase 4: Kaltstart-Tagbrowser nachgebessert; eigener unabhängiger 28-Fälle-Review folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,15 +814,15 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_cold_start_repair_plan_ready",
+    "status": "phase4_cold_start_repair_candidate_pending_review",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Umsetzungslauf nach ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md: ersten sichtbaren Klick messen, bestätigte Ursache von DD-047.01 beheben, frische Hostprofile prüfen; danach eigener unabhängiger 28-Fälle-Review.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 27 von 28 Unterfällen im zweiten Review verifiziert; Kaltstart-Browseröffnung DD-047.01 offen und als eigener Nachbesserungslauf geplant. Fachphasentor offen; Kandidatenbuild nicht installiert.",
+    "nextRun": "Getrennter unabhängiger Phase-4-Review aller 28 Unterfälle auf Build 0bf98879…; ersten Kaltstart-Klick über Tags-Register und Menü mit eigenem und leerem Tagprofil prüfen.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 27 von 28 Unterfällen im zweiten Review verifiziert; DD-047.01 hat einen neuen Kaltstart-Nachbesserungskandidaten mit direkten Hostbelegen. Fachphasentor bis zum eigenen 28-Fälle-Review offen; Kandidatenbuild nicht installiert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+    "candidateBuildSha256": "0bf988794648bc406e73fe029c15c1c29725ab4ce007d0d0bc3ae2633d83f934",
     "candidateCoreTests": 152,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
@@ -1398,6 +1398,22 @@
       "openCases": ["DD-047.01"],
       "gate": "open",
       "next": "Getrennter Umsetzungslauf: Klick- und Modal-Lebenszyklus messen, Ursache gezielt reparieren und frische Hostpaare auf finalem Build prüfen."
+    },
+    "phase4ColdStartRepairImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_pending_independent_review",
+      "plan": "ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/phase4-coldstart-implementation.md",
+      "candidateBuildSha256": "0bf988794648bc406e73fe029c15c1c29725ab4ce007d0d0bc3ae2633d83f934",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "ownTagsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-own-clean2/evidence/1791429320198-parity-phase4-objects-edit/result.json",
+      "ownTagsReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-own-clean2/evidence/1791429335033-parity-phase4-objects-reopen/result.json",
+      "emptyTagsEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-empty/evidence/1791429433748-parity-phase4-objects-edit/result.json",
+      "emptyTagsReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-empty/evidence/1791429475636-parity-phase4-objects-reopen/result.json",
+      "menuFirstEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/verify-menu2/evidence/1791429674239-parity-phase4-objects-edit/result.json",
+      "coreTestsPassed": 152,
+      "gate": "open",
+      "next": "Eigener unabhängiger 28-Fälle-Review auf dem finalen Build; erst danach Phase-4-Aufräumplanung."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
