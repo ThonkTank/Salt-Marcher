@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 const { values } = parseArgs({ options: {
   run: { type: 'string' }, app: { type: 'string' }, xvnc: { type: 'string' }, wm: { type: 'string' },
   locked: { type: 'boolean', default: false },
+  'first-run': { type: 'boolean', default: false },
 } });
 const required = name => {
   if (!values[name] || !path.isAbsolute(values[name])) throw new Error(`Absolute --${name} required`);
@@ -28,6 +29,7 @@ const lock = path.join(process.env.XDG_RUNTIME_DIR || `/run/user/${process.getui
 if (!values.locked) {
   const child = spawn('flock', ['-n', '-E', '75', lock, process.execPath, fileURLToPath(import.meta.url),
     '--locked', '--run', run, '--app', app, '--xvnc', xvnc,
+    ...(values['first-run'] ? ['--first-run'] : []),
     ...(values.wm ? ['--wm', required('wm')] : [])], { stdio: 'inherit' });
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
   child.on('exit', code => { process.exitCode = code ?? 1; });
@@ -55,7 +57,7 @@ async function main() {
   if (!displayNumber) throw new Error('No unused test display');
   for (const dir of ['config', 'data', 'cache', 'maps', 'screens']) fs.mkdirSync(path.join(run, dir));
   fs.mkdirSync(path.join(run, 'data', 'Wonderdraft'));
-  fs.writeFileSync(path.join(run, 'data', 'Wonderdraft', 'config.ini'),
+  if (!values['first-run']) fs.writeFileSync(path.join(run, 'data', 'Wonderdraft', 'config.ini'),
     '[Display]\nfullscreen=false\nwindow_width=1280\nwindow_height=960\nwindow_maximized=false\nwindow_position_x=0\nwindow_position_y=0\n');
   // Unix socket paths are limited; QA evidence directories can be much longer.
   const busDirectory = fs.mkdtempSync(path.join(path.dirname(lock), 'wonderdraft-qa-bus-'));
@@ -69,6 +71,7 @@ async function main() {
     displayIsolation: { waylandDisplay: '', gdkBackend: 'x11', qtPlatform: 'xcb', gtkUsePortal: '0',
       sessionBus: path.join(busDirectory, 'bus'), busServiceActivation: false },
     profile: { config: path.join(run, 'config'), data: path.join(run, 'data'), cache: path.join(run, 'cache') },
+    profileInitialization: values['first-run'] ? 'first_run_defaults' : 'fixed_window_config',
     lock, processes: [], state: 'starting',
   };
   const save = () => fs.writeFileSync(path.join(run, 'session.json'), JSON.stringify(manifest, null, 2) + '\n');

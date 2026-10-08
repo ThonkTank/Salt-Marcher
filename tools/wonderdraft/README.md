@@ -16,6 +16,8 @@ node tools/wonderdraft/session.mjs \
 
 Eine gemeinsame grafische QA-Sperre verhindert gleichzeitig gestartete Testinstanzen. Der Starter prüft zusätzlich laufende Original-/Testprozesse. Testprofil und Fenstergröße sind fest; RFB hört ausschließlich lokal. Openbox ist für die Fensterinitialisierung dieser Godot-Version nötig. Die normale Ressourcenverwaltung gilt; bei akutem systemweitem Speichermangel beendet die Notbremse nur eigene Kinder. `session.json` dokumentiert Rolle, Hashes, Eingabeart, PID und Prozessstartkennung.
 
+Für Erststartdialoge zusätzlich `--first-run` angeben. Dann beginnt das eigene Profil ohne vorgegebene `config.ini`; Wonderdraft legt seine Standardeinstellungen selbst an. `profileInitialization` dokumentiert diese Variante. Die private Anzeige und deren Größe bleiben gleich. Ob ein Startdialog erscheint, muss am tatsächlichen Frame geprüft werden; sein Ausbleiben beweist keine vollständige Abdeckung bedingt sichtbarer Dialoge.
+
 Systemdateidialoge benötigen ebenfalls die private Anzeige. Wonderdraft und seine Kinddialoge erhalten X11 als Backend, keine Wayland-Anzeige und einen eigenen D-Bus ohne Serviceaktivierung. Dadurch verwenden sie keinen Dateidialog des produktiven Desktops. Der kurze private Socketpfad steht in `displayIsolation`; sein Verzeichnis wird nach Beendigung der eigenen Prozesse entfernt. Bei einem Systemdialog zuerst dessen tatsächliches Bild abwarten. Eine nicht reagierende Wonderdraft-Oberfläche allein beweist keinen Programmabsturz: ein modaler Kinddialog kann noch geöffnet sein.
 
 Zuerst den **aktuellen echten Frame lesen**, erst danach Eingaben anhand der gesehenen Oberfläche festlegen. Keine Koordinaten aus anderen Anwendungen übernehmen:
