@@ -6,11 +6,19 @@ import { readObjectArgb, writeObjectArgb } from "../../src/features/objekte/colo
 import { createPrefab, placePrefab } from "../../src/prefabs";
 import { createRoom, createObject, objectAtPoint, createLight, createPortal, createWall } from "../../src/commands";
 import { compactWheelNavigation, wheelNavigation } from "../../src/navigation";
-import { selectableByClick, selectionAllowed, selectionLayer, selectionLayers, selectionType, selectionCenter, selectionMirrorChanges, selectionTransformAt, selectionFrame, selectionFrameTransformAt, selectionInsideBox, transformSelectionGroup, scaleBoxSelection, scaleSelectionFrame, rotateBoxSelection, selectionStackChange, captureSelectionClipboard, copyAtViewportCenter, type SelectionType } from "../../src/selection";
+import { selectableByClick, selectionAllowed, selectionLayer, selectionLayers, selectionType, selectionCenter, selectionMirrorChanges, selectionTransformAt, objectSelectionFrame, selectionFrame, selectionFrameTransformAt, selectionInsideBox, transformSelectionGroup, scaleBoxSelection, scaleSelectionFrame, rotateBoxSelection, selectionStackChange, captureSelectionClipboard, copyAtViewportCenter, type SelectionType } from "../../src/selection";
 import { compactObjectVisible, gridStep, objectNearViewport, fieldMeasurementLabel, pathRenderGroup, roomMeasurement } from "../../src/rendering";
 import { MapRepository } from "../../src/persistence";
 import { portalPose, moveEntity } from "../../src/geometry";
 import { newDocument, MemoryStore } from "./fixtures";
+
+const clothId = "pack:dungeondraft-builtin-1.2.0.1:object:res%3A%2F%2Ftextures%2Fobjects%2Factivities%2Fadministration%2Fcloth_01.png";
+
+test("unmeasured furniture keeps its existing selection frame", () => {
+  const object = { kind: "object", x: 3, y: 4, width: 2, height: 1,
+    rotation: 0, assetId: "other" } as MapObject;
+  assert.deepEqual(objectSelectionFrame(object), selectionFrame([object]));
+});
 
 
 test("repeated furniture placement and movement keep room ownership in one undo step", () => {
@@ -82,28 +90,21 @@ test("DD-028 object alpha survives property history and a fresh document parse",
 test("selected box gives the measured corner grip priority over its interior at two zooms", () => {
   const box = {
     kind: "object", x: 10, y: 10, width: 4, height: 6,
-    rotation: 0,
-  } as MapObject;
+    rotation: 0, assetId: clothId,
+  } as MapObject,
+    frame = objectSelectionFrame(box),
+    right = frame.x + frame.width / 2,
+    bottom = frame.y + frame.height / 2;
   assert.deepEqual(selectionTransformAt(box, { x: 10, y: 10 }, 40), { mode: "move" });
-  assert.deepEqual(selectionTransformAt(box, { x: 12.2, y: 13.2 }, 40),
+  assert.deepEqual(selectionTransformAt(box, { x: right, y: bottom }, 40),
     { mode: "scale", corner: 2 });
-  assert.deepEqual(selectionTransformAt(box, { x: 14, y: 15 }, 40),
-    { mode: "rotate" });
-  assert.deepEqual(selectionTransformAt(box, { x: 11.5, y: 12.5 }, 40),
-    { mode: "scale", corner: 2 });
-  assert.deepEqual(selectionTransformAt(box, { x: 11.35, y: 12.35 }, 40),
-    { mode: "move" });
-  assert.deepEqual(selectionTransformAt(box, { x: 12.8, y: 13 }, 40),
-    { mode: "scale", corner: 2 });
-  assert.deepEqual(selectionTransformAt(box, { x: 12.85, y: 13 }, 40),
-    { mode: "rotate" });
-  assert.deepEqual(selectionTransformAt(box, { x: 12.4, y: 13 }, 80),
-    { mode: "scale", corner: 2 });
-  assert.deepEqual(selectionTransformAt(box, { x: 12.425, y: 13 }, 80),
+  assert.deepEqual(selectionTransformAt(box, { x: right + 2, y: 10 }, 40),
     { mode: "rotate" });
   for (const [corner, x, y, sx, sy] of [
-    [0, 8, 7, 1, 1], [1, 12, 7, -1, 1],
-    [2, 12, 13, -1, -1], [3, 8, 13, 1, -1],
+    [0, 10 - frame.width / 2, 10 - frame.height / 2, 1, 1],
+    [1, right, 10 - frame.height / 2, -1, 1],
+    [2, right, bottom, -1, -1],
+    [3, 10 - frame.width / 2, bottom, 1, -1],
   ] as const) {
     for (const pixelsPerField of [40, 80]) {
       const at = (pixels: number, inward: number) => ({
@@ -124,20 +125,22 @@ test("selected box gives the measured corner grip priority over its interior at 
 
 test("rotated furniture uses the world-aligned native frame for grips and movement", () => {
   const box = { kind: "object", x: 10, y: 10, width: 4, height: 4,
-    rotation: Math.PI / 4 } as MapObject;
-  const half = 2 * Math.SQRT2;
+    rotation: Math.PI / 4, assetId: clothId } as MapObject,
+    frame = objectSelectionFrame(box),
+    halfX = frame.width / 2,
+    halfY = frame.height / 2;
   for (const pixelsPerField of [40, 80]) {
-    assert.deepEqual(selectionTransformAt(box, { x: 10 - half, y: 10 - half }, pixelsPerField),
+    assert.deepEqual(selectionTransformAt(box, { x: 10 - halfX, y: 10 - halfY }, pixelsPerField),
       { mode: "scale", corner: 0 });
-    assert.deepEqual(selectionTransformAt(box, { x: 10 + half, y: 10 - half }, pixelsPerField),
+    assert.deepEqual(selectionTransformAt(box, { x: 10 + halfX, y: 10 - halfY }, pixelsPerField),
       { mode: "scale", corner: 1 });
-    assert.deepEqual(selectionTransformAt(box, { x: 10 + half, y: 10 + half }, pixelsPerField),
+    assert.deepEqual(selectionTransformAt(box, { x: 10 + halfX, y: 10 + halfY }, pixelsPerField),
       { mode: "scale", corner: 2 });
-    assert.deepEqual(selectionTransformAt(box, { x: 10 - half, y: 10 + half }, pixelsPerField),
+    assert.deepEqual(selectionTransformAt(box, { x: 10 - halfX, y: 10 + halfY }, pixelsPerField),
       { mode: "scale", corner: 3 });
     assert.deepEqual(selectionTransformAt(box, { x: 12, y: 12 }, pixelsPerField),
       { mode: "move" });
-    assert.deepEqual(selectionTransformAt(box, { x: 10 + half + 0.03, y: 10 }, pixelsPerField),
+    assert.deepEqual(selectionTransformAt(box, { x: 10 + halfX + 0.03, y: 10 }, pixelsPerField),
       { mode: "rotate" });
   }
 });
@@ -226,25 +229,29 @@ test("marquee uses the free portal center but skips wall-anchored portals", () =
   assert.equal(selectionInsideBox(anchored, { x: -10, y: -10, width: 20, height: 20 }, get), false);
 });
 
-test("dragging a rotated object's frame keeps its opposite AABB corner fixed through save and undo", async () => {
+test("dragging a rotated object's frame follows the padded gesture bounds through save and undo", async () => {
   const s = new Session(newDocument("Transform", 20, 20)),
     floor = s.floors.values().next().value!.id,
     original = createObject(s, floor, { x: 8, y: 8 }),
     before = { ...original, x: 8, y: 8, width: 4, height: 6,
-      rotation: Math.PI / 2 };
+      rotation: Math.PI / 2, assetId: clothId };
   s.execute({ label: "Testform", entities: [{ id: original.id, before: original, after: before }] });
   const after = scaleBoxSelection(before, 2, { x: 11, y: 10 }, { x: 12, y: 11 });
   assert.ok(after.width > before.width);
   assert.ok(after.height > before.height);
   assert.ok(Math.abs(after.width / before.width - after.height / before.height) < 1e-9);
-  const opposite = (box: { x: number; y: number; width: number; height: number; rotation: number }) => ({
-    x: box.x - (Math.abs(box.width * Math.cos(box.rotation)) +
-      Math.abs(box.height * Math.sin(box.rotation))) / 2,
-    y: box.y - (Math.abs(box.width * Math.sin(box.rotation)) +
-      Math.abs(box.height * Math.cos(box.rotation))) / 2,
-  });
-  assert.ok(Math.hypot(opposite(after).x - opposite(before).x,
-    opposite(after).y - opposite(before).y) < 1e-9);
+  const beforeFrame = objectSelectionFrame(before),
+    scaledFrame = scaleSelectionFrame(beforeFrame, 2,
+      { x: 11, y: 10 }, { x: 12, y: 11 });
+  assert.ok(Math.abs(after.x - scaledFrame.x) < 1e-9);
+  assert.ok(Math.abs(after.y - scaledFrame.y) < 1e-9);
+  assert.ok(Math.abs(after.width / before.width -
+    scaledFrame.width / beforeFrame.width) < 1e-9);
+  const selectedAfter = objectSelectionFrame(after as MapObject);
+  assert.ok(Math.abs(selectedAfter.x - selectedAfter.width / 2 -
+    (beforeFrame.x - beforeFrame.width / 2)) < 1e-9);
+  assert.ok(Math.abs(selectedAfter.y - selectedAfter.height / 2 -
+    (beforeFrame.y - beforeFrame.height / 2)) < 1e-9);
   const rotated = rotateBoxSelection(after,
     { x: after.x + 2, y: after.y }, { x: after.x, y: after.y + 2 });
   assert.ok(Math.abs((rotated.rotation ?? 0) - after.rotation - Math.PI / 2) < 1e-9);

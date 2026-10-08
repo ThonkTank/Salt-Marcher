@@ -169,7 +169,7 @@ export function selectionTransformAt(
   const frame = entity.kind === "light"
     ? { x: entity.x, y: entity.y, width: 1, height: 1,
       rotation: entity.rotation ?? 0 }
-    : selectionFrame([entity])!;
+    : entity.kind === "object" ? objectSelectionFrame(entity) : selectionFrame([entity])!;
   return transformAtFrame(frame, point, pixelsPerField, true,
     entity.kind === "light" ? "light" : "box");
 }
@@ -239,6 +239,16 @@ export function selectionFrame(
     height: bottom - top,
     rotation,
   };
+}
+
+/** The directly measured native Cloth 01 frame grows with its texture scale. */
+export function objectSelectionFrame(entity: MapObject): SelectionFrame {
+  const frame = selectionFrame([entity])!;
+  if (!entity.assetId?.startsWith("pack:dungeondraft-builtin-1.2.0.1:object:") ||
+      !entity.assetId.endsWith("cloth_01.png")) return frame;
+  const scale = entity.width / (74 / 256);
+  return { ...frame, width: frame.width + 0.1875 * scale,
+    height: frame.height + 0.189453125 * scale };
 }
 
 export function selectionFrameTransformAt(
@@ -335,7 +345,8 @@ export function scaleBoxSelection(
   start: Point,
   end: Point,
 ): BoxSelection {
-  const frame = selectionFrame([entity])!,
+  const frame = entity.kind === "object"
+      ? objectSelectionFrame(entity) : selectionFrame([entity])!,
     afterFrame = scaleSelectionFrame(frame, corner, start, end),
     factor = afterFrame.width / frame.width;
   return {

@@ -28,7 +28,7 @@ import {
   isRoom,
 } from "./model";
 import { Session } from "./session";
-import { selectionFrame, type SelectionFrame, type TransformSelection } from "./selection";
+import { objectSelectionFrame, selectionFrame, type SelectionFrame, type TransformSelection } from "./selection";
 import {
   hit,
   wallSegments,
@@ -1916,22 +1916,8 @@ export class MapRenderer {
           contour++;
         }
     } else if (e.kind === "object" || e.kind === "reference") {
-      const c = Math.cos(e.rotation),
-        s = Math.sin(e.rotation),
-        corners = [
-          { x: -e.width / 2 - 0.12, y: -e.height / 2 - 0.12 },
-          { x: e.width / 2 + 0.12, y: -e.height / 2 - 0.12 },
-          { x: e.width / 2 + 0.12, y: e.height / 2 + 0.12 },
-          { x: -e.width / 2 - 0.12, y: e.height / 2 + 0.12 },
-        ].map((point) => ({
-          x: e.x + point.x * c - point.y * s,
-          y: e.y + point.x * s + point.y * c,
-        }));
-      g.poly(
-        corners.flatMap((point) => [point.x, point.y]),
-        true,
-      ).stroke({ color: 0x008da8, width: 2 / this.camera.scale });
-      this.drawSelectionFrame(g, selectionFrame([e])!);
+      this.drawSelectionFrame(g, e.kind === "object"
+        ? objectSelectionFrame(e) : selectionFrame([e])!);
     } else if (e.kind === "door") {
       const p = portalPose(e, (id) => this.session.entities.get(id));
       g.circle(p.x, p.y, 0.7).stroke({

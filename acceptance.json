@@ -59440,6 +59440,26 @@
       "projectInvariant": "Raumgrenzzug mit roomId, Key-Bezug, Undo/Redo, Save und frischer Neuöffnung im Host.",
       "gate": "open",
       "decision": "Nur Nachbesserungsplanung. Gleiche Original-/Hoststartkarten und Eingabespuren klären elf offene Fälle; Produktänderung erst bei direkt gemessener Funktionsdifferenz. Getrennte Umsetzung und unabhängiger Review folgen."
+    },
+    "phase6RepairImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_ready_for_separate_independent_review_with_open_input_edges",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/phase6-repair-implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/implementation-audit.json",
+      "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/host-final/evidence/1791484915762-parity-phase6-repair-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/host-final/evidence/1791484988886-parity-phase6-repair-reopen/result.json",
+      "nativeScaleReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale-reopen/evidence/reopened.png",
+      "coreTestsPassed": 156,
+      "pairedCandidate": ["DD-026.22", "DD-026.23", "DD-026.26", "DD-030.22", "DD-030.25"],
+      "partlyPairedCandidate": ["DD-026.24", "DD-026.27", "DD-030.24"],
+      "openInput": ["DD-026.25", "DD-030.19", "DD-030.20"],
+      "projectInvariant": "Raumgrenzzug mit roomId, Feature, Key, Undo/Redo, Speichern und Neuöffnung im Host bestanden.",
+      "gate": "open",
+      "decision": "Der Umsetzungskandidat korrigiert die direkt gemessene Cloth-Griffsensitivität und sichert Raumwechsel, Objektgesten und Regressionen im isolierten Host. Mehrere Eingaberänder bleiben ungepaart; erst der getrennte unabhängige Review entscheidet die 15 Pflichtpositionen und das Fachphasentor."
     }
   }
 }
