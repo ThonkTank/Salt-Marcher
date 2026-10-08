@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase5_repair2_reviewed_gate_open",
+    "status": "phase5_repair3_plan_ready_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener begrenzter Nachbesserungsplan für DD-028.10: direkte native Kartenfolge A→B→A im selben Prozess; danach getrennte Umsetzung und unabhängiger Review.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 26 Positionen belegt, DD-028.10 wegen fehlender nativer B→A-Rückkehr offen. DD-028.19 ist im Objektkontext belegt, als Gesamtfall offen. Fachphasentor offen; installierter Build und Nutzervault unverändert.",
+    "nextRun": "Eigener Phase-5-Nachbesserungs-Umsetzungslauf für DD-028.10: Öffnen-Dialog diagnostizieren, native A→B→A-Folge im selben Prozess und Hostvergleich; danach unabhängiger 28-Positionen-Review.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 26 Positionen belegt; begrenzter dritter Plan für DD-028.10 liegt vor, native B→A-Rückkehr bleibt offen. DD-028.19 ist im Objektkontext belegt, als Gesamtfall offen. Fachphasentor offen; installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
     "candidateCoreTests": 155,
@@ -1713,6 +1713,18 @@
       "coreTestsPassed": 155,
       "gate": "open",
       "next": "Getrennter Nachbesserungsplan für die native A→B→A-Rückkehr; danach eigene Umsetzung und unabhängiger Fachreview."
+    },
+    "phase5Repair3Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE5-REPAIR3-PLAN.md",
+      "baseCommit": "3322179",
+      "baseBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+      "openCase": "DD-028.10: native B→A return in one process",
+      "gate": "open",
+      "next": "Getrennter Umsetzungslauf mit nativer Dialogdiagnose, direkter A→B→A-Folge und Hostvergleich; danach unabhängiger 28-Positionen-Review."
     }
   }
 }
