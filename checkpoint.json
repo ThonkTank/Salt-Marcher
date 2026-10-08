@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase5_repair2_candidate_review_pending_gate_open",
+    "status": "phase5_repair2_reviewed_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener unabhängiger Phase-5-Nachbesserungsreview für alle 28 Positionen und das Fachphasentor; DD-028.10 mit offener nativer B→A-Probe gesondert entscheiden.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: neun Fachfälle und der Objektkontext von DD-028.19 sind bereits belegt. Für 18 weitere Positionen liegen Umsetzungskandidaten mit Original- und Hostbelegen vor; DD-028.10 bleibt wegen der nativen B→A-Probe teilweise offen. Fachphasentor und unabhängiger Review stehen aus; installierter Build und Nutzervault unverändert.",
+    "nextRun": "Eigener begrenzter Nachbesserungsplan für DD-028.10: direkte native Kartenfolge A→B→A im selben Prozess; danach getrennte Umsetzung und unabhängiger Review.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 26 Positionen belegt, DD-028.10 wegen fehlender nativer B→A-Rückkehr offen. DD-028.19 ist im Objektkontext belegt, als Gesamtfall offen. Fachphasentor offen; installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
     "candidateCoreTests": 155,
@@ -1696,6 +1696,23 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
       "gate": "open",
       "next": "Getrennter unabhängiger Review mit Einzelentscheidung für 28 Positionen und Phase-5-Fachphasentor."
+    },
+    "phase5Repair2IndependentReview": {
+      "date": "2026-10-08",
+      "state": "reviewed_gate_open",
+      "reviewOfCommit": "ecb788c",
+      "candidateBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json",
+      "rawValues": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-raw-values.json",
+      "verifiedCases": 26,
+      "openEvidenceCase": "DD-028.10",
+      "verifiedObjectContextSharedCase": "DD-028.19",
+      "hostReviewPairsPassed": 7,
+      "coreTestsPassed": 155,
+      "gate": "open",
+      "next": "Getrennter Nachbesserungsplan für die native A→B→A-Rückkehr; danach eigene Umsetzung und unabhängiger Fachreview."
     }
   }
 }

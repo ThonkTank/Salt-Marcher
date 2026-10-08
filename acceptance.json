@@ -24966,6 +24966,29 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Kontrollierte native Karte: Layer 400 vor Layer 100; Select trifft den sichtbaren Globe 01. Host-Render-/Hit-Test-Folge und Neuöffnung entsprechen dem.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first-select2.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400-select.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd026-phase5-20261008/evidence/12-under-pair.dungeondraft_map"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468214078-parity-phase5-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468243407-parity-phase5-repair-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25117,6 +25140,29 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Native Over-Listenfolge aus Bedienprobe plus kontrolliertes gleichlagiges Überlappungspaar: letzter Eintrag liegt vorn und wird getroffen; Host Over, Save und Neuöffnung ebenso.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first-select2.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400-select.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd026-phase5-20261008/evidence/12-under-pair.dungeondraft_map"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468214078-parity-phase5-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468243407-parity-phase5-repair-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25268,6 +25314,29 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Native Under-Bedienprobe setzt neuen Eintrag vorn in der Liste; kontrollierte Überlappung zeigt diesen hinter dem letzten Objekt. Host Under und Hit-Test stimmen.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/02-first-select2.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-sorting-20261008/01-layer400-select.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd026-phase5-20261008/evidence/12-under-pair.dungeondraft_map"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468214078-parity-phase5-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468243407-parity-phase5-repair-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25428,6 +25497,31 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Original und Host zeigen 45° am Globe 01 in Cursorvorschau und neuer Instanz; 0,785398 rad sind roh gespeichert. Beide Range-Regler reagieren während gehaltenem Zug.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/rotation-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/rotation-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25588,6 +25682,31 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Original und Host zeigen Scale 1,99 relativ zum Standard-Globe. Native Rohachsen sind 1,99/1,99, Hostmaße sind 1,99-fach; der Scale-Regler reagiert während gehaltenem Zug.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/scale-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/scale-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25749,6 +25868,32 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Die zweite Atlas-Instanz speichert Shadow=false und zeigt keinen zusätzlichen Schatten; die Standardinstanzen speichern Shadow=true mit sichtbarer Schattenwirkung.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-options.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step4-placed.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -25894,6 +26039,27 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Native Karten unterscheiden nur block_light; Schattenkeil und seitlich unveränderter Pixel. Eigener Hostlauf zeigt dieselbe Wirkungsrichtung, unabhängigen Shadow-Schalter, Rückschalten und Neuöffnung.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-light-20261008/off.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-light-20261008/on.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-light-20261008/off.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-light-20261008/on.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-light/evidence/1791468331692-parity-phase5-light-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-light/evidence/1791468355657-parity-phase5-light-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26059,6 +26225,37 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Neue QA-Colorable-Instanzen speichern gewählte RGB-Werte; nicht färbbare Atlas-Textur bleibt in ihrer Eigenfarbe.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/R64-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/R64-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-preview.png",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-152552-2726797/evidence/screens/alpha-loaded.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468672702-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468693903-parity-phase5-visual-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-R64.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-R64.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/alpha-visual.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466131962-parity-phase5-visual-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26286,6 +26483,28 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Zuvor bestandener Bibliotheksfall; Phase-4-Edit und frische Neuöffnung auf demselben Endbuild erneut bestanden.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/85-object-qa-filter-settled.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/10-object-tags-scroll30.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-regression-20261008/evidence/1791455727821-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-regression-20261008/evidence/1791455799713-parity-phase4-objects-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-library/evidence/1791468833016-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-library/evidence/1791468872045-parity-phase4-objects-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26470,6 +26689,34 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Atlas-Cursorvorschau vor jedem der vier Kartenklicks; Folgeinstanz stimmt in Asset und aktiven Optionen.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step1-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step3-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/screens/step4-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step1-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step3-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step4-preview.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step4.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26629,6 +26876,33 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Ein Klick auf Globe 02 erzeugt im frischen Endbuild-Host genau eine Instanz; direktes Originalpaar aus Vorreview gültig.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/place-default.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/09-place-default.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-026-OBJECT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-19-NATIVE-DEFAULTS.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455583043-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455599494-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456426804-parity-phase5-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456448963-parity-phase5-review-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468706330-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468740981-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26759,6 +27033,28 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Ruhendes Escape lässt Object Tool aktiv; eigener Endbuild-Hostlauf bestätigt die vom Picker-Escape getrennte Regel.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/08-escape-hover.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/07-hover-dwell.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/objekte/DD-026-20-ESCAPE-STATIC.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455583043-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455599494-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468706330-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468740981-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -26930,6 +27226,34 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Vier gültige, auf der 8×8-Karte liegende Atlas-Instanzen mit Asset-/Optionswechsel in einem Lauf.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step1.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step3.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/step4.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-151236-2719722/evidence/maps/snap-object.dungeondraft_map"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step1.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step2.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step3.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-step4.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -27596,6 +27920,41 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Vier Platzierungen einzeln 4→0 rückgängig und 0→4 wiederhergestellt; Rohobjekte bleiben gleich.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/undo1.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/undo2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/undo3.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/undo4.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/redo1.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/redo2.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/redo3.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/redo4.dungeondraft_map"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-undo1.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-undo2.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-undo3.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-undo4.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-redo1.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-redo2.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-redo3.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/atlas-redo4.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -27766,6 +28125,30 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Originalkarte und Hostkarte nach Prozessneustart mit identischen vier Atlas-Optionen und fünf Farbobjekten.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150025-2709563/evidence/maps/redo4.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-150645-2715672/evidence/screens/reopen-loaded.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-153745-2733465/evidence/screens/color-reopen-loaded.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/final-reopen.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/final-reopen.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -29628,6 +30011,32 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Direkter Original-Feldklick speichert ff4e87bf in einem neuen Colorable-Objekt. Der kalibrierte Host-Feldklick erreicht denselben Rohwert und erhält ihn nach Neuöffnung.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/field-picker-corrected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/field-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/field-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-gesture-calibration.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-field-picker.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-field-object.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-field-object.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -29779,6 +30188,32 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Direkter Original-Hue-Klick speichert ff4ebf60 in einem neuen Colorable-Objekt. Der kalibrierte Host-Hue-Klick erreicht denselben Rohwert und erhält ihn nach Neuöffnung.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/hue-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/hue-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/hue-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-gesture-calibration.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-hue-picker.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-hue-object.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-hue-object.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -29928,6 +30363,30 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: R=64: neues Objekt ff403834; vorherige Objekte bleiben unverändert.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/R64-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/R64-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/R64-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-R64.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-R64.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30077,6 +30536,30 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: G=128: neues Objekt ff408034; vorherige Objekte bleiben unverändert.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/G128-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/G128-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/G128-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-G128.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-G128.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30226,6 +30709,30 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: B=192: neues Objekt ff4080c0; vorherige Objekte bleiben unverändert.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/B192-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/B192-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/B192-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-B192.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-B192.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30435,6 +30942,30 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Original-UI-Probe und eigene Host-UI-Probe setzen A=255/128/0 an geeigneten Colorable-Objekten. Rohwerte, getrennte History-Schritte, kontrollierte Bildmatrix und frische Hostöffnung belegen die Alpha-Wirkung.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-152552-2726797/evidence/screens/alpha-loaded.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468643745-parity-phase5-alpha-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468659652-parity-phase5-alpha-review-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468672702-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468693903-parity-phase5-visual-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/alpha-visual.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466131962-parity-phase5-visual-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30540,6 +31071,28 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Sechs- und achtstellige Hexregeln im Endbuild-Host erneut bestanden; direkte native Regel aus Vorreview gültig.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd028-phase5-tmux-20261008/evidence/12-hex-tab.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455583043-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455599494-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456426804-parity-phase5-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456448963-parity-phase5-review-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468706330-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468740981-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30721,6 +31274,33 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Unabhängige Rohkarten- und Endbuildprüfung: Picker-Accept überträgt alle fünf gemessenen ARGB-Werte in jeweils neues Colorable-Objekt.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/R64-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/G128-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/B192-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/field-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/maps/hue-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-153745-2733465/evidence/screens/color-reopen-loaded.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/final-edit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/final-reopen.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -30854,6 +31434,28 @@
           "strictAcceptance": "passed",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Kreisöffner und Escape ohne Werkzeugwechsel im Endbuild-Host erneut bestanden.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd028-phase5-tmux-20261008/evidence/03-picker.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455583043-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455599494-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456426804-parity-phase5-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/evidence/1791456448963-parity-phase5-review-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468706330-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468740981-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -31007,6 +31609,35 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "open_evidence",
+          "decision": "Originalkarte A speichert 31 Kacheln und ein gültiges Folgeobjekt mit 8012ab34; neu erzeugte Karte B zeigt 30. Der Host besteht A→B→A und Neustart. Die Rückkehr B→A im selben Originalprozess ist wegen des blockierenden Öffnen-Dialogs nicht direkt belegt.",
+          "remaining": "Original B→A im selben Prozess direkt prüfen; Host- und Rohkartenindizien ersetzen diese Bedienfolge nicht.",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-143801-2700804/evidence/maps/A-new-swatch-object.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-143801-2700804/evidence/screens/A-new-swatch-object.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-153848-2734310/evidence/screens/A-palette-reopen.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-153848-2734310/evidence/screens/B-palette-new.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791467899664-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-main/evidence/1791468108063-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468214078-parity-phase5-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-sorting/evidence/1791468243407-parity-phase5-repair-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/palette-A-object.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/palette-B-empty.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/palette-A-return.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791467064735-parity-phase5-repair2-reopen/palette-A-fresh-reopen.json"
+          ],
+          "strictAcceptance": "open",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -31186,6 +31817,32 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Die gültige Originalkarte und die eigene Hostkarte tönen nur die markierten Colorable-Pixel; feste Assetpixel bleiben bei A=0/128/255 sichtbar. Die Bildwirkung ist ungefähr gleichwertig.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-152552-2726797/evidence/screens/alpha-loaded.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-144718-2703626/evidence/screens/B192-preview.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468672702-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468693903-parity-phase5-visual-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468643745-parity-phase5-alpha-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468659652-parity-phase5-alpha-review-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/alpha-visual.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466131962-parity-phase5-visual-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-final/evidence/1791466889203-parity-phase5-repair2-edit/color-B192.png"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -31361,6 +32018,31 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Original und Host speichern A=0/128/255 und zeigen die Transparenz nach frischer Öffnung. Host-UI-Platzierung und kontrollierte Renderkarte sind getrennt belegt.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-152552-2726797/evidence/screens/alpha-loaded.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/native/runs/20261008-152552-2726797/evidence/screens/alpha-reopen.png"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468672702-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-visual/evidence/1791468693903-parity-phase5-visual-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468643745-parity-phase5-alpha-review-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-alpha-current2/evidence/1791468659652-parity-phase5-alpha-review-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466106072-parity-phase5-visual-edit/alpha-visual.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/host-visual/evidence/1791466131962-parity-phase5-visual-reopen/result.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
@@ -31853,6 +32535,26 @@
           "strictAcceptance": "open",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/review-audit.json"
+        },
+        "phase5Repair2IndependentReview": {
+          "date": "2026-10-08",
+          "status": "object_context_verified_total_open",
+          "decision": "Objekt-Pipette mit Hover und bestätigendem Klick ohne zusätzliche Objektinstanz auf dem unveränderten Endbuild erneut bestanden; gemeinsamer Fall bleibt für Scatter und Light offen.",
+          "remaining": "Scatter- und Light-Kontexte folgen in späteren Phasen.",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd028-phase5-tmux-20261008/evidence/15-pipette-over-map.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455583043-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/evidence/1791455599494-reopen/result.json"
+          ],
+          "hostBuildSha256": "46cfd6a59d7f3cd266efc3fe2bdd9493bdbe27ed3ba6ac7fbd60a27f6d6e5bb4",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468706330-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/host-objects/evidence/1791468740981-reopen/result.json"
+          ],
+          "strictAcceptance": "open",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
         }
       },
       {
