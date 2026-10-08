@@ -55911,6 +55911,20 @@
       "gate": "open",
       "decision": "Interner Aufräumkandidat ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Review verifiziert; ein eigener unabhängiger Aufräum-Review entscheidet das Aufräumtor vor Phase 5."
     },
+    "phase4CleanupIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_open",
+      "candidateCommit": "6fb0388",
+      "candidateBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/phase4-cleanup-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/review-audit.json",
+      "independentHostResults": 5,
+      "implementationHostResultsAudited": 8,
+      "openFindings": ["P4-CL-R1", "P4-CL-R2"],
+      "gate": "open",
+      "decision": "Der Fachreview mit 28 Unterfällen bleibt unverändert gültig. Der technische Aufräum-Review zeigt Kachelneubau nach Assetinvalidierung bei identischen IDs und eine unvollständige gepaarte Mess-/ID-Matrix. Eigene Nachbesserungsplanung, Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 5."
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",
