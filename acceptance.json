@@ -63923,6 +63923,24 @@
           "productChange": "none",
           "limit": "Der Renderer meldete trotz inaktivem Electron-Fenster document.hasFocus()=true und kein blur. Die gemessene Bedienfolge stimmt in Wirkung und Speicherung; ein nicht ausgelöster Renderer-Blur wird nicht behauptet. Physische Eingabe bleibt Phase 7.",
           "gate": "open_pending_independent_review"
+        },
+        "repair3Review": {
+          "date": "2026-10-09",
+          "state": "verified_in_measured_scope",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "observation": "A-KeyRelease traf bei inaktivem Obsidian-Electron-Fenster das externe X11-Zielfenster, nicht den Editor. Nach Rückkehr speicherte Atlas Globe 01 flip=true wie im Original; Rückkehr bei A gehalten true, normaler Release im Editor false. Frische Host-Neuöffnung erhielt alle drei Werte.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/host/evidence/1791499555013-parity-phase6-repair2-focus-edit/wm-focus-probe.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/host/evidence/1791499555013-parity-phase6-repair2-focus-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/host/evidence/1791499573626-parity-phase6-repair2-focus-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/review-audit.json",
+          "limit": "document.hasFocus() blieb trotz inaktivem Electron-Fenster true; kein DOM-Blur belegt. Physische Maus-/Touchpad-Eingabe folgt in Phase 7."
         }
       },
       {
@@ -96566,6 +96584,40 @@
       "productChange": "none",
       "gate": "open",
       "next": "Eigener unabhängiger Review des Fokuspaars und aller 15 Phase-6-Pflichtpositionen; erst danach Fachphasentor."
+    },
+    "phase6Repair3IndependentReview": {
+      "date": "2026-10-09",
+      "state": "fach_gate_passed_cleanup_pending",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "reviewOfCommit": "e616d29c5221828516846d30d288b0738c428eed",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/review-audit.json",
+      "verified": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.24",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "newlyReviewed": "DD-026.25",
+      "open": [],
+      "coreTestsPassed": 167,
+      "projectInvariant": "V4-Raumgrenzzug im vorigen Review auf demselben Build bestanden.",
+      "limit": "Kein DOM-Blur im Host beobachtet; physische Eingabe und kombinierte Großkarte folgen in Phase 7. Cloth-Mittelpunkt grafisch ungefähr gleichwertig.",
+      "gate": "passed",
+      "next": "Eigener technischer Phase-6-Aufräumplan; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
     }
   }
 }

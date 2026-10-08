@@ -971,13 +971,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_repair3_implementation_candidate_review_pending",
+    "status": "phase6_fach_gate_passed_cleanup_plan_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener unabhängiger Review von DD-026.25 und aller 15 Phase-6-Pflichtpositionen auf Build bdf8d7a3…; Fachphasentor bleibt bis dahin offen.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun frühere und fünf neue Positionen getrennt reviewt; DD-026.25 hat nun ein direktes externes A-Fokuspaar als Umsetzungskandidat. Fachphasentor und Aufräumen bleiben bis zum eigenen Review offen. Raumgrenz-Invariante auf aktuellem Build bestanden; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Eigener technischer Phase-6-Aufräumplan; Umsetzung und unabhängiger Aufräumreview bleiben vor Phase 7 getrennt.",
+    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: alle 15 Pflichtpositionen in getrennten Fachreviews auf Endbuild belegt, Fachphasentor bestanden. Externer A-KeyRelease und Hostwirkung direkt gepaart; kein DOM-Blur behauptet. Phase 7 bis zum Phase-6-Aufräumtor gesperrt; Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
     "candidateCoreTests": 167,
@@ -2420,6 +2420,19 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499327049-parity-phase6-repair2-focus-reopen/result.json",
       "gate": "open",
       "next": "Eigener unabhängiger Review von DD-026.25 und aller 15 Phase-6-Pflichtpositionen auf Build bdf8d7a3…; Fachphasentor bleibt bis dahin offen."
+    },
+    "phase6Repair3Review": {
+      "date": "2026-10-09",
+      "state": "fach_gate_passed_cleanup_pending",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/review-audit.json",
+      "reviewOfCommit": "e616d29c5221828516846d30d288b0738c428eed",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "verifiedCases": 15,
+      "coreTestsPassed": 167,
+      "productChange": "none",
+      "gate": "passed",
+      "next": "Eigener Phase-6-Aufräumplan; Phase 7 bleibt bis zum Aufräumreview gesperrt."
     }
   }
 }
