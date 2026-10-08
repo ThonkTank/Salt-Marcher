@@ -975,13 +975,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase7_plan_ready_implementation_next",
+    "status": "phase7_implementation_partial_p7_1",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Phase-7-Umsetzungslauf nach ROADMAP-PARITY-PHASE7-PLAN.md: zuerst kleine zusammenhängende V4-Folge, danach Großkarte und Vault-Kopie; physische Eingabe bleibt eigene direkte Probe.",
-    "note": "Phase 6 samt Aufräumtor bestanden. Phase 7 hat einen eigenen Vier-Stränge-Plan für gemeinsamen Ablauf, physische Bedienung, große Karte und geschützte Spielansicht; Fachphasentor offen. Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "P7-1 um Raumkontur-Nachbearbeitung, weitere eingebaute und Paketobjekte sowie Transformation nach Auswahl ergänzen; danach P7-3 Großkarte und P7-4 Vault-Kopie, P7-2 als echte Hardwareprobe. Unabhängiger Review erst nach Umsetzung.",
+    "note": "Phase 6 samt Aufräumtor bestanden. P7-1 besitzt ein bestandenes isoliertes Edit-/Neuöffnungspaar für zwei Räume, Portal, zwei Objektarten und atomaren Feature-Key-Raumwechsel. P7-1 ist damit nur teilweise umgesetzt; P7-2/3/4 und Phase-7-Review bleiben offen. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
@@ -2494,6 +2494,17 @@
       ],
       "gate": "open",
       "next": "Getrennte Phase-7-Umsetzung, danach unabhängiger Review und erst anschließend abschließende Aufräumphase."
+    },
+    "phase7Implementation": {
+      "date": "2026-10-09",
+      "state": "in_progress_p7_1_partial",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/phase7-p7-1-progress.md",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/evidence/1791502824418-parity-phase7-combined-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/evidence/1791503193207-parity-phase7-combined-reopen/result.json",
+      "verified": "Zwei Räume, gebundenes Portal, eingebautes und Paketobjekt, Feature A, exakter Key, Raumwechsel, Undo/Redo, Speichern und Kartenklick nach frischer Neuöffnung.",
+      "open": ["P7-1 Raumkontur und weitere Objekt-/Auswahltransformationen", "P7-2 physische Eingabe", "P7-3 große kombinierte Karte", "P7-4 geschützte Vault-Kopie", "Unabhängiger Fachreview"],
+      "gate": "open"
     }
   }
 }
