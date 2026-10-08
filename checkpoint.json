@@ -17,8 +17,9 @@
   },
   "hexAtlasRoadmap": {
     "date": "2026-10-08",
-    "state": "roadmap_saved_not_implemented",
+    "state": "hex00_planned_not_implemented",
     "plan": "ROADMAP-HEX-ATLAS.md",
+    "activePhasePlan": "ROADMAP-HEX-00-PLAN.md",
     "architecture": "ARCHITECTURE.md#vereinbarte-hex-atlas-erweiterung",
     "revision": "29_hex_phases_and_10_city_phases_in_one_mode_free_atlas",
     "cityPlan": "ROADMAP-CITIES.md",
@@ -52,7 +53,39 @@
       "HEX-10": "Mehrstufige Welt, Ooke-Bildvorlagen und erste PNG-Ausgabe."
     },
     "verification": "Plan und offener Wonderdraft-Ausgangskatalog gespeichert; noch keine Produktumsetzung oder direkte Original-/Hostabnahme. Vor HEX-01 vollständiges Original-Mapping und belegte Startfolgen; je Werkzeugphase konkrete Originalwirkung, Hostpaar und eigener Review. Nach je zwei Produktphasen geprüfter Teststand. Nutzbarkeit und Parität bleiben getrennte Nachweise.",
-    "next": "HEX-00-A/B/C gemäß WONDERDRAFT-PARITY.md ausführen: gesicherte Dungeon-Ausgangsbasis, direkte Wonderdraft-Inventur und Startfolge samt Review. Zusätzlich CITY-00 als kleine Ergebnisgalerie für Stadtübersicht und ausgearbeitete Draufsicht vorbereiten. HEX-01 bleibt bis zum Wonderdraft-Referenztor ungeöffnet; Stadtproduktcode bis zum CITY-00-Ergebnistor. Alle geplanten Übergänge und Bearbeitung müssen im selben Atlas ohne separate Modi funktionieren."
+    "next": "Eigener Umsetzungslauf HEX-00-I01 gemäß ROADMAP-HEX-00-PLAN.md: gesicherte Dungeon-Ausgangsbasis, isolierter Kernlauf, unterstützte Original-Teststeuerung und direkte Wonderdraft-Inventur. Danach separate Startfolgen, Fachreview/Nachbesserung und Aufräumläufe. CITY-00 bleibt eigener früher Ergebnisreferenzlauf. HEX-01 erst nach Originaltor und Aufräumreview; Stadtproduktcode erst nach CITY-00. Alle Übergänge und Bearbeitung im selben Atlas ohne separate Modi."
+  },
+  "hexAtlasExecution": {
+    "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
+    "phase": "HEX-00",
+    "state": "planning_complete_implementation_next",
+    "plan": "ROADMAP-HEX-00-PLAN.md",
+    "currentRun": {
+      "id": "HEX-00-P01",
+      "kind": "planning",
+      "startedAt": "2026-10-08T19:42:27.848506+02:00",
+      "endedAt": "2026-10-08T19:46:56.581997+02:00",
+      "focus": "Offene Punkte, technische Referenz-/Testbasis, direkte Originalinventur und getrennte Abnahme-/Aufräumläufe planen.",
+      "state": "complete",
+      "result": "Konkreter Plan gespeichert und statisch geprüft. Keine Produktumsetzung, direkte Originalaufnahme oder Fachfreigabe dieses Laufs.",
+      "baseCommit": "3cf41c876977e14a9444b4fb6fa768edcb80798d",
+      "evidence": ["/home/aaron/.cache/dungeon-native-qa/hex-00/planning-20261008-194227/plan-verification.json"]
+    },
+    "nextRun": {
+      "id": "HEX-00-I01",
+      "kind": "implementation",
+      "focus": "Ausgangsbasis sichern, Dungeon-Kernweg isoliert prüfen, unterstützte Original-Teststeuerung nachweisen und vollständige direkte Wonderdraft-Oberfläche zuordnen.",
+      "gate": "Originalinventar und Referenztor bleiben bis zum separaten Fachreview offen."
+    },
+    "review": {
+      "state": "not_started",
+      "next": "Eigener HEX-00-R01 nach Inventur und originalen Startfolgen; Pflichtlücken in eigenen Nachbesserungs-/Reviewläufen schließen."
+    },
+    "cleanup": {
+      "state": "not_started",
+      "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
+    },
+    "open": ["Direkte Original-Teststeuerung und Profilisolierung", "Vollständiges direktes UI-Inventar", "Originale Startfolgen mit Neustart", "Isolierter Dungeon-Kernweg", "Separater Fachreview und Aufräumreview", "Eigener CITY-00-Ergebnisreferenzlauf"]
   },
   "phase": "Phase 5: Aufräum-Nachbesserungsplan liegt vor; getrennte QA-Umsetzung folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
