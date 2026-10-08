@@ -53,6 +53,7 @@ func update(delta):
         "is_drawing": selection.isDrawing,
         "transform_mode": selection.transformMode,
         "transform_corner": selection.transformCorner,
+        "mouse_viewport": str(Global.Editor.get_viewport().get_mouse_position()),
         "box_begin": str(selection.boxBegin),
         "box_end": str(selection.boxEnd),
         "selected": selected
