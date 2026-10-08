@@ -93,6 +93,25 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTo
     const pickerButton = page.getByRole("button", { name: "Objektfarbe RGBA öffnen" });
     await pickerButton.click();
     const hex = page.getByRole("textbox", { name: "Hex ARGB" });
+    await hex.fill("ff4080c0");
+    await hex.press("Tab");
+    const field = page.locator(".dn-object-rgba-field");
+    await field.scrollIntoViewIfNeeded();
+    const fieldBox = await field.boundingBox();
+    assert(fieldBox);
+    await field.click({ position: {
+      x: fieldBox.width * .59375 - 1, y: fieldBox.height * .25 - 1,
+    } });
+    assert.equal(await hex.inputValue(), "4e86bf");
+    const hue = page.locator(".dn-object-rgba-picker input[aria-label='Objektfarbe Farbton']");
+    await hue.scrollIntoViewIfNeeded();
+    const hueBox = await hue.boundingBox();
+    assert(hueBox);
+    await hue.click({ position: {
+      x: hueBox.width / 2, y: hueBox.height * .359375,
+    } });
+    assert.equal(await hex.inputValue(), "4ebf5f");
+    checks.push("Calibrated native field and hue positions yield exact RGB values");
     const initialHex = await hex.inputValue();
     await page.locator(".dn-object-rgba-field").click({ position: { x: 120, y: 35 } });
     assert.notEqual(await hex.inputValue(), initialHex);
