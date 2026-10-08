@@ -51,6 +51,8 @@ Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners 
 
 **Aufräumumsetzung 08.10.2026:** Der [Umsetzungskandidat](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/phase3-cleanup-implementation.md) verwendet Boden-Geometrie und Shader während gehaltener Punktvorschauen weiter, beschleunigt die Prüfung berührter Randzellen und bündelt Wandstilregel sowie vier Phase-3-Fixtures. Alle 72 Variantenarrays und 72 Abdeckungsmasken sind vor/nach dem Eingriff bytegleich; 17 finale isolierte Hostläufe einschließlich Edit/Neuöffnung und Phase-1-/2-Regressionen bestanden auf Build `013c9aef…`. Typprüfung, 146 Kerntests und Build bestanden. Die 17 Fachunterfälle bleiben abgenommen; der **eigene unabhängige Aufräum-Review** und damit das Aufräumtor stehen noch aus. Phase 4 bleibt gesperrt, Installation und produktiver Vault unverändert.
 
+**Unabhängiger Aufräum-Review 08.10.2026:** Der [getrennte Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-review-20261008/phase3-cleanup-review.md) bestätigt den Diff, alle 72 bytegleichen Varianten- und Abdeckungs-Hashes, Preview-Freigabe und Fixture-Hashschutz. Eigene isolierte Hostläufe auf Build `013c9aef…` bestehen mit 5+5 Kontur-, 4+4 Punktstil-, 6+6 Bevel- und Bearbeitungs-/Neuöffnungsprüfungen der neun Building-Optionen. Die zwei gehaltenen Konturbilder sind pixelgleich mit dem Fachreview; Phase-1-/2-Regressionen und 146 Kerntests bleiben grün. **Das Phase-3-Aufräumtor ist bestanden.** Der nächste eigene Arbeitslauf plant Phase 4; produktiver Vault und installierter Build bleiben unverändert.
+
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
 **Unterfälle:** `DD-026.01` bis `.08`, `.17`, `.30` und `DD-047`.
