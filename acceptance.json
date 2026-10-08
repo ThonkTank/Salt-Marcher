@@ -31660,6 +31660,27 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/phase5-repair3-implementation.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/implementation-audit.json",
           "strictAcceptance": "open"
+        },
+        "phase5Repair3IndependentReview": {
+          "date": "2026-10-08",
+          "status": "verified",
+          "decision": "Original A→B→A im selben Prozess mit 31→30→31 Palettenkacheln; Werkzeugfarbe wird bei New/Open Rot/255, nach erneuter Wahl entstehen zwei gültige 8012ab34-Objekte. Eigener Host-Editlauf und frische Neuöffnung entsprechen Palette, Werkzeugzustand und gespeicherten Objekten.",
+          "remaining": "",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-native-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-163220-2780403/evidence/screens/04-B-palette.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-163220-2780403/evidence/maps/A-after-return-colorable.dungeondraft_map"
+          ],
+          "hostBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+          "reviewHostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/host-main/evidence/1791471464941-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/host-main/evidence/1791471645867-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-host-audit.json"
+          ],
+          "strictAcceptance": "passed",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-audit.json"
         }
       },
       {
@@ -59111,6 +59132,24 @@
       "openCases": [],
       "gate": "passed",
       "next": "Getrennter Planlauf für Phase-3-Aufräumen; danach eigene Umsetzung und eigener Review vor Phase 4."
+    },
+    "phase5Repair3IndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_passed",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "candidateCommit": "bfa9141",
+      "candidateBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-audit.json",
+      "nativeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-native-audit.json",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-host-audit.json",
+      "verifiedCases": 27,
+      "verifiedObjectContextSharedCase": "DD-028.19",
+      "openOverallSharedCase": "DD-028.19: Scatter und Light folgen später",
+      "coreTestsPassed": 155,
+      "gate": "passed",
+      "next": "Getrennter Planlauf für Phase-5-Aufräumen; danach eigene Umsetzung und unabhängiger Aufräum-Review vor Phase 6."
     }
   }
 }

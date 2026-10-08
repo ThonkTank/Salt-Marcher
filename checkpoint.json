@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 5: dritte Nachbesserung umgesetzt; unabhängiger Fachreview folgt",
+  "phase": "Phase 5: Fachphasentor bestanden; eigener Aufräumplan folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase5_repair3_implemented_review_pending",
+    "status": "phase5_fach_gate_passed_cleanup_plan_next",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener unabhängiger Phase-5-Review: direkte DD-028.10-Original-/Hostfolge und 28 Positionen auf dem finalen Kandidaten prüfen; erst danach Fachphasentor entscheiden.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 26 Positionen auf dem vorigen Review belegt; DD-028.10 besitzt jetzt eine direkte Originalfolge A→B→A und einen korrigierten Hostkandidaten, dessen unabhängige Abnahme aussteht. DD-028.19 ist im Objektkontext belegt, als Gesamtfall offen. Fachphasentor offen; installierter Build und Nutzervault unverändert.",
+    "nextRun": "Eigener Phase-5-Aufräumplan: Modelle, Werkzeugzustand, Palette, Render- und Ereigniswege auf konkrete technische Schwächen prüfen; danach getrennte Umsetzung und unabhängiger Aufräum-Review vor Phase 6.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im geforderten Objektkontext belegt und als Gesamtfall für Scatter/Light offen. DD-028.10 besitzt direkte Original- und eigene Hostfolge A→B→A. Fachphasentor bestanden; Phase-5-Aufräumtor noch offen. Installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
     "candidateCoreTests": 155,
@@ -1740,6 +1740,22 @@
       "coreTestsPassed": 155,
       "gate": "open",
       "next": "Getrennter unabhängiger 28-Positionen-Review des Phase-5-Endbuilds; anschließend erst Aufräumplanung bei bestandenem Fachphasentor."
+    },
+    "phase5Repair3IndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_passed",
+      "reviewOfCommit": "bfa9141",
+      "candidateBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-audit.json",
+      "nativeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-native-audit.json",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/review-host-audit.json",
+      "verifiedCases": 27,
+      "verifiedObjectContextSharedCase": "DD-028.19",
+      "coreTestsPassed": 155,
+      "gate": "passed",
+      "next": "Getrennter Planlauf für Phase-5-Aufräumen; danach eigene Umsetzung und unabhängiger Aufräum-Review vor Phase 6."
     }
   }
 }
