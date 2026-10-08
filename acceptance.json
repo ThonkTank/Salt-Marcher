@@ -53265,6 +53265,29 @@
       "gate": "passed",
       "next": "Phase 4 in einem eigenen Arbeitslauf konkret planen; die bereits verifizierten Phase-3-Fachfälle werden durch das Aufräumen nicht erweitert."
     },
+    "phase4Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE4-PLAN.md",
+      "baseCommit": "c1991f3",
+      "baseBuildSha256": "013c9aefaabd2fca85b673eac020516b57228385366814f60350141a6aad9fe8",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "originalProgramSha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
+      "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
+      "requiredCases": [
+        "DD-026.01", "DD-026.02", "DD-026.03", "DD-026.04", "DD-026.05",
+        "DD-026.06", "DD-026.07", "DD-026.08", "DD-026.17", "DD-026.30",
+        "DD-047.01", "DD-047.02", "DD-047.03", "DD-047.04", "DD-047.05",
+        "DD-047.06", "DD-047.07", "DD-047.08", "DD-047.09", "DD-047.10",
+        "DD-047.11", "DD-047.12", "DD-047.13", "DD-047.14", "DD-047.15",
+        "DD-047.16", "DD-047.17", "DD-047.18"
+      ],
+      "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/",
+      "decision": "Nur Plan. Alle 28 Pflicht-Unterfälle und das Phase-4-Fachphasentor bleiben offen; Original-Detailregeln werden vor der jeweiligen Umsetzung direkt gemessen.",
+      "gate": "open",
+      "next": "Getrennter Phase-4-Umsetzungslauf nach ROADMAP-PARITY-PHASE4-PLAN.md; danach eigener unabhängiger 28-Fälle-Review."
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",

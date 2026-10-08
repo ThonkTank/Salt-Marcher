@@ -61,6 +61,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Phasentor:** Dieselbe Suche und Filterfolge führt zum beabsichtigten Asset; Tag- und Setänderungen haben die belegte Geltung und Persistenz. Unbestätigte Originalregeln bleiben ausdrücklich offen.
 
+**Plan 08.10.2026:** Der [getrennte Phase-4-Plan](ROADMAP-PARITY-PHASE4-PLAN.md) inventarisiert alle 28 Pflicht-Unterfälle, den installierten und den aktuellen Kandidatenstand sowie die vorhandenen Originalbelege. Zuerst werden die noch offenen Originalregeln für Used, Fuzzy/Exact, beide Such-Löschwege, Tag-/Setkonflikte, Minus und Abbruch gezielt nachgemessen. Danach folgen Assetbasis, Bibliotheksbedienung, Tag-/Setverwaltung und paarweise Hostprüfung mit frischem Prozess. Umsetzung und unabhängiger 28-Fälle-Review sind eigene Läufe; das Phase-4-Fachphasentor ist offen. Produktcode, Installation und Nutzervault blieben in diesem Planlauf unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.
