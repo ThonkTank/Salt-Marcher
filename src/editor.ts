@@ -2389,14 +2389,8 @@ export class DungeonEditor {
       }
     }
     if (g.tool === "select" && !g.entity && g.moved) {
-      const bounds = {
-          x: Math.min(g.start.x, point.x),
-          y: Math.min(g.start.y, point.y),
-          width: Math.abs(g.start.x - point.x),
-          height: Math.abs(g.start.y - point.y),
-        },
-        previous = g.marqueePrevious ?? g.start,
-        patternBounds = {
+      const previous = g.marqueePrevious ?? g.start,
+        bounds = {
           x: Math.min(g.start.x, previous.x),
           y: Math.min(g.start.y, previous.y),
           width: Math.abs(g.start.x - previous.x),
@@ -2409,9 +2403,7 @@ export class DungeonEditor {
               selectionAllowed(entity, this.selectionTypes, this.selectionLayers) &&
               !entity.locked &&
               this.renderer.visibleForSelection(entity.id) &&
-              selectionInsideBox(entity,
-                entity.kind === "surface" && entity.category === "pattern"
-                  ? patternBounds : bounds,
+              selectionInsideBox(entity, bounds,
                 (id) => this.session.entities.get(id)),
           )
           .map((entity) => entity.id);

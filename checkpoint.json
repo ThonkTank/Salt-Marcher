@@ -943,10 +943,10 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "DD-030.20 direkt mit nativen Auswahl-IDs und sichtbarem Rahmen messen; DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun Positionen reviewt, DD-026.24/.27 und DD-030.19 direkte Umsetzungskandidaten. DD-026.25 und DD-030.24 teilweise, DD-030.20 offen; Fachphasentor und unabhängiger Review offen. Raumgrenz-Invariante auf Endbuild bestätigt; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
+    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun Positionen reviewt, DD-026.24/.27 und DD-030.19/.20 direkte Umsetzungskandidaten. DD-026.25 und DD-030.24 teilweise offen; Fachphasentor und unabhängiger Review offen. Raumgrenz-Invariante auf vorherigem Endbuild bestätigt; Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
+    "candidateBuildSha256": "365107482f87001c6229215d10290ca5f9e2ac4afd3c69be1c96fc0553e71c0d",
     "candidateCoreTests": 157,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
@@ -2279,22 +2279,22 @@
     },
     "phase6Repair2Implementation": {
       "date": "2026-10-08",
-      "state": "in_progress_three_candidates_three_open",
+      "state": "in_progress_four_candidates_two_open",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
       "candidate": [
         "DD-026.24",
         "DD-026.27",
-        "DD-030.19"
+        "DD-030.19",
+        "DD-030.20"
       ],
       "stillOpen": [
         "DD-026.25",
-        "DD-030.20",
         "DD-030.24"
       ],
-      "productChange": "src/features/objekte/object-library.ts",
+      "productChange": "src/features/objekte/object-library.ts; src/editor.ts",
       "gate": "open",
-      "next": "DD-030.20 direkt mit nativen Auswahl-IDs und sichtbarem Rahmen messen; DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
+      "next": "DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
       "partialEvidence": [
         "DD-026.25",
         "DD-030.24"
@@ -2323,7 +2323,15 @@
       ],
       "rawAuditSelection": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/selection-audit.json",
       "hostOverlapEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493749765-edit/result.json",
-      "hostOverlapReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493764637-reopen/result.json"
+      "hostOverlapReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-overlap-host-20261008/evidence/1791493764637-reopen/result.json",
+      "rawAuditMarquee": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/marquee-audit.json",
+      "hostMarqueeEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791494811345-edit/result.json",
+      "hostMarqueeReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791495010085-reopen/result.json",
+      "selectionRegressionPartial": "/home/aaron/.cache/dungeon-native-qa/evidence/1791495401776-selection-edit/result.json",
+      "phase6GesturesRegression": [
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791495541997-parity-phase6-gestures-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791495668159-parity-phase6-gestures-reopen/result.json"
+      ]
     }
   }
 }

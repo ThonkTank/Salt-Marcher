@@ -211,7 +211,7 @@ async function selectionWorkflow() {
     const entities=app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.entities;
     return [entities.get("object-1"),entities.get("object-2")].map(({x,y})=>({x,y}));
   }),[{x:3,y:3},{x:6,y:3}]);
-  await dragWorld([1.2,2],[3.2,4]);
+  await dragWorld([1.2,2],[3.2,4],16);
   assert.deepEqual((await state()).selected,["object-1"],"The object is selected when its anchor is inside a clipping box");
   checks.push("Selection marquee, joint movement and one Undo preserve both object positions");
   await setFilter("Objektarten",["Lichter"]);
@@ -220,7 +220,7 @@ async function selectionWorkflow() {
   assert.deepEqual((await state()).selected,[],"A blank click clears the prior object selection");
   await dragWorld([6.5,1.2],[8.8,3.6]);
   assert.deepEqual((await state()).selected,[],"A box clipping the light symbol without its anchor must not select it");
-  await dragWorld([6.5,1.2],[9.2,3.6]);
+  await dragWorld([6.5,1.2],[9.2,3.6],16);
   assert.deepEqual((await state()).selected,["light-1"],"The light is selected when its anchor is inside a clipping box");
   await clickWorld(9,3);
   await page.locator(".dn-canvas canvas").focus();
