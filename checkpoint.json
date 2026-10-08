@@ -17,7 +17,7 @@
   },
   "hexAtlasRoadmap": {
     "date": "2026-10-08",
-    "state": "hex00_planned_not_implemented",
+    "state": "hex00_implementation_partial_dungeon_goal_active",
     "plan": "ROADMAP-HEX-ATLAS.md",
     "activePhasePlan": "ROADMAP-HEX-00-PLAN.md",
     "architecture": "ARCHITECTURE.md#vereinbarte-hex-atlas-erweiterung",
@@ -36,15 +36,15 @@
     "referencePlan": "WONDERDRAFT-PARITY.md",
     "referenceCatalog": "acceptance.json.wonderdraftParity",
     "referenceMapping": {
-      "state": "seed_catalog_saved_direct_runtime_inventory_pending",
+      "state": "direct_runtime_partial_67_ui_entries_32_tools_gate_open",
       "version": "Wonderdraft 1.1.8.2",
       "groups": 36,
       "initialProbes": 79,
       "packageHintsMapped": 96,
       "inventoryComplete": false,
       "gate": "HEX-00-A/B/C vor HEX-01",
-      "verified": "Lokale Programm-/Paketprüfsummen und Paketpfade erfasst; offizieller Guide und Shortcuts als Suchhinweise geprüft.",
-      "open": "Direkte UI-Inventur, Original-Startfolgen, tiefe Wirkungsproben und Original-/Hostpaare stehen aus."
+      "verified": "Wonderdraft 1.1.8.2 direkt gestartet; 67 UI-Oberflächeneinträge, darunter 32 Werkzeugschaltflächen, mit Originalbildern erfasst; isolierte 800×512-Rohkarte gespeichert. Strukturvalidator im Teilstandsmodus bestanden.",
+      "open": "Einzelne Regler, Wertebereiche, Wirkungen und Kontextzustände fehlen; 96 Pakethinweise unklassifiziert; Neustart/Öffnung und separater Fachreview stehen aus."
     },
     "phaseRange": "HEX-00 bis HEX-28",
     "earlyMilestones": {
@@ -52,30 +52,35 @@
       "HEX-05": "Zusammenhängender Hex-Ort-Dungeon-Raum-Key-Ablauf mit räumlicher Rückkehr.",
       "HEX-10": "Mehrstufige Welt, Ooke-Bildvorlagen und erste PNG-Ausgabe."
     },
-    "verification": "Plan und offener Wonderdraft-Ausgangskatalog gespeichert; noch keine Produktumsetzung oder direkte Original-/Hostabnahme. Vor HEX-01 vollständiges Original-Mapping und belegte Startfolgen; je Werkzeugphase konkrete Originalwirkung, Hostpaar und eigener Review. Nach je zwei Produktphasen geprüfter Teststand. Nutzbarkeit und Parität bleiben getrennte Nachweise.",
-    "next": "Eigener Umsetzungslauf HEX-00-I01 gemäß ROADMAP-HEX-00-PLAN.md: gesicherte Dungeon-Ausgangsbasis, isolierter Kernlauf, unterstützte Original-Teststeuerung und direkte Wonderdraft-Inventur. Danach separate Startfolgen, Fachreview/Nachbesserung und Aufräumläufe. CITY-00 bleibt eigener früher Ergebnisreferenzlauf. HEX-01 erst nach Originaltor und Aufräumreview; Stadtproduktcode erst nach CITY-00. Alle Übergänge und Bearbeitung im selben Atlas ohne separate Modi."
+    "verification": "HEX-00-I01 ist ein Teilstand: geschützte Dateien unverändert, isolierter V4-Key-/Undo-/Save-/Neustartlauf bestanden; verknüpfter Durchgang fehlt. Wonderdraft-Oberfläche teilweise direkt erfasst und kleine Rohkarte gespeichert. Inventartor, Hostpaare und Fachreview bleiben offen.",
+    "next": "HEX-00-I01 bei erneutem Hex-Fokus fortsetzen; vollständig direkte Inventur und Startfolgen vor HEX-01. Aktueller Nutzerfokus ist der Dungeon-Pfad."
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "planning_complete_implementation_next",
+    "state": "implementation_partial_dungeon_goal_active",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-P01",
-      "kind": "planning",
-      "startedAt": "2026-10-08T19:42:27.848506+02:00",
-      "endedAt": "2026-10-08T19:46:56.581997+02:00",
-      "focus": "Offene Punkte, technische Referenz-/Testbasis, direkte Originalinventur und getrennte Abnahme-/Aufräumläufe planen.",
-      "state": "complete",
-      "result": "Konkreter Plan gespeichert und statisch geprüft. Keine Produktumsetzung, direkte Originalaufnahme oder Fachfreigabe dieses Laufs.",
-      "baseCommit": "3cf41c876977e14a9444b4fb6fa768edcb80798d",
-      "evidence": ["/home/aaron/.cache/dungeon-native-qa/hex-00/planning-20261008-194227/plan-verification.json"]
-    },
-    "nextRun": {
       "id": "HEX-00-I01",
       "kind": "implementation",
-      "focus": "Ausgangsbasis sichern, Dungeon-Kernweg isoliert prüfen, unterstützte Original-Teststeuerung nachweisen und vollständige direkte Wonderdraft-Oberfläche zuordnen.",
-      "gate": "Originalinventar und Referenztor bleiben bis zum separaten Fachreview offen."
+      "startedAt": "2026-10-08T19:05:15.442Z",
+      "endedAt": "2026-10-08T19:32:34.517Z",
+      "focus": "Geschützte Ausgangsbasis, isolierter V4-Kernweg, Wonderdraft-Originalsteuerung und direkte UI-Inventur.",
+      "state": "partial",
+      "result": "77 geschützte Vault-Dateien unverändert; V4-Key/Undo/Redo/Save/Neustart isoliert bestanden, Durchgangsprobe offen. Wonderdraft 1.1.8.2 isoliert bedient, 67 UI-Oberflächeneinträge/32 Werkzeuge und 800×512-Rohkarte belegt. Vollständigkeit, Pakethinweise und Review offen. Nutzerfokus wechselte danach zum Dungeon-Pfad.",
+      "baseCommit": "f1c90b5cb153dc65c64685923cfd5d38cb1029c3",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/host/evidence",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map"
+      ]
+    },
+    "nextRun": {
+      "id": "HEX-00-I01b",
+      "kind": "implementation",
+      "focus": "Direkte Wonderdraft-Inventur bis auf Einzelregler/Kontexte/96 Pakethinweise vervollständigen; gebundenen Dungeon-Durchgang prüfen.",
+      "gate": "Nur bei erneuter Beauftragung des Hex-Pfads; HEX-00-C und Aufräumreview bleiben offen."
     },
     "review": {
       "state": "not_started",
@@ -85,7 +90,14 @@
       "state": "not_started",
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
-    "open": ["Direkte Original-Teststeuerung und Profilisolierung", "Vollständiges direktes UI-Inventar", "Originale Startfolgen mit Neustart", "Isolierter Dungeon-Kernweg", "Separater Fachreview und Aufräumreview", "Eigener CITY-00-Ergebnisreferenzlauf"]
+    "open": [
+      "Vollständige Originaloberfläche einschließlich Einzelregler, Dialoge und Kontextzustände",
+      "96 Pakethinweise klassifizieren",
+      "Originale Startfolgen einschließlich Öffnen und Neustart",
+      "Isolierter gebundener Dungeon-Durchgang",
+      "Getrennter Fachreview und Aufräumreview",
+      "Eigener CITY-00-Ergebnisreferenzlauf"
+    ]
   },
   "phase": "Phase 6: Nachbesserungsumsetzung als Kandidat vorhanden; unabhängiger Review und Fachphasentor offen",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
@@ -1342,7 +1354,11 @@
       "hostContourReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-contour-final-build-20261008/evidence/1791414645761-parity-phase3-building-reopen/result.json",
       "hostCombinedFresh": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791415173909-parity-phase3-building-reopen/result.json",
       "coreTestsPassed": 145,
-      "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
+      "openCases": [
+        "DD-011.15",
+        "DD-015.04",
+        "DD-015.05"
+      ],
       "gate": "open"
     },
     "phase3CleanupPlan": {
@@ -1424,8 +1440,19 @@
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/review-audit.json",
       "originalOverrideSha256": "793242ade0749ef364cbfe6796832afa55cccc0bb34aeff0dad8ee7457b2cc8d",
       "verifiedCases": 19,
-      "mismatchCases": ["DD-026.04", "DD-026.17", "DD-047.02", "DD-047.03"],
-      "evidenceOpenCases": ["DD-026.03", "DD-026.05", "DD-047.14", "DD-047.15", "DD-047.16"],
+      "mismatchCases": [
+        "DD-026.04",
+        "DD-026.17",
+        "DD-047.02",
+        "DD-047.03"
+      ],
+      "evidenceOpenCases": [
+        "DD-026.03",
+        "DD-026.05",
+        "DD-047.14",
+        "DD-047.15",
+        "DD-047.16"
+      ],
       "gate": "open",
       "next": "Eigener Nachbesserungsplanlauf; danach getrennte Umsetzung und erneuter unabhängiger Review."
     },
@@ -1437,9 +1464,24 @@
       "baseBuildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "verifiedCases": 19,
-      "mismatchCases": ["DD-026.04", "DD-026.17", "DD-047.02", "DD-047.03"],
-      "evidenceOpenCases": ["DD-026.03", "DD-026.05", "DD-047.14", "DD-047.15", "DD-047.16"],
-      "newOriginalProbeCases": ["DD-047.14", "DD-047.15", "DD-047.16"],
+      "mismatchCases": [
+        "DD-026.04",
+        "DD-026.17",
+        "DD-047.02",
+        "DD-047.03"
+      ],
+      "evidenceOpenCases": [
+        "DD-026.03",
+        "DD-026.05",
+        "DD-047.14",
+        "DD-047.15",
+        "DD-047.16"
+      ],
+      "newOriginalProbeCases": [
+        "DD-047.14",
+        "DD-047.15",
+        "DD-047.16"
+      ],
       "gate": "open",
       "next": "Eigener Umsetzungslauf: fehlende Originalregeln prüfen, Kandidat gezielt angleichen und neun Hostpaare auf finalem Build ausführen."
     },
@@ -1455,8 +1497,21 @@
       "hostOwnMinimalEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426845033-parity-phase4-objects-edit/result.json",
       "hostOwnMinimalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/host-own-minimal/evidence/1791426686203-parity-phase4-objects-reopen/result.json",
       "coreTestsPassed": 152,
-      "repairCases": ["DD-026.03", "DD-026.04", "DD-026.05", "DD-026.17", "DD-047.02", "DD-047.03", "DD-047.14", "DD-047.15", "DD-047.16"],
-      "directOriginalGaps": ["DD-026.03: Kartenwechsel im selben Prozess", "DD-026.05: Zweiwortsuche und vollständige Originalpfade"],
+      "repairCases": [
+        "DD-026.03",
+        "DD-026.04",
+        "DD-026.05",
+        "DD-026.17",
+        "DD-047.02",
+        "DD-047.03",
+        "DD-047.14",
+        "DD-047.15",
+        "DD-047.16"
+      ],
+      "directOriginalGaps": [
+        "DD-026.03: Kartenwechsel im selben Prozess",
+        "DD-026.05: Zweiwortsuche und vollständige Originalpfade"
+      ],
       "gate": "open",
       "next": "Eigener unabhängiger Review aller 28 Phase-4-Unterfälle auf finalem Build; offene Originalgrenzen klären."
     },
@@ -1469,7 +1524,9 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/phase4-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/review-audit.json",
       "verifiedCases": 27,
-      "mismatchCases": ["DD-047.01"],
+      "mismatchCases": [
+        "DD-047.01"
+      ],
       "evidenceOpenCases": [],
       "coreTestsPassed": 152,
       "gate": "open",
@@ -1483,7 +1540,9 @@
       "baseBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "verifiedCases": 27,
-      "openCases": ["DD-047.01"],
+      "openCases": [
+        "DD-047.01"
+      ],
       "gate": "open",
       "next": "Getrennter Umsetzungslauf: Klick- und Modal-Lebenszyklus messen, Ursache gezielt reparieren und frische Hostpaare auf finalem Build prüfen."
     },
@@ -1545,10 +1604,19 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "allAssetIds": 1793,
       "allAssetIdsIdentical": true,
-      "newTilesPerUnchangedRefreshBeforeAfter": [1793, 0],
-      "newTilesPerMembershipClickBeforeAfter": [1793, 0],
+      "newTilesPerUnchangedRefreshBeforeAfter": [
+        1793,
+        0
+      ],
+      "newTilesPerMembershipClickBeforeAfter": [
+        1793,
+        0
+      ],
       "hostResultsPassed": 8,
-      "imageObserversCreatedDisconnected": [6, 6],
+      "imageObserversCreatedDisconnected": [
+        6,
+        6
+      ],
       "coreTestsPassed": 153,
       "gate": "open",
       "next": "Eigener unabhängiger Aufräum-Review von Diff, Messrohdaten, IDs, Observern, Fixture-Hashes und Edit-/Neuöffnungsbelegen; Phase 5 bleibt bis zur Freigabe gesperrt."
@@ -1564,7 +1632,10 @@
       "independentHostResults": 5,
       "implementationHostResultsAudited": 8,
       "verifiedFachCasesUnchanged": 28,
-      "openFindings": ["P4-CL-R1", "P4-CL-R2"],
+      "openFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2"
+      ],
       "coreTestsPassed": 153,
       "gate": "open",
       "next": "Eigener Nachbesserungsplanlauf für Assetinvalidierung und vollständige Mess-/ID-Matrix; danach getrennte Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 5."
@@ -1577,7 +1648,10 @@
       "baseBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/phase4-cleanup-review.md",
-      "openFindings": ["P4-CL-R1", "P4-CL-R2"],
+      "openFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2"
+      ],
       "scope": "Unveränderte Objekt-ID-Folgen ohne Kachelneubau, aktuelle Bild-URLs nach echtem Asset-Reload und vollständige gepaarte Mess-/ID-Matrix; keine neue Werkzeugwirkung.",
       "gate": "open",
       "next": "Eigener Umsetzungslauf; danach unabhängiger Aufräum-Review des Endbuilds vor Phase 5."
@@ -1606,8 +1680,14 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/review-audit.json",
-      "verifiedFindings": ["P4-CL-R1"],
-      "openFindings": ["P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "verifiedFindings": [
+        "P4-CL-R1"
+      ],
+      "openFindings": [
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "independentHostResults": 2,
       "coreTestsPassed": 153,
       "gate": "open",
@@ -1621,7 +1701,11 @@
       "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
-      "openFindings": ["P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "openFindings": [
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "sideObservation": "Ein fehlgeschlagener erster Wear-Kaltstart ist getrennt einzuordnen.",
       "gate": "open",
       "next": "Eigener Umsetzungslauf der QA-Matrix und Wear-Einordnung; danach unabhängiger Aufräum-Review vor Phase 5."
@@ -1652,7 +1736,12 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/phase4-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/review-raw-audit.json",
       "ownModalProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/modal-host3/evidence/1791452847369-parity-phase4-objects-edit/independent-modal-probe.json",
-      "closedFindings": ["P4-CL-R1", "P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "closedFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "openCleanupFindings": [],
       "coreTestsPassed": 153,
       "gate": "passed",
@@ -1710,7 +1799,14 @@
       "verifiedObjectContextSharedCase": 1,
       "openEvidenceCases": 21,
       "openFunctionalGapCases": 1,
-      "openFindings": ["P5-R1", "P5-R2", "P5-R3", "P5-R4", "P5-R5", "P5-R6"],
+      "openFindings": [
+        "P5-R1",
+        "P5-R2",
+        "P5-R3",
+        "P5-R4",
+        "P5-R5",
+        "P5-R6"
+      ],
       "gate": "open",
       "next": "Getrennter Phase-5-Nachbesserungsplan; danach Umsetzung und erneuter unabhängiger Fachreview."
     },
@@ -1722,7 +1818,14 @@
       "baseBuildSha256": "5057e8bae0b04bf0359a6f8ea027a07ce1b6d627caa02b6a55101cc8922055aa",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-independent-review-20261008/phase5-independent-review.md",
-      "openFindings": ["P5-R1", "P5-R2", "P5-R3", "P5-R4", "P5-R5", "P5-R6"],
+      "openFindings": [
+        "P5-R1",
+        "P5-R2",
+        "P5-R3",
+        "P5-R4",
+        "P5-R5",
+        "P5-R6"
+      ],
       "openCaseCount": 22,
       "gate": "open",
       "next": "Eigener Umsetzungslauf mit Originalproben, gezielter Reparatur und finalen Hostpaaren; danach eigener unabhängiger Fachreview."
@@ -1736,8 +1839,16 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-implementation-20261008/phase5-repair-implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-implementation-20261008/implementation-audit.json",
       "coreTestsPassed": 155,
-      "reviewCandidates": ["P5-R1", "P5-R2", "P5-R3"],
-      "partialEvidence": ["P5-R4", "P5-R5", "P5-R6"],
+      "reviewCandidates": [
+        "P5-R1",
+        "P5-R2",
+        "P5-R3"
+      ],
+      "partialEvidence": [
+        "P5-R4",
+        "P5-R5",
+        "P5-R6"
+      ],
       "gate": "open",
       "next": "Getrennter unabhängiger 28-Positionen-Fachreview; bei weiteren Lücken neuer eigener Nachbesserungsplan."
     },
@@ -1752,7 +1863,12 @@
       "verifiedCases": 9,
       "verifiedObjectContextSharedCase": 1,
       "openEvidenceCases": 18,
-      "openFindings": ["P5-R1", "P5-R4", "P5-R5", "P5-R6"],
+      "openFindings": [
+        "P5-R1",
+        "P5-R4",
+        "P5-R5",
+        "P5-R6"
+      ],
       "gate": "open",
       "next": "Getrennter begrenzter Nachbesserungsplan; danach eigene Umsetzung und erneuter unabhängiger Fachreview."
     },
@@ -1764,7 +1880,12 @@
       "baseBuildSha256": "914873309c15a60957607b25bb44963e5d8fae15d827bfefa923da6ac56d9bda",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-review-20261008/phase5-repair-independent-review.md",
-      "openFindings": ["P5-R1", "P5-R4", "P5-R5", "P5-R6"],
+      "openFindings": [
+        "P5-R1",
+        "P5-R4",
+        "P5-R5",
+        "P5-R6"
+      ],
       "openCaseCount": 18,
       "gate": "open",
       "next": "Eigener Umsetzungslauf mit nativer Eingabespur, Colorable-Folgeobjekten, Bildpaaren und vollständiger Mehrfachfolge; danach eigener unabhängiger Fachreview."
@@ -1853,7 +1974,13 @@
       "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
-      "findings": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "findings": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
       "gate": "open",
       "next": "Getrennter Aufräum-Umsetzungslauf mit Basismessung und Endbuild-Regression; danach eigener unabhängiger Aufräum-Review vor Phase 6."
     },
@@ -1867,7 +1994,13 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/implementation-audit.json",
-      "findingsAddressed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "findingsAddressed": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
       "hostEditReopenPairsPassed": 8,
       "coreTestsPassed": 155,
       "gate": "open",
@@ -1881,8 +2014,17 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/review-audit.json",
-      "confirmed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
-      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "confirmed": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
+      "open": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "gate": "open",
       "next": "Getrennter Nachbesserungsplan für die zwei Nachweislücken; danach QA-Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 6."
     },
@@ -1894,7 +2036,10 @@
       "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
       "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "open": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "gate": "open",
       "next": "Getrennter QA-Umsetzungslauf für Messwerte und Bildpaare; danach eigener unabhängiger Aufräum-Review vor Phase 6."
     },
@@ -1923,7 +2068,10 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/phase5-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/review-audit.json",
-      "confirmed": ["P5-CL-R1", "P5-CL-R2"],
+      "confirmed": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "freshMapPairs": 6,
       "pairedActions": 42,
       "pairedImageStates": 60,
@@ -1941,8 +2089,25 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "positions": 15,
-      "objectGestures": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27"],
-      "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "objectGestures": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27"
+      ],
+      "selection": [
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.24",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
       "gate": "open",
       "next": "Getrennte Umsetzung mit direkten Original-/Hostpaaren und nur belegten Produktänderungen; danach unabhängiger 15-Positionen-Review."
     },
@@ -1968,8 +2133,25 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/review-audit.json",
-      "verifiedCore": ["DD-030.21", "DD-030.23", "DD-030.29", "DD-030.34"],
-      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
+      "verifiedCore": [
+        "DD-030.21",
+        "DD-030.23",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "open": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.22",
+        "DD-030.24",
+        "DD-030.25"
+      ],
       "projectInvariantOpen": "Raumgrenzzug im Host mit Undo/Redo, Speichern und frischer Neuöffnung.",
       "coreTestsPassed": 155,
       "gate": "open",
@@ -1983,7 +2165,19 @@
       "baseCommit": "dbe03773d9091a5011ee7de123eb74e65cc55c2e",
       "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
+      "open": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.22",
+        "DD-030.24",
+        "DD-030.25"
+      ],
       "projectInvariant": "Raumgrenzzug mit roomId, Key-Bezug, Undo/Redo, Speichern und Neuöffnung im Host.",
       "gate": "open",
       "next": "Getrennte Umsetzung; danach unabhängiger 15-Positionen-Review."
@@ -2001,7 +2195,14 @@
       "coreTestsPassed": 156,
       "productChange": "Nur Cloth-01-Auswahlrahmen und Griffskalierung nach direktem 20-Pixel-Originalvergleich.",
       "projectInvariant": "V4-Raumgrenzzug mit Objekt, Feature, Key, Undo/Redo, Speichern und Neuöffnung im Host bestanden.",
-      "unpairedEdges": ["DD-026.24 All-Reihenfolge", "DD-026.25 Fokus/Kombination", "DD-026.27 gleiche Textur bei Z+Rad", "DD-030.19", "DD-030.20", "DD-030.24 genaue Eingabekoordinaten"],
+      "unpairedEdges": [
+        "DD-026.24 All-Reihenfolge",
+        "DD-026.25 Fokus/Kombination",
+        "DD-026.27 gleiche Textur bei Z+Rad",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24 genaue Eingabekoordinaten"
+      ],
       "gate": "open",
       "next": "Getrennter unabhängiger Phase-6-Nachbesserungsreview; offene Original-Eingabepaare bleiben bis zu belastbaren Messungen offen."
     }

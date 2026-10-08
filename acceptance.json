@@ -978,11 +978,11 @@
     "reference": {
       "product": "Wonderdraft",
       "version": "1.1.8.2",
-      "executable": "/home/aaron/.local/opt/Wonderdraft/Wonderdraft.x86_64",
+      "executable": "/home/aaron/Downloads/Wonderdraft-1.1.8.2-b-Linux64/Wonderdraft.x86_64",
       "executableSha256": "4a560dd2de30a35949b9f5d610ce3169562782e1e7c908c5bbfb8d17fb805faf",
-      "package": "/home/aaron/.local/opt/Wonderdraft/Wonderdraft.pck",
+      "package": "/home/aaron/Downloads/Wonderdraft-1.1.8.2-b-Linux64/Wonderdraft.pck",
       "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac",
-      "versionEvidence": "Versionskennung in res://scripts/global.gdc der lokalen PCK gelesen; noch keine GUI-Beobachtung.",
+      "versionEvidence": "PCK-Kennung und direkter Originalbildschirm 1.1.8.2; siehe directRuntimeEvidence.",
       "documentation": [
         {
           "url": "https://wonderdraft.net/",
@@ -1000,10 +1000,24 @@
           "versionPinned": false
         }
       ],
-      "directRuntimeEvidence": []
+      "directRuntimeEvidence": [
+        {
+          "role": "original_gui_screenshot",
+          "version": "1.1.8.2",
+          "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/help-open.png"
+        },
+        {
+          "role": "original_saved_map",
+          "version": "1.1.8.2",
+          "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+          "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+        }
+      ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "seed_catalog_from_local_package_and_official_docs_runtime_mapping_pending",
+    "inventoryStatus": "direct_gui_partial_surface_mapping; full controls, validation, package classification and independent review open",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -1013,14 +1027,21 @@
         {
           "id": "HEX-00-A",
           "task": "Alle erreichbaren Originalkategorien, Menüs, Werkzeuge, Optionen, Kontextzustände, Gesten und Dialoge direkt inventarisieren; UI-Pfad und Defaults/Validierung erfassen; jeden Eintrag stabilen WD-Fällen und einer Produktphase zuordnen.",
-          "state": "not_run",
-          "evidence": []
+          "state": "in_progress",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-1.png",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-5.png"
+          ]
         },
         {
           "id": "HEX-00-B",
           "task": "Kleine originale Kontrollkarten anlegen: Neuanlage, Navigation, Grundpinsel, Farbgrundlage, Abbruch, Undo/Redo, Save/Open und vollständiger Prozessneustart direkt belegen; Testdaten für erste Hostpaare festlegen.",
-          "state": "not_run",
-          "evidence": []
+          "state": "in_progress",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+          ]
         },
         {
           "id": "HEX-00-C",
@@ -1047,7 +1068,2092 @@
       "fullNativeInventoryRequiredBefore": "HEX-01",
       "fullPairedCoverageDue": "HEX-28"
     },
-    "uiInventory": [],
+    "uiInventory": [
+      {
+        "id": "WD-UI-0001",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Water Appearance [W]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Water Appearance [W]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-008.02"
+        ],
+        "phase": "HEX-12",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0002",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > River Tool [R]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "River Tool [R]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-010.01"
+        ],
+        "phase": "HEX-13",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-2-later.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0003",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Lake Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Lake Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-009.01"
+        ],
+        "phase": "HEX-12",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-3.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-3.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0004",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Freshwater Brush",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Freshwater Brush",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-009.02"
+        ],
+        "phase": "HEX-12",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-4.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-4.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0005",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Freshwater Eraser",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Freshwater Eraser",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-009.02"
+        ],
+        "phase": "HEX-12",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-5.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-5.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0006",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Water Color Brush",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Water Color Brush",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-008.01"
+        ],
+        "phase": "HEX-12",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-6.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-6.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0007",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Windrose Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Windrose Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-029.01"
+        ],
+        "phase": "HEX-25",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-7.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-7.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0008",
+        "version": "1.1.8.2",
+        "exactUiPath": "Water > Windrose Move Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Windrose Move Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-029.02"
+        ],
+        "phase": "HEX-25",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-8.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-water-8.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0009",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Landmass Wizard",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Landmass Wizard",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-013.01"
+        ],
+        "phase": "HEX-15",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0010",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Landmass Brush [Z]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Landmass Brush [Z]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-005.01"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0011",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Landmass Eraser [X]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Landmass Eraser [X]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-006.01"
+        ],
+        "phase": "HEX-11",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-3.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-3.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0012",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Raise Landmass Tool [C]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Raise Landmass Tool [C]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-006.01"
+        ],
+        "phase": "HEX-11",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-4.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-4.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0013",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Lower Landmass Tool [V]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Lower Landmass Tool [V]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-006.01"
+        ],
+        "phase": "HEX-11",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-5.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-5.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0014",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Ground Color Brush [G]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Ground Color Brush [G]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-007.01"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-6.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-6.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0015",
+        "version": "1.1.8.2",
+        "exactUiPath": "Land > Landmass Polygonal Lasso [A]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Landmass Polygonal Lasso [A]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-015.01"
+        ],
+        "phase": "HEX-23",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-land-7.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-land-7.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0016",
+        "version": "1.1.8.2",
+        "exactUiPath": "Paths > Path Tool [P]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Path Tool [P]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-011.01"
+        ],
+        "phase": "HEX-14",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-paths-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-paths-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0017",
+        "version": "1.1.8.2",
+        "exactUiPath": "Paths > Path Move Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Path Move Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-012.01"
+        ],
+        "phase": "HEX-13",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-paths-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-paths-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0018",
+        "version": "1.1.8.2",
+        "exactUiPath": "Symbols > Symbol Tool [S]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Symbol Tool [S]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-016.01"
+        ],
+        "phase": "HEX-17",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-symbols-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0019",
+        "version": "1.1.8.2",
+        "exactUiPath": "Symbols > Tree Brush [T]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Tree Brush [T]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-018.01"
+        ],
+        "phase": "HEX-18",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-symbols-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-symbols-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0020",
+        "version": "1.1.8.2",
+        "exactUiPath": "Symbols > Mountain Brush [M]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Mountain Brush [M]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-018.01"
+        ],
+        "phase": "HEX-18",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-symbols-3.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-symbols-3.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0021",
+        "version": "1.1.8.2",
+        "exactUiPath": "Symbols > Symbol Eraser [E]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Symbol Eraser [E]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-019.01"
+        ],
+        "phase": "HEX-18",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-symbols-4.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-symbols-4.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0022",
+        "version": "1.1.8.2",
+        "exactUiPath": "Symbols > Symbol Move Tool [Q]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Symbol Move Tool [Q]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-017.01"
+        ],
+        "phase": "HEX-17",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-symbols-5.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-symbols-5.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0023",
+        "version": "1.1.8.2",
+        "exactUiPath": "Regions > Territory Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Territory Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-024.01"
+        ],
+        "phase": "HEX-21",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-regions-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-regions-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0024",
+        "version": "1.1.8.2",
+        "exactUiPath": "Regions > Edit Territories",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Edit Territories",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-024.02"
+        ],
+        "phase": "HEX-21",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-regions-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-regions-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0025",
+        "version": "1.1.8.2",
+        "exactUiPath": "Labels > Label Tool [L]",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Label Tool [L]",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-022.01"
+        ],
+        "phase": "HEX-20",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-labels-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-labels-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0026",
+        "version": "1.1.8.2",
+        "exactUiPath": "Labels > Move Label Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Move Label Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-022.02"
+        ],
+        "phase": "HEX-20",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-labels-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-labels-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0027",
+        "version": "1.1.8.2",
+        "exactUiPath": "Labels > Box Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Box Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-022.02"
+        ],
+        "phase": "HEX-20",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-labels-3.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-labels-3.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0028",
+        "version": "1.1.8.2",
+        "exactUiPath": "Overlay > Trace Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Trace Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-025.01"
+        ],
+        "phase": "HEX-09",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-overlay-1.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-1.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0029",
+        "version": "1.1.8.2",
+        "exactUiPath": "Overlay > Grid Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Grid Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-031.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-overlay-2.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-2.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0030",
+        "version": "1.1.8.2",
+        "exactUiPath": "Overlay > Frame Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Frame Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-028.01"
+        ],
+        "phase": "HEX-25",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-overlay-3.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-3.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0031",
+        "version": "1.1.8.2",
+        "exactUiPath": "Overlay > Scale Creator",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Scale Creator",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-030.01"
+        ],
+        "phase": "HEX-25",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-overlay-4.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-4.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0032",
+        "version": "1.1.8.2",
+        "exactUiPath": "Overlay > Measuring Tool",
+        "context": "800×512 QA-Karte",
+        "commandOrControl": "Measuring Tool",
+        "controlType": "tool_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Werkzeugwechsel sichtbar; Optionen und Zeichenwirkung noch nicht vollständig geprüft.",
+        "gesture": "Werkzeugschaltfläche anklicken",
+        "previewOrCommit": "Werkzeugoberfläche sichtbar; Zeichenwirkung offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-030.02"
+        ],
+        "phase": "HEX-25",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-overlay-5.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/panel-overlay-5.png"
+          }
+        ],
+        "classification": "original_tool_surface"
+      },
+      {
+        "id": "WD-UI-0033",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Water",
+        "context": "geladene Karte",
+        "commandOrControl": "Water",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-water.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0034",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Land",
+        "context": "geladene Karte",
+        "commandOrControl": "Land",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-land.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0035",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Paths",
+        "context": "geladene Karte",
+        "commandOrControl": "Paths",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-paths.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0036",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Symbols",
+        "context": "geladene Karte",
+        "commandOrControl": "Symbols",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-symbols.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0037",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Regions",
+        "context": "geladene Karte",
+        "commandOrControl": "Regions",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-regions.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0038",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Labels",
+        "context": "geladene Karte",
+        "commandOrControl": "Labels",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-labels.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0039",
+        "version": "1.1.8.2",
+        "exactUiPath": "linke Kategorienleiste > Overlay",
+        "context": "geladene Karte",
+        "commandOrControl": "Overlay",
+        "controlType": "category_button",
+        "default": "Land bei Neuanlage",
+        "rangeOrChoices": null,
+        "validation": "Auswahl wechselt die linke Werkzeugleiste; Kontextwechselwirkung weiter prüfen.",
+        "gesture": "Kategorie anklicken",
+        "previewOrCommit": "Werkzeugleiste gewechselt",
+        "stateScope": "aktiver Editor",
+        "caseIds": [
+          "WD-002.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/category-overlay.png"
+          }
+        ],
+        "classification": "original_category_surface"
+      },
+      {
+        "id": "WD-UI-0040",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Open Recent",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Open Recent",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-003.03"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0041",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Save As",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Save As",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-003.01"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0042",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Change Map Size",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Change Map Size",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-032.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0043",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Create Detail Map",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Create Detail Map",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-032.02"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0044",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Preferences",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0045",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Open User Folder",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Open User Folder",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0046",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Online Manual",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Online Manual",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0047",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Community Links",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0048",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Premium Art Packs",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Premium Art Packs",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-020.01"
+        ],
+        "phase": "HEX-19",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0049",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Extract Map Data",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Extract Map Data",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0050",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Repackage Map Data",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Repackage Map Data",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0051",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Exit",
+        "context": "Startbildschirm und geladene Karte",
+        "commandOrControl": "Exit",
+        "controlType": "menu_command",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Aktivierungszustand in beiden Kontexten sichtbar; Wirkung nicht für jeden Befehl geprüft.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-003.02"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/002-menu.png"
+          },
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/menu-with-map.png"
+          }
+        ],
+        "classification": "original_menu_surface"
+      },
+      {
+        "id": "WD-UI-0052",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > New",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "New",
+        "controlType": "toolbar_button",
+        "default": null,
+        "rangeOrChoices": null,
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-001.01"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0053",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Width",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Width",
+        "controlType": "number_field",
+        "default": 1920,
+        "rangeOrChoices": null,
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-001.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0054",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Height",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Height",
+        "controlType": "number_field",
+        "default": 1080,
+        "rangeOrChoices": "450 eingegeben → 512 angezeigt; weitere Grenzen offen",
+        "validation": "Untergrenze 512 direkt beobachtet; Maximum offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-001.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0055",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Template",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Template",
+        "controlType": "selection",
+        "default": null,
+        "rangeOrChoices": null,
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-001.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0056",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Landscape / Portrait",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Landscape / Portrait",
+        "controlType": "radio_group",
+        "default": null,
+        "rangeOrChoices": null,
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-001.02"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/006-landscape.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0057",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Settings > Theme",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Theme",
+        "controlType": "selection",
+        "default": "Eastward",
+        "rangeOrChoices": [
+          "Adventure",
+          "Black & White",
+          "Eastward",
+          "Feudal",
+          "Imagination",
+          "Paper",
+          "Pastel",
+          "Terra",
+          "Worn"
+        ],
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-026.01"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0058",
+        "version": "1.1.8.2",
+        "exactUiPath": "New > New Map > Assets > Assets",
+        "context": "Neuanlagedialog",
+        "commandOrControl": "Assets",
+        "controlType": "selection",
+        "default": null,
+        "rangeOrChoices": null,
+        "validation": "Weitere Grenzen/Wirkung offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-020.01"
+        ],
+        "phase": "HEX-19",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/003-new-assets.png"
+          }
+        ],
+        "classification": "original_dialog_surface"
+      },
+      {
+        "id": "WD-UI-0059",
+        "version": "1.1.8.2",
+        "exactUiPath": "Save > Save Map > File",
+        "context": "ungespeicherte 800×512 QA-Karte",
+        "commandOrControl": "File",
+        "controlType": "file_name_field",
+        "default": "leer",
+        "rangeOrChoices": "*.wonderdraft_map",
+        "validation": "HEX00-F01.wonderdraft_map wurde im isolierten Profil gespeichert; Öffnung nach Neustart offen.",
+        "gesture": "Dateiname eingeben und Save anklicken",
+        "previewOrCommit": "Rohkarte gespeichert",
+        "stateScope": "Karte",
+        "caseIds": [
+          "WD-003.01"
+        ],
+        "phase": "HEX-02",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+          },
+          {
+            "role": "original_saved_map",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+            "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+          }
+        ],
+        "classification": "original_dialog_control"
+      },
+      {
+        "id": "WD-UI-0060",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences > General",
+        "context": "Startbildschirm",
+        "commandOrControl": "General",
+        "controlType": "dialog_tab",
+        "default": "aktiv bei Öffnung",
+        "rangeOrChoices": null,
+        "validation": "Reiter und sichtbare Werte direkt aufgenommen; einzelne Regler/Listen noch separat zu erfassen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/003-preferences.png"
+          }
+        ],
+        "classification": "original_preferences_surface"
+      },
+      {
+        "id": "WD-UI-0061",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences > Interface",
+        "context": "Startbildschirm",
+        "commandOrControl": "Interface",
+        "controlType": "dialog_tab",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Reiter und sichtbare Werte direkt aufgenommen; einzelne Regler/Listen noch separat zu erfassen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/004-preferences-interface.png"
+          }
+        ],
+        "classification": "original_preferences_surface"
+      },
+      {
+        "id": "WD-UI-0062",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences > Advanced",
+        "context": "Startbildschirm",
+        "commandOrControl": "Advanced",
+        "controlType": "dialog_tab",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Reiter und sichtbare Werte direkt aufgenommen; einzelne Regler/Listen noch separat zu erfassen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/004-preferences-advanced.png"
+          }
+        ],
+        "classification": "original_preferences_surface"
+      },
+      {
+        "id": "WD-UI-0063",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences > Hotkeys",
+        "context": "Startbildschirm",
+        "commandOrControl": "Hotkeys",
+        "controlType": "dialog_tab",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Reiter und sichtbare Werte direkt aufgenommen; einzelne Regler/Listen noch separat zu erfassen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/004-preferences-hotkeys.png"
+          }
+        ],
+        "classification": "original_preferences_surface"
+      },
+      {
+        "id": "WD-UI-0064",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Preferences > Performance",
+        "context": "Startbildschirm",
+        "commandOrControl": "Performance",
+        "controlType": "dialog_tab",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Reiter und sichtbare Werte direkt aufgenommen; einzelne Regler/Listen noch separat zu erfassen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/004-preferences-performance.png"
+          }
+        ],
+        "classification": "original_preferences_surface"
+      },
+      {
+        "id": "WD-UI-0065",
+        "version": "1.1.8.2",
+        "exactUiPath": "obere Leiste > Theme",
+        "context": "geladene Karte",
+        "commandOrControl": "Theme",
+        "controlType": "toolbar_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Dialog geöffnet und sichtbar; Detailwirkungen offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-026.01"
+        ],
+        "phase": "HEX-01",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/theme-open.png"
+          }
+        ],
+        "classification": "original_toolbar_surface"
+      },
+      {
+        "id": "WD-UI-0066",
+        "version": "1.1.8.2",
+        "exactUiPath": "obere Leiste > Assets",
+        "context": "geladene Karte",
+        "commandOrControl": "Assets",
+        "controlType": "toolbar_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Dialog geöffnet und sichtbar; Detailwirkungen offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-020.01"
+        ],
+        "phase": "HEX-19",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/assets-open.png"
+          }
+        ],
+        "classification": "original_toolbar_surface"
+      },
+      {
+        "id": "WD-UI-0067",
+        "version": "1.1.8.2",
+        "exactUiPath": "obere Leiste > Help",
+        "context": "geladene Karte",
+        "commandOrControl": "Help",
+        "controlType": "toolbar_button",
+        "default": "nicht zutreffend",
+        "rangeOrChoices": null,
+        "validation": "Dialog geöffnet und sichtbar; Detailwirkungen offen.",
+        "gesture": "Linksklick",
+        "previewOrCommit": "Oberfläche direkt beobachtet; Wirkung noch offen.",
+        "stateScope": "Nicht geprüft",
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "original_gui_screenshot",
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/help-open.png"
+          }
+        ],
+        "classification": "original_toolbar_surface"
+      }
+    ],
     "uiInventoryFields": [
       "id",
       "version",
@@ -2158,17 +4264,41 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Alle Felder, Vorlagen und Startzustände des Neuanlagedialogs erfassen; eine kleine Karte anlegen und dieselbe Folge abbrechen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
-          "options": null,
+          "path": "New > New Map",
+          "sequence": "New geöffnet; 800×512 eingestellt; OK; leere Karte sichtbar.",
+          "options": {
+            "defaultWidthPx": 1920,
+            "defaultHeightPx": 1080,
+            "theme": "Eastward"
+          },
           "preview": null,
-          "effect": null,
-          "savedEffect": null,
+          "effect": "Leere Karte im Original geöffnet.",
+          "savedEffect": "HEX00-F01.wonderdraft_map im isolierten Profil gespeichert.",
           "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "evidence": [
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+            },
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/map-start.png"
+            },
+            {
+              "role": "original_saved_map",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+              "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+            }
+          ],
+          "gap": "Abbruchfolge und Wiederöffnung nach frischem Originalprozess fehlen."
         },
         "target": {
           "state": "pending_original_mapping",
@@ -2215,17 +4345,40 @@
         "fixture": "WD-F01",
         "plannedOriginalProbe": "Erreichbare Größen-, Ausrichtungs- und Vorgabeoptionen einzeln auslösen; gültige Grenzen, ungültige Werte und Wiederverwendung direkt messen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
-          "options": null,
+          "path": "New > New Map > Settings",
+          "sequence": "Breite 800 eingeben; Höhe 450 eingeben und 512 angezeigt; Orientierungsschaltfläche ausgelöst.",
+          "options": {
+            "observedDefault": "1920×1080 px",
+            "observedHeightMinimumPx": 512,
+            "observedOrientationSwap": "Klick auf Landscape vertauschte die beiden angezeigten Maße 800×512 zu 512×800."
+          },
           "preview": null,
-          "effect": null,
+          "effect": "800×512 QA-Karte angelegt.",
           "savedEffect": null,
           "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "evidence": [
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/002-new.png"
+            },
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+            },
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211156-3018501/evidence/screens/006-landscape.png"
+            }
+          ],
+          "gap": "Weitere Größenlimits, Templateoptionen und Orientierung bei gespeicherter Karte offen."
         },
         "target": {
           "state": "pending_original_mapping",
@@ -2382,17 +4535,40 @@
         "fixture": "WD-F07",
         "plannedOriginalProbe": "Neue und geänderte Karte, Dateidialog-Abbruch, Kopie und erneutes Öffnen prüfen; Dateiziel und sichtbaren Dirty-Status vergleichen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
-          "sequence": null,
+          "path": "Save > Save Map",
+          "sequence": "Save geöffnet; HEX00-F01.wonderdraft_map eingegeben; Save angeklickt.",
           "options": null,
           "preview": null,
-          "effect": null,
-          "savedEffect": null,
+          "effect": "Dateidialog schloss; Rohkarte unter isoliertem XDG_DATA_HOME geschrieben.",
+          "savedEffect": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+            "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+          },
           "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "evidence": [
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-dialog.png"
+            },
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png"
+            },
+            {
+              "role": "original_saved_map",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
+              "sha256": "27d1d6a32353fd6a4e78c75e25b748b91675a112d74c5941d4ff27fa0e16a050"
+            }
+          ],
+          "gap": "Save As, Abbruch und Wiederöffnung nach vollständigem Prozessneustart offen."
         },
         "target": {
           "state": "pending_original_mapping",
@@ -5235,17 +7411,40 @@
         "fixture": "WD-F06",
         "plannedOriginalProbe": "Alle erreichbaren Themen und enthaltenen Komponenten erfassen; Thema bei Neuanlage und Wechsel auf einer gestalteten Karte getrennt prüfen.",
         "original": {
-          "state": "awaiting_direct_probe",
+          "state": "partial_direct_probe",
           "version": "1.1.8.2",
-          "path": null,
+          "path": "New > New Map > Settings > Theme; obere Leiste > Theme",
           "sequence": null,
-          "options": null,
+          "options": [
+            "Adventure",
+            "Black & White",
+            "Eastward",
+            "Feudal",
+            "Imagination",
+            "Paper",
+            "Pastel",
+            "Terra",
+            "Worn"
+          ],
           "preview": null,
           "effect": null,
           "savedEffect": null,
           "reopen": null,
-          "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "evidence": [
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-210848-3012378/evidence/screens/006-theme-list.png"
+            },
+            {
+              "role": "original_gui_screenshot",
+              "version": "1.1.8.2",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/theme-open.png"
+            }
+          ],
+          "gap": "Themenwechsel und gespeicherte Wirkung noch nicht geprüft."
         },
         "target": {
           "state": "pending_original_mapping",
@@ -65357,13 +67556,22 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-custom-color-20261007/custom-color-implementation.md",
-      "casesAdvanced": ["DD-011.12"],
+      "casesAdvanced": [
+        "DD-011.12"
+      ],
       "rawOriginalCases": 36,
       "maxHalfAlphaFractionDifference": 0.0085,
       "maxOpaqueMeanRgbError": 3.302,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Gewöhnliche Tint-/Alpha-Familien, Sofort-/Randbilder, gemeinsame Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     },
@@ -65373,13 +67581,22 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-normal-color-20261007/normal-floor-implementation.md",
-      "casesAdvanced": ["DD-011.12"],
+      "casesAdvanced": [
+        "DD-011.12"
+      ],
       "rawOriginalCases": 18,
       "maxHalfAlphaFractionDifference": 0.0086,
       "maxOpaqueMeanRgbError": 1.3,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Sofort-/Atlasrandbilder, weitere auffällige Stile, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     },
@@ -65389,14 +67606,23 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-immediate-20261007/immediate-gallery-implementation.md",
-      "casesAdvanced": ["DD-011.11"],
+      "casesAdvanced": [
+        "DD-011.11"
+      ],
       "pairedImmediateCases": 22,
       "loadedFullTileCases": 24,
       "meanLoadedFullTileRgbError": 1.455,
       "maxLoadedFullTileRgbError": 3.699,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Original-Sofortzug für Wood Vertical und Diamond korrekt paaren; Variantenfolge, native Atlaswahl und Randwirkung der fünf Concrete-Zellen klären; übrige Phase-3-Matrizen und unabhängiger Review offen."
     },
@@ -65406,13 +67632,22 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "27c37a84ad1ba59129b4f640ffabe9fb458b6a471f1ca28023e7add8affed7dc",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-first-pair-20261007/first-pair-implementation.md",
-      "casesAdvanced": ["DD-011.11"],
+      "casesAdvanced": [
+        "DD-011.11"
+      ],
       "pairedGalleryGestures": 2,
       "originalFreshReopen": true,
       "hostFreshReopen": true,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Wood-Erstzug-Bildbereitschaft und unmittelbare Variantenfolge, Concrete-Atlasränder, Picker/Pipette, Wand/Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     },
@@ -65422,14 +67657,24 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md",
-      "casesAdvanced": ["DD-011.17", "DD-011.22"],
+      "casesAdvanced": [
+        "DD-011.17",
+        "DD-011.22"
+      ],
       "pairedFieldContexts": 2,
       "pairedPipetteRuleContexts": 2,
       "originalFreshReopen": true,
       "hostFreshReopen": true,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Abweichender Kartenhintergrund für Pipette, Holz-Kantenprobe, Wall-/Cave-Alpha-Bildwirkung, Wandstil-/Farbmatrix, Bevel/Punktmutation und finale Optionskarte; unabhängiger Review ausstehend."
     },
@@ -65439,15 +67684,25 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-matrix-20261007/wall-matrix-implementation.md",
-      "casesAdvanced": ["DD-015.01", "DD-015.03"],
+      "casesAdvanced": [
+        "DD-015.01",
+        "DD-015.03"
+      ],
       "galleryStylesPaired": 10,
       "battlementsArgbValuesPaired": 9,
       "originalFreshReopen": true,
       "hostFreshReopen": true,
       "productPatchRetained": false,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Wandtextur-Fugen, Enden, Schatten, Ecken, Kurven, Portalöffnung und QAWall01; übrige offene Bildmatrizen und unabhängiger Review."
     },
@@ -65457,15 +67712,27 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "d1b48302220509f87be24f89b04e29eaa1f404d70c26ef4211cad5e7b0359d31",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-qawall-interior-20261007/qawall-matrix-implementation.md",
-      "casesAdvanced": ["DD-011.11", "DD-011.12", "DD-015.01", "DD-015.03"],
+      "casesAdvanced": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-015.01",
+        "DD-015.03"
+      ],
       "qaWallArgbValuesPaired": 9,
       "originalFreshReopen": true,
       "hostFreshReopen": true,
       "controlledRawWearToggle": true,
       "productPatchRetained": false,
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Original-Gebäudeabnutzung per UI/Save erheben und gleiches Host-Einstellungsmodell planen; danach Boden- und Wandbildmatrizen auf beiden Zuständen wiederholen, übrige Phase-3-Lücken und unabhängiger Review offen."
     },
@@ -65479,11 +67746,21 @@
       "uiSavedWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-off.dungeondraft_map",
       "uiSavedWearOn": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-on.dungeondraft_map",
       "originalFreshReopenWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-off-reopen/runs/20261007-201704-2055204/evidence/screens/02-reopened-map.png",
-      "observedValues": {"disabled": null, "enabled": "res://textures/wear/grime.png"},
+      "observedValues": {
+        "disabled": null,
+        "enabled": "res://textures/wear/grime.png"
+      },
       "acceptanceRule": "Gleiche Bedienung und Funktion, ungefähr gleichwertige Grafik; geringe Pixel- und Farbmittelabweichungen allein sperren die Abnahme nicht.",
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "next": "Original an/aus auf gleich gezeichneten Karten mit Save/Neustart paaren; Host-Modus und Bestandskarten festlegen, separat umsetzen und unabhängig reviewen."
     },
@@ -65493,7 +67770,12 @@
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md",
-      "casesAdvanced": ["DD-011.11", "DD-011.12", "DD-015.01", "DD-015.03"],
+      "casesAdvanced": [
+        "DD-011.11",
+        "DD-011.12",
+        "DD-015.01",
+        "DD-015.03"
+      ],
       "originalPairedBuildings": 4,
       "originalPairedPortals": 1,
       "originalFreshReopenBothModes": true,
@@ -65501,8 +67783,15 @@
       "existingV2CardOpened": true,
       "checks": "TypeScript, 142 Kerntests, Build, isolierter Host-Edit und frischer Hostprozess bestanden.",
       "openCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.17", "DD-011.22",
-        "DD-015.01", "DD-015.03", "DD-015.04", "DD-015.05"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.17",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05"
       ],
       "remaining": "Übrige Phase-3-Unterfälle nach dem getrennten Verhaltensplan umsetzen; anschließend unabhängiger 17-Fälle-Review. Produktiver Vault und installierter Build bleiben unverändert."
     },
@@ -65601,7 +67890,11 @@
       "hostCombinedFresh": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-regression-final-20261008/evidence/1791415173909-parity-phase3-building-reopen/result.json",
       "observedRule": "Punktverschiebung erhält die vorhandene Wand; Einfügen und Entfernen wenden die aktuell gewählte Wand in einem Undo-Schritt an.",
       "checks": "TypeScript, 145 Kerntests und Build bestanden. Auf demselben Endbuild bestanden Punktstil-Edit und Neuöffnung je 4/4, Bevel-Matrix-Edit und Neuöffnung je 6/6, Kontur-Edit und Neuöffnung je 5/5, Building-Optionskarte 11/11, Phase-1- und Phase-2-Regressionen sowie acht semantische Original-/Host-Konturchecks.",
-      "openCases": ["DD-011.15", "DD-015.04", "DD-015.05"],
+      "openCases": [
+        "DD-011.15",
+        "DD-015.04",
+        "DD-015.05"
+      ],
       "remaining": "Unabhängigen Review aller 17 Phase-3-Unterfälle auf dem Endbuild getrennt durchführen; die drei Unterfälle und das Fachphasentor bleiben bis dahin offen."
     },
     "phase3CleanupPlan": {
@@ -65656,12 +67949,34 @@
       "originalProgramSha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
       "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
       "requiredCases": [
-        "DD-026.01", "DD-026.02", "DD-026.03", "DD-026.04", "DD-026.05",
-        "DD-026.06", "DD-026.07", "DD-026.08", "DD-026.17", "DD-026.30",
-        "DD-047.01", "DD-047.02", "DD-047.03", "DD-047.04", "DD-047.05",
-        "DD-047.06", "DD-047.07", "DD-047.08", "DD-047.09", "DD-047.10",
-        "DD-047.11", "DD-047.12", "DD-047.13", "DD-047.14", "DD-047.15",
-        "DD-047.16", "DD-047.17", "DD-047.18"
+        "DD-026.01",
+        "DD-026.02",
+        "DD-026.03",
+        "DD-026.04",
+        "DD-026.05",
+        "DD-026.06",
+        "DD-026.07",
+        "DD-026.08",
+        "DD-026.17",
+        "DD-026.30",
+        "DD-047.01",
+        "DD-047.02",
+        "DD-047.03",
+        "DD-047.04",
+        "DD-047.05",
+        "DD-047.06",
+        "DD-047.07",
+        "DD-047.08",
+        "DD-047.09",
+        "DD-047.10",
+        "DD-047.11",
+        "DD-047.12",
+        "DD-047.13",
+        "DD-047.14",
+        "DD-047.15",
+        "DD-047.16",
+        "DD-047.17",
+        "DD-047.18"
       ],
       "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/",
       "decision": "Nur Plan. Alle 28 Pflicht-Unterfälle und das Phase-4-Fachphasentor bleiben offen; Original-Detailregeln werden vor der jeweiligen Umsetzung direkt gemessen.",
@@ -65694,7 +68009,10 @@
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/review-audit.json",
       "independentHostResults": 5,
       "implementationHostResultsAudited": 8,
-      "openFindings": ["P4-CL-R1", "P4-CL-R2"],
+      "openFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2"
+      ],
       "gate": "open",
       "decision": "Der Fachreview mit 28 Unterfällen bleibt unverändert gültig. Der technische Aufräum-Review zeigt Kachelneubau nach Assetinvalidierung bei identischen IDs und eine unvollständige gepaarte Mess-/ID-Matrix. Eigene Nachbesserungsplanung, Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 5."
     },
@@ -65706,7 +68024,10 @@
       "baseBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/phase4-cleanup-review.md",
-      "openFindings": ["P4-CL-R1", "P4-CL-R2"],
+      "openFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2"
+      ],
       "gate": "open",
       "decision": "Nur Nachbesserungsplan. Die 28 unabhängig verifizierten Fachfälle bleiben unverändert; P4-CL-R1/R2 und das Aufräumtor bleiben bis zu getrennter Umsetzung und erneutem unabhängigen Review offen."
     },
@@ -65734,8 +68055,14 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/review-audit.json",
-      "verifiedFindings": ["P4-CL-R1"],
-      "openFindings": ["P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "verifiedFindings": [
+        "P4-CL-R1"
+      ],
+      "openFindings": [
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "independentHostResults": 2,
       "verifiedFachCasesUnchanged": 28,
       "coreTestsPassed": 153,
@@ -65750,7 +68077,11 @@
       "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
-      "openFindings": ["P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "openFindings": [
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "gate": "open",
       "decision": "Nur Nachbesserungsplan für korrekte Modal-, Obsidian-Prozessspeicher- und Sichtbarkeitsmessung sowie Einordnung des fehlgeschlagenen ersten Wear-Kaltstarts. Die 28 Fachfälle und P4-CL-R1 bleiben verifiziert; ein eigener Umsetzungslauf und danach ein unabhängiger Aufräum-Review entscheiden das weiterhin offene Tor vor Phase 5."
     },
@@ -65784,7 +68115,12 @@
       "ownModalProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/modal-host3/evidence/1791452847369-parity-phase4-objects-edit/independent-modal-probe.json",
       "verified": "17 vollständige geordnete ID-Zustände auf drei Builds gleich; je sieben Aktionen viermal; Modalöffnung 1793 Modalknoten, Obsidian-Scope-Aktionspeak nach Reset und geometrisch sichtbare Bildquellen separat nachgerechnet. Eigene Modal-/Scrollprobe, fünf Phase-4-Hostfolgen, Raum-/Key-Edit und Neuöffnung, Bildbyte-/Blob-URL-Wechsel, Observer-Freigabe sowie Typprüfung, 153 Tests und Build auf unverändertem Bundle bestanden.",
       "wearColdObservation": "Ein programmgesteuerter Neuanlagebefehl bei noch offenem about:blank-Einstellungsdialog öffnete auf Fach- und Endbuild das Modal dort. Nach Start im Hauptdokument bestanden Wear-Edit und frische Neuöffnung; kein durch Phase-4-Aufräumen eingeführter Unterschied oder direkt belegter Bedienfehler im Hauptdokument.",
-      "closedFindings": ["P4-CL-R1", "P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "closedFindings": [
+        "P4-CL-R1",
+        "P4-CL-R2-MODAL",
+        "P4-CL-R2-MEMORY",
+        "P4-CL-R2-URLS"
+      ],
       "openCleanupFindings": [],
       "gate": "passed",
       "decision": "Der eigene unabhängige Review schließt P4-CL-R2 und das Phase-4-Aufräumtor. Die 28 Phase-4-Fachfälle behalten ihre direkte Original-/Host-Abnahme; Phase 5 folgt mit eigenem Planlauf. Physische Eingabe und gemeinsamer Abschluss bleiben späteren Roadmap-Phasen vorbehalten."
@@ -65797,14 +68133,36 @@
       "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "requiredObjectCases": [
-        "DD-026.09", "DD-026.10", "DD-026.11", "DD-026.12", "DD-026.13",
-        "DD-026.14", "DD-026.15", "DD-026.16", "DD-026.17", "DD-026.18",
-        "DD-026.19", "DD-026.20", "DD-026.21", "DD-026.28", "DD-026.29"
+        "DD-026.09",
+        "DD-026.10",
+        "DD-026.11",
+        "DD-026.12",
+        "DD-026.13",
+        "DD-026.14",
+        "DD-026.15",
+        "DD-026.16",
+        "DD-026.17",
+        "DD-026.18",
+        "DD-026.19",
+        "DD-026.20",
+        "DD-026.21",
+        "DD-026.28",
+        "DD-026.29"
       ],
       "requiredObjectColorCases": [
-        "DD-028.01", "DD-028.02", "DD-028.03", "DD-028.04", "DD-028.05",
-        "DD-028.06", "DD-028.07", "DD-028.08", "DD-028.09", "DD-028.10",
-        "DD-028.11", "DD-028.12", "DD-028.19"
+        "DD-028.01",
+        "DD-028.02",
+        "DD-028.03",
+        "DD-028.04",
+        "DD-028.05",
+        "DD-028.06",
+        "DD-028.07",
+        "DD-028.08",
+        "DD-028.09",
+        "DD-028.10",
+        "DD-028.11",
+        "DD-028.12",
+        "DD-028.19"
       ],
       "previouslyVerifiedRegression": "DD-026.17 im Phase-4-Fachreview; keine neue Abnahme in diesem Planlauf",
       "sharedCaseBoundary": "DD-028.19 bleibt als Gesamtfall bis zur separaten Scatter-/Light-Prüfung offen.",
@@ -65821,10 +68179,23 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/review-raw-audit.json",
       "verifiedCases": [
-        "DD-011.11", "DD-011.12", "DD-011.15", "DD-011.16", "DD-011.17",
-        "DD-011.18", "DD-011.19", "DD-011.20", "DD-011.21", "DD-011.22",
-        "DD-015.01", "DD-015.02", "DD-015.03", "DD-015.04", "DD-015.05",
-        "DD-015.06", "DD-015.07"
+        "DD-011.11",
+        "DD-011.12",
+        "DD-011.15",
+        "DD-011.16",
+        "DD-011.17",
+        "DD-011.18",
+        "DD-011.19",
+        "DD-011.20",
+        "DD-011.21",
+        "DD-011.22",
+        "DD-015.01",
+        "DD-015.02",
+        "DD-015.03",
+        "DD-015.04",
+        "DD-015.05",
+        "DD-015.06",
+        "DD-015.07"
       ],
       "openCases": [],
       "gate": "passed",
@@ -65856,7 +68227,13 @@
       "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
-      "findings": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "findings": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
       "gate": "open",
       "decision": "Nur Aufräumplan für die fünf belegten technischen Schwächen. Keine Produktänderung oder neue Fachabnahme; getrennter Umsetzungslauf und unabhängiger Aufräum-Review vor Phase 6."
     },
@@ -65869,7 +68246,13 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/implementation-audit.json",
-      "findingsAddressed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "findingsAddressed": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
       "hostEditReopenPairsPassed": 8,
       "coreTestsPassed": 155,
       "gate": "open",
@@ -65884,8 +68267,17 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/review-audit.json",
-      "confirmed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
-      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "confirmed": [
+        "P5-CL-1",
+        "P5-CL-2",
+        "P5-CL-3",
+        "P5-CL-4",
+        "P5-CL-5"
+      ],
+      "open": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "coreTestsPassed": 155,
       "hostEditReopenPairsPassed": 8,
       "gate": "open",
@@ -65900,7 +68292,10 @@
       "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
       "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "open": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "gate": "open",
       "decision": "Nur begrenzte Nachweisplanung. Direkte Textur-/Gradient- und Renderzeitmessung sowie gepaarte Objekt-/Pfad-/Tür-Lichtbilder folgen in getrennter QA-Umsetzung und unabhängigem Review. Keine Produktänderung oder neue Fachabnahme."
     },
@@ -65919,7 +68314,10 @@
       "pairedImageStates": 60,
       "hostEditReopenPairsRechecked": 8,
       "coreTestsPassed": 155,
-      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "open": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "gate": "open",
       "decision": "QA-Nachweise für Texturpool, Gradienten, tatsächliche Renderaufrufe und gepaarte Nahlichtbilder liegen vor; Produktbuild blieb unverändert. Erst der getrennte unabhängige Aufräum-Review entscheidet P5-CL-R1/R2 und das Tor vor Phase 6."
     },
@@ -65932,7 +68330,10 @@
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/phase5-cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review2-20261008/review-audit.json",
-      "confirmed": ["P5-CL-R1", "P5-CL-R2"],
+      "confirmed": [
+        "P5-CL-R1",
+        "P5-CL-R2"
+      ],
       "freshMapPairs": 6,
       "pairedActions": 42,
       "pairedImageStates": 60,
@@ -65955,8 +68356,25 @@
       "baseCommit": "0b9479a5831945c6d288bcb908ae45067d7f7c35",
       "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "objectGestures": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27"],
-      "selection": ["DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "objectGestures": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27"
+      ],
+      "selection": [
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.24",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
       "gate": "open",
       "decision": "Nur Phase-6-Planung. Direkte Original-/Endbuildfolgen für sechs Objektgesten und neun objektbezogene Auswahlpositionen fehlen; erst danach belegte Unterschiede umsetzen und unabhängig reviewen. Physische Eingabe und gemeinsame Großkarte bleiben Phase 7."
     },
@@ -65970,7 +68388,23 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791480301981-parity-phase6-gestures-reopen/result.json",
       "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "cases": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.21", "DD-030.22", "DD-030.23", "DD-030.24", "DD-030.25", "DD-030.29", "DD-030.34"],
+      "cases": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.24",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
       "coreTestsPassed": 155,
       "gate": "open",
       "decision": "Umsetzungskandidat mit direkter Original-Gestenkarte, bestandenem Host-Edit-/Neuöffnungspaar und Basisprüfungen; der unabhängige Fachreview entscheidet jede Position gesondert."
@@ -65986,8 +68420,25 @@
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/review-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/host/evidence/1791480748163-parity-phase6-gestures-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/host/evidence/1791480803096-parity-phase6-gestures-reopen/result.json",
-      "verifiedCore": ["DD-030.21", "DD-030.23", "DD-030.29", "DD-030.34"],
-      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
+      "verifiedCore": [
+        "DD-030.21",
+        "DD-030.23",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "open": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.22",
+        "DD-030.24",
+        "DD-030.25"
+      ],
       "projectInvariantOpen": "Raumgrenzzug mit roomId, Undo/Redo, Speichern und frischer Neuöffnung im Obsidian-Host.",
       "originalRecordCorrection": "DD-026.27 speicherte 95° aus 90° Ausgangswinkel; Rohakte und Umsetzungsbericht benennen den gespeicherten Wert irrtümlich als 5° aus 0.",
       "coreTestsPassed": 155,
@@ -66003,8 +68454,25 @@
       "baseCommit": "dbe03773d9091a5011ee7de123eb74e65cc55c2e",
       "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
-      "regression": ["DD-030.21", "DD-030.23", "DD-030.29", "DD-030.34"],
+      "open": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.26",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.22",
+        "DD-030.24",
+        "DD-030.25"
+      ],
+      "regression": [
+        "DD-030.21",
+        "DD-030.23",
+        "DD-030.29",
+        "DD-030.34"
+      ],
       "projectInvariant": "Raumgrenzzug mit roomId, Key-Bezug, Undo/Redo, Save und frischer Neuöffnung im Host.",
       "gate": "open",
       "decision": "Nur Nachbesserungsplanung. Gleiche Original-/Hoststartkarten und Eingabespuren klären elf offene Fälle; Produktänderung erst bei direkt gemessener Funktionsdifferenz. Getrennte Umsetzung und unabhängiger Review folgen."
@@ -66022,9 +68490,23 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/host-final/evidence/1791484988886-parity-phase6-repair-reopen/result.json",
       "nativeScaleReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale-reopen/evidence/reopened.png",
       "coreTestsPassed": 156,
-      "pairedCandidate": ["DD-026.22", "DD-026.23", "DD-026.26", "DD-030.22", "DD-030.25"],
-      "partlyPairedCandidate": ["DD-026.24", "DD-026.27", "DD-030.24"],
-      "openInput": ["DD-026.25", "DD-030.19", "DD-030.20"],
+      "pairedCandidate": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.26",
+        "DD-030.22",
+        "DD-030.25"
+      ],
+      "partlyPairedCandidate": [
+        "DD-026.24",
+        "DD-026.27",
+        "DD-030.24"
+      ],
+      "openInput": [
+        "DD-026.25",
+        "DD-030.19",
+        "DD-030.20"
+      ],
       "projectInvariant": "Raumgrenzzug mit roomId, Feature, Key, Undo/Redo, Speichern und Neuöffnung im Host bestanden.",
       "gate": "open",
       "decision": "Der Umsetzungskandidat korrigiert die direkt gemessene Cloth-Griffsensitivität und sichert Raumwechsel, Objektgesten und Regressionen im isolierten Host. Mehrere Eingaberänder bleiben ungepaart; erst der getrennte unabhängige Review entscheidet die 15 Pflichtpositionen und das Fachphasentor."
