@@ -36103,6 +36103,22 @@
             ],
             "gap": "Original-Kartenwert nach genau einem Wheel-Tick, Touchpad-Grenzen und installierter Endstand offen."
           }
+        },
+        "review": {
+          "state": "verified",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "−15° und 175→−170° mit Karten-, Kamera- und Historywirkung gepaart.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures2/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -36185,6 +36201,22 @@
             ],
             "gap": "Original-Range-Grenzen und Original-Kartenwert nach genau einem Alt-Wheel-Tick sowie installierter Endstand offen."
           }
+        },
+        "review": {
+          "state": "verified",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "0,9, 0,1, 4 und Alt+Shift-Grenzfolge mit gespeicherten Atlasobjekten gepaart.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures3/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -36275,6 +36307,23 @@
               "reopen": "pass"
             }
           }
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Exact-Folge gepaart; vollständige All-Reihenfolge als eigenes Original-/Hostpaar fehlt.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures3/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "Exact-Folge gepaart; vollständige All-Reihenfolge als eigenes Original-/Hostpaar fehlt."
         }
       },
       {
@@ -36370,6 +36419,23 @@
               "reopen": "pass"
             }
           }
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "A-Halten-Kernfolge belegt; Fokusverlust und kombinierte A-Gesten sind nicht belastbar gepaart.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures3/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "A-Halten-Kernfolge belegt; Fokusverlust und kombinierte A-Gesten sind nicht belastbar gepaart."
         }
       },
       {
@@ -36459,6 +36525,22 @@
               "reopen": "pass"
             }
           }
+        },
+        "review": {
+          "state": "verified",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Rechts/Alt+Rechts, Wiederholung und Winkel-Wrap bei leerer Karten-History gepaart.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures3/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -36549,6 +36631,23 @@
               "reopen": "open"
             }
           }
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "90→95° und 90→85° belegt; native +5°-Karte und Host nutzen unterschiedliche Texturen.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-gestures3/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "90→95° und 90→85° belegt; native +5°-Karte und Host nutzen unterschiedliche Texturen."
         }
       },
       {
@@ -43673,6 +43772,20 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Überlappungspriorität mit umgekehrter Zeichenfolge im Original nicht verlässlich gewählt.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-selection1/evidence/overlap-drag-attempt.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/phase6-repair-implementation.md"
+          ],
+          "hostEvidence": [],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "Überlappungspriorität mit umgekehrter Zeichenfolge im Original nicht verlässlich gewählt."
         }
       },
       {
@@ -43734,6 +43847,20 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Vorwärts-/Rückwärtsrahmen und Randanker im Original nicht verlässlich gewählt.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/phase6-repair-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "Vorwärts-/Rückwärtsrahmen und Randanker im Original nicht verlässlich gewählt."
         }
       },
       {
@@ -43795,6 +43922,21 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified_regression",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Objekt-Licht-Mehrfachwahl aus vorigem Fachreview; Endbuild-Regression bestanden.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488336076-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488388693-parity-phase6-gestures-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -43856,6 +43998,23 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Dasselbe gesperrte Möbel normal/Alt gewählt und ohne History entsperrt; Host und Neuöffnung gepaart.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-selection1/evidence/locked-normal-click.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-selection1/evidence/locked-alt-click.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-selection1/evidence/locked-unlocked.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -43917,6 +44076,21 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified_regression",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Gemeinsame Objekt-Licht-Bewegung mit einem Undo aus vorigem Fachreview; Endbuild-Regression bestanden.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488336076-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488388693-parity-phase6-gestures-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -43978,6 +44152,23 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-selection-grips.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Äußere Cloth-Drehung wirkt in beiden Hosts; Start-/Endzeiger und Anker nicht exakt gepaart (1,556139 gegen 1,570796 rad).",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale1/map/original-working.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale-reopen/evidence/reopened.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+          "gap": "Äußere Cloth-Drehung wirkt in beiden Hosts; Start-/Endzeiger und Anker nicht exakt gepaart (1,556139 gegen 1,570796 rad)."
         }
       },
       {
@@ -44039,6 +44230,23 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-selection-grips.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Cloth-01-Eckgriff bei 100 %/Snap, 20×20 px und horizontalem Kontrollzug numerisch gepaart; Undo/Redo/Neuöffnung bestanden.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale1/evidence/scale-diagonal-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/native-scale1/evidence/scale-horizontal-held.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd030-furniture-scale-3i0axO/summary.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -44258,6 +44466,21 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified_regression",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Spiegelung und Undo/Redo aus vorigem Fachreview; Endbuild-Regression bestanden.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488336076-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488388693-parity-phase6-gestures-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -44527,6 +44750,21 @@
             "/home/aaron/.cache/dungeon-native-qa/evidence/1791480174640-parity-phase6-gestures-edit/saved-map.dungeon"
           ],
           "gap": "Unabhängiger Phase-6-Fachreview und noch ungemessene physische Eingabe, Griff-, Zoom- und Snap-Grenzen offen."
+        },
+        "review": {
+          "state": "verified_regression",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+          "observation": "Auswahlauflösung nach Undo aus vorigem Fachreview; Endbuild-Regression bestanden.",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488336076-parity-phase6-gestures-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488388693-parity-phase6-gestures-reopen/result.json"
+          ],
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json"
         }
       },
       {
@@ -68510,6 +68748,42 @@
       "projectInvariant": "Raumgrenzzug mit roomId, Feature, Key, Undo/Redo, Speichern und Neuöffnung im Host bestanden.",
       "gate": "open",
       "decision": "Der Umsetzungskandidat korrigiert die direkt gemessene Cloth-Griffsensitivität und sichert Raumwechsel, Objektgesten und Regressionen im isolierten Host. Mehrere Eingaberänder bleiben ungepaart; erst der getrennte unabhängige Review entscheidet die 15 Pflichtpositionen und das Fachphasentor."
+    },
+    "phase6RepairIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_open",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "reviewOfCommit": "2d91935",
+      "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
+      "hostRepairEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488131588-parity-phase6-repair-edit/result.json",
+      "hostRepairReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/host/evidence/1791488202809-parity-phase6-repair-reopen/result.json",
+      "hostCoreEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488336076-parity-phase6-gestures-edit/result.json",
+      "hostCoreReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-core-review-20261008/host/evidence/1791488388693-parity-phase6-gestures-reopen/result.json",
+      "verified": [
+        "DD-026.22",
+        "DD-026.23",
+        "DD-026.26",
+        "DD-030.21",
+        "DD-030.22",
+        "DD-030.23",
+        "DD-030.25",
+        "DD-030.29",
+        "DD-030.34"
+      ],
+      "open": [
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
+      ],
+      "projectInvariant": "V4-Raumgrenzzug mit Feature, Key, Undo/Redo, Speichern und frischer Neuöffnung bestätigt.",
+      "gate": "open",
+      "next": "Eigener Planlauf für sechs offene Positionen, danach getrennte Umsetzung und unabhängiger Review."
     }
   }
 }
