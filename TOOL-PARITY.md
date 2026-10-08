@@ -523,3 +523,7 @@ Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase5-clean
 ## Phase 5: unabhängiger Aufräum-Review
 
 Der [Reviewbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md) und [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/review-audit.json) bestätigen den Kandidatenbuild `f8738f07…` erneut: Paletten-Plus verursacht in je drei 8×8-/128×128-Wiederholungen keine Visuals oder Lichtaufträge; die gemeinsamen Sichtbarkeitspolygone der 14 Lichtaktionen sind gleich. Object- und Building-Picker beenden Sampling und Listener; acht Host-Edit-/Neuöffnungspaare und 155 Kerntests bestehen. **Aufräumtor offen**, weil die geplante direkte Textur-/Renderzeitmessung und gepaarte Pfad-/Tür-Lichtbilder fehlen. Getrennter Nachbesserungsplan, QA-Umsetzung und erneuter Review folgen vor Phase 6. Fachphasentor, installierter Build und Nutzervault bleiben unverändert.
+
+## Phase 5: Nachbesserungsplan für den Aufräumreview
+
+Der [eigene Plan](ROADMAP-PARITY-CLEANUP-5-REPAIR-PLAN.md) schließt die Nachweislücken `P5-CL-R1/R2` über drei gepaarte 8×8-/128×128-Läufe je Build. Neue Pool-Texturen, wiederverwendete Referenzen, Lichtgradienten und tatsächliche `app.render()`-Dauern werden getrennt gezählt; feste Nahlichtbilder und Rohgeometrie verbinden Objekt-, Pfad- und Türaktionen. Der Produktkandidat bleibt unverändert. **Planlauf ohne neue Abnahme; Aufräumtor offen, Phase 6 gesperrt.** QA-Umsetzung und unabhängiger Review folgen in eigenen Läufen.

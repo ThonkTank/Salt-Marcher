@@ -59193,6 +59193,19 @@
       "hostEditReopenPairsPassed": 8,
       "gate": "open",
       "decision": "Der eigene Review bestätigt Kernwirkung und Regressionen ohne neuen Produktbefund. Gezählte Textur-/Gradientressourcen und Renderzeit vor/nach dem Eingriff sowie gepaarte Pfad-/Tür-Nahlichtbilder fehlen als im Plan verlangte Nachweise. Eigener Nachbesserungsplan, QA-Umsetzung und erneuter Review vor Phase 6."
+    },
+    "phase5CleanupRepairPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_qa_implementation",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-CLEANUP-5-REPAIR-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md",
+      "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "open": ["P5-CL-R1", "P5-CL-R2"],
+      "gate": "open",
+      "decision": "Nur begrenzte Nachweisplanung. Direkte Textur-/Gradient- und Renderzeitmessung sowie gepaarte Objekt-/Pfad-/Tür-Lichtbilder folgen in getrennter QA-Umsetzung und unabhängigem Review. Keine Produktänderung oder neue Fachabnahme."
     }
   }
 }
