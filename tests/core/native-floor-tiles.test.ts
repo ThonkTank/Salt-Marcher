@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { Building } from "../../src/model";
+import type { Building, Point } from "../../src/model";
+import { inside } from "../../src/geometry";
 import { nativeDesignId, isNativeCustomColorFloorAssetId } from
   "../../src/features/material/native-path-catalog";
 import { floorPolygonTouchesCell, nativeFloorCells, nativeFloorVariants } from
@@ -79,4 +80,48 @@ test("diagonal edge receives a clipped texture tile without filling its distant 
   assert.equal(floorPolygonTouchesCell(right, 6, 5), true);
   assert.equal(floorPolygonTouchesCell(right, 7, 5), false);
   assert.equal(floorPolygonTouchesCell(right, 2, 5), false);
+});
+
+test("clipped floor cells retain the former footprint for concave and boundary rings", () => {
+  const former = (outer: readonly Point[], x: number, y: number) => {
+    if (inside({ x: x + 0.5, y: y + 0.5 }, outer)) return true;
+    if (outer.some(p => p.x >= x && p.x <= x + 1 &&
+        p.y >= y && p.y <= y + 1)) return true;
+    for (const corner of [
+      { x, y }, { x: x + 1, y }, { x: x + 1, y: y + 1 }, { x, y: y + 1 },
+    ]) if (inside(corner, outer)) return true;
+    for (let i = 0; i < outer.length; i++) {
+      const a = outer[i]!, b = outer[(i + 1) % outer.length]!,
+        dx = b.x - a.x, dy = b.y - a.y;
+      let low = 0, high = 1;
+      for (const [p, q] of [
+        [-dx, a.x - x], [dx, x + 1 - a.x],
+        [-dy, a.y - y], [dy, y + 1 - a.y],
+      ] as const) {
+        if (p === 0 && q < 0) { low = 2; break; }
+        if (p < 0) low = Math.max(low, q / p);
+        if (p > 0) high = Math.min(high, q / p);
+      }
+      if (low <= high) return true;
+    }
+    return false;
+  };
+  const rings: Point[][] = [
+    [{ x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 7 }, { x: 1, y: 7 }],
+    [{ x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 2 },
+      { x: 2, y: 2 }, { x: 2, y: 7 }, { x: 1, y: 7 }],
+    [{ x: 0.2, y: 0.2 }, { x: 7.8, y: 7.1 },
+      { x: 7.7, y: 7.8 }, { x: 0.1, y: 0.8 }],
+    [{ x: 3.1, y: 3.1 }, { x: 3.7, y: 3.2 }, { x: 3.4, y: 3.8 }],
+    [{ x: 0, y: 0 }, { x: 8, y: 0 }, { x: 4, y: 4 }],
+    Array.from({ length: 64 }, (_, i) => ({
+      x: 4 + 3.2 * Math.cos(i * 2 * Math.PI / 64),
+      y: 4 + 3.2 * Math.sin(i * 2 * Math.PI / 64),
+    })),
+  ];
+  for (const [index, outer] of rings.entries())
+    for (let y = -1; y < 9; y++)
+      for (let x = -1; x < 9; x++)
+        assert.equal(floorPolygonTouchesCell(outer, x, y), former(outer, x, y),
+          `ring ${index}, cell ${x},${y}`);
 });

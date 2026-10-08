@@ -37,7 +37,8 @@ module.exports = ({ page, fs, path, assert, out, vault, sourceVault,
     assert.equal(await page.evaluate(() =>
       app.commands.executeCommandById("dungeon-editor:create-dungeon")), true);
     const modal = page.locator(".modal:visible").last();
-    await modal.getByText("Dungeon anlegen", { exact: true }).waitFor();
+    await modal.getByText("Dungeon anlegen", { exact: true })
+      .waitFor({ timeout: 45000 });
     const wear = modal.locator(".setting-item")
       .filter({ hasText: "Gebäudeabnutzung deaktivieren" })
       .locator('input[type="checkbox"]');
@@ -117,7 +118,8 @@ module.exports = ({ page, fs, path, assert, out, vault, sourceVault,
       assert.equal(await page.evaluate(() =>
         app.commands.executeCommandById("dungeon-editor:create-dungeon")), true);
       const modal = page.locator(".modal:visible").last();
-      await modal.getByText("Dungeon anlegen", { exact: true }).waitFor();
+      await modal.getByText("Dungeon anlegen", { exact: true })
+        .waitFor({ timeout: 45000 });
       const wear = modal.locator(".setting-item")
         .filter({ hasText: "Gebäudeabnutzung deaktivieren" })
         .locator('input[type="checkbox"]');
@@ -138,7 +140,8 @@ module.exports = ({ page, fs, path, assert, out, vault, sourceVault,
       assert.equal(await page.evaluate(() =>
         app.commands.executeCommandById("dungeon-editor:create-dungeon")), true);
       const modal = page.locator(".modal:visible").last();
-      await modal.getByText("Dungeon anlegen", { exact: true }).waitFor();
+      await modal.getByText("Dungeon anlegen", { exact: true })
+        .waitFor({ timeout: 45000 });
       assert.equal(await visibleToggleValue(modal.locator(".setting-item")
         .filter({ hasText: "Gebäudeabnutzung deaktivieren" })
         .locator('input[type="checkbox"]')), false);

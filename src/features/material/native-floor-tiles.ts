@@ -112,14 +112,14 @@ export function floorPolygonTouchesCell(
   outer: readonly Point[], x: number, y: number,
 ): boolean {
   if (inside({ x: x + 0.5, y: y + 0.5 }, outer)) return true;
-  if (outer.some((p) => p.x >= x && p.x <= x + 1 &&
-      p.y >= y && p.y <= y + 1)) return true;
-  for (const corner of [
-    { x, y }, { x: x + 1, y }, { x: x + 1, y: y + 1 }, { x, y: y + 1 },
-  ]) if (inside(corner, outer)) return true;
   for (let i = 0; i < outer.length; i++) {
     const a = outer[i]!, b = outer[(i + 1) % outer.length]!,
       dx = b.x - a.x, dy = b.y - a.y;
+    if (a.x >= x && a.x <= x + 1 && a.y >= y && a.y <= y + 1)
+      return true;
+    if (Math.max(a.x, b.x) < x || Math.min(a.x, b.x) > x + 1 ||
+        Math.max(a.y, b.y) < y || Math.min(a.y, b.y) > y + 1)
+      continue;
     let low = 0, high = 1;
     for (const [p, q] of [
       [-dx, a.x - x], [dx, x + 1 - a.x],

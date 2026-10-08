@@ -38,6 +38,10 @@ import {
   type BuildingContourEdit,
 } from "./geometry";
 import { type ComposeBuildingResult } from "./compute";
+import {
+  applyBuildingWallStyle,
+  type BuildingWallStyle,
+} from "./features/bau/building-wall-style";
 
 export function createRoom(
   session: Session,
@@ -306,8 +310,7 @@ export interface BuildingMutationRequest {
   readonly expectedRevision: number;
   readonly currentRevision: number;
   readonly newBuilding?: Building;
-  readonly eraseWallStyle?: Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">;
+  readonly eraseWallStyle?: BuildingWallStyle;
 }
 export interface BuildingMutationPlan {
   readonly command: Command | null;
@@ -419,15 +422,7 @@ export function planBuildingMutation(
   let selectedId: string | undefined;
   const wallStyle = request.eraseWallStyle;
   const withCurrentWall = (building: Building): Building => wallStyle
-    ? {
-        ...building,
-        wall: wallStyle.wall,
-        wallAlpha: wallStyle.wallAlpha,
-        wallBevel: wallStyle.wallBevel,
-        wallWidth: wallStyle.wallWidth,
-        wallAssetId: wallStyle.wallAssetId,
-      }
-    : building;
+    ? applyBuildingWallStyle(building, wallStyle) : building;
   for (const before of changed) {
     const polygons = geometryById.get(before.id)!,
       after: Building | null = polygons.length
@@ -462,8 +457,7 @@ export interface BuildingContourMutationRequest {
   readonly after: Building;
   readonly edit: BuildingContourEdit;
   /** Native point insertion and removal apply the selected Building wall. */
-  readonly wallStyle?: Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">;
+  readonly wallStyle?: BuildingWallStyle;
 }
 function assertCurrentBuildingContour(
   entities: readonly Entity[], before: Building, message: string,
@@ -548,7 +542,7 @@ export function planBuildingContourMutation(
   )
     throw new Error("Ungültige Punktbearbeitung.");
   const finalAfter = request.wallStyle && edit.kind !== "move"
-    ? { ...after, ...request.wallStyle }
+    ? applyBuildingWallStyle(after, request.wallStyle)
     : after;
   validateBuildingContourAfter(finalAfter);
   if (recordsEqual(before, finalAfter)) return null;

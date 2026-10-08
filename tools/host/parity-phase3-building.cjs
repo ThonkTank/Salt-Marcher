@@ -4,9 +4,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   const mapPath = "Dungeons/Parity/Building-Styles.dungeon";
   const savedState = path.join(qa, "parity-phase3-building-saved.json");
   const combinedState = path.join(qa, "parity-phase3-combined-saved.json");
-  const pckPath = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-  const packPath = "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/assets/qa-wall-pack.dungeondraft_pack";
-  const hash = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+  const fixtures = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
+  const { pckPath, hash } = fixtures;
   const state = () => page.evaluate(() => {
     const editor = app.workspace.activeLeaf?.view?.editor;
     return editor && {
@@ -61,16 +60,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
   }
   async function edit() {
-    const pack = fs.readFileSync(packPath);
-    assert.equal(hash(pack), "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
-    await page.evaluate(async ({ mapPath, pckPath, pack }) => {
-      const plugin = app.plugins.getPlugin("dungeon-editor");
-      await plugin.useNativeAssetArchive(pckPath);
-      const bytes = Uint8Array.from(atob(pack), char => char.charCodeAt(0));
-      await plugin.assets.add([new Blob([bytes])]);
-      await plugin.reloadAssets();
+    await fixtures.load(page);
+    await page.evaluate(async ({ mapPath }) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       const document = {
         format: "dungeon-map", version: 3, id: "parity-phase3-building",
@@ -81,7 +72,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
         entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
       };
       await app.vault.create(mapPath, JSON.stringify(document, null, 2));
-    }, { mapPath, pckPath, pack: pack.toString("base64") });
+    }, { mapPath });
     await open();
     await chooseTool("Raum");
     assert.equal(await page.getByRole("checkbox", { name: "Bevel Corners" }).isChecked(), true);
@@ -394,11 +385,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
     if (wallBlendProbe) assert(wallTintPair);
     if (bevelMaskProbe) assert(!wallBlendProbe);
     if (wallGlProbe) assert(wallBlendProbe);
-    const pack = fs.readFileSync(packPath);
-    assert.equal(hash(pack),
-      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    const pack = fixtures.verifyPack();
+    fixtures.verifyPck();
     await page.evaluate(async ({ pckPath, pack }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.useNativeAssetArchive(pckPath);
@@ -587,11 +575,8 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   }
   async function portalVisual(twoDoors = false, layerProbe = false,
     bevelOff = false) {
-    const pack = fs.readFileSync(packPath);
-    assert.equal(hash(pack),
-      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    const pack = fixtures.verifyPack();
+    fixtures.verifyPck();
     const file = twoDoors
       ? "Dungeons/Parity/QAWall-Two-Portals.dungeon"
       : "Dungeons/Parity/QAWall-Portal-Visual.dungeon";
@@ -723,8 +708,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   }
   async function floorVariant(restart) {
     const file = "Dungeons/Parity/Floor-Variants.dungeon";
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    fixtures.verifyPck();
     await page.evaluate(async ({ file, pckPath, restart }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.useNativeAssetArchive(pckPath);
@@ -842,8 +826,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       "simple/tileset_wood_damaged", "simple/tileset_plank_45",
       "simple/tileset_wood_interlaced", "simple/tileset_worn_cobble",
     ];
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    fixtures.verifyPck();
     await page.evaluate(async ({ file, pckPath, restart, names, defaultTint }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.useNativeAssetArchive(pckPath);
@@ -1457,9 +1440,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
       "00ff0000", "80ff0000", "ffff0000",
       "00445566", "80445566", "ff445566",
     ]);
-    const pack = qaWall ? fs.readFileSync(packPath) : null;
-    if (pack) assert.equal(hash(pack),
-      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
+    const pack = qaWall ? fixtures.verifyPack() : null;
     if (!restart) await page.evaluate(async ({ file, pckPath, pack }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.useNativeAssetArchive(pckPath);
@@ -1929,8 +1910,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, vault, out, checks,
   async function sameCard(restart) {
     const file = "Dungeons/Parity/Native-Options-Card.dungeon",
       saved = path.join(qa, "parity-phase3-native-options-card-saved.json");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
+    fixtures.verifyPck();
     await page.evaluate(async ({ file, pckPath, restart }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       await plugin.useNativeAssetArchive(pckPath);

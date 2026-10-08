@@ -1,7 +1,7 @@
 module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
   chooseTool }) => {
-  const pckPath = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-  const packPath = "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/assets/qa-wall-pack.dungeondraft_pack";
+  const fixtures = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
+  const { pckPath, hash } = fixtures;
   const prefix = "Dungeons/Parity/Bevel-";
   const files = {
     battlements: prefix + "Battlements.dungeon",
@@ -12,7 +12,6 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
     ellipseOff: prefix + "QA-Ellipse-Off.dungeon",
   };
   const savedPath = path.join(qa, "parity-phase3-bevel-matrix-saved.json");
-  const hash = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
   const state = () => page.evaluate(() => {
     const editor = app.workspace.activeLeaf?.view?.editor;
     return editor && { document: editor.session.document(),
@@ -101,17 +100,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
       JSON.stringify(document, null, 2));
   }
   async function edit() {
-    const pack = fs.readFileSync(packPath);
-    assert.equal(hash(pack),
-      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
-    const assets = await page.evaluate(async ({ pckPath, pack, files }) => {
+    const pack = await fixtures.load(page);
+    const assets = await page.evaluate(async ({ files }) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
-      await plugin.useNativeAssetArchive(pckPath);
-      await plugin.assets.add([new Blob([Uint8Array.from(atob(pack),
-        char => char.charCodeAt(0))])]);
-      await plugin.reloadAssets();
       const catalog = plugin.listAssets(["QAWall01"], true),
         qa = catalog.find(asset => asset.kind === "wall" && asset.name === "QA Wall"),
         battlements = catalog.find(asset => asset.kind === "wall" &&
@@ -129,7 +120,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks,
           entities: [], content: { definitions: [], occurrences: [],
             routes: [], archive: [] } }));
       return { qa: qa.id, battlements: battlements.id };
-    }, { pckPath, pack: pack.toString("base64"), files });
+    }, { files });
     fs.writeFileSync(path.join(out, "assets.json"), JSON.stringify({ ...assets,
       pckSha256: hash(fs.readFileSync(pckPath)), packSha256: hash(pack) }, null, 2));
     const records = [];

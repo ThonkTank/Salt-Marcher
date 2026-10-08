@@ -49,6 +49,8 @@ Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners 
 
 **Aufräumplan 08.10.2026:** Der [getrennte Phase-3-Aufräumplan](ROADMAP-PARITY-CLEANUP-3-PLAN.md) legt Bodenvorschau-Ressourcen, Rasterarbeit, Building-Wandstilpfade und Hostfixtures als begrenzten Umfang fest. Die Fachabnahme bleibt bestanden; Aufräumumsetzung und eigener Aufräum-Review stehen aus. Phase 4 beginnt erst nach bestandenem Aufräumtor.
 
+**Aufräumumsetzung 08.10.2026:** Der [Umsetzungskandidat](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/phase3-cleanup-implementation.md) verwendet Boden-Geometrie und Shader während gehaltener Punktvorschauen weiter, beschleunigt die Prüfung berührter Randzellen und bündelt Wandstilregel sowie vier Phase-3-Fixtures. Alle 72 Variantenarrays und 72 Abdeckungsmasken sind vor/nach dem Eingriff bytegleich; 17 finale isolierte Hostläufe einschließlich Edit/Neuöffnung und Phase-1-/2-Regressionen bestanden auf Build `013c9aef…`. Typprüfung, 146 Kerntests und Build bestanden. Die 17 Fachunterfälle bleiben abgenommen; der **eigene unabhängige Aufräum-Review** und damit das Aufräumtor stehen noch aus. Phase 4 bleibt gesperrt, Installation und produktiver Vault unverändert.
+
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
 **Unterfälle:** `DD-026.01` bis `.08`, `.17`, `.30` und `DD-047`.

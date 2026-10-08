@@ -53234,6 +53234,20 @@
       "scope": "Ressourcen der gehaltenen Bodenvorschau, gemessene Rasterarbeit, Building-Wandstilpfade und Phase-3-Hostfixtures.",
       "decision": "Dieser Plan ändert keine der 17 bestandenen Fachabnahmen. Umsetzung und unabhängiger Aufräum-Review folgen in eigenen Läufen; Phase 4 bleibt gesperrt."
     },
+    "phase3CleanupImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_ready_for_separate_cleanup_review",
+      "candidateBuildSha256": "013c9aefaabd2fca85b673eac020516b57228385366814f60350141a6aad9fe8",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/phase3-cleanup-implementation.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/implementation-audit.json",
+      "benchmarkBefore": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-benchmark-before-20261008/evidence/1791417788126-parity-phase3-building-edit/cleanup-preview-benchmark.json",
+      "benchmarkAfter": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-final-benchmark-20261008/evidence/1791417945180-parity-phase3-building-edit/cleanup-preview-benchmark.json",
+      "coverageBefore": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/before-coverage/native-floor-benchmark.json",
+      "coverageAfter": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/after-coverage/native-floor-benchmark.json",
+      "checks": "72 Variantenarrays und 72 Abdeckungsmasken bytegleich; 17 finale Host-Ergebnisse auf demselben Kandidatenbuild bestanden, darunter Kontur, Bevel, Punktstil, Optionen, Alpha, Wear und Phase-1-/2-Regressionen mit frischer Neuöffnung. Typprüfung, 146 Kerntests und Build bestanden.",
+      "gate": "open",
+      "decision": "Umsetzungskandidat ohne neue Fachabnahme. Der unabhängige Aufräum-Review folgt getrennt; Phase 4 bleibt gesperrt."
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",

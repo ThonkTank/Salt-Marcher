@@ -77,6 +77,11 @@ import {
 import {
   previewBuildingMutationWithPortals,
 } from "./features/bau/building-edge-portal-preview";
+import {
+  applyBuildingWallStyle,
+  buildingWallStyle,
+  type BuildingWallStyle,
+} from "./features/bau/building-wall-style";
 import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
 import { setIcon } from "obsidian";
 import {
@@ -2292,15 +2297,8 @@ export class DungeonEditor {
       ? buildingPointDragDestination(grip, g.start, point, this.snapEnabled)
       : undefined;
   }
-  private currentBuildingWallStyle(): Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId"> {
-    return {
-      wall: this.settings.surfaces.floor.wallColor,
-      wallAlpha: this.settings.room.wallAlpha ?? 255,
-      wallBevel: this.settings.room.wallBevel ?? true,
-      wallWidth: this.settings.surfaces.floor.wallWidth,
-      wallAssetId: this.settings.room.wallAssetId,
-    };
+  private currentBuildingWallStyle(): BuildingWallStyle {
+    return buildingWallStyle(this.settings);
   }
   private previewBuildingPointGesture(g: Gesture, point: Point): void {
     const before = g.entity,
@@ -2316,7 +2314,7 @@ export class DungeonEditor {
         .filter((entity): entity is Entity =>
           entity?.kind === "door" && entity.anchor?.boundaryId === before.id),
       after = g.buildingEdge
-        ? { ...proposal.after, ...this.currentBuildingWallStyle() }
+        ? applyBuildingWallStyle(proposal.after, this.currentBuildingWallStyle())
         : proposal.after,
       preview = previewBuildingMutationWithPortals(portals, before,
         after, proposal.edit);
@@ -2781,11 +2779,7 @@ export class DungeonEditor {
     const floorId = this.renderer.floorId,
       defaults = this.settings.surfaces[category],
       material = this.settings.material,
-      roomStyle = {
-        wallAssetId: this.settings.room.wallAssetId,
-        wallAlpha: this.settings.room.wallAlpha ?? 255,
-        wallBevel: this.settings.room.wallBevel ?? true,
-      },
+      floorWallStyle = buildingWallStyle(this.settings),
       styleKey = (source: Surface | Building) =>
         source.kind === "building"
           ? JSON.stringify([
@@ -2810,11 +2804,11 @@ export class DungeonEditor {
               source.material ?? null,
             ]),
       desiredStyle = JSON.stringify(category === "floor" ? [
-        defaults.layer, defaults.color, defaults.wallColor,
-        defaults.wallWidth, (defaults.opacity ?? 1), "none", material ?? null,
-        roomStyle.wallAssetId ?? null,
-        roomStyle.wallAlpha,
-        roomStyle.wallBevel,
+        defaults.layer, defaults.color, floorWallStyle.wall,
+        floorWallStyle.wallWidth, (defaults.opacity ?? 1), "none", material ?? null,
+        floorWallStyle.wallAssetId ?? null,
+        floorWallStyle.wallAlpha,
+        floorWallStyle.wallBevel,
       ] : [
         defaults.layer, defaults.color, defaults.wallColor,
         defaults.wallWidth, defaults.opacity ?? 1,
@@ -2885,12 +2879,12 @@ export class DungeonEditor {
                   layer: defaults.layer,
                   fill: defaults.color,
                   floorAlpha: Math.round((defaults.opacity ?? 1) * 255),
-                  wall: defaults.wallColor,
-                  wallAlpha: roomStyle.wallAlpha,
-                  wallBevel: roomStyle.wallBevel,
-                  wallWidth: defaults.wallWidth,
-                  ...(roomStyle.wallAssetId
-                    ? { wallAssetId: roomStyle.wallAssetId } : {}),
+                  wall: floorWallStyle.wall,
+                  wallAlpha: floorWallStyle.wallAlpha,
+                  wallBevel: floorWallStyle.wallBevel,
+                  wallWidth: floorWallStyle.wallWidth,
+                  ...(floorWallStyle.wallAssetId
+                    ? { wallAssetId: floorWallStyle.wallAssetId } : {}),
                   ...(material ? { material } : {}),
                 }
               : undefined,
@@ -2901,14 +2895,8 @@ export class DungeonEditor {
             expectedRevision: revision,
             currentRevision: this.session.revision,
             ...(newBuilding ? { newBuilding } : {}),
-            ...(erase && defaults.wallWidth > 0 ? {
-              eraseWallStyle: {
-                wall: defaults.wallColor,
-                wallAlpha: roomStyle.wallAlpha,
-                wallBevel: roomStyle.wallBevel,
-                wallWidth: defaults.wallWidth,
-                wallAssetId: roomStyle.wallAssetId,
-              },
+            ...(erase && floorWallStyle.wallWidth > 0 ? {
+              eraseWallStyle: floorWallStyle,
             } : {}),
           });
         if (!plan.command) return;

@@ -685,6 +685,10 @@ async function workflow() {
     return;
   }
   if (parityPhase3Building) {
+    if (process.argv.includes("--cleanup-preview-benchmark")) {
+      await require("./host/parity-phase3-cleanup-benchmark.cjs")(scenarioContext).edit();
+      return;
+    }
     if (process.argv.includes("--contour-extensions")) {
       const scenario = require("./host/parity-phase3-contour-extensions.cjs")(scenarioContext);
       if (restart) await scenario.reopen();

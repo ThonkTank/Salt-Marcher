@@ -1,6 +1,7 @@
 import { isRoom, type Building, type Entity, type Point } from "../../model";
 import type { Command } from "../../session";
 import { planBuildingContourMutation, planBuildingOutlineRemoval } from "../../commands";
+import { applyBuildingWallStyle, type BuildingWallStyle } from "./building-wall-style";
 import {
   buildingContourEntries,
   nearestBuildingVertex,
@@ -135,8 +136,7 @@ export function planBuildingBackspacePoint(
   entities: readonly Entity[],
   before: Building,
   grip: BuildingVertexGrip,
-  wallStyle?: Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
+  wallStyle?: BuildingWallStyle,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
   const contour = buildingContourEntries(before)[grip.contour];
@@ -156,7 +156,7 @@ export function planBuildingBackspacePoint(
   if (contour.points.length < 3) return { status: "stale", command: null };
   const points = contour.points.filter((_, index) => index !== grip.index),
     shapeAfter = replaceBuildingContour(before, grip.contour, points),
-    after = wallStyle ? { ...shapeAfter, ...wallStyle } : shapeAfter,
+    after = wallStyle ? applyBuildingWallStyle(shapeAfter, wallStyle) : shapeAfter,
     command = planBuildingContourMutation({
       entities,
       before,
@@ -245,11 +245,10 @@ export function previewBuildingEdgeDrag(
   before: Building,
   grip: BuildingEdgeGrip,
   destination: Point,
-  wallStyle?: Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
+  wallStyle?: BuildingWallStyle,
 ): Building | null {
   const after = proposeBuildingPointDrag(before, grip, destination)?.after;
-  return after ? wallStyle ? { ...after, ...wallStyle } : after : null;
+  return after ? wallStyle ? applyBuildingWallStyle(after, wallStyle) : after : null;
 }
 
 export function planBuildingEdgeDrag(
@@ -257,8 +256,7 @@ export function planBuildingEdgeDrag(
   before: Building,
   grip: BuildingEdgeGrip,
   destination: Point,
-  wallStyle?: Pick<Building,
-    "wall" | "wallAlpha" | "wallBevel" | "wallWidth" | "wallAssetId">,
+  wallStyle?: BuildingWallStyle,
 ): BuildingPointEdit {
   if (before.locked) return { status: "locked", command: null };
   const proposal = proposeBuildingPointDrag(before, grip, destination);
@@ -271,6 +269,6 @@ export function planBuildingEdgeDrag(
   });
   return command
     ? { status: "command", command,
-      after: wallStyle ? { ...proposal.after, ...wallStyle } : proposal.after }
+      after: wallStyle ? applyBuildingWallStyle(proposal.after, wallStyle) : proposal.after }
     : { status: "stale", command: null };
 }

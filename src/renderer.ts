@@ -86,6 +86,9 @@ export interface Visual {
   floorMask?: Graphics;
   floorGeometry?: MeshGeometry;
   floorShader?: Shader;
+  floorMesh?: Mesh<MeshGeometry, Shader>;
+  floorUnderlay?: Graphics;
+  floorShaderStyle?: string;
 }
 export interface ColorableObjectSource {
   readonly image: Blob;
@@ -111,6 +114,9 @@ interface BuildingPreview {
   floorMask?: Graphics;
   floorGeometry?: MeshGeometry;
   floorShader?: Shader;
+  floorMesh?: Mesh<MeshGeometry, Shader>;
+  floorUnderlay?: Graphics;
+  floorShaderStyle?: string;
   wallTexture?: Texture;
   assets: string[];
   portals: readonly { before: Door; after: Door | null }[];
@@ -473,16 +479,21 @@ export class MapRenderer {
     grime: Texture,
     replacement?: Building,
   ): void {
-    target.floorLayer?.destroy({ children: true });
-    target.floorMask?.destroy();
-    target.floorGeometry?.destroy();
-    target.floorShader?.destroy();
-    target.floorLayer = undefined;
-    target.floorMask = undefined;
-    target.floorGeometry = undefined;
-    target.floorShader = undefined;
+    const clear = () => {
+      target.floorLayer?.destroy({ children: true });
+      target.floorMask?.destroy();
+      target.floorGeometry?.destroy();
+      target.floorShader?.destroy();
+      target.floorLayer = undefined;
+      target.floorMask = undefined;
+      target.floorGeometry = undefined;
+      target.floorShader = undefined;
+      target.floorMesh = undefined;
+      target.floorUnderlay = undefined;
+      target.floorShaderStyle = undefined;
+    };
     if (texture.width % 256 || texture.height % 256 ||
-        !building.polygons.length) return;
+        !building.polygons.length) { clear(); return; }
     const columns = texture.width / 256,
       variants = this.floorVariants(building.floorId, replacement),
       positions: number[] = [], uvs: number[] = [], indices: number[] = [];
@@ -512,19 +523,31 @@ export class MapRenderer {
           indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
         }
     }
-    if (!indices.length) return;
-    const geometry = new MeshGeometry({
+    if (!indices.length) { clear(); return; }
+    const customColor = isNativeCustomColorFloorAssetId(building.material?.assetId),
+      wear = this.settings.nativeBuildingWear !== false,
+      style = `${Number(customColor)}:${Number(wear)}`,
+      reusable = !!replacement && !!target.floorMesh &&
+        target.floorMesh.texture === texture && target.floorShaderStyle === style,
+      geometry = reusable ? target.floorGeometry! : new MeshGeometry({
         positions: new Float32Array(positions),
         uvs: new Float32Array(uvs), indices: new Uint32Array(indices),
-      }),
-      shader = nativeFloorShader(texture, grime,
-        isNativeCustomColorFloorAssetId(building.material?.assetId),
-        this.settings.nativeBuildingWear !== false),
-      mesh = new Mesh({ geometry, texture, shader }),
-      layer = new Container(), mask = new Graphics(),
-      underlay = new Graphics();
+      });
+    if (reusable) {
+      geometry.positions = new Float32Array(positions);
+      geometry.uvs = new Float32Array(uvs);
+      geometry.indices = new Uint32Array(indices);
+    } else clear();
+    const shader = reusable ? target.floorShader! : nativeFloorShader(
+        texture, grime, customColor, wear),
+      mesh = reusable ? target.floorMesh! : new Mesh({ geometry, texture, shader }),
+      layer = reusable ? target.floorLayer! : new Container(),
+      mask = reusable ? target.floorMask! : new Graphics(),
+      underlay = reusable ? target.floorUnderlay! : new Graphics();
     mesh.tint = building.fill;
     mesh.alpha = (building.floorAlpha ?? 255) / 255;
+    mask.clear();
+    underlay.clear();
     for (const polygon of building.polygons) {
       underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
         .fill(0x252525);
@@ -537,14 +560,19 @@ export class MapRenderer {
         mask.poly(hole.flatMap((point) => [point.x, point.y]), true)
           .cut();
     }
-    layer.addChild(underlay, mesh);
-    layer.mask = mask;
-    target.container.addChildAt(layer, 0);
-    target.container.addChild(mask);
+    if (!reusable) {
+      layer.addChild(underlay, mesh);
+      layer.mask = mask;
+      target.container.addChildAt(layer, 0);
+      target.container.addChild(mask);
+    }
     target.floorLayer = layer;
     target.floorMask = mask;
     target.floorGeometry = geometry;
     target.floorShader = shader;
+    target.floorMesh = mesh;
+    target.floorUnderlay = underlay;
+    target.floorShaderStyle = style;
   }
   private rebuild(): void {
     this.clearBuildingPreview();

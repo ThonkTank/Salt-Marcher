@@ -1,8 +1,8 @@
 module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
   chooseTool }) => {
   const source = "/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-matrix-aligned-20261008/vault/Dungeons/Parity/Bevel-QA-Ring-Off.dungeon";
-  const pckPath = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-  const packPath = "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/native-package/runs/20261007-025609-1253642/assets/qa-wall-pack.dungeondraft_pack";
+  const fixtures = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
+  const { hash } = fixtures;
   const prefix = "Dungeons/Parity/Contour-";
   const files = {
     bevel: prefix + "Bevel-Selected.dungeon",
@@ -12,7 +12,6 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     multipart: prefix + "Multipart.dungeon",
   };
   const savedFile = path.join(qa, "parity-phase3-contour-extensions-saved.json");
-  const hash = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
   const state = () => page.evaluate(() => {
     const e = app.workspace.activeLeaf?.view?.editor;
     return { document: e.session.document(), history: e.session.historySize,
@@ -58,12 +57,59 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     await page.mouse.move(b.x, b.y, { steps: 8 });
     await page.waitForFunction(id => app.workspace.activeLeaf?.view?.editor
       ?.renderer.buildingPreview?.sourceId === id, id);
+    await page.waitForFunction(() => !!app.workspace.activeLeaf?.view?.editor
+      ?.renderer.buildingPreview?.floorGeometry, null, { timeout: 45000 });
+    const floorResources = await page.evaluate(() => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer;
+      const preview = renderer.buildingPreview;
+      const original = preview.entity;
+      const geometry = preview.floorGeometry, shader = preview.floorShader,
+        layer = preview.floorLayer, mask = preview.floorMask,
+        underlay = preview.floorUnderlay;
+      globalThis.__phase3CleanupFloorResources = { geometry, shader, layer, mask,
+        underlay };
+      const changed = structuredClone(original);
+      changed.polygons[0].outer[0].x += 0.01;
+      renderer.drawNativeFloor(preview, changed, preview.floorTexture,
+        preview.floorGrimeTexture, changed);
+      const first = geometry === preview.floorGeometry &&
+        shader === preview.floorShader && layer === preview.floorLayer &&
+        mask === preview.floorMask && underlay === preview.floorUnderlay;
+      renderer.drawNativeFloor(preview, original, preview.floorTexture,
+        preview.floorGrimeTexture, original);
+      const second = geometry === preview.floorGeometry &&
+        shader === preview.floorShader && layer === preview.floorLayer &&
+        mask === preview.floorMask && underlay === preview.floorUnderlay;
+      return { first, second, sourceVisible: renderer.visuals.get(original.id)
+        ?.container.visible, previewFloorChildren: preview.floorLayer.children.length };
+    });
+    assert.deepEqual(floorResources, { first: true, second: true,
+      sourceVisible: false, previewFloorChildren: 2 });
+    fs.writeFileSync(path.join(out, name + "-floor-resources.json"),
+      JSON.stringify(floorResources, null, 2));
     const held = await state();
     assert.deepEqual(held.document, before.document);
     assert.equal(held.history, before.history);
     assert(held.preview.sprites > 0);
     await page.screenshot({ path: path.join(out, name + "-held.png") });
     await page.mouse.up();
+    const released = await page.evaluate(id => {
+      const renderer = app.workspace.activeLeaf.view.editor.renderer;
+      const refs = globalThis.__phase3CleanupFloorResources;
+      delete globalThis.__phase3CleanupFloorResources;
+      return { previewGone: !renderer.buildingPreview,
+        sourceVisible: renderer.visuals.get(id)?.container.visible ?? true,
+        geometryDestroyed: refs.geometry.attributes === null,
+        shaderDestroyed: refs.shader._destroyed === true,
+        layerDestroyed: refs.layer.destroyed === true,
+        maskDestroyed: refs.mask.destroyed === true,
+        underlayDestroyed: refs.underlay.destroyed === true };
+    }, id);
+    assert.deepEqual(released, { previewGone: true, sourceVisible: true,
+      geometryDestroyed: true, shaderDestroyed: true,
+      layerDestroyed: true, maskDestroyed: true, underlayDestroyed: true });
+    fs.writeFileSync(path.join(out, name + "-floor-release.json"),
+      JSON.stringify(released, null, 2));
     assert.equal((await state()).history, before.history + 1);
     return { before, after: await state() };
   }
@@ -98,18 +144,7 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, qa, out, checks,
     fs.writeFileSync(path.join(out, name + ".json"), JSON.stringify(document, null, 2));
   }
   async function edit() {
-    const pack = fs.readFileSync(packPath);
-    assert.equal(hash(pack),
-      "eaad533f4da8880bf8c0339d9d6ae66dd3d8e1c1d60917288ab0a91242d51ad9");
-    assert.equal(hash(fs.readFileSync(pckPath)),
-      "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60");
-    await page.evaluate(async ({ pckPath, pack }) => {
-      const plugin = app.plugins.getPlugin("dungeon-editor");
-      await plugin.useNativeAssetArchive(pckPath);
-      await plugin.assets.add([new Blob([Uint8Array.from(atob(pack),
-        char => char.charCodeAt(0))])]);
-      await plugin.reloadAssets();
-    }, { pckPath, pack: pack.toString("base64") });
+    await fixtures.load(page);
     const sourceBytes = fs.readFileSync(source);
     const sourceHash = hash(sourceBytes);
     assert.equal(sourceHash,
