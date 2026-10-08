@@ -67,6 +67,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Unabhängiger Review 08.10.2026:** Der [getrennte 28-Fälle-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md) verifiziert 19 Unterfälle. Vier direkte Bedienabweichungen betreffen normale/Strg-Tagwahl, Setwahl und den anfänglichen Default-/Override-Modus nach gespeicherter Datei; fünf weitere Unterfälle benötigen gezielte Original-/Hostpaare. Die Original-Override-Datei wurde gespeichert und nach frischem Prozessstart wirksam geladen. Typprüfung, 151 Tests und Build bestehen auf unverändertem Kandidatenhash. **Das Fachphasentor bleibt offen.** Ein eigener Nachbesserungsplanlauf folgt vor Umsetzung und erneuter unabhängiger Prüfung; Installation und Nutzervault blieben unverändert.
 
+**Nachbesserungsplan 08.10.2026:** Der [eigene Plan](ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md) ordnet die vier Abweichungen und fünf offenen Vergleichsfälle konkreten Originalproben, Codepfaden und Hostfolgen zu. Neue isolierte Originalproben klären das Fenster-X des Browsers und den vorläufigen Radiozustand nach Dialog-X. Erst der getrennte Umsetzungslauf darf Produktcode ändern; ein weiterer unabhängiger 28-Fälle-Review entscheidet das weiterhin offene Fachphasentor. Installation und Nutzervault blieben unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.

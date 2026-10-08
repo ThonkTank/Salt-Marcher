@@ -35374,6 +35374,17 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairPlanProbe": {
+          "date": "2026-10-08",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Gespeicherte Override-Datei laden → Override wählen → QA X Close Probe ohne Save anlegen → Browser-Fenster-X → Browser erneut öffnen.",
+          "effect": "QA-Tag ist nach Wiederöffnung verworfen; die Override-Datei bleibt bytegleich bei SHA-256 793242ade0749ef364cbfe6796832afa55cccc0bb34aeff0dad8ee7457b2cc8d.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-034600-2404664/evidence/repair-plan-tag-unsaved-before-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-034600-2404664/evidence/repair-plan-reopen-after-x.png"
+          ],
+          "remaining": "Derselbe Fenster-X-Weg ist im isolierten Host direkt zu paaren; unabhängige Endabnahme bleibt offen."
         }
       },
       {
@@ -35474,6 +35485,16 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairPlanProbe": {
+          "date": "2026-10-08",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Frisches Profil ohne Override-Datei → Tags Browser → Override wählen.",
+          "effect": "Dialogtext: No custom tags were found. Would you like to copy the default tags for creating a custom override?",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-before-x.png"
+          ],
+          "remaining": "Original mit vorhandenem eigenem QA-Tagbestand und Hostpaar noch prüfen; keine allgemeine Kopierregel daraus ableiten."
         }
       },
       {
@@ -35573,6 +35594,18 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
           "date": "2026-10-08",
           "strictAcceptance": "open"
+        },
+        "phase4RepairPlanProbe": {
+          "date": "2026-10-08",
+          "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Frisches Profil → Override-Prompt → Dialog-X → Default → Override erneut.",
+          "effect": "Nach X ist Override vorläufig markiert, Bearbeitung bleibt gesperrt und es entsteht keine Datei. Nach Default und erneutem Override erscheint derselbe Prompt wieder.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-before-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-034840-2405860/evidence/repair-plan-prompt-retry-after-x.png"
+          ],
+          "remaining": "Cancel und Dialog-X im Host getrennt nachbilden und auf frischem Build direkt prüfen; unabhängige Endabnahme bleibt offen."
         }
       },
       {

@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: unabhängiger 28-Fälle-Review abgeschlossen; Nachbesserungsplan folgt bei offenem Fachphasentor",
+  "phase": "Phase 4: Nachbesserungsplan für neun offene Unterfälle abgelegt; eigener Umsetzungslauf folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,16 +814,16 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_review_19_verified_9_open",
+    "status": "phase4_repair_plan_ready_19_verified_9_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter Phase-4-Nachbesserungsplan für vier direkte Abweichungen und fünf offene Belegpaare; danach eigener Umsetzungs- und Reviewlauf.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 19 von 28 Pflicht-Unterfällen im unabhängigen Review verifiziert, vier direkte Abweichungen und fünf offene Belegpaare; Fachphasentor offen. Kandidatenbuild ist nicht installiert.",
+    "nextRun": "Getrennter Phase-4-Nachbesserungsumsetzungslauf nach ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md; danach eigener unabhängiger 28-Fälle-Review.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 19 von 28 Pflicht-Unterfällen unabhängig verifiziert, vier direkte Abweichungen und fünf offene Belegpaare. Nachbesserungsplan liegt vor; das Fachphasentor ist offen und der Kandidatenbuild nicht installiert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-    "candidateBuildSha256": "013c9aefaabd2fca85b673eac020516b57228385366814f60350141a6aad9fe8",
-    "candidateCoreTests": 146,
+    "candidateBuildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+    "candidateCoreTests": 151,
     "phase2Review": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review-20261007/phase2-review.md",
     "phase2ReviewResult": "gate_open",
     "phase2Repair": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-repair-final2-20261007/phase2-repair.md",
@@ -1340,6 +1340,20 @@
       "evidenceOpenCases": ["DD-026.03", "DD-026.05", "DD-047.14", "DD-047.15", "DD-047.16"],
       "gate": "open",
       "next": "Eigener Nachbesserungsplanlauf; danach getrennte Umsetzung und erneuter unabhängiger Review."
+    },
+    "phase4RepairPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md",
+      "baseCommit": "313b2e1",
+      "baseBuildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "verifiedCases": 19,
+      "mismatchCases": ["DD-026.04", "DD-026.17", "DD-047.02", "DD-047.03"],
+      "evidenceOpenCases": ["DD-026.03", "DD-026.05", "DD-047.14", "DD-047.15", "DD-047.16"],
+      "newOriginalProbeCases": ["DD-047.14", "DD-047.15", "DD-047.16"],
+      "gate": "open",
+      "next": "Eigener Umsetzungslauf: fehlende Originalregeln prüfen, Kandidat gezielt angleichen und neun Hostpaare auf finalem Build ausführen."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
