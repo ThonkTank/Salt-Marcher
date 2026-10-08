@@ -73,6 +73,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Zweiter unabhängiger Review 08.10.2026:** Der [getrennte 28-Fälle-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase4-review2-20261008/phase4-independent-review.md) verifiziert 27 Unterfälle auf dem unveränderten Build `21ec88f4…`. Die Original-Zweiwortsuche und der Kartenwechsel A→B→A im selben Originalprozess sind nun direkt belegt und stimmen mit dem Host überein. `DD-047.01` bleibt offen: In zwei frischen isolierten Hostprofilen öffnete der sichtbare erste Klick auf „Tags bearbeiten“ den Browser nicht; nach Neustart gelang derselbe Weg. Das Original öffnete ihn beim ersten Klick. Typprüfung, 152 Tests und Build bestanden erneut. **Das Phase-4-Fachphasentor bleibt offen.** Als nächster eigener Arbeitslauf folgt der Nachbesserungsplan für den Kaltstart-Bedienpfad, danach getrennte Umsetzung und erneuter unabhängiger Review. Installation und Nutzervault blieben unverändert.
 
+**Kaltstart-Nachbesserungsplan 08.10.2026:** Der [getrennte Plan](ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md) begrenzt die Restarbeit auf `DD-047.01`. Der nächste Umsetzungslauf muss zuerst Ereignis, Handleraufruf und Modal-Lebenszyklus des ersten sichtbaren Klicks unterscheiden und nur den belegten Fehlerpfad korrigieren. Frische Profile mit und ohne eigene Tagdatei, Save/Abbruch, Neuöffnung und die 27 übrigen Unterfälle bleiben Prüfpflicht. Planlauf ohne Produktänderung; **Fachphasentor offen**. Installation und Nutzervault blieben unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.

@@ -1,5 +1,5 @@
 {
-  "phase": "Phase 4: zweiter unabhängiger 28-Fälle-Review abgeschlossen; Kaltstart-Browseröffnung offen",
+  "phase": "Phase 4: Nachbesserungsplan für DD-047.01 abgeschlossen; getrennte Umsetzung folgt",
   "goal": "Building und Object Tool nacheinander gegen Dungeondraft 1.2.0.1 angleichen; je Fachphase getrennt planen, umsetzen und reviewen, bei Lücken Nachbesserung und Review in eigenen Läufen wiederholen; danach je eine eigene Aufräumphase mit Plan-, Umsetzungs- und Reviewlauf und derselben Nachbesserungsschleife.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase4_second_review_27_verified_1_mismatch",
+    "status": "phase4_cold_start_repair_plan_ready",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Nachbesserungsplan für DD-047.01: Kaltstart-Klick auf Tags bearbeiten erfassen und gezielt reparieren; danach getrennte Umsetzung und unabhängiger 28-Fälle-Review.",
-    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: Zweiter unabhängiger Endbuild-Review verifiziert 27 von 28 Unterfällen; DD-047.01 öffnet im ersten isolierten Kaltstart-Klick den Browser nicht. Fachphasentor offen; Kandidatenbuild nicht installiert.",
+    "nextRun": "Getrennter Umsetzungslauf nach ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md: ersten sichtbaren Klick messen, bestätigte Ursache von DD-047.01 beheben, frische Hostprofile prüfen; danach eigener unabhängiger 28-Fälle-Review.",
+    "note": "Phase 3: 17 Fachunterfälle und Aufräumtor unabhängig bestanden. Phase 4: 27 von 28 Unterfällen im zweiten Review verifiziert; Kaltstart-Browseröffnung DD-047.01 offen und als eigener Nachbesserungslauf geplant. Fachphasentor offen; Kandidatenbuild nicht installiert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
     "candidateCoreTests": 152,
@@ -1386,6 +1386,18 @@
       "coreTestsPassed": 152,
       "gate": "open",
       "next": "Eigener Nachbesserungsplanlauf für Kaltstart-Browseröffnung; danach getrennte Umsetzung und erneuter unabhängiger Review."
+    },
+    "phase4ColdStartRepairPlan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md",
+      "baseCommit": "93c17ae",
+      "baseBuildSha256": "21ec88f47208e892957f5a9690616a2f38d823b92e38bb2a7bd76ed6a7cad1ce",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "verifiedCases": 27,
+      "openCases": ["DD-047.01"],
+      "gate": "open",
+      "next": "Getrennter Umsetzungslauf: Klick- und Modal-Lebenszyklus messen, Ursache gezielt reparieren und frische Hostpaare auf finalem Build prüfen."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
