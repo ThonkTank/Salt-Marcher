@@ -257,6 +257,31 @@ export class Session {
   setLocked(id: Id, locked: boolean): void {
     this.setLockedMany([id], locked);
   }
+  /** Native palette edits belong to the map, but do not enter Undo history. */
+  setObjectPalette(colors: readonly string[]): void {
+    this.assertMutable();
+    const palette = [...colors];
+    const next = immutable({ ...this.stateSettings, objectPalette: palette });
+    validateSettings(next);
+    if (JSON.stringify(next) === JSON.stringify(this.stateSettings)) return;
+    // Rebase settings commands so Undo/Redo of other map options preserves
+    // palette changes made after those commands.
+    const rebase = (command: Command): Command => command.settings
+      ? immutable({ ...command, settings: {
+          before: { ...command.settings.before, objectPalette: palette },
+          after: { ...command.settings.after, objectPalette: palette },
+        } })
+      : command;
+    this.past = this.past.map(rebase);
+    this.future = this.future.map(rebase);
+    this.stateSettings = next;
+    this.revision++;
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: true, content: false, revision: this.revision,
+      rulesRevision: this.rulesRevision, label: "Objektpalette ändern",
+    });
+  }
   setLockedMany(ids: Iterable<Id>, locked: boolean): void {
     this.assertMutable();
     const changes = [...new Set(ids)].map((id) => {

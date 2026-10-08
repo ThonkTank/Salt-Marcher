@@ -2,7 +2,7 @@ const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck
 const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 const MAP = "Dungeons/Parity/Object-Placement.dungeon";
 
-module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTool }) => {
+module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTool, waitForFileAbsent }) => {
   const state = () => page.evaluate(() => {
     const editor = app.workspace.activeLeaf.view.editor;
     return { entities: editor.session.document().entities.filter((e) => e.kind === "object"),
@@ -150,6 +150,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTo
     await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
     assert.deepEqual((await state()).entities, beforeUndo.entities);
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await waitForFileAbsent(path.join(vault, MAP + ".draft"));
     fs.writeFileSync(path.join(out, "object-state.json"), JSON.stringify(await state(), null, 2));
     await page.screenshot({ path: path.join(out, "object-placement.png") });
     checks.push("Repeated placement is undoable and redoable with exact saved object values");

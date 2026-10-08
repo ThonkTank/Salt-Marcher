@@ -247,6 +247,8 @@ export interface Settings {
   readonly feetPerField: 5;
   readonly assetPacks?: readonly string[];
   readonly builtInAssets?: boolean;
+  /** Ordered ARGB swatches of the native Object Tool; absent on older maps. */
+  readonly objectPalette?: readonly string[];
   readonly wallShadows: boolean;
   readonly objectShadows: boolean;
   readonly buildingWear: number;
@@ -379,6 +381,10 @@ export function validateSettings(s: Settings): void {
       (n) => Number.isFinite(n) && n > 0 && n <= 10000,
     ) ||
     (s.builtInAssets !== undefined && typeof s.builtInAssets !== "boolean") ||
+    (s.objectPalette !== undefined &&
+      (!Array.isArray(s.objectPalette) ||
+        s.objectPalette.some((color) =>
+          typeof color !== "string" || !/^[0-9a-f]{8}$/i.test(color)))) ||
     (s.assetPacks !== undefined &&
       (!Array.isArray(s.assetPacks) ||
         new Set(s.assetPacks).size !== s.assetPacks.length ||

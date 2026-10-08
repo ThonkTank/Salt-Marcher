@@ -6,6 +6,42 @@ import { createRoom, createDoor, createObject, createLight, editNote, updatePass
 import { MapRepository, FileConflict } from "../../src/persistence";
 import { archiveEntities, createFeatureDefinition, createFeatureOccurrence, updateFeatureDefinition, updateFeatureOccurrence } from "../../src/content";
 import { newDocument, MemoryStore, mapPath, fixture } from "./fixtures";
+import { NATIVE_OBJECT_PALETTE } from "../../src/features/objekte/rgba-picker";
+
+test("native Object palette falls back on old maps and persists ARGB duplicates without Undo", async () => {
+  const store = new MemoryStore(), path = "QA/Objektpalette.dungeon",
+    repo = new MapRepository(store, path),
+    session = new Session(newDocument("Palette", 8, 8));
+  assert.equal(session.settings.objectPalette, undefined);
+  const defaults = NATIVE_OBJECT_PALETTE.map((color) =>
+    "ff" + color.toString(16).padStart(6, "0"));
+  assert.equal(defaults.length, 30);
+  const before = session.settings;
+  session.execute({ label: "Kartenname ändern", settings: {
+    before, after: { ...before, name: "Neuer Name" },
+  } });
+  const history = session.historySize;
+  const colors = [...defaults, "8012ab34", "8012ab34"];
+  session.setObjectPalette(colors);
+  assert.equal(session.historySize, history);
+  assert.equal(session.dirty, true);
+  assert.deepEqual(session.settings.objectPalette, colors);
+  session.undo();
+  assert.equal(session.settings.name, "Palette");
+  assert.deepEqual(session.settings.objectPalette, colors);
+  session.redo();
+  assert.equal(session.settings.name, "Neuer Name");
+  assert.deepEqual(session.settings.objectPalette, colors);
+  await repo.save(session);
+  assert.equal(session.dirty, false);
+  const reopened = await new MapRepository(store, path).open();
+  assert.deepEqual(reopened.settings.objectPalette, colors);
+  assert.equal(reopened.settings.name, "Neuer Name");
+  assert.throws(() => parseDocument(JSON.stringify({
+    ...reopened.document(),
+    settings: { ...reopened.settings, objectPalette: ["12ab34"] },
+  })), /Karteneinstellungen/);
+});
 
 test("Object Tool Under prepends on one layer and undo restores exact order", async () => {
   const store = new MemoryStore();

@@ -42,6 +42,7 @@ import {
   type MountedObjectColorPicker,
   type ObjectColorPickerHooks,
 } from "./features/objekte/rgba-picker";
+import { readObjectArgb } from "./features/objekte/color-alpha";
 import { mountScatterColorPicker } from "./features/objekte/scatter-picker-dismiss";
 import {
   createObjectLibraryTilePreview,
@@ -1755,20 +1756,59 @@ export class Properties {
     const palette = document.createElement("div");
     palette.className = "dn-object-palette";
     palette.style.cssText = "display:grid;grid-template-columns:repeat(6,1fr);gap:4px;";
-    for (const color of NATIVE_OBJECT_PALETTE) {
+    const colors = this.session.settings.objectPalette ??
+      NATIVE_OBJECT_PALETTE.map((color) =>
+        "ff" + color.toString(16).padStart(6, "0"));
+    for (const argb of colors) {
+      const { rgb: color, alphaByte: alpha } = readObjectArgb(argb);
       const button = document.createElement("button");
       button.type = "button";
-      button.title = "#" + color.toString(16).padStart(6, "0");
+      button.title = "#" + (alpha === 255 ? argb.slice(2) : argb);
       button.setAttribute("aria-label", "Objektfarbe " + button.title);
-      button.style.cssText = `height:24px;border-radius:50%;background:#${color.toString(16).padStart(6, "0")};`;
+      button.style.cssText = "height:24px;border-radius:50%;" +
+        `background:rgba(${(color >> 16) & 255},${(color >> 8) & 255},` +
+        `${color & 255},${alpha / 255});`;
       button.addEventListener("click", () => {
-        update({ color, alpha: 255 });
+        update({ color, alpha });
         syncSwatch();
-        this.previewObjectLibraryColor(color, 255);
+        this.previewObjectLibraryColor(color, alpha);
+        this.previewToolObject();
         this.defaultsChanged();
       });
       palette.append(button);
     }
+    const addColor = document.createElement("button");
+    addColor.type = "button";
+    addColor.textContent = "+";
+    addColor.setAttribute("aria-label", "Objektfarbe zur Palette hinzufügen");
+    addColor.style.cssText = "height:24px;border-radius:50%;";
+    addColor.addEventListener("click", () => {
+      if (this.objectPicker) return;
+      let picker: MountedObjectColorPicker;
+      picker = mountObjectColorPicker(this.root,
+        this.defaults.object.color, this.defaults.object.alpha ?? 255, {
+          onPreview: (color, alpha) => {
+            update({ color, alpha });
+            syncSwatch();
+            this.previewObjectLibraryColor(color, alpha);
+            this.previewToolObject();
+          },
+          onCommit: (color, alpha) => {
+            update({ color, alpha });
+            this.defaultsChanged();
+          },
+          sampleMapColor: this.sampleMapColor,
+          onClose: () => {
+            const argb = picker.controller.argb;
+            this.objectPicker = undefined;
+            // The original adds a swatch on both measured Accept and Escape.
+            // This map-level edit has no native Undo step.
+            this.session.setObjectPalette([...colors, argb]);
+          },
+        });
+      this.objectPicker = picker;
+    });
+    palette.append(addColor);
     this.root.append(palette);
   }
 

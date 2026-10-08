@@ -381,13 +381,15 @@ export class MapRenderer {
       if (event.floors && !this.session.floors.has(this.floorId))
         this.floorId = this.session.floors.keys().next().value!;
       const blockers = [...event.ids].some((id) => {
-        const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
-        return (
+        const blocks = (e: Entity | undefined) =>
           e?.kind === "building" ||
           e?.kind === "wall" ||
           e?.kind === "door" ||
-          (e?.kind === "surface" && e.category === "cave")
-        );
+          (e?.kind === "surface" && e.category === "cave") ||
+          (e?.kind === "path" && !!e.blocksLight) ||
+          (e?.kind === "object" && !!e.blocksLight);
+        return blocks(this.session.entities.get(id)) ||
+          blocks(this.visuals.get(id)?.entity);
       });
       const buildingChanged = [...event.ids].some((id) => {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
@@ -1542,10 +1544,15 @@ export class MapRenderer {
       { width, height } = this.session.settings;
     const viewportWidth = this.captureViewport?.width ?? this.host.clientWidth,
       viewportHeight = this.captureViewport?.height ?? this.host.clientHeight;
+    const ambient = this.session.floors.get(this.floorId)?.ambient ?? 1;
+    const base = this.appearance.mapFill ?? 0xebe4d6;
+    const ground = (Math.round(((base >> 16) & 255) * ambient) << 16) |
+      (Math.round(((base >> 8) & 255) * ambient) << 8) |
+      Math.round((base & 255) * ambient);
     background
       .clear()
       .rect(0, 0, width, height)
-      .fill(this.appearance.mapFill ?? 0xebe4d6);
+      .fill(ground);
     g.clear();
     if (this.appearance.grid === false) return;
     const step = gridStep(c.scale);
