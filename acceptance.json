@@ -31638,6 +31638,28 @@
           "strictAcceptance": "open",
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/phase5-repair2-independent-review.md",
           "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-review-20261008/review-audit.json"
+        },
+        "phase5Repair3Implementation": {
+          "date": "2026-10-08",
+          "state": "candidate_for_independent_review",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-163220-2780403/evidence/native-a-b-a-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-163220-2780403/evidence/maps/A-after-return-colorable.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-164231-2787249/evidence/native-selected-color-reset-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/native/runs/20261008-164514-2790315/evidence/screens/03-A-object-tool-return.png"
+          ],
+          "candidateBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/host-final/evidence/1791470883950-parity-phase5-repair2-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/host-final/evidence/1791470883950-parity-phase5-repair2-edit/palette-A-return-followup.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/host-final/evidence/1791471057103-parity-phase5-repair2-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/host-final/evidence/1791471057103-parity-phase5-repair2-reopen/palette-A-fresh-reopen.json"
+          ],
+          "remaining": "Eigener unabhängiger Review aller 28 Phase-5-Positionen und der direkten DD-028.10-Original-/Hostfolge.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/phase5-repair3-implementation.md",
+          "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/implementation-audit.json",
+          "strictAcceptance": "open"
         }
       },
       {

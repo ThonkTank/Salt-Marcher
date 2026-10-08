@@ -310,7 +310,9 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     await page.evaluate(async (name) =>
       app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(name)), PALETTE_B);
     await chooseTool("Möbel");
-    assert.equal((await state()).palette, undefined);
+    const bState = await state();
+    assert.equal(bState.palette, undefined);
+    assert.deepEqual([bState.defaults.color, bState.defaults.alpha], [0x6b3834, 255]);
     assert.equal(await page.locator(".dn-object-palette button").count(), 31);
     await saveState("palette-B-empty");
     await page.evaluate(async (name) =>
@@ -319,7 +321,20 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     const aAgain = await saveState("palette-A-return");
     assert.deepEqual(aAgain.palette.slice(-1), ["8012ab34"]);
     assert.deepEqual(aAgain.objects, aState.objects);
-    checks.push("A→B→A keeps the new swatch and tinted Colorable object map-local");
+    assert.deepEqual([aAgain.defaults.color, aAgain.defaults.alpha], [0x6b3834, 255]);
+    await page.getByRole("button", { name: "Objektfarbe #8012ab34" }).click();
+    assert.deepEqual([(await state()).defaults.color, (await state()).defaults.alpha],
+      [0x12ab34, 128]);
+    await page.getByRole("button", { name: "QA Object Color", exact: true }).click();
+    await place(6, 2);
+    const followup = await saveState("palette-A-return-followup");
+    assert.equal(followup.objects.length, 2);
+    assert.deepEqual(followup.objects[0], aState.objects[0]);
+    assert.deepEqual([followup.objects[1].color, followup.objects[1].alpha],
+      [0x12ab34, 128]);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await waitForFileAbsent(path.join(vault, PALETTE_A + ".draft"));
+    checks.push("A→B→A restores the swatch, resets the tool color and tints a new Colorable object");
   }
   async function reopen() {
     await open();
@@ -338,9 +353,13 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     assert.deepEqual(a.palette, savedA.settings.objectPalette);
     assert.deepEqual(a.objects, savedA.entities.filter((v) => v.kind === "object"));
     assert.deepEqual(a.palette.slice(-1), ["8012ab34"]);
+    assert.deepEqual([a.defaults.color, a.defaults.alpha], [0x6b3834, 255]);
+    assert.equal(a.objects.length, 2);
     assert.equal(a.objects[0].color, 0x12ab34);
     assert.equal(a.objects[0].alpha, 128);
-    checks.push("Fresh process reopens palette A with the same ARGB swatch and object");
+    assert.equal(a.objects[1].color, 0x12ab34);
+    assert.equal(a.objects[1].alpha, 128);
+    checks.push("Fresh process reopens palette A with both ARGB objects and the default tool color");
   }
   return { edit, reopen };
 };

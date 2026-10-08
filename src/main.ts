@@ -686,7 +686,16 @@ export default class DungeonPlugin extends Plugin {
     }));
   }
   toolDefaults(): ToolSettings {
-    return this.pluginData.toolDefaults;
+    const defaults = this.pluginData.toolDefaults;
+    const nativeObject = toolSettings().object;
+    // Dungeondraft starts each newly opened map with the first Object Tool color.
+    // The map's custom palette remains in Session settings and is not reset here.
+    defaults.object = {
+      ...defaults.object,
+      color: nativeObject.color,
+      alpha: nativeObject.alpha,
+    };
+    return defaults;
   }
   prefabs(): readonly Prefab[] {
     return this.pluginData.prefabs;
