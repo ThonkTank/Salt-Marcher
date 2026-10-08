@@ -35,13 +35,14 @@ const restart = process.argv.includes("--restart"),
   parityPhase3Wear = process.argv.includes("--parity-phase3-wear"),
   parityPhase4Objects = process.argv.includes("--parity-phase4-objects"),
   parityPhase5Objects = process.argv.includes("--parity-phase5-objects"),
+  parityPhase5Review = process.argv.includes("--parity-phase5-review"),
   parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
   parityPhase4CleanupMatrix = parityPhase4Objects && process.argv.includes("--parity-phase4-cleanup-matrix"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -609,7 +610,7 @@ async function workflow() {
   } else await page.waitForFunction(
     (expected) => typeof app !== "undefined" &&
       app.vault?.adapter?.basePath === expected && app.workspace?.layoutReady,
-    vault, { timeout: parityPhase3Wear || parityPhase4Objects || parityPhase5Objects ? 90000 : 30000 },
+    vault, { timeout: parityPhase3Wear || parityPhase4Objects || parityPhase5Objects || parityPhase5Review ? 90000 : 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -673,6 +674,12 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (parityPhase5Review) {
+    const scenario = require("./host/parity-phase5-review.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityPhase5Objects) {
     const scenario = require("./host/parity-phase5-objects.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
