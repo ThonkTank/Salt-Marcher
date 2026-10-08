@@ -36,6 +36,18 @@ test("prepared object list keeps native-first order and full package identity", 
     "res://packs/pack-a/textures/objects/atlas_globe_01.png");
 });
 
+test("All orders native folders before sibling files and dots before underscores", () => {
+  const sample = [
+    builtIn("Bird Nest", "creatures/bird_nest_01"),
+    builtIn("Bottle 01", "dining/bottle_01"),
+    builtIn("Cat", "creatures/domesticated/cat_01"),
+    builtIn("Bottle", "dining/bottle"),
+  ];
+  assert.deepEqual(sortedObjectAssetEntries(sample).map((entry) => entry.asset.id), [
+    sample[2]!.id, sample[0]!.id, sample[3]!.id, sample[1]!.id,
+  ]);
+});
+
 test("Fuzzy search, Exact search, search X and trash have separate observed effects", () => {
   let state = { ...newObjectLibraryState(assets[0]!.id), text: "atlas" };
   state = applyObjectSearch(state);

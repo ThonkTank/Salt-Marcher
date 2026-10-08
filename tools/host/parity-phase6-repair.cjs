@@ -124,6 +124,10 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     await snapshot("locked-object-unlocked");
     checks.push("Normal click excludes locked furniture; Alt selects it and Unlock persists outside Undo history");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() => {
+      const editor = app.workspace.activeLeaf.view.editor;
+      return !editor.saving && !editor.session.dirty;
+    });
     await waitForFileAbsent(path.join(vault, MAP + ".draft"));
     const saved = JSON.parse(fs.readFileSync(path.join(vault, MAP), "utf8"));
     assert.deepEqual(saved, unlocked.document);

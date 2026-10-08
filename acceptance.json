@@ -57402,6 +57402,23 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json",
           "gap": "Exact-Folge gepaart; vollständige All-Reihenfolge als eigenes Original-/Hostpaar fehlt."
+        },
+        "repair2Implementation": {
+          "state": "candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "observation": "Die laufende Original-All-Liste und der Host zeigen dieselben 1.792 Pfade und denselben SHA-256; Shift+Rad wechselt an Anfang, Mitte und Ende mit Umbruch in beiden Richtungen. Acht entsprechende Texturen sind platziert und frisch geöffnet. Eine schnelle Original-Kontrollplatzierung bei Index 896 lag außerhalb der Karte; die wiederholte Platzierung lag innerhalb.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-object-library-20261008/library-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-host-20261008/evidence/1791491424395-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-host-20261008/evidence/1791491464534-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-regression-20261008/evidence/1791491577487-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-regression-20261008/evidence/1791491612305-parity-phase4-objects-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-endbuild-regression-rerun-20261008/evidence/1791491987156-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-endbuild-regression-rerun-20261008/evidence/1791492264637-parity-phase6-repair-reopen/result.json"
+          ],
+          "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
+          "productChange": "src/features/objekte/object-library.ts",
+          "gate": "open"
         }
       },
       {
@@ -89926,35 +89943,55 @@
     },
     "phase6Repair2Implementation": {
       "date": "2026-10-08",
-      "state": "in_progress_one_case_candidate_one_case_partial",
+      "state": "in_progress_two_cases_candidate_one_case_partial",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
-      "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
+      "candidateBuildSha256": "1ecd0b72849b8d063c2f7f91600e2c793b647fcc43ba00454eefd06360b88f63",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "candidate": [
+        "DD-026.24",
         "DD-026.27"
       ],
       "stillOpen": [
-        "DD-026.24",
         "DD-026.25",
         "DD-030.19",
         "DD-030.20",
         "DD-030.24"
       ],
       "reviewPending": [
+        "DD-026.24",
         "DD-026.27"
       ],
-      "productChange": "none",
+      "productChange": "src/features/objekte/object-library.ts",
       "gate": "open",
-      "next": "DD-026.25 externer Host-Fokuswechsel bleibt offen; All-Kachelliste und drei Auswahl-/Cloth-Eingabepaare direkt messen, dann unabhängigen Review durchführen.",
+      "next": "DD-030.19/.20/.24 direkt als Original-/Hostpaare messen. DD-026.25 bleibt nach zwei erfolglosen Host-Fokusmethoden offen, bis eine neue Fokusroute vorliegt; danach eigener unabhängiger Review.",
       "partialEvidence": [
         "DD-026.25"
       ],
       "rawAuditA": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
       "hostAEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490310539-parity-phase6-repair2-focus-edit/result.json",
-      "hostAReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490325683-parity-phase6-repair2-focus-reopen/result.json"
+      "hostAReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490325683-parity-phase6-repair2-focus-reopen/result.json",
+      "rawAuditLibrary": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-object-library-20261008/library-audit.json",
+      "hostLibraryEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-host-20261008/evidence/1791491424395-edit/result.json",
+      "hostLibraryReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-host-20261008/evidence/1791491464534-reopen/result.json",
+      "phase4LibraryRegression": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-regression-20261008/evidence/1791491577487-parity-phase4-objects-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-library-regression-20261008/evidence/1791491612305-parity-phase4-objects-reopen/result.json"
+      ],
+      "phase6Regression": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-endbuild-regression-rerun-20261008/evidence/1791491987156-parity-phase6-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-endbuild-regression-rerun-20261008/evidence/1791492264637-parity-phase6-repair-reopen/result.json"
+      ],
+      "phase5Regression": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-regression-20261008/evidence/1791492520204-parity-phase5-repair2-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-regression-20261008/evidence/1791492692978-parity-phase5-repair2-reopen/result.json"
+      ],
+      "phase5LightRegression": [
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-light-regression-20261008/evidence/1791492822498-parity-phase5-light-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-phase5-light-regression-20261008/evidence/1791492836261-parity-phase5-light-reopen/result.json"
+      ]
     }
   }
 }

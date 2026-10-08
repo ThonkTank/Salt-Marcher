@@ -34,12 +34,24 @@ export function indexObjectAssets(assets: readonly AssetDefinition[]): readonly 
   });
 }
 
+/** Dungeondraft's All list places child folders before files at each path level. */
+function nativeObjectPathOrder(left: string, right: string): number {
+  const a = left.split("/"), b = right.split("/");
+  for (let index = 0; index < Math.min(a.length, b.length); index++) {
+    if (a[index] === b[index]) continue;
+    const aFolder = index < a.length - 1, bFolder = index < b.length - 1;
+    if (aFolder !== bFolder) return aFolder ? -1 : 1;
+    return a[index]! < b[index]! ? -1 : 1;
+  }
+  return a.length - b.length;
+}
+
 export function sortedObjectAssetEntries(assets: readonly AssetDefinition[]): readonly ObjectAssetEntry[] {
   return [...indexObjectAssets(assets)].sort((a, b) => {
     const ap = a.path ?? "", bp = b.path ?? "";
     const an = ap.startsWith("res://textures/") ? 0 : 1;
     const bn = bp.startsWith("res://textures/") ? 0 : 1;
-    return an - bn || ap.localeCompare(bp, "en");
+    return an - bn || nativeObjectPathOrder(ap, bp);
   });
 }
 
