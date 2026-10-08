@@ -99,6 +99,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
+Der [eigene Phase-5-Umsetzungsplan](ROADMAP-PARITY-PHASE5-PLAN.md) legt Originalproben, Werkzeug- und Pickerausbau, Hostpaare und das getrennte Fachreview fest. `DD-026.17` bleibt als bestandener Phase-4-Fall Regression; von `DD-028.19` wird zunächst nur der Objektkontext geprüft. Dieser Planlauf ändert keinen Produktcode und nimmt keine neuen Fachfälle ab.
+
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.
 
 Ebene und Over/Under, Drehung, einheitliche Skalierung, Schatten, Lichtblockade, geeignete Custom Color, Cursorvorschau, Escape und wiederholte Platzierung werden mit demselben Asset geprüft. Werkzeugvorgaben und bereits gesetzte Objekte bleiben getrennt.

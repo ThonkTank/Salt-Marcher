@@ -56016,6 +56016,29 @@
       "gate": "passed",
       "decision": "Der eigene unabhängige Review schließt P4-CL-R2 und das Phase-4-Aufräumtor. Die 28 Phase-4-Fachfälle behalten ihre direkte Original-/Host-Abnahme; Phase 5 folgt mit eigenem Planlauf. Physische Eingabe und gemeinsamer Abschluss bleiben späteren Roadmap-Phasen vorbehalten."
     },
+    "phase5Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE5-PLAN.md",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "requiredObjectCases": [
+        "DD-026.09", "DD-026.10", "DD-026.11", "DD-026.12", "DD-026.13",
+        "DD-026.14", "DD-026.15", "DD-026.16", "DD-026.17", "DD-026.18",
+        "DD-026.19", "DD-026.20", "DD-026.21", "DD-026.28", "DD-026.29"
+      ],
+      "requiredObjectColorCases": [
+        "DD-028.01", "DD-028.02", "DD-028.03", "DD-028.04", "DD-028.05",
+        "DD-028.06", "DD-028.07", "DD-028.08", "DD-028.09", "DD-028.10",
+        "DD-028.11", "DD-028.12", "DD-028.19"
+      ],
+      "previouslyVerifiedRegression": "DD-026.17 im Phase-4-Fachreview; keine neue Abnahme in diesem Planlauf",
+      "sharedCaseBoundary": "DD-028.19 bleibt als Gesamtfall bis zur separaten Scatter-/Light-Prüfung offen.",
+      "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/",
+      "decision": "Nur Plan. Offene Layer-/Sorting-, Scale-, Licht-, Picker-, Escape- und Original-Neuöffnungsregeln werden vor Implementierungs- und Hostentscheidungen direkt gemessen. Phase-5-Fachphasentor offen.",
+      "gate": "open"
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",
