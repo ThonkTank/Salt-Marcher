@@ -2,7 +2,7 @@
 
 Diese Helfer bedienen das installierte Original in einem eigenen XDG-Profil. Sie enthalten keinen Kartenrenderer oder Nachbau. Bilder, Rohkarten, Profile und Laufprotokolle bleiben außerhalb des Repos unter `/home/aaron/.cache/dungeon-native-qa/`. Der aktuelle Fortschritt steht ausschließlich im Checkpoint; die verbindlichen Zuordnungen in `acceptance.json.wonderdraftParity`.
 
-Voraussetzungen: Node mit den Repo-Abhängigkeiten, `flock`, ein ausführbares Xvnc und Openbox mit seinen Bibliotheken. Die für diesen Rechner privat entpackten Programme liegen unter `/home/aaron/.cache/dungeon-native-qa/dependencies/`; keine Paketinstallation oder Änderung am Wonderdraft-Programm ist nötig.
+Voraussetzungen: Node mit den Repo-Abhängigkeiten, `flock`, `/usr/bin/dbus-daemon`, ein ausführbares Xvnc und Openbox mit seinen Bibliotheken. Die für diesen Rechner privat entpackten Programme liegen unter `/home/aaron/.cache/dungeon-native-qa/dependencies/`; keine Paketinstallation oder Änderung am Wonderdraft-Programm ist nötig.
 
 Aus dem Repo mit einem **neuen absoluten Laufverzeichnis** starten:
 
@@ -16,6 +16,8 @@ node tools/wonderdraft/session.mjs \
 
 Eine gemeinsame grafische QA-Sperre verhindert gleichzeitig gestartete Testinstanzen. Der Starter prüft zusätzlich laufende Original-/Testprozesse. Testprofil und Fenstergröße sind fest; RFB hört ausschließlich lokal. Openbox ist für die Fensterinitialisierung dieser Godot-Version nötig. Die normale Ressourcenverwaltung gilt; bei akutem systemweitem Speichermangel beendet die Notbremse nur eigene Kinder. `session.json` dokumentiert Rolle, Hashes, Eingabeart, PID und Prozessstartkennung.
 
+Systemdateidialoge benötigen ebenfalls die private Anzeige. Wonderdraft und seine Kinddialoge erhalten X11 als Backend, keine Wayland-Anzeige und einen eigenen D-Bus ohne Serviceaktivierung. Dadurch verwenden sie keinen Dateidialog des produktiven Desktops. Der kurze private Socketpfad steht in `displayIsolation`; sein Verzeichnis wird nach Beendigung der eigenen Prozesse entfernt. Bei einem Systemdialog zuerst dessen tatsächliches Bild abwarten. Eine nicht reagierende Wonderdraft-Oberfläche allein beweist keinen Programmabsturz: ein modaler Kinddialog kann noch geöffnet sein.
+
 Zuerst den **aktuellen echten Frame lesen**, erst danach Eingaben anhand der gesehenen Oberfläche festlegen. Keine Koordinaten aus anderen Anwendungen übernehmen:
 
 ```sh
@@ -23,7 +25,7 @@ node tools/wonderdraft/rfb.mjs --session /ABSOLUTER-LAUF/session.json --shot 001
 node tools/wonderdraft/rfb.mjs --session /ABSOLUTER-LAUF/session.json --click 123,21 --shot 002-new
 ```
 
-Weitere begrenzte Eingaben: `--move x,y`, `--drag x,y:x,y`, `--wheel x,y:-3`, `--key Control+s`, `--text 'Text'`. Jede Aktion wird protokolliert. Ein Screenshotname darf nicht wiederverwendet werden. Bilder und Metadaten erhalten denselben Sitzungsbezug und Bildhash; vor jeder Verbindung werden die eigenen Prozesse erneut geprüft. Asynchrone Lade-/Speichervorgänge bis zum beobachteten Endzustand prüfen; eine kurze Wartezeit beweist keinen Abschluss. Dateidialoge mit Verzeichnis im Feld `Path` und einfachem Dateinamen in `File` bedienen.
+Weitere begrenzte Eingaben: `--move x,y`, `--drag x,y:x,y`, `--wheel x,y:-3`, `--key Control+s`, `--text 'Text'`. `--button right` beziehungsweise `--button middle` verändert nur einen angegebenen Klick oder Zug; ohne Angabe gilt `left`. Taste und Taste gehalten während eines Mauszuges sind verschiedene Gesten; der Helfer bietet bisher nur abgeschlossene Tastendrücke. Jede Aktion wird protokolliert. Ein Screenshotname darf nicht wiederverwendet werden. Bilder und Metadaten erhalten denselben Sitzungsbezug und Bildhash; vor jeder Verbindung werden die eigenen Prozesse erneut geprüft. Asynchrone Lade-/Speichervorgänge bis zum beobachteten Endzustand prüfen; eine kurze Wartezeit beweist keinen Abschluss. Dateidialoge mit Verzeichnis im Feld `Path` und einfachem Dateinamen in `File` bedienen.
 
 Nur die eigene Sitzung beenden: eine Datei `stop` im exakt dokumentierten Laufverzeichnis anlegen und den Starter bis zum Ende abwarten. `session.json` muss danach `stopped` melden; ein Fehler oder erzwungener Stop wird separat festgehalten. Keine fremden Prozesse beenden.
 
@@ -36,6 +38,8 @@ node tools/wonderdraft/validate-inventory.mjs acceptance.json --require-complete
 ```
 
 Die erste Prüfung ist ausschließlich ein Pakethinweis. Die zweite prüft Zuordnungen und Bildprovenienz, **keine visuelle Vollständigkeit**. `--allow-open` erlaubt einen Teilstand, ohne das Tor zu schließen. Der Standardaufruf und `--require-complete` bleiben erfolglos, solange das Tor beziehungsweise Inventurlücken offen sind. Sichtbare Optionen schließen keine Wirkungsprobe. Synthetische Originaleingaben, Obsidian-Hostprüfung und physische Eingabe bleiben getrennte Nachweise. Fehlende lokale Belegdateien führen zum Fehler; ein frisch geklonter Katalog ohne den externen QA-Bestand darf keine Direktabnahme vortäuschen.
+
+`mapped_surface_role` klassifiziert eine Paketrolle anhand des Pfadnamens und direkt beobachteter Originaloberflächen. `classificationBasis` nennt diese Schlussfolgerung ausdrücklich; sie behauptet keine instrumentierte Codezuordnung. Mehrdeutige oder noch unbeobachtete Rollen bleiben `pending`. Der eigene Fachreview muss diese Einordnung und die Oberflächenabdeckung prüfen. Zusätzliche `contextObservations` und `surfaceObservations` ergänzen bestehende Kennungen, ohne daraus eine vollständige Originalfolge abzuleiten.
 
 Aus anderen GitHub-Arbeitsständen übernommene `original_gui_screenshot`-Belege mit `session.txt` bleiben erhalten. Selbst vorhandene Bilder dieses Belegtyps bleiben bis zur ergänzenden Prozess-/Frameprüfung offen; fehlende Dateien ergeben Fehler. Neue Messungen verwenden vollständige JSON-Sitzungs-/Framebelege mit Hashes. Der aus dem Repo übernommene `session.sh` bleibt als vorhandener Starter erhalten; für diese Messserie wird der dokumentierte JSON-Starter verwendet. Übernommene Kennungen werden nicht umnummeriert.
 

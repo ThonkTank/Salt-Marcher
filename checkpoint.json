@@ -62,31 +62,30 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "implementation_partial_inventory_continuation_next",
+    "state": "original_inventory_partial",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-I01",
-      "kind": "implementation",
-      "startedAt": "2026-10-08T19:51:08.127115+02:00",
-      "endedAt": "2026-10-08T22:21:32.650647+02:00",
-      "focus": "gesicherter Dungeon-Kernweg und direkte Wonderdraft-Inventur",
-      "state": "partial",
-      "result": "partial direct original inventory; no phase review or product approval; 479 pinned local UI observations added, incoming 67 retained; anchored dungeon baseline passed before and after repository integration.",
-      "baseCommit": "edf93504fcdfd13fb749d7325b30a7203ae1b5aa",
-      "integratedCommit": "27fa2c022de2e6e2e260a6ded60fe4ed7698c41b",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/result.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/input.jsonl",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/integrated-host/evidence/1791490682835-phase4-key-edit/result.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/integrated-host/evidence/1791490747254-phase4-key-reopen/result.json"
-      ]
-    },
-    "nextRun": {
       "id": "HEX-00-I01b",
       "kind": "implementation",
-      "focus": "Originalauswahl, begonnene/fertige Geometrie, Dropdowns, Wertebereiche, unbezeichnete Regler, Dialoge und 96 Pakethinweise vervollständigen; importierte Belege abgleichen.",
-      "gate": "Originaltor und Fach-/Aufräumreview bleiben offen; danach eigener Startfolgenlauf HEX-00-I02."
+      "startedAt": "2026-10-08T22:27:26.781962+02:00",
+      "focus": "Original-Kontexte, Auswahl, Optionslisten und Pakethinweise vervollständigen",
+      "state": "completed_partial",
+      "baseCommit": "3f5af0297be9d212397ca3b79cb195e7c0fdbe63",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/validation-local.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/validation-full.json"
+      ],
+      "endedAt": "2026-10-08T23:17:47.069718+02:00",
+      "integratedCommit": "441f873c1a74d2df937eb5471031f7f4981c0b9d",
+      "outcome": "38 zusätzliche Original-UI-Einträge; 85/96 Pakethinweise als Oberflächenrollen eingeordnet; Merge-Warnung, Auswahl- und Systemdialogkontexte direkt erfasst. Originaltor und Fachreview bleiben offen."
+    },
+    "nextRun": {
+      "id": "HEX-00-I01c",
+      "kind": "implementation",
+      "focus": "Restliche Auswahl-/Entwurfszustände, Optionslisten, Wertebereiche und Dialoge sowie die 11 offenen Pakethinweise direkt erfassen; importierte Beleglücken weiter koordinieren.",
+      "gate": "HEX-00-A bleibt offen; danach eigener Startfolgenlauf HEX-00-I02, HEX-00-R01 und getrennte Aufräumläufe vor HEX-01."
     },
     "review": {
       "state": "not_started",
@@ -97,14 +96,13 @@
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
     "open": [
-      "Einzel-/Mehrfachauswahl, begonnene/fertige Geometrie, Clipboard, Text- und abweichende Kontextzustände direkt erfassen.",
-      "Noch geschlossene Dropdowns, Stil-/Assetpaletten, Zahlenbereiche und unbeschriftete Regler/Icons klären.",
-      "Regions-Werkzeugnamen und vollständigen SHIFT-Hinweis erfassen.",
-      "Extract/Repackage, Open/Help, Trace-Dateidialog, Themen- und Labelpreset-Save-As-Dialoge erfassen.",
-      "Alle 96 Pakethinweise mit direkter Zuordnung oder begründeter interner Einordnung klassifizieren.",
+      "Lasso-/Clipboard-, Windrose-, Box- und weitere Auswahl-/Entwurfszustände direkt erfassen.",
+      "Übrige Dropdowns, Stil-/Assetpaletten, Zahlenbereiche, unbeschriftete Regler und vollständige Set-Liste klären.",
+      "Restliche Pakethinweise direkt zuordnen oder begründet intern einordnen: area_creator_dialog, export_dialog, generate_progress_popup, ground_color_eraser_button, inspect_dialog, news_dialog, quit_save_dialog, update_dialog, warlock_panel, welcome_dialog, zoom_dialog.",
+      "Export-Dateidialog, Zoomdialog sowie weitere erreichbare Kontext-/Validierungsdialoge erfassen.",
       "13 frühe Originalfolgen einschließlich Rohkarte, A/B/A und vollständigem Prozessneustart im eigenen Umsetzungslauf.",
       "HEX-00-C-Fachreview und getrennte Aufräumläufe; CITY-00-Ergebnisvorbilder im eigenen Referenzlauf.",
-      "Incoming original evidence paths from b772d8d are not locally available; preserve and revalidate them, no completion inferred."
+      "Importierte Originalbelege aus b772d8d lokal nicht verfügbar: unverändert erhalten; neue Messungen ergänzen sie ausdrücklich und ersetzen keinen fehlenden Altbeleg."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -112,11 +110,13 @@
     },
     "verification": {
       "check": "passed",
-      "tests": 163,
+      "tests": 164,
       "build": "passed",
-      "host": "anchored room/key edit and exact fresh reopen passed",
-      "testProvenance": "Local tests include preserved foreign fixture-test edits; excluded from this commit. No claim that this count describes the clean published tree.",
-      "catalog": "479 local pinned entries passed; combined imported evidence check fails on unavailable external files. Inventory gate remains open."
+      "host": "anchored room/key edit with exact Undo/Redo and fresh-process reopen passed on integrated 441f873 build",
+      "testProvenance": "Local worktree includes preserved foreign fixture-test edits; those edits are excluded from this commit. This count does not represent the clean published tree.",
+      "catalog": "517 local pinned UI entries and 85 surface-role classifications passed provenance validation; combined 584-entry catalog fails on 111 unavailable imported-evidence references. Original gate remains open.",
+      "physicalInput": "not_run",
+      "installation": "unchanged"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

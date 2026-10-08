@@ -57,6 +57,8 @@ async function main() {
   fs.mkdirSync(path.join(run, 'data', 'Wonderdraft'));
   fs.writeFileSync(path.join(run, 'data', 'Wonderdraft', 'config.ini'),
     '[Display]\nfullscreen=false\nwindow_width=1280\nwindow_height=960\nwindow_maximized=false\nwindow_position_x=0\nwindow_position_y=0\n');
+  // Unix socket paths are limited; QA evidence directories can be much longer.
+  const busDirectory = fs.mkdtempSync(path.join(path.dirname(lock), 'wonderdraft-qa-bus-'));
   const manifest = {
     id: randomUUID(), role: 'actual_original_runtime', product: 'Wonderdraft',
     startedAt: new Date().toISOString(), inputKind: 'synthetic_local_rfb', physicalInput: false,
@@ -64,6 +66,8 @@ async function main() {
     run, executable: app, executableSha256: hash(app),
     packageSha256: hash(path.join(path.dirname(app), 'Wonderdraft.pck')),
     display: `:${displayNumber}`, port: 5900 + displayNumber, width: 1280, height: 960,
+    displayIsolation: { waylandDisplay: '', gdkBackend: 'x11', qtPlatform: 'xcb', gtkUsePortal: '0',
+      sessionBus: path.join(busDirectory, 'bus'), busServiceActivation: false },
     profile: { config: path.join(run, 'config'), data: path.join(run, 'data'), cache: path.join(run, 'cache') },
     lock, processes: [], state: 'starting',
   };
@@ -87,6 +91,7 @@ async function main() {
       for (let i = 0; i < 30 && alive(child); i++) await pause(100);
       if (alive(child)) { child.kill('SIGKILL'); manifest.forcedStop = true; }
     }
+    fs.rmSync(busDirectory, { recursive: true, force: true });
     manifest.state = manifest.failure ? 'failed' : 'stopped';
     manifest.endedAt = new Date().toISOString(); save();
   }
@@ -104,6 +109,13 @@ async function main() {
       if (ready) break; await pause(100);
     }
     if (!ready) throw new Error('Original display failed to start');
+    // No inherited desktop portal or service activation in the original test.
+    const busConfig = path.join(run, 'session-bus.xml');
+    const busPathXml = manifest.displayIsolation.sessionBus.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    fs.writeFileSync(busConfig, `<busconfig><type>session</type><listen>unix:path=${busPathXml}</listen><policy context="default"><allow own="*"/><allow send_destination="*"/><allow receive_sender="*"/></policy></busconfig>`);
+    const bus = start('/usr/bin/dbus-daemon', ['--nofork', '--config-file=' + busConfig], 'session-bus');
+    for (let i = 0; i < 50 && alive(bus) && !fs.existsSync(manifest.displayIsolation.sessionBus); i++) await pause(100);
+    if (!alive(bus) || !fs.existsSync(manifest.displayIsolation.sessionBus)) throw new Error('Private original session bus failed');
     if (values.wm) {
       fs.accessSync(required('wm'), fs.constants.X_OK);
       const wmRoot = path.resolve(path.dirname(values.wm), '../..');
@@ -120,6 +132,9 @@ async function main() {
     const original = start(app, ['--position', '0,0', '--resolution', '1280x960'], 'wonderdraft', {
       ...process.env, DISPLAY: manifest.display, XDG_CONFIG_HOME: manifest.profile.config,
       XDG_DATA_HOME: manifest.profile.data, XDG_CACHE_HOME: manifest.profile.cache,
+      // System file selectors must inherit the private display too.
+      WAYLAND_DISPLAY: '', GDK_BACKEND: 'x11', QT_QPA_PLATFORM: 'xcb', GTK_USE_PORTAL: '0',
+      DBUS_SESSION_BUS_ADDRESS: 'unix:path=' + manifest.displayIsolation.sessionBus,
       LIBGL_ALWAYS_SOFTWARE: '1', LANG: 'en_US.UTF-8', LC_ALL: 'en_US.UTF-8',
     });
     manifest.state = 'running'; save(); console.log(path.join(run, 'session.json'));

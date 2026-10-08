@@ -11,7 +11,11 @@ const { values } = parseArgs({ options: {
   session: { type: 'string' }, shot: { type: 'string' },
   click: { type: 'string' }, move: { type: 'string' }, key: { type: 'string' },
   text: { type: 'string' }, drag: { type: 'string' }, wheel: { type: 'string' },
+  button: { type: 'string', default: 'left' },
 } });
+const buttonMask = { left: 1, middle: 2, right: 4 }[values.button];
+if (!buttonMask) throw new Error('Mouse button must be left, middle or right');
+if (values.button !== 'left' && !values.click && !values.drag) throw new Error('Mouse button requires click or drag');
 const sessionPath = values.session;
 const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
 if (session.state !== 'running' || session.role !== 'actual_original_runtime') throw new Error('Not a live original session');
@@ -65,14 +69,14 @@ try {
   socket.write(Buffer.from([2, 0, 0, 1, 0, 0, 0, 0])); // raw rectangles only
   if (values.move) { pointer(point(values.move)); actions.push({ move: values.move }); }
   if (values.click) {
-    const p = point(values.click); pointer(p); await pause(100); pointer(p, 1); await pause(100); pointer(p);
-    actions.push({ click: values.click });
+    const p = point(values.click); pointer(p); await pause(100); pointer(p, buttonMask); await pause(100); pointer(p);
+    actions.push({ click: values.click, button: values.button });
   }
   if (values.drag) {
     const [a, b] = values.drag.split(':').map(point); if (!a || !b) throw new Error('drag start:end required');
-    pointer(a); await pause(100); pointer(a, 1);
-    for (let i = 1; i <= 16; i++) { pointer([Math.round(a[0] + (b[0] - a[0]) * i / 16), Math.round(a[1] + (b[1] - a[1]) * i / 16)], 1); await pause(60); }
-    pointer(b); actions.push({ drag: values.drag });
+    pointer(a); await pause(100); pointer(a, buttonMask);
+    for (let i = 1; i <= 16; i++) { pointer([Math.round(a[0] + (b[0] - a[0]) * i / 16), Math.round(a[1] + (b[1] - a[1]) * i / 16)], buttonMask); await pause(60); }
+    pointer(b); actions.push({ drag: values.drag, button: values.button });
   }
   if (values.wheel) {
     const [position, ticks] = values.wheel.split(':'); const p = point(position), n = Number(ticks);
