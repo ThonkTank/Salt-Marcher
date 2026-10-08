@@ -1,10 +1,9 @@
 const MAP = "Dungeons/Parity/Object-Light-Repair.dungeon";
-const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 const OBJECT_ID = "phase5-light-globe";
 const ASSET_ID = "pack:dungeondraft-builtin-1.2.0.1:object:res%3A%2F%2Ftextures%2Fobjects%2Factivities%2Fadministration%2Fatlas_globe_01.png";
 
 module.exports = ({ page, fs, path, assert, crypto, PNG, vault, out, checks, chooseTool, sleep, waitForFileAbsent }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const worldPoint = (x, y) => page.evaluate(({ x, y }) => {
     const r = app.workspace.activeLeaf.view.editor.renderer;
     const b = r.canvas.getBoundingClientRect();
@@ -43,9 +42,9 @@ module.exports = ({ page, fs, path, assert, crypto, PNG, vault, out, checks, cho
   const object = () => page.evaluate(() => app.workspace.activeLeaf.view.editor
     .session.entities.get("phase5-light-globe"));
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
+    const pck = fixtures.verifyPck();
     await page.evaluate(async (pck) =>
-      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), PCK);
+      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), pck);
     await page.evaluate(async ({ name, assetId, objectId }) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(name, JSON.stringify({

@@ -46,6 +46,7 @@ export interface ChangeEvent {
   readonly notes: ReadonlySet<string>;
   readonly floors: boolean;
   readonly settings: boolean;
+  readonly paletteOnly?: boolean;
   readonly content: boolean;
   readonly revision: number;
   readonly rulesRevision: number;
@@ -279,6 +280,7 @@ export class Session {
     this.emit({
       ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
       settings: true, content: false, revision: this.revision,
+      paletteOnly: true,
       rulesRevision: this.rulesRevision, label: "Objektpalette ändern",
     });
   }

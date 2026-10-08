@@ -1,9 +1,8 @@
-const PACK = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd028/assets/own-object-color.dungeondraft_pack";
 const ORIGINAL = "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-colorable-object-alpha-solid.dungeondraft_map";
-const PACK_SHA = "df920080409feda5d15194cd8c998553f18a80292762da2f30735ea6b5649088";
 const MAP = "Dungeons/Parity/Object-Alpha-Visual.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, vault, out, checks }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const objects = () => page.evaluate(() => app.workspace.activeLeaf.view.editor
     .session.document().entities.filter((v) => v.kind === "object"));
   const open = async () => {
@@ -26,8 +25,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks }) => {
     });
   };
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PACK))
-      .digest("hex"), PACK_SHA);
+    const pack = fixtures.verifyColorPack();
     const original = JSON.parse(fs.readFileSync(ORIGINAL));
     const native = original.world.levels["0"].objects;
     assert.deepEqual(native.map((item) => item.custom_color),
@@ -37,7 +35,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks }) => {
       const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
       await plugin.assets.add([new Blob([bytes])]);
       await plugin.reloadAssets();
-    }, fs.readFileSync(PACK).toString("base64"));
+    }, pack.toString("base64"));
     const asset = await page.evaluate(() => app.plugins.getPlugin("dungeon-editor")
       .listAssets(["QAObjASl"], true)
       .find((item) => item.name === "QA Object Color"));
@@ -72,7 +70,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks }) => {
     fs.writeFileSync(path.join(out, "alpha-visual-pair.json"), JSON.stringify({
       original: ORIGINAL,
       originalSha256: crypto.createHash("sha256").update(fs.readFileSync(ORIGINAL)).digest("hex"),
-      packSha256: PACK_SHA, entities,
+      packSha256: fixtures.colorPackSha256, entities,
     }, null, 2));
     await page.screenshot({ path: path.join(out, "alpha-visual.png") });
     checks.push("Controlled four-object native alpha matrix renders white, RGB, A=128 and A=0");

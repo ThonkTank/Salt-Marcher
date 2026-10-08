@@ -1,9 +1,8 @@
-const PACK = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd028/assets/own-object-color.dungeondraft_pack";
-const PACK_SHA = "df920080409feda5d15194cd8c998553f18a80292762da2f30735ea6b5649088";
 const MAP = "Dungeons/Parity/Object-Alpha-Review.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
   chooseTool, waitForFileAbsent }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const state = () => page.evaluate(() => {
     const editor = app.workspace.activeLeaf.view.editor;
     return { objects: editor.session.document().entities.filter((e) => e.kind === "object"),
@@ -24,14 +23,13 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
   };
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PACK))
-      .digest("hex"), PACK_SHA);
+    const pack = fixtures.verifyColorPack();
     await page.evaluate(async (encoded) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
       await plugin.assets.add([new Blob([bytes])]);
       await plugin.reloadAssets();
-    }, fs.readFileSync(PACK).toString("base64"));
+    }, pack.toString("base64"));
     await page.evaluate(async (name) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(name, JSON.stringify({

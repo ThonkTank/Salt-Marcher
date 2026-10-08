@@ -341,6 +341,7 @@ export class DungeonEditor {
   private hoveredBuildingVertex?: BuildingVertexGrip;
   private clipboard?: SelectionClipboard;
   private closed = false;
+  private cancelColorSample?: () => void;
   private saving = false;
   private toolbar: HTMLElement;
   private inspector: HTMLElement;
@@ -767,18 +768,25 @@ export class DungeonEditor {
     this.refresh();
   }
   private sampleMapColor(onPreview?: (sample: { color: number; alphaByte: number }) => void): Promise<{ color: number; alphaByte: number } | null> {
+    this.cancelColorSample?.();
     const canvas = this.renderer.canvas,
       doc = canvas.ownerDocument;
     if (onPreview && this.tool === "object") this.renderer.clearObjectPreview();
     return new Promise((resolve) => {
+      let finished = false;
       const finish = (value: { color: number; alphaByte: number } | null) => {
+        if (finished) return;
+        finished = true;
         canvas.removeEventListener("pointerdown", sample, true);
         canvas.removeEventListener("pointermove", hover, true);
         doc.removeEventListener("keydown", key, true);
         doc.removeEventListener("pointerdown", outside, true);
-        if (onPreview && this.tool === "object") this.refreshObjectPreview();
+        this.cancelColorSample = undefined;
+        if (!this.closed && onPreview && this.tool === "object")
+          this.refreshObjectPreview();
         resolve(value);
       };
+      this.cancelColorSample = () => finish(null);
       const read = (event: PointerEvent) => {
         const point = this.renderer.local(event);
         return this.renderer.sampleRenderedPixel({ x: point.x, y: point.y - 1 });
@@ -3683,12 +3691,14 @@ export class DungeonEditor {
   }
   destroy(): void {
     this.closed = true;
+    this.cancelColorSample?.();
+    this.unsub?.();
+    this.properties?.dispose();
     this.structuredPanel?.commit();
     this.structuredPanel?.destroy();
     this.setMaximized(false);
     this.cancel();
     this.abort.abort();
-    this.unsub?.();
     this.assetUnsub?.();
     this.objectTagUnsub?.();
     this.objectLibrary.show(false);

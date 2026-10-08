@@ -1,13 +1,10 @@
-const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-const PACK = "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd028/assets/own-object-color.dungeondraft_pack";
-const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
-const PACK_SHA = "df920080409feda5d15194cd8c998553f18a80292762da2f30735ea6b5649088";
 const MAP = "Dungeons/Parity/Object-Repair2.dungeon";
 const PALETTE_A = "Dungeons/Parity/Palette-A.dungeon";
 const PALETTE_B = "Dungeons/Parity/Palette-B.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
   chooseTool, waitForFileAbsent }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const state = () => page.evaluate(() => {
     const e = app.workspace.activeLeaf.view.editor;
     return { objects: e.session.document().entities.filter((v) => v.kind === "object"),
@@ -30,9 +27,6 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     }
     await page.mouse.click(p.x, p.y);
   };
-  const verify = (file, expected) => assert.equal(
-    crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),
-    expected, `Fixture hash mismatch: ${file}`);
   const open = async () => {
     await page.evaluate(async (name) =>
       app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(name)), MAP);
@@ -60,16 +54,16 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     return current;
   };
   async function edit() {
-    verify(PCK, PCK_SHA);
-    verify(PACK, PACK_SHA);
+    const pck = fixtures.verifyPck();
+    const pack = fixtures.verifyColorPack();
     await page.evaluate(async (pck) =>
-      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), PCK);
+      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), pck);
     await page.evaluate(async (encoded) => {
       const plugin = app.plugins.getPlugin("dungeon-editor");
       const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
       await plugin.assets.add([new Blob([bytes])]);
       await plugin.reloadAssets();
-    }, fs.readFileSync(PACK).toString("base64"));
+    }, pack.toString("base64"));
     await page.evaluate(async (name) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(name, JSON.stringify({
@@ -323,6 +317,11 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     assert.deepEqual(aAgain.objects, aState.objects);
     assert.deepEqual([aAgain.defaults.color, aAgain.defaults.alpha], [0x6b3834, 255]);
     await page.getByRole("button", { name: "Objektfarbe #8012ab34" }).click();
+    assert.deepEqual([(await state()).defaults.color, (await state()).defaults.alpha],
+      [0x12ab34, 128]);
+    await page.evaluate(() => app.plugins.getPlugin("dungeon-editor").toolDefaults());
+    await chooseTool("Auswahl");
+    await chooseTool("Möbel");
     assert.deepEqual([(await state()).defaults.color, (await state()).defaults.alpha],
       [0x12ab34, 128]);
     await page.getByRole("button", { name: "QA Object Color", exact: true }).click();

@@ -265,6 +265,7 @@ export function buildingStyleDefaultColor(asset: AssetDefinition | undefined): n
 export class Properties {
   private pathLibrarySearch = newPathLibrarySearchState();
   private objectPicker?: MountedObjectColorPicker;
+  private disposing = false;
   private buildingPicker?: MountedBuildingColorPicker;
   private objectLibraryPreview?: ObjectLibraryTilePreview;
   constructor(
@@ -1733,25 +1734,37 @@ export class Properties {
       const current = this.defaults.object;
       swatch.style.backgroundColor = `rgba(${(current.color >> 16) & 255},${(current.color >> 8) & 255},${current.color & 255},${(current.alpha ?? 255) / 255})`;
     };
-    const openPicker = () => {
-      if (this.objectPicker) return;
-      this.objectPicker = mountObjectColorPicker(this.root,
-        this.defaults.object.color, this.defaults.object.alpha ?? 255, {
-          onPreview: (color, alpha) => {
-            update({ color, alpha });
-            syncSwatch();
-            this.previewObjectLibraryColor(color, alpha);
-            this.previewToolObject();
-          },
-          onCommit: (color, alpha) => {
-            update({ color, alpha });
-            this.defaultsChanged();
-          },
-          sampleMapColor: this.sampleMapColor,
-          onClose: () => { this.objectPicker = undefined; },
-        });
+    const previewColor = (color: number, alpha: number) => {
+      update({ color, alpha });
+      syncSwatch();
+      this.previewObjectLibraryColor(color, alpha);
+      this.previewToolObject();
     };
-    swatch.addEventListener("click", openPicker);
+    const commitColor = (color: number, alpha: number) => {
+      update({ color, alpha });
+      this.defaultsChanged();
+    };
+    const openPicker = (addToPalette = false) => {
+      if (this.objectPicker) return;
+      let picker: MountedObjectColorPicker;
+      picker = mountObjectColorPicker(this.root,
+        this.defaults.object.color, this.defaults.object.alpha ?? 255, {
+          onPreview: previewColor,
+          onCommit: commitColor,
+          sampleMapColor: this.sampleMapColor,
+          onClose: () => {
+            this.objectPicker = undefined;
+            if (!addToPalette || this.disposing) return;
+            const current = this.session.settings.objectPalette ??
+              NATIVE_OBJECT_PALETTE.map((color) =>
+                "ff" + color.toString(16).padStart(6, "0"));
+            // Accept and Escape both append a tile, including duplicates.
+            this.session.setObjectPalette([...current, picker.controller.argb]);
+          },
+        });
+      this.objectPicker = picker;
+    };
+    swatch.addEventListener("click", () => openPicker());
     syncSwatch();
     this.root.append(swatch);
     const palette = document.createElement("div");
@@ -1770,11 +1783,8 @@ export class Properties {
         `background:rgba(${(color >> 16) & 255},${(color >> 8) & 255},` +
         `${color & 255},${alpha / 255});`;
       button.addEventListener("click", () => {
-        update({ color, alpha });
-        syncSwatch();
-        this.previewObjectLibraryColor(color, alpha);
-        this.previewToolObject();
-        this.defaultsChanged();
+        previewColor(color, alpha);
+        commitColor(color, alpha);
       });
       palette.append(button);
     }
@@ -1783,32 +1793,7 @@ export class Properties {
     addColor.textContent = "+";
     addColor.setAttribute("aria-label", "Objektfarbe zur Palette hinzufügen");
     addColor.style.cssText = "height:24px;border-radius:50%;";
-    addColor.addEventListener("click", () => {
-      if (this.objectPicker) return;
-      let picker: MountedObjectColorPicker;
-      picker = mountObjectColorPicker(this.root,
-        this.defaults.object.color, this.defaults.object.alpha ?? 255, {
-          onPreview: (color, alpha) => {
-            update({ color, alpha });
-            syncSwatch();
-            this.previewObjectLibraryColor(color, alpha);
-            this.previewToolObject();
-          },
-          onCommit: (color, alpha) => {
-            update({ color, alpha });
-            this.defaultsChanged();
-          },
-          sampleMapColor: this.sampleMapColor,
-          onClose: () => {
-            const argb = picker.controller.argb;
-            this.objectPicker = undefined;
-            // The original adds a swatch on both measured Accept and Escape.
-            // This map-level edit has no native Undo step.
-            this.session.setObjectPalette([...colors, argb]);
-          },
-        });
-      this.objectPicker = picker;
-    });
+    addColor.addEventListener("click", () => openPicker(true));
     palette.append(addColor);
     this.root.append(palette);
   }
@@ -2149,5 +2134,16 @@ export class Properties {
     this.renderReferenceControls(e);
     this.renderObjectControls(tool, e);
     this.renderScatterAndFloorProperties(tool, floorId);
+  }
+  dispose(): void {
+    this.disposing = true;
+    const buildingPicker = this.buildingPicker;
+    this.buildingPicker = undefined;
+    buildingPicker?.close();
+    const objectPicker = this.objectPicker;
+    this.objectPicker = undefined;
+    objectPicker?.close("escape");
+    this.objectLibraryPreview?.dispose();
+    this.objectLibraryPreview = undefined;
   }
 }

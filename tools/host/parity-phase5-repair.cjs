@@ -1,8 +1,7 @@
 const MAP = "Dungeons/Parity/Object-Palette-Repair.dungeon";
-const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 
 module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTool, sleep, waitForFileAbsent }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const state = () => page.evaluate(() => {
     const s = app.workspace.activeLeaf.view.editor.session;
     const e = app.workspace.activeLeaf.view.editor;
@@ -33,9 +32,9 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTo
     name: "Objektfarbe zur Palette hinzufügen",
   });
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
+    const pck = fixtures.verifyPck();
     await page.evaluate(async (pck) =>
-      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), PCK);
+      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), pck);
     await page.evaluate(async (name) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(name, JSON.stringify({

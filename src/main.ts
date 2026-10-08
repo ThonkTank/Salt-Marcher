@@ -686,6 +686,9 @@ export default class DungeonPlugin extends Plugin {
     }));
   }
   toolDefaults(): ToolSettings {
+    return this.pluginData.toolDefaults;
+  }
+  resetObjectColorForMap(): void {
     const defaults = this.pluginData.toolDefaults;
     const nativeObject = toolSettings().object;
     // Dungeondraft starts each newly opened map with the first Object Tool color.
@@ -695,7 +698,6 @@ export default class DungeonPlugin extends Plugin {
       color: nativeObject.color,
       alpha: nativeObject.alpha,
     };
-    return defaults;
   }
   prefabs(): readonly Prefab[] {
     return this.pluginData.prefabs;

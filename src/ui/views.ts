@@ -857,6 +857,7 @@ export class PendingDungeonView extends ItemView {
       }
       this.current = map;
       this.contentEl.replaceChildren();
+      this.plugin.resetObjectColorForMap();
       this.editor = new DungeonEditor(
         this.contentEl, map.session, map.repository,
         editorHost(this.plugin, map, path,
@@ -934,6 +935,7 @@ export class DungeonView extends FileView {
       this.current = map;
       this.mapPath = file.path;
       this.contentEl.replaceChildren();
+      this.plugin.resetObjectColorForMap();
       this.editor = new DungeonEditor(
         this.contentEl,
         map.session,

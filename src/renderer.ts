@@ -174,6 +174,7 @@ export class MapRenderer {
   private compareAlpha = 0.2;
   private currentAlpha = 1;
   private visuals = new Map<Id, Visual>();
+  private lightBlockers = new Map<Id, { entity: Entity; bounds: Bounds }>();
   private nativeFloorCache = new Map<Id,
     { revision: number; variants: Uint8Array }>();
   private resize?: ResizeObserver;
@@ -211,6 +212,10 @@ export class MapRenderer {
   ) {
     this.settings = session.settings;
     this.floorId = session.floors.keys().next().value!;
+    for (const entity of session.entities.values()) {
+      const blocker = this.lightBlocker(entity);
+      if (blocker) this.lightBlockers.set(entity.id, blocker);
+    }
     this.textures = new TexturePool(this.assetUrl);
     this.furniture
       .roundRect(-0.5, -0.5, 1, 1, 0.07)
@@ -380,22 +385,18 @@ export class MapRenderer {
     this.unsub = this.session.subscribe((event) => {
       if (event.floors && !this.session.floors.has(this.floorId))
         this.floorId = this.session.floors.keys().next().value!;
-      const blockers = [...event.ids].some((id) => {
-        const blocks = (e: Entity | undefined) =>
-          e?.kind === "building" ||
-          e?.kind === "wall" ||
-          e?.kind === "door" ||
-          (e?.kind === "surface" && e.category === "cave") ||
-          (e?.kind === "path" && !!e.blocksLight) ||
-          (e?.kind === "object" && !!e.blocksLight);
-        return blocks(this.session.entities.get(id)) ||
-          blocks(this.visuals.get(id)?.entity);
-      });
+      const lightRegions = this.changedLightBlockers(event.ids);
+      const settingsChanged = this.settings !== this.session.settings;
+      const rebuildForSettings = settingsChanged && !event.paletteOnly;
+      if (settingsChanged) this.settings = this.session.settings;
       const buildingChanged = [...event.ids].some((id) => {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
         return e?.kind === "building";
       });
-      if (event.floors) this.rebuild();
+      if (event.floors || rebuildForSettings) {
+        this.rebuild();
+        if (rebuildForSettings) this.drawMapMask();
+      }
       else {
         let rebuiltVisual = false;
         if (event.content && this.session.version === 4)
@@ -417,14 +418,13 @@ export class MapRenderer {
               rebuiltVisual = true;
             }
         if (event.entityOrder || rebuiltVisual) this.syncVisualOrder();
-        if (blockers)
+        if (lightRegions.length)
           for (const v of this.visuals.values())
-            if (v.entity.kind === "light") this.updateLight(v);
-      }
-      if (this.settings !== this.session.settings) {
-        this.settings = this.session.settings;
-        this.rebuild();
-        this.drawMapMask();
+            if (v.entity.kind === "light" && v.entity.shadows &&
+                !event.ids.has(v.entity.id) &&
+                lightRegions.some((region) => region.floorId === v.entity.floorId &&
+                  overlaps(v.bounds, region.bounds)))
+              this.updateLight(v);
       }
       this.drawDimensions();
       this.drawSelection();
@@ -434,6 +434,49 @@ export class MapRenderer {
     this.rebuild();
     this.drawMapMask();
     this.cameraChanged();
+  }
+  private lightBlocker(entity: Entity | undefined):
+    { entity: Entity; bounds: Bounds } | undefined {
+    if (!entity || !(entity.kind === "building" || entity.kind === "wall" ||
+        entity.kind === "door" ||
+        (entity.kind === "surface" && entity.category === "cave") ||
+        (entity.kind === "path" && entity.blocksLight) ||
+        (entity.kind === "object" && entity.blocksLight))) return undefined;
+    return { entity, bounds: entityBounds(entity,
+      (id) => this.session.entities.get(id)) };
+  }
+  private changedLightBlockers(ids: ReadonlySet<Id>):
+    { floorId: Id; bounds: Bounds }[] {
+    const changed = new Set(ids);
+    for (const id of ids) {
+      const before = this.lightBlockers.get(id)?.entity;
+      const after = this.session.entities.get(id);
+      if (before?.kind !== "building" && before?.kind !== "wall" &&
+          after?.kind !== "building" && after?.kind !== "wall") continue;
+      for (const [doorId, blocker] of this.lightBlockers)
+        if (blocker.entity.kind === "door" &&
+            blocker.entity.anchor?.boundaryId === id) changed.add(doorId);
+      for (const doorId of this.session.dependents(id))
+        if (this.session.entities.get(doorId)?.kind === "door") changed.add(doorId);
+    }
+    const regions: { floorId: Id; bounds: Bounds }[] = [];
+    for (const id of changed) {
+      const before = this.lightBlockers.get(id);
+      const entity = this.session.entities.get(id);
+      const after = this.lightBlocker(entity);
+      if (before) regions.push({ floorId: before.entity.floorId, bounds: before.bounds });
+      if (after) regions.push({ floorId: after.entity.floorId, bounds: after.bounds });
+      for (const door of [before?.entity, entity]) {
+        if (door?.kind !== "door" || !door.anchor) continue;
+        const parent = this.lightBlockers.get(door.anchor.boundaryId);
+        const current = this.lightBlocker(this.session.entities.get(door.anchor.boundaryId));
+        if (parent) regions.push({ floorId: parent.entity.floorId, bounds: parent.bounds });
+        if (current) regions.push({ floorId: current.entity.floorId, bounds: current.bounds });
+      }
+      if (after) this.lightBlockers.set(id, after);
+      else this.lightBlockers.delete(id);
+    }
+    return regions;
   }
   private clearVisual(id: Id): void {
     const v = this.visuals.get(id);

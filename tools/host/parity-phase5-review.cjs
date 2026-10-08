@@ -1,8 +1,7 @@
-const PCK = "/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64/Dungeondraft.pck";
-const PCK_SHA = "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60";
 const MAP = "Dungeons/Parity/Object-Review.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTool }) => {
+  const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const state = () => page.evaluate(() => {
     const e = app.workspace.activeLeaf.view.editor;
     return { objects: e.session.document().entities.filter((v) => v.kind === "object"),
@@ -27,9 +26,9 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTo
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
   };
   async function edit() {
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(PCK)).digest("hex"), PCK_SHA);
+    const pck = fixtures.verifyPck();
     await page.evaluate(async (pck) =>
-      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), PCK);
+      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(pck), pck);
     await page.evaluate(async (name) => {
       await app.vault.createFolder("Dungeons/Parity").catch(() => {});
       await app.vault.create(name, JSON.stringify({
@@ -93,8 +92,11 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks, chooseTo
       customPlusPresent: await page.getByRole("button", { name: /eigene.*farbe|farbe.*hinzufügen/i }).count(),
       color: (await state()).defaults.color, alpha: (await state()).defaults.alpha,
     }, null, 2));
-    assert.equal(paletteCount, 30);
-    checks.push("ARGB picker accepts 127 alpha; palette remains at 30 without native custom-plus action");
+    assert.equal(paletteCount, 31);
+    assert.equal(await page.getByRole("button", {
+      name: "Objektfarbe zur Palette hinzufügen",
+    }).count(), 1);
+    checks.push("ARGB picker accepts 127 alpha; 30 native swatches and the verified Plus action remain visible");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.screenshot({ path: path.join(out, "review-edit.png") });
   }

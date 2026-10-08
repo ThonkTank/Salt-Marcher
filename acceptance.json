@@ -59162,6 +59162,21 @@
       "findings": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
       "gate": "open",
       "decision": "Nur Aufräumplan für die fünf belegten technischen Schwächen. Keine Produktänderung oder neue Fachabnahme; getrennter Umsetzungslauf und unabhängiger Aufräum-Review vor Phase 6."
+    },
+    "phase5CleanupImplementation": {
+      "date": "2026-10-08",
+      "state": "candidate_ready_independent_review_pending",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "plan": "ROADMAP-PARITY-CLEANUP-5-PLAN.md",
+      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/implementation-audit.json",
+      "findingsAddressed": ["P5-CL-1", "P5-CL-2", "P5-CL-3", "P5-CL-4", "P5-CL-5"],
+      "hostEditReopenPairsPassed": 8,
+      "coreTestsPassed": 155,
+      "gate": "open",
+      "next": "Eigener unabhängiger Aufräum-Review prüft die fünf Änderungen und alle direkten Belege; Phase 6 bleibt bis zum Tor gesperrt."
     }
   }
 }
