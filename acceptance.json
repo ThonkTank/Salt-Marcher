@@ -23589,6 +23589,22 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.01",
+          "state": "verified",
+          "finding": "Werkzeug und linke Parameter/rechte All-Used-Tags-Bibliothek sind im Original und Host erreichbar.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -23683,6 +23699,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.02",
+          "state": "verified",
+          "finding": "All zeigt native PCK-Objekte und das aktive Paketobjekt als ladbare Bildkacheln; 1.792+1 im Host.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/07-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/12-object-all-bottom-drag.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -23777,6 +23811,23 @@
             ]
           },
           "remaining": "Original-/Hostpaar über mehrere Geschosse, Karten und frische Originalöffnung fehlt."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.03",
+          "state": "open_evidence",
+          "finding": "Used-Snapshot nach Platzierung und Undo ist gepaart; Auswahl über mehrere Geschosse, Karten und frischen Originalprozess bleibt ungeprüft.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/23-used-tab.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/used-after-undo-reselect.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -23855,6 +23906,28 @@
             ]
           },
           "remaining": "Mehrtagwahl, Kombination und Zustand nach frischem Originalprozess fehlen."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.04",
+          "state": "open_mismatch",
+          "finding": "Original: normaler Tag-Klick ersetzt die Auswahl, Strg+Klick ergänzt sie; Host: normaler Klick schaltet Tags kumulativ um.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/25-tags-direct.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/85-object-qa-filter-settled.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/09-object-tags-active.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/10-object-tags-scroll30.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-admin-alchemy.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-ctrl-admin.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs",
+            "src/features/objekte/object-library-panel.ts"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -23954,6 +24027,26 @@
             ]
           },
           "remaining": "Trefferidentität und Reihenfolge weiterer Suchbegriffe sowie kombinierte Filter fehlen."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.05",
+          "state": "open_evidence",
+          "finding": "Enter-Suche atlas/atla und Leertreffer funktionieren; Trefferidentität und Bedienfolge mit weiteren Begriffen und Filtern sind noch nicht vollständig direkt gepaart.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/11-search-return.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/searched-atlas.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/fuzzy-atla.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -24048,6 +24141,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.06",
+          "state": "verified",
+          "finding": "atla liefert in Fuzzy 15 Kacheln und in Exact nach Enter keine; bloßes Verschieben des Reglers startet keine Suche.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/fuzzy-atla.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/exact-atla-submitted.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -24146,6 +24257,25 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.07",
+          "state": "verified",
+          "finding": "Papierkorb stellt die Galerie wieder her, lässt den Text stehen und löscht die Kachelmarkierung.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/13-trash-search-none.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/10-after-trash-wait.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -24236,6 +24366,22 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.08",
+          "state": "verified",
+          "finding": "Anklicken einer konkreten Kachel wählt deren Objektpfad; Platzierung und V3-Neuöffnung erhalten ihn.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -24879,6 +25025,26 @@
             ]
           },
           "remaining": "Mehrtaglogik und Setwechsel im Original sind noch nicht vollständig gemessen."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.17",
+          "state": "open_mismatch",
+          "finding": "Original: Setwahl markiert dessen Tags zusätzlich in der vollständigen Tagliste und zeigt deren Vereinigungsmenge; Host leert die Tagwahl und beschränkt die Liste auf Setmitglieder.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/85-object-qa-filter-settled.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/10-object-tags-scroll30.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-set-crafts.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs",
+            "src/features/objekte/object-library-panel.ts"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -25965,6 +26131,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-026.30",
+          "state": "verified",
+          "finding": "X leert nur Suchtext; die angewandten Treffer bleiben bis zur getrennten Papierkorb-Aktion sichtbar.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/20-round-after-red.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/search-x.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -33928,6 +34111,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.01",
+          "state": "verified",
+          "finding": "Edit Object Tags öffnet den Browser mit beiden Modi, Edit Tags/Edit Sets und Save/Close.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/43-tags-browser-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-browser-default.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34004,6 +34205,25 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.02",
+          "state": "open_mismatch",
+          "finding": "Nach frischem Originalstart mit gespeicherter Override-Datei ist Default vorausgewählt; Host startet bei vorhandener Datei sofort in Override.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/74-override-return.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/evidence/review-override-loaded-browser.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs",
+            "src/ui/object-tags-modal.ts"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -34082,6 +34302,28 @@
             ]
           },
           "remaining": "Originalpriorität bei überlappendem Default-/Override-Assetpfad fehlt."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.03",
+          "state": "open_mismatch",
+          "finding": "Gespeicherte Override-Zuordnung bleibt nach Neustart getrennt und steuert nach Neuwahl die Bibliothek; der Host weicht beim Startmodus des Browsers ab.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-tags-reopen/evidence/09-tag-dropdown-mid.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/evidence/review-override-reopened-tag.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/evidence/review-override-library-reselected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/data/Dungeondraft/override.dungeondraft_tags"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs",
+            "src/ui/object-tags-modal.ts"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -34158,6 +34400,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.04",
+          "state": "verified",
+          "finding": "Edit Tags zeigt Tag-Dropdown und scrollbares Objektgitter derselben Assetbasis.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/61-edit-tags-grid-bottom.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34236,6 +34495,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.05",
+          "state": "verified",
+          "finding": "Tag-Dropdown wechselt die Mitgliedschaftsmarkierungen im Objektgitter.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/52-tag-added.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-tags-reopen/evidence/09-tag-dropdown-mid.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34312,6 +34589,25 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.06",
+          "state": "verified",
+          "finding": "Kachelklick ändert die Mitgliedschaft genau dieses Objekts; Default und Override bleiben getrennt.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/53-testtag-assigned-first.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-override-globe-removed.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-default-globe-retained.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34390,6 +34686,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.07",
+          "state": "verified",
+          "finding": "Edit Sets öffnet Set-Dropdown und Tagliste.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/54-edit-sets.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34468,6 +34782,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.08",
+          "state": "verified",
+          "finding": "Set-Dropdown lädt die Mitgliedschaften des gewählten Sets.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/69-set-dropdown-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34544,6 +34876,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.09",
+          "state": "verified",
+          "finding": "Set-Tagliste zeigt die vorhandenen Tags und markierte Mitgliedschaften.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34622,6 +34971,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.10",
+          "state": "verified",
+          "finding": "Tagklick im gewählten Set schaltet genau seine Mitgliedschaft; Save und Host-Neustart erhalten sie.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/59-testtag-in-set.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34698,6 +35065,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.11",
+          "state": "verified",
+          "finding": "Plus in Edit Tags öffnet Edit Name und legt den benannten Tag an.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/50-tag-plus-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/52-tag-added.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34774,6 +35158,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.12",
+          "state": "verified",
+          "finding": "Minus löscht den ausgewählten Tag sofort ohne Rückfrage; Auswahl springt auf Wood.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/61-edit-tags-grid-bottom.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/tag-minus.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34852,6 +35253,27 @@
             ]
           },
           "remaining": "Save und frische Neuöffnung im Original mit vollständig gleicher Tag-/Setdatei fehlen."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.13",
+          "state": "verified",
+          "finding": "Save persistiert die getrennte Override-Datei; frischer Original- und Hostprozess laden Tag/Set/Objektzuordnungen.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/60-tags-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/data/Dungeondraft/override.dungeondraft_tags",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/evidence/review-override-reopened-tag.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/evidence/review-override-library-reselected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/runs/20261008-033739-2396000/data/Dungeondraft/override.dungeondraft_tags"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -34932,6 +35354,26 @@
             ]
           },
           "remaining": "Fenster-X im Original ist noch getrennt von Close zu prüfen."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.14",
+          "state": "open_evidence",
+          "finding": "Close verwirft ungespeicherte Änderungen gepaart; der eigene Fenster-X-Weg des Originalbrowsers ist noch nicht direkt geprüft.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/62-tags-close.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/unsaved-tag-before-close.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/unsaved-tag-reopen.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -35012,6 +35454,26 @@
             ]
           },
           "remaining": "Kopierregel bei bereits bestehenden eigenen Tags im Original fehlt."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.15",
+          "state": "open_evidence",
+          "finding": "Create Tag Overrides: OK kopiert den Default-Bestand im leeren Profil; die Regel bei schon vorhandenen eigenen Tags ist nicht direkt gepaart.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-set-create.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/45-override-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/48-override-created.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/60-tags-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-033127-2386775/evidence/review-override-created.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -35092,6 +35554,25 @@
             ]
           },
           "remaining": "Original-Radiozustand nach Dialog-X war widersprüchlich; erneute isolierte Probe nötig."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.16",
+          "state": "open_evidence",
+          "finding": "Cancel belässt Default und erzeugt keine Datei; der Originalzustand nach Dialog-X und erneuter Override-Wahl ist noch widersprüchlich.",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-set-create.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/45-override-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/46-override-cancel.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/override-prompt-x.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "open"
         }
       },
       {
@@ -35168,6 +35649,24 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.17",
+          "state": "verified",
+          "finding": "Plus in Edit Sets öffnet Edit Name und legt den benannten Seteintrag an.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/55-set-plus-dialog.png",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/57-set-created.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/set-created.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {
@@ -35244,6 +35743,23 @@
             ]
           },
           "remaining": "Unabhängiger Unterfall-Review steht aus."
+        },
+        "phase4IndependentReview": {
+          "id": "DD-047.18",
+          "state": "verified",
+          "finding": "Minus löscht das gewählte Set sofort ohne Rückfrage; Auswahl springt auf Water.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/set-minus.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+            "tools/host/parity-phase4-objects.cjs"
+          ],
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md",
+          "date": "2026-10-08",
+          "strictAcceptance": "verified"
         }
       },
       {

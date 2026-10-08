@@ -65,6 +65,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Umsetzungskandidat 08.10.2026:** Native und Paketobjekte, All/Used/Tags, Enter-Suche mit Fuzzy/Exact und zwei Löschwegen sowie die globale Tag-/Setverwaltung sind auf [Build `4edd0f23…`](/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/phase4-implementation.md) umgesetzt. Ein isolierter Obsidian-Lauf bestand Bearbeitung und frischen Prozess mit dem geprüften QA-Paket; die neuen Originalproben stehen daneben. Mehrtagwahl, Used über Geschosse/Karten, Override-Konfliktpriorität und Original-Neustart nach Tag-Save sind noch offen. Der eigene unabhängige Review aller 28 Unterfälle folgt; das Fachphasentor bleibt offen. Installation und Nutzervault wurden nicht verändert.
 
+**Unabhängiger Review 08.10.2026:** Der [getrennte 28-Fälle-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase4-review-20261008/phase4-independent-review.md) verifiziert 19 Unterfälle. Vier direkte Bedienabweichungen betreffen normale/Strg-Tagwahl, Setwahl und den anfänglichen Default-/Override-Modus nach gespeicherter Datei; fünf weitere Unterfälle benötigen gezielte Original-/Hostpaare. Die Original-Override-Datei wurde gespeichert und nach frischem Prozessstart wirksam geladen. Typprüfung, 151 Tests und Build bestehen auf unverändertem Kandidatenhash. **Das Fachphasentor bleibt offen.** Ein eigener Nachbesserungsplanlauf folgt vor Umsetzung und erneuter unabhängiger Prüfung; Installation und Nutzervault blieben unverändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.
