@@ -55953,6 +55953,22 @@
       "gate": "open",
       "decision": "Interner Nachbesserungskandidat für P4-CL-R1/R2 ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert. Ein eigener unabhängiger Aufräum-Review bewertet Rohmatrix, Bildwechsel, Knoten/Observer, Speicherpeaks und den dokumentierten fehlgeschlagenen ersten Wear-Kaltstartversuch vor Phase 5."
     },
+    "phase4CleanupRepairIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_open",
+      "candidateCommit": "80ded62",
+      "candidateBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/review-audit.json",
+      "verifiedFindings": ["P4-CL-R1"],
+      "openFindings": ["P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "independentHostResults": 2,
+      "verifiedFachCasesUnchanged": 28,
+      "coreTestsPassed": 153,
+      "gate": "open",
+      "decision": "P4-CL-R1 ist durch eigenen Hostlauf behoben. P4-CL-R2 bleibt wegen falscher Modal-Knotenzählung, QA-Runner-cgroup statt Obsidian-Aktionsspeicher und nicht nach Sichtbarkeit ausgewählter Bild-URLs offen. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Fachreview verifiziert; ein eigener Nachbesserungsplan, Umsetzung und erneuter unabhängiger Aufräum-Review folgen vor Phase 5."
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",
