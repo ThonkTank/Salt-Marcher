@@ -77,9 +77,13 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/validation-local.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/validation-full.json"
       ],
-      "endedAt": "2026-10-08T23:17:47.069718+02:00",
-      "integratedCommit": "441f873c1a74d2df937eb5471031f7f4981c0b9d",
-      "outcome": "38 zusätzliche Original-UI-Einträge; 85/96 Pakethinweise als Oberflächenrollen eingeordnet; Merge-Warnung, Auswahl- und Systemdialogkontexte direkt erfasst. Originaltor und Fachreview bleiben offen."
+      "endedAt": "2026-10-08T23:20:47.719082+02:00",
+      "integratedCommit": "53c0addfab0e913017e202b6cd6a84f5711fdcb6",
+      "outcome": "38 zusätzliche Original-UI-Einträge; 85/96 Pakethinweise als Oberflächenrollen eingeordnet; Merge-Warnung, Auswahl- und Systemdialogkontexte direkt erfasst. Originaltor und Fachreview bleiben offen.",
+      "incomingCommits": [
+        "441f873c1a74d2df937eb5471031f7f4981c0b9d",
+        "53c0addfab0e913017e202b6cd6a84f5711fdcb6"
+      ]
     },
     "nextRun": {
       "id": "HEX-00-I01c",
@@ -112,7 +116,7 @@
       "check": "passed",
       "tests": 164,
       "build": "passed",
-      "host": "anchored room/key edit with exact Undo/Redo and fresh-process reopen passed on integrated 441f873 build",
+      "host": "anchored room/key edit with exact Undo/Redo passed; fresh-process reopen passed again after integrating 53c0add; product build unchanged",
       "testProvenance": "Local worktree includes preserved foreign fixture-test edits; those edits are excluded from this commit. This count does not represent the clean published tree.",
       "catalog": "517 local pinned UI entries and 85 surface-role classifications passed provenance validation; combined 584-entry catalog fails on 111 unavailable imported-evidence references. Original gate remains open.",
       "physicalInput": "not_run",
