@@ -119,6 +119,7 @@ interface Gesture {
   startLocal: Point;
   last: Point;
   marqueePrevious?: Point;
+  transformPrevious?: Point;
   entity?: Entity;
   transform?: {
     source: TransformSelection;
@@ -2194,6 +2195,10 @@ export class DungeonEditor {
     } else if (g.tool === "select" && g.transform &&
       g.transform.action.mode !== "move") {
       const { source, action, frame } = g.transform;
+      if (action.mode === "rotate")
+        g.transformPrevious = this.renderer.toWorld(g.last);
+      const transformPoint = action.mode === "rotate"
+        ? g.transformPrevious! : point;
       if (action.mode === "scale" && source.kind === "light" && frame) {
         const result = transformSelectionGroup([source], frame, action, g.start, point);
         this.renderer.previewTransform(source, result.entities[0]!, result.frame);
@@ -2201,7 +2206,7 @@ export class DungeonEditor {
         this.renderer.previewTransform(source,
           action.mode === "scale" && source.kind !== "light"
             ? scaleBoxSelection(source, action.corner, g.start, point)
-            : rotateBoxSelection(source, g.start, point));
+            : rotateBoxSelection(source, g.start, transformPoint));
     } else if (g.tool === "select" && !g.entity) {
       g.marqueePrevious = this.renderer.toWorld(g.last);
       this.renderer.previewMarquee(g.start, point);
@@ -2369,13 +2374,15 @@ export class DungeonEditor {
         return true;
       }
       if (action.mode !== "move") {
+        const transformPoint = action.mode === "rotate"
+          ? g.transformPrevious ?? g.start : point;
         const scaledLight = action.mode === "scale" && source.kind === "light" && frame
           ? transformSelectionGroup([source], frame, action, g.start, point)
           : undefined,
           transformed = scaledLight?.entities[0] ??
             (action.mode === "scale" && source.kind !== "light"
               ? scaleBoxSelection(source, action.corner, g.start, point)
-              : rotateBoxSelection(source, g.start, point)),
+              : rotateBoxSelection(source, g.start, transformPoint)),
           after = transformed.kind === "object"
             ? objectAtPoint(this.session, transformed,
                 { x: transformed.x, y: transformed.y })

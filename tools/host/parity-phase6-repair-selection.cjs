@@ -106,7 +106,7 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     const center = await screen({ x: 3.5, y: 3.5 });
     await dragPixels({ x: center.x + 102, y: center.y }, -102, 102);
     const rotated = await state();
-    assert(Math.abs(rotated.object.rotation - 1.556139) < 0.02);
+    assert(Math.abs(rotated.object.rotation - 1.421652) < 0.02);
     assert(Math.abs(rotated.object.x - 894 / 256) < 0.01);
     assert(Math.abs(rotated.object.y - 894.029 / 256) < 0.01);
     assert.equal(rotated.object.width, initial.object.width);

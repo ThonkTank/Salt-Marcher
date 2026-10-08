@@ -68828,6 +68828,25 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/selection-audit.json"
           ],
           "gate": "open"
+        },
+        "repair2PairedTrace": {
+          "state": "implementation_candidate_independent_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "referenceEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/rotation-audit.json"
+          ],
+          "observation": "Acht einzeln verarbeitete Zeigerbewegungen drehen Cloth 01 bis 1,421652 rad. Die Vorschau folgt jeweils dem vorigen Bewegungsereignis; Release ändert den Winkel nicht.",
+          "change": "src/editor.ts verwendet bei der Einzelobjekt-Drehung den vorigen verarbeiteten Zeigerpunkt für Vorschau und Commit.",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496533129-edit/rotation-pair.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496568977-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496665536-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496694553-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496787742-parity-phase6-repair-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/evidence/1791496977981-parity-phase6-repair-reopen/result.json"
+          ],
+          "gap": "Unabhängiger Fachreview, physische Eingabe und nicht gemessene andere Elementarten bleiben offen. Die native gespeicherte Position weicht um ungefähr zwei Originalpixel vom Host ab."
         }
       },
       {
@@ -93477,36 +93496,36 @@
       "decision": "Nur Planung für sechs ungepaarte Eingabefolgen; keine Produktänderung oder neue Fachabnahme. Eigene Umsetzung und unabhängiger Review folgen."
     },
     "phase6Repair2Implementation": {
-      "date": "2026-10-08",
-      "state": "in_progress_four_candidates_two_open",
+      "date": "2026-10-09",
+      "state": "in_progress_five_candidates_one_open",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
-      "candidateBuildSha256": "365107482f87001c6229215d10290ca5f9e2ac4afd3c69be1c96fc0553e71c0d",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "candidate": [
         "DD-026.24",
         "DD-026.27",
         "DD-030.19",
-        "DD-030.20"
+        "DD-030.20",
+        "DD-030.24"
       ],
       "stillOpen": [
-        "DD-026.25",
-        "DD-030.24"
+        "DD-026.25"
       ],
       "reviewPending": [
         "DD-026.24",
         "DD-026.27",
         "DD-030.19",
-        "DD-030.20"
+        "DD-030.20",
+        "DD-030.24"
       ],
       "productChange": "src/features/objekte/object-library.ts; src/editor.ts",
       "gate": "open",
-      "next": "DD-030.24 braucht ein gleich getaktetes Zeigerpaar, DD-026.25 eine neue Host-Fokusroute. Danach eigener unabhängiger Review.",
+      "next": "DD-026.25 braucht eine wirksame Host-Fokusroute. Danach eigener unabhängiger Review aller 15 Phase-6-Positionen.",
       "partialEvidence": [
-        "DD-026.25",
-        "DD-030.24"
+        "DD-026.25"
       ],
       "rawAuditA": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
       "hostAEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-host-20261008/evidence/1791490310539-parity-phase6-repair2-focus-edit/result.json",
@@ -93536,10 +93555,19 @@
       "rawAuditMarquee": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/marquee-audit.json",
       "hostMarqueeEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791494811345-edit/result.json",
       "hostMarqueeReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791495010085-reopen/result.json",
+      "rawAuditRotation": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-selection-20261008/rotation-audit.json",
+      "hostRotationEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791496533129-edit/result.json",
+      "hostRotationReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791496568977-reopen/result.json",
+      "rotationRegressionEdit": "/home/aaron/.cache/dungeon-native-qa/evidence/1791496665536-edit/result.json",
+      "rotationRegressionReopen": "/home/aaron/.cache/dungeon-native-qa/evidence/1791496694553-reopen/result.json",
       "selectionRegressionPartial": "/home/aaron/.cache/dungeon-native-qa/evidence/1791495401776-selection-edit/result.json",
       "phase6GesturesRegression": [
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791495541997-parity-phase6-gestures-edit/result.json",
         "/home/aaron/.cache/dungeon-native-qa/evidence/1791495668159-parity-phase6-gestures-reopen/result.json"
+      ],
+      "phase6RotationBuildRegression": [
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791496787742-parity-phase6-repair-edit/result.json",
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791496977981-parity-phase6-repair-reopen/result.json"
       ]
     }
   }

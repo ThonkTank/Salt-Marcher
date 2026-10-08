@@ -72,6 +72,7 @@ def main():
     parser.add_argument("--end", nargs=2, type=int, required=True)
     parser.add_argument("--port", type=int, default=5909)
     parser.add_argument("--steps", type=int, default=24)
+    parser.add_argument("--trace-steps", action="store_true")
     parser.add_argument("--hold-seconds", type=float, default=0)
     parser.add_argument("--allow-selection", action="store_true")
     parser.add_argument("--output", type=Path)
@@ -85,6 +86,7 @@ def main():
     if before["selected"] and not args.allow_selection:
         raise RuntimeError("Native selection is not empty before the drag")
     with connect(args.port) as sock:
+        step_trace = []
         pointer(sock, *start, False)
         time.sleep(0.45)
         pointer(sock, *start, True)
@@ -94,13 +96,18 @@ def main():
             y = round(start[1] + (end[1] - start[1]) * step / args.steps)
             pointer(sock, x, y, True)
             time.sleep(0.09)
+            if args.trace_steps:
+                step_trace.append({"pointer": [x, y],
+                                   "state": snapshot(args.request, args.log,
+                                                     f"{args.id}-step-{step}")})
         time.sleep(args.hold_seconds)
         held = snapshot(args.request, args.log, args.id + "-held")
         pointer(sock, *end, False)
         time.sleep(0.2)
         after = snapshot(args.request, args.log, args.id + "-after")
     result = {"id": args.id, "screen_start": start, "screen_end": end,
-              "before": before, "held": held, "after": after}
+              "before": before, "steps": step_trace,
+              "held": held, "after": after}
     output = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         args.output.write_text(output)
