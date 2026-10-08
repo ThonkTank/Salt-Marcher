@@ -63,6 +63,8 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 **Plan 08.10.2026:** Der [getrennte Phase-4-Plan](ROADMAP-PARITY-PHASE4-PLAN.md) inventarisiert alle 28 Pflicht-Unterfälle, den installierten und den aktuellen Kandidatenstand sowie die vorhandenen Originalbelege. Zuerst werden die noch offenen Originalregeln für Used, Fuzzy/Exact, beide Such-Löschwege, Tag-/Setkonflikte, Minus und Abbruch gezielt nachgemessen. Danach folgen Assetbasis, Bibliotheksbedienung, Tag-/Setverwaltung und paarweise Hostprüfung mit frischem Prozess. Umsetzung und unabhängiger 28-Fälle-Review sind eigene Läufe; das Phase-4-Fachphasentor ist offen. Produktcode, Installation und Nutzervault blieben in diesem Planlauf unverändert.
 
+**Umsetzungskandidat 08.10.2026:** Native und Paketobjekte, All/Used/Tags, Enter-Suche mit Fuzzy/Exact und zwei Löschwegen sowie die globale Tag-/Setverwaltung sind auf [Build `4edd0f23…`](/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/phase4-implementation.md) umgesetzt. Ein isolierter Obsidian-Lauf bestand Bearbeitung und frischen Prozess mit dem geprüften QA-Paket; die neuen Originalproben stehen daneben. Mehrtagwahl, Used über Geschosse/Karten, Override-Konfliktpriorität und Original-Neustart nach Tag-Save sind noch offen. Der eigene unabhängige Review aller 28 Unterfälle folgt; das Fachphasentor bleibt offen. Installation und Nutzervault wurden nicht verändert.
+
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.

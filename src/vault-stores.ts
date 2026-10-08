@@ -3,6 +3,9 @@ import { closeSync, openSync, readSync, statSync } from "node:fs";
 import { safePath } from "./model";
 import { FileConflict, type FileStore } from "./persistence";
 import { type AssetCatalogStore, type BinarySource } from "./assets";
+import type { ObjectTagStorage } from "./features/objekte/object-tag-store";
+import { rename, writeFile, mkdir, unlink } from "node:fs/promises";
+import { dirname } from "node:path";
 
 export class VaultStore implements FileStore {
   constructor(private app: App) {}
@@ -98,6 +101,35 @@ export class VaultAssetStore implements AssetCatalogStore {
     const path = this.packagePath(hash),
       adapter = this.app.vault.adapter;
     if (await adapter.exists(path)) await adapter.remove(path);
+  }
+}
+
+export class VaultObjectTagStorage implements ObjectTagStorage {
+  private readonly path = ".obsidian/dungeon-editor-assets/object-tags.json";
+  constructor(private app: App) {}
+  async read(): Promise<string | null> {
+    const adapter = this.app.vault.adapter;
+    return await adapter.exists(this.path) ? adapter.read(this.path) : null;
+  }
+  async compareAndWrite(before: string | null, after: string): Promise<void> {
+    if (await this.read() !== before) throw new FileConflict(this.path);
+    const adapter = this.app.vault.adapter;
+    if (adapter instanceof FileSystemAdapter) {
+      const target = adapter.getFullPath(this.path);
+      await mkdir(dirname(target), { recursive: true });
+      const temporary = `${target}.${Date.now()}-${Math.random().toString(36).slice(2)}.next`;
+      await writeFile(temporary, after, { flag: "wx" });
+      try {
+        if (await this.read() !== before) throw new FileConflict(this.path);
+        await rename(temporary, target);
+      } finally {
+        await unlink(temporary).catch(() => {});
+      }
+      return;
+    }
+    const root = ".obsidian/dungeon-editor-assets";
+    if (!(await adapter.exists(root))) await adapter.mkdir(root);
+    await adapter.write(this.path, after);
   }
 }
 export class LocalBinarySource implements BinarySource {

@@ -63,6 +63,8 @@ import {
   type ToolSettings,
 } from "./properties";
 import { type AssetDefinition } from "./assets";
+import { ObjectLibraryPanel } from "./features/objekte/object-library-panel";
+import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import {
   buildingPointGripPixels,
@@ -178,6 +180,9 @@ export interface EditorHost {
   openPlay?: (roomId?: string) => void;
   assets?: () => readonly AssetDefinition[];
   subscribeAssets?: (listener: () => void) => () => void;
+  objectTags?: () => ObjectTagDocument;
+  subscribeObjectTags?: (listener: () => void) => () => void;
+  manageObjectTags?: () => void;
   toolDefaults?: () => ToolSettings;
   persistToolDefaults?: () => void;
   prefabs?: () => readonly Prefab[];
@@ -309,6 +314,8 @@ export class DungeonEditor {
   private abort = new AbortController();
   private unsub?: () => void;
   private assetUnsub?: () => void;
+  private objectTagUnsub?: () => void;
+  private objectLibrary: ObjectLibraryPanel;
   private gesture?: Gesture;
   private objectPreviewPoint?: Point;
   private tool: Tool = "select";
@@ -437,6 +444,8 @@ export class DungeonEditor {
         },
         menuContent,
       );
+    if (host.manageObjectTags)
+      this.button("Objekt-Tags bearbeiten", () => host.manageObjectTags!(), menuContent);
     this.optionsToggle = this.button(
       "Optionen",
       () => {
@@ -472,6 +481,7 @@ export class DungeonEditor {
       () => {
         host.persistToolDefaults?.();
         this.refreshObjectPreview();
+        this.objectLibrary?.syncSelection();
       },
       (id) => this.adoptFloor(id),
       (id, color, alpha) => this.renderer.previewObjectColor(id, color, alpha),
@@ -639,6 +649,21 @@ export class DungeonEditor {
       });
     }
     this.emptyPanel = element("div", "dn-empty-panel", this.inspector);
+    const objectLibraryHost = element("aside", "dn-object-library", this.body);
+    this.objectLibrary = new ObjectLibraryPanel(objectLibraryHost, session, {
+      assets: () => host.assets?.() ?? [],
+      tags: () => host.objectTags?.() ?? { tags: {}, sets: {} },
+      assetUrl: host.assetUrl,
+      selectedAsset: () => this.settings.object.assetId,
+      selectAsset: (id) => {
+        this.settings.object = { ...this.settings.object,
+          assetId: id, color: 0xffffff };
+        host.persistToolDefaults?.();
+        this.refreshProperties();
+        this.refreshObjectPreview();
+      },
+      editTags: () => host.manageObjectTags?.(),
+    });
     const canvasHost = element("main", "dn-canvas", this.body);
     this.renderer = new MapRenderer(
       canvasHost,
@@ -651,7 +676,9 @@ export class DungeonEditor {
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();
       this.refreshProperties();
+      this.objectLibrary.refresh();
     });
+    this.objectTagUnsub = host.subscribeObjectTags?.(() => this.objectLibrary.refresh());
     this.keyDock = element("aside", "dn-key-dock", this.body);
     const keyHead = element("div", "dn-key-heading", this.keyDock);
     element("strong", "", keyHead, "Key bearbeiten");
@@ -1195,6 +1222,10 @@ export class DungeonEditor {
   }
   private refreshProperties(): void {
     this.properties?.render(this.tool, this.selected, this.floor.value);
+    const libraryActive = this.tool === "object" || this.tool === "scatter";
+    this.root.classList.toggle("dn-object-library-open", libraryActive);
+    this.objectLibrary.show(libraryActive);
+    this.objectLibrary.syncSelection();
     const entities = [...this.selection]
       .map((id) => this.session.entities.get(id))
       .filter((entity): entity is Entity => !!entity);
@@ -3616,6 +3647,7 @@ export class DungeonEditor {
     this.abort.abort();
     this.unsub?.();
     this.assetUnsub?.();
+    this.objectTagUnsub?.();
     this.renderer.destroy();
     this.root.replaceChildren();
   }

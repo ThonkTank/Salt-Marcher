@@ -33,11 +33,12 @@ const restart = process.argv.includes("--restart"),
   parityPhase2Points = process.argv.includes("--parity-phase2-points"),
   parityPhase3Building = process.argv.includes("--parity-phase3-building"),
   parityPhase3Wear = process.argv.includes("--parity-phase3-wear"),
+  parityPhase4Objects = process.argv.includes("--parity-phase4-objects"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -193,6 +194,8 @@ function prepare() {
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
+    if (parityPhase4Objects)
+      fs.rmSync(vault + "/.obsidian/dungeon-editor-assets/object-tags.json", { force: true });
   }
   fs.mkdirSync(out, { recursive: true });
   fs.mkdirSync(vault + "/.obsidian/plugins/dungeon-editor", {
@@ -484,7 +487,7 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (parityPhase4Objects ? "parity-phase4-objects-" : parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -585,7 +588,7 @@ async function workflow() {
   } else await page.waitForFunction(
     (expected) => typeof app !== "undefined" &&
       app.vault?.adapter?.basePath === expected && app.workspace?.layoutReady,
-    vault, { timeout: parityPhase3Wear ? 90000 : 30000 },
+    vault, { timeout: parityPhase3Wear || parityPhase4Objects ? 90000 : 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -649,6 +652,12 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep };
+  if (parityPhase4Objects) {
+    const scenario = require("./host/parity-phase4-objects.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityPhase3Wear) {
     const scenario = require("./host/parity-phase3-wear.cjs")(scenarioContext);
     if (restart) await scenario.reopen();

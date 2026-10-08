@@ -1,4 +1,5 @@
 import type { AssetDefinition, BinarySource } from "../../assets";
+import { parseObjectTags, type ObjectTagDocument } from "../objekte/object-tags";
 
 /** The locally inspected Dungeondraft 1.2.0.1 Linux resource archive. */
 export const NATIVE_PATH_PCK_SHA256 =
@@ -36,6 +37,8 @@ export interface NativePathCatalog {
   readonly floors: readonly AssetDefinition[];
   readonly walls: readonly AssetDefinition[];
   readonly portals: readonly AssetDefinition[];
+  readonly objects: readonly AssetDefinition[];
+  readonly defaultObjectTags: ObjectTagDocument;
   /** Returns a directly displayable WebP slice; undefined for foreign IDs. */
   image(assetId: string): Blob | undefined;
 }
@@ -47,6 +50,7 @@ interface DirectoryEntry {
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 const PATH_IMPORT = /^res:\/\/textures\/paths\/([^/]+)\.png\.import$/;
+const OBJECT_IMPORT = /^res:\/\/textures\/objects\/(.+)\.png\.import$/;
 const REMAP_PATH = /^path="(res:\/\/\.import\/[^"\r\n]+\.stex)"\s*$/gm;
 /** The order stored in a new Dungeondraft 1.2.0.1 map's tiles.lookup. */
 const FLOOR_ORDER = [
@@ -188,6 +192,7 @@ export async function readNativePathCatalog(
   const floors: AssetDefinition[] = [];
   const walls: AssetDefinition[] = [];
   const portals: AssetDefinition[] = [];
+  const objects: AssetDefinition[] = [];
   const images = new Map<string, DirectoryEntry>();
   const imageDetails = async (sourcePath: string, id: string) => {
     const metadata = entries.get(sourcePath + ".import");
@@ -239,6 +244,25 @@ export async function readNativePathCatalog(
   }
   if (!textures.length) invalid("Keine nativen Pfadtexturen gefunden.");
   textures.sort((a, b) => a.asset.name.localeCompare(b.asset.name, "en"));
+  for (const importPath of entries.keys()) {
+    const match = OBJECT_IMPORT.exec(importPath);
+    if (!match) continue;
+    const sourcePath = importPath.slice(0, -".import".length);
+    const id = ["pack", NATIVE_PATH_PACK_ID, "object", sourcePath]
+      .map(encodeURIComponent).join(":");
+    await imageDetails(sourcePath, id);
+    const name = match[1]!.split("/").at(-1)!
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    objects.push({ id, packId: NATIVE_PATH_PACK_ID,
+      kind: "object", name, files: { image: sourcePath } });
+  }
+  if (!objects.length) invalid("Keine nativen Objekte gefunden.");
+  const tagsEntry = entries.get("res://data/default.dungeondraft_tags");
+  if (!tagsEntry || tagsEntry.size > 1_000_000)
+    invalid("Standard-Objekttags fehlen.");
+  const defaultObjectTags = parseObjectTags(decoder.decode(
+    await readExact(source, tagsEntry.offset, tagsEntry.size)));
   const design = async (kind: "tileset" | "wall", key: string) => {
     const path = `res://data/${kind === "tileset" ? "tilesets" : "walls"}/${key}.dungeondraft_${kind}`;
     const entry = entries.get(path);
@@ -275,7 +299,7 @@ export async function readNativePathCatalog(
     packId: NATIVE_PATH_PACK_ID, kind: "portal", name: "Standard Door",
     files: { image: doorPath } });
   return {
-    textures, floors, walls, portals,
+    textures, floors, walls, portals, objects, defaultObjectTags,
     image(assetId: string): Blob | undefined {
       const entry = images.get(assetId);
       return (

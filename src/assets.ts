@@ -1,4 +1,6 @@
 import { discoverColorableObjectPaths } from "./features/objekte/colorable-tags";
+import { mergeObjectTags, parsePackageObjectTags,
+  type ObjectTagDocument } from "./features/objekte/object-tags";
 import {
   colorableSettingsFromMetadata,
   type ColorableObjectSettings,
@@ -360,6 +362,7 @@ export class PackAssetLibrary {
   private packs = new Map<string, DungeondraftPack>();
   private definitions = new Map<string, AssetDefinition>();
   private urls = new Map<string, string>();
+  private objectTagDocuments = new Map<string, ObjectTagDocument>();
 
   async add(source: BinarySource): Promise<readonly AssetDefinition[]> {
     const pack = await readDungeondraftPack(source);
@@ -371,7 +374,16 @@ export class PackAssetLibrary {
     const assets = await discoverPackAssets(pack);
     if (this.packs.has(pack.metadata.id))
       throw new Error("Paket bereits geladen: " + pack.metadata.name);
+    const tagDocuments: ObjectTagDocument[] = [];
+    const prefix = `res://packs/${pack.metadata.id}/`;
+    for (const entry of pack.entries) {
+      if (!entry.path.startsWith(prefix) ||
+          !/^data\/.+\.dungeondraft_tags$/i.test(entry.path.slice(prefix.length))) continue;
+      tagDocuments.push(parsePackageObjectTags(
+        await pack.asset(entry.path.slice(prefix.length)).text(), pack.metadata.id));
+    }
     this.packs.set(pack.metadata.id, pack);
+    this.objectTagDocuments.set(pack.metadata.id, mergeObjectTags(...tagDocuments));
     for (const asset of assets) this.definitions.set(asset.id, asset);
     return assets;
   }
@@ -383,6 +395,12 @@ export class PackAssetLibrary {
         (!kind || asset.kind === kind) &&
         (!query || asset.name.toLocaleLowerCase("de").includes(query)),
     );
+  }
+
+  objectTags(packIds?: readonly string[]): ObjectTagDocument {
+    const selected = packIds ? new Set(packIds) : undefined;
+    return mergeObjectTags(...[...this.objectTagDocuments].filter(
+      ([id]) => !selected || selected.has(id)).map(([, tags]) => tags));
   }
 
   has(id: string): boolean {
@@ -412,6 +430,7 @@ export class PackAssetLibrary {
     this.urls.clear();
     this.definitions.clear();
     this.packs.clear();
+    this.objectTagDocuments.clear();
   }
 }
 

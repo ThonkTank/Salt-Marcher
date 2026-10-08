@@ -683,6 +683,15 @@ function editorHost(
       map.session.settings.builtInAssets,
     ),
     subscribeAssets: (listener) => plugin.subscribeAssets(listener),
+    objectTags: () => plugin.objectTags(
+      map.session.settings.assetPacks,
+      map.session.settings.builtInAssets,
+    ),
+    subscribeObjectTags: (listener) => plugin.subscribeObjectTags(listener),
+    manageObjectTags: () => plugin.openObjectTags(
+      map.session.settings.assetPacks,
+      map.session.settings.builtInAssets,
+    ),
     toolDefaults: () => plugin.toolDefaults(),
     persistToolDefaults: () => plugin.persistToolDefaults(),
     prefabs: () => plugin.prefabs(),

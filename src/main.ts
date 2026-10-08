@@ -16,7 +16,7 @@ import {
 } from "./model";
 import { Session } from "./session";
 import { FileConflict, MapRepository } from "./persistence";
-import { VaultStore, VaultAssetStore, LocalBinarySource } from "./vault-stores";
+import { VaultStore, VaultAssetStore, VaultObjectTagStorage, LocalBinarySource } from "./vault-stores";
 import { AssetPackagesModal, CreateDungeonModal } from "./ui/map-modals";
 import { VIEW, PENDING_VIEW, PLAY_VIEW, ROOM_VIEW } from "./ui/view-types";
 import { DungeonMapCard, DungeonEmbed, DungeonPlayView, DungeonRoomView, PendingDungeonView, DungeonView } from "./ui/views";
@@ -41,6 +41,10 @@ import {
   readNativePathCatalog,
   type NativePathCatalog,
 } from "./features/material/native-path-catalog";
+import { ObjectTagStore } from "./features/objekte/object-tag-store";
+import { emptyObjectTags, mergeObjectTags,
+  type ObjectTagDocument } from "./features/objekte/object-tags";
+import { ObjectTagsModal } from "./ui/object-tags-modal";
 
 export interface OpenMap {
   session: Session;
@@ -135,6 +139,7 @@ export default class DungeonPlugin extends Plugin {
   disableBuildingWearForNewMap = false;
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
+  readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
   private assetLibrary = new PackAssetLibrary();
   private nativePathCatalog?: NativePathCatalog;
   private nativePathAttempted?: string;
@@ -164,6 +169,8 @@ export default class DungeonPlugin extends Plugin {
   }
   async onload(): Promise<void> {
     const loaded = await this.loadData();
+    await this.objectTagStore.load().catch((error) =>
+      new Notice("Objekt-Tags konnten nicht geladen werden: " + String(error), 10000));
     if (loaded && Array.isArray(loaded.sizePresets)) {
       const defaults = toolSettings(),
         saved =
@@ -334,7 +341,8 @@ export default class DungeonPlugin extends Plugin {
             ? this.nativePathCatalog.textures.length +
               this.nativePathCatalog.floors.length +
               this.nativePathCatalog.walls.length +
-              this.nativePathCatalog.portals.length : 0,
+              this.nativePathCatalog.portals.length +
+              this.nativePathCatalog.objects.length : 0,
           error: this.nativePathError,
         }),
         choose: (path) => this.useNativeAssetArchive(path),
@@ -558,8 +566,26 @@ export default class DungeonPlugin extends Plugin {
     return builtInAssets && this.nativePathCatalog
       ? [...packed, ...this.nativePathCatalog.textures.map((item) => item.asset),
           ...this.nativePathCatalog.floors, ...this.nativePathCatalog.walls,
-          ...this.nativePathCatalog.portals]
+          ...this.nativePathCatalog.portals, ...this.nativePathCatalog.objects]
       : packed;
+  }
+  objectTags(packIds?: readonly string[], builtInAssets = this.catalogBuiltIns): ObjectTagDocument {
+    const base = builtInAssets
+      ? this.objectTagStore.current() ?? this.nativePathCatalog?.defaultObjectTags ?? emptyObjectTags()
+      : emptyObjectTags();
+    return mergeObjectTags(base, this.assetLibrary.objectTags(packIds));
+  }
+  openObjectTags(packIds?: readonly string[], builtInAssets = this.catalogBuiltIns): void {
+    new ObjectTagsModal(this.app, {
+      defaults: this.nativePathCatalog?.defaultObjectTags ?? emptyObjectTags(),
+      override: this.objectTagStore.current(),
+      assets: this.listAssets(packIds, builtInAssets).filter((asset) => asset.kind === "object"),
+      assetUrl: (id) => this.assetUrl(id + "\0image"),
+      save: (document) => this.objectTagStore.save(document),
+    }).open();
+  }
+  subscribeObjectTags(listener: () => void): () => void {
+    return this.objectTagStore.subscribe(listener);
   }
   colorableObjectSource(
     id: string,

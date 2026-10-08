@@ -120,7 +120,7 @@
 }
 .dn-body {
   display: grid;
-  grid-template-columns: 80px 144px 256px minmax(0, 1fr) 0;
+  grid-template-columns: 80px 144px 256px minmax(0, 1fr) 0 0;
   width: 100%;
   min-width: 0;
   min-height: 0;
@@ -128,7 +128,13 @@
   position: relative;
 }
 .dungeon-native-editor.dn-key-open .dn-body {
-  grid-template-columns: 80px 144px 0 minmax(0, 1fr) 360px;
+  grid-template-columns: 80px 144px 0 minmax(0, 1fr) 0 360px;
+}
+.dungeon-native-editor.dn-object-library-open .dn-body {
+  grid-template-columns: 80px 144px 256px minmax(0, 1fr) 300px 0;
+}
+.dungeon-native-editor.dn-object-library-open.dn-key-open .dn-body {
+  grid-template-columns: 80px 144px 0 minmax(0, 1fr) 300px 360px;
 }
 .dn-group-rail,
 .dn-tool-rail {
@@ -441,7 +447,7 @@
   outline-offset: -2px;
 }
 .dn-key-dock {
-  grid-column: 5;
+  grid-column: 6;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -455,6 +461,89 @@
 .dn-key-dock[hidden] {
   display: none !important;
 }
+.dn-object-library {
+  grid-column: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 8px;
+  padding: 12px;
+  overflow: hidden;
+  background: var(--background-primary);
+  border-left: 1px solid var(--background-modifier-border);
+}
+.dn-object-library[hidden] { display: none !important; }
+.dn-object-library h2 { margin: 0; font-size: 17px; }
+.dn-object-library-tabs,
+.dn-object-library-search,
+.dn-object-library-precision,
+.dn-object-library-tag-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.dn-object-library-tabs button { flex: 1; }
+.dn-object-library-tabs button[aria-pressed="true"],
+.dn-object-library-tags button[aria-pressed="true"] {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.dn-object-library-search label { display: flex; align-items: center; flex: 1; min-width: 0; gap: 3px; }
+.dn-object-library-search input { width: 100%; min-width: 0; }
+.dn-object-library-search button { flex: 0 0 auto; }
+.dn-object-library-precision input { min-width: 0; flex: 1; }
+.dn-object-library-tag-controls label { flex: 1; min-width: 0; }
+.dn-object-library-tag-controls select { width: 100%; }
+.dn-object-library-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-height: 130px;
+  overflow: auto;
+}
+.dn-object-library-tags button { padding: 3px 5px; font-size: 11px; }
+.dn-object-library-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
+}
+.dn-object-library-tile {
+  display: grid;
+  place-items: center;
+  height: 84px;
+  min-width: 0;
+  padding: 3px;
+  border: 2px solid transparent;
+  background: var(--background-secondary);
+}
+.dn-object-library-tile[aria-pressed="true"] { border-color: #e1bf26; }
+.dn-object-library-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.dn-object-tags-dialog { width: min(930px, 92vw); max-width: 92vw; }
+.dn-object-tags-modal { min-width: 0; }
+.dn-object-tags-modal p { white-space: normal; }
+.dn-object-tag-modes, .dn-object-tag-tabs, .dn-object-tag-select,
+.dn-object-tag-actions { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.dn-object-tag-tabs button { flex: 1; }
+.dn-object-tag-tabs button[aria-pressed="true"] { color: var(--text-accent); }
+.dn-object-tag-select label { display: flex; align-items: center; gap: 8px; flex: 1; }
+.dn-object-tag-select select { flex: 1; min-width: 0; }
+.dn-object-tag-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 3px;
+  max-height: min(56vh, 540px);
+  overflow: auto;
+}
+.dn-object-tag-tile { height: 76px; padding: 2px; border: 2px solid transparent; }
+.dn-object-tag-tile[aria-pressed="true"] { border-color: #e1bf26; }
+.dn-object-tag-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.dn-object-set-tags { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: 56vh; overflow: auto; }
+.dn-object-set-tags label { display: flex; align-items: center; gap: 4px; }
+.dn-object-tag-actions { justify-content: space-between; }
 .dn-key-heading {
   display: flex;
   align-items: center;
@@ -622,7 +711,9 @@
     display: block;
   }
   .dn-body,
-  .dungeon-native-editor.dn-key-open .dn-body {
+  .dungeon-native-editor.dn-key-open .dn-body,
+  .dungeon-native-editor.dn-object-library-open .dn-body,
+  .dungeon-native-editor.dn-object-library-open.dn-key-open .dn-body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 42px 42px minmax(0, 1fr);
   }
@@ -689,6 +780,16 @@
     height: 78%;
     box-shadow: -5px 6px 20px #0004;
   }
+  .dn-object-library {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: end;
+    align-self: stretch;
+    z-index: 8;
+    width: min(300px, 85%);
+    box-shadow: -5px 6px 20px #0004;
+  }
+  .dungeon-native-editor.dn-key-open .dn-object-library { display: none; }
   .dn-footer {
     padding: 3px 5px;
     gap: 5px;

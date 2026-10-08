@@ -23569,6 +23569,26 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Object Tool über Objekte-Gruppe öffnen",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Objekte platzieren öffnen: linke Parameter, rechte All/Used/Tags-Galerie.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -23641,6 +23661,28 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Alle geladenen Objektbilder anzeigen",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/07-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/12-object-all-bottom-drag.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "All öffnen: 1.792 native und ein aktives Paketobjekt als Kacheln; sichtbare Bilder laden.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -23712,6 +23754,29 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Globus setzen → Used → Undo → All → Used; Used bleibt bis zum erneuten Tab-Eintritt unverändert.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/23-used-tab.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/used-after-place.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/used-after-undo.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/used-after-undo-reselect.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Globus platzieren → Used → Undo → All → Used → Redo → All → Used; 1/1/0/0/1 Kacheln.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Original-/Hostpaar über mehrere Geschosse, Karten und frische Originalöffnung fehlt."
         }
       },
       {
@@ -23767,6 +23832,29 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Tags-Ansicht öffnen",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/25-tags-direct.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/85-object-qa-filter-settled.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/09-object-tags-active.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/10-object-tags-scroll30.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Tags-Tab öffnen, Colorable und QA-Tag wählen; Paketobjekt und Globus erscheinen in den jeweiligen Filtern.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Mehrtagwahl, Kombination und Zustand nach frischem Originalprozess fehlen."
         }
       },
       {
@@ -23842,6 +23930,30 @@
               "reopen": "partial"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "atlas + Return, atla + Return; Treffer werden erst bei Return neu angewandt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/11-search-return.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/searched-atlas.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/fuzzy-atla.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "atlas vor Return unverändert, nach Return 19; atla bei Fuzzy nach Return 15 Kacheln.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Trefferidentität und Reihenfolge weiterer Suchbegriffe sowie kombinierte Filter fehlen."
         }
       },
       {
@@ -23913,6 +24025,29 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "atla bei Fuzzy + Return → Exact-Schieber → erneut Return; die Schieberbewegung allein ändert die Treffer nicht.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/fuzzy-atla.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/exact-after-atla.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/exact-atla-submitted.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "atla bei Exact nach Return null, Regler allein ohne Neusuche; erneut Fuzzy + Return 15 Kacheln.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -23987,6 +24122,30 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "atlas + Return → Papierkorb; volle Galerie bei stehenbleibendem Text.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/12-search-none.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/13-trash-search-none.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/10-after-trash-wait.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/searched-atlas.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Papierkorb nach Suche: 1.793 Kacheln, Text bleibt, Kachelmarkierung weg.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -24057,6 +24216,26 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Bildkachel wählen in Originalbibliothek verwenden",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Globus-Kachel wählen und platzieren; gespeicherte Asset-ID entspricht der Kachel.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -24678,6 +24857,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Tagset und Tags im linken Panel nutzen",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/85-object-qa-filter-settled.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-scroll-nachlauf/evidence/10-object-tags-scroll30.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "QA-Set wählen, QA-Tag anklicken; genau die zugewiesene Globus-Kachel erscheint.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Mehrtaglogik und Setwechsel im Original sind noch nicht vollständig gemessen."
         }
       },
       {
@@ -25742,6 +25943,28 @@
               "reopen": "open"
             }
           }
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "atlas + Return → X im Suchfeld; Text leer, angewandte Treffer bleiben.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/20-round-after-red.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/searched-atlas.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/search-x.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "X nach atlas + Return: Text leer, 19 Treffer bleiben; Papierkorb setzt separat zurück.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -33684,6 +33907,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Edit Object Tags im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/43-tags-browser-open.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Tags Browser öffnen und Default/Override, Edit Tags/Edit Sets, Save/Close bedienen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -33739,6 +33983,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Mode Default im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/74-override-return.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Default: 81 Tags/15 Sets, Plus deaktiviert; Standardzuordnung bleibt ungeschrieben.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -33795,6 +34060,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Mode Override im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-tags-reopen/evidence/09-tag-dropdown-mid.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Override per OK anlegen, QA-Tag/Set speichern; Browser und Prozess neu öffnen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Originalpriorität bei überlappendem Default-/Override-Assetpfad fehlt."
         }
       },
       {
@@ -33850,6 +34137,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Edit Tags im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/61-edit-tags-grid-bottom.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Edit Tags zeigt Dropdown und Objektgitter einschließlich aktivem Paketobjekt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -33906,6 +34214,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Tag-Dropdown im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/52-tag-added.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-tags-reopen/evidence/09-tag-dropdown-mid.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Administration und QA-Tag im Dropdown wählen; Globus-Markierung folgt gewähltem Tag.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -33961,6 +34291,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Objektgitter-Zuordnung im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/53-testtag-assigned-first.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Globus-Kachel im QA-Tag an, aus und wieder an; nur diese Mitgliedschaft ändert sich.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34017,6 +34368,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Edit Sets im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/54-edit-sets.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Edit Sets zeigt Set-Dropdown und Tagliste.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34073,6 +34446,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Set-Dropdown im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/69-set-dropdown-open.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Combat und QA-Set im Dropdown wählen; Mitgliedschaftsanzeige wechselt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34128,6 +34523,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Tagliste für Set im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "QA-Set zeigt QA-Tag, dessen Markierung nach Save und Neuöffnung erhalten bleibt.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34184,6 +34600,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Tag im Set umschalten im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-sets.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/59-testtag-in-set.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "QA-Tag im QA-Set an, aus, an; gespeicherter Seteintrag enthält genau den QA-Tag.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34239,6 +34677,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Plus in Edit Tags wählen und QA20261004 benennen",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/50-tag-plus-dialog.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/52-tag-added.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Plus in Edit Tags → Edit Name → Accept; Duplikatname meldet Fehler.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34293,6 +34752,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Isolierten QA-Tag anlegen und mit Minus entfernen; keine Rückfrage, Auswahl springt auf Wood.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/61-edit-tags-grid-bottom.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/tag-created.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/tag-minus.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Isolierten letzten QA-Tag per Minus ohne Rückfrage entfernen; Auswahl springt auf Wood.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34349,6 +34830,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Save im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/60-tags-saved.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/data/Dungeondraft/override.dungeondraft_tags"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Save zweimal; globale Tagdatei enthält QA-Tag, Set und Assetpfad; frischer Obsidian-Prozess lädt sie.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Save und frische Neuöffnung im Original mit vollständig gleicher Tag-/Setdatei fehlen."
         }
       },
       {
@@ -34405,6 +34908,30 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "QA-Tag ohne Save anlegen → Close → Browser erneut öffnen; Tag ist verworfen.",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-tags.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/62-tags-close.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/70-reopen-testset.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/unsaved-tag-before-close.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/unsaved-tag-reopen.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Ungespeicherten QA-Tag mit Close verwerfen und Browser erneut öffnen.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Fenster-X im Original ist noch getrennt von Close zu prüfen."
         }
       },
       {
@@ -34462,6 +34989,29 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Create Tag Overrides: OK im Tags Browser wählen",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-set-create.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/45-override-dialog.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/48-override-created.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/60-tags-saved.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Create Tag Overrides per OK: 81 Standard-Tags/15 Sets in bearbeitbaren Entwurf kopieren.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Kopierregel bei bereits bestehenden eigenen Tags im Original fehlt."
         }
       },
       {
@@ -34518,6 +35068,30 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "partial_original_gap",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Create Tag Overrides per Dialog-X schließen; keine Override-Datei entsteht.",
+            "evidence": [
+              "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-object-set-create.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/45-override-dialog.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/46-override-cancel.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/override-prompt.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/override-prompt-x.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Create Tag Overrides per Dialog-X und Cancel abbrechen; keine Datei, Default bleibt aktiv.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Original-Radiozustand nach Dialog-X war widersprüchlich; erneute isolierte Probe nötig."
         }
       },
       {
@@ -34573,6 +35147,27 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Plus in Edit Sets",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/55-set-plus-dialog.png",
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/57-set-created.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Plus in Edit Sets → Edit Name → Accept; QA-Set erscheint.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {
@@ -34627,6 +35222,28 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "phase4Implementation": {
+          "state": "candidate_pending_independent_review",
+          "original": {
+            "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "sequence": "Isoliertes QA-Set anlegen und mit Minus entfernen; keine Rückfrage, Auswahl springt auf Water.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/evidence/58-set-tags-bottom.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/set-created.png",
+              "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/runs/20261008-025338-2350150/evidence/set-minus.png"
+            ]
+          },
+          "host": {
+            "buildSha256": "4edd0f23291e4d3c320c1582c39298ae2d76f328b3cabe5a71810a085089859b",
+            "sequence": "Isoliertes letztes QA-Set per Minus ohne Rückfrage entfernen; Auswahl springt auf Water.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422598098-parity-phase4-objects-edit/result.json",
+              "/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/evidence/1791422685460-parity-phase4-objects-reopen/result.json",
+              "tools/host/parity-phase4-objects.cjs"
+            ]
+          },
+          "remaining": "Unabhängiger Unterfall-Review steht aus."
         }
       },
       {

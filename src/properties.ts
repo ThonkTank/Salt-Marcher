@@ -1681,7 +1681,7 @@ export class Properties {
           ...this.defaults.object,
           assetId: undefined,
         };
-      const libraryTile = packageObjects.length
+      const libraryTile = e?.kind === "object" && packageObjects.length
         ? this.choice(
             "Paketobjekt",
             object.assetId ?? "",
