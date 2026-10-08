@@ -814,13 +814,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_implementation_candidate_review_pending",
+    "status": "phase6_review_complete_repair_plan_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Getrennter unabhängiger Phase-6-Fachreview der 15 Positionen anhand Originalrohkarte, Endbuild-Edit-/Neuöffnungspaaren und offenen Auswahlgrenzen; bei Befunden eigenständigen Nachbesserungsplan anlegen.",
-    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen; Fach- und Aufräumtor bestanden. Phase 6: Umsetzungskandidat mit direkter Original-Gestenkarte, aktuellem Host-Edit-/Neuöffnungspaar und 155 Basistests liegt vor; unabhängiger Fachreview offen. Installierter Build und Nutzervault unverändert.",
+    "nextRun": "Getrennter Phase-6-Nachbesserungsplan für elf offene Pflichtpositionen und den Raumgrenzzug; danach eigene Umsetzung und erneuter unabhängiger Fachreview.",
+    "note": "Phase 4: 28 Fachunterfälle und Aufräumtor bestanden. Phase 5: 27 Positionen belegt, DD-028.19 im Objektkontext belegt und als Gesamtfall für Scatter/Light offen; Fach- und Aufräumtor bestanden. Phase 6: unabhängiger Review belegt vier begrenzte Auswahl-Kernfolgen, lässt elf Pflichtpositionen und die Raumgrenz-Invariante offen. Eigene Host-Neuöffnung und 155 Basistests bestanden; Fachphasentor offen. Installierter Build und Nutzervault unverändert.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
     "candidateCoreTests": 155,
@@ -1871,6 +1871,21 @@
       "positions": 15,
       "gate": "open",
       "next": "Unabhängiger Fachreview; die Umsetzung selbst ist kein Paritätsurteil."
+    },
+    "phase6IndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_open",
+      "reviewOfCommit": "8659274e916b9b404915ce3643e13c5b884f9e39",
+      "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/review-audit.json",
+      "verifiedCore": ["DD-030.21", "DD-030.23", "DD-030.29", "DD-030.34"],
+      "open": ["DD-026.22", "DD-026.23", "DD-026.24", "DD-026.25", "DD-026.26", "DD-026.27", "DD-030.19", "DD-030.20", "DD-030.22", "DD-030.24", "DD-030.25"],
+      "projectInvariantOpen": "Raumgrenzzug im Host mit Undo/Redo, Speichern und frischer Neuöffnung.",
+      "coreTestsPassed": 155,
+      "gate": "open",
+      "next": "Eigener Nachbesserungsplan; nur belegte Funktionsabweichungen umsetzen und danach getrennt reviewen."
     }
   }
 }
