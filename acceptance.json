@@ -55998,6 +55998,24 @@
       "gate": "open",
       "decision": "QA-Nachbesserungskandidat für P4-CL-R2-MODAL/MEMORY/URLS ohne neue Fachfall-Abnahme und ohne Produktcodeänderung. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert. Ein eigener unabhängiger Aufräum-Review entscheidet Tor und Wear-Einordnung vor Phase 5."
     },
+    "phase4CleanupMatrixRepairIndependentReview": {
+      "date": "2026-10-08",
+      "state": "review_complete_gate_passed",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review3-20261008/phase4-independent-review.md",
+      "candidateCommit": "9ae3827",
+      "candidateBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/phase4-cleanup-independent-review.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/review-raw-audit.json",
+      "ownModalProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/modal-host3/evidence/1791452847369-parity-phase4-objects-edit/independent-modal-probe.json",
+      "verified": "17 vollständige geordnete ID-Zustände auf drei Builds gleich; je sieben Aktionen viermal; Modalöffnung 1793 Modalknoten, Obsidian-Scope-Aktionspeak nach Reset und geometrisch sichtbare Bildquellen separat nachgerechnet. Eigene Modal-/Scrollprobe, fünf Phase-4-Hostfolgen, Raum-/Key-Edit und Neuöffnung, Bildbyte-/Blob-URL-Wechsel, Observer-Freigabe sowie Typprüfung, 153 Tests und Build auf unverändertem Bundle bestanden.",
+      "wearColdObservation": "Ein programmgesteuerter Neuanlagebefehl bei noch offenem about:blank-Einstellungsdialog öffnete auf Fach- und Endbuild das Modal dort. Nach Start im Hauptdokument bestanden Wear-Edit und frische Neuöffnung; kein durch Phase-4-Aufräumen eingeführter Unterschied oder direkt belegter Bedienfehler im Hauptdokument.",
+      "closedFindings": ["P4-CL-R1", "P4-CL-R2-MODAL", "P4-CL-R2-MEMORY", "P4-CL-R2-URLS"],
+      "openCleanupFindings": [],
+      "gate": "passed",
+      "decision": "Der eigene unabhängige Review schließt P4-CL-R2 und das Phase-4-Aufräumtor. Die 28 Phase-4-Fachfälle behalten ihre direkte Original-/Host-Abnahme; Phase 5 folgt mit eigenem Planlauf. Physische Eingabe und gemeinsamer Abschluss bleiben späteren Roadmap-Phasen vorbehalten."
+    },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
       "state": "verified",
