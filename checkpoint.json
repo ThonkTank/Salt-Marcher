@@ -99,7 +99,7 @@
       "Eigener CITY-00-Ergebnisreferenzlauf"
     ]
   },
-  "phase": "Phase 6: unabhängiger Nachbesserungsreview abgeschlossen; sechs Pflichtpositionen und Fachphasentor offen",
+  "phase": "Phase 6: zweiter Nachbesserungsplan vorhanden; sechs Pflichtpositionen und Fachphasentor offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
   "backup": "/home/aaron/.cache/dungeon-native-qa/backups/phase6-before-transfer-20261006",
   "installed": true,
@@ -276,7 +276,7 @@
     "smallPeakBytes": 702210048,
     "largePeakBytes": 619491328
   },
-  "next": "Eigener Phase-6-Nachbesserungsplan für DD-026.24/.25/.27 und DD-030.19/.20/.24; erst danach getrennte Umsetzung und unabhängiger Review.",
+  "next": "Getrennter Phase-6-Nachbesserungs-Umsetzungslauf nach ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md; nur direkt bestätigte Unterschiede ändern, danach unabhängiger Review.",
   "open": [
     "Auswahlwerkzeug: Mittelpunkt-Regel für Möbel, Lichter und freie Durchgänge sowie Ausschluss wandgebundener Durchgänge und freier Wände vom Rahmen sind direkt belegt; freie Wände bleiben am Endpunkt anklickbar. Pfade, rechteckige Dächer und Muster benötigen vollständige Konturumschließung. Beim Muster ist die linke/obere Kante inklusiv; die scheinbare rechte/untere Zusatzlücke folgt dem vorangehenden Bewegungsereignis. Alle vier ungedrehten Möbelgriffe haben bei 100 und 200 Prozent einen ungefähr 33 Bildschirmpixel großen Trefferkreis mit Vorrang vor der Innenbewegung; der gedrehte Einzelmöbelrahmen liegt gerade um die gedrehte Kontur, und seine vier Ecken skalieren bei 100 Prozent. Gemeinsame Objekt-Licht-Rahmen wurden vor und nach Drehung an allen vier Ecken bei 100 Prozent vermessen; die exakte gedrehte Griffgrenze bleibt offen. Offen bleiben die Ereignisfolge bei anderen Elementarten und umgekehrtem Zug, unregelmäßige Dachkonturen, übrige Griff- und Klicktrefferzonen, Skalierungsempfindlichkeit anderer Möbelgrößen, Griffe und Richtungen, Gruppen sowie Snap-Grenzen; beim einzelnen Licht sind Eckaktionen, gespeicherte Wirkung und aktive Rahmengröße belegt, Rahmen-Transienz und Lichtgriff-Überlappung sind nativ und im isolierten Obsidian-Schnelltest belegt.",
     "Hand/Pan-P0/P1 sind direkt im Original und im installierten Obsidian-Host belegt. Offen bleiben der globale Canvasrand-Fallback nach verlorenem Pointer-Capture, Fokusverlust, weitere Zoomstufen, physische Maus/Touchpad, Großkarte sowie die nichtnative dauerhafte Hand-Schaltfläche. DD-011 Building V2 ist installiert; Snap-off, Portalbreite an nach Edit verkürzter Kante und komplexe Großkonturen bleiben offen.",
@@ -914,13 +914,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_repair_review_complete_gate_open",
+    "status": "phase6_repair2_plan_ready_implementation_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Phase-6-Nachbesserungsplan für DD-026.24/.25/.27 und DD-030.19/.20/.24; erst danach getrennte Umsetzung und unabhängiger Review.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: fünf neue und vier zuvor bestätigte Positionen belegt; sechs Eingabe-/Vergleichspaare offen. Raumgrenz-Invariante bestätigt. Fachphasentor offen; Hex-Atlas- und Stadtstand bleiben erhalten.",
+    "nextRun": "Getrennter Phase-6-Nachbesserungs-Umsetzungslauf nach ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md; nur direkt bestätigte Unterschiede ändern, danach unabhängiger Review.",
+    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun Positionen belegt, sechs offen; Raumgrenz-Invariante bestätigt. Zweiter begrenzter Nachbesserungsplan liegt vor, Umsetzung und unabhängiger Review fehlen. Hex-Atlas- und Stadtstand bleiben erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
     "candidateCoreTests": 156,
@@ -2235,6 +2235,23 @@
       "projectInvariant": "passed",
       "gate": "open",
       "next": "Eigener Phase-6-Nachbesserungsplan für DD-026.24/.25/.27 und DD-030.19/.20/.24; erst danach getrennte Umsetzung und unabhängiger Review."
+    },
+    "phase6Repair2Plan": {
+      "date": "2026-10-08",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
+      "baseCommit": "615c94daec5d8f530c5a20270d2b703cad25345f",
+      "open": [
+        "DD-026.24",
+        "DD-026.25",
+        "DD-026.27",
+        "DD-030.19",
+        "DD-030.20",
+        "DD-030.24"
+      ],
+      "gate": "open",
+      "next": "Getrennter Phase-6-Nachbesserungs-Umsetzungslauf nach ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md; nur direkt bestätigte Unterschiede ändern, danach unabhängiger Review."
     }
   }
 }

@@ -555,3 +555,7 @@ Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repai
 ## Phase 6: unabhängiger Nachbesserungsreview
 
 Der [eigene Review](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md) und [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/review-audit.json) prüfen Dungeondraft-Binärdatei/PCK, drei native Rohkarten, Endbuild und vier neue isolierte Hostläufe. `DD-026.22/.23/.26` und `DD-030.22/.25` sind für ihre definierten Original-/Hostfolgen bestätigt; `DD-030.21/.23/.29/.34` bestehen als bereits geprüfte Kernfolgen die Endbuild-Regression. `DD-026.24/.25/.27` sowie `DD-030.19/.20/.24` bleiben für ausdrücklich benannte Eingabe- und Vergleichspaare offen. Der V4-Raumgrenzzug ist bestätigt. **Phase-6-Fachphasentor offen; ein eigener Planlauf für sechs Restpunkte folgt vor weiterer Umsetzung und unabhängigem Review.** Installierter Build und Nutzervault blieben unverändert.
+
+## Phase 6: zweiter Nachbesserungsplan
+
+Der [eigene Plan](ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md) ordnet den sechs offenen Positionen je eine konkrete Original-/Hostfolge und eine nachprüfbare Eingabespur zu. Live-Reihenfolge der All-Bibliothek, A-Fokus-/Kombinationsgesten, gleiche Z-Textur, überlagerte Auswahl-IDs, Rahmen-Zugrichtung und Cloth-Außendrehung bilden den begrenzten Umfang. Ein rein lesender Original-Helfer darf Zustände messen, aber keine Geste ersetzen. **Nur Planung; Fachphasentor offen.** Umsetzung und unabhängiger Review folgen in eigenen Läufen.
