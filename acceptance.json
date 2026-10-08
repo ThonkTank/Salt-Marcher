@@ -63907,6 +63907,22 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
           ],
           "gate": "open"
+        },
+        "repair3Implementation": {
+          "date": "2026-10-09",
+          "state": "focus_pair_candidate_independent_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "build": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+          "observation": "Unter KWin wurde Obsidian als Electron-Fenster inaktiv; das unabhängige X11-Fenster protokollierte A-KeyRelease, Obsidian kein A-KeyUp. Nach Rückkehr speicherte Atlas Globe 01 flip=true wie im Originaldialog. Rückkehr bei weiterhin gehaltenem A speicherte true; normaler Release im Editor false. Frische Host-Neuöffnung erhielt true/true/false.",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/focus-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499303280-parity-phase6-repair2-focus-edit/wm-focus-probe.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499303280-parity-phase6-repair2-focus-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499327049-parity-phase6-repair2-focus-reopen/result.json"
+          ],
+          "productChange": "none",
+          "limit": "Der Renderer meldete trotz inaktivem Electron-Fenster document.hasFocus()=true und kein blur. Die gemessene Bedienfolge stimmt in Wirkung und Speicherung; ein nicht ausgelöster Renderer-Blur wird nicht behauptet. Physische Eingabe bleibt Phase 7.",
+          "gate": "open_pending_independent_review"
         }
       },
       {
@@ -96535,6 +96551,21 @@
       ],
       "gate": "open",
       "decision": "Nur der Fokusvergleich ist geplant; kein Produktcode geändert oder Fachfall freigegeben. Umsetzung und eigener Review folgen getrennt."
+    },
+    "phase6Repair3Implementation": {
+      "date": "2026-10-09",
+      "state": "candidate_pending_independent_review",
+      "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/focus-audit.json",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
+      "case": "DD-026.25",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499303280-parity-phase6-repair2-focus-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499327049-parity-phase6-repair2-focus-reopen/result.json",
+      "productChange": "none",
+      "gate": "open",
+      "next": "Eigener unabhängiger Review des Fokuspaars und aller 15 Phase-6-Pflichtpositionen; erst danach Fachphasentor."
     }
   }
 }

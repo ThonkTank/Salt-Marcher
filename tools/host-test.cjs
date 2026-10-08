@@ -717,7 +717,11 @@ async function workflow() {
   }
   if (parityPhase6Repair2Focus) {
     const scenario = require("./host/parity-phase6-repair2-focus.cjs")(scenarioContext);
-    if (restart) await scenario.reopen();
+    if (process.argv.includes("--focus-wm-probe")) {
+      if (restart) await scenario.probeWindowManagerReopen();
+      else await scenario.probeWindowManager();
+    }
+    else if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
   }

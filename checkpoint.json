@@ -971,13 +971,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase6_repair3_plan_ready",
+    "status": "phase6_repair3_implementation_candidate_review_pending",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Umsetzungslauf nach ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md: A-Release im X11-Fokusfenster unter KWin messen, nur bestätigte Abweichung ändern, danach eigener Review.",
-    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun frühere und fünf neue Positionen getrennt reviewt; DD-026.25 bleibt für die externe Fokusfolge offen. Fachphasentor und Aufräumen offen. Raumgrenz-Invariante auf aktuellem Build bestanden; Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Eigener unabhängiger Review von DD-026.25 und aller 15 Phase-6-Pflichtpositionen auf Build bdf8d7a3…; Fachphasentor bleibt bis dahin offen.",
+    "note": "Phase 4 und 5 samt Aufräumtoren bestanden. Phase 6: neun frühere und fünf neue Positionen getrennt reviewt; DD-026.25 hat nun ein direktes externes A-Fokuspaar als Umsetzungskandidat. Fachphasentor und Aufräumen bleiben bis zum eigenen Review offen. Raumgrenz-Invariante auf aktuellem Build bestanden; Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
     "candidateCoreTests": 167,
@@ -2407,6 +2407,19 @@
       "gate": "open",
       "next": "DD-026.25: wirksamen Host-Renderer-Fokusverlust planen und messen; danach Nachbesserung und eigener Review vor dem Phase-6-Fachphasentor."
     },
-    "phase6Repair3Plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md"
+    "phase6Repair3Plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
+    "phase6Repair3Implementation": {
+      "date": "2026-10-09",
+      "state": "candidate_pending_independent_review",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/implementation.md",
+      "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/focus-audit.json",
+      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
+      "case": "DD-026.25",
+      "productChange": "none",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499303280-parity-phase6-repair2-focus-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499327049-parity-phase6-repair2-focus-reopen/result.json",
+      "gate": "open",
+      "next": "Eigener unabhängiger Review von DD-026.25 und aller 15 Phase-6-Pflichtpositionen auf Build bdf8d7a3…; Fachphasentor bleibt bis dahin offen."
+    }
   }
 }

@@ -123,5 +123,139 @@ module.exports = ({ page, fs, path, assert, crypto, vault, out, checks,
     await snapshot("reopened");
     checks.push("DD-026.25 fresh process reloads four A gesture objects");
   }
-  return { edit, reopen };
+  async function probeWindowManager() {
+    const cp = require("node:child_process");
+    const display = process.env.DUNGEON_QA_DISPLAY;
+    const sinkScript = path.join(__dirname, "key-release-sink.py");
+    assert(display && fs.existsSync(sinkScript),
+      "X11 display and key sink script required");
+    const xenv = { ...process.env, DISPLAY: display };
+    const xdo = (...args) => cp.execFileSync("xdotool", args, {
+      env: xenv, encoding: "utf8", timeout: 8000,
+    }).trim();
+    const sinkLog = path.join(out, "key-sink.jsonl");
+    const pck = fixtures.verifyPck();
+    await page.evaluate(async (archive) =>
+      app.plugins.getPlugin("dungeon-editor").useNativeAssetArchive(archive), pck);
+    await page.evaluate(async (name) => {
+      await app.vault.createFolder("Dungeons/Parity").catch(() => {});
+      await app.vault.create(name, JSON.stringify({
+        format: "dungeon-map", version: 3, id: "parity-phase6-repair3-focus",
+        settings: { name: "Repair3 Focus", width: 8, height: 8,
+          feetPerField: 5, assetPacks: [], builtInAssets: true,
+          wallShadows: false, objectShadows: false, buildingWear: 0 },
+        floors: [{ id: "floor-1", name: "Ground", elevation: 0, ambient: 1 }],
+        entities: [], content: { definitions: [], occurrences: [], routes: [], archive: [] },
+      }, null, 2));
+    }, MAP);
+    await open();
+    await installTrace();
+    await page.locator(".dn-canvas canvas").focus();
+    const obsidianWindow = xdo("getactivewindow");
+    const sink = cp.spawn("python3", [sinkScript, sinkLog], {
+      env: xenv, stdio: "ignore",
+    });
+    const record = { display, windows: { obsidian: obsidianWindow },
+      events: [] };
+    const sample = async (name) => {
+      record.events.push({ name, activeWindow: xdo("getactivewindow"),
+        focusWindow: xdo("getwindowfocus"),
+        sink: fs.existsSync(sinkLog)
+          ? fs.readFileSync(sinkLog, "utf8").trim().split("\n")
+            .filter(Boolean).map((line) => JSON.parse(line)) : [],
+        host: await page.evaluate(() => {
+          const editor = app.workspace.activeLeaf.view.editor;
+          let electronFocused;
+          try { electronFocused = require("electron").remote.getCurrentWindow().isFocused(); }
+          catch (error) { electronFocused = String(error); }
+          return { documentFocused: document.hasFocus(), electronFocused,
+            mirrorHeld: editor.objectMirrorHeld, trace: window.__mirrorTrace,
+            objects: editor.session.document().entities.filter((e) => e.kind === "object") };
+        }) });
+      fs.writeFileSync(path.join(out, "wm-focus-probe.json"),
+        JSON.stringify(record, null, 2));
+      if (["a-down", "sink-active-a-up", "obsidian-return",
+        "after-placement", "held-return", "after-normal-release"].includes(name)) {
+        try {
+          cp.execFileSync("import", ["-display", display, "-window", "root",
+            path.join(out, `${name}.png`)], { env: xenv, timeout: 8000 });
+        } catch (error) { record.screenshotError = String(error); }
+      }
+    };
+    try {
+      let sinkWindow;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        try {
+          sinkWindow = xdo("search", "--onlyvisible", "--name", "Codex KeyRelease Sink")
+            .split("\n").filter(Boolean).at(-1);
+        } catch {}
+        if (sinkWindow) break;
+        await page.waitForTimeout(200);
+      }
+      assert(sinkWindow, "KeyRelease sink window not found");
+      record.windows.sink = sinkWindow;
+      xdo("windowactivate", "--sync", obsidianWindow);
+      await page.locator(".dn-canvas canvas").focus();
+      await page.waitForTimeout(200);
+      await sample("before");
+      xdo("keydown", "a");
+      await page.waitForTimeout(250);
+      await sample("a-down");
+      xdo("windowactivate", "--sync", sinkWindow);
+      xdo("windowraise", sinkWindow);
+      await page.waitForTimeout(300);
+      await sample("sink-active-a-held");
+      xdo("keyup", "a");
+      await page.waitForTimeout(250);
+      await sample("sink-active-a-up");
+      xdo("windowactivate", "--sync", obsidianWindow);
+      await page.waitForTimeout(250);
+      await sample("obsidian-return");
+      const placed = await place(2, 2);
+      record.placed = placed;
+      await sample("after-placement");
+      assert.equal(placed.flip, true);
+      assert(record.events.find((entry) => entry.name === "sink-active-a-up")
+        .sink.some((event) => event.type === "KeyRelease" && event.keysym === "a"));
+      xdo("keydown", "a");
+      xdo("keyup", "a");
+      await page.waitForTimeout(250);
+      await sample("reset-after-away-release");
+      assert.equal((await state()).mirrorHeld, false);
+      xdo("keydown", "a");
+      await page.waitForTimeout(200);
+      xdo("windowactivate", "--sync", sinkWindow);
+      xdo("windowraise", sinkWindow);
+      await page.waitForTimeout(250);
+      await sample("sink-active-a-still-held");
+      xdo("windowactivate", "--sync", obsidianWindow);
+      await page.waitForTimeout(250);
+      await sample("held-return");
+      record.placedHeldReturn = await place(3, 2);
+      assert.equal(record.placedHeldReturn.flip, true);
+      xdo("keyup", "a");
+      await page.waitForTimeout(250);
+      await sample("after-normal-release");
+      record.placedNormalRelease = await place(4, 2);
+      assert.equal(record.placedNormalRelease.flip, false);
+      await page.getByRole("button", { name: "Speichern", exact: true }).click();
+      await waitForFileAbsent(path.join(vault, MAP + ".draft"));
+      fs.copyFileSync(path.join(vault, MAP), path.join(out, "saved-wm-focus.dungeon"));
+      fs.writeFileSync(path.join(out, "wm-focus-probe.json"),
+        JSON.stringify(record, null, 2));
+      checks.push("DD-026.25 WM focus and sink KeyRelease retain mirror; held return and normal release distinguish next placements");
+    } finally {
+      try { xdo("keyup", "a"); } catch {}
+      sink.kill();
+    }
+  }
+  async function probeWindowManagerReopen() {
+    await open();
+    const current = await state();
+    const saved = JSON.parse(fs.readFileSync(path.join(vault, MAP), "utf8"));
+    assert.deepEqual(current.objects, saved.entities.filter((e) => e.kind === "object"));
+    assert.deepEqual(current.objects.map((e) => e.flip), [true, true, false]);
+    checks.push("DD-026.25 fresh process reloads external-release, held-return and normal-release objects");
+  }
+  return { edit, reopen, probeWindowManager, probeWindowManagerReopen };
 };
