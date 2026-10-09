@@ -241,3 +241,9 @@ Der unabhängige read-only N01-Produktreview bestand exakt
 `a06703c31766a064c6a8e8510a1cb5eaa46ca549` ohne Pflichtbefund. Das ist noch
 kein Cloud-Nachtest: Die Wiederholung des exakt beschriebenen H01-Ablaufs im
 isolierten Cloudvault bleibt offen. N-006 bleibt getrennt.
+
+### GM-UX-N-005-N01-H01-R02 – Lauf wegen nicht eindeutiger Host-Evidenz abgebrochen
+
+Status: **blocked**, kein N01-Abnahmeurteil. Auf integriertem Shared/Build-Commit `2f522daf6887bf0c51aba9036ee43b821ad069ba` waren Build (`npm run build`, `dirty:false`) und installiertes Tripel hashgleich zum aus N01 `a06703c` bytegleichen Paket. Bei der sichtbaren Teilfolge passten DOM-Messwerte und aufeinanderfolgende Screenshots nicht verlässlich zusammen; mehrere alte Playwright/CDP-Verbindungen blieben am gleichen Obsidian-Prozess geöffnet. Deshalb gelten die Rohbelege `evidence-n01-h01-r02/01–13` nur als Diagnostik, nicht als Produktabnahme. Keine Karte bearbeitet; SHA-256 vor/nach `56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7`. Keine Produktdatei geändert.
+
+Issue #1 enthält Vorlauf `6087828989` und Abbruch/Übergabe `6087877294`, einschließlich fehlender Nachweise und folgender Arbeit. Nächster Lauf `GM-UX-N-005-N01-H01-R03` ist **not started**: derselbe H01-Abnahmescope nach Beenden der sechs verwaisten CDP-Clientprozesse auf dem bereits isolierten Cloud-Obsidian-1.14.4-Host und der isolierten QA-Vaultdatei. Eine separate App/User-Data-Dir ist in dieser Exec-Umgebung nicht startbar (kein DISPLAY, kein Obsidian-Binary, Cloud-Runtime ohne Hoststart-Capability); deshalb keine frische Electron-Behauptung. Sollte die einzelne verbleibende UI-Sitzung weiter inkonsistent sein, wird R03 als blocked abgeschlossen. Besitzer bleibt Cloud-GM-Produkttester; Dungeon-N01-Implementierungsbesitzer Kartograph.

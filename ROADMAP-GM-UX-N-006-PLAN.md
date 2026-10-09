@@ -192,3 +192,20 @@ Obsidian-Layoutspeicherung. Der exakte Reparaturcommit `e922b9c` schloss alle
 drei Pflichtbefunde und bestand den unabhängigen Nachreview ohne weitere
 Pflichtlücke. Damit ist nur `GM-UX-N-006-I01` planseitig geöffnet; Implementierung
 und Hostprüfung wurden nicht begonnen.
+
+## Implementierungsstand I01
+
+`GM-UX-N-006-I01` ist im Produktcommit
+`a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2` abgeschlossen. Der neue
+hostneutrale Drei-Feld-Codec verwirft Fremdpfade, Zusatzfelder, falsche
+Typen/Versionen sowie leere und überlange Werte. Das flüchtige Register hält
+State, Leaf-Token und eine pluginweit monotone Revision; Rename, Delete und
+Plugin-Unload sind getrennt modelliert, während ein Leaf-Unload absichtlich
+keinen veralteten Wert veröffentlicht. Drei fokussierte Fälle, `npm run check`,
+`npm test` (378/378) und `npm run build` bestanden.
+
+Damit ist ausschließlich I02 geöffnet. Die Verdrahtung in `DungeonView` und
+`DungeonEditor`, der zweifache belegte Tab-Neuöffnungsablauf im getrennten
+Cloud-Host, unabhängiger Produktreview und GM-Nachtest sind nicht nachgewiesen.
+I01 ist keine UX-, Host-, physische Eingabe-, Fach-, Paritäts- oder
+Gesamtfreigabe.
