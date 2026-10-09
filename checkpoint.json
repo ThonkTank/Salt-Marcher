@@ -4151,20 +4151,22 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city00_result_gallery_complete_full_inventory_partial",
+    "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P01",
-      "kind": "implementation_planning",
-      "startedAt": "2026-10-09T16:25:35.193204+00:00",
-      "focus": "Unabhängigen Stadtmodell-/Codec-Anteil konkret planen",
-      "state": "completed",
-      "result": "Hex-Besitzer bestätigt reine CITY-Modell-/Codec-Vorbereitung ohne gemeinsame Schnittstellenänderung. Natives Meterformat, stabileIDs/Graphreferenzen, Hauspose/Polygone/Grundstücke/Viertel und strikte verlustfreie Prüfung konkret geplant. Formaler CITY01-Hostanschluss bleibt nach HEX05; I41-Skalierwirkung wegen fehlendem dokumentierten Modifier-Scrollweg zurückgestellt, weiterhin offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I01",
       "kind": "model_implementation",
-      "focus": "Native Meterdaten und strikten Stadtcodec implementieren, drei Basisprüfungen durchführen"
+      "startedAt": "2026-10-09T16:28:02.695114+00:00",
+      "focus": "Natives Meterformat und City-Codec implementieren",
+      "state": "completed",
+      "result": "Reines natives CityDocument/Codec implementiert: lokale Meter, stabileIDs, Straßenknoten/-verlauf, Platz/Grundstück/Viertel, Grundriss/Innenhof/Hauspose und strikte Referenz-/Geometrieprüfung. Keine fremde Eingabemutation, keine unbekannten Feldverluste; gemeinsame Typen/Topologie wiederverwendet. Typprüfung,269Tests einschließlich10 gezielter City-Fälle und Build grün. Kein Atlasadapter, keine History-/Dateiaktion oder Host-/Paritätsfreigabe; Fachreview folgt.",
+      "finishedAt": "2026-10-09T16:35:46.547763+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R01",
+      "kind": "implementation_review",
+      "focus": "Datenvertrag und numerische/Referenzgrenzen gegen Plan unabhängig prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

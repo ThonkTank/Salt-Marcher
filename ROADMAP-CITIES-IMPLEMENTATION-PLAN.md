@@ -12,7 +12,7 @@ Vor der Atlasübergabe wird ausschließlich der unabhängige [Stadtmodell-/Codec
 
 ## Iststand und offene technische Basis
 
-Alle 24 CTY-Unterfälle sind offen; native Stadtmodelle, Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
+Alle 24 CTY-Unterfälle sind offen. Das reine native Stadtmodell mit Codec ist vorbereitet; Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
 
 ## Technische Arbeitspakete
 
@@ -663,3 +663,6 @@ CITY-00-I40-CR Start 2026-10-09T16:19:03.385325+00:00; Snapshot/acceptance/Ansch
 
 
 CITY-01-PREP-P01 Start 2026-10-09T16:25:35.193204+00:00; Hex-Besitzer bestätigt reine CITY-Modell-/Codec-Vorbereitung ohne gemeinsame Schnittstellenänderung. Natives Meterformat, stabileIDs/Graphreferenzen, Hauspose/Polygone/Grundstücke/Viertel und strikte verlustfreie Prüfung konkret geplant. Formaler CITY01-Hostanschluss bleibt nach HEX05; I41-Skalierwirkung wegen fehlendem dokumentierten Modifier-Scrollweg zurückgestellt, weiterhin offen. Plan: ROADMAP-CITIES-CITY01-MODEL-PLAN.md. I/R und Aufräum-P/I/R folgen getrennt.
+
+
+CITY-01-PREP-I01 Start 2026-10-09T16:28:02.695114+00:00; Abschluss 2026-10-09T16:35:46.547763+00:00; Reines natives CityDocument/Codec implementiert: lokale Meter, stabileIDs, Straßenknoten/-verlauf, Platz/Grundstück/Viertel, Grundriss/Innenhof/Hauspose und strikte Referenz-/Geometrieprüfung. Keine fremde Eingabemutation, keine unbekannten Feldverluste; gemeinsame Typen/Topologie wiederverwendet. Typprüfung,269Tests einschließlich10 gezielter City-Fälle und Build grün. Kein Atlasadapter, keine History-/Dateiaktion oder Host-/Paritätsfreigabe; Fachreview folgt. Nachweis: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json.
