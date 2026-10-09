@@ -495,3 +495,5 @@ CITY-00-I30-I Ergebnis: Processing Offset→None→Offset verändert angezeigte 
 CITY-00-I30-R Start 2026-10-09T15:14:08.660483+00:00; Zehn Rawhashes, getrennte Controls03/05/07 und Rücksetzung09 geprüft. Sichtwirkung04/06/08 belegt; keine Processing-Dateigeometrie, Höheneinheiten, Extrusion oder Persistenz behauptet. Aufräumbefund: Snapshot führt Processing/Raised/Solids weiterhin pauschal offen.
 
 CITY-00-I30-CP Start 2026-10-09T15:14:35.119600+00:00; Plan: CO-WAT-0002-Snapshot um drei visuelle Teilwirkungen ergänzen; Dateigeometrie/IDs/Persistenz weiterhin offen. Complex-Beobachtung und alle historischen Belege erhalten;10 Rawhashes, Verweisziele und64/24 offene Pflichten prüfen. CI/CR getrennt.
+
+CITY-00-I30-CI Start 2026-10-09T15:14:47.857614+00:00; Snapshot enthält Processing/Raised/Solids-Sichtwirkung und getrennte Dateigeometrie-/Persistenzlücke; historische Belege und Complex-Grenze erhalten.
