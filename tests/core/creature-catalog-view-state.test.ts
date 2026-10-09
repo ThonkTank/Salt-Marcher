@@ -7,6 +7,7 @@ import {
   adjacentCreatureId,
   applyCreatureCatalogDrafts,
   creatureCatalogFilterChips,
+  creatureCatalogDraftKeyForFilter,
   creatureCatalogQueryForState,
   creatureCatalogRangeError,
   creatureCatalogSortChange,
@@ -117,8 +118,10 @@ test("catalog view restore owns defaults and derives every missing draft from on
   assert.equal(restored.sort, "name");
   assert.equal(restored.direction, "asc");
   assert.equal(restored.page, 0);
-  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS)
-    assert.equal(restored[draftKey], restored[filterKey]);
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS) {
+    assert.equal(creatureCatalogDraftKeyForFilter(filterKey), draftKey);
+    assert.equal(restored[creatureCatalogDraftKeyForFilter(filterKey)], restored[filterKey]);
+  }
 
   const nonDefault = restoreCreatureCatalogViewState({
     ...filters,

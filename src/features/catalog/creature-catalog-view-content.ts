@@ -11,6 +11,7 @@ import {
   adjacentCreatureId,
   applyCreatureCatalogDrafts,
   creatureCatalogFilterChips,
+  creatureCatalogDraftKeyForFilter,
   creatureCatalogQueryForState,
   creatureCatalogRangeError,
   creatureCatalogSortChange,
@@ -18,7 +19,6 @@ import {
   resetCreatureCatalogFilters,
   restoreCreatureCatalogViewState,
   type CreatureCatalogArrayFilter,
-  type CreatureCatalogDraftKey,
   type CreatureCatalogFilterChip,
   type CreatureCatalogTextFilter,
   type CreatureCatalogViewState,
@@ -258,7 +258,7 @@ export class CreatureCatalogViewContent {
     filters.className = "dn-catalog-filters";
     filters.setAttribute("aria-label", "Monster filtern");
     filters.append(
-      this.searchInput(),
+      this.textFilterInput("Monstername suchen", "search", "text", "Name suchen"),
       this.numberInput("HG min", "cr-min", this.state.crMin, (value) =>
         this.change({ crMin: value, page: 0, resultsScroll: 0 })),
       this.numberInput("HG max", "cr-max", this.state.crMax, (value) =>
@@ -276,13 +276,12 @@ export class CreatureCatalogViewContent {
         this.change({ hpMin: value, page: 0, resultsScroll: 0 })),
       this.numberInput("TP max", "hp-max", this.state.hpMax, (value) =>
         this.change({ hpMax: value, page: 0, resultsScroll: 0 })),
-      this.textFilterInput("Bewegung", "movement", "movement", "movementDraft"),
-      this.textFilterInput("Sinne", "senses", "senses", "sensesDraft"),
-      this.textFilterInput("Verwundbarkeit", "vulnerabilities", "vulnerabilities", "vulnerabilitiesDraft"),
-      this.textFilterInput("Resistenz", "resistances", "resistances", "resistancesDraft"),
-      this.textFilterInput("Immunität", "immunities", "immunities", "immunitiesDraft"),
-      this.textFilterInput("Zustandsimmunität", "condition-immunities", "conditionImmunities",
-        "conditionImmunitiesDraft"),
+      this.textFilterInput("Bewegung", "movement", "movement"),
+      this.textFilterInput("Sinne", "senses", "senses"),
+      this.textFilterInput("Verwundbarkeit", "vulnerabilities", "vulnerabilities"),
+      this.textFilterInput("Resistenz", "resistances", "resistances"),
+      this.textFilterInput("Immunität", "immunities", "immunities"),
+      this.textFilterInput("Zustandsimmunität", "condition-immunities", "conditionImmunities"),
     );
 
     const chips = this.renderFilterChips();
@@ -539,50 +538,29 @@ export class CreatureCatalogViewContent {
     for (const debouncer of this.debouncers.values()) debouncer.dispose();
   }
 
-  private searchInput(): HTMLInputElement {
-    const input = this.contentEl.ownerDocument.createElement("input");
-    input.type = "search";
-    input.value = this.state.textDraft ?? this.state.text ?? "";
-    input.placeholder = "Name suchen";
-    input.setAttribute("aria-label", "Monstername suchen");
-    input.dataset.focusKey = "search";
-    input.addEventListener("input", () => {
-      this.state = { ...this.state, textDraft: input.value };
-      this.debouncer("text").schedule(() => this.publishSearch());
-    }, { signal: this.renderAbort.signal });
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      this.debouncer("text").flush(() => this.publishSearch());
-    }, { signal: this.renderAbort.signal });
-    return input;
-  }
-
-  private publishSearch(): void {
-    this.change({ text: this.state.textDraft?.trim() || undefined, page: 0, resultsScroll: 0 });
-  }
-
   private textFilterInput(labelText: string, key: string, stateKey: CreatureCatalogTextFilter,
-    draftKey: CreatureCatalogDraftKey): HTMLInputElement {
+    placeholder = labelText): HTMLInputElement {
+    const draftKey = creatureCatalogDraftKeyForFilter(stateKey);
     const input = this.contentEl.ownerDocument.createElement("input");
     input.type = "search";
     input.value = this.state[draftKey] ?? this.state[stateKey] ?? "";
-    input.placeholder = labelText;
+    input.placeholder = placeholder;
     input.setAttribute("aria-label", labelText);
     input.dataset.focusKey = key;
     input.addEventListener("input", () => {
       this.state = { ...this.state, [draftKey]: input.value };
-      this.debouncer(stateKey).schedule(() => this.publishTextFilter(stateKey, draftKey));
+      this.debouncer(stateKey).schedule(() => this.publishTextFilter(stateKey));
     }, { signal: this.renderAbort.signal });
     input.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
       event.preventDefault();
-      this.debouncer(stateKey).flush(() => this.publishTextFilter(stateKey, draftKey));
+      this.debouncer(stateKey).flush(() => this.publishTextFilter(stateKey));
     }, { signal: this.renderAbort.signal });
     return input;
   }
 
-  private publishTextFilter(stateKey: CreatureCatalogTextFilter, draftKey: CreatureCatalogDraftKey): void {
+  private publishTextFilter(stateKey: CreatureCatalogTextFilter): void {
+    const draftKey = creatureCatalogDraftKeyForFilter(stateKey);
     this.change({ [stateKey]: this.state[draftKey]?.trim() || undefined, page: 0, resultsScroll: 0 });
   }
 
