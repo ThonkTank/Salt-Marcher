@@ -127,6 +127,9 @@ sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
 
 ### CE-01-I02 – View-Grundgerüst und Kernfluss
 
+Status: umgesetzt; Typprüfung, 225 Tests und Build bestanden. Unabhängiger
+Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
+
 - View-Type, Registrierung und Command-Fokus ergänzen.
 - Suche, CR/Typ/Größe, Sortierung, Paging, Auswahl und vollständigen Statblock
   mit stabiler View-Session implementieren.
@@ -175,6 +178,6 @@ sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-I02`: eigener `ItemView`, Command-Fokus, Kernsuche/-filter,
-Sortierung, Paging, Auswahl und vollständiger read-only Statblock. Keine
-CE-01- oder Encounter-Fachfreigabe behaupten.
+`CE-01-I03`: verbleibende Filter, einzelne Chips/Reset, 200-ms-Debounce mit
+Stale-Schutz, responsive/A11y-Vervollständigung und fokussierte DOM-Host-
+Prüfungen. Keine CE-01- oder Encounter-Fachfreigabe behaupten.

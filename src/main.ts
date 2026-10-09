@@ -18,7 +18,7 @@ import { Session } from "./session";
 import { FileConflict, MapRepository } from "./persistence";
 import { VaultStore, VaultAssetStore, VaultObjectTagStorage, LocalBinarySource } from "./vault-stores";
 import { AssetPackagesModal, CreateDungeonModal } from "./ui/map-modals";
-import { VIEW, PENDING_VIEW, PLAY_VIEW, ROOM_VIEW } from "./ui/view-types";
+import { VIEW, PENDING_VIEW, PLAY_VIEW, ROOM_VIEW, CREATURE_CATALOG_VIEW } from "./ui/view-types";
 import { DungeonMapCard, DungeonEmbed, DungeonPlayView, DungeonRoomView, PendingDungeonView, DungeonView } from "./ui/views";
 import { DungeonEditor } from "./editor";
 import { projectedRoomDocuments, roomSectionForAnchor } from "./room-projection";
@@ -47,6 +47,7 @@ import { emptyObjectTags, mergeObjectTags,
 import { ObjectTagsModal } from "./ui/object-tags-modal";
 import { newSizePresetSize } from "./features/verwaltung/new-map-size";
 import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loader";
+import { CreatureCatalogView } from "./features/catalog/creature-catalog-view";
 
 export interface OpenMap {
   session: Session;
@@ -248,6 +249,7 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(PENDING_VIEW, (leaf) => new PendingDungeonView(leaf, this));
     this.registerView(PLAY_VIEW, (leaf) => new DungeonPlayView(leaf, this));
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
+    this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });
@@ -270,6 +272,11 @@ export default class DungeonPlugin extends Plugin {
       id: "manage-dungeon-assets",
       name: "Assetpakete verwalten",
       callback: () => this.openAssets(),
+    });
+    this.addCommand({
+      id: "open-creature-catalog",
+      name: "Monsterkatalog öffnen",
+      callback: () => void this.openCreatureCatalog(),
     });
     this.addCommand({
       id: "open-dungeon-play-view",
@@ -409,6 +416,13 @@ export default class DungeonPlugin extends Plugin {
       active: true,
       state: { path, roomId },
     });
+    this.app.workspace.revealLeaf(leaf);
+  }
+  async openCreatureCatalog(): Promise<void> {
+    const [existing, ...duplicates] = this.app.workspace.getLeavesOfType(CREATURE_CATALOG_VIEW);
+    for (const duplicate of duplicates) duplicate.detach();
+    const leaf = existing ?? this.app.workspace.getLeaf("tab");
+    if (!existing) await leaf.setViewState({ type: CREATURE_CATALOG_VIEW, active: true });
     this.app.workspace.revealLeaf(leaf);
   }
   async openRoomKey(path: string, roomId: string, sectionId?: string, anchor?: string): Promise<void> {

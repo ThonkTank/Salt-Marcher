@@ -1,8 +1,8 @@
 {
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T11:55:00Z",
-  "state": "ce01_i01_reviewed_i02_next",
+    "updated": "2026-10-09T13:36:06Z",
+  "state": "ce01_i02_implemented_i03_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -165,7 +165,28 @@
       "review": "Passed after product-bundle/gate regressions, honest dirty provenance and all runtime capability guards were added.",
       "limits": "No ItemView or host acceptance yet; CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
     },
-    "next": "CE-01-I02 implements the dedicated ItemView and core catalog flow; no CE-01 or encounter acceptance approval."
+    "ce01I02": {
+      "run": "CE-01-I02",
+      "state": "completed_checked_review_pending",
+      "files": [
+        "src/features/catalog/creature-catalog-view.ts",
+        "src/features/catalog/creature-catalog-view-state.ts",
+        "src/main.ts",
+        "src/ui/view-types.ts",
+        "styles.css",
+        "tests/core/creature-catalog-view-state.test.ts"
+      ],
+      "result": "A unique Obsidian ItemView is command-accessible and retains its serializable catalog session. It exposes core name/CR/type/size filters, deterministic sortable and pageable results, mouse/keyboard selection, complete read-only statblocks, direct license notice and explicit loading/error/retry states.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 225, "failed": 0},
+        "build": "passed",
+        "mainJsGrowthBytes": 159355,
+        "mainJsGrowthLimitBytes": 180000
+      },
+      "limits": "Implementation candidate only. Advanced filters/chips/reset/debounce, DOM-host and real Obsidian acceptance, independent review and all Encounter behavior remain open; CE-AC-01/02/14 are not approved."
+    },
+    "next": "CE-01-I03 completes advanced filters, removable chips/reset, debounced stale-safe querying, responsive/A11y behavior and focused DOM-host coverage; no CE-01 or encounter acceptance approval."
   },
   "cityPlans": {
     "schemaVersion": 1,
