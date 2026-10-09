@@ -48,6 +48,7 @@ import { ObjectTagsModal } from "./ui/object-tags-modal";
 import { newSizePresetSize } from "./features/verwaltung/new-map-size";
 import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loader";
 import { CreatureCatalogView } from "./features/catalog/creature-catalog-view";
+import { createUniqueCatalogOpener } from "./features/catalog/creature-catalog-view-content";
 
 export interface OpenMap {
   session: Session;
@@ -147,6 +148,7 @@ export default class DungeonPlugin extends Plugin {
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
   readonly creatureCatalog = new CreatureCatalogLoader();
+  private creatureCatalogOpen?: () => Promise<void>;
   private objectTagsBrowserMode: "default" | "override" = "default";
   private assetLibrary = new PackAssetLibrary();
   private nativePathCatalog?: NativePathCatalog;
@@ -419,11 +421,9 @@ export default class DungeonPlugin extends Plugin {
     this.app.workspace.revealLeaf(leaf);
   }
   async openCreatureCatalog(): Promise<void> {
-    const [existing, ...duplicates] = this.app.workspace.getLeavesOfType(CREATURE_CATALOG_VIEW);
-    for (const duplicate of duplicates) duplicate.detach();
-    const leaf = existing ?? this.app.workspace.getLeaf("tab");
-    if (!existing) await leaf.setViewState({ type: CREATURE_CATALOG_VIEW, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    if (!this.creatureCatalogOpen)
+      this.creatureCatalogOpen = createUniqueCatalogOpener(this.app.workspace, CREATURE_CATALOG_VIEW);
+    await this.creatureCatalogOpen();
   }
   async openRoomKey(path: string, roomId: string, sectionId?: string, anchor?: string): Promise<void> {
     for (const type of [VIEW, PENDING_VIEW])

@@ -12,7 +12,7 @@ interface DomWindow {
   readonly HTMLInputElement: { readonly prototype: HTMLInputElement };
 }
 
-async function openedView(): Promise<{
+async function openedView(value: unknown = bundledSrd): Promise<{
   readonly view: CreatureCatalogViewContent;
   readonly root: HTMLElement;
   readonly window: DomWindow;
@@ -29,7 +29,7 @@ async function openedView(): Promise<{
   if (!("reportValidity" in window.HTMLInputElement.prototype))
     Object.defineProperty(window.HTMLInputElement.prototype, "reportValidity", { value: () => true });
   const root = document.querySelector<HTMLElement>("#catalog")!;
-  const catalog = new CreatureCatalog(bundledSrd);
+  const catalog = new CreatureCatalog(value);
   const view = new CreatureCatalogViewContent(root, {
     notice: SRD_5_1_NOTICE,
     load: async () => catalog,
@@ -144,6 +144,21 @@ test("catalog DOM preserves an empty draft and commits pending input on close", 
   const state = view.getState();
   assert.equal(state.text, "aboleth");
   assert.equal(state.textDraft, "aboleth");
+});
+
+test("catalog keyboard focus tolerates parser-accepted adversarial creature IDs", async () => {
+  const raw = JSON.parse(JSON.stringify(bundledSrd)) as { creatures: { id: string }[] };
+  const adversarialId = 'bad"]';
+  raw.creatures[0]!.id = adversarialId;
+  const { view, root, window } = await openedView(raw);
+  const rows = [...root.querySelectorAll<HTMLTableRowElement>("tbody tr")];
+  const targetIndex = rows.findIndex((row) => row.dataset.focusKey === `row-${adversarialId}`);
+  assert.notEqual(targetIndex, -1);
+  const sourceIndex = targetIndex === 0 ? 1 : targetIndex - 1;
+  const source = rows[sourceIndex]!;
+  source.focus();
+  assert.doesNotThrow(() => source.dispatchEvent(key(window, targetIndex === 0 ? "ArrowUp" : "ArrowDown")));
+  await view.onClose();
 });
 
 test("catalog CSS declares its own responsive container and descendant breakpoints", () => {

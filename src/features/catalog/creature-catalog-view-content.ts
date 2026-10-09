@@ -41,6 +41,37 @@ export interface CreatureCatalogViewPort {
   load(): Promise<CreatureCatalog>;
 }
 
+interface UniqueCatalogLeaf {
+  setViewState(state: { type: string; active: boolean }): Promise<void>;
+  detach(): void;
+}
+
+interface UniqueCatalogWorkspace<Leaf extends UniqueCatalogLeaf> {
+  getLeavesOfType(viewType: string): readonly Leaf[];
+  getLeaf(kind: "tab"): Leaf;
+  revealLeaf(leaf: Leaf): void;
+}
+
+/** Serialize creation and collapse pre-existing duplicates to one canonical leaf. */
+export function createUniqueCatalogOpener<Leaf extends UniqueCatalogLeaf>(
+  workspace: UniqueCatalogWorkspace<Leaf>,
+  viewType: string,
+): () => Promise<void> {
+  let opening: Promise<void> | undefined;
+  return () => {
+    if (!opening) {
+      opening = (async () => {
+        const [existing, ...duplicates] = workspace.getLeavesOfType(viewType);
+        for (const duplicate of duplicates) duplicate.detach();
+        const leaf = existing ?? workspace.getLeaf("tab");
+        if (!existing) await leaf.setViewState({ type: viewType, active: true });
+        workspace.revealLeaf(leaf);
+      })().finally(() => { opening = undefined; });
+    }
+    return opening;
+  };
+}
+
 export class CreatureCatalogViewContent {
   private catalog?: CreatureCatalog;
   private page?: CreatureCatalogPage;
@@ -452,8 +483,7 @@ export class CreatureCatalogViewContent {
     const target = adjacentCreatureId(this.page?.rows ?? [], id, delta > 0 ? 1 : -1);
     if (!target) return;
     this.change({ selectedId: target, detailScroll: 0 });
-    this.contentEl.querySelector<HTMLElement>(`[data-focus-key="row-${target}"]`)
-      ?.focus({ preventScroll: true });
+    this.focusControl(`row-${target}`);
   }
 
   private sort(sort: CreatureCatalogSort): void {
