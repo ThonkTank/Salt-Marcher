@@ -130624,10 +130624,13 @@
         "original": {
           "sequence": "Hauptleiste → Undo",
           "options": null,
-          "effect": null,
+          "effect": "Bei einem per Building Tool gezeichneten Rechteckraum entfernt Hauptleisten-Undo den sichtbaren Raum; Redo wird verfügbar. Ein direkter QA-Ablauf, keine allgemeine Befehlsregel.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/native-h01-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/05-after-draw.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/06-after-undo.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Undo“ nimmt den letzten Kartenbefehl zurück.",
@@ -130666,7 +130669,7 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
           ],
-          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Dungeondraft-Originalwirkung, weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Die Dungeondraft-Originalwirkung ist nur für einen Rechteckbefehl direkt belegt; weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -130679,10 +130682,13 @@
         "original": {
           "sequence": "Hauptleiste → Redo",
           "options": null,
-          "effect": null,
+          "effect": "Hauptleisten-Redo stellt den zuvor per Undo entfernten Rechteckraum sichtbar wieder her; die Holztextur wird neu erzeugt. Ein direkter QA-Ablauf.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/native-h01-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/06-after-undo.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/07-after-redo.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Redo“ stellt den zurückgenommenen Kartenbefehl wieder her.",
@@ -130721,7 +130727,7 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
           ],
-          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Dungeondraft-Originalwirkung, weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Die Dungeondraft-Originalwirkung ist nur für einen Rechteckbefehl direkt belegt; weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
