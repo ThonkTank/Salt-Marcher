@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I27-I; 64 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I28-I; 64 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -55,7 +55,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0039 | CITY-07 | Bildeffekte | control_observed_only |
 | CO-FTG-0041 | CITY-07 | 3D-Darstellung und Street View | perspective_entry_and_return_observed |
 | CO-FTG-0042 | CITY-07 | Ruhetag manuell überschreiben | control_observed_only |
-| CO-WAT-0002 | CITY-07 | Dächer und Vierteldarstellung | partial |
+| CO-WAT-0002 | CITY-07 | Dächer und Vierteldarstellung | Gable/Block-Sichtwirkung; keine Vierteltopologie-/Einzelbearbeitungs-/Persistenzabnahme, Hip/Complex/Hidden ungeprüft |
 | CO-WAT-0004 | CITY-07 | Wälder und Stadtumgebung | Bäume0→13 Punkte; Waldflag off/on/off mit sichtbaren Außenflächen, tatsächliches JSON bytegleich299585B/all14; Konturbearbeitung/Persistenz offen |
 | CO-WAT-0009 | CITY-07 | Farb-/Stilvorgaben | vivid_apply_color_file_geometry_equal_tint_partial |
 | CO-COK-0005 | CITY-08 | Exportbereich, Raster und Vorlagen | keine gesonderte Wirkungsprobe; documentation |

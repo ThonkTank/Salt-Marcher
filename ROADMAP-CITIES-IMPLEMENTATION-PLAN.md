@@ -467,3 +467,5 @@ CITY-00-I28-I Ergebnis: Roofs Plain→Gable→Plain zeigt zusätzliche Dachfirst
 CITY-00-I28-R Start 2026-10-09T15:03:37.480848+00:00; Neun Rawhashes und sichtbare Wirkung04/07 geprüft; Controls08 bestätigen Lots/Plain/Offset und unveränderte Raised/Solids. Blockdarstellung ist keine zusätzliche geographische Viertelbearbeitung. Andere Vorgaben und Save/Export ausdrücklich ungeprüft. Aufräumbefund: CO-WAT-0002-Snapshot noch unspezifisch partial.
 
 CITY-00-I28-CP Start 2026-10-09T15:03:50.802170+00:00; Plan: Snapshot anhand acceptance um Gable-/Block-Teilwirkung ergänzen; Blockdarstellung von eigenständiger Vierteltopologie trennen. Historische I03-/I19-Belege erhalten, sämtliche Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR separat.
+
+CITY-00-I28-CI Start 2026-10-09T15:04:03.424384+00:00; Snapshot auf I28, Gable-/Block-Sichtwirkung und offene weitere Vorgaben/Einzelbearbeitung/Persistenz aktualisiert; keine Rawdatei oder fremde Wurzel verändert.
