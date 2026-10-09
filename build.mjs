@@ -116,6 +116,20 @@ if (test) await build({
     },
   }],
 });
+if (test) await build({
+  entryPoints: ["tests/atlas-copy-modal.entry.ts"],
+  outfile: ".build/atlas-copy-modal.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022",
+  sourcemap: true, logLevel: "info",
+  plugins: [{
+    name: "obsidian-atlas-modal-test-stub",
+    setup(builder) {
+      builder.onResolve({ filter: /^obsidian$/ }, () => ({
+        path: new URL("./tests/fixtures/obsidian-atlas-modal-stub.ts", import.meta.url).pathname,
+      }));
+    },
+  }],
+});
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);

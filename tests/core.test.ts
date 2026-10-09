@@ -24,6 +24,7 @@ import "./core/atlas-foundation.test";
 import "./core/atlas-terrain.test";
 import "./core/atlas-file-transaction.test";
 import "./core/atlas-repository.test";
+import "./core/atlas-copy-recovery.test";
 import "./core/city-codec.test";
 import "./core/city-commands.test";
 import "./core/city-edit.test";
