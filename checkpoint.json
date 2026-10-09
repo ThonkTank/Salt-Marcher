@@ -3614,17 +3614,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I11-I",
-      "kind": "reference_effect_probe",
-      "startedAt": "2026-10-09T12:21:16.277352+00:00",
-      "focus": "Originalstraßenwirkung und temporäre Persistenz prüfen",
-      "state": "completed",
-      "result": "Eigene Road-Strecke gezeichnet, gespeichert und frisch geladen; nur diese Strecke entfernt und zweite Neuöffnung geprüft. Hintergrundvariation verhindert Ganzbildidentitätsbehauptung"
-    },
-    "nextRun": {
       "id": "CITY-00-I11-R",
       "kind": "requirements_review",
-      "focus": "Straßenprobe gegen Plan, Befundumfang und Pflichtzuordnung prüfen"
+      "startedAt": "2026-10-09T12:22:05.222112+00:00",
+      "focus": "Originalstraßenwirkung und Zuordnung prüfen",
+      "state": "completed",
+      "result": "Originalwirkung begrenzt belegt; R01 Quellzugang und R02 fehlende direkte Bearbeitungszuordnung bereinigen; keine Produktfreigabe"
+    },
+    "nextRun": {
+      "id": "CITY-00-I11-CP",
+      "kind": "cleanup_planning",
+      "focus": "Quell-/Verfügbarkeits-/CTY-Metadaten planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
