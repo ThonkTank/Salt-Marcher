@@ -4029,17 +4029,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I30-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:14:08.660483+00:00",
-      "focus": "Processing-Belege R",
-      "state": "completed",
-      "result": "Zehn Rawhashes, getrennte Controls03/05/07 und Rücksetzung09 geprüft. Sichtwirkung04/06/08 belegt; keine Processing-Dateigeometrie, Höheneinheiten, Extrusion oder Persistenz behauptet. Aufräumbefund: Snapshot führt Processing/Raised/Solids weiterhin pauschal offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I30-CP",
       "kind": "cleanup_planning",
-      "focus": "Belege und Snapshot CP"
+      "startedAt": "2026-10-09T15:14:35.119600+00:00",
+      "focus": "Processing-Belege CP",
+      "state": "completed",
+      "result": "Plan: CO-WAT-0002-Snapshot um drei visuelle Teilwirkungen ergänzen; Dateigeometrie/IDs/Persistenz weiterhin offen. Complex-Beobachtung und alle historischen Belege erhalten;10 Rawhashes, Verweisziele und64/24 offene Pflichten prüfen. CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I30-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Belege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
