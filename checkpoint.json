@@ -3604,5 +3604,23 @@
     "files": ["package.json", "tests/canvas-of-kings-session.test.mjs"],
     "verification": {"targeted": {"passed": 5, "failed": 0}, "npmTest": {"passed": 206, "failed": 0}, "check": "passed", "build": "passed"},
     "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
+  },
+  "gmProductTesting": {
+    "date": "2026-10-09",
+    "state": "planned_waiting_for_product_ui_access",
+    "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+    "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
+    "currentRun": "GM-UX-01",
+    "executedUiRuns": 0,
+    "observedFindings": [],
+    "blocker": "Kein bedienbarer Obsidian-Host in diesem Workspace; Laptopzugang und exklusiver GUI-Slot sind abzustimmen.",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080090197",
+    "assignedPrerequisite": {
+      "id": "GM-UX-ACCESS",
+      "owner": "Lokaler Hex-/Host-Kollege in Abstimmung mit Stadt-Kollegen",
+      "state": "requested_not_confirmed"
+    },
+    "next": "Produktslot und Zugang bestätigen, danach Vorbereitung → improvisierte Spielsitzung → Save/Neuöffnung als zusammenhängenden UI-Lauf durchführen.",
+    "automation": "Bestehende stündliche Automation auf GM-Produkttests und Nacharbeitskoordination umgestellt."
   }
 }
