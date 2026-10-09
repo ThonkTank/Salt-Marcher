@@ -84,31 +84,17 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-H01",
-      "kind": "real_host_acceptance",
-      "state": "automated_scope_completed_checked_reviewed",
-      "focus": "Verify the catalog command, unique leaf, retained state, responsive layouts, fresh-process restore and damaged-payload retry in isolated real Obsidian processes",
-      "result": "Three isolated real Obsidian runs on one exact clean SHA passed edit, restart and damaged-payload scenarios. Host execution exposed and repaired unsafe browser timer invocation and loss of explicit default sort state after restore. Physical keyboard/mouse, screenreader and other-platform acceptance remain open.",
-      "plan": "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
-      "verification": {
-        "check": "passed",
-        "tests": {"passed": 242, "failed": 0},
-        "build": "passed",
-        "sourceRevision": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
-        "mainBytes": 1339676,
-        "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
-        "mainJsGrowthBytes": 150306,
-        "runs": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit"
-        ]
+      "id": "CE-01-C01-P01",
+      "kind": "cleanup_plan",
+      "state": "completed_static_validation_review_pending",
+      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
+      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
+      "basis": {
+        "reviewedProductCommit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
+        "reviewedMainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
+        "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
       },
-      "review": {
-        "state": "passed_automated_scope",
-        "findings": "Independent read-only review confirmed exact clean build identity, UI/layout evidence, restart/default state, fault recovery and three distinct normally exited Obsidian processes."
-      },
-      "limits": "Automated input is not physical keyboard/mouse evidence. Physical input, screenreader and non-Linux platform acceptance remain open; CE-01 is not fully approved."
+      "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -249,8 +235,8 @@
     "nextRun": {
       "id": "CE-01-C01",
       "kind": "cleanup",
-      "plan": "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
-      "focus": "Reconcile the reviewed H01 evidence and retained host harness without closing physical, screenreader or platform gates; then prepare CE-02 while physical input awaits user execution"
+      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
+      "focus": "Review this bounded cleanup plan, then centralize restore defaults and draft hydration, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
     }
   },
   "repositoryWorkflow": {
@@ -4024,17 +4010,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I27-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T14:59:46.504135+00:00",
-      "focus": "Forest-Snapshot und Belegschutz prüfen",
+      "id": "CITY-00-I28-R",
+      "kind": "reference_review",
+      "startedAt": "2026-10-09T15:03:37.480848+00:00",
+      "focus": "Dach-/Blockbelege R",
       "state": "completed",
-      "result": "Aufräumumfang geprüft ohne Restbefund; Waldkonturbearbeitung/Persistenz sowie Produktparität offen."
+      "result": "Neun Rawhashes und sichtbare Wirkung04/07 geprüft; Controls08 bestätigen Lots/Plain/Offset und unveränderte Raised/Solids. Blockdarstellung ist keine zusätzliche geographische Viertelbearbeitung. Andere Vorgaben und Save/Export ausdrücklich ungeprüft. Aufräumbefund: CO-WAT-0002-Snapshot noch unspezifisch partial."
     },
     "nextRun": {
-      "id": "CITY-00-I28-P",
-      "kind": "reference_planning",
-      "focus": "Dächer und Vierteldarstellung konkret planen; HEX-05-Übergabe verfolgen"
+      "id": "CITY-00-I28-CP",
+      "kind": "cleanup_planning",
+      "focus": "Snapshotkorrektur planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

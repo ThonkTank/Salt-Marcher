@@ -195,10 +195,9 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-H01`: echte Obsidian-Abnahme des nach `CE-01-R01`, `CE-01-N01` und
-`CE-01-R02` statisch bestandenen Kandidaten. Command-Palette, eindeutiger
-Fokus, Filter/Detailzustand, Schließen/Neuöffnen, frischer Prozess,
-beschädigtes Asset, physische Tastatur und 900×650/1150×700 bleiben bis zu
-diesem Lauf offen. Erst nach seinem Review folgt der getrennte
-`CE-01-C01`-Aufräumlauf; keine Fach- oder Hostfreigabe aus Tests allein
-ableiten.
+`CE-01-H01` hat seinen automatisierten echten Obsidian-Umfang auf dem exakten
+sauberen Produktstand `aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05`
+unabhängig reviewt bestanden. Physische Tastatur/Maus, Screenreader und weitere
+Plattformen bleiben offen. Als Nächstes folgt der getrennte
+[`CE-01-C01`-Aufräumlauf](ROADMAP-SALTMARCHER-CE01-C01-PLAN.md); keine
+vollständige Fachfreigabe aus dem automatisierten Hostumfang ableiten.
