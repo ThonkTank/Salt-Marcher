@@ -40,3 +40,5 @@ R01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag
 Diese Punkte sind verbindliche Umsetzung-/Abnahmepflichten des Anschlusses, keine bereits existierenden Shared-APIs. R02 kann die Vollständigkeit dieses Vorschlags prüfen; formale gemeinsame Vertragsfreigabe und sichtbare Produktabnahme bleiben separat offen.
 
 N01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
+
+R02-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.

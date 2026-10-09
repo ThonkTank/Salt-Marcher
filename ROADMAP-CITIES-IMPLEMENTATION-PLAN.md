@@ -1027,3 +1027,5 @@ CITY-01-INTEGRATION-N01-CLEAN-R01 Start 2026-10-09T19:28:43.984353+00:00; Planli
 CITY-01-INTEGRATION-R02 Start 2026-10-09T19:29:00.630020+00:00; R02: alle drei Befunde im Vorschlag vollständig adressiert. Vertrag, Implementierung und Hostabnahme bleiben offen.
 
 CITY-01-INTEGRATION-R02-CLEAN-P01 Start 2026-10-09T19:29:03.471755+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
