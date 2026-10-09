@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:29:53.754275+00:00",
+    "updated": "2026-10-09T12:40:27.142161+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2160,13 +2160,14 @@
         "product": "Fantasy Town Generator",
         "feature": "Einstellungen und Namenslisten",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:29:53.754275+00:00",
+        "observedAt": "2026-10-09T12:40:27.142161+00:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "temporary_load_access_confirmed_save_access_unconfirmed",
         "observationKind": "direct_form_state_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json"
         ],
         "task": "Vorgaben speichern und Namensliste verwenden",
         "phase": "CITY-02",
@@ -2183,27 +2184,45 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Formularparameter/Entwurfsauswahl erfasst; erzeugte Karten-/Namenswirkung, Settings-Datei und eigene Umsetzung/Host/Bedienung weiterhin offen.",
+        "gap": "Namensauswahl direkt teilbelegt; Load settings zugänglich/leere Liste, dokumentiertes Save settings im geprüften temporären Formular nicht vorhanden. Ursache und Speicher-/Datei-/Teilladeeffekt sowie eigene Umsetzung/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I12-I",
-          "state": "name_set_selection_control_observed",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
-          "sourceScope": "own_original_create_draft_without_generation",
-          "observation": "Custom race/Human editor:12name sets, Generic+OldGerman selected; no generated names or settings file",
+          "run": "CITY-00-I13-I",
+          "state": "load_empty_save_access_unconfirmed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+          "sourceScope": "Existing own Hamlet; create draft only, no generation",
+          "observation": "Basic defaults Medieval Europe and Generic fantasy restored after prior reset; Load saved settings opens empty list and enabled upload from file button; All settings folder overview and General section expose no Save settings button in this temporary form; Existing town settings menu offers Render settings and Toggle UI elements; Closed own draft; CITY00 Hamlet QA,250m,Satellite,Districts,11:00 Monday preserved",
           "remaining": [
-            "No generated American/Ringed result; no preview observed on examined layout pages",
-            "No saved settings file, names-output or reload of draft parameters tested",
-            "Control labels/hints do not prove wall/placement/material/district generation effects",
-            "Angle numeric values have no explicit unit in displayed labels",
-            "Prior settlement export remains unverified; no third download attempt",
-            "No own product/host/UX acceptance"
+            "No accessible save control in examined temporary form; cause/account relation unknown",
+            "No named settings saved, downloaded or imported; no persistence/partial-merge effect proved",
+            "No file chooser opened; stopped settlement-export hypothesis not retried",
+            "No generation, own product, host or UX acceptance"
           ]
         },
         "implementationPhases": [
           "CITY-02",
           "CITY-06"
+        ],
+        "originalProbes": [
+          {
+            "run": "CITY-00-I12-I",
+            "state": "name_set_selection_control_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+            "sourceScope": "own_original_create_draft_without_generation",
+            "observation": "Custom race/Human editor:12name sets, Generic+OldGerman selected; no generated names or settings file",
+            "remaining": [
+              "No generated American/Ringed result; no preview observed on examined layout pages",
+              "No saved settings file, names-output or reload of draft parameters tested",
+              "Control labels/hints do not prove wall/placement/material/district generation effects",
+              "Angle numeric values have no explicit unit in displayed labels",
+              "Prior settlement export remains unverified; no third download attempt",
+              "No own product/host/UX acceptance"
+            ]
+          }
+        ],
+        "documentationSources": [
+          "https://docs.fantasytowngenerator.com/createSettlement/save_settings/"
         ]
       },
       {
@@ -3396,7 +3415,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I12-I",
+      "run": "CITY-00-I13-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3419,7 +3438,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json"
       ],
       "resultReferences": [
         {
