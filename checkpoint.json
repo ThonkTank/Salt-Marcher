@@ -1617,7 +1617,7 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "original_host_render_and_ui_candidates_recorded_review_open",
+      "state": "per_entity_shadow_review_passed_atlas_options_and_phase1_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
@@ -1627,8 +1627,11 @@
       "hostBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
       "hostUiReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md",
       "hostUiAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/ui-audit.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+      "reviewBuildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
-      "next": "Unabhängigen DD-006.03/.04-Review auf integriertem Endbuild durchführen; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. New-Map-Bedienung ist historisch."
+      "next": "DD-006.03/.04 im per-Element-/UI-/Save-Scope reviewt; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. Danach verbleibende Phase-1-Datei-/Ansichtsfälle; Gesamttor offen."
     },
     "dd001002Plan": {
       "date": "2026-10-09",
@@ -1652,7 +1655,7 @@
       "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
       "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
       "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json",
-      "next": "DD-001/002 und weitere New-Map-Startfälle aus dem Paritätstor genommen; DD-006.03/.04 und verbleibende Phase-1-Fälle nach Atlasnutzen prüfen.",
+      "next": "DD-001/002 und weitere New-Map-Startfälle aus dem Paritätstor genommen; DD-006.03/.04 im per-Element-Scope reviewt. Verbleibende Phase-1-Fälle nach Atlasnutzen prüfen.",
       "multilevelOriginal": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
       "multilevelCandidate": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
       "multilevelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
@@ -2156,7 +2159,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize, das Phase-1-Tor bleibt offen. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes DD-006.03/.04 und übertragbare Ansichts-/Dateifunktionen für den Atlas prüfen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt; DD-006.03/.04 im per-Element-Render-/UI-/Save-Scope. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes übertragbare Ansichts-/Dateifunktionen und globale Atlasoptionen nach Nutzerzweck prüfen; Phase-1-Gesamttor offen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -3851,17 +3854,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I20-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T13:47:20.089912+00:00",
-      "focus": "Original-History vor Save gesondert planen",
+      "id": "CITY-00-I20-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T13:57:24.991800+00:00",
+      "focus": "Scope, Rohschutz und Pflichtstatus prüfen",
       "state": "completed",
-      "result": "Kollegenfreigabe und vier verschwundene Prozessidentitäten geprüft; native Pre-Save-Folge auf geschützter eigener Kartenkopie geplant."
+      "result": "Aufräumreview bestanden; Original-History weiter offen, beide Hypothesen gestoppt, Slot zurückgegeben."
     },
     "nextRun": {
-      "id": "CITY-00-I20-I",
-      "kind": "native_history_probe",
-      "focus": "Straßenpunkt ändern, Undo/Redo vor Save direkt prüfen"
+      "id": "CITY-00-I21-P",
+      "kind": "reference_planning",
+      "focus": "HEX-05-Übergabe prüfen; nächste noch offene zugängliche Originalwirkung planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
