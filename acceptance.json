@@ -89873,6 +89873,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "New Map mit 35×20 und vier eingebauten Vorlagen geöffnet; Host-Befehl öffnet den Dialog.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91240,6 +91254,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Vier eingebaute Vorlagen mit direkt gemessenen Maßen; eigene 12×9-Vorlage erneut wählbar.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91294,6 +91322,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Vorlagenwahl und eigene 12×9-Vorlage ändern Breite; der Host-Entwurf und seine gespeicherte V4-Karte übernehmen 12.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91348,6 +91390,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Vorlagenwahl und eigene 12×9-Vorlage ändern Höhe; der Host-Entwurf und seine gespeicherte V4-Karte übernehmen 9.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91700,7 +91756,21 @@
             "reopen": "pass"
           }
         },
-        "verifiedScope": "Neue 8×8-Karte bis zum ersten Save ohne Kartendatei; Licht und derselbe Undo/Redo-Schritt vor und nach Save, bytegleich gespeicherte Datei bei History-Aktionen und korrektes frisches Öffnen."
+        "verifiedScope": "Neue 8×8-Karte bis zum ersten Save ohne Kartendatei; Licht und derselbe Undo/Redo-Schritt vor und nach Save, bytegleich gespeicherte Datei bei History-Aktionen und korrektes frisches Öffnen.",
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Host-Entwurf wird erst mit Speichern zur V4-Datei; der bestehende direkte Originalbeleg bleibt maßgeblich.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        }
       },
       {
         "id": "DD-001.05",
@@ -91772,7 +91842,21 @@
             "reopen": "not_applicable"
           }
         },
-        "verifiedScope": "Cancel im Original, Escape im Host als gleichwertiger Abbruch; keine Kartendatei, Ausgang 35×20 beim erneuten Öffnen."
+        "verifiedScope": "Cancel im Original, Escape im Host als gleichwertiger Abbruch; keine Kartendatei, Ausgang 35×20 beim erneuten Öffnen.",
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Cancel schließt New Map im Original und Host; der Host erzeugt dabei keine Karte.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        }
       },
       {
         "id": "DD-002.02",
@@ -91826,6 +91910,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Eigener New-Template-Dialog übernimmt den Namen QA-Phase1 zusammen mit 12×9.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91880,6 +91978,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Eigener New-Template-Dialog übernimmt Breite 12 und stellt sie nach erneuter Auswahl wieder her.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -91934,6 +92046,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Eigener New-Template-Dialog übernimmt Höhe 9 und stellt sie nach erneuter Auswahl wieder her.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -92005,7 +92131,21 @@
             "reopen": "not_applicable"
           }
         },
-        "verifiedScope": "Benannte 8×8-Vorlage; unmittelbare Maßanzeige nach Merken/Accept im selben Prozess. Allgemeine Vorlagenpersistenz separat offen."
+        "verifiedScope": "Benannte 8×8-Vorlage; unmittelbare Maßanzeige nach Merken/Accept im selben Prozess. Allgemeine Vorlagenpersistenz separat offen.",
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Accept übernimmt QA-Phase1 12×9 unmittelbar in New Map.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        }
       },
       {
         "id": "DD-002.06",
@@ -92059,6 +92199,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Cancel verwirft den untergeordneten Dialog und erhält Auswahl und 48×27 in New Map.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -105842,6 +105996,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Plus öffnet einen eigenen Vorlagendialog mit leeren Namen und 8×8.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -106166,6 +106334,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "X schließt New Map ohne Kartenänderung; erneutes Öffnen zeigt 35×20.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -106401,6 +106583,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "X verwirft den untergeordneten Dialog ohne eigene Vorlage.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
         }
       },
       {
@@ -106959,7 +107155,21 @@
             "reopen": "pass"
           }
         },
-        "verifiedScope": "Entfernen der QA-Vorlage bei zuvor angezeigten 12×8; Vorlagenliste danach ohne Eintrag, Maße erhalten."
+        "verifiedScope": "Entfernen der QA-Vorlage bei zuvor angezeigten 12×8; Vorlagenliste danach ohne Eintrag, Maße erhalten.",
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Minus entfernt QA-Phase1; die Anzeige springt zu 40\" TV, Maße bleiben zunächst 12×9.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "0a6c0ab44a0a727af7449c5ae1437a508da03180f865f0befe6175f57722c114",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511358966-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        }
       },
       {
         "id": "DD-036.68",

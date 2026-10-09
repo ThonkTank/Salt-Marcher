@@ -1,9 +1,9 @@
-import { App, FileSystemAdapter, Modal, Notice, Setting, type ButtonComponent, type SliderComponent, type ToggleComponent } from "obsidian";
+import { App, FileSystemAdapter, Modal, Notice, Setting, type ButtonComponent, type DropdownComponent, type ExtraButtonComponent, type SliderComponent, type ToggleComponent } from "obsidian";
 import { type ReferenceImage, type Settings } from "../model";
 import { Session } from "../session";
 import { type Prefab } from "../prefabs";
 import { type AssetCatalog } from "../assets";
-import { NEW_MAP_DEFAULT_SIZE, newMapDialogSize } from "../features/verwaltung/new-map-size";
+import { NATIVE_SIZE_PRESETS, NEW_MAP_DEFAULT_SIZE, newMapDialogSize } from "../features/verwaltung/new-map-size";
 import { resizeMap, type MapMargins } from "../commands";
 import { generateLayout, type GeneratorKind } from "../generators";
 import type DungeonPlugin from "../main";
@@ -714,6 +714,47 @@ export class AssetPackagesModal extends Modal {
     }
   }
 }
+class NewSizePresetModal extends Modal {
+  private answer?: (value: { name: string; width: number; height: number } | null) => void;
+  request(): Promise<{ name: string; width: number; height: number } | null> {
+    return new Promise((resolve) => {
+      this.answer = resolve;
+      this.open();
+    });
+  }
+  onOpen(): void {
+    this.setTitle("Neue Größenvorlage");
+    let name = "", width = 8, height = 8;
+    new Setting(this.contentEl).setName("Name")
+      .addText((input) => input.onChange((value) => (name = value)));
+    new Setting(this.contentEl).setName("Breite in Feldern")
+      .addText((input) => input.setValue("8")
+        .onChange((value) => (width = Number(value))));
+    new Setting(this.contentEl).setName("Höhe in Feldern")
+      .addText((input) => input.setValue("8")
+        .onChange((value) => (height = Number(value))));
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Übernehmen").setCta()
+        .onClick(() => {
+          if (!name.trim() || !Number.isFinite(width) || !Number.isFinite(height) ||
+              width <= 0 || height <= 0 || width > 10000 || height > 10000) {
+            new Notice("Bitte einen Namen und gültige Maße eingeben.");
+            return;
+          }
+          this.answer?.({ name: name.trim(), width, height });
+          this.answer = undefined;
+          this.close();
+        }))
+      .addButton((button) => button.setButtonText("Abbrechen")
+        .onClick(() => this.close()));
+  }
+  onClose(): void {
+    this.answer?.(null);
+    this.answer = undefined;
+    this.contentEl.replaceChildren();
+  }
+}
+
 export class CreateDungeonModal extends Modal {
   private generation = 0;
   constructor(
@@ -736,8 +777,7 @@ export class CreateDungeonModal extends Modal {
     let name = "",
       width = size.width,
       height = size.height,
-      presetName = "",
-      selectedPreset = "",
+      selectedPreset: string = NATIVE_SIZE_PRESETS[0].name,
       builtInAssets = catalog.builtIns,
       wallShadows = true,
       objectShadows = true,
@@ -749,41 +789,44 @@ export class CreateDungeonModal extends Modal {
         catalog.packs
           .filter((record) => record.enabled)
           .map((record) => record.metadata.id),
-      ),
-      presets = [...this.plugin.sizePresets()];
+      );
+    let presets = [...NATIVE_SIZE_PRESETS, ...this.plugin.sizePresets()];
     this.contentEl.createEl("p", {
       text: "Neue Karte mit verknüpften Raum-Keys. 1 Feld entspricht 5 Fuß.",
     });
+    let widthInput!: HTMLInputElement, heightInput!: HTMLInputElement;
     new Setting(this.contentEl)
       .setName("Name")
       .addText((t) =>
         t.setPlaceholder("Name des Dungeons").onChange((v) => (name = v)),
       );
-    let widthInput!: HTMLInputElement, heightInput!: HTMLInputElement;
     new Setting(this.contentEl)
       .setName("Breite in Feldern")
-      .addText((t) =>
-        t.setValue(String(width)).onChange((v) => (width = Number(v))),
-      );
-    widthInput = this.contentEl.querySelectorAll<HTMLInputElement>(
-      ".setting-item input",
-    )[1]!;
+      .addText((input) => {
+        widthInput = input.inputEl;
+        input.setValue(String(width)).onChange((value) => (width = Number(value)));
+      });
     new Setting(this.contentEl)
       .setName("Höhe in Feldern")
-      .addText((t) =>
-        t.setValue(String(height)).onChange((v) => (height = Number(v))),
-      );
-    heightInput = this.contentEl.querySelectorAll<HTMLInputElement>(
-      ".setting-item input",
-    )[2]!;
+      .addText((input) => {
+        heightInput = input.inputEl;
+        input.setValue(String(height)).onChange((value) => (height = Number(value)));
+      });
     const presetSetting = new Setting(this.contentEl).setName("Größenvorlage");
+    let presetSelect!: DropdownComponent, removePreset!: ExtraButtonComponent;
+    const refreshPresets = () => {
+      presets = [...NATIVE_SIZE_PRESETS, ...this.plugin.sizePresets()];
+      presetSelect.selectEl.replaceChildren(...presets.map((preset) =>
+        new Option(preset.name, preset.name)));
+      presetSelect.selectEl.value = selectedPreset;
+      removePreset.setDisabled(NATIVE_SIZE_PRESETS.some((preset) =>
+        preset.name === selectedPreset));
+    };
     presetSetting.addDropdown((dropdown) => {
-      dropdown.addOption("", "Freie Größe");
+      presetSelect = dropdown;
       for (const preset of presets)
-        dropdown.addOption(
-          preset.name,
-          preset.name + " (" + preset.width + " × " + preset.height + ")",
-        );
+        dropdown.addOption(preset.name, preset.name);
+      dropdown.setValue(selectedPreset);
       dropdown.onChange((value) => {
         selectedPreset = value;
         const preset = presets.find((candidate) => candidate.name === value);
@@ -792,36 +835,50 @@ export class CreateDungeonModal extends Modal {
         height = preset.height;
         widthInput.value = String(width);
         heightInput.value = String(height);
+        removePreset.setDisabled(NATIVE_SIZE_PRESETS.some((candidate) =>
+          candidate.name === value));
       });
     });
+    presetSetting.addExtraButton((button) => button
+      .setIcon("plus")
+      .setTooltip("Größenvorlage hinzufügen")
+      .onClick(async () => {
+        const created = await new NewSizePresetModal(this.app).request();
+        if (!created) return;
+        if (NATIVE_SIZE_PRESETS.some((preset) =>
+            preset.name.toLocaleLowerCase() === created.name.toLocaleLowerCase())) {
+          new Notice("Der Vorlagenname ist bereits vergeben.");
+          return;
+        }
+        try {
+          await this.plugin.saveSizePreset(created.name, created.width, created.height);
+          selectedPreset = created.name;
+          width = created.width;
+          height = created.height;
+          widthInput.value = String(width);
+          heightInput.value = String(height);
+          refreshPresets();
+        } catch (error) {
+          new Notice(String(error));
+        }
+      }));
     presetSetting.addExtraButton((button) =>
-      button
-        .setIcon("trash-2")
+      (removePreset = button)
+        .setIcon("minus")
         .setTooltip("Gewählte Vorlage löschen")
+        .setDisabled(true)
         .onClick(async () => {
-          if (!selectedPreset) return;
-          await this.plugin.removeSizePreset(selectedPreset);
-          void this.render({ width, height });
-        }),
-    );
-    new Setting(this.contentEl)
-      .setName("Aktuelle Größe als Vorlage")
-      .addText((input) =>
-        input
-          .setPlaceholder("Vorlagenname")
-          .onChange((value) => (presetName = value)),
-      )
-      .addButton((button) =>
-        button.setButtonText("Merken").onClick(async () => {
+          if (!selectedPreset || NATIVE_SIZE_PRESETS.some((preset) =>
+            preset.name === selectedPreset)) return;
           try {
-            await this.plugin.saveSizePreset(presetName, width, height);
-            new Notice("Größenvorlage gespeichert.");
-            void this.render({ width, height });
+            await this.plugin.removeSizePreset(selectedPreset);
+            selectedPreset = NATIVE_SIZE_PRESETS[0].name;
+            refreshPresets();
           } catch (error) {
             new Notice(String(error));
           }
         }),
-      );
+    );
     new Setting(this.contentEl)
       .setName("Eingebaute Grundassets")
       .addToggle((toggle) =>
@@ -888,11 +945,11 @@ export class CreateDungeonModal extends Modal {
               }),
           );
     }
-    new Setting(this.contentEl).addButton((b) =>
-      b
-        .setButtonText("Anlegen")
-        .setCta()
-        .onClick(async () => {
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Abbrechen")
+        .onClick(() => this.close()))
+      .addButton((b) =>
+        b.setButtonText("Anlegen").setCta().onClick(async () => {
           b.setDisabled(true);
           try {
             const size = newMapDialogSize(width, height);
@@ -919,8 +976,7 @@ export class CreateDungeonModal extends Modal {
             new Notice(String(error));
             b.setDisabled(false);
           }
-        }),
-    );
+        }));
   }
   onClose(): void {
     this.generation++;
