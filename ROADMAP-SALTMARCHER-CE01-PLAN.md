@@ -137,7 +137,7 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
-Status: umgesetzt; Typprüfung, 232 Tests, Produktbuild und alle drei
+Status: umgesetzt; Typprüfung, 234 Tests, Produktbuild und alle drei
 Payload-Grenzen bestanden. Der hostneutrale DOM-Test deckt die beiden
 I02-Befunde, 200-ms-Debounce, Stale-Schutz, Tastaturfluss sowie 900×650 und
 1150×700 ab. Unabhängiger Review und echte Obsidian-Host-Abnahme bleiben

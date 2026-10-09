@@ -74,8 +74,11 @@ export class CreatureCatalogView extends ItemView {
       );
     };
     update();
-    if (typeof ResizeObserver !== "function") return;
-    this.resizeObserver = new ResizeObserver(update);
+    const ResizeObserverType =
+      this.contentEl.ownerDocument.defaultView?.ResizeObserver ??
+      globalThis.ResizeObserver;
+    if (typeof ResizeObserverType !== "function") return;
+    this.resizeObserver = new ResizeObserverType(update);
     this.resizeObserver.observe(this.contentEl);
   }
 }

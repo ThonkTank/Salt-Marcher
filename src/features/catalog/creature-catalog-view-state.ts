@@ -218,6 +218,24 @@ export function clearCreatureCatalogFilters(
   };
 }
 
+export function applyCreatureCatalogPendingText(
+  state: CreatureCatalogViewState,
+): CreatureCatalogViewState {
+  if (!state.pendingText) return state;
+  const next: Record<string, unknown> = {
+    ...state,
+    pendingText: undefined,
+    page: 0,
+    resultsScroll: 0,
+  };
+  for (const key of CREATURE_CATALOG_TEXT_FILTERS) {
+    const value = state.pendingText[key];
+    if (value === undefined) continue;
+    next[key] = value.trim() || undefined;
+  }
+  return next as CreatureCatalogViewState;
+}
+
 export function creatureCatalogSortChange(
   state: CreatureCatalogViewState,
   sort: CreatureCatalogSort,

@@ -181,6 +181,38 @@ test("text filters wait 200 ms, Enter flushes immediately and stale queries cann
   assert.doesNotMatch(root.querySelector("tbody")?.textContent ?? "", /Dragon/);
 });
 
+test("restored pending text is applied before the catalog opens", async () => {
+  const catalog = new CreatureCatalog(bundledSrd);
+  const queries: CreatureCatalogQuery[] = [];
+  const source: CreatureCatalogSource = {
+    creatures: catalog.creatures,
+    detail: (id) => catalog.detail(id),
+    search: (query) => {
+      queries.push(query);
+      return catalog.search(query);
+    },
+  };
+  const { controller, root } = fixture(source);
+  await controller.setState({
+    pendingText: { text: "  aboleth  " },
+    page: 4,
+    resultsScroll: 90,
+  });
+  const restored = controller.getState();
+  assert.equal(restored.text, "aboleth");
+  assert.equal(restored.pendingText, undefined);
+  assert.equal(restored.page, 0);
+  assert.equal(restored.resultsScroll, 0);
+  await controller.open();
+  assert.equal(queries.at(-1)?.text, "aboleth");
+  assert.equal(
+    root.querySelector<HTMLInputElement>("[data-focus-key='text']")?.value,
+    "aboleth",
+  );
+  assert.match(root.querySelector("tbody")?.textContent ?? "", /Aboleth/);
+  assert.doesNotMatch(root.querySelector("tbody")?.textContent ?? "", /Dragon/);
+});
+
 test("catalog controller keeps keyboard navigation and detail dismissal accessible", async () => {
   const { controller, root, window } = fixture();
   await controller.open();
@@ -213,6 +245,10 @@ test("catalog host boundary stays neutral and the responsive container is active
   assert.doesNotMatch(controller, /from ["']obsidian["']/);
   assert.doesNotMatch(adapter, /createElement|querySelector|\.search\(/);
   assert.match(adapter, /CreatureCatalogController/);
+  assert.match(
+    adapter,
+    /contentEl\.ownerDocument\.defaultView\?\.ResizeObserver\s*\?\?\s*globalThis\.ResizeObserver/s,
+  );
   assert.match(
     styles,
     /\.dn-creature-catalog\s*\{[^}]*container-type:\s*inline-size/s,

@@ -4,6 +4,7 @@ import type { Creature } from "../../src/features/catalog/creature-catalog";
 import {
   CREATURE_CATALOG_PAGE_SIZE,
   adjacentCreatureId,
+  applyCreatureCatalogPendingText,
   clearCreatureCatalogFilters,
   creatureCatalogActiveFilters,
   creatureCatalogQueryForState,
@@ -154,6 +155,26 @@ test("catalog filter chips expose every active filter and reset only filters", (
     resultsScroll: 0,
     detailScroll: 12,
   });
+});
+
+test("pending catalog text folds into applied filters before persistence or restore", () => {
+  const applied = applyCreatureCatalogPendingText({
+    text: "old",
+    movement: "walk",
+    pendingText: { text: "  aboleth  ", movement: "   ", senses: "darkvision" },
+    page: 3,
+    resultsScroll: 88,
+    detailScroll: 12,
+    sort: "name",
+  });
+  assert.equal(applied.text, "aboleth");
+  assert.equal(applied.movement, undefined);
+  assert.equal(applied.senses, "darkvision");
+  assert.equal(applied.pendingText, undefined);
+  assert.equal(applied.page, 0);
+  assert.equal(applied.resultsScroll, 0);
+  assert.equal(applied.detailScroll, 12);
+  assert.equal(applyCreatureCatalogPendingText(applied), applied);
 });
 
 test("catalog keyboard selection stays within the current result page", () => {

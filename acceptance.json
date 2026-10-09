@@ -262,16 +262,17 @@
         "package-lock.json"
       ],
       "result": "The complete catalog query/state/render flow is host-neutral behind injected DOM, catalog, notice and scheduler ports; the Obsidian ItemView is a thin lifecycle and resize adapter. All remaining 2014-comparable filters, removable chips/reset, 200-ms debouncing, stale-query protection, responsive 900x650 and 1150x700 layouts, status semantics and keyboard flows are implemented. Focused DOM regressions reproduce and close the old-DOM scroll overwrite and missing catalog container-type findings.",
+      "reviewRepair": "Pending debounced text is folded into applied filter state for persistence, close and restore so visible input and results cannot diverge. Resize observation prefers the content element owner window, preserving the correct realm for Obsidian popouts; both paths have focused regressions.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 232, "failed": 0},
+        "tests": {"passed": 234, "failed": 0},
         "build": "passed",
         "inventory": {
           "sourceBytes": 832272,
           "gzipBytes": 102869,
           "base64Characters": 137160,
-          "mainBytes": 1354974,
-          "mainJsGrowthBytes": 165604,
+          "mainBytes": 1355073,
+          "mainJsGrowthBytes": 165703,
           "mainJsGrowthLimitBytes": 180000,
           "limitsPassed": true
         }

@@ -7,8 +7,8 @@ import {
 } from "./creature-catalog";
 import {
   CREATURE_CATALOG_PAGE_SIZE,
-  CREATURE_CATALOG_TEXT_FILTERS,
   adjacentCreatureId,
+  applyCreatureCatalogPendingText,
   clearCreatureCatalogFilters,
   creatureCatalogActiveFilters,
   creatureCatalogQueryForState,
@@ -81,22 +81,21 @@ export class CreatureCatalogController {
 
   getState(): Record<string, unknown> {
     this.captureScroll();
+    const snapshot = applyCreatureCatalogPendingText(this.state);
     return {
-      ...this.state,
-      pendingText: this.state.pendingText
-        ? { ...this.state.pendingText }
-        : undefined,
+      ...snapshot,
+      pendingText: undefined,
     };
   }
 
   async setState(state: Record<string, unknown>): Promise<void> {
     this.cancelDebounce();
-    this.state = {
+    this.state = applyCreatureCatalogPendingText({
       sort: "name",
       direction: "asc",
       page: 0,
       ...normalizeCreatureCatalogViewState(state),
-    };
+    });
     if (this.opened && this.catalog) await this.refresh();
   }
 
@@ -120,6 +119,7 @@ export class CreatureCatalogController {
   close(): void {
     if (!this.opened) return;
     this.captureScroll();
+    this.state = applyCreatureCatalogPendingText(this.state);
     this.opened = false;
     this.cancelDebounce();
     this.loadAbort.abort();
@@ -666,21 +666,10 @@ export class CreatureCatalogController {
   }
 
   private flushPendingText(): void {
-    const pending = this.state.pendingText;
-    if (!pending) return;
+    if (!this.state.pendingText) return;
     this.cancelDebounce();
     this.captureScroll();
-    const next: Record<string, unknown> = {
-      ...this.state,
-      pendingText: undefined,
-      page: 0,
-      resultsScroll: 0,
-    };
-    for (const key of CREATURE_CATALOG_TEXT_FILTERS) {
-      if (pending[key] === undefined) continue;
-      next[key] = pending[key]?.trim() ? pending[key] : undefined;
-    }
-    this.state = next as CreatureCatalogViewState;
+    this.state = applyCreatureCatalogPendingText(this.state);
     void this.refresh();
   }
 
