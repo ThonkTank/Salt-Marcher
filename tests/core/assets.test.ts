@@ -7,6 +7,8 @@ import { createDoor, createObject, createLight, createPortal, createWall, duplic
 import { AssetCatalog, discoverPackAssets, PackAssetLibrary, readDungeondraftPack, type AssetCatalogStore, type BinarySource } from "../../src/assets";
 import { generateLayout } from "../../src/generators";
 import { newDocument, fixture } from "./fixtures";
+import { buildingWearMode, buildingWearAssetId,
+  NATIVE_BUILDING_WEAR_IDS } from "../../src/features/material/native-path-catalog";
 
 test("native building wear is binary and older numeric maps retain their mode", () => {
   const enabled = newDocument("Wear on", 8, 8),
@@ -24,6 +26,35 @@ test("native building wear is binary and older numeric maps retain their mode", 
   assert.equal(parsed.settings.buildingWear, 0.55);
   assert.throws(() => parseDocument(JSON.stringify({ ...enabled,
     settings: { ...enabled.settings, nativeBuildingWear: "off" } })));
+});
+
+test("DD-008 five wear modes retain their identity through document and history", () => {
+  const session = new Session(newDocument("Wear modes", 8, 8));
+  assert.equal(buildingWearMode(session.settings), "grime");
+  const beforeShadow = session.settings;
+  session.execute({ label: "Wall shadow", settings: { before: beforeShadow,
+    after: { ...beforeShadow, wallShadows: false } } });
+  for (const mode of ["none", "dust", "grime", "noise", "scratched"] as const) {
+    session.setBuildingWearMode(mode);
+    assert.equal(session.historySize, 1);
+    const reopened = parseDocument(JSON.stringify(session.document()));
+    assert.equal(buildingWearMode(reopened.settings), mode);
+    assert.equal(reopened.settings.nativeBuildingWear, mode !== "none");
+    assert.equal(buildingWearAssetId(reopened.settings),
+      NATIVE_BUILDING_WEAR_IDS[mode === "none" ? "grime" : mode]);
+  }
+  session.undo();
+  assert.equal(buildingWearMode(session.settings), "scratched");
+  assert.equal(session.settings.wallShadows, true);
+  session.redo();
+  assert.equal(buildingWearMode(session.settings), "scratched");
+  assert.equal(session.settings.wallShadows, false);
+  const legacy = { ...session.settings,
+    buildingWearMode: undefined, nativeBuildingWear: false };
+  assert.equal(buildingWearMode(legacy), "none");
+  for (const invalid of ["", "wet", 0])
+    assert.throws(() => parseDocument(JSON.stringify({ ...session.document(),
+      settings: { ...session.settings, buildingWearMode: invalid } })));
 });
 
 

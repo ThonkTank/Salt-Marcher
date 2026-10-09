@@ -939,7 +939,8 @@ export class CreateDungeonModal extends Modal {
               },
               undefined,
               { wallShadows, objectShadows, buildingWear: 0,
-                nativeBuildingWear: !disableBuildingWear },
+                nativeBuildingWear: !disableBuildingWear,
+                buildingWearMode: disableBuildingWear ? "none" : "grime" },
               startWizard,
             );
             this.close();

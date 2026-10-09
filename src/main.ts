@@ -135,6 +135,7 @@ interface CreationAppearance {
   readonly objectShadows: boolean;
   readonly buildingWear: number;
   readonly nativeBuildingWear: boolean;
+  readonly buildingWearMode?: "none" | "grime";
 }
 export default class DungeonPlugin extends Plugin {
   disableBuildingWearForNewMap = false;

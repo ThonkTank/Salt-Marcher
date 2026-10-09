@@ -253,6 +253,7 @@ export interface Settings {
   readonly objectShadows: boolean;
   readonly buildingWear: number;
   readonly nativeBuildingWear?: boolean;
+  readonly buildingWearMode?: "none" | "dust" | "grime" | "noise" | "scratched";
 }
 export type FeatureKind = "feature" | "creature" | "loot" | "trap";
 export interface FeatureDefinition {
@@ -329,9 +330,10 @@ export function newDocument(
   assets?: Pick<Settings, "assetPacks" | "builtInAssets">,
   appearance: Pick<
     Settings,
-    "wallShadows" | "objectShadows" | "buildingWear" | "nativeBuildingWear"
+    "wallShadows" | "objectShadows" | "buildingWear" | "nativeBuildingWear" |
+    "buildingWearMode"
   > = { wallShadows: true, objectShadows: true, buildingWear: 0,
-    nativeBuildingWear: true },
+    nativeBuildingWear: true, buildingWearMode: "grime" },
   version: 3 | 4 = 4,
 ): MapDocument {
   const result: MapDocument = {
@@ -377,6 +379,9 @@ export function validateSettings(s: Settings): void {
     s.buildingWear > 1 ||
     (s.nativeBuildingWear !== undefined &&
       typeof s.nativeBuildingWear !== "boolean") ||
+    (s.buildingWearMode !== undefined &&
+      !["none", "dust", "grime", "noise", "scratched"].includes(
+        s.buildingWearMode)) ||
     ![s.width, s.height].every(
       (n) => Number.isFinite(n) && n > 0 && n <= 10000,
     ) ||
