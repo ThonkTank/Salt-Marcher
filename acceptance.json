@@ -1622,17 +1622,19 @@
         "product": "Canvas of Kings",
         "feature": "Zufallsvarianten von Objektkategorien",
         "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observedAt": "2026-10-09T18:57:07.640Z",
+        "observedVersion": "Steam build 16643264",
+        "availability": "installed_steam_demo_3122210",
+        "observationKind": "direct_partial_effect",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/manifest.json"
+        ],
         "task": "Kategorie verteilen und Eigenschaften variieren",
         "phase": "CITY-07",
         "caseIds": [
           "CTY-006.02"
         ],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY07materialized variant/pose onstableelementIDs, explicit refreshpreview and oneAtlascommand, no rerandomizeonload.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -1641,9 +1643,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Tree-category variants visible and actual saved assets/poses proved. Fullcategory matrix/seed/distribution/reopen, own implementation/host/UX remainopen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I43-I",
+          "state": "category_asset_scale_rotation_variants_materialized_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/manifest.json",
+          "observation": "Same tree category selected, auto next preview and explicit Tab randomize/refresh visibly change preview; two trees placed. Saved materialized objects use distinct tree_c/tree_ac assets, scale.82/1.12, rotation42/-82. Only objects changed; previous objects unchanged.",
+          "remaining": [
+            "Steam demo only; semanticVersion not observed",
+            "Original graphics automatically reduced (welcome)",
+            "Random seed/range/distribution and per-control isolated effects not tested",
+            "Other category/custom subtype variations and full version untested",
+            "Fresh reopen/restart and own materialized variants/host/UX/physical comparison open"
+          ]
+        }
       },
       {
         "id": "CO-COK-0003",
@@ -4275,7 +4290,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I42-I",
+      "run": "CITY-00-I43-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4325,7 +4340,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/manifest.json"
       ],
       "resultReferences": [
         {
