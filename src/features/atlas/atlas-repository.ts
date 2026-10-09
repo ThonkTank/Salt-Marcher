@@ -194,6 +194,101 @@ export class AtlasRepository {
   get hasDraft(): boolean {
     return this.draftRaw !== null;
   }
+  /** Copy the captured content into a fresh identity; canonical source files stay unchanged. */
+  copy(path: string, id: string, name: string): Promise<void> {
+    safePath(path);
+    const snapshot = this.snapshot(),
+      world = parseOverworld(JSON.stringify({ ...snapshot.world, id, name }));
+    if (
+      path === this.worldPath ||
+      !path.endsWith(".overworld") ||
+      id === this.baselineWorld.id
+    )
+      throw new Error(
+        "Die Kopie benötigt einen eigenen Atlasnamen und eine neue Weltkennung.",
+      );
+    return this.exclusive(async () => {
+      // Never recover or replace another owner's destination journal/draft.
+      for (const target of [path, path + ".draft", path + ".journal"])
+        if ((await this.store.read(target)) !== null)
+          throw new FileConflict(target);
+      await this.persist(this.snapshot());
+      const writes: AtlasFileWrite[] = [
+        { path: this.worldPath, before: this.baseline, after: this.baseline },
+        { path: path + ".draft", before: null, after: null },
+      ];
+      for (const ref of snapshot.world.chunks) {
+        const sourcePath = this.dataPath(ref.file),
+          saved = await this.store.read(sourcePath);
+        if (this.bases.has(ref.file) && this.bases.get(ref.file) !== saved)
+          throw new FileConflict(sourcePath);
+        const text =
+          snapshot.loaded.get(ref.file) ?? this.restored.get(ref.file) ?? saved;
+        if (text === null || text === undefined)
+          throw new Error(
+            "Ein Landschaftsbereich fehlt; Kopie wurde nicht angelegt.",
+          );
+        const chunk = parseTerrainChunk(text, snapshot.world.id, ref);
+        writes.push(
+          { path: sourcePath, before: saved, after: saved },
+          {
+            path: `Atlasdaten/${id}/${ref.file}`,
+            before: null,
+            after: serializeTerrainChunk({ ...chunk, worldId: id }),
+          },
+        );
+      }
+      writes.push({ path, before: null, after: serializeOverworld(world) });
+      const allowed = new Set(writes.map((w) => w.path));
+      await new FileTransaction(
+        this.store,
+        path + ".journal",
+        (p) => allowed.has(p),
+        this.scope,
+      ).commit(writes);
+    });
+  }
+  /** Retire only this draft; return a fresh saved source without changing canonical files. */
+  discard(): Promise<TerrainSource> {
+    const snapshot = this.snapshot();
+    const unchanged = () => {
+      const current = this.snapshot();
+      return (
+        sameWorld(current.world, snapshot.world) &&
+        same([...current.loaded], [...snapshot.loaded])
+      );
+    };
+    return this.exclusive(async () => {
+      if (!unchanged())
+        throw new Error("Atlas wurde während des Verwerfens weiterbearbeitet.");
+      const writes: AtlasFileWrite[] = [
+        { path: this.worldPath, before: this.baseline, after: this.baseline },
+        ...[...this.bases].map(([file, before]) => ({
+          path: this.dataPath(file),
+          before,
+          after: before,
+        })),
+        { path: this.draftPath, before: this.draftRaw, after: null },
+      ];
+      await this.transaction.commit(writes);
+      this.draftRaw = null;
+      if (!unchanged()) {
+        // A newer edit must survive even if it arrived during the draft deletion.
+        await this.persist(this.snapshot());
+        throw new Error(
+          "Atlas wurde während des Verwerfens weiterbearbeitet; Entwurf bleibt erhalten.",
+        );
+      }
+      this.restored.clear();
+      this.bases.clear();
+      this.source = new TerrainSource(
+        this.baselineWorld,
+        new AtlasHistory(),
+        (ref) => this.load(ref),
+      );
+      return this.source;
+    });
+  }
   persistDraft(): Promise<void> {
     const snapshot = this.snapshot();
     return this.exclusive(() => this.persist(snapshot));
