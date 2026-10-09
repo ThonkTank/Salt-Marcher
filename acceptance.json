@@ -2577,16 +2577,18 @@
         "id": "CO-FTG-0017",
         "product": "Fantasy Town Generator",
         "feature": "Bewohner-Massenbearbeitung",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T19:30:56.956Z",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial_effect",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json"
+        ],
         "task": "Mehrere Bewohner gemeinsam ändern",
         "phase": "CITY-06",
         "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md; CITY-06: explizite Ziel-IDs/Feldänderungen, no-change pro Feld, Vorschau und ein Atlasbefehl; Cancel schreibt nichts. Auswahlabschluss und eigentlicher Daten-Apply getrennt darstellen.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -2595,9 +2597,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Keine direkte Massenbearbeitungsprobe vorhanden. Der früher hier zugeordnete Stundenwechsel ist ausschließlich CO-FTG-0018 zugeordnet; Massenbearbeitung und eigene Umsetzung/Host/Bedienung bleiben offen.",
+        "gap": "Zweierauswahl, Namens-Apply, Cancel und sichtbare Rücksetzung direkt belegt. Weitere Felder/Move/Delete, Fresh-Reopen, Konflikt-/History-/Datenwirkung sowie eigene Umsetzung/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I46-I46",
+          "state": "two_person_surname_apply_cancel_restore_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json",
+          "observation": "Population Bulk edit available in temporary access; Checkbox setChecked failed once with unchanged selection; original documented CTRL-click worked; Thawn and Wyddis explicitly selected; selected count2 observed; Selection Save opens editor, does not itself apply person edits; Edit/Move/Delete folders shown; only Edit probed; Edit offers last name/race/gender/religion/friend group/faction/job; no-change fields default; Unsaved last-name draft closed; original names retained; Second isolated draft Save changes both surnames toCITY46QA; explicit name search returns both; Same two changed people reselected and surname restored toCobblekind using Save; Original Thawn search restored, four original summary cards; Wyddis home/work/activity visible after restoration",
+          "limits": [
+            "Visible Save/search effect, no fresh process/reload or native data file",
+            "Original serialized IDs and atomic/history/conflict guarantees unmeasured",
+            "Only surname tested; race/gender/religion/friend/faction/job/move/delete effects not tested",
+            "Visible restoration, no bytewise whole-settlement or full population invariance proof",
+            "Own implementation/host/usability/physical comparison remains open"
+          ]
+        }
       },
       {
         "id": "CO-FTG-0018",

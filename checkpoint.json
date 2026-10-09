@@ -4653,17 +4653,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-PLAN-CLEAN-R46",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:30:39.201603+00:00",
-      "focus": "Bewohner-Massenbearbeitung: CR",
-      "state": "completed",
-      "result": "Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen."
-    },
-    "nextRun": {
       "id": "CITY-00-I46-I46",
       "kind": "reference_implementation",
-      "focus": "Aktuelle Population-Mehrfachauswahl und zugänglichen Editor im Original prüfen"
+      "startedAt": "2026-10-09T19:30:56.956Z",
+      "focus": "FTG-Bulk-Wirkung und Rücksetzung: I",
+      "state": "completed",
+      "result": "CO17 von Dokumentationskandidat zu echter Teilwirkung: zwei Bewohner gemeinsam umbenannt, Cancel geprüft und ursprüngliche Namen sichtbar wiederhergestellt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I46-CLEAN-P46",
+      "kind": "cleanup_plan",
+      "focus": "Zweierauswahl/Cancel/Apply/Rücksetzung gegen Originalbelege reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
