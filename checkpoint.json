@@ -3427,17 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-NR",
-      "kind": "reference_rereview",
-      "startedAt": "2026-10-09T10:42:55.611878+00:00",
-      "focus": "R01/R02 gegen Umsetzung erneut prüfen",
-      "state": "completed_no_required_findings_in_package",
-      "result": "Pflichtlücken dieses FTG-Belegpakets geschlossen; vollständige CITY-00-Referenzinventur bleibt offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I05-P",
       "kind": "reference_planning",
-      "focus": "Familienstammbaum eines vorhandenen FTG-Bewohners direkt prüfen; COK wartet auf zulässigen Zugang und freien GUI-Platz"
+      "startedAt": "2026-10-09T10:43:56.338779+00:00",
+      "focus": "Originalwirkung der Familienstammbaum-Schaltfläche",
+      "state": "completed",
+      "result": "Vorhandene Person, Relations-Vergleich, sichtbarer Graph und technische Datenbindung geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I05-I",
+      "kind": "reference_implementation",
+      "focus": "Thawn Cobblekind Relations und Family tree im Original prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
