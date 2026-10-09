@@ -2175,6 +2175,16 @@
         "result": "Elf getrennte frische Obsidian-Prozesse öffnen synthetisch vorbereitete J01-Zwischenstände der tatsächlich gespeicherten Fünf-Chunk-Welt über AtlasRepository und VaultStore. Prepared-Grenzen 1–8 rollen alle sieben Zieldateien auf Before zurück, erhalten den gültigen Draft und entfernen das Journal; sichtbarer Status Entwurf gesichert. Committed 9 und Cleanup 10 behalten After ohne Draft/Journal, Status Gespeichert. Ein externer dritter Wert nach Teilwrite erhält sämtliche Bytes und das Journal, verhindert das Öffnen und zeigt den konkreten Konflikt. Alle Läufe verwenden denselben sauberen Build, elf verschiedene App-PIDs und normale Ausgänge.",
         "review": "Unabhängiger read-only Re-Review auf Clean-Head 3d102573 PASS für den engen Obsidian/VaultStore-Open-Recovery-Nachweis ohne Pflichtlücke; alle Einzeldatei-/Journalhashes, Build-Tripel und Prozessausgänge geprüft. Die Zwischenstände wurden vor den Hostläufen aus J01-Writes eingesetzt; ein harter Obsidian-Prozessabbruch selbst, fsync/Power-Loss/torn writes, City-/Dungeon-Kinder, I01d-Verwerfen und volle DD-036.03-/HEX-02-Freigabe bleiben offen."
       },
+      "s01DirectCrash": {
+        "run": "DD-036-S01-J03",
+        "state": "scoped_one_native_hard_crash_boundary_recovery_independent_review_passed_full_case_open",
+        "testCommit": "0711828446c2504065f08010547bbedd5d0df9df",
+        "mainSha256": "260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+        "crashEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573040825-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
+        "recoveryEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573051667-dd036-s01-recovery-reopen/s01-recovery-result.json",
+        "result": "Ein isolierter Obsidian-Prozess wird nach dem dritten von sechs geänderten Atlaszielen per SIGKILL beendet. Das vorbereitete Journal, drei geänderte und zwei unveränderte Terrainkinder sowie der gültige Draft behalten nach dem Kill exakt ihre Hashes; die unveränderte Weltdatei bleibt gleich. Ein neuer Obsidian-Prozess rollt alle Teilwrites über AtlasRepository/VaultStore auf Before zurück, entfernt das Journal und zeigt Entwurf gesichert. Beide Prozesse nutzten denselben sauberen Build; nur der zweite endete normal.",
+        "review": "Unabhängiger read-only Review PASS auf Testcommit 0711828 für diese eine echte Host-Abbruchgrenze nach abgeschlossenem CAS. Keine vollständige native Abbruchmatrix, fsync-/Power-Loss-/torn-write-Garantie, City-/Dungeon-Kinder, I01d-Verwerfen oder vollständige DD-036.03-/HEX-02-Freigabe."
+      },
       "o01Original": {
         "run": "DD-036-O01-ORIGINAL-03",
         "state": "scoped_topbar_open_original_effect_independent_review_passed_full_cases_open",

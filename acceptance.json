@@ -130557,16 +130557,18 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "partial_terrain_save_draft_reopen_repeat_save_and_vaultstore_recovery_independent_review_passed",
-          "build": "main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948",
+          "state": "partial_terrain_save_draft_reopen_repeat_save_vaultstore_recovery_and_one_native_hard_crash_independent_review_passed",
+          "build": "Save/Draft/Noop/J02: main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948. J03: Testcommit 0711828446c2504065f08010547bbedd5d0df9df, main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f.",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573040825-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573051667-dd036-s01-recovery-reopen/s01-recovery-result.json"
           ],
-          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. Ein direkt ausgelöster harter Abbruch des Obsidian-Prozesses, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. J03 beendet einen isolierten Obsidian-Prozess per SIGKILL nach dem dritten von sechs geänderten Atlaszielen und belegt den Rollback durch einen frischen Obsidian-/VaultStore-Prozess. Weitere direkte Host-Abbruchgrenzen, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
