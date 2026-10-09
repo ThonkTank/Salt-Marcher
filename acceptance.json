@@ -112375,6 +112375,20 @@
           ],
           "measuredScope": "Original 12×8: oben -1 → 0 und oben 999 → 64 bei Gegenrand 0; Host-GUI 8×8 zeigt beide Grenzen nach Tab.",
           "remaining": "Oberer Crop, weitere Ausgangsgrößen und unabhängiger Review offen."
+        },
+        "followUpPhase1TopCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×10 mit zehn Smart-Tile-Zellen → Top in tiles -2 → Save → Top in tiles +2 → Save; dieselbe gespeicherte 12×8-Beschnittkarte frisch öffnen → Top in tiles +2 → Save",
+          "sourceMapSha256": "3b1e2426d175b1bbcdaba54f0fb0dbc696c9258aa4ce6f04a88bcbbf97f7b11a",
+          "cropMapSha256": "9e8bcf8f67bff5a1d100e73d6e567afec541629fe4c5762815077b4c64a465d7",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-top-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-top-crop-20261009/native-same/runs/20261009-060758-3500010/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-top-crop-20261009/native-fresh/runs/20261009-060844-3500712/evidence/result.json"
+          ],
+          "measuredScope": "Oben -2: gespeicherte Zellen 10→5; oben +2 im selben wie im frischen Prozess bleiben fünf. Vier Polygone verschieben alle Y-Punkte um -512 native Einheiten und kehren nach +2 exakt zurück.",
+          "remaining": "Linke Folge nochmals direkt kontrollieren, anschließend Host-Zellschicht und unabhängigen Review prüfen. Keine Fallfreigabe."
         }
       },
       {
