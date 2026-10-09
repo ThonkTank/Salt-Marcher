@@ -3528,6 +3528,7 @@
       },
       "build": "passed"
     },
-    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme."
+    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme.",
+    "review": "Die Lazy-Range-Assertion behandelt offene slice-Grenzen korrekt. Sie protokolliert weiterhin nur slice-Aufrufe, nicht ob danach arrayBuffer()/text() Materialisierung auslöst; Lazy-Payload-Verhalten ist dadurch nur teilweise belegt."
   }
 }
