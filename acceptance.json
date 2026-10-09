@@ -109,7 +109,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T11:30:17.614823+00:00",
+    "updated": "2026-10-09T12:06:58.566027+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -195,13 +195,16 @@
         ]
       }
     ],
-    "referenceStatus": "partial_direct_original_probes_all_three_products_full_inventory_and_city_result_gallery_open",
+    "referenceStatus": "fixed_result_gallery_recorded_review_pending_full_function_inventory_open",
     "referenceGate": {
       "phase": "CITY-00",
-      "state": "open",
+      "state": "gallery_recorded_review_pending",
       "blocks": "CITY-01",
       "rule": "Vor Stadtproduktcode eine kleine feste Galerie für Stadtübersicht und ausgearbeitete Draufsicht mit Version/Datum, Umfang und Ergebnismerkmalen belegen. Keine Werkzeug-/Gestenparität inventarisieren.",
-      "evidence": []
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
+        "ROADMAP-CITIES-REFERENCE-GALLERY.md"
+      ]
     },
     "architecture": "ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung",
     "documents": {
@@ -3324,7 +3327,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json"
       ],
       "resultReferences": [
         {

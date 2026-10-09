@@ -3615,17 +3615,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T11:57:44.082756+00:00",
-      "focus": "Ergebnisgalerie und klare Gate-Grenzen planen",
-      "state": "completed",
-      "result": "Vier feste Galerieformen und Quellenprüfung geplant; spätere Funktion/Host/UX-Pflichten bleiben erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I09-I",
       "kind": "reference_gallery",
-      "focus": "Original-Ergebnisbilder sammeln und Kriterien zuordnen"
+      "startedAt": "2026-10-09T12:06:58.565973+00:00",
+      "focus": "Vier Ergebnisformen sichern und Kriterien zuordnen",
+      "state": "completed",
+      "result": "Sechs feste Referenzen mit Originalbytes/Hashes, Quellen, Datum und Ausschnitten; veröffentlichte COK-Galerie von eigener Demo getrennt"
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-R",
+      "kind": "requirements_review",
+      "focus": "Galerie gegen Roadmap und Plan prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
