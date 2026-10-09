@@ -79,30 +79,32 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_plan_reviewed_implementation_next_physical_input_open",
+    "state": "ce01_c01_implementation_host_passed_review_pending_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-P01",
-      "kind": "cleanup_plan",
-      "state": "completed_static_validation_reviewed",
-      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
+      "id": "CE-01-C01-I01",
+      "kind": "cleanup_implementation",
+      "state": "completed_checked_host_passed_review_pending",
+      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, derive reset keys from the same mapping and retain the repeatable H01 harness",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "basis": {
-        "reviewedProductCommit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
-        "reviewedMainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
-        "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
+      "result": "Restore defaults, seven draft pairs and reset draft keys now share one host-neutral mapping. Focused state/DOM coverage and all three automated real-Obsidian H01 scenarios passed on the exact clean candidate.",
+      "verification": {
+        "sourceRevision": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
+        "check": "passed",
+        "tests": {"passed": 246, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1339259,
+        "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
+        "mainJsGrowthBytes": 149889,
+        "runs": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit"
+        ]
       },
-      "review": {
-        "state": "passed_after_repair",
-        "reviewedCommit": "37342f98911e1e5fcbcb7f369f1e411f3bdda667",
-        "finding": "The plan identified reset draft-list drift but did not require resetCreatureCatalogFilters to derive draft keys from the canonical DRAFT_FILTERS mapping.",
-        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list.",
-        "reReviewCommit": "9016cedfee0c82b4b64ac786f55a849c2e8c918c",
-        "result": "Independent read-only re-review passed without a remaining mandatory finding."
-      },
-      "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
+      "limits": "Independent cleanup review is pending. Automated input is not physical keyboard/mouse evidence; physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -234,17 +236,17 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both. CE-01-H01 then passed the independently reviewed automated real-Obsidian edit/restart/fault scope on exact clean SHA aa6d92d with 242 tests; only physical input, screenreader, other-platform acceptance and cleanup remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-I01 now passes 246 tests and all three automated real-host scenarios on exact clean SHA 5759cc9; cleanup review plus physical input, screenreader and other-platform acceptance remain open.",
     "open": [
-      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-01-C01 cleanup; all CE-02 through CE-07 runs",
+      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-01-C01 cleanup review; all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01-I01",
-      "kind": "cleanup_implementation",
+      "id": "CE-01-C01-R01",
+      "kind": "cleanup_review",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Centralize restore defaults and reset draft keys on DRAFT_FILTERS, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
+      "focus": "Independently review the exact cleanup diff, shared restore/reset draft mapping, focused tests, build inventory and all three exact-candidate real-host receipts"
     }
   },
   "repositoryWorkflow": {

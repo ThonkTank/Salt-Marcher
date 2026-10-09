@@ -102,3 +102,29 @@ Erst der bestandene C01-R01 schließt das CE-01-Aufräumtor. CE-01 selbst bleibt
 bis zu den noch offenen physischen, Screenreader- und Plattformabnahmen ohne
 vollständige Fachfreigabe. CE-02 darf geplant, aber gemäß der bestehenden
 Roadmap erst nach dem bestandenen Aufräumreview implementiert werden.
+
+## C01-I01 – Ergebnis
+
+Die begrenzte Umsetzung ist auf dem exakten sauberen Commit
+`5759cc9b3b2f016849f3e8325e0f7effe59edc2b` abgeschlossen. Ein gemeinsamer
+hostneutraler Restore-Helfer besitzt Defaults und Draftableitung;
+`resetCreatureCatalogFilters()` verwendet dieselbe exportierte Zuordnung. Der
+Content wiederholt weder Defaults noch sieben Draftpaare, und der Hostfall
+enthält den ungenutzten `crypto`-Eingang nicht mehr. `npm run check`, 246/246
+Tests und `npm run build` bestanden. `main.js` ist 1.339.259 Byte groß,
+149.889 Byte über der gebundenen Baseline und besitzt SHA-256
+`f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686`.
+
+Die drei automatisierten echten Obsidian-Läufe bestanden auf genau diesem
+Commit und Build:
+
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit`
+
+Alle drei besitzen eigene systemd-Units, Invocation-IDs und Obsidian-Prozesse,
+endeten nach angefordertem normalen Quit erfolgreich und verwendeten keine
+erzwungene Terminierung. Edit/Layouts, exakter frischer Restore samt sauberem
+Default-Reopen und beschädigte Payload mit Same-Leaf-Retry blieben grün. Der
+unabhängige C01-R01 ist noch offen; physische Eingabe, Screenreader und weitere
+Plattformen bleiben ebenfalls offen.
