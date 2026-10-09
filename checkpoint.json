@@ -3357,20 +3357,20 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I01",
+      "id": "CITY-00-I02",
       "kind": "reference_implementation",
-      "startedAt": "2026-10-09T12:15:44.926455+02:00",
-      "focus": "Originalinventar und direkte FTG-Erstellungsoberfläche",
-      "state": "partial",
-      "result": "32 Kandidaten aus drei Produkten; 13 FTG-Formularbereiche direkt sichtbar; keine Funktionsabnahme",
+      "startedAt": "2026-10-09T12:17:53.808939+02:00",
+      "state": "completed_bounded_reference_package",
+      "focus": "FTG-Hamlet, Bewohner, Zeit und Exportmenü direkt prüfen",
+      "result": "38 Funktionskandidaten; erste FTG-Ergebnisprobe mit Bild/AX/Hashes gesichert; JSON-Download und gesamte CITY-00 bleiben offen",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
       ]
     },
     "nextRun": {
-      "id": "CITY-00-I02",
-      "kind": "reference_implementation",
-      "focus": "Detailoptionen, Originalwirkungsproben und feste Ergebnisgalerie vervollständigen"
+      "id": "CITY-00-I02-R",
+      "kind": "reference_review",
+      "focus": "Belegumfang, fehlende Wirkungsproben und Katalogzuordnung dieses Referenzpakets prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
