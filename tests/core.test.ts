@@ -12,6 +12,7 @@ import "./core/smart-tiles-resize.test";
 import "./core/terrain-mask-resize.test";
 import "./core/building-floor-raster-resize.test";
 import "./core/object-library.test";
+import "./core/colorable-raw-png.test";
 import "./core/v4.test";
 import "./core/creature-catalog.test";
 import "./core/creature-catalog-view-state.test";
