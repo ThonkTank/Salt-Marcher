@@ -4070,17 +4070,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I35-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:41:23.847706+00:00",
-      "focus": "Größe-/Recipebelege CP",
-      "state": "completed",
-      "result": "Plan: Snapshot auf65/I35 aktualisieren, CO-WAT-0001 um gekoppelte Seed-/Größenwirkung ergänzen und CO-WAT-0011 mit eigenständigem offenen Umfang aufnehmen. Rezeptarchitektur als geplant festhalten: vollständige validierte Vorgaben, neue Vorschau, kein Neugenerieren beim normalen Laden. Alle alten IDs/Belege und fremde JSON-Wurzeln erhalten; CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I35-CI",
       "kind": "cleanup_implementation",
-      "focus": "Größe-/Recipebelege und Snapshot CI"
+      "startedAt": "2026-10-09T15:41:36.407999+00:00",
+      "focus": "Größe-/Recipebelege CI",
+      "state": "completed",
+      "result": "Snapshot enthält65 Pflichten einschließlich Permalink-Reproduktion und gekoppelte Small-Größen-/Seedwirkung. Architektur führt geplanten Recipevertrag und materialisiertes normales Laden getrennt; bestehende Kennungen/Belege erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I35-CR",
+      "kind": "cleanup_review",
+      "focus": "Größe-/Recipebelege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
