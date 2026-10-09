@@ -133249,7 +133249,7 @@
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         },
         "followUpPhase1PairedHistory": {
-          "state": "scoped_candidate_independent_review_pending",
+          "state": "scoped_review_passed_phase1_open",
           "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalGesture": "Building-Rechteck 6…8 × 6…8 zeichnen → Settings > Map Settings > NONE → Save → Undo → Save → Redo → Save",
           "hostGesture": "Bauwerk > Rechteck 6…8 × 6…8 zeichnen → Einstellungen > Karteneinstellungen > NONE → Speichern → Rückgängig → Speichern → Wiederholen → Speichern",
@@ -133265,8 +133265,13 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json"
           ],
-          "measuredScope": "Beide 8×8-Karten haben Building-Grenzen -2…6 × 0…6 und 6…8 × 6…8; NONE erzeugt keinen Undo-Schritt, Undo/Redo betrifft nur den Building-Zug, Redo stellt die gespeicherten Bytes je Produkt wieder her. Host NONE bleibt nach frischem Prozess markiert.",
-          "gap": "Unabhängiger Review, direkte Grafikpaarung aller vier aktiven Modi auf gleicher Assetbasis und Mehrgeschosswirkung offen; Phase-1-Tor offen."
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json"
+          ],
+          "measuredScope": "Beide 8×8-Karten haben Building-Grenzen -2…6 × 0…6 und 6…8 × 6…8; NONE erzeugt keinen Undo-Schritt, Undo/Redo betrifft nur den Building-Zug, Redo stellt die gespeicherten Bytes je Produkt wieder her. Host NONE bleibt nach frischem Prozess markiert; unabhängiger Hostreview wiederholt dies.",
+          "gap": "Direkte Grafikpaarung aller vier aktiven Modi auf gleicher Assetbasis und Mehrgeschosswirkung offen; Phase-1-Tor offen."
         }
       },
       {
