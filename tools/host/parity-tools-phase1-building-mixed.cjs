@@ -3,6 +3,7 @@ const OVERPAINT = "Dungeons/Phase1-BuildingMixed/wood-stone-overpaint.dungeon";
 const ERASED = "Dungeons/Phase1-BuildingMixed/wood-stone-erased.dungeon";
 const LARGE_OVERPAINT = "Dungeons/Phase1-BuildingMixed/wood-stone-overpaint-large.dungeon";
 const HOLE = "Dungeons/Phase1-BuildingMixed/wood-stone-hole.dungeon";
+const TWO_CELL_HOLE = "Dungeons/Phase1-BuildingMixed/wood-stone-two-cell-hole.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   checks, chooseTool }) => {
@@ -12,6 +13,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   const erasedBaseline = path.join(qa, "mixed-erase-baseline.json");
   const largePaintBaseline = path.join(qa, "overpaint-large-baseline.json");
   const holeBaseline = path.join(qa, "mixed-hole-baseline.json");
+  const twoCellHoleBaseline = path.join(qa, "mixed-two-cell-hole-baseline.json");
   const hash = (name = MAP) => crypto.createHash("sha256")
     .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const state = () => page.evaluate(() => {
@@ -117,6 +119,17 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       `${point.x}:${point.y}`)), new Set(["3:2", "4:2", "4:3", "3:3"]));
     assert.ok(doc.smartTiles.some((cell) => cell.x === 3 && cell.y === 2 &&
       cell.assetId === woodId));
+  }
+  function verifyTwoCellHole(doc, woodId, stoneId) {
+    verify(doc, woodId, stoneId);
+    const building = doc.entities[0];
+    assert.equal(building.wallWidth, 0);
+    const polygon = building.polygons[0];
+    assert.equal(polygon.holes.length, 1);
+    assert.deepEqual(new Set(polygon.holes[0].map((point) =>
+      `${point.x}:${point.y}`)), new Set(["2:2", "4:2", "4:3", "2:3"]));
+    for (const x of [2, 3]) assert.ok(doc.smartTiles.some((cell) =>
+      cell.x === x && cell.y === 2 && cell.assetId === woodId));
   }
   async function edit() {
     const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -325,6 +338,44 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     await holeEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
     verifyHole((await state()).document, wood.id, stone.id);
     checks.push("DD-038 interior Alt hole keeps its Wood tile while masking one contour cell in one Undo step");
+    await page.evaluate(async ({ name, content }) => {
+      await app.vault.create(name, content);
+    }, { name: TWO_CELL_HOLE, content: fs.readFileSync(mapFile, "utf8") });
+    await open(TWO_CELL_HOLE);
+    const twoCellHoleEditor = page.locator(".dungeon-native-editor:visible").last();
+    await twoCellHoleEditor.locator(".dn-group-rail")
+      .getByRole("button", { name: "Bauwerk", exact: true }).click();
+    await twoCellHoleEditor.locator(".dn-tool-rail")
+      .getByRole("button", { name: "Rechteck", exact: true }).click();
+    await twoCellHoleEditor.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    await page.keyboard.down("Alt");
+    try {
+      await draw({ x: 2, y: 2 }, { x: 4, y: 3 }, 18);
+    } finally {
+      await page.keyboard.up("Alt");
+    }
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.document().entities[0]?.polygons[0]?.holes.length === 1);
+    const twoCellHole = await state();
+    verifyTwoCellHole(twoCellHole.document, wood.id, stone.id);
+    assert.equal(twoCellHole.history, 1);
+    await page.screenshot({ path: path.join(out, "wood-stone-two-cell-hole-edit.png") });
+    await twoCellHoleEditor.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    const twoCellHoleSaved = JSON.parse(fs.readFileSync(path.join(vault, TWO_CELL_HOLE), "utf8"));
+    assert.deepEqual(twoCellHoleSaved, twoCellHole.document);
+    fs.writeFileSync(twoCellHoleBaseline, JSON.stringify({ document: twoCellHoleSaved,
+      hash: hash(TWO_CELL_HOLE), woodId: wood.id, stoneId: stone.id }, null, 2));
+    await twoCellHoleEditor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    verify((await state()).document, wood.id, stone.id);
+    assert.equal((await state()).document.entities[0].polygons[0].holes.length, 0);
+    await twoCellHoleEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    verifyTwoCellHole((await state()).document, wood.id, stone.id);
+    checks.push("DD-038 two-cell interior Alt hole retains 18 styled tile values in one Undo step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -397,6 +448,20 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     });
     await page.screenshot({ path: path.join(out, "wood-stone-hole-fresh.png") });
     checks.push("DD-038 fresh Host keeps the masked interior hole and all 18 styled tile values");
+    const twoCellHole = JSON.parse(fs.readFileSync(twoCellHoleBaseline, "utf8"));
+    await open(TWO_CELL_HOLE);
+    const twoCellHoleFresh = await state();
+    assert.deepEqual(twoCellHoleFresh.document, twoCellHole.document);
+    assert.equal(hash(TWO_CELL_HOLE), twoCellHole.hash);
+    verifyTwoCellHole(twoCellHoleFresh.document, twoCellHole.woodId, twoCellHole.stoneId);
+    await page.waitForFunction(() => {
+      const visual = [...app.workspace.getLeavesOfType("dungeon-native-map")
+        .at(-1).view.editor.renderer.visuals.values()]
+        .find((item) => item.entity.kind === "building");
+      return visual?.floorExtraGeometries?.length === 1;
+    });
+    await page.screenshot({ path: path.join(out, "wood-stone-two-cell-hole-fresh.png") });
+    checks.push("DD-038 fresh Host keeps the two-cell masked interior hole and all 18 styled tile values");
   }
   return { edit, reopen };
 };

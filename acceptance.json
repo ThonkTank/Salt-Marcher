@@ -130435,16 +130435,21 @@
           "remaining": "Weitere Lochgrößen und -formen, Übermalung im Loch, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingFloorTwoCellHoleOriginalProbe": {
-          "state": "two_cell_interior_hole_original_measured_host_open_case_open",
+          "state": "two_cell_interior_hole_scoped_host_raw_pair_passed_review_open_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/original-probe.md",
           "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/00-source.dungeondraft_map",
           "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/01-erased.dungeondraft_map",
           "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/02-undo.dungeondraft_map",
           "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/03-redo.dungeondraft_map",
           "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-fresh-original-20261009/native-checked/runs/20261009-123115-3733552/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/evidence/1791542056610-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/evidence/1791542075285-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/independent-audit.json",
           "measuredScope": "8×8 Wood/Stone: Ein 2×1-Alt-Innenloch bei (2,2)–(4,3) erzeugt einen inneren Konturring. Alle 18 gespeicherten Zellen, Stile und Farben bleiben unverändert; Undo/Redo sind jeweils bytegleich zum Ausgangs- und Lochzustand, die frische Originalöffnung zeigt die Aussparung.",
-          "remaining": "Hostpaar und unabhängiger Review offen. Ein 2×2-Loch braucht eine größere Quellkontur; weitere Radierformen, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Original-/Host-Rohdatenpaar und frische Hostöffnung bestehen; unabhängiger Review offen. Ein 2×2-Loch braucht eine größere Quellkontur; weitere Radierformen, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
