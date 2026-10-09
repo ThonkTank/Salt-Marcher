@@ -3427,18 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T10:40:38.524671+00:00",
-      "timeScope": "recording start; preceding browser interaction times retained in evidence artifacts",
-      "focus": "FTG-Gebäudeänderung speichern und nach Neuladen prüfen",
-      "state": "completed_partial_reference_probe",
-      "result": "Umbenennung und sieben Bewohner nach Reload bestätigt; JSON-Dateiausgabe unbestätigt; COK-Testzugang offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I04-R",
       "kind": "reference_review",
-      "focus": "Belegumfang, Exportzuordnung und Pflichtlücken gegen Plan prüfen"
+      "startedAt": "2026-10-09T10:41:10.233983+00:00",
+      "focus": "Gebäude-/Exportbelege gegen Inventar und Plan prüfen",
+      "state": "completed_gaps_found",
+      "result": "R01: CO-FTG-0020 vermischt Dateiausgabe mit gesperrten Integrationen; R02: Export-Timeout war zuvor irrtümlich CO-FTG-0019 statt Ausgabe zugeordnet; Nachbesserung erforderlich"
+    },
+    "nextRun": {
+      "id": "CITY-00-I04-CP",
+      "kind": "cleanup_planning",
+      "focus": "Originalbelege erhalten; Export- und Integrationszuordnung gezielt reparieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
