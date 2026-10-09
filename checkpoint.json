@@ -86,13 +86,19 @@
     "currentRun": {
       "id": "CE-01-C01-P01",
       "kind": "cleanup_plan",
-      "state": "completed_static_validation_review_pending",
+      "state": "repair_completed_static_validation_review_pending",
       "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "basis": {
         "reviewedProductCommit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
         "reviewedMainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
         "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
+      },
+      "review": {
+        "state": "changes_required",
+        "reviewedCommit": "37342f98911e1e5fcbcb7f369f1e411f3bdda667",
+        "finding": "The plan identified reset draft-list drift but did not require resetCreatureCatalogFilters to derive draft keys from the canonical DRAFT_FILTERS mapping.",
+        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list."
       },
       "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
     },
@@ -4010,17 +4016,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I28-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:03:37.480848+00:00",
-      "focus": "Dach-/Blockbelege R",
+      "id": "CITY-00-I29-P",
+      "kind": "reference_planning",
+      "startedAt": "2026-10-09T15:05:16.163755+00:00",
+      "focus": "Weitere Gebäudedarstellungen planen",
       "state": "completed",
-      "result": "Neun Rawhashes und sichtbare Wirkung04/07 geprüft; Controls08 bestätigen Lots/Plain/Offset und unveränderte Raised/Solids. Blockdarstellung ist keine zusätzliche geographische Viertelbearbeitung. Andere Vorgaben und Save/Export ausdrücklich ungeprüft. Aufräumbefund: CO-WAT-0002-Snapshot noch unspezifisch partial."
+      "result": "Hip/Complex/Hidden als begrenzte Originalprobe mit Rücksetzung geplant."
     },
     "nextRun": {
-      "id": "CITY-00-I28-CP",
-      "kind": "cleanup_planning",
-      "focus": "Snapshotkorrektur planen"
+      "id": "CITY-00-I29-I",
+      "kind": "reference_probe",
+      "focus": "Drei angebotene Darstellungen und Processing-Inventar prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
