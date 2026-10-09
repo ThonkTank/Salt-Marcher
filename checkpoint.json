@@ -3372,17 +3372,20 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I03-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T12:26:01.188629+02:00",
-      "focus": "Watabou-Galerie, Versions-/Menü-/Exportumfang auf direktem Original planen",
-      "state": "completed",
-      "result": "Begrenztes Originalpaket geplant; direkte Webseite erreichbar"
-    },
-    "nextRun": {
       "id": "CITY-00-I03-I",
       "kind": "reference_implementation",
-      "focus": "Tatsächlich eingebetteten Generator mit festem Seed und aktuellen Optionen erfassen"
+      "startedAt": "2026-10-09T12:26:27.986169+02:00",
+      "focus": "Direkte Watabou-Stadtgalerie und Funktionsmenüs mit festem Seed",
+      "state": "completed_bounded_reference_package",
+      "result": "Ummauerte Hafen-/Flussstadt in Übersicht und Detail, sechs Menübelege; 44 offene Funktionskandidaten; Versions-/Wirkungsabnahmen offen",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+      ]
+    },
+    "nextRun": {
+      "id": "CITY-00-I03-R",
+      "kind": "reference_review",
+      "focus": "Reproduzierbarkeit und Bild-/Funktionsumfang prüfen, anschließend getrennt aufräumen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
@@ -3396,7 +3399,8 @@
       "localHexThread": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
       "ownResponsibility": "Stadtpfad und seine Referenz-/Funktions-/Bedienabnahmen; gemeinsame Abschlusskoordination",
       "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
-      "state": "coordination_sent_responsibility_reply_pending"
+      "state": "responsibilities_confirmed_hex_basis_then_city",
+      "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
     }
   }
 }
