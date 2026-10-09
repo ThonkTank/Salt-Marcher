@@ -1504,13 +1504,16 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "original_render_probe_recorded_host_pair_next",
+      "state": "original_and_host_render_candidate_recorded_ui_and_review_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
       "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
+      "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+      "hostBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
-      "next": "Hostbildpaar für die getrennte Wirkung und gespeicherte V4-Felder prüfen; Bedienvorgaben für neue Elemente und bestehende Elemente getrennt halten. New-Map-Bedienung ist historisch."
+      "next": "UI-Bedienung der Schattenwerte, Vorgaben für neue Elemente und Undo/Redo getrennt prüfen; danach unabhängigen DD-006.03/.04-Review. New-Map-Bedienung ist historisch."
     },
     "dd001002Plan": {
       "date": "2026-10-09",

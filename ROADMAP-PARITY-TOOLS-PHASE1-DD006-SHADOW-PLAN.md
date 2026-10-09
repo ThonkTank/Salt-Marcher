@@ -15,3 +15,5 @@ Ein importierter Original-Rohkartenwechsel belegt nur die Renderwirkung der gesp
 ## Original-Zwischenbefund
 
 Der [isolierte Original-Renderlauf](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md) ergibt bei gleicher vorhandener Geometrie vier bytegleiche Bilder trotz Wechsel der globalen `world.wall_shadow`/`world.object_shadow`-Werte. Bei Wechsel der gespeicherten `shadow`-Felder an Wand beziehungsweise Objekt ändern sich die zugehörigen Bildbereiche getrennt. Daraus folgt für den Hostvergleich: vorhandene Elemente und Vorgaben für neue Elemente gesondert behandeln. Eine direkte Atlas-Bedienfolge ist damit noch nicht belegt.
+
+Das [Hostpaar](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md) bestätigt die getrennte per-Element-Renderwirkung und bytegleiche Dateien nach frischer Neuöffnung. Der nächste Lauf betrifft UI-Wahl, neue Elemente und History; danach folgt ein unabhängiger Review. Die V4-Bildpaare allein schließen `DD-006.03/.04` nicht.

@@ -143364,6 +143364,15 @@
           "measured": "Bei gleicher bestehender Geometrie ändert wall.shadow=false 15068 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
           "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
         },
+        "followUpPhase1HostRenderCandidate": {
+          "state": "candidate_render_save_reopen_review_pending",
+          "scope": "Vier importierte V4-Karten mit gleicher Geometrie und unabhängigen per-Element-Schattenwerten; kein UI-Toggle oder Historybeleg.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Wand aus ändert 27356 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
+          "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -143439,6 +143448,15 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
           "measured": "Bei gleicher bestehender Geometrie ändert object.shadow=false 238 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
           "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
+        },
+        "followUpPhase1HostRenderCandidate": {
+          "state": "candidate_render_save_reopen_review_pending",
+          "scope": "Vier importierte V4-Karten mit gleicher Geometrie und unabhängigen per-Element-Schattenwerten; kein UI-Toggle oder Historybeleg.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Objekt aus ändert 644 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
+          "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
         },
         "baseline": {
           "editor": {
