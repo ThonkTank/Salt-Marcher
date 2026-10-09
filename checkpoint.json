@@ -8,6 +8,30 @@
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "smr01CampaignData": {
+      "state": "e2e01_campaign_context_i01_n02_checked_re_review_pending",
+      "requirementPlan": "ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md",
+      "implementationPlan": "ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md",
+      "reviewedRequirementCandidate": "11e256309d43bcd1c14db66ffc41945c9360aec8",
+      "gateCatalog": "ROADMAP-E2E-GATES-CANDIDATE.md",
+      "gateCatalogCommit": "cc93c31870f461527b2f8953fe88e433dada7cd1",
+      "sharedBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+      "candidateBranch": "codex/e2e01-campaign-context-i01",
+      "scope": "Host-neutral CampaignLifecycle, CampaignContext, A-to-B-to-A isolation, reopen identity preservation and complete campaign-local copy/import remap model for E2E-01.",
+      "implementation": "Validated opaque campaign, context, command and receipt identities; immutable snapshots and projections; staged idempotent create/rename commands with cancel-before-publish, publish-wins, same-command status recovery and late-result guards; a separate revision-bound trusted owner-registry snapshot fixing every record ID to its declared record type as well as owner IDs and supported reference schemas; owner-confirmed inventory and AudioSource metadata/byte evidence; and an invisible Campaign/Data remap participant with independent Campaign/Namespace/local IDs.",
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 433,
+          "failed": 0
+        },
+        "build": "passed"
+      },
+      "limits": "Host-neutral product foundation only. No foreign payload rebinding, visible copy/import publish, Campaign-to-Atlas adapter, shared History/Transaction, durable P02 receipt/reopen, P04 archive import, host evidence or E2E-01 PASS.",
+      "planReview": "Independent review required two repairs on 2f7946643c73da0e1fbd9464021b68dda5e77ac8. Narrow re-review passed exact repaired plan aebc74ea247ff3498024939a19f4fe4d296f5ad0: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/19#issuecomment-6090810091",
+      "codeReview": "Independent R01 on 4685c6e8aeac698c0f8198ca87e0853c0fd371ce required clearing the completed publish promise after outcome resolution, anchoring delivery coverage in a separate trusted registry snapshot, and rejecting owner-unsupported or reserved record types. N01 implemented those repairs. The narrow re-review on 1a73c0b1446e9969ebbe47d69f10b5d78852f171 found that separate record-ID and record-type sets still permitted an ID-to-type swap. N02 binds each registry record ID directly to its declared type and adds the negative type-swap regression.",
+      "next": "Publish N02 and obtain an independent exact-SHA re-review before any steward handoff or integration."
+    },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
       "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
