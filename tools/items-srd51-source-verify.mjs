@@ -226,13 +226,16 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
     }).join(" ");
     const facts = [record.cost?.sourceText, record.weight?.sourceText, record.damage?.diceText,
       record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
-      record.armor?.strengthRequirementText, record.armor?.stealthRuleText].filter(Boolean);
+      record.armor?.strengthRequirementText, record.armor?.stealthRuleText,
+      ...record.properties.map(property => property.description),
+      ...record.description.map(description => description.text)].filter(Boolean);
     for (const fact of facts) {
       invariant(text.includes(normalizePdfText(fact)), `${record.id}: PDF-Beleg für „${fact}“ fehlt.`);
       checkedFacts += 1;
     }
   }
-  return Object.freeze({ checkedRecords: transcript.records.length, checkedFacts, scope: "structured-table-facts" });
+  return Object.freeze({ checkedRecords: transcript.records.length, checkedFacts,
+    scope: "structured-table-and-sourced-description-facts" });
 }
 
 async function json(path) {
