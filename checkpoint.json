@@ -357,23 +357,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "plan_and_local_baseline_checked_cloud_facts_pending",
+    "state": "hex01_complete_cloud_layout_reloaded_next_hex02",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "GM-UX-N-004-P01",
-      "kind": "bounded_diagnosis_planning",
-      "startedAt": "2026-10-09T15:56:40.748020+00:00",
-      "checkpointRegisteredAt": "2026-10-09T15:59:21.831542+00:00",
+      "id": "GM-UX-N-004-R01",
+      "kind": "host_retest_review",
+      "startedAt": "2026-10-09T16:31:18.304242+00:00",
+      "finishedAt": "2026-10-09T16:31:18.304242+00:00",
       "state": "completed",
-      "focus": "Own full/split baseline and actual Cloud sizing facts; product source unchanged.",
-      "finishedAt": "2026-10-09T16:00:59.321054+00:00",
-      "result": "Local full/split baseline stable over60frames; Cloud facts requested, cause not yet proved.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-plan-and-baseline.json"
+      "focus": "No source layout repair: incomplete QA installation caused missing flex rules; complete triplet plus app reload resolved observed failure. Start HEX02 implementation.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json"
     },
     "nextRun": {
-      "id": "GM-UX-N-004-I01",
-      "kind": "bounded_layout_implementation",
-      "focus": "Only if product layout feedback established; renderer sizing scope, no camera/hex changes."
+      "id": "HEX-02-I01a",
+      "kind": "implementation",
+      "focus": "Sparse native 3-mile terrain, continuous axial strokes and common document history; early host island next I01b."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -386,7 +384,7 @@
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
     },
     "open": [
-      "GM-UX-N-004: Cloud viewport/render reproduction and bounded repair before reuse in HEX02.",
+      "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
       "HEX02 terrain/history/drafts, then HEX03..05 common location/Dungeon Atlas; CITY01 depends on tested HEX05 contract.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open."
@@ -401,7 +399,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "R02 two Original processes normal0 and own two previous kernel hosts released; CITY holds native slot for COK selection/grouping. Requested return for changed integrated build kernel only.",
+      "nativeGuiSlot": "Root holds one local native slot for HEX02; City core-model prep only, Cloud host separate.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
@@ -960,6 +958,35 @@
       "gmViewportBaseline": {
         "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-plan-and-baseline.json",
         "cloudApproved": false
+      },
+      "gmViewportDiagnosis": {
+        "run": "GM-UX-N-004-R01",
+        "state": "installation_mismatch_resolved_after_app_reload",
+        "startedAt": "2026-10-09T16:31:18.304242+00:00",
+        "finishedAt": "2026-10-09T16:31:18.304242+00:00",
+        "reviewedSource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084884147",
+        "localFreshProcessProof": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-plan-and-baseline.json",
+        "localScreensViewed": true,
+        "cloudScreensViewedByRoot": false,
+        "cloudRetestByReviewer": {
+          "sourceCommit": "0dc85609a35bc4c4452f7afc2a360400922becab",
+          "mainSha256": "416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159",
+          "expectedStylesSha256": "6e3fd4d05a39bcddcd0753e42f17330da312810f94b19b51eb58eb64acb997c0",
+          "oldStylesSha256": "7aa18d6351e5a11d6a21860510cb8ab21469f0e7f323cedd2ceebb90256e9c33",
+          "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "reloadOnly": true,
+          "splitViewport": "546.5x796",
+          "fullViewport": "1096x819.6",
+          "visibleRasterAndZoomFitPassed": true,
+          "otherVaultFilesHashUnchanged": true
+        },
+        "productFilesChanged": false,
+        "cleanupRequired": false,
+        "remaining": [
+          "Cloud fresh Electron process unverified",
+          "Filled terrain / full Atlas / physical input and large-map approval remain open"
+        ],
+        "decision": "No source layout repair: incomplete QA installation caused missing flex rules; complete triplet plus app reload resolved observed failure. Start HEX02 implementation."
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
