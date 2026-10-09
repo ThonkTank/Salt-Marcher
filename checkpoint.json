@@ -9,14 +9,14 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "peer_changes_required_repair_pending_rereview",
+      "state": "architecture_changes_required_repair_pending_rereview",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
       "integratedShared": "b6effa8c39d6c9e8d46c9ad2386e9736f92eb1b2",
-      "planCandidateCommit": "c8fb1ebce65969a4d6ae437300a5bafd45288aa2",
-      "reviewedCandidate": "77c8ece7ee803123524d64295d6a8c748a1845c0",
-      "review": "Campaign/Data peer R02 in Issue comment 6087780040 required permanent Character deletion to remove every live Scene, mask and Combat reference in the same confirmed publication boundary, never as deleted-with-cleanup-pending. The repair also forbids Undo from restoring the deleted CharacterId; focused peer re-review and independent architecture review remain required.",
+      "planCandidateCommit": "4bfa7d80bd5b611c9b1e312dec0558959012ee18",
+      "reviewedCandidate": "c8fb1ebce65969a4d6ae437300a5bafd45288aa2",
+      "review": "Independent architecture R03 in Issue comment 6087888192 required explicit deletion-source precedence and full owner closure, complete Rejoin/Scene retirement, five-phase fault acceptance, Party command history, missing acceptance cases and activation-source precedence. The repair incorporates Campaign/Data decision 6087908963 and Music/Weather/Shops ratification 6087913612; focused owner and independent architecture re-reviews remain required.",
       "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
     },
     "source": {
