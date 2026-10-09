@@ -4083,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I37-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:50:44.965080+00:00",
-      "focus": "Flussbelege CP",
-      "state": "completed",
-      "result": "Plan: CO-WAT-0001-Snapshot um kontrollierte River-Wirkung und offene Übergangstopologie ergänzen. Geplante Wasser-Ausschlussflächen/Übergangselemente mit fremdem Umgebungsbesitz in ARCHITECTURE verankern. Historische Seed/Größen/Feature-Belege und sämtliche IDs erhalten; Hashes/Verweise/65/24 offene Pflichten prüfen; CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I37-CI",
       "kind": "cleanup_implementation",
-      "focus": "Flussbelege und Snapshot CI"
+      "startedAt": "2026-10-09T15:50:58.493229+00:00",
+      "focus": "Flussbelege CI",
+      "state": "completed",
+      "result": "Snapshot enthält River-Umgebungswirkung mit leerer planks-Gruppe und offener Topologie. Architektur führt geplante Wasser-/Uferabstände, explizite Übergänge und geschützten regionalen Dokumentbesitz; keine Produktabnahme aus Originalprobe."
+    },
+    "nextRun": {
+      "id": "CITY-00-I37-CR",
+      "kind": "cleanup_review",
+      "focus": "Flussbelege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
