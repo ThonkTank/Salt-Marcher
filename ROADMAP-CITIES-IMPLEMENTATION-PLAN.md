@@ -111,3 +111,11 @@ CI-Ergebnis: CLP-01/02/03 konkretisiert; keine Produktfähigkeit implementiert o
 09.10.2026; eigener Reviewlauf nach CI-Commit 83693f3. CLP-01 bestanden: stabiles Dreiproduktschema trennt Dokumentation, Originalprobe und eigene Abnahme. CLP-02 bestanden: fünf überprüfbare Atlasübergaben; keine zweite Kamera/History. CLP-03 bestanden: vollständiges Inventar plus CTY- und Endbuildreview, messbare gepaarte Bedienaufgaben; Zugangslücken bleiben offen. Alle 24 bestehenden CTY-Fälle sind eindeutig zugeordnet. Checkpoint-Roots des Ausgangsstands sind semantisch unverändert. JSON-/Verweisprüfung und Diffcheck bestanden.
 
 Keine weitere Pflichtlücke im Planaufbau gefunden. Dies beendet die Bereinigung des Planungspakets, nicht CITY-00 oder die Produktparität. CITY-00-I01 beginnt mit direkten Browserproben und Erweiterung des Katalogs auf drei Originalprodukte; native QA nur nach gemeinsamer Sperrprüfung. Der vollständige Originalumfang ist noch zu ermitteln.
+
+## Referenzpaket-Aufräumplan CITY-00-I02-CP
+
+R01: Pauschale Zuordnung aller CTY-Fälle einer Phase entfernen. In CI eine explizite semantische Tabelle je CO-Kennung verwenden. Zusätzliche Bewohner-/Simulations-/Exportfähigkeiten ohne entsprechendes CTY-Kriterium bleiben eigenständige Funktionsanforderungen (`caseIds: []`, `independentFunctionalRequirement: true`); sie werden dadurch nicht optional. Stabile CO-/CTY-Kennungen und vorhandene Belege erhalten.
+
+R02: Für die JSON-Exportaktion `originalProbe.exportFileState: unverified_after_download_timeout` samt Beobachtung eintragen. Datei-/Formatinhalt erst nach realer Sicherung belegen. Menübeobachtung bleibt als Teilbeleg; keine Fähigkeiten oder Qualitätsanforderungen streichen.
+
+CI führt ausschließlich diese beiden Katalogbereinigungen aus. CR prüft vollständige Kennungs-/Belegerhaltung, die explizite CTY-Zuordnung, fehlende Abschlussbehauptungen und JSON-/Diffgültigkeit. Danach eigener Fach-Nachreview N-R, bevor das nächste Originalpaket startet. Die vollständige CITY-00-Abnahme bleibt offen.

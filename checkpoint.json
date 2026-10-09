@@ -3366,20 +3366,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I02-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T12:22:09.154275+02:00",
-      "focus": "Direkte Originalbelege und funktionale Anforderungszuordnung des begrenzten FTG-Pakets",
-      "state": "completed_changes_required",
-      "result": "Direkte FTG-Proben bestätigt; R01 pauschale CTY-Zuordnung korrigieren; R02 fehlende Exportdatei explizit erhalten",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/reference-review.json"
-      ]
-    },
-    "nextRun": {
       "id": "CITY-00-I02-CP",
       "kind": "cleanup_planning",
-      "focus": "Katalogzuordnung und Beleggrenzen bereinigen, dann CI und CR separat"
+      "startedAt": "2026-10-09T12:22:37.572740+02:00",
+      "focus": "Explizite CO-/CTY-Zuordnung und unbestätigten Downloadstatus planen",
+      "state": "completed",
+      "result": "R01/R02 gezielt im Plan beschrieben; keine Originalfähigkeit ausgeschlossen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I02-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Katalogzuordnung explizit und belegtreu bereinigen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
