@@ -905,3 +905,5 @@ CITY-00-I42-REVIEW-CLEAN-I42 Start 2026-10-09T18:54:46.255992+00:00; bestehender
 CITY-00-I42-REVIEW-CLEAN-R42 Start 2026-10-09T18:55:03.984815+00:00; unveränderteRawhashes/Reviewlink/24CTY+65COopen/fremdeWurzeln geprüft. KeinRestbefund imI42Aufräumen. NächstePlanung:frischfreigegebenerisolierterCOKVariantenvergleich,keineUndoRetry.
 
 CITY-00-I43-P43 Start 2026-10-09T18:55:59.348181+00:00; ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md plant neueCOKKategorie-/Variantenwirkungsprobe aufeigenerQA-Kopie, freigegebenerSlot, keineUndoRetry/Versionsübertreibung. Cleanup-P/I/R vorI43.
+
+CITY-00-I43-PLAN-CLEAN-P43 Start 2026-10-09T18:56:33.932996+00:00; Plan: neuenVariantenplan imbestehendenReferenzabschnittverlinken; eigeneQA-Originalkopie/Demo-/Slotgrenzen verifizieren. KeinRuntimeumbau. ReviewprüftLink/Originalhashschutz und65CO/24CTYopen.
