@@ -185,3 +185,10 @@ ihn gegen Issue-#1-Kommentar `6085700084`, den aktuellen `FileView`-,
 `DungeonView`-, `DungeonEditor`- und `MapRenderer`-Vertrag sowie die
 Nichtmutationsgrenze ab. Ein PASS öffnet nur `GM-UX-N-006-I01`; er ist keine
 Implementierungs-, UX-, Host-, physische Eingabe- oder Fachfreigabe.
+
+Der unabhängige Erstreview des Plankandidaten `95a972c` verlangte eine monotone
+Mehr-Leaf-Reihenfolge, vollständige Async-Lifecycle-Guards und eine echte
+Obsidian-Layoutspeicherung. Der exakte Reparaturcommit `e922b9c` schloss alle
+drei Pflichtbefunde und bestand den unabhängigen Nachreview ohne weitere
+Pflichtlücke. Damit ist nur `GM-UX-N-006-I01` planseitig geöffnet; Implementierung
+und Hostprüfung wurden nicht begonnen.

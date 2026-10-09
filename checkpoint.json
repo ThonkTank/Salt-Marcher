@@ -2023,16 +2023,16 @@
     },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
-      "state": "plan_repaired_independent_re_review_pending",
+      "state": "plan_repaired_independent_re_review_passed",
       "run": "GM-UX-N-006-P01",
       "plan": "ROADMAP-GM-UX-N-006-PLAN.md",
       "source": "GM-UX-006 im getrennten Cloud-GM-Produkttest; Issue #1 Kommentar 6085700084",
       "ownership": "Dungeon-Strang; vor Fortsetzung auf Shared-Head 2a055f10800c63678ca9fe991b0dd31a02483744 keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer. N-005-I01 wird durch denselben Dungeon-Strang unmittelbar nach veröffentlichtem N-006-P01-Review-PASS übernommen und bis dahin nicht parallel begonnen.",
       "finding": "Auf isolierter Nebelwacht-Kopie blieben Geschoss Geheimgang, Räume 13–15, Türen, Key und Gang gespeichert; nach Schließen und Wiederöffnen war in zwei Läufen jeweils Erdgeschoss aktiv.",
       "planDecision": "Das letzte gültige aktive Geschoss derselben Karte automatisch über den bestehenden Obsidian-FileView-State plus einen flüchtigen, gleich codierten Tab-Reopen-Handoff wiederherstellen. Kein belegter Grund für absichtlichen Erdgeschoss-Reset oder zusätzliche Wiederaufnahmeoberfläche; kein Karten-, Draft-, History- oder Plugin-Datenzustand.",
-      "review": "Unabhängiger read-only Review des Plankandidaten 95a972cf05cb9ff99a646109a3642fcabde8e8b7 verlangte monotone Mehr-Leaf-Reihenfolge ohne stale Unload-Overwrite, Generation/Pfad/Editor-Guards nach allen Await-Grenzen und echte Obsidian-Layoutspeicherung über erhaltenen Base-State, ViewStateResult und requestSaveLayout. Reparatur umgesetzt; Nachreview des exakten Reparaturcommits ausstehend.",
+      "review": "Unabhängiger read-only Review des Plankandidaten 95a972cf05cb9ff99a646109a3642fcabde8e8b7 verlangte monotone Mehr-Leaf-Reihenfolge ohne stale Unload-Overwrite, Generation/Pfad/Editor-Guards nach allen Await-Grenzen und echte Obsidian-Layoutspeicherung über erhaltenen Base-State, ViewStateResult und requestSaveLayout. Der exakte Reparaturcommit e922b9c4a35ca4e2814ba7f747c251fb38ae02be bestand den unabhängigen Nachreview ohne weitere Pflichtlücke.",
       "limits": "Nur technischer Plan; noch keine Produktänderung oder GUI-/Hostprüfung. Frischer Prozess ohne wiederhergestelltes Leaf fällt weiterhin auf das erste Geschoss zurück. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe.",
-      "next": "Exakten reparierten Plancommit unabhängig gegen die drei Pflichtbefunde und den übrigen Tester-/Nichtmutationsvertrag nachreviewen."
+      "next": "GM-UX-N-006-I01 ist planseitig geöffnet, aber nicht gestartet. Gemäß Koordination folgt zunächst der separat bestandene GM-UX-N-005-I01-Lauf beim selben Dungeon-Besitzer; vor Umsetzung Shared-Head und Besitz erneut prüfen."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2620,7 +2620,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-006-P01-R01: den exakten Plan zur automatischen Wiederherstellung des aktiven Geschosses über gemeinsamen FileView-/flüchtigen Tab-Reopen-State unabhängig reviewen und Pflichtlücken reparieren. N-005-I01 folgt beim selben Dungeon-Besitzer erst nach veröffentlichtem Planreview-PASS; DD-036 und Atlaspersistenz bleiben getrennt.",
+    "nextRun": "GM-UX-N-005-I01: der Dungeon-Strang übernimmt nach veröffentlichtem N-006-P01-Review-PASS ausschließlich die reine V4-Raum-Key-Projektion und Suche aus ROADMAP-GM-UX-N-005-PLAN.md. Vor Umsetzung Shared-Head, Issue #1, PRs und Branches erneut prüfen; N-006-I01 bleibt separat planseitig offen, DD-036-O01a gehört dem getrennten Besitzer, Atlaspersistenz bleibt unberührt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
