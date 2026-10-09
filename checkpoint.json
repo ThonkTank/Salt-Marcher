@@ -4399,17 +4399,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N07",
-      "kind": "refinement",
-      "startedAt": "2026-10-09T18:16:37.056677+00:00",
-      "focus": "Precision-Reparatur um tatsächliche Rotationsanteile korrigieren",
-      "state": "completed",
-      "result": "Inverse Precision mit abs(cos/sin) gewichtet; beide echte Kleinständerungen wirksam,8gedrehte No-ops erhalten. Eingehendes Atlas-Speicherpaket integriert;check,347Tests/build bestanden. Keine APIänderung, R10 offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R10",
       "kind": "review",
-      "focus": "Bestehende Precisionreparatur mit Originalgegenproben und integriertem Atlaspaket sicher reviewen"
+      "startedAt": "2026-10-09T18:19:16.853758+00:00",
+      "focus": "Bestehende Präzisionsreparatur abschließend prüfen",
+      "state": "completed",
+      "result": "Originalgegenfälle und echte kleine Änderungen bestätigt;144Konturen exakt,2304Inverse-Achsfehler unter Schätzung. Beide lokalen Befunde geschlossen, Quellen unverändert zu347Tests/check/build. Host offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-GESTURES-FINAL-CLEAN-P06",
+      "kind": "cleanup_plan",
+      "focus": "Abgeschlossenen lokalen Werkzeugkern und fehlende Hostanschlüsse konsistent dokumentieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
