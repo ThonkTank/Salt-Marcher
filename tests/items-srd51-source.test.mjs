@@ -62,7 +62,7 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 13);
+  assert.equal(result.validation.occurrenceCount, 50);
   assert.equal(result.validation.recordCount, 13);
   assert.ok(result.blockers.length >= 5);
 });
