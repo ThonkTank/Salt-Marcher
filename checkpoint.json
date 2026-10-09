@@ -1915,7 +1915,7 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "plan_repaired_independent_re_review_pending",
+      "state": "plan_repaired_independent_re_review_passed",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
       "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
@@ -1923,9 +1923,10 @@
       "repairRun": "DD-036-ATLAS-P01-R01",
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
-      "limits": "Nur Planreparatur; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. HEX-02 und die reale Shell bleiben Voraussetzungen.",
-      "next": "Unabhängiger read-only Re-Review des exakten DD-036-ATLAS-P01-R01-Plancommits gegen Issue #1 Kommentar 6084893762; erst PASS öffnet O01a für eine referenzfreie .overworld. O01b mit Kinddateien wartet auf Terrain-Lader und sichtbare Hostverdrahtung.",
-      "followingRun": "GM-UX-N-005-P01: nach bestandenem DD-036-Planreview als eigener Dungeon-Planlauf die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen."
+      "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
+      "limits": "Nur Planreparatur und Planreview; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. O01a ist planbar, aber nicht gestartet; O01b, HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
+      "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
