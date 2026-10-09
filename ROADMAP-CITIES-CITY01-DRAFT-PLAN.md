@@ -55,3 +55,7 @@ Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catc
 ## Aufräumplan nach I05/R06
 
 CITY-01-PREP-DRAFT-CLEAN-P05 Start 2026-10-09T17:49:17.752616+00:00. Der Draft hat keine Listener, Timer, zweite History oder persistenten Kandidaten; keine Laufzeitbereinigung begründet. Die zwei Dokument-/Szenenkopien bleiben geprüfte Ownershipgrenzen. ARCHITECTURE um vorhandenen Draft und private History-Fehlerisolation ergänzen; den historischen Observerbefund im Plan ausdrücklich als repariert kennzeichnen. Quellhashes und fremde JSON-Roots erhalten. CITY-DRAFT-R06-01 bleibt offen und bekommt danach N05/R07: dauerhafte Straßen-/Hausanlage und codecgültiger Szenenfehler. Getrennte Aufräumumsetzung und Review prüfen Dokument-/Quellkonsistenz; Host/Atlas/Save bleiben offen.
+
+## Aufräumplan nach N05/R07
+
+CITY-01-PREP-N05-CLEAN-P05 Start 2026-10-09T17:52:58.904860+00:00. Die beiden neuen Regressionen verwenden echte vorhandene Quellen und gemeinsame History, keine produktionsfremden Zustandskopien. Geprüfte kleine Hausfixture wiederverwenden; kein unnötiger Fixture-/Runtimeumbau. Gesamt- und Anschlussplan müssen den inzwischen vorhandenen CityDraft samt geprüften Grenzen nennen, während Renderer, Gestenrouter, Platzierung und Save/Reload offen bleiben. Danach Quellenhashes aus N05, JSON, neue Verweise und offene CTY-Fälle prüfen. Der nächste technische Plan behandelt den City-Werkzeugadapter am bestätigten aufrufergelieferten project/unproject-Vertrag; tatsächliche Atlas-/Hostintegration erfolgt mit dem Hexbesitzer.
