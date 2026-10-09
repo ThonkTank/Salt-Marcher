@@ -150,6 +150,72 @@ test("room key search yields a clean key dock, but dirty draft blocks before lay
   ]);
 });
 
+test("editor floor restore and programmatic switches use one nonmutating state port", () => {
+  const session = new Session(newDocument("Geschosse", 20, 20, undefined, undefined, 4));
+  const initial = session.floors.values().next().value!;
+  const upper = addFloor(session);
+  const before = session.document();
+  const dirty = session.dirty;
+  const historySize = session.historySize;
+  const changed: string[] = [];
+  const fake = {
+    closed: false,
+    session,
+    renderer: {
+      floorId: initial.id,
+      setFloor(id: string) { this.floorId = id; },
+    },
+    floor: { value: initial.id },
+    host: { floorState: { changed: (id: string) => changed.push(id) } },
+    cancel() {},
+    applyComparison() {},
+    allowKeyNavigation: () => true,
+    applySelection: () => Promise.resolve(),
+    applyFloor(id: string) { methods.applyFloor!.call(this, id); },
+    switchFloor(id: string) { methods.switchFloor!.call(this, id); },
+  };
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  assert.equal(methods.restoreInitialFloor!.call(fake, upper.id), upper.id);
+  assert.deepEqual(changed, [upper.id]);
+  assert.equal(fake.floor.value, upper.id);
+  methods.applyFloor!.call(fake, initial.id);
+  assert.deepEqual(changed, [upper.id, initial.id]);
+  assert.equal(methods.restoreInitialFloor!.call(fake, "deleted-floor"), initial.id);
+  assert.deepEqual(changed, [upper.id, initial.id, initial.id]);
+  assert.deepEqual(session.document(), before);
+  assert.equal(session.dirty, dirty);
+  assert.equal(session.historySize, historySize);
+});
+
+test("same-file workspace floor restore honors dirty guard and clears selection", async () => {
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  const calls: string[] = [];
+  let allowed = false;
+  const fake = {
+    closed: false,
+    session: { floors: new Map([["floor-a", {}], ["floor-b", {}]]) },
+    renderer: { floorId: "floor-a" },
+    floor: { value: "floor-a" },
+    allowKeyNavigation: () => allowed,
+    applyFloor: (id: string) => {
+      calls.push(`floor:${id}`);
+      fake.renderer.floorId = id;
+    },
+    applySelection: (ids: string[]) => {
+      calls.push(`selection:${ids.length}`);
+      return Promise.resolve();
+    },
+    switchFloor(id: string) { methods.switchFloor!.call(this, id); },
+  };
+  assert.equal(methods.restoreWorkspaceFloor!.call(fake, "floor-b"), "floor-a");
+  assert.deepEqual(calls, []);
+  assert.equal(fake.floor.value, "floor-a");
+  allowed = true;
+  assert.equal(methods.restoreWorkspaceFloor!.call(fake, "floor-b"), "floor-b");
+  await Promise.resolve();
+  assert.deepEqual(calls, ["floor:floor-b", "selection:0"]);
+});
+
 test("room key result CSS keeps the location line visible in the 256px inspector", () => {
   const css = readFileSync("styles.css", "utf8");
   assert.match(css, /\.dn-room-key-search-result\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*44px;/s);

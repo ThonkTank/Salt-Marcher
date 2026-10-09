@@ -1,4 +1,4 @@
-import { App, FileView, ItemView, MarkdownRenderChild, Notice, TFile, type WorkspaceLeaf } from "obsidian";
+import { App, FileView, ItemView, MarkdownRenderChild, Notice, TFile, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import { type CompassDirection, type FeatureOccurrence, type Door, type Entity, type MapObject, type NoteLink, type Room, isRoom, isStructuredRoom } from "../model";
 import { compactWheelNavigation, wheelNavigation } from "../navigation";
 import { DungeonEditor, type EditorHost } from "../editor";
@@ -14,6 +14,12 @@ import { PrefabNameModal, GeneratorModal, ReferenceImagesModal, MapInformationMo
 import { VIEW, PENDING_VIEW, PLAY_VIEW, ROOM_VIEW } from "./view-types";
 import type DungeonPlugin from "../main";
 import type { OpenMap } from "../main";
+import {
+  dungeonViewState,
+  dungeonViewStateFromWorkspace,
+  withDungeonViewState,
+  type DungeonViewState,
+} from "../features/verwaltung/dungeon-view-state";
 
 export class DungeonMapCard {
   readonly el = document.createElement("div");
@@ -665,6 +671,7 @@ function editorHost(
   sourceDocument: Document,
   pending = false,
   exportName?: string,
+  floorState?: EditorHost["floorState"],
 ): EditorHost {
   const bindSourceDocument = () => {
     // Obsidian creates Modal in activeWindow, which can lag behind this view.
@@ -813,6 +820,7 @@ function editorHost(
     },
     openPlay: pending ? undefined : (roomId) => void plugin.openPlay(mapPath, roomId),
     exitEditor: () => exitEditor(),
+    floorState,
   };
 }
 export class PendingDungeonView extends ItemView {
@@ -921,12 +929,30 @@ export class DungeonView extends FileView {
   private current?: OpenMap;
   private mapPath?: string;
   private generation = 0;
+  private requestedState?: DungeonViewState;
+  private currentLoad?: {
+    readonly generation: number;
+    readonly acquiredPath: string;
+    path: string;
+    map?: OpenMap;
+    editor?: DungeonEditor;
+    closed: boolean;
+    released: boolean;
+    closing?: Promise<void>;
+  };
   get session(): Session | undefined {
     return this.editor ? this.current?.session : undefined;
   }
   constructor(
     leaf: WorkspaceLeaf,
     private plugin: DungeonPlugin,
+    private readonly createEditor: (
+      root: HTMLElement,
+      session: Session,
+      repository: OpenMap["repository"],
+      host: EditorHost,
+    ) => DungeonEditor = (root, session, repository, host) =>
+      new DungeonEditor(root, session, repository, host),
   ) {
     super(leaf);
   }
@@ -939,22 +965,114 @@ export class DungeonView extends FileView {
   getIcon(): string {
     return "map";
   }
+  getState(): Record<string, unknown> {
+    const base = super.getState();
+    const path = this.mapPath ?? this.file?.path;
+    const state = path && this.editor
+      ? dungeonViewState(path, this.editor.activeFloorId)
+      : undefined;
+    return state ? withDungeonViewState(base, state) : base;
+  }
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
+    const requested = dungeonViewStateFromWorkspace(state);
+    this.requestedState = requested;
+    await super.setState(state, result);
+    if (this.requestedState !== requested) return;
+    if (!requested) {
+      this.requestedState = undefined;
+      return;
+    }
+    const load = this.currentLoad;
+    if (
+      load &&
+      requested.path === load.path &&
+      load.editor &&
+      this.owns(load)
+    ) {
+      this.requestedState = undefined;
+      load.editor.restoreWorkspaceFloor(requested.activeFloorId);
+      return;
+    }
+    if (this.file?.path && this.file.path !== requested.path)
+      this.requestedState = undefined;
+  }
+  private owns(load: NonNullable<DungeonView["currentLoad"]>): boolean {
+    return (
+      this.currentLoad === load &&
+      !load.closed &&
+      load.generation === this.generation &&
+      this.file?.path === load.path &&
+      (!load.editor ||
+        (this.editor === load.editor &&
+          this.current === load.map &&
+          this.mapPath === load.path))
+    );
+  }
+  private releaseLoad(load: NonNullable<DungeonView["currentLoad"]>): void {
+    if (!load.map || load.released) return;
+    load.released = true;
+    this.plugin.release(load.acquiredPath, load.map);
+  }
+  private closeLoad(load?: NonNullable<DungeonView["currentLoad"]>): Promise<void> {
+    if (!load) return Promise.resolve();
+    load.closed = true;
+    if (load.closing) return load.closing;
+    load.closing = (async () => {
+      if (load.editor) {
+        try {
+          load.editor.commitNote();
+          if (load.map?.session.dirty)
+            await load.map.repository.persistDraft(load.map.session);
+        } catch (error) {
+          new Notice(
+            "Entwurf konnte nicht gesichert werden und bleibt in dieser Sitzung erhalten: " +
+              String(error),
+            10000,
+          );
+        }
+        load.editor.destroy();
+      }
+      this.releaseLoad(load);
+    })();
+    return load.closing;
+  }
   async onLoadFile(file: TFile): Promise<void> {
     const generation = ++this.generation;
+    const prior = this.currentLoad;
+    this.currentLoad = undefined;
+    await this.closeLoad(prior);
+    if (this.editor === prior?.editor) this.editor = undefined;
+    if (this.current === prior?.map) this.current = undefined;
+    if (this.mapPath === prior?.path) this.mapPath = undefined;
+    if (generation !== this.generation || this.file?.path !== file.path) return;
+    const load: NonNullable<DungeonView["currentLoad"]> = {
+      generation,
+      acquiredPath: file.path,
+      path: file.path,
+      closed: false,
+      released: false,
+    };
+    this.currentLoad = load;
     this.contentEl.replaceChildren();
     this.contentEl.createEl("p", { text: "Karte wird geöffnet …" });
     try {
       const map = await this.plugin.acquire(file.path);
+      load.map = map;
+      if (!this.owns(load)) {
+        this.releaseLoad(load);
+        return;
+      }
       await this.plugin.ensureAssets();
-      if (generation !== this.generation) {
-        this.plugin.release(file.path, map);
+      if (!this.owns(load)) {
+        this.releaseLoad(load);
         return;
       }
       this.current = map;
       this.mapPath = file.path;
       this.contentEl.replaceChildren();
       this.plugin.resetObjectColorForMap();
-      this.editor = new DungeonEditor(
+      let editor!: DungeonEditor;
+      editor = this.createEditor(
         this.contentEl,
         map.session,
         map.repository,
@@ -963,38 +1081,68 @@ editorHost(
           () => map.repository.save(map.session),
           () => this.exitEditor(),
           this.contentEl.ownerDocument, false, file.basename,
+          {
+            changed: (activeFloorId) => {
+              if (!this.owns(load) || load.editor !== editor || this.editor !== editor)
+                return;
+              const state = this.plugin.rememberDungeonViewState(
+                this.leaf,
+                load.path,
+                activeFloorId,
+              );
+              if (!state || !this.owns(load)) return;
+              this.app.workspace.requestSaveLayout();
+            },
+          },
         ),
       );
-      await this.editor.init();
-      this.editor.maximize();
+      load.editor = editor;
+      this.editor = editor;
+      await editor.init();
+      if (!this.owns(load) || load.editor !== editor || this.editor !== editor) {
+        await this.closeLoad(load);
+        return;
+      }
+      const ownState = this.requestedState?.path === file.path
+        ? this.requestedState
+        : undefined;
+      const requested = ownState ?? this.plugin.dungeonViewState(file.path);
+      this.requestedState = undefined;
+      if (!this.owns(load)) return;
+      editor.restoreInitialFloor(requested?.activeFloorId);
+      if (!this.owns(load)) return;
+      editor.maximize();
     } catch (error) {
-      this.contentEl.replaceChildren();
-      this.contentEl.createEl("p", {
-        text: "Die Karte konnte nicht geöffnet werden: " + String(error),
-      });
+      const visible = this.owns(load);
+      if (this.currentLoad === load) this.currentLoad = undefined;
+      await this.closeLoad(load);
+      if (this.editor === load.editor) this.editor = undefined;
+      if (this.current === load.map) this.current = undefined;
+      if (this.mapPath === load.path) this.mapPath = undefined;
+      if (visible) {
+        this.contentEl.replaceChildren();
+        this.contentEl.createEl("p", {
+          text: "Die Karte konnte nicht geöffnet werden: " + String(error),
+        });
+      }
     }
   }
   async onUnloadFile(): Promise<void> {
     this.generation++;
-    if (this.editor) {
-      try {
-        this.editor.commitNote();
-        if (this.current?.session.dirty)
-          await this.current.repository.persistDraft(this.current.session);
-      } catch (error) {
-        new Notice(
-          "Entwurf konnte nicht gesichert werden und bleibt in dieser Sitzung erhalten: " +
-            String(error),
-          10000,
-        );
-      }
-      this.editor.destroy();
-      this.editor = undefined;
-    }
-    if (this.current && this.mapPath)
-      this.plugin.release(this.mapPath, this.current);
+    const load = this.currentLoad;
+    this.currentLoad = undefined;
+    await this.closeLoad(load);
+    this.editor = undefined;
     this.current = undefined;
     this.mapPath = undefined;
+  }
+  async onRename(file: TFile): Promise<void> {
+    const previousPath = this.mapPath;
+    await super.onRename(file);
+    const load = this.currentLoad;
+    if (!load || previousPath !== load.path) return;
+    load.path = file.path;
+    this.mapPath = file.path;
   }
   private exitEditor(): void {
     const play =

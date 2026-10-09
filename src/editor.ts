@@ -232,6 +232,9 @@ export interface EditorHost {
   forgetPrefab?: (prefab: Prefab, doc: Document, signal: AbortSignal) => Promise<boolean>;
   requestPrefabDetails?: () => Promise<{ set: string; name: string } | null>;
   exitEditor?: () => void;
+  floorState?: {
+    changed: (activeFloorId: string) => void;
+  };
 }
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -1379,6 +1382,21 @@ export class DungeonEditor {
       options,
     );
   }
+  get activeFloorId(): string {
+    return this.renderer.floorId;
+  }
+  restoreInitialFloor(requested?: string): string {
+    if (this.closed) return this.renderer.floorId;
+    if (requested && this.session.floors.has(requested)) this.applyFloor(requested);
+    else this.host.floorState?.changed(this.renderer.floorId);
+    return this.renderer.floorId;
+  }
+  restoreWorkspaceFloor(requested: string): string {
+    if (this.closed || !this.session.floors.has(requested))
+      return this.renderer.floorId;
+    this.switchFloor(requested);
+    return this.renderer.floorId;
+  }
   private refreshFloors(): void {
     const selected = this.floor?.value,
       compare = this.compare?.value;
@@ -1403,10 +1421,12 @@ export class DungeonEditor {
     void this.applySelection([], false);
   }
   private applyFloor(id: string): void {
+    if (!this.session.floors.has(id)) return;
     this.cancel();
-    this.floor.value = id;
     this.renderer.setFloor(id);
+    this.floor.value = this.renderer.floorId;
     this.applyComparison();
+    this.host.floorState?.changed(this.renderer.floorId);
   }
   private async copyCurrentFloor(): Promise<void> {
     try {

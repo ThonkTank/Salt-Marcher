@@ -46,6 +46,11 @@ import { emptyObjectTags, mergeObjectTags,
   type ObjectTagDocument } from "./features/objekte/object-tags";
 import { ObjectTagsModal } from "./ui/object-tags-modal";
 import { newSizePresetSize } from "./features/verwaltung/new-map-size";
+import {
+  DungeonViewStateRegistry,
+  dungeonViewState,
+  type DungeonViewState,
+} from "./features/verwaltung/dungeon-view-state";
 import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loader";
 import { CreatureCatalogView } from "./features/catalog/creature-catalog-view";
 import { createUniqueCatalogOpener } from "./features/catalog/creature-catalog-view-content";
@@ -145,6 +150,7 @@ export default class DungeonPlugin extends Plugin {
   disableBuildingWearForNewMap = false;
   startWizardForNewMap = false;
   private readonly sessionSizePresets: SizePreset[] = [];
+  private readonly dungeonViewStates = new DungeonViewStateRegistry();
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
@@ -355,6 +361,31 @@ export default class DungeonPlugin extends Plugin {
           );
       }),
     );
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        if (!oldPath.endsWith(".dungeon")) return;
+        if (file instanceof TFile && file.extension === "dungeon")
+          this.dungeonViewStates.rename(oldPath, file.path);
+        else this.dungeonViewStates.delete(oldPath);
+      }),
+    );
+    this.registerEvent(
+      this.app.vault.on("delete", (file) => {
+        if (file instanceof TFile && file.extension === "dungeon")
+          this.dungeonViewStates.delete(file.path);
+      }),
+    );
+  }
+  dungeonViewState(path: string): DungeonViewState | undefined {
+    return this.dungeonViewStates.latest(path)?.state;
+  }
+  rememberDungeonViewState(
+    leafToken: object,
+    path: string,
+    activeFloorId: string,
+  ): DungeonViewState | undefined {
+    const state = dungeonViewState(path, activeFloorId);
+    return state ? this.dungeonViewStates.publish(leafToken, state)?.state : undefined;
   }
   openAssets(session?: Session): void {
     new AssetPackagesModal(
@@ -868,6 +899,7 @@ export default class DungeonPlugin extends Plugin {
     }
   }
   onunload(): void {
+    this.dungeonViewStates.clear();
     for (const pending of this.maps.values())
       void pending
         .then((map) => {
