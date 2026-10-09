@@ -627,7 +627,7 @@ async function main() {
       "--env=XDG_CONFIG_HOME=" + qa + "/config",
       "--env=XDG_CACHE_HOME=" + qa + "/cache",
       "--env=XDG_DATA_HOME=" + qa + "/data",
-      "md.obsidian.Obsidian",
+      "md.obsidian.Obsidian//stable",
       "--user-data-dir=" + qa + "/config/obsidian",
       "--remote-debugging-port=" + debugPort,
       "--remote-debugging-address=127.0.0.1",
