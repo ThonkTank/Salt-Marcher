@@ -32,6 +32,10 @@ Die Bilder in `acceptance.json` belegen häufig zunächst nur Sichtbarkeit und B
 
 Innerhalb der Umsetzung können diese Blöcke als einzeln prüfbare Commits veröffentlicht werden; der unabhängige Fachreview beginnt erst auf einem gemeinsamen Endbuild. Der bestehende `DD-039`-Hostbeleg und die vier belegten Start-/Vorlagenfälle sind Regressionen, keine Wiederimplementierungsaufträge.
 
+## DD-039-Hostpaar ohne Größenänderung
+
+Der eigenständige GUI-Prüfer `tools/host/parity-tools-phase1-map-info.cjs` ist vorbereitet. Er öffnet Karteninformationen auf einer unveränderten 8×8-Karte, prüft Größe und Pfad, leere und ausgewählte Paketliste, Close/X ohne Dokument- oder Historyänderung sowie beide gespeicherten Zustände nach frischem Hoststart. Die bisherige DD-039-Regression nutzte den nun ausgeschlossenen Resize-Befehl; ihre Belege bleiben historisch. Syntax, Typprüfung, 206 Kerntests und Build bestehen auf unverändertem Produktbundle. **Der neue GUI-Edit- und Neuöffnungslauf ist noch nicht ausgeführt; DD-039 und das Phase-1-Tor bleiben offen.** Nach Freigabe des lokalen Grafikplatzes folgen beide Hostläufe, Rohdatenprüfung und eigener Review.
+
 ## Fachreview und Tor
 
 Der getrennte Review liest jeden der 68 Einträge gegen Original- und Hostrohbeleg. Er prüft mindestens leeren Start, bearbeitete Karte, Abbruchpfade, Undo/Redo, Save As/Recent, Schatten/Abnutzung, Zoom/Guide/Ruler und frische Neuöffnung. Eine kombinierte V4-Folge erhält Raum-ID, Feature-Verweis, wortgleiche Key-Bytes und gespeicherte Bildgrößen; eine große Karte deckt Ansichtswechsel und Speichern ab. `npm run check`, `npm test`, `npm run build` und passende isolierte Hostläufe ergänzen die Bedienprüfung. Produktiver Vault und Fremdänderungen bleiben unangetastet; nur eine grafische Testinstanz läuft.

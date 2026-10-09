@@ -1423,6 +1423,15 @@
     "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_in_progress",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "mapInfoNoResizePreparation": {
+      "date": "2026-10-09",
+      "cases": "DD-039.01–.06",
+      "state": "helper_prepared_gui_edit_reopen_pending",
+      "helper": "tools/host/parity-tools-phase1-map-info.cjs",
+      "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "checks": "Syntax, npm run check, 206/206 Tests und npm run build bestanden; kein neuer GUI-Lauf.",
+      "next": "Nach Freigabe des lokalen Grafikplatzes Edit- und Neuöffnungslauf ohne Resize, Rohdatenprüfung und separaten DD-039-Review ausführen."
+    },
     "resizeScopeDecision": {
       "date": "2026-10-09",
       "cases": "DD-038.01–.09",
@@ -1885,7 +1894,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: Nutzerentscheidung vom 09.10.2026 berücksichtigt: DD-038.01–.09 und kombinierte Resize-Hostfolge entfallen. Als nächstes die noch erforderlichen DD-008-, DD-039-, DD-002-, DD-006/007- und Ansichts-/Dateimenüfälle gegen Original und Host nach Phasenplan bearbeiten. Building-Boden-Gesten bleiben als Werkzeugparität erhalten. Grenzenloses Wachstum ohne Resize-Aktion wird nach ROADMAP-HEX-ATLAS.md geprüft. P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen. Als nächstes den vorbereiteten DD-039-Hostprüfer ohne Resize mit Edit und frischer Öffnung ausführen, Rohdaten prüfen und unabhängig reviewen; den reservierten lokalen Hex-Grafikplatz respektieren. DD-008 benötigt identische Original-/Host-Geometrie, kombinierte History und Mehrgeschossprobe; anschließend die weiteren 68 Pflichtfälle in Roadmap-Reihenfolge bearbeiten. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
