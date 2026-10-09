@@ -154,18 +154,30 @@ export interface CampaignOwnerInventoryV1 {
   readonly records: readonly CampaignIdentityRecordV1[];
   readonly payloadEvidence: readonly CampaignPayloadEvidenceV1[];
 }
-export interface CampaignExpectedOwnerV1 {
+export interface CampaignOwnerRegistryEntryV1 {
   readonly ownerId: string;
   readonly ownerRevision: string;
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
   readonly referenceSchemas: readonly string[];
+  readonly recordTypes: readonly string[];
+  readonly recordIds: readonly CampaignLocalId[];
+}
+/** Trusted only when obtained from the separate integration registry port, never from a delivery. */
+export interface CampaignOwnerRegistryV1 {
+  readonly version: 1;
+  readonly registryId: string;
+  readonly registryRevision: string;
+  readonly sourceCampaignId: CampaignId;
+  readonly sourceNamespace: CampaignNamespace;
+  readonly owners: readonly CampaignOwnerRegistryEntryV1[];
 }
 export interface CampaignDeliveryV1 {
   readonly version: 1;
+  readonly registryId: string;
+  readonly registryRevision: string;
   readonly sourceCampaignId: CampaignId;
   readonly sourceNamespace: CampaignNamespace;
-  readonly expectedOwners: readonly CampaignExpectedOwnerV1[];
   readonly inventories: readonly CampaignOwnerInventoryV1[];
 }
 export interface CampaignIdRemapV1 {

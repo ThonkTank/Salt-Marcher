@@ -118,6 +118,8 @@ test("lost acknowledgement resolves through the original command and receipt wit
   assert.equal(resolved.receiptId, staged.receiptId);
   assert.equal(resolved.targetCampaignId, staged.targetCampaignId);
   assert.equal(port.publishes.length, 1);
+  assert.equal((await service.execute(id)).status, "finalized");
+  assert.equal(port.publishes.length, 1);
 });
 
 test("A to B to A reopen retains campaign identity but creates isolated activation tokens", async () => {

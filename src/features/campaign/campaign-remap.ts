@@ -15,6 +15,7 @@ import {
   type CampaignLocalId,
   type CampaignNamespace,
   type CampaignOwnerInventoryV1,
+  type CampaignOwnerRegistryV1,
   type CampaignParticipantStageV1,
   type CampaignRemapPlanV1,
   type CampaignSnapshotV1,
@@ -40,6 +41,19 @@ function supportedSchemas(value: unknown): readonly string[] {
   const result = array(value, "Referenzschemas").map((schema) => referenceSchema(String(schema))).sort();
   if (!result.length || new Set(result).size !== result.length)
     throw new Error("Ungültige unterstützte Referenzschemas.");
+  return Object.freeze(result);
+}
+function supportedTypes(value: unknown): readonly string[] {
+  const result = array(value, "Recordtypen").map((type) => identityType(String(type))).sort();
+  if (!result.length || result.some((type) => type === "campaign" || type === "namespace") ||
+      new Set(result).size !== result.length)
+    throw new Error("Ungültige erlaubte Recordtypen.");
+  return Object.freeze(result);
+}
+function registryRecordIds(value: unknown): readonly CampaignLocalId[] {
+  const result = array(value, "Registry-Record-IDs").map((id) => campaignLocalId(String(id))).sort();
+  if (new Set(result).size !== result.length)
+    throw new Error("Doppelte Registry-Record-ID.");
   return Object.freeze(result);
 }
 function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInventoryV1 {
@@ -112,35 +126,54 @@ function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInvento
 
 export function stageCampaignRemap(
   sourceRaw: CampaignSnapshotV1,
+  registry: CampaignOwnerRegistryV1,
   delivery: CampaignDeliveryV1,
   targetName: string,
   factories: CampaignRemapFactories,
 ): CampaignParticipantStageV1 {
   const source = campaignSnapshot(sourceRaw);
+  if (!registry || typeof registry !== "object" || registry.version !== 1)
+    throw new Error("Ungültiger Owner-Registry-Snapshot.");
   if (!delivery || typeof delivery !== "object" || delivery.version !== 1)
     throw new Error("Ungültige Campaign-Lieferung.");
-  if (campaignId(String(delivery.sourceCampaignId)) !== source.campaignId ||
-      campaignNamespace(String(delivery.sourceNamespace)) !== source.namespace)
+  const registryId = revisionToken(registry.registryId, "Registry-ID"),
+    registryRevision = revisionToken(registry.registryRevision, "Registry-Revision");
+  if (campaignId(String(registry.sourceCampaignId)) !== source.campaignId ||
+      campaignNamespace(String(registry.sourceNamespace)) !== source.namespace ||
+      campaignId(String(delivery.sourceCampaignId)) !== source.campaignId ||
+      campaignNamespace(String(delivery.sourceNamespace)) !== source.namespace ||
+      revisionToken(delivery.registryId, "Registry-ID") !== registryId ||
+      revisionToken(delivery.registryRevision, "Registry-Revision") !== registryRevision)
     throw new Error("Campaign-Lieferung gehört zu einer anderen Quelle.");
-  const expected = array(delivery.expectedOwners, "Ownerliste"),
+  const expected = array(registry.owners, "Registry-Ownerliste"),
     inventories = array(delivery.inventories, "Ownerinventare").map((value) =>
       checkedInventory(value as CampaignOwnerInventoryV1));
-  if (!expected.length) throw new Error("Campaign-Lieferung hat keine Owner.");
+  if (!expected.length) throw new Error("Owner-Registry hat keine Owner.");
   const expectedById = new Map<string, {
     ownerRevision: string;
     schemaRevision: string;
     snapshotRevision: string;
     referenceSchemas: readonly string[];
+    recordTypes: readonly string[];
+    recordIds: readonly CampaignLocalId[];
   }>();
+  const registeredRecords = new Set<string>([source.campaignId, source.namespace]);
   for (const raw of expected) {
-    if (!raw || typeof raw !== "object") throw new Error("Ungültiger erwarteter Owner.");
-    const value = raw as CampaignDeliveryV1["expectedOwners"][number], id = ownerId(value.ownerId);
-    if (expectedById.has(id)) throw new Error("Doppelter erwarteter Owner.");
+    if (!raw || typeof raw !== "object") throw new Error("Ungültiger Registry-Owner.");
+    const value = raw as CampaignOwnerRegistryV1["owners"][number], id = ownerId(value.ownerId),
+      recordIds = registryRecordIds(value.recordIds);
+    if (expectedById.has(id)) throw new Error("Doppelter Registry-Owner.");
+    for (const recordId of recordIds) {
+      if (registeredRecords.has(recordId)) throw new Error("Registry-Identität kollidiert.");
+      registeredRecords.add(recordId);
+    }
     expectedById.set(id, {
       ownerRevision: revisionToken(value.ownerRevision, "Ownerrevision"),
       schemaRevision: revisionToken(value.schemaRevision, "Schemarevision"),
       snapshotRevision: revisionToken(value.snapshotRevision, "Snapshotrevision"),
       referenceSchemas: supportedSchemas(value.referenceSchemas),
+      recordTypes: supportedTypes(value.recordTypes),
+      recordIds,
     });
   }
   const inventoryById = new Map<string, CampaignOwnerInventoryV1>();
@@ -157,8 +190,13 @@ export function stageCampaignRemap(
     if (inventory.ownerRevision !== revisions.ownerRevision ||
         inventory.schemaRevision !== revisions.schemaRevision ||
         inventory.snapshotRevision !== revisions.snapshotRevision ||
-        JSON.stringify(inventory.referenceSchemas) !== JSON.stringify(revisions.referenceSchemas))
+        JSON.stringify(inventory.referenceSchemas) !== JSON.stringify(revisions.referenceSchemas) ||
+        JSON.stringify(inventory.records.map((record) => record.id).sort()) !==
+          JSON.stringify(revisions.recordIds))
       throw new Error("Ownerinventar ist stale.");
+    for (const record of inventory.records)
+      if (!revisions.recordTypes.includes(record.recordType))
+        throw new Error("Nicht erlaubter Recordtyp.");
   }
 
   const records = new Map<string, { owner: string; type: string }>(),

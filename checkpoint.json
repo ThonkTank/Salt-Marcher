@@ -9,7 +9,7 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr01CampaignData": {
-      "state": "e2e01_campaign_context_i01_checked_review_pending",
+      "state": "e2e01_campaign_context_i01_n01_checked_re_review_pending",
       "requirementPlan": "ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md",
       "implementationPlan": "ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md",
       "reviewedRequirementCandidate": "11e256309d43bcd1c14db66ffc41945c9360aec8",
@@ -18,18 +18,19 @@
       "sharedBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
       "candidateBranch": "codex/e2e01-campaign-context-i01",
       "scope": "Host-neutral CampaignLifecycle, CampaignContext, A-to-B-to-A isolation, reopen identity preservation and complete campaign-local copy/import remap model for E2E-01.",
-      "implementation": "Validated opaque campaign, context, command and receipt identities; immutable snapshots and projections; staged idempotent create/rename commands with cancel-before-publish, publish-wins, same-command status recovery and late-result guards; owner-confirmed inventory coverage with revision-bound supported reference schemas and AudioSource metadata/byte evidence; and an invisible Campaign/Data remap participant with independent Campaign/Namespace/local IDs.",
+      "implementation": "Validated opaque campaign, context, command and receipt identities; immutable snapshots and projections; staged idempotent create/rename commands with cancel-before-publish, publish-wins, same-command status recovery and late-result guards; a separate revision-bound trusted owner-registry snapshot fixing owner IDs, record IDs, allowed types and supported reference schemas; owner-confirmed inventory and AudioSource metadata/byte evidence; and an invisible Campaign/Data remap participant with independent Campaign/Namespace/local IDs.",
       "verification": {
         "check": "passed",
         "tests": {
-          "passed": 432,
+          "passed": 433,
           "failed": 0
         },
         "build": "passed"
       },
       "limits": "Host-neutral product foundation only. No foreign payload rebinding, visible copy/import publish, Campaign-to-Atlas adapter, shared History/Transaction, durable P02 receipt/reopen, P04 archive import, host evidence or E2E-01 PASS.",
       "planReview": "Independent review required two repairs on 2f7946643c73da0e1fbd9464021b68dda5e77ac8. Narrow re-review passed exact repaired plan aebc74ea247ff3498024939a19f4fe4d296f5ad0: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/19#issuecomment-6090810091",
-      "next": "Publish the checked I01 candidate and obtain an independent exact-SHA code/contract review before any steward handoff or integration."
+      "codeReview": "Independent R01 on 4685c6e8aeac698c0f8198ca87e0853c0fd371ce required clearing the completed publish promise after outcome resolution, anchoring delivery coverage in a separate trusted registry snapshot, and rejecting owner-unsupported or reserved record types. N01 implements all three repairs.",
+      "next": "Publish N01 and obtain an independent exact-SHA re-review before any steward handoff or integration."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",

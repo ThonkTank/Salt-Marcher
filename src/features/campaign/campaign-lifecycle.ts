@@ -206,12 +206,17 @@ export class CampaignLifecycle {
     }
     command.receipt = campaignReceipt({ ...command.receipt, status: "validated" });
     command.publishStarted = true;
-    command.running = Promise.resolve().then(() => this.port.publish(command.request)).then((outcome) =>
+    const running = Promise.resolve().then(() => this.port.publish(command.request)).then((outcome) =>
       this.applyOutcome(command, outcome), () => {
         command.receipt = campaignReceipt({ ...command.receipt, status: "outcome_unknown" });
         return command.receipt;
       });
-    return command.running;
+    command.running = running;
+    const clear = () => {
+      if (command.running === running) command.running = undefined;
+    };
+    void running.then(clear, clear);
+    return running;
   }
 
   query(commandId: CampaignCommandId): Promise<CampaignReceipt> {
@@ -219,7 +224,7 @@ export class CampaignLifecycle {
     const command = this.commands.get(commandId);
     if (!command) return Promise.reject(new Error("Unbekannte Command-ID."));
     if (command.receipt.status !== "outcome_unknown") return Promise.resolve(command.receipt);
-    return this.port.status(commandId, command.request.receiptId).then((outcome) =>
+    return Promise.resolve().then(() => this.port.status(commandId, command.request.receiptId)).then((outcome) =>
       this.applyOutcome(command, outcome));
   }
 
