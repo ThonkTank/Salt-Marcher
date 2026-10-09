@@ -4325,17 +4325,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P05",
-      "kind": "implementation_planning",
-      "startedAt": "2026-10-09T17:35:42.174Z",
-      "focus": "Transiente CityDraft-Lebensdauer und gemeinsame Historyfehlergrenze planen",
-      "state": "completed",
-      "result": "CityDraft-API konkret geplant; echte postcommit-Subscriberlücke belegt, koordinierte Reparatur erforderlich vor verlässlichem Apply."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-P05",
       "kind": "cleanup_planning",
-      "focus": "Draftplan auf Zustandsübergänge und koordinierte Historyreparatur prüfen"
+      "startedAt": "2026-10-09T17:40:53.561548+00:00",
+      "focus": "Draftplan auf Zustands-/Rendergrenze und bestätigte Observerreparatur prüfen",
+      "state": "completed",
+      "result": "Observerfix bestätigt; nullPreview zeigt aktuelle Source, terminale Drafts und Zustandsprüfung konkret präzisieren."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-I05",
+      "kind": "cleanup_implementation",
+      "focus": "Bestätigten Observerumfang und nullPreview-/Lebensdauervertrag ergänzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

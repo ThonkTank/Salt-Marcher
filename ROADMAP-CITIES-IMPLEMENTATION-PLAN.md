@@ -768,3 +768,6 @@ CITY-01-PREP-SCENE-CLEAN-R04 Start 2026-10-09T17:32:52.031176+00:00; Architektur
 
 
 CITY-01-PREP-P05 Start 2026-10-09T17:35:42.174Z; Konkreter CityDraft-Plan: unveränderlicher Gestenanfangsstand, genau eine vollständig geprüfte document/scene-Vorschau, clearPreview für unvollständige Konturen, Cancel ohne Rückschreibung und ein gemeinsamer Apply-Befehl. Invalid-/failed-/closed-Zustände und kein Retry/Rebase festgelegt. Reproduzierte History-Lücke CITY-HISTORY-P05-01: Subscriberfehler nach Commit lässt execute werfen und weitere Listener ausfallen; private Isolation mit Hex-Besitzer koordiniert, vorI05 Besitzerstand prüfen. Plan ROADMAP-CITIES-CITY01-DRAFT-PLAN.md und konkrete echte History-/Terrain-/Cityregressionen. Keine UI-/Host-/Dateiaktion. Plan-Aufräum-P/I/R folgt.
+
+
+CITY-01-PREP-DRAFT-PLAN-CLEAN-P05 Start 2026-10-09T17:40:53.561548+00:00; Planreview: Hex-Besitzer bestätigt notify-Reparatur im I05-Paket, keine Dateikollision. Präzisieren: Sync-Observerfehler werden isoliert; unveränderte öffentliche subscribe-/History-API. preview=null bedeutet aktueller Sourcezustand ohne Draftoverlay, nie restaurierter before. Router gibt terminale Draftreferenz frei, Klasse besitzt keine Listener. closed-Zustandsfehler dürfen keine erneute invalid-Mutation bewirken. CI/CR getrennt; reine Dokumentationsarbeit.
