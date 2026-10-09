@@ -26,6 +26,11 @@ export function deriveGroupUiIds(group, uiInventory) {
   return uiInventory.filter(u => u.caseIds?.some(id => group.caseIds.includes(id))).map(u => u.id).sort();
 }
 
+// Hashes the retained receipt, not an unavailable historical image.
+export const evidenceRecordHash = e => createHash('sha256').update(JSON.stringify(e)).digest('hex');
+const frameKey = e => JSON.stringify([e?.session, e?.metadata, e?.screenshot]);
+const historicalRoles = new Set(['original_gui_screenshot', 'original_saved_map']);
+
 // Checks provenance and mapping consistency, never decides visual completeness.
 export function validateInventory(document, options = {}) {
   const catalog = document.wonderdraftParity || document;
@@ -57,16 +62,62 @@ export function validateInventory(document, options = {}) {
   const phases = new Set(groups.length ? groups.flatMap(g => g.phases) : catalog.cases.flatMap(c => [c.phase, ...(c.relatedPhases || [])]));
   const hints = new Set(groups.flatMap(g => [...g.tools, ...g.ui]));
   const classifications = catalog.packageClassification || [];
+  const evidenceOwners = new Map(catalog.uiInventory.map(u => [u.id, u]));
+  evidenceOwners.set('reference', { directEvidence: catalog.reference.directRuntimeEvidence || [] });
+  const usages = new Map(), usageIds = new Set();
+  if (catalog.evidenceUsageContractVersion !== undefined && catalog.evidenceUsageContractVersion !== 1)
+    errors.push('unknown evidence usage contract version');
+  if (catalog.evidenceUsages !== undefined && (catalog.evidenceUsageContractVersion !== 1 || !Array.isArray(catalog.evidenceUsages)))
+    errors.push('historical usages require the explicit versioned contract');
+  for (const usage of Array.isArray(catalog.evidenceUsages) ? catalog.evidenceUsages : []) {
+    if (!usage || typeof usage !== 'object') { errors.push('invalid historical usage'); continue; }
+    const owner = evidenceOwners.get(usage.owner), old = owner?.directEvidence?.[usage.evidenceIndex];
+    const key = JSON.stringify([usage.owner, usage.evidenceIndex]), count = errors.length;
+    if (!usage.id || usageIds.has(usage.id) || usages.has(key)) errors.push('missing or duplicate historical usage');
+    usageIds.add(usage.id);
+    if (!Number.isInteger(usage.evidenceIndex) || usage.evidenceIndex < 0 || !old || !historicalRoles.has(old.role) || old.version !== catalog.reference.version ||
+      usage.source?.recordSha256 !== evidenceRecordHash(old) || usage.source?.path !== old.path ||
+      usage.source?.session !== old.session || usage.source?.role !== old.role || usage.source?.version !== old.version)
+      errors.push(`${usage.id}: changed or orphan historical source/owner`);
+    if (usage.state !== 'historical_unverified' || !usage.reason?.trim() || !usage.originalFailure?.trim() || !usage.replacementScope?.trim())
+      errors.push(`${usage.id}: historical source must remain explicitly unverified with reason, failure and scope`);
+    if (usage.owner !== 'reference' && (usage.assertion?.exactUiPath !== owner?.exactUiPath ||
+      usage.assertion?.commandOrControl !== owner?.commandOrControl || usage.assertion?.context !== owner?.context))
+      errors.push(`${usage.id}: changed source assertion`);
+    if (usage.owner === 'reference' && usage.assertion?.version !== catalog.reference.version)
+      errors.push(`${usage.id}: changed reference assertion`);
+    const replacements = usage.replacementEvidence;
+    if (!Array.isArray(replacements) || !replacements.length || new Set(replacements.map(frameKey)).size !== replacements.length ||
+      replacements.some(r => !owner?.directEvidence?.some(e => e.role === 'actual_original_runtime' && frameKey(e) === frameKey(r))))
+      errors.push(`${usage.id}: current replacements must belong to the same owner`);
+    if (old?.role === 'original_saved_map' && (!Array.isArray(usage.replacementSavedEffects) || !usage.replacementSavedEffects.length))
+      errors.push(`${usage.id}: historical saved map requires a current saved effect`);
+    if (catalog.evidenceUsageContractVersion === 1 && count === errors.length) usages.set(key, usage);
+  }
   function evidence(e, owner) {
+    // A replacement validates the current observation only. The old receipt is
+    // still read and its failure retained; it never becomes a verified source.
+    const recordOwner = evidenceOwners.get(owner), index = recordOwner?.directEvidence?.indexOf(e);
+    const usage = usages.get(JSON.stringify([owner, index]));
+    if (historicalRoles.has(e?.role) && usage) {
+      const count = errors.length;
+      const replacements = usage.replacementEvidence.map(r => recordOwner.directEvidence.find(current =>
+        current.role === 'actual_original_runtime' && frameKey(current) === frameKey(r)));
+      const sessions = replacements.map(r => evidence(r, `${owner} replacement ${usage.id}`)).filter(Boolean);
+      for (const map of usage.replacementSavedEffects || []) rawMap(map, `${owner} replacement ${usage.id}`);
+      if (count === errors.length && sessions.length === replacements.length) {
+        let failure;
+        try { importedEvidence(e); failure = 'imported source receipt lacks pinned frame/process metadata; separate verification required'; }
+        catch (error) { failure = error.message; }
+        historicalEvidenceIssues.push({ owner, source: e.path, message: `${owner}: ${failure}`,
+          state: 'historical_unverified_replaced', usageId: usage.id, originalFailure: usage.originalFailure,
+          replacementScope: usage.replacementScope, replacements: usage.replacementEvidence });
+        return undefined;
+      }
+    }
     try {
       if (e.role === 'original_gui_screenshot') {
-        if (e.version !== catalog.reference.version) throw new Error('wrong original version');
-        const source = readFile(e.session).toString();
-        if (!/app_pid=\d+/.test(source) || !/started_at=/.test(source)) throw new Error('Originalsitzung fehlt.');
-        let bytes;
-        try { bytes = readFile(e.path); } catch { throw new Error('Belegdatei fehlt.'); }
-        if (!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) throw new Error('not an original PNG frame');
-        if (e.sha256 && createHash('sha256').update(bytes).digest('hex') !== e.sha256) throw new Error('changed imported image');
+        importedEvidence(e);
         open(`${owner}: imported source receipt lacks pinned frame/process metadata; separate verification required`);
         return undefined;
       }
@@ -87,8 +138,19 @@ export function validateInventory(document, options = {}) {
     } catch (error) {
       const message = `${owner}: ${error.message}`;
       errors.push(message);
-      if (e?.role === 'original_gui_screenshot') historicalEvidenceIssues.push({ owner, source: e.path, message, state: 'still_blocks_active_evidence' });
+      if (historicalRoles.has(e?.role)) historicalEvidenceIssues.push({ owner, source: e.path, message, state: 'still_blocks_active_evidence' });
     }
+  }
+  function importedEvidence(e) {
+    if (e.version !== catalog.reference.version) throw new Error('wrong original version');
+    const source = readFile(e.session).toString();
+    if (!/app_pid=\d+/.test(source) || !/started_at=/.test(source)) throw new Error('Originalsitzung fehlt.');
+    let bytes;
+    try { bytes = readFile(e.path); } catch { throw new Error('Belegdatei fehlt.'); }
+    if (e.role === 'original_gui_screenshot' && !bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))
+      throw new Error('not an original PNG frame');
+    if (e.sha256 && createHash('sha256').update(bytes).digest('hex') !== e.sha256) throw new Error('changed imported image or map');
+    if (e.role === 'original_saved_map') throw new Error('saved historical map is not a direct original observation');
   }
   function directList(list, owner) {
     if (!Array.isArray(list) || !list.length) { errors.push(`${owner}: direct original frames required`); return []; }
@@ -100,6 +162,8 @@ export function validateInventory(document, options = {}) {
         throw new Error('saved raw map missing or changed');
     } catch (error) { errors.push(`${owner}: ${error.message}`); }
   }
+  if (catalog.evidenceUsageContractVersion === 1)
+    for (const e of catalog.reference.directRuntimeEvidence || []) evidence(e, 'reference');
   function questions(owner, limits, list, mappedCases) {
     if (!scoped) { if (limits?.length) open(`${owner}: ${limits.join('; ')}`); return; }
     if (!Array.isArray(list)) { if (limits?.length) errors.push(`${owner}: unclassified observation questions`); return; }
