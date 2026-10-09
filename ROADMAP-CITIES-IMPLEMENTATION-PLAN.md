@@ -203,3 +203,7 @@ Bedienziel: Darstellungsänderung erhält Kamera, Zoomanker und Auswahl; Origina
 ## CITY-00-I07-BCP: Referenzmetadaten bereinigen
 
 I07-BR01: CO-FTG-0039 um die direkt sichtbaren Color-effect-Optionen None/Greyscale/Sepia/Green tint erweitern; keine Wirkung behaupten. I07-BR02: externe Ergänzung zum unveränderten Rohmanifest mit den konkreten Rückstellungsframes sowie identischem Bildausschnitt für Helligkeitswerte erzeugen. Grauwertmittel ist nur eine Zusatzmessung des Originalbildes, keine Geometrie-/Bedienabnahme. Quelldateien unverändert erhalten, Hashes erneut prüfen. Eigener Umsetzungslauf BCI, danach BCR prüft beide Befunde und fremde JSON-Wurzeln.
+
+## CITY-00-I08-P: FTG-3D und Street View
+
+CO-FTG-0041 bislang nur sichtbarer Control. Eigene temporäre Siedlung: General-Ausgangswerte und Tageskarte sichern, ausschließlich3D-Unstable aktivieren, Save, tatsächliche Karte und neue Navigationscontrols prüfen. Street-View nur über sichtbare Originalcontrols aufrufen; Ablauf, Lage/Orientierung und Rückkehr dokumentieren. Keine Wirkung aus Hinweistext ableiten. Anschließend3D wieder ausschalten und Ausgangsuhr/Wetter/übrige Renderwerte erhalten; Kamera nach Save am gleichen Maßstab prüfen. Höchstens zwei erfolglose Folgen. Originalartefakte in city00-i08-browser-20261009; eigener Review und getrennte Aufräumläufe. COK-I07 bleibt bis Hex-Slotfreigabe ausstehend. Architekturfolgen erst aus tatsächlicher Probe ableiten und in ARCHITECTURE.md festhalten.
