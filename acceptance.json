@@ -1673,7 +1673,12 @@
             "run": "CITY-00-I32-I",
             "state": "partial",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
-            "result": "Visible generation controls differ from initial URL. Control Rebuild then Greens-only flag Rebuild: same seed/size, buildings499→544, fields4→7, districts7→8; other10 groups equal including empty greens. No unconditional green output or stable object preservation proved."
+            "result": "Visible generation controls differ from initial URL. Control Rebuild then Greens-only flag Rebuild: same seed/size, buildings499→544, fields4→7, districts7→8; other10 groups equal including empty greens. No unconditional green output or stable object preservation proved.",
+            "restorationClarification": {
+              "observedIn": "CITY-00-I33-I",
+              "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+              "result": "I32 OFF was an immediate pending control only. I33 fresh tab shows GreensON; no durable global restoration was proved by I32."
+            }
           }
         ]
       },
