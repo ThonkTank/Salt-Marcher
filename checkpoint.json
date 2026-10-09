@@ -3887,17 +3887,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I24-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:22:26.418895+00:00",
-      "focus": "Gassenflag und tatsächliche JSON-Ausgabe planen",
-      "state": "completed",
-      "result": "Vorher/Nachher-Originalprobe mit sichtbarem Flag und tatsächlichen Downloads geplant; keine Topologie-/Persistenzannahme."
-    },
-    "nextRun": {
       "id": "CITY-00-I24-I",
       "kind": "alley_reference_probe",
-      "focus": "Show alleys umschalten und echte Geometrieausgaben vergleichen"
+      "startedAt": "2026-10-09T14:25:11.558665+00:00",
+      "focus": "Gassenflag und tatsächlich ausgegebene Geometrie prüfen",
+      "state": "completed",
+      "result": "roads 3→74 LineStrings, andere13 Gruppen wertgleich; off/on/off geprüft, eigene Kopie geschlossen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I24-R",
+      "kind": "reference_review",
+      "focus": "Downloadvergleich und begrenzte Originalwirkung unabhängig reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

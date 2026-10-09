@@ -1540,7 +1540,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-roads.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json"
         ],
         "task": "Hauptweg und Gasse bearbeiten",
         "phase": "CITY-05",
@@ -1556,14 +1557,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
+        "gap": "Show alleys und tatsächliche Ausgabe von71 zusätzlichen Linien direkt belegt; individuelle Hauptweg-/Gassenbearbeitung, Topologie, Save/Reload, Version und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I24-I",
+            "state": "direct_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
+            "result": "Show alleys Flag/Wirkungsprobe und tatsächliche JSON-Dateien: roads 3→74 LineStrings, ursprüngliche3 erhalten, übrige13 Gruppen wertgleich."
+          }
+        ]
       },
       {
         "id": "CO-WAT-0004",
@@ -3777,7 +3786,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I23-I",
+      "run": "CITY-00-I24-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3810,7 +3819,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json"
       ],
       "resultReferences": [
         {
