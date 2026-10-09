@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_i02_plan_third_review_changes_required",
+    "state": "smr00_adr_p01_h03_i02_plan_review_passed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,14 +101,17 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "i02_p01_third_review_changes_required",
+      "state": "i02_p01_plan_review_passed_implementation_next",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
-      "i02PlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
+      "i02PreviousPlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
+      "i02PlanCandidate": "c9f05806c94a1900ab276940730cae24ee94850f",
+      "i02PlanIntegrationCommit": "e051028aa581fd4d77b57b22b128658d2b5a20cc",
+      "i02RepairMatrix": "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3 and R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2. R03 on b4f50c52e926d6ee7d7016d29b2d58192c0377d8 confirms state-specific conflict IDs but still requires explicit source states for all normal and rollback transitions plus a per-transition-phase-adversary lookup of Receipt, target, temp, snapshot, capture, rollback and Parent digest instead of class-level oracles."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3, R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 and R03 rejected b4f50c52e926d6ee7d7016d29b2d58192c0377d8. Independent read-only R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f: 87 explicit p01-v3 transitions, 13 complete overlays, 3 phases and 3,393 unambiguous cells bind exact recovery vectors without fallbacks. No helper, test or Evidence was added."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -117,25 +120,25 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-P01-N03",
-      "kind": "child_state_machine_plan_repair",
+      "id": "ADR-P01-H03-I02-I01",
+      "kind": "native_child_state_machine_implementation",
       "owner": "local_implementation_thread",
-      "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
+      "focus": "Implement only the reviewed N03 child-state-machine and generated fault cells against p01-v3; no H03 Go, platform selection or P02 authorization before code, security and evidence review"
     }
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
+    "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N03-R01",
-      "kind": "independent_plan_re_review",
-      "state": "passed",
-      "focus": "Verify variable and variant-specific rarity without losing the earlier plan repairs",
+      "id": "CE-02-I02-S01-W01",
+      "kind": "source_inventory_schema_transcript_intermediate",
+      "state": "in_progress_verified_incomplete",
+      "focus": "Establish pinned source identity, canonical attribution, schema draft and fail-closed verification without exposing incomplete Item data",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Independent N03-R01 passed exact 679d432e145bd9afe766393346e4b788931886ea without remaining mandatory plan findings (Issue #1 comment 6085341786). This is plan approval only; S01 and I01 remain undelivered."
+      "result": "Pinned the official 403-page SRD 5.1 PDF and SaltMarcher's exact 5e-database extraction-helper revision, added the exact canonical attribution, a versioned transcript schema draft, explicitly empty incomplete inventory/transcript fixtures, and a verifier that rejects the package for product use unless completeness is true. This is an honest intermediate only: 0 inventory occurrences and 0 transcript records; S01 review and I01 remain blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -332,17 +335,18 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold, but no source occurrence or transcript record is complete and no Item product feature is available. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
+      "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01",
-      "kind": "source_inventory_schema_transcript",
+      "id": "CE-02-I02-S01-W02",
+      "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Create complete pinned SRD-5.1 inventory, transcript, versioned schema, canonical attribution and PDF-to-transcript source verification; independent S01-R01 PASS required before I01 product implementation"
+      "focus": "Populate and fully reconcile all official equipment rows and magic-item headings/details, close the inventory-derived enums and merge ledger, implement full PDF-to-transcript matching and remaining goldens; independent S01-R01 PASS remains required before I01"
     }
   },
   "repositoryWorkflow": {
@@ -1984,12 +1988,18 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "independent_plan_review_failed_repair_required",
+      "state": "plan_repaired_independent_re_review_passed",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
       "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
       "reviewFinding": "Pflichtlücken: aktueller Atlas besitzt noch keine ausführbare History-/Save-/Dirty-Grenze; Dungeondraft- und Wonderdraft-Belege müssen getrennt bleiben; Weltkennung/Kopierdateien brauchen ein exaktes Orakel; HEX-01-Compare/Write ist kein Journal-/Draft-/Recovery-Nachweis.",
-      "next": "DD-036-ATLAS-P01-R01: nur den Plan reparieren, Fälle nach ausführbarer HEX-02-Voraussetzung und realer Shell staffeln, Referenzquellen je Hostschritt trennen sowie Identitäts- und gemeinsamen FileTransaction-/Draft-Vertrag als prüfbare Orakel festlegen; danach unabhängiger Planreview."
+      "repairRun": "DD-036-ATLAS-P01-R01",
+      "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
+      "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
+      "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
+      "limits": "Nur Planreparatur und Planreview; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. O01a ist planbar, aber nicht gestartet; O01b, HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
+      "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2577,7 +2587,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "DD-036-ATLAS-P01-R01: den Dateiflussplan nach dem unabhängigen Review reparieren; read-only Öffnen von HEX-01, erst später ausführbare HEX-02-History-/Save-/Dirty-Folgen, getrennte Dungeondraft-/Wonderdraft-Referenzwahrheit, Weltkennungs-/Kopierorakel und gemeinsamen FileTransaction-/Draft-/Recovery-Weg präzise staffeln. Danach eigener Planreview; keine Host- oder Paritätsfreigabe. Globale Atlasoptionen und übrige Phase-1-Fälle bleiben offen.",
+    "nextRun": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf die durch GM-UX-005 belegte Suche nach Raum-Key-Texten planen; Treffer nennt Raum und Geschoss, Aktivierung öffnet Raum und Key ohne Kartenänderung, leere Suche stellt die Übersicht wieder her und Save/Reload erhält den Hinweis. Nicht mit DD-036-O01a, Atlaspersistenz oder fremden Featurepfaden vermischen; keine Produkt-, Host- oder Fachfreigabe aus der Planung.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4272,17 +4282,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-COMMAND-CLEAN-R02",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:00:39.825702+00:00",
-      "focus": "Befehlsarchitektur und integrierte Basischecks prüfen",
+      "id": "CITY-01-PREP-EDIT-CLEAN-I03",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T17:10:49.725727+00:00",
+      "focus": "Vorhandene Fachaktionen und Codecgrenzen dokumentieren",
       "state": "completed",
-      "result": "Aufgeräumter Befehlsadapter reviewt; integrierte Typprüfung,282Tests und Build grün. Atlas-/Host-/Savepflichten offen."
+      "result": "Architektur und Pläne bilden vorhandenen Fachcode ab, falsche Pfadvalidierungsbehauptung korrigiert; keine Laufzeitänderung."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-P03",
-      "kind": "implementation_planning",
-      "focus": "Reine Straßen-/Haus-Fachaktionen auf CityDocumentchanges planen und mit Atlasbesitzer abstimmen"
+      "id": "CITY-01-PREP-EDIT-CLEAN-R03",
+      "kind": "cleanup_review",
+      "focus": "Aufgeräumte Fachaktionen und Nachweise abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
