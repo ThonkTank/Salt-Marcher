@@ -100329,6 +100329,22 @@
       "decision": "P7-1 reviewed with a second complete popout edit/reopen pair; P7-3 and P7-4 already reviewed. Physical P7-2 deferred by user, so phase gate remains open.",
       "open": ["P7-2 physical mouse/touchpad deferred by user", "Phase-7 gate", "Final cleanup"],
       "gate": "open"
+    },
+    "phase7GateReview": {
+      "date": "2026-10-09",
+      "state": "p7_1_3_4_reviewed_p7_2_skipped_at_user_request_cleanup_pending",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "exception": {
+        "strand": "P7-2",
+        "basis": "Ausdrückliche Nutzeranweisung vom 09.10.2026: Überspringe das und arbeite weiter.",
+        "physicalInputPerformed": false,
+        "physicalInputVerified": false
+      },
+      "gate": "passed_with_user_exception",
+      "open": ["Abschließende Aufräumphase", "Parität der übrigen Dungeondraft-Werkzeuge"]
     }
   }
 }

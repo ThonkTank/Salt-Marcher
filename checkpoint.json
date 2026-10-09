@@ -994,18 +994,18 @@
     "productionState": "/home/aaron/.cache/dungeon-native-qa/cleanup-production-state.json",
     "coreTests": 115,
     "protectedDungeonFilesUnchanged": 74,
-    "physicalInput": "deferred_at_user_request"
+    "physicalInput": "skipped_at_user_request_unverified"
   },
   "parityRoadmap": {
-    "status": "phase7_p7_1_3_4_reviewed_p7_2_deferred_gate_open",
+    "status": "phase7_fach_gate_passed_with_p7_2_exception_cleanup_plan_next",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
-    "followUpState": "planned_not_started_waiting_for_phase7_and_cleanup",
+    "followUpState": "planned_not_started_waiting_for_final_cleanup",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "P7-2 erst nach Aufhebung der Nutzeraufschiebung als direkte physische Maus-/Touchpad-Probe ausführen; danach Phase-7-Fachphasentor und eigene abschließende Aufräumphase. Bis dahin keine synthetische Hardwareabnahme.",
-    "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. Der frühere P7-1-Dialogabbruch war ein Host-Fensterziel-Fehler bei einem Obsidian-Popout; Produktbuild unverändert. P7-2 ist auf Nutzerwunsch vorerst aufgeschoben, daher Fachphasentor und Aufräumen offen. Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "Eigener Planlauf für die abschließende Phase-7-Aufräumphase; danach getrennte Umsetzung und unabhängiger Review. Erst nach bestandenem Aufräumtor beginnt ROADMAP-PARITY-TOOLS.md mit eigenem Phase-1-Plan.",
+    "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
@@ -2589,6 +2589,17 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
       "open": ["P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben", "Phase-7-Fachphasentor", "Abschließende Aufräumphase"],
       "gate": "open"
+    },
+    "phase7GateReview": {
+      "date": "2026-10-09",
+      "state": "fach_gate_passed_with_p7_2_user_exception_cleanup_pending",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "physicalInput": "skipped_at_user_request_unverified",
+      "gate": "passed_with_user_exception",
+      "open": ["Phase-7-Aufräumplan, Umsetzung und unabhängiger Review", "Folge-Roadmap für übrige Werkzeuge"]
     }
   }
 }
