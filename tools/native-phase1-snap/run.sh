@@ -23,6 +23,9 @@ done
 test -n "${display:-}" || exit 75
 cp --reflink=auto "$source_map" "$run/map/phase1-snap.dungeondraft_map"
 sha256sum "$source_app/Dungeondraft.x86_64" "$source_app/Dungeondraft.pck" "$source_map" > "$run/source.sha256"
+if [ -n "${DUNGEON_PHASE1_NATIVE_REUSE_DATA:-}" ]; then
+  cp -a "$DUNGEON_PHASE1_NATIVE_REUSE_DATA/." "$run/data/Dungeondraft/"
+else
 cat > "$run/data/Dungeondraft/config.ini" <<INI
 [Display]
 current_screen=0
@@ -39,6 +42,7 @@ disable_default_assets=false
 [Mods]
 active_mods=[  ]
 INI
+fi
 dd_pid=''
 xvnc_pid=''
 cleanup() {

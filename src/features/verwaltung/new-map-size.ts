@@ -23,3 +23,14 @@ export function newMapDialogSize(width: number, height: number): {
     height,
   };
 }
+
+/** Native New Template spinboxes use whole fields within 8–128. */
+export function newSizePresetSize(width: number, height: number): {
+  width: number;
+  height: number;
+} {
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error("Bitte gültige Maße für die Größenvorlage eingeben.");
+  const clamp = (value: number) => Math.max(8, Math.min(128, Math.round(value)));
+  return { width: clamp(width), height: clamp(height) };
+}

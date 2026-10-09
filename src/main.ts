@@ -45,6 +45,7 @@ import { ObjectTagStore } from "./features/objekte/object-tag-store";
 import { emptyObjectTags, mergeObjectTags,
   type ObjectTagDocument } from "./features/objekte/object-tags";
 import { ObjectTagsModal } from "./ui/object-tags-modal";
+import { newSizePresetSize } from "./features/verwaltung/new-map-size";
 
 export interface OpenMap {
   session: Session;
@@ -138,6 +139,7 @@ interface CreationAppearance {
 export default class DungeonPlugin extends Plugin {
   disableBuildingWearForNewMap = false;
   startWizardForNewMap = false;
+  private readonly sessionSizePresets: SizePreset[] = [];
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
@@ -660,31 +662,25 @@ export default class DungeonPlugin extends Plugin {
     );
   }
   sizePresets(): readonly SizePreset[] {
-    return this.pluginData.sizePresets;
+    return this.sessionSizePresets;
   }
-  async saveSizePreset(
+  saveSizePreset(
     name: string,
     width: number,
     height: number,
-  ): Promise<void> {
+  ): SizePreset {
     name = name.trim();
     if (!name)
       throw new Error("Bitte einen Namen für die Größenvorlage eingeben.");
-    newDocument("Größenvorlage", width, height);
-    await this.changePluginData((current) => ({
-      ...current,
-      sizePresets: [
-        ...current.sizePresets.filter((preset) =>
-          preset.name.toLocaleLowerCase() !== name.toLocaleLowerCase()),
-        { name, width, height },
-      ],
-    }));
+    const preset = { name, ...newSizePresetSize(width, height) };
+    this.sessionSizePresets.push(preset);
+    return preset;
   }
-  async removeSizePreset(name: string): Promise<void> {
-    await this.changePluginData((current) => ({
-      ...current,
-      sizePresets: current.sizePresets.filter((preset) => preset.name !== name),
-    }));
+  removeSizePreset(index: number): void {
+    if (!Number.isInteger(index) || index < 0 ||
+        index >= this.sessionSizePresets.length)
+      throw new Error("Die Größenvorlage ist nicht mehr vorhanden.");
+    this.sessionSizePresets.splice(index, 1);
   }
   toolDefaults(): ToolSettings {
     return this.pluginData.toolDefaults;

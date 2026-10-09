@@ -283,3 +283,7 @@ Ergänzung des vereinbarten Zielbilds: [Stadtplan-Roadmap](ROADMAP-CITIES.md), C
 ## Dungeondraft-Kartenassistent beim Kartenstart
 
 Die New-Map-Auswahl für den Assistenten ist pro Pluginprozess gemerkt. Eine neue Karte entsteht zuerst als leerer, noch nicht gespeicherter V4-Entwurf; die Pending-View übergibt nur das einmalige Startsignal an den seitlichen Editor-Assistenten. DUNGEON/CAVE und die Vorschau bleiben Editorzustand. „Neu generieren“ ersetzt nur die Kennungen des vorherigen Vorschlags dieser Assistentenansicht, „Fertigstellen“ wechselt zurück zur Werkzeugansicht und lässt die erzeugten Entitäten bearbeitbar. Das gespeicherte V4-Format erhält dafür kein neues Pflichtfeld. Native Generatorparameter und Materialwirkung bleiben Gegenstand von `DD-004/005`; der Phase-1-Startpfad ist noch nicht unabhängig reviewt.
+
+## Prozesslokale Größenvorlagen
+
+Die direkt verglichene Dungeondraft-Version hält selbst angelegte New-Map-Größenvorlagen nur im laufenden Prozess. Der Host verwaltet neue Vorlagen daher in einer geordneten Plugininstanz-Liste und speichert sie nicht mit `saveData`. Vorhandene ältere `sizePresets`-Daten bleiben beim Lesen und bei anderen Datenänderungen erhalten, erscheinen aber nicht in dieser Liste. Gleichnamige Einträge bleiben getrennt; erneute Auswahl eines Namens landet beim ersten Eintrag. Der Vorlagendialog normalisiert auf ganze 8–128 Felder. Die genaue Rundung mittlerer Bruchwerte, die obere Höhengrenze und native Entfernung bei doppelten Namen bleiben für den unabhängigen Phase-1-Review offen.

@@ -36,7 +36,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
       ['55" TV', 48, 27], ["A4 Paper", 11, 8],
       ["A3 Paper", 16, 11], ['40" TV', 35, 20],
     ]) {
-      await preset(parent).selectOption(name);
+      await preset(parent).selectOption({ label: name });
       assert.deepEqual(await dimensions(parent), { width, height });
     }
     evidence.builtIns = options;
@@ -61,24 +61,61 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     await field(child, "Höhe in Feldern").fill("9");
     await child.getByRole("button", { name: "Übernehmen", exact: true }).click();
     await child.waitFor({ state: "hidden" });
-    assert.equal(await preset(parent).inputValue(), "QA-Phase1");
+    assert.equal(await preset(parent).inputValue(), "4");
     assert.deepEqual(await dimensions(parent), { width: 12, height: 9 });
     assert.deepEqual(await pluginPresets(), [{ name: "QA-Phase1", width: 12, height: 9 }]);
     assert.equal(await field(parent, "Name").inputValue(), "Phase1-Vorlage");
-    await preset(parent).selectOption('40" TV');
+    await preset(parent).selectOption({ label: '40" TV' });
     assert.deepEqual(await dimensions(parent), { width: 35, height: 20 });
-    await preset(parent).selectOption("QA-Phase1");
+    await preset(parent).selectOption({ label: "QA-Phase1" });
     assert.deepEqual(await dimensions(parent), { width: 12, height: 9 });
     evidence.reselected = { name: "QA-Phase1", ...(await dimensions(parent)) };
     checks.push("DD-002 Accept stores a named 12×9 template and reselecting it restores both dimensions");
 
     await parent.locator('[aria-label="Gewählte Vorlage löschen"]').click();
-    assert.equal(await preset(parent).inputValue(), '40" TV');
+    assert.equal(await preset(parent).inputValue(), "0");
     assert.deepEqual(await dimensions(parent), { width: 12, height: 9 });
     assert.deepEqual(await pluginPresets(), []);
     evidence.afterDelete = { selected: await preset(parent).inputValue(),
       ...(await dimensions(parent)) };
     checks.push("DD-002 minus removes only the custom template and leaves entered dimensions unchanged");
+
+    await parent.locator('[aria-label="Größenvorlage hinzufügen"]').click();
+    child = modal("Neue Größenvorlage");
+    await child.waitFor({ state: "visible" });
+    await field(child, "Name").fill("Bounds");
+    await field(child, "Breite in Feldern").fill("0");
+    await field(child, "Höhe in Feldern").fill("10001");
+    await child.getByRole("button", { name: "Übernehmen", exact: true }).click();
+    await child.waitFor({ state: "hidden" });
+    assert.deepEqual(await dimensions(parent), { width: 8, height: 128 });
+    assert.deepEqual(await pluginPresets(), [{ name: "Bounds", width: 8, height: 128 }]);
+    await parent.locator('[aria-label="Größenvorlage hinzufügen"]').click();
+    child = modal("Neue Größenvorlage");
+    await child.waitFor({ state: "visible" });
+    await field(child, "Name").fill("Bounds");
+    await field(child, "Breite in Feldern").fill("12");
+    await field(child, "Höhe in Feldern").fill("9");
+    await child.getByRole("button", { name: "Übernehmen", exact: true }).click();
+    await child.waitFor({ state: "hidden" });
+    assert.deepEqual(await pluginPresets(), [
+      { name: "Bounds", width: 8, height: 128 },
+      { name: "Bounds", width: 12, height: 9 },
+    ]);
+    assert.deepEqual((await preset(parent).locator("option").allTextContents()).slice(-2),
+      ["Bounds", "Bounds"]);
+    await preset(parent).selectOption("4");
+    assert.deepEqual(await dimensions(parent), { width: 8, height: 128 });
+    await preset(parent).selectOption("5");
+    assert.equal(await preset(parent).inputValue(), "4");
+    assert.deepEqual(await dimensions(parent), { width: 8, height: 128 });
+    await parent.locator('[aria-label="Gewählte Vorlage löschen"]').click();
+    assert.deepEqual(await pluginPresets(), [{ name: "Bounds", width: 12, height: 9 }]);
+    await preset(parent).selectOption("4");
+    assert.deepEqual(await dimensions(parent), { width: 12, height: 9 });
+    await parent.locator('[aria-label="Gewählte Vorlage löschen"]').click();
+    assert.deepEqual(await pluginPresets(), []);
+    checks.push("DD-002 template dimensions clamp to 8–128; duplicate names remain listed and choose the first match");
 
     await parent.locator('[aria-label="Größenvorlage hinzufügen"]').click();
     child = modal("Neue Größenvorlage");
@@ -94,7 +131,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
 
     parent = await openNew();
     await field(parent, "Name").fill("Phase1-Vorlage");
-    await preset(parent).selectOption('55" TV');
+    await preset(parent).selectOption({ label: '55" TV' });
     await parent.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await parent.waitFor({ state: "hidden" });
     assert.equal(fs.existsSync(mapFile), false);
@@ -156,12 +193,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
       app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.session.document());
     assert.deepEqual(current, prior.document);
     assert.equal(hash(), prior.hash);
-    assert.deepEqual(await pluginPresets(), [{ name: "QA-Persist", width: 12, height: 9 }]);
+    assert.deepEqual(await pluginPresets(), []);
     const parent = await openNew();
-    await preset(parent).selectOption("QA-Persist");
-    assert.deepEqual(await dimensions(parent), { width: 12, height: 9 });
+    assert.deepEqual(await preset(parent).locator("option").allTextContents(),
+      ['40" TV', '55" TV', "A4 Paper", "A3 Paper"]);
+    assert.deepEqual(await dimensions(parent), { width: 35, height: 20 });
     await parent.locator(".modal-header-button").click();
-    checks.push("DD-001/002 fresh process reopens the exact V4 map and persisted custom size template");
+    checks.push("DD-001/002 fresh process reopens the exact V4 map while custom size templates reset");
   }
   return { edit, reopen };
 };

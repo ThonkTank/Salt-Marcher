@@ -3,7 +3,7 @@ import { type ReferenceImage, type Settings } from "../model";
 import { Session } from "../session";
 import { type Prefab } from "../prefabs";
 import { type AssetCatalog } from "../assets";
-import { NATIVE_SIZE_PRESETS, NEW_MAP_DEFAULT_SIZE, newMapDialogSize } from "../features/verwaltung/new-map-size";
+import { NATIVE_SIZE_PRESETS, NEW_MAP_DEFAULT_SIZE, newMapDialogSize, newSizePresetSize } from "../features/verwaltung/new-map-size";
 import { resizeMap, type MapMargins } from "../commands";
 import { generateLayout, type GeneratorKind } from "../generators";
 import type DungeonPlugin from "../main";
@@ -736,12 +736,11 @@ class NewSizePresetModal extends Modal {
     new Setting(this.contentEl)
       .addButton((button) => button.setButtonText("Übernehmen").setCta()
         .onClick(() => {
-          if (!name.trim() || !Number.isFinite(width) || !Number.isFinite(height) ||
-              width <= 0 || height <= 0 || width > 10000 || height > 10000) {
+          if (!name.trim() || !Number.isFinite(width) || !Number.isFinite(height)) {
             new Notice("Bitte einen Namen und gültige Maße eingeben.");
             return;
           }
-          this.answer?.({ name: name.trim(), width, height });
+          this.answer?.({ name: name.trim(), ...newSizePresetSize(width, height) });
           this.answer = undefined;
           this.close();
         }))
@@ -777,7 +776,7 @@ export class CreateDungeonModal extends Modal {
     let name = "",
       width = size.width,
       height = size.height,
-      selectedPreset: string = NATIVE_SIZE_PRESETS[0].name,
+      selectedPresetIndex = 0,
       builtInAssets = catalog.builtIns,
       wallShadows = true,
       objectShadows = true,
@@ -814,27 +813,28 @@ export class CreateDungeonModal extends Modal {
     let presetSelect!: DropdownComponent, removePreset!: ExtraButtonComponent;
     const refreshPresets = () => {
       presets = [...NATIVE_SIZE_PRESETS, ...this.plugin.sizePresets()];
-      presetSelect.selectEl.replaceChildren(...presets.map((preset) =>
-        new Option(preset.name, preset.name)));
-      presetSelect.selectEl.value = selectedPreset;
-      removePreset.setDisabled(NATIVE_SIZE_PRESETS.some((preset) =>
-        preset.name === selectedPreset));
+      presetSelect.selectEl.replaceChildren(...presets.map((preset, index) =>
+        new Option(preset.name, String(index))));
+      presetSelect.selectEl.value = String(selectedPresetIndex);
+      removePreset.setDisabled(selectedPresetIndex < NATIVE_SIZE_PRESETS.length);
     };
     presetSetting.addDropdown((dropdown) => {
       presetSelect = dropdown;
-      for (const preset of presets)
-        dropdown.addOption(preset.name, preset.name);
-      dropdown.setValue(selectedPreset);
+      for (const [index, preset] of presets.entries())
+        dropdown.addOption(String(index), preset.name);
+      dropdown.setValue(String(selectedPresetIndex));
       dropdown.onChange((value) => {
-        selectedPreset = value;
-        const preset = presets.find((candidate) => candidate.name === value);
+        const chosen = presets[Number(value)];
+        const index = presets.findIndex((candidate) => candidate.name === chosen?.name);
+        selectedPresetIndex = index;
+        presetSelect.selectEl.value = String(index);
+        const preset = presets[index];
         if (!preset) return;
         width = preset.width;
         height = preset.height;
         widthInput.value = String(width);
         heightInput.value = String(height);
-        removePreset.setDisabled(NATIVE_SIZE_PRESETS.some((candidate) =>
-          candidate.name === value));
+        removePreset.setDisabled(index < NATIVE_SIZE_PRESETS.length);
       });
     });
     presetSetting.addExtraButton((button) => button
@@ -843,16 +843,12 @@ export class CreateDungeonModal extends Modal {
       .onClick(async () => {
         const created = await new NewSizePresetModal(this.app).request();
         if (!created) return;
-        if (NATIVE_SIZE_PRESETS.some((preset) =>
-            preset.name.toLocaleLowerCase() === created.name.toLocaleLowerCase())) {
-          new Notice("Der Vorlagenname ist bereits vergeben.");
-          return;
-        }
         try {
-          await this.plugin.saveSizePreset(created.name, created.width, created.height);
-          selectedPreset = created.name;
-          width = created.width;
-          height = created.height;
+          const saved = this.plugin.saveSizePreset(
+            created.name, created.width, created.height);
+          selectedPresetIndex = presets.length;
+          width = saved.width;
+          height = saved.height;
           widthInput.value = String(width);
           heightInput.value = String(height);
           refreshPresets();
@@ -865,12 +861,11 @@ export class CreateDungeonModal extends Modal {
         .setIcon("minus")
         .setTooltip("Gewählte Vorlage löschen")
         .setDisabled(true)
-        .onClick(async () => {
-          if (!selectedPreset || NATIVE_SIZE_PRESETS.some((preset) =>
-            preset.name === selectedPreset)) return;
+        .onClick(() => {
+          if (selectedPresetIndex < NATIVE_SIZE_PRESETS.length) return;
           try {
-            await this.plugin.removeSizePreset(selectedPreset);
-            selectedPreset = NATIVE_SIZE_PRESETS[0].name;
+            this.plugin.removeSizePreset(selectedPresetIndex - NATIVE_SIZE_PRESETS.length);
+            selectedPresetIndex = 0;
             refreshPresets();
           } catch (error) {
             new Notice(String(error));
