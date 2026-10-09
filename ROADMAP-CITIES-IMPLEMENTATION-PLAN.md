@@ -965,3 +965,5 @@ I45-Originalplan: [FTG-Gebäudebedarfe und Anzahlgrenzen](ROADMAP-CITIES-CITY00-
 CITY-00-I45-PLAN-CLEAN-I45 Start 2026-10-09T19:18:31.866072+00:00; Plan neben Roadmap verlinkt; eigene Formularprobe getrennt von alter QA-Karte und paralleler nativer GUI.
 
 CITY-00-I45-PLAN-CLEAN-R45 Start 2026-10-09T19:18:34.697707+00:00; Planlink/JSON/Fremdwurzeln geprüft; keine Produktabnahme. Originalformularprobe kann im Hintergrundtab beginnen.
+
+CITY-00-I45-I45 Start 2026-10-09T19:18:45.432Z; Originalparameter vermessen: Initialzahl2/Limit1 und Per-population-Auswahl im Entwurf; deklarierte Ausnahmen identifiziert, keine Ergebnisgenerierung. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json.

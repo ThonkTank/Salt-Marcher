@@ -2370,17 +2370,18 @@
         "product": "Fantasy Town Generator",
         "feature": "Gebäudebedarfe und Anzahlgrenzen",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T19:18:45.432Z",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct_control_only",
+        "availability": "temporary_settlement",
+        "observationKind": "direct_form_state_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
         "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-FTG-BUILDING-LIMITS-PLAN.md; CITY-02/06: Initialzahl-vor-Limit, Fraktionsausnahme und Arbeitsplatz-Override als explizite Generierungsregeln unterstützen; Parameter/Endgeometrie materialisiert speichern. Keine aktuellen gemeinsamen APIs voraussetzen.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -2389,11 +2390,19 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Nur der Formularordner Buildings ist sichtbar. Bedarfsvorgaben, Anzahlgrenzen und erzeugte Verteilungswirkung sowie eigene Umsetzung/Host/Bedienung bleiben ungeprüft.",
+        "gap": "Gebäudetyp-/Bedarfs-/Limitparameter und zwei Änderungen im Formular direkt belegt. Deklarierte Ausnahmeregeln noch ohne erzeugte Anzahlwirkung. Rundung, vollständige Typen-/Abhängigkeitsmatrix, eigene Umsetzung/Host/Bedienung bleiben offen.",
         "originalProbe": {
-          "run": "CITY-00-I01",
-          "state": "buildings_folder_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "run": "CITY-00-I45-I45",
+          "state": "direct_form_state_partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+          "observation": "209 individual building types listed; Abandoned shrine Initial number0 and blank Limit; changed to2 and1, both accepted in draft; Limit tooltip: initial number still placed above limit; faction buildings excluded; minimum settlement size and coast/river/raw resource requirements; item/service quality and price multipliers; simulation resources explicitly do not affect generation; Overall inside shop default10 percent/outside50 percent, custom control off; Always place workplace enabled; tooltip bypasses dependencies at high unemployment; 80 dependency groups listed; Animal produce provider per other buildings7.2 Cattle/Pig/Sheep groups; Changed dependency type to Per population; one per100 people displayed; First-building threshold and custom shop percentage controls visible",
+          "limits": [
+            "Single temporary settlement per user; no replacement generated to preserve existing QA map",
+            "Tooltips are declared policy, not measured result counts",
+            "Only two selected types/groups inspected; no full209/80 matrix",
+            "Graph cycles, rounding, factions, workforce override and generated distribution unmeasured",
+            "Own implementation/host/usability/physical comparison open"
+          ]
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"

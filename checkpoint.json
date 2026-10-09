@@ -4512,17 +4512,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-PLAN-CLEAN-R45",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:18:34.697707+00:00",
-      "focus": "FTG-Gebäudebedarfe: CLEAN-R",
-      "state": "completed",
-      "result": "Planlink/JSON/Fremdwurzeln geprüft; keine Produktabnahme. Originalformularprobe kann im Hintergrundtab beginnen."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-I45",
       "kind": "reference_implementation",
-      "focus": "Buildings-Parameter im eigenen FTG-Erstellungsentwurf vermessen"
+      "startedAt": "2026-10-09T19:18:45.432Z",
+      "focus": "Gebäudebedarfe: I",
+      "state": "completed",
+      "result": "Originalparameter vermessen: Initialzahl2/Limit1 und Per-population-Auswahl im Entwurf; deklarierte Ausnahmen identifiziert, keine Ergebnisgenerierung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-CLEAN-P45",
+      "kind": "cleanup_plan",
+      "focus": "Formularbelege und deklarierte Ausnahmeregeln getrennt gegen Anforderungen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
