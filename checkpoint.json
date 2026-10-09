@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-N01-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T21:34:42.388646+00:00",
-      "focus": "Tabellenstruktur und geschützte Citydaten",
-      "state": "completed",
-      "result": "Zusammenhängende Gate-Tabelle repariert; Cityfixturevorschlag exakt gegen R01 erhalten, Verweise geprüft."
-    },
-    "nextRun": {
       "id": "CITY-E2E-N01-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Diff/JSON/Gateeingänge unabhängig vom Schreiben nachlesen"
+      "startedAt": "2026-10-09T21:35:04.374590+00:00",
+      "focus": "Zwei Planreparaturen und Fremdschutz",
+      "state": "completed",
+      "result": "Eigene Struktur-/JSON-/Verweis-/Diffprüfung PASS; beide R01-Punkte im Plan repariert, unabhängige R02 ausstehend."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-R02",
+      "kind": "independent_plan_review",
+      "focus": "Hex um unabhängigen Re-Review des exakten reparierten Kandidaten bitten; keine Selbstintegration oder isolierte GUIprobe."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
