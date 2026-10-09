@@ -3349,5 +3349,29 @@
       "gate": "passed",
       "next": "Eigener Phase-1-Planlauf der Folge-Roadmap."
     }
+  },
+  "cityExecution": {
+    "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
+    "phase": "CITY-00",
+    "state": "overall_plan_statically_checked",
+    "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+    "currentRun": {
+      "id": "CITY-P01-CI",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T12:13:44.877952+02:00",
+      "focus": "Referenzinventarschema, Atlas-Übergabe und Abschlussregel konkretisieren",
+      "state": "completed",
+      "result": "CLP-01/02/03 im Plan umgesetzt; keine Produktabnahme"
+    },
+    "nextRun": {
+      "id": "CITY-P01-CR",
+      "kind": "cleanup_review",
+      "focus": "Drei Planbereinigungen gegen Nutzerauftrag und Roadmap prüfen"
+    },
+    "open": [
+      "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
+      "HEX-05 gemeinsame Atlasbasis vor CITY-01",
+      "CITY-01 bis CITY-09 Produkt-, Host-, Ergebnis- und physische Bedienabnahmen"
+    ]
   }
 }
