@@ -1666,6 +1666,13 @@
       "multilevelReviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
       "multilevelReviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
     },
+    "gmUxN002Plan": {
+      "date": "2026-10-09",
+      "state": "plan_recorded_implementation_open",
+      "plan": "ROADMAP-GM-UX-N-002-PLAN.md",
+      "source": "GM-UX-002 im getrennten Cloud-GM-Test; Issue #1",
+      "next": "Hostneutrale Live-Suche und ×-Leeren umsetzen; drei Assets, zehn Platzierungen, Undo/Redo und Save/Reopen isoliert prüfen."
+    },
     "gmUxN001Plan": {
       "date": "2026-10-09",
       "state": "local_review_passed_cloud_retest_open",
