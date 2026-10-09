@@ -228,3 +228,16 @@ Zusätzlich blieb `blaue Fackel` nach normalem Tab-Schließen/Wiederöffnen als 
 **Integrität und Grenzen:** Datei `Karte.dungeon` blieb vor/nach dem Lauf SHA-256 `56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7`; die temporäre Draft-Probe wurde verworfen, abschließend wurde gespeichert. Belege: `evidence-95e7/26-reloaded-db47c8a.png`, `28-db47c8a-search-open.png`, `30-db47c8a-search-results.png`, `31-db47c8a-search-activated.png`, `32-db47c8a-dirty-draft.png`, `33-db47c8a-dirty-guard-blocked.png`, `34-db47c8a-dirty-discarded.png`, `35-db47c8a-search-cleared.png`, `36-db47c8a-saved-overview.png`, `38-db47c8a-tab-closed.png`, `40-db47c8a-reopened.png`, `41-db47c8a-reopen-search-start.png`, `42-db47c8a-reopen-search-results.png`, `44-db47c8a-search-after-clean-dock.png`, `45-db47c8a-reopen-activated-clean-dock.png`, `46-db47c8a-final-clean.png` unter `/workspace/scratch/gm-cloud-qa/`. Das ist ein Cloud-Produkttest auf dem exakten Bundle, keine physische Eingabe-, frische Electron-, GM-R01- oder Gesamtfreigabe; N-006 bleibt getrennt.
 
 **Konkrete Übergabe nach dem Retest:** Kartograph – Dungeon-Strang hat GM-UX-N-005-N01 in Issue #1 Kommentar `6087711097` ausdrücklich übernommen. Er verantwortet Suchstartzustand nach normalem Close/Reopen, Bedienbarkeit des Suchpanels bei sauberem leerem Key-Dock sowie vollständige Raum-/Geschosslabels bei 256-px-Inspector. Wiederholungsfolge für Abnahme: `db47c8a`-Bundle oder späterer integrierter Fixbuild in denselben isolierten Vault installieren; Close/Reopen; Suchstart prüfen; sichtbare anklickbare Raum-12/Geschoss-1-Zeile; Treffer öffnet unveränderten Key; Dirty-Draft stoppt Raumwechsel bis ausdrückliches Verwerfen/Übernehmen; Datei-Hash vor/nach vergleichen. N-006 bleibt ausgeschlossen.
+
+**Dungeon-Anschluss N01:** Kartograph/Dungeon-Strang übernahm den begrenzten
+Auftrag in Issue #1 `6087711097` auf Base `7d35591b`. Produktcommit `a06703c`
+initialisiert eine neue Suchpanelinstanz ausdrücklich mit leerer Übersicht,
+schließt beim Suchöffnen ausschließlich einen sauberen Key-Dock über den
+vorhandenen Weg und stoppt bei dirty Key-Draft vor jeder Ansichtsmutation.
+Raum-/Geschoss-Ortszeile und automatische Mindesthöhe bleiben im 256-px-
+Inspector sichtbar; die Ergebnisliste scrollt innerhalb des Panels. Acht
+fokussierte DOM-/Editorfälle, Typprüfung, 375/375 Tests und Build bestanden.
+Der unabhängige read-only N01-Produktreview bestand exakt
+`a06703c31766a064c6a8e8510a1cb5eaa46ca549` ohne Pflichtbefund. Das ist noch
+kein Cloud-Nachtest: Die Wiederholung des exakt beschriebenen H01-Ablaufs im
+isolierten Cloudvault bleibt offen. N-006 bleibt getrennt.

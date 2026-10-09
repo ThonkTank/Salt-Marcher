@@ -1093,20 +1093,24 @@
 .dn-key-preview { min-height: 36px; padding: 6px; border: 1px solid var(--background-modifier-border); }
 .dn-key-dock .dn-structured-key { overflow: auto; }
 .dn-key-dock .dn-key-content { max-height: 22vh; }
-.dn-room-key-search { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dn-room-key-search { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; }
 .dn-room-key-search-label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
 .dn-room-key-search-label input { width: 100%; min-width: 0; }
 .dn-room-key-search-status { margin: 0; color: var(--text-muted); }
-.dn-room-key-search-results { display: flex; flex-direction: column; gap: 5px; overflow: auto; }
+.dn-room-key-search-results { display: flex; flex: 1 1 auto; flex-direction: column; gap: 5px; min-height: 0; overflow: auto; }
 .dn-room-key-search-result {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
   width: 100%;
+  height: auto;
+  min-height: 44px;
   text-align: left;
   white-space: normal;
 }
+.dn-room-key-search-location { display: block; flex: 0 0 auto; line-height: 1.25; white-space: normal; }
 .dn-room-key-search-section { color: var(--text-accent); }
 .dn-room-key-search-snippet { color: var(--text-muted); }
 .dn-room-key-search-empty { margin: 0; }
