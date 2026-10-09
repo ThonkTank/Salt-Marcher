@@ -6,6 +6,8 @@ Direkter Auftrag vom 09.10.2026: vollständige Funktionsgleichwertigkeit mit Can
 
 Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase1. Eigene Arbeitskopie, gemeinsame Veröffentlichung ohne Force-Push. Der Hex-Kollege besitzt derzeit HEX-00 und seine GUI-Testinstanz; keine parallele native Testinstanz starten. CITY-01 beginnt nach der festen CITY-00-Ergebnisgalerie und dem geprüften HEX-05-Übergabevertrag. Direkte Detailwirkungen werden spätestens vor ihrem zugehörigen Fachpaket geprüft; vollständige Originalinventur und Parität bleiben Pflicht für CITY-09. Bis zur Atlasübergabe wird Referenzarbeit vorgezogen.
 
+Der konkrete [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) ordnet die aktuellen Quellschnittstellen, fehlenden HEX-05-Verträge, Stadtmodule und vollständigen Abnahmesequenzen zu. Er wird nach der geprüften Atlasübergabe an den gelieferten APIs aktualisiert.
+
 ## Iststand und offene technische Basis
 
 Alle 24 CTY-Unterfälle sind offen; native Stadtmodelle, Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
@@ -630,3 +632,6 @@ CITY-00-I39-R Start 2026-10-09T16:04:44.446953+00:00; Plan vollständig gegen ne
 
 
 CITY-00-I39-CP Start 2026-10-09T16:05:14.494999+00:00; Plan: Geometriehelfer aus src/geometry.ts im Plan einordnen: rectangle/inside/overlaps als punktbasierte Kandidaten, kein neuer Parallelbestand; Entity-/Portal-/Building-Helfer nicht ungeprüft auf Metergeometrie übernehmen. Polygon-Grenzsemantik und topologyEpsilon1e-9 benötigen bewusste Meterprüfung; BuildingEllipse hängt von Koordinatenspanne ab. Anschlussplan im vorderen Gesamtplan verlinken; ursprüngliches Quellaudit unverändert lassen und finalen Dokumenthash separat sichern. Umsetzung und Review getrennt.
+
+
+CITY-00-I39-CI Start 2026-10-09T16:05:51.739005+00:00; Anschlussplan nennt vorhandene rectangle/inside/overlaps und deren Rand-/Bounding-Box-Grenzen; feste Topologietoleranz, BuildingEllipse-Segmentzahl und Dungeon-Entity-/Portalbindung ausdrücklich getrennt. Keine ungeprüfte Feld→Meter-Übernahme oder zweite Geometriebibliothek. Plan direkt im Gesamtplan verlinkt; ursprüngliche Evidenz unverändert. Abschließender Hash-/Quell-/Verweisreview folgt.

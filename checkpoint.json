@@ -4094,17 +4094,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T16:05:14.494999+00:00",
-      "focus": "Geometrie-/Einheitenkopplung und Anschlussplan-Auffindbarkeit bereinigen",
-      "state": "completed",
-      "result": "Geometriehelfer aus src/geometry.ts im Plan einordnen: rectangle/inside/overlaps als punktbasierte Kandidaten, kein neuer Parallelbestand; Entity-/Portal-/Building-Helfer nicht ungeprüft auf Metergeometrie übernehmen. Polygon-Grenzsemantik und topologyEpsilon1e-9 benötigen bewusste Meterprüfung; BuildingEllipse hängt von Koordinatenspanne ab. Anschlussplan im vorderen Gesamtplan verlinken; ursprüngliches Quellaudit unverändert lassen und finalen Dokumenthash separat sichern."
-    },
-    "nextRun": {
       "id": "CITY-00-I39-CI",
       "kind": "cleanup_implementation",
-      "focus": "Wiederverwendung mit echten Grenzen konkretisieren und Plan verlinken"
+      "startedAt": "2026-10-09T16:05:51.739005+00:00",
+      "focus": "Geometrie-Reuse und Einheitenprüfung konkretisiert",
+      "state": "completed",
+      "result": "Anschlussplan nennt vorhandene rectangle/inside/overlaps und deren Rand-/Bounding-Box-Grenzen; feste Topologietoleranz, BuildingEllipse-Segmentzahl und Dungeon-Entity-/Portalbindung ausdrücklich getrennt. Keine ungeprüfte Feld→Meter-Übernahme oder zweite Geometriebibliothek. Plan direkt im Gesamtplan verlinkt; ursprüngliche Evidenz unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I39-CR",
+      "kind": "cleanup_review",
+      "focus": "Finalplan, Geometriequellen, Referenzen und fremde Zustände prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -33,6 +33,12 @@ CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeiche
 
 Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registrierten gemeinsamen Befehle. „Stadt hier anlegen“ erzeugt CityDocument und Elternplatzierung als einen rücknehmbaren Auftrag. Save nutzt denselben konsistenten Snapshot beider Besitzer. Es gibt keine isolierte persistente Stadt-Kamera, keine eigene Undo-Liste und keinen Zoomschalter für Stadtwerkzeuge.
 
+## Geometrie wiederverwenden, Einheiten prüfen
+
+`src/geometry.ts` besitzt bereits die punktbasierten Helfer `rectangle`, `inside` und `overlaps`. CITY prüft sie zuerst auf dieselbe Meter-/Kontursemantik; eine weitere Kopie dieser Algorithmen ist nicht vorgesehen. `inside` besitzt keine ausdrückliche Behandlung von Randpunkten und `overlaps` prüft nur inklusive Bounding-Box-Überlappung. Sie allein beweisen keine gültige Straße-/Hauskollision oder Polygon-Topologie.
+
+`assertBuildingTopology` prüft zwar Konturen und Löcher, verwendet aber die feste Koordinatentoleranz `topologyEpsilon = 1e-9` und Building-spezifische Fehlermeldungen. Vor gemeinsamer Nutzung müssen Metermaßstab, Randfälle und sehr kleine/große Konturen geprüft und gegebenenfalls ein hostneutraler Kern mit expliziter Toleranz herausgezogen werden. `buildingEllipse` bemisst seine Segmentzahl anhand der Koordinatenspanne; Dungeon-Feldwerte dürfen nicht unverändert als Stadtmeter wirken. `moveEntity`, `hit`, Portalanker und `entityBounds` bleiben Dungeon-Adapter. Gemeinsame reine Geometrie wird bei Bedarf zusammen mit ihren Regressionen extrahiert; bestehende Dungeonwirkungen werden dabei erhalten. Kamera/Platzierungstransformationen stammen weiter ausschließlich aus dem gelieferten Atlasvertrag.
+
 ## Umsetzung nach geprüfter HEX-05-Übergabe
 
 1. Gelieferten Commit, tatsächliche APIs und Hostnachweise aufnehmen; die obige Tabelle aktualisieren. Die HEX-05-Folge Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess muss belegt sein. Den Cloud-Befund GM-UX-N-004 unabhängig schließen. Fehlende Verträge gezielt mit HEX-Besitzer lösen.
