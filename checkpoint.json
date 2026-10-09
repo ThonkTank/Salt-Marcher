@@ -4171,11 +4171,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_n003_n004_assigned_atlas_zoom_blocked_continue_gm_workflow",
+    "state": "gm_ux_n004_cloud_dom_diagnosis_sent_retest_pending_continue_gm_workflow",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-02 Atlas foundation zoom probe",
-    "executedUiRuns": 5,
+    "currentRun": "GM-UX-N-004 old-build cloud DOM diagnosis at equal 548px panes",
+    "executedUiRuns": 6,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4247,18 +4247,18 @@
       {
         "id": "GM-UX-004",
         "priority": "P1-Kandidat",
-        "status": "visible_zoom_test_blocked_atlas_render_or_cloud_host_issue_assigned_issue1",
+        "status": "cloud_dom_diagnosis_reported_issue1_fixbuild_retest_pending",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Obsidian; Ursache Produkt/Host offen",
         "build": "Obsidian 1.14.4, source commit 0dc85609a35bc4c4452f7afc2a360400922becab, main.js SHA-256 416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159; build dirty only in GM docs/checkpoint",
-        "scenario": "Synthetischer leerer Atlas GM Atlas Zoom Test, 1440x1000; danach sichtbarer Splitterzug auf ca. 860 px Atlasbreite",
-        "reproduction": "Befehlspalette > Atlas anlegen > synthetischen Namen eingeben. Canvas schwarz; kein Raster/Ursprung sichtbar. + dreimal, −, Strg+Mausrad und sichtbarer Splitterzug. Kein sichtbarer Zoom auf schwarzem Canvas; sichtbarer Maßstabstext bleibt 3 Meilen pro Hex. Diagnostisch: Atlasviewport ca. 498x11170 px und nach Splitterzug 860x16868 px.",
+        "scenario": "Synthetischer Atlas GM Atlas Zoom Test, Obsidian 1.14.4, App 1440x1000/DPR1; sichtbarer Splitterzug zu Atlas-/Spielansicht-Panes 546.5x960 und 549.5x960",
+        "reproduction": "Ohne Zoom/Pan/Hex-Aktionen: nach sichtbarer Zweipaneinstellung read-only DOM/CSS messen. Aktive workspace-leaf-content 546.5x960, display:flex/overflow:hidden/position:relative. .dn-atlas ist zugleich .view-content mit display:block/overflow:auto, Rect/Client 546.5x921.64/535x922, scrollHeight 34293. .dn-atlas-viewport block/overflow:visible/position:static, 510.5x34130.5; Canvas 511x34124 Bitmap. Ein reiner zusätzlicher ResizeObserver sah in 24.65s +2128px (305 Benachrichtigungen), weitere +280px in 2s.",
         "expected": "Leerer Atlas zeigt sichtbares Raster und Ursprung; Canvas bleibt innerhalb des sichtbaren Fensters/Panes. −/+, Strg+Mausrad und Einpassen zeigen sichtbare, nachvollziehbare Zoomänderungen.",
-        "actual": "Schwarze Atlasfläche ohne sichtbare Hexes/Ursprung; extreme vertikale Viewportgröße; sichtbarer Zoomeffekt nicht beurteilbar. Host-WebGL-Ursache nicht ausgeschlossen.",
+        "actual": "Pixi type 4 (RendererType.CANVAS), canvasContext=true, gl=false; frische WebGL2-/WebGL-Proben beide nicht verfügbar. Canvas-Pixelproben transparent [0,0,0,0]. Keine Pixi/WebGL/ResizeObserver Consolewarnungen, pageerrors oder Requestfehler im beobachteten Fenster. Cloud-Ursache (fehlendes WebGL plus Layout-/Resize-Rückkopplung) berichtet; transparente Darstellung nicht abschließend kausal zugeordnet.",
         "impact": "P1-Kandidat, weil neu sichtbare Atlas-Zoomfunktion aus GM-Sicht nicht beurteilbar ist; keine Nutzerzeit/Latenz gemessen.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/218-atlas-create-command.png; /workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/221-atlas-initial-scale.png; /workspace/scratch/gm-cloud-qa/222-atlas-plus-three.png; /workspace/scratch/gm-cloud-qa/223-atlas-zoom-attempts.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png",
+        "evidence": "/workspace/scratch/gm-cloud-qa/218-atlas-create-command.png; /workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/221-atlas-initial-scale.png; /workspace/scratch/gm-cloud-qa/222-atlas-plus-three.png; /workspace/scratch/gm-cloud-qa/223-atlas-zoom-attempts.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png; /workspace/scratch/gm-cloud-qa/238-atlas-final-black-overflow.png; /workspace/scratch/gm-cloud-qa/239-atlas-two-pane-548.png; /workspace/scratch/gm-cloud-qa/240-atlas-exact-548-pane-dom.png",
         "latency": "Nicht gemessen; CDP-/Fernsteuerungszeit nicht als Produktlatenz gewertet.",
         "retest": null,
-        "coordination": "Hex-/Atlas-Auftrag GM-UX-N-004, Issue #1 Kommentar 6084269776; Ursache und Nachtest offen; HEX-01-CLEAN-P01/R01-Auftragsgrenze, Issue #1 Kommentar 6084291328."
+        "coordination": "Hex-/Atlas-Auftrag GM-UX-N-004, Issue #1 Kommentar 6084269776; Ursache und Nachtest offen; HEX-01-CLEAN-P01/R01-Auftragsgrenze, Issue #1 Kommentar 6084291328.; detailierte Cloud-DOM-/Canvas-/WebGL-/ResizeObserver-Fakten Issue #1 Kommentar 6084619486; Fixbuild-Nachtest offen."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4269,7 +4269,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Während Dungeon-Auftrag GM-UX-N-003 und Hex-Auftrag GM-UX-N-004 offen sind, GM-UX-01 mit längerer Gameplay-Informationssuche und Ebenenwechsel fortsetzen. Nach Produktfix denselben Key- und Atlaszoomablauf erneut testen; Atlas ist derzeit visuell nicht abgenommen.",
+    "next": "Hex-Atlas-Verantwortlichen Fixbuild für den angekündigten eigenen Cloud-Nachtest abwarten; GM-UX-01 unabhängig mit Informationssuche/Ebenenwechsel fortsetzen. N-004-Wiederholung nur am exakten neuen Build; Baseline bleibt der alte 416c739-Build.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4388,12 +4388,12 @@
       },
       {
         "id": "GM-UX-OBS-03",
-        "status": "atlas_zoom_test_blocked_current_cloud_build_task_assigned",
-        "observation": "Sichtbare Atlasfläche bleibt schwarz und wächst im Cloud Obsidian Pane extrem in die Höhe; Zoom ist visuell nicht abnehmbar. Ursache Produkt/Cloud-WebGL offen.",
+        "status": "cloud_dom_diagnosis_reported_fixbuild_retest_pending",
+        "observation": "Bei gleich breiten Obsidian Leaves (546.5/549.5px) ist .dn-atlas computed display:block/overflow:auto, während .dn-atlas-viewport overflow:visible und Canvashöhe ungebunden weiterwachsen. Pixi RendererType.CANVAS; Cloud WebGL-Probes fehlen; Canvas-Pixelproben transparent. Reiner ResizeObserver maß +2128px/24.65s. Keine Console/WebGL/ResizeObserver-Fehler erfasst.",
         "impact": "Atlaszoom nicht visuell testbar; keine Produkterfolgsaussage.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png",
-        "next": "GM-UX-N-004 mit Hex-Verantwortlichen klären und anschließend denselben Zoomablauf wiederholen.",
-        "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328."
+        "evidence": "/workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png; /workspace/scratch/gm-cloud-qa/239-atlas-two-pane-548.png; /workspace/scratch/gm-cloud-qa/240-atlas-exact-548-pane-dom.png",
+        "next": "Fixbuild von Hex abwarten; derselbe Cloud-Host und 548px Splitpane werden für getrennten Nachtest verwendet.",
+        "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
       }
     ]
   }
