@@ -61,6 +61,7 @@ const restart = process.argv.includes("--restart"),
   parityToolsPhase1Wear = process.argv.includes("--parity-tools-phase1-wear"),
   parityToolsPhase1Resize = process.argv.includes("--parity-tools-phase1-resize"),
   parityToolsPhase1MapInfo = process.argv.includes("--parity-tools-phase1-map-info"),
+  gmUxN001 = process.argv.includes("--gm-ux-n001"),
   parityToolsPhase1SmartTiles = process.argv.includes("--parity-tools-phase1-smart-tiles"),
   parityToolsPhase1TerrainMasks = process.argv.includes("--parity-tools-phase1-terrain-masks"),
   parityToolsPhase1BuildingFloor = process.argv.includes("--parity-tools-phase1-building-floor"),
@@ -250,7 +251,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures || parityPhase6Repair || parityPhase6RepairSelection || parityToolsPhase1NewMap || parityToolsPhase1StartOptions || parityToolsPhase1Wizard)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures || parityPhase6Repair || parityPhase6RepairSelection || parityToolsPhase1NewMap || parityToolsPhase1StartOptions || parityToolsPhase1Wizard || gmUxN001)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
@@ -772,6 +773,12 @@ async function workflow() {
   }
   if (parityToolsPhase1MapInfo) {
     const scenario = require("./host/parity-tools-phase1-map-info.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (gmUxN001) {
+    const scenario = require("./host/gm-ux-n001.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
