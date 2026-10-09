@@ -79,22 +79,34 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_h01_automated_reviewed_physical_input_open",
+    "state": "ce01_c01_plan_review_changes_required_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-P01",
-      "kind": "cleanup_plan",
-      "state": "completed_static_validation_review_pending",
-      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
+      "id": "CE-01-C01-P01-R01",
+      "kind": "cleanup_plan_review",
+      "state": "changes_required",
+      "focus": "Independently review the bounded CE-01 cleanup plan against the current implementation and retained H01 contracts",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "basis": {
-        "reviewedProductCommit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
-        "reviewedMainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
-        "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
+        "reviewedPlanCommit": "2ee3a80f988ac8b96a736a0cc15ee27b5e989faf",
+        "integratedHead": "37342f98911e1e5fcbcb7f369f1e411f3bdda667"
       },
-      "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
+      "finding": "The plan correctly identifies drift between separately maintained restore and reset draft lists, but C01-I01 centralizes only restore/hydration. resetCreatureCatalogFilters would retain a second manual list of all seven draft keys, leaving the stated aging risk open.",
+      "requiredRepair": "Require reset to derive its draft keys from the same DRAFT_FILTERS matrix and add a seven-filter reset regression that also proves sort and selection remain unchanged.",
+      "retained": "Restore/default consolidation, narrow file scope, removal of the unused host dependency, exact-candidate H01 repetition, D&D-2014-only scope, H01 evidence and all physical/screenreader/platform limits remain sound.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 245, "failed": 0},
+        "build": "passed",
+        "json": "passed",
+        "diffCheck": "passed",
+        "mainBytes": 1338544,
+        "mainJsGrowthBytes": 149174,
+        "mainJsGrowthLimitBytes": 180000
+      },
+      "limits": "Read-only plan review only. No product code, host execution, cleanup approval or CE-01 approval."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -233,10 +245,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01",
-      "kind": "cleanup",
+      "id": "CE-01-C01-P01-N01",
+      "kind": "cleanup_plan_repair",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Review this bounded cleanup plan, then centralize restore defaults and draft hydration, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
+      "focus": "Repair the plan so restore, hydration and reset share DRAFT_FILTERS and the regression matrix covers all seven filter/draft pairs plus preserved sort and selection; then re-review before implementation"
     }
   },
   "repositoryWorkflow": {
