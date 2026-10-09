@@ -192,6 +192,11 @@ Mehrfachwerte, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit,
 einen fokussierten DOM-Harness und atomare Draft-Übernahme beim Host-Lifecycle.
 `CE-01-R01` fand einen Unique-View-Concurrency-Race und selectorunsicheren
 Tastaturfokus. `CE-01-N01` reparierte beide Pfade; `CE-01-R02` bestand nach
-expliziten Regressionen für kanonisches Reveal, Duplikatbereinigung und eine
-adversariale ID. Nächster Lauf ist `CE-01-H01`, die echte Obsidian-Abnahme.
-Noch keine CE-01- oder Encounter-Fachfreigabe behaupten.
+expliziten Regressionen. `CE-01-H01` bestand seinen automatisierten echten
+Obsidian-Umfang. `CE-01-C01` zentralisierte Restore-, Default- und Draftregeln;
+sein erster Review fand eine verbleibende Content-Duplizierung, die
+`CE-01-C01-N01` beseitigte. Der unabhängige Re-Review schloss das Aufräumtor.
+Nächster Lauf ist `CE-02-P01`, der eigene technische Fachplan für den
+vollständigen SaltMarcher-Katalog. Physische CE-01-Eingabe, Screenreader und
+weitere Plattformen bleiben offen; noch keine vollständige CE-01- oder
+Encounter-Fachfreigabe behaupten.

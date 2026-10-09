@@ -90,7 +90,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
   "updated": "2026-10-09T15:03:43Z",
-  "state": "ce01_c01_plan_reviewed_implementation_next_physical_input_open",
+  "state": "ce01_c01_cleanup_reviewed_ce02_plan_next_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -378,11 +378,12 @@
     },
     "ce01C01Review": {
       "run": "CE-01-C01-R01",
-      "state": "changes_required",
+      "state": "passed_after_repair",
       "reviewedCommit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
       "finding": "CreatureCatalogViewContent still names six text-filter draft keys manually and implements the name draft through a separate search path, so CREATURE_CATALOG_DRAFT_FILTERS is not yet the only pair source.",
       "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
-      "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md"
+      "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "reReview": "CE-01-C01-R02 passed on c9dfde7 after confirming the sole pair source, shared content path, retained name UX, 247 tests, exact build and all three normal-exit host receipts."
     },
     "ce01C01RepairPlan": {
       "run": "CE-01-C01-N01-P01",
@@ -394,7 +395,7 @@
     },
     "ce01C01Repair": {
       "run": "CE-01-C01-N01",
-      "state": "completed_checked_host_passed_rereview_pending",
+      "state": "completed_checked_host_passed_rereviewed",
       "commit": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
       "result": "All seven text filters derive their draft key from the canonical mapping and use one content input/publish path; the name input retains its placeholder, ARIA label, focus, debounce and Enter behavior.",
       "verification": {
@@ -410,9 +411,10 @@
           "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
         ]
       },
-      "limits": "Independent re-review pending; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
+      "review": "CE-01-C01-R02 passed without a remaining mandatory finding.",
+      "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
     },
-    "next": "Independently re-review CE-01-C01-N01. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "next": "Plan CE-02 as a separate reviewed phase before implementation. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

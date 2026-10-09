@@ -84,5 +84,8 @@ Commit und Build:
 
 Alle drei Prozesse besitzen eigene Unit, Invocation-ID und Prozessidentität,
 endeten normal mit Status 0 und ohne erzwungene Terminierung. Der unabhängige
-Re-Review bleibt offen; ebenso physische Eingabe, Screenreader und weitere
-Plattformen.
+Re-Review `CE-01-C01-R02` bestätigte auf `c9dfde7` die einzige Paarquelle,
+den gemeinsamen Contentpfad, die erhaltene Name-UX, 247/247 Tests, Buildbytes
+und alle drei Prozessbelege ohne weiteren Pflichtbefund. Das CE-01-Aufräumtor
+ist damit geschlossen. Physische Eingabe, Screenreader und weitere Plattformen
+bleiben offen; CE-01 erhält deshalb weiterhin keine vollständige Fachfreigabe.
