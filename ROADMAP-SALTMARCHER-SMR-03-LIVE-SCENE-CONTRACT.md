@@ -1,6 +1,7 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
-Status: **Plankandidat; nicht reviewt, nicht ratifiziert und ohne
+Status: **Campaign/Data-Peerreview R01 `CHANGES_REQUIRED`; reparierter
+Plankandidat vor erneutem Exact-SHA-Review; nicht ratifiziert und ohne
 Implementierungs-, Host- oder Persistenzfreigabe.**
 
 ## Fachliche Quellen
@@ -32,6 +33,12 @@ SMR-01-Kandidaten `11e256309d43bcd1c14db66ffc41945c9360aec8` ein.
 Beide bleiben getrennt ratifikationspflichtig. Java-, JavaFX-, Electron-,
 JDBC- und historische Obsidian-Implementierungen sind ausschließlich
 Verhaltensreferenzen, keine Zielarchitektur.
+
+Der Campaign/Data-Peerreview R01 dokumentierte in
+[Issue #1, Kommentar 6087727266](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087727266)
+zwei Pflichtlücken: Initialisierung bei bereits aktiver Party und die
+Complete-vs-Salvage-Grenze bei Provider-/Medienschaden. Diese Fassung repariert
+beide Punkte; der Vorgänger besitzt keinen PASS.
 
 ## Umfang und Nichtziele
 
@@ -77,12 +84,25 @@ LiveScene, Primary Scene, Focus-Referenz oder SceneClock besitzen. Eine reine
 Campaign-Lifecycle-Operation darf keine Scene als Nebenwirkung erzeugen.
 
 `InitializeLiveSession` ist eine ausdrückliche, idempotente GM-/Continue-Aktion.
-Sie erzeugt genau eine leere Primary LiveScene, deren SceneClock und den ersten
-gültigen Focus. Eine Wiederholung mit derselben CommandId liefert dasselbe
-Receipt; ein bereits initialisierter Zustand wird nicht dupliziert. Der
-Anwendungsstart bleibt auf der Campaign-Auswahl. Erst ausdrückliches Continue
-lädt die gespeicherte Live-Session-Projektion; es gibt kein verborgenes
-automatisches Session-Resume.
+Sie erzeugt genau eine Primary LiveScene, deren SceneClock und den ersten
+gültigen Focus. Der Befehl liest eine revisionierte Party-Projektion und ordnet
+alle dort aktiven CharacterIds in ihrer bestehenden Partyreihenfolge atomar der
+neuen Primary Scene zu; bei leerer Party ist die Primary Scene leer. Ist Party
+nicht verfügbar oder ihre Revision bei Validate stale, scheitert die gesamte
+Initialisierung sichtbar und veröffentlicht weder Scene noch Focus oder Clock.
+Eine aktive, unzugeordnete Party neben einer veröffentlichten leeren Primary
+Scene ist kein zulässiger Zwischen- oder Recoveryzustand. Eine Wiederholung mit
+derselben CommandId liefert dasselbe Receipt; ein bereits initialisierter
+Zustand wird nicht dupliziert. Der Anwendungsstart bleibt auf der
+Campaign-Auswahl. Erst ausdrückliches Continue lädt die gespeicherte
+Live-Session-Projektion; es gibt kein verborgenes automatisches Session-Resume.
+
+Ein vollständiger Import mit bereits vorhandenem Live-Session-Zustand remappt
+dessen Scenes und Zuordnungen nach SMR-01 und ruft keine Initialisierung auf.
+Nur eine gültige Campaign ohne LiveScene benutzt den obigen Initialisierungsweg.
+Beschädigte oder mehrdeutige importierte/gesicherte Scene-Zustände werden durch
+Recovery beziehungsweise disclosed Salvage behandelt und niemals durch eine
+synthetische leere Scene verdeckt.
 
 Nach erfolgreicher Initialisierung existiert immer genau eine Primary Scene.
 Wenn keine Partyfigur aktiv ist, bleibt eine leere Primary Scene verwendbar.
@@ -124,6 +144,32 @@ einer veralteten Scene- oder Maskenprojektion als aktuell angezeigt. Stattdessen
 zeigt die Live Session ihre stabile CharacterId, die beabsichtigte Zielgrenze
 und einen strukturierten Pending-/Retry-Zustand. Unbetroffene Scenes und Masken
 bleiben verwendbar.
+
+### Party-, Roster- und Adventuring-Day-Projektion
+
+Eine immutable `PartyProjection` enthält mindestens CampaignId, PartyRevision,
+die geordneten Rostereinträge mit stabiler CharacterId, explizite
+active/inactive-Mitgliedschaft, optionale Profilwerte mit echter Abwesenheit,
+XP-/Level-/Rest-Fakten sowie pro aktiver Figur die bestätigte LiveSceneId oder
+einen strukturierten Pending-Zustand. Namen sind nicht identitätsstiftend.
+
+- Name-only-Erstellung erzeugt immer eine inaktive Rosterfigur ohne Scene- oder
+  Travel-Zuordnung. Optionale Spieler-, Spezies-, Klassen-, Sprach-, Level-,
+  Passive-, RK- und Bewegungswerte bleiben abwesend und werden nicht durch
+  Sentinel- oder Defaultwerte ersetzt.
+- Profiländerung, XP-Zuteilung/Korrektur, Rest und Party-Mitgliedschaft sind
+  getrennte Party-Befehle. XP und Rest verändern keine Scene-Zuordnung; nur
+  Aktivierung, Deaktivierung, Löschung oder ein ausdrücklicher Scene-Move tun
+  dies über die gemeinsame Grenze.
+- Charakterlöschung entfernt abhängige Scene-/Masken-/Combat-Referenzen nach
+  der autoritativen Party-Entscheidung und bewahrt nichtrekonstruktive
+  historische Fakten nach SMR-01. Eine betroffene Undo-History darf die
+  gelöschte CharacterId nicht wiederherstellen.
+- Adventuring-Day-Budget und -Fortschritt sind reine, revisionierte Party-
+  Berechnungen. Eigene Eingabezeilen bleiben transient und verändern weder
+  Roster noch aktuelle Party oder Scene-Zuordnung.
+- Die planning-only expected Party eines Session-Plans gehört SMR-06 und ist
+  weder die aktuelle Party noch eine LiveScene-Zuordnung.
 
 ### Primary Scene und Focus
 
@@ -281,12 +327,23 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     und Referenzen in eine unabhängige Campaign, ohne Topologieverlust oder
     Rückreferenz; Konflikte bleiben fail-closed.
 12. Ausfall eines Masken-, Music-, Weather-, Shop-, Karten- oder
-    Passive-Display-Providers lässt Scene, Party, Notizen, bestätigte Arbeit,
-    Preservation und vollständigen Export nutzbar.
-13. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
+    Passive-Display-Providers lässt Scene, Party, Notizen, bestätigte Arbeit
+    und Preservation nutzbar. Complete Export bleibt nur dann Complete, wenn
+    er jedes erforderliche verifizierte Medium und alle retained
+    Capability-Daten enthält und nichts still auslässt. Fehlende oder
+    unrecoverable Daten erlauben ausschließlich einen getrennt bezeichneten
+    Salvage-Export, dessen Manifest jede betroffene stabile Identität,
+    erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade.
+13. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
+    optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
+    inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
+14. XP-Zuteilung/Korrektur, ausgewählte Short-/Long-Rests und
+    Adventuring-Day-Berechnung ändern keine Scene-Zuordnung. Eine planning-only
+    expected Party verändert weder Roster-Mitgliedschaft noch LiveScene.
+15. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
     getakteten Scenes, acht Masken und 50 Teilnehmern erfüllt die TN-21-
     Livebudgets; die großen Profile truncaten oder vermischen keine Wahrheit.
-14. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
+16. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
     nicht-farbige Zustände erhalten dieselben Scene-/Party-Aktionen und
     vollständige zugängliche Namen.
 
