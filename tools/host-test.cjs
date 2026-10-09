@@ -583,17 +583,21 @@ async function shutdown() {
   if (page && !page.isClosed())
     try {
       if (
-        await page.evaluate(
-          (expected) =>
-            typeof app !== "undefined" &&
-            app.vault?.adapter?.basePath === expected,
-          vault,
-        )
+        await Promise.race([
+          page.evaluate(
+            (expected) =>
+              typeof app !== "undefined" &&
+              app.vault?.adapter?.basePath === expected,
+            vault,
+          ),
+          sleep(2000).then(() => false),
+        ])
       ) {
         requestedNormalQuit = true;
-        await page.evaluate(() =>
-          setTimeout(() => window.electron.remote.app.quit(), 0),
-        );
+        await Promise.race([
+          page.evaluate(() => setTimeout(() => window.electron.remote.app.quit(), 0)),
+          sleep(2000),
+        ]);
         await sleep(700);
       }
     } catch {}
@@ -621,7 +625,7 @@ async function shutdown() {
   }
   if (remaining.length) await sleep(1000);
   const systemdBeforeCleanup = systemdProperties();
-  await browser?.close().catch(() => {});
+  if (browser) await Promise.race([browser.close().catch(() => {}), sleep(2000)]);
   if (scope) {
     try {
       cp.execFileSync(
@@ -829,14 +833,21 @@ async function workflow() {
     { timeout: 5000 },
   );
   if (firstUseTrust) {
-    // The first-use trust transition can discard a command modal opened immediately after plugin registration.
-    await page.reload({ waitUntil: "domcontentloaded" });
+    // First-use trust may finish loading after command registration.
+    await sleep(3000);
     await page.waitForFunction(
       (expected) => typeof app !== "undefined" && app.vault?.adapter?.basePath === expected &&
         app.workspace?.layoutReady && !!app.plugins.getPlugin("dungeon-editor"),
       vault,
       { timeout: 30000 },
     );
+    await page.evaluate((expected) => {
+      if (app.vault.adapter.basePath !== expected)
+        throw new Error("Unbekanntes Testfenster");
+      app.setting.close();
+      window.electron.remote.getCurrentWindow().focus();
+    }, vault);
+    await page.waitForFunction(() => activeWindow === window);
   }
   await page.evaluate(() => {
     for (const leaf of app.workspace.getLeavesOfType("dungeon-native-map"))
@@ -2821,20 +2832,23 @@ async function workflow() {
         fs.writeFileSync(
           out + "/failure-state.json",
           JSON.stringify(
-            await page.evaluate(() => ({
-              body: document.body.innerText,
-              app:
-                typeof app !== "undefined"
-                  ? {
-                      vault: app.vault?.adapter?.basePath,
-                      workspace: !!app.workspace,
-                      layoutReady: app.workspace?.layoutReady,
-                      plugins: app.plugins
-                        ? Object.keys(app.plugins.manifests)
-                        : null,
-                    }
-                  : null,
-            })),
+            await Promise.race([
+              page.evaluate(() => ({
+                body: document.body.innerText,
+                app:
+                  typeof app !== "undefined"
+                    ? {
+                        vault: app.vault?.adapter?.basePath,
+                        workspace: !!app.workspace,
+                        layoutReady: app.workspace?.layoutReady,
+                        plugins: app.plugins
+                          ? Object.keys(app.plugins.manifests)
+                          : null,
+                      }
+                    : null,
+              })),
+              sleep(2000).then(() => ({ unavailable: "renderer did not respond" })),
+            ]),
             null,
             2,
           ),
