@@ -422,12 +422,11 @@
     "state": "concrete_location_plan_checked_not_implemented",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "HEX-03-P01",
-      "kind": "location_plan",
-      "startedAt": "2026-10-09T19:38:23.619137+00:00",
-      "finishedAt": "2026-10-09T19:38:23.619137+00:00",
-      "state": "completed",
-      "focus": "Early native Location/placement/shared history/save/copy/recovery/fresh flow; bounded codec+commands first, actual UI next before extra link comforts."
+      "id": "HEX-03-I01a",
+      "kind": "location_core",
+      "recordedAt": "2026-10-09T19:46:28.182629+00:00",
+      "state": "in_progress",
+      "focus": "New standalone closed native Location/Placement/Key codec plus one lifetime LocationSource, nullable absence and composable same-history commands; no World/UI/Store activation."
     },
     "nextRun": {
       "id": "HEX-03-I01a",
@@ -475,7 +474,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "Root N01-H01 edit/fresh normal Exits0, no GUI process remains; slot available by explicit coordination, no parallel instance.",
+      "nativeGuiSlot": "Explicitly handed to City for isolated CO-COK-0004 light/weather Original; Root no native GUI until normal exit and explicit return.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
