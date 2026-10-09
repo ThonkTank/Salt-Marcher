@@ -103,3 +103,39 @@ I02-P01 endet erst nach unabhängiger Planprüfung. Erst deren PASS autorisiert 
 deren exakter Commit benötigt anschließend getrennte Code-/Security-/Evidence-Reviews. Befunde
 erzeugen einen separaten Repair-Plan und Repair-Commit. Erst nach Matrix-PASS folgt ein eigener
 Cleanup-Plan; weder dieser Plan noch ein späterer PASS autorisiert H03-Go, P02 oder Plattform-Go.
+
+## R01-Reparatur: erzeugbare Receipt- und Matrixzellen
+
+Die folgenden Tabellen ersetzen jede implizite Sammelregel. `RG(n)` bedeutet: exklusive neue
+Receiptgeneration schreiben, `fdatasync`, `renameat2(RENAME_NOREPLACE)`, dann `fsync(receipt-dir)`;
+der jeweilige Zustand ist erst danach sichtbar. Jede Zeile besitzt damit eine prüfbare Generation.
+
+| Parent-ID | Vorbedingung | Mutation nach RG | nächste RG/fsync | Fresh-Recovery-Orakel |
+| --- | --- | --- | --- | --- |
+| P01 prepared | kein Child-Schritt | Parent prepared | RG(parent prepared), dir-fsync | Before, kein Child oder retained vorbereitete Wahrheit |
+| P02 children-committed | alle vier Child committed, After-Digest | Parent children-committed | RG, dir-fsync | aggregiertes After vervollständigen |
+| P03 committed | P02 sichtbar | Parent committed | RG, dir-fsync | aggregiertes After, idempotent |
+| P04 rolling-back | P01/P02/P03, keine fremde Wahrheit | Parent rolling-back | RG, dir-fsync | operationale Rollbacks fortsetzen oder conflict |
+| P05 rolled-back | alle Child rolled-back, Before-Digest | Parent rolled-back | RG, dir-fsync | aggregiertes Before, retained Artefakte |
+| P06 conflict | dritte Wahrheit/Receiptverlust/fremde Identität | keine Überschreibung | RG(conflict), dir-fsync | retained conflict, unverändert beim zweiten Lauf |
+
+Für jede Childoperation erzeugt der Controller exakt diese Transition-IDs; jeder Pfeil bedeutet
+vorherige RG, Dateimutation, Identitäts-/Hashprüfung, nachfolgende RG und Directory-fsync.
+
+| Operation | IDs in Reihenfolge | Fresh-Recovery-Orakel |
+| --- | --- | --- |
+| Create | C01 prepared→temp-synced; C02 temp-synced→new-published; C03 new-published→committed; C04 committed→rolling-back; C05 rolling-back→rollback-captured; C06 rollback-captured→rolled-back; C07 any→conflict | Ziel After nach C03, Ziel abwesend nach C06, Rollback-Capture retained |
+| Update | U01 prepared→before-snapshotted; U02 →ready-to-capture; U03 →old-captured; U04 →new-published; U05 →committed; U06 →rolling-back; U07 →rollback-captured; U08 →rollback-published; U09 →rolled-back; U10 any→conflict-before-capture/conflict | B/Capture retained; Target Before vor U03, After U04–U07, Before U08/U09 |
+| Delete | D01 prepared→before-snapshotted; D02 →ready-to-capture; D03 →deleted; D04 →committed; D05 →rolling-back; D06 →rollback-published; D07 →rolled-back; D08 any→conflict-before-capture/conflict | B/Capture retained; Target Before vor D03, abwesend D03–D05, Before D06/D07 |
+
+Die formal geschlossene Matrix ist das kartesische Produkt
+`M = {C01..C07,U01..U10,D01..D08,P01..P06} × {before,during,after} × A`.
+`A={replace-before-capture,inplace-fd-write,rebind-after-capture,target-symlink,parent-symlink,
+hardlink,root-swap,parent-swap,mount-device,receipt-missing,receipt-duplicate,receipt-corrupt,
+second-recovery}`. Zell-ID ist `H03-I02-<transition>-<phase>-<adversary>`; der Controller erzeugt
+sie lexikographisch. Applicability: Capture-Klassen nur U03/U04/D03 und deren Recovery; After-capture
+nur C02/U03/U04/D03; Mount nur wenn sicher privilegiert, sonst `not-run`=No-Go; übrige Zellen sind
+pflichtig. Erwartung jeder anwendbaren Zelle ist exakt das Tabellenorakel der Transition plus:
+Temp vor Rename=After/nach Rename=abwesend; B/Capture/Rollback-Capture=retained present; Restore-Temp
+nach Rename=abwesend; Receipt=letzte RG oder retained conflict; Parent=P01 Before, P02/P03 After,
+P05 Before, P06 conflict. Jeder andere Hash, Name, inode oder Mischzustand ist `failed`.
