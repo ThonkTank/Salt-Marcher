@@ -115,8 +115,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:43:39Z",
-    "state": "ce02_i02_plan_repair_review_pending_ce01_physical_open",
+    "updated": "2026-10-09T16:47:39Z",
+    "state": "ce02_i02_plan_second_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -485,13 +485,13 @@
     "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open.",
     "ce02I02Plan": {
       "run": "CE-02-I02-P01",
-      "state": "r01_changes_required_repair_review_pending",
+      "state": "n01_r01_changes_required_n02_review_pending",
       "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
       "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
-      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs: pre-implementation provenance gate, deterministic identities/extraction, canonical license notice, attunement semantics, provider status mapping, v1 state migration and I02 host gates. Repair candidate awaits independent re-review."
+      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab confirmed five groups and required two remaining repairs: remove S01 gate cycle and name/version a complete schema artifact (Issue #1 comment 6085248851). N02 awaits independent review."
     }
   },
   "cityPlans": {
