@@ -132,17 +132,19 @@
       "state": "completed_check_review_pending",
       "focus": "Repair only the contradictory CE-02-I01 status and provenance fields without changing product bytes",
       "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "result": "The CE-02-I01 product remains unchanged. This repair aligns duplicate status fields and binds the implementation evidence to exact product commit 7469e64202e730175ee138136a69d82ad4f28ea6; independent repair review is pending.",
+      "result": "The CE-02-I01 product remains unchanged. This repair aligns duplicate status fields and binds a fresh clean check, 259-test run and build to exact product commit 7469e64202e730175ee138136a69d82ad4f28ea6; independent repair review is pending.",
       "verification": {
         "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
         "metadataJson": "passed",
         "productInputs": "unchanged from 7469e64202e730175ee138136a69d82ad4f28ea6",
+        "dirty": false,
+        "node": "v22.22.2",
         "check": "passed",
         "tests": {"passed": 259, "failed": 0},
         "build": "passed",
-        "mainBytes": 1361064,
-        "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
-        "mainJsGrowthBytes": 171694
+        "mainBytes": 1362196,
+        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
+        "mainJsGrowthBytes": 172826
       },
       "review": "Independent CE-02-I01 review of 7469e64202e730175ee138136a69d82ad4f28ea6 retained the product/CSS scope but found contradictory review states and a stale dirty sourceRevision. N01 repairs only those fields; exact-head re-review is pending.",
       "limits": "No new data owner, host acceptance or CE-02 approval. Physical input, screenreader and non-Linux platform acceptance remain open."
@@ -293,12 +295,15 @@
       "result": "One accessible seven-section catalog workspace now migrates the unversioned CE-01 Monster state, retains isolated typed section state, routes Monster query/detail reads through the real immutable SRD-5.1 provider with generation/abort isolation, and exposes six honest unavailable providers without invented data.",
       "verification": {
         "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
+        "dirty": false,
+        "node": "v22.22.2",
         "check": "passed",
         "tests": {"passed": 259, "failed": 0},
         "focusedTests": {"passed": 217, "failed": 0},
         "build": "passed",
-        "mainBytes": 1361064,
-        "mainJsGrowthBytes": 171694
+        "mainBytes": 1362196,
+        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
+        "mainJsGrowthBytes": 172826
       },
       "review": "Independent review of exact product commit 7469e64202e730175ee138136a69d82ad4f28ea6 retained the product and scoped CSS but required repair of contradictory status/provenance fields. N01 exact-head re-review is pending.",
       "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. No host, physical-input, screenreader or non-Linux acceptance and no CE-02 approval."
