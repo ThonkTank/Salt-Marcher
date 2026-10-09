@@ -1061,12 +1061,13 @@
         "product": "Canvas of Kings",
         "feature": "Pfad-/Flächenplatzierung",
         "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
-        "observedAt": "2026-10-09T10:57:45.428Z",
+        "observedAt": "2026-10-09T11:49:19.144Z",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
         ],
         "task": "Pfad und Fläche verändern; automatische Objekte folgen",
         "phase": "CITY-07",
@@ -1082,27 +1083,43 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Demo-Pfad/Plot und Kontrollpunktwirkung direkt belegt; volle Funktionstiefe, Vollversion und eigener Vergleich offen.",
+        "gap": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I06-NI",
-          "state": "path_plot_create_and_control_move_observed",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "productVariant": "Canvas of Kings Demo 3122210",
+          "run": "CITY-00-I07-I",
+          "state": "named_path_and_plot_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+          "sourceScope": "installed_demo_not_full_version",
+          "observation": "Named Wide dirt road/Market effect;13Path and6Plot preset labels visible",
           "remaining": [
-            "Full version inventory",
-            "Preset identities",
-            "Density/structure controls",
-            "Save/reopen",
-            "Own implementation and better usability"
+            "Demo-limited content and automatically reduced graphics",
+            "District/building layouts, density, detach individual buildings, fuller city result gallery unverified",
+            "Two --click flags in first road command parsed only last; input provenance has950,580, next command added360,580; no road failure inferred",
+            "Save-session exit closed RFB before requested screenshot; normal Originalexit0 recorded; no025 frame claimed",
+            "No original file structure parsing/modification; same file hash proves unchanged input, visual comparison only"
           ]
         },
         "documentationObservation": {
           "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
           "observedAt": "2026-10-09T12:15:44.926455+02:00",
           "scope": "official full-version description; distinct from partial demo probe"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I06-NI",
+            "state": "path_plot_create_and_control_move_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+            "productVariant": "Canvas of Kings Demo 3122210",
+            "remaining": [
+              "Full version inventory",
+              "Preset identities",
+              "Density/structure controls",
+              "Save/reopen",
+              "Own implementation and better usability"
+            ]
+          }
+        ]
       },
       {
         "id": "CO-COK-0002",
@@ -2538,12 +2555,13 @@
         "product": "Canvas of Kings",
         "feature": "Native Karten speichern und öffnen",
         "sourceUrl": "steam://run/3122210",
-        "observedAt": "2026-10-09T11:03:19.264Z",
+        "observedAt": "2026-10-09T11:49:19.144Z",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
         ],
         "task": "Neue Karte speichern und in frischem Prozess öffnen",
         "phase": "CITY-01",
@@ -2559,18 +2577,34 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "gap": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I06-NI",
-          "state": "control_observed_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "productVariant": "Canvas of Kings Demo 3122210",
-          "observation": "Save/Save As/Open/New menus; Save As dialog, no confirmed file",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
-          "sourceScope": "installed_demo_control_not_full_version_description"
-        }
+          "run": "CITY-00-I07-I",
+          "state": "save_and_fresh_open_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+          "sourceScope": "installed_demo_not_full_version",
+          "observation": "Native Save/Open:12221bytes, unchangedSHA, fresh profile/process restores visible scene",
+          "remaining": [
+            "Demo-limited content and automatically reduced graphics",
+            "District/building layouts, density, detach individual buildings, fuller city result gallery unverified",
+            "Two --click flags in first road command parsed only last; input provenance has950,580, next command added360,580; no road failure inferred",
+            "Save-session exit closed RFB before requested screenshot; normal Originalexit0 recorded; no025 frame claimed",
+            "No original file structure parsing/modification; same file hash proves unchanged input, visual comparison only"
+          ]
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I06-NI",
+            "state": "control_observed_only",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+            "productVariant": "Canvas of Kings Demo 3122210",
+            "observation": "Save/Save As/Open/New menus; Save As dialog, no confirmed file",
+            "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
+            "sourceScope": "installed_demo_control_not_full_version_description"
+          }
+        ]
       },
       {
         "id": "CO-COK-0007",
@@ -3215,7 +3249,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I08-I",
+      "run": "CITY-00-I07-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3233,7 +3267,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
       ],
       "resultReferences": [
         {
