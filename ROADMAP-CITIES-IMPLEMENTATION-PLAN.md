@@ -849,3 +849,5 @@ Stadt-Besitzerfeedback 2026-10-09T18:23:09.537136+00:00: exakten Root-Kandidaten
 
 
 CITY-01-PREP-P07 Start 2026-10-09T18:27:36.073378+00:00; ROADMAP-CITIES-CITY01-RENDERER-PLAN.md konkretisiert den bestätigten City-Szenenbeitrag, affine Meterbreiten, transparente Mehrhöfe, atomare GraphicsContexts und gezielte Kern-/Hostgrenzen. Pixi cut-Mehrfachaufrufrisiko durch einen gemeinsamen Lochpfad berücksichtigt. Keine Runtimeänderung. Aufräum-P/I/R folgt vor I07.
+
+CITY-01-PREP-RENDERER-PLAN-CLEAN-P07 Start 2026-10-09T18:32:56.440371+00:00; Fokus: Rendererplan ohne neue Statusdatenbank auffindbar machen und überholte pauschale Teamwartepflicht berichtigen. Umsetzung: ein Gesamtplanlink, präziser bestätigter City-Scope im vorhandenen Koordinationsobjekt; gemeinsame SMR-/HEX-Frameverträge bleiben gesondert gated. Review: Links, fremde JSON-Wurzeln, offene CTY-Fälle und keine Runtimeänderung prüfen.

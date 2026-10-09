@@ -4421,17 +4421,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P07",
-      "kind": "planning",
-      "startedAt": "2026-10-09T18:32:42.596621+00:00",
-      "focus": "City-Szenenbeitrag ohne zweite Atlaszustände konkret planen",
-      "state": "completed",
-      "result": "Rendererplan erstellt; installierte Pixi-API geprüft; Mehrhofcut-Falle im Plan geschlossen. Umsetzung und Hostabnahme offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-P07",
       "kind": "cleanup_planning",
-      "focus": "Planlinks und bestätigte Besitzergrenze bereinigen"
+      "startedAt": "2026-10-09T18:32:56.440371+00:00",
+      "focus": "Dokumentationsgrenzen und Auffindbarkeit planen",
+      "state": "completed",
+      "result": "Ein Link und bestehende Koordinationsfelder bereinigen; keine zusätzliche Statusdatei oder Produktänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-I07",
+      "kind": "cleanup_implementation",
+      "focus": "Rendererplan verlinken und bestätigten Scope dokumentieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
