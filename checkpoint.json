@@ -3580,17 +3580,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T11:53:46.363932+00:00",
-      "focus": "RFB-Optionen vor Verbindung validieren",
-      "state": "completed",
-      "result": "Vorparser und früher CLI-Regressionstest umgesetzt; check/build bestanden,207/207Standardtests und6/6COK-Tests"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-CR",
       "kind": "cleanup_review",
-      "focus": "Adapterreparatur, Quellen und Metadaten abschließen"
+      "startedAt": "2026-10-09T11:54:21.887865+00:00",
+      "focus": "Nativebelege und Eingabereparatur abschließend prüfen",
+      "state": "completed",
+      "result": "R01 geschlossen;75Originalhashes und Karte unverändert;207Tests/check/build belegt. Originalumfang und HEX-05/Stadtprodukt weiterhin offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-P",
+      "kind": "reference_planning",
+      "focus": "Offene CITY-00-Fähigkeiten und Demo-/Vollversionszugang bündeln, nächste wirkungsvolle Probe planen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
@@ -3606,12 +3606,6 @@
       "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
       "state": "responsibilities_confirmed_hex_basis_then_city",
       "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
-    },
-    "pendingNativeRun": {
-      "id": "CITY-00-I07-I",
-      "state": "completed_save_reopen_probe_review_pending",
-      "focus": "Vollständige COK-Save/Neuöffnungs-/Presetprobe",
-      "dependency": "Hex-Kollege hat nächsten nativen Platz für14Interface-Farben reserviert"
     }
   },
   "testFixturePortability": {
