@@ -370,6 +370,23 @@ zuzuordnende Phase bleibt als Konflikt erhalten und wird nie überschrieben. Das
 `MapRepository`-Journal koordiniert darauf aufbauend die alte/neue Wahrheit
 über Map und Notizen.
 
+Für `after = null` gilt eine eigene Delete-State-Machine, nicht die
+Publikationsabkürzung eines Update-Schritts: Receipt `prepared` durable
+schreiben, den Zielnamen exklusiv in den synchronisierten Backupnamen bewegen,
+die Abwesenheit am Ziel prüfen, Zustand `deleted` samt Verzeichnissync durable
+setzen und erst danach den Parent-Commit abwarten. Linux verwendet dafür
+`renameat2`/Verzeichnis-FD, macOS `renameatx_np`/nachgewiesenen
+Verzeichnissync und Windows `SetFileInformationByHandle` mit
+Write-through-Handle; alle vorherigen Share-, Identitäts- und Reparse-Prüfungen
+gelten unverändert. Vor Parent-Commit wird das Backup nicht gelöscht. Recovery
+eines `prepared` oder `old-captured` stellt die alten Bytes atomar wieder her;
+Recovery eines `deleted` bestätigt die Abwesenheit als `new`; ein dritter Hash,
+unerwartete Wiederbelegung oder fehlende Identität bleibt ein Konflikt. Faults
+vor/nach Capture, nach Delete, Datei-/Verzeichnissync, Receipt-Commit und in
+jeder Parent-Freigabe testen `old`, `deleted` oder fail-closed, für Update und
+Delete gleichermaßen. Erst nach repositoryweitem Commit oder vollständig
+verifiziertem Rollback dürfen Backup und Receipt freigegeben werden.
+
 Das unveränderte `MapRepository`-Journal bildet zusammen mit einem
 P01-Repository-Receipt das repositoryweite Commit-Orakel. Wenn der
 `FileStore`-Adapter den vorhandenen Journalwrite `prepared` empfängt, validiert
@@ -399,8 +416,10 @@ Primitive oder kann ein konkurrierender nicht kooperierender Writer zwischen
 Validierung und Veröffentlichung unbemerkt gewinnen, ist die Plattform
 `No-Go`; ein generisches `rename()`-Versprechen genügt nicht. Faults vor und
 nach Capture, Datei-Sync, Publication, Verzeichnis-Sync und Receipt-Commit
-müssen nach Recovery exakt alte oder neue vollständige Bytes und ein
-`old`-/`new`-Receipt, nie Teilstand oder stilles Überschreiben ergeben.
+müssen nach Recovery exakt alte oder neue vollständige Bytes beziehungsweise
+eine verifizierte Abwesenheit und ein `old`-/`new`-/`deleted`-Receipt, nie
+Teilstand oder stilles Überschreiben ergeben. Create-, Update- und Delete-
+Operationen sind jeweils eigene harte Fault-Matrix-Zeilen.
 
 ### Fixtures und Ablauf
 
@@ -698,23 +717,31 @@ DOS-Zeit `1980-01-01T00:00:00`, Dateiart/-rechte `0100644` und bytegenau
 kanonisches Manifest-JSON. Implementierung, Node-Version und
 ZIP-Bibliotheksversion sind im Lockfile und Receipt gebunden; Tests prüfen
 lokale und zentrale Header sowie CRC32 bytegenau. Nur unter diesem Profil ist
-derselbe vollständige Archiv-SHA-256 auf allen drei Plattformen ein Tor. Falls
-eine Plattform dieses Profil nicht erzeugen kann, vergleicht die ADR
-ausschließlich den kanonischen Manifest-/Entry-Digest und führt den
-Archivbytehash getrennt pro Toolchain; sie behauptet dann keinen OS-identischen
-Archivhash.
+derselbe vollständige Archiv-SHA-256 auf allen drei Plattformen ein Tor. Kann
+eine Plattform dieses Profil nicht erzeugen, lesen und bytegenau validieren,
+ist P04 für diese Plattform ein `No-Go`; ein toolchainspezifischer Archivhash
+oder alleiniger Manifest-/Entry-Digest ersetzt den Formatvertrag nicht.
 
 Die ID-Klassen sind vor dem Export fest: Campaign-ID und alle
 campaign-lokalen Identitäten werden beim Import neu geprägt; inhaltshashbasierte
-Asset-IDs bleiben stabil; eine bereits vorhandene byteidentische globale
-Definition verwendet deren Ziel-ID, eine abweichende importierte Definition
-erhält eine neue Ziel-ID. Das Manifest enthält eine kanonisch nach Klasse und
-Quell-ID sortierte Source→Target-Bijektion: jede Quell-ID besitzt genau ein
-Ziel, kein Ziel gehört zu zwei Quellen, und jeder Verweis nennt seine
-ID-Klasse. Der Referenzdigest umfasst Mapping und sämtliche normalisierten
-Kanten. Für den semantischen Vergleich werden Ziel-IDs ausschließlich über
-diese Bijektion auf Quell-IDs zurückgeführt; rohe ID-Gleichheit wird nicht als
-Roundtriporacle missbraucht.
+Asset-IDs bleiben stabil. Das Exportmanifest enthält ausschließlich pro
+Quell-ID die ID-Klasse, den kanonischen Inhalts-/Definitionsdigest und alle
+normalisierten ausgehenden Referenzen; es behauptet noch keine Ziel-ID.
+Während des Imports erzeugt die Utility-Importautorität deterministisch einen
+Importplan: lokale IDs erhalten neue eindeutige Ziel-IDs, eine bereits
+vorhandene byteidentische globale Definition wird wiederverwendet, eine
+abweichende Definition erhält eine neue Ziel-ID. Zwei quellseitige globale
+Definitionen mit identischem kanonischem Inhalt werden dabei ausdrücklich
+kanonisch zu einer Zieldefinition zusammengeführt (many-to-one); gleiche
+Inhalte dürfen also mehrere Quell-IDs, aber genau eine Ziel-ID besitzen.
+Unvereinbare Definitionen werden stattdessen getrennt geprägt. Der Plan ist
+eine totale, klassengetreue Source→Target-Zuordnung, keine Bijektion. Der
+atomar committed Importreceipt bindet diese Zuordnung, ihren Mappingdigest und
+den Digest sämtlicher remappter Referenzkanten. Der semantische Vergleich
+führt Ziel-IDs ausschließlich über diesen Receipt-Plan auf Quellen zurück;
+rohe ID-Gleichheit wird nicht als Roundtriporacle missbraucht. Die hostile
+Fixture enthält zwei quellgleiche globale IDs und prüft die deterministische
+many-to-one-Regel sowie einen stale-source-reference-Fehler vor Commit.
 
 Die deterministische Fixture `ADR-R1` enthält mindestens:
 
@@ -775,7 +802,8 @@ Campaign-/Definitionsstand ist `No-Go`.
 
 ### P04-Abnahme
 
-- Nach Entfernung der Quelle besitzt der Import über die geprüfte Bijektion
+- Nach Entfernung der Quelle besitzt der Import über die geprüfte
+  Source→Target-Zuordnung
   semantisch identische Campaign-, Karten-, Runtime-, Trash-, Definitionen-/
   Mapping- und opaque-retained-Digests sowie bytegleiche Assethashes. Ein
   Negativscan findet die Quell-Campaign-ID und alle nur in der Quelle gültigen
@@ -795,11 +823,10 @@ Campaign-/Definitionsstand ist `No-Go`.
   begrenzte Eingaben/Verstärkung und vollständige Messung von RSS, CPU, Handles
   und Speicherdruck. `TN-19`, `TN-20`, `RP-R` und `RP-L` bleiben offen.
 - Alle neun gerichteten OS-Kombinationen bestehen mit demselben kanonischen
-  Manifest-/Entry-Digest und semantischem Zieloracle. Der vollständige
-  Exporthash muss nur beim oben definierten identischen ZIP-Profil gleich sein,
-  sonst wird er pro Toolchain ausgewiesen. Der Kernlauf besteht mit
-  deaktiviertem Netzwerk und meldet unerklärte ausgehende Verbindungen als
-  Fehler.
+  Manifest-/Entry-Digest, identischem ZIP-Bytehash und semantischem Zieloracle.
+  Eine Plattform, die das oben definierte ZIP-Profil nicht bytegenau erzeugen,
+  lesen oder validieren kann, ist `No-Go`; der Kernlauf besteht mit deaktiviertem
+  Netzwerk und meldet unerklärte ausgehende Verbindungen als Fehler.
 - Jeder feindliche Fall wird vor Commit abgewiesen; Pfadescape, Ausführung,
   Netzwerkauflösung, stilles Weglassen, unbeschränkte Verstärkung und
   unbestätigte Mutation bestehender Definitionen sind jeweils `0`.
