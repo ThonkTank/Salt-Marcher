@@ -296,4 +296,6 @@ Nach einer bestätigten Änderung mindestens eines Kartenrandes verschiebt `resi
 
 Der Größen-Dialog bindet vor dem Öffnen `activeWindow` und `activeDocument` an das Quelldokument der angeklickten Kartenansicht. Obsidian erstellt Modals sonst gegebenenfalls im zuvor aktiven Fenster; die Zuordnung folgt dem bereits vorhandenen Objekt-Tag-Dialog.
 
+Der lesende Karteninformationsdialog verwendet dieselbe Fensterbindung und ist zusätzlich über das Kartenmenü erreichbar. Er liest Größe, Dateipfad und Paketauswahl beim Öffnen aus dem aktuellen Kartenstand; Close und X führen keinen Kartenbefehl aus.
+
 Die Randfelder normalisieren beim Verlassen den eingegebenen Wert anhand des gegenüberliegenden Randes. Der aus der gemessenen 12×8-Originalmatrix abgeleitete Dialogkandidat begrenzt jeden Rand auf ±64 und die resultierende Seite auf 8–128 Felder; halbe Werte werden vom Nullpunkt weg gerundet. Für außerhalb dieses Originalbereichs liegende Hostkarten bleibt die bisherige breitere Kartenfunktion erhalten. Die Verallgemeinerung der gemessenen Eingaberegel auf weitere Ausgangsgrößen ist noch nicht unabhängig reviewt.

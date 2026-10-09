@@ -16,6 +16,16 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     .filter({ hasText: "Kartengröße ändern" }).last();
   const setting = (dialog, label) => dialog.locator(".setting-item")
     .filter({ has: page.locator(".setting-item-name", { hasText: label }) });
+  async function openInfo() {
+    const menu = page.locator(".dungeon-native-editor:visible").last()
+      .locator(".dn-popover-menu");
+    await menu.locator("summary").click();
+    await menu.getByRole("button", { name: "Karteninformationen" }).click();
+    const info = page.locator(".modal:visible")
+      .filter({ hasText: "Karteninformationen" }).last();
+    await info.waitFor({ state: "visible" });
+    return info;
+  }
   async function openDialog() {
     const menu = page.locator(".dungeon-native-editor:visible").last()
       .locator(".dn-popover-menu");
@@ -127,9 +137,26 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     assert.deepEqual(saved, after.document);
     fs.writeFileSync(baseline, JSON.stringify({ document: saved, hash: hash() }, null, 2));
     await page.screenshot({ path: path.join(out, "resize-saved.png") });
+    const savedState = await editor(), savedHash = hash();
+    let info = await openInfo();
+    await info.getByText("keine", { exact: true }).waitFor({ state: "visible" });
+    assert.match(await info.innerText(), /8 × 9 Felder/);
+    assert.ok((await info.innerText()).includes(mapFile));
+    await page.screenshot({ path: path.join(out, "map-info-after-resize.png") });
+    await info.getByRole("button", { name: "Schließen" }).click();
+    assert.deepEqual(await editor(), savedState);
+    assert.equal(hash(), savedHash);
+    info = await openInfo();
+    const infoBounds = await info.boundingBox();
+    assert.ok(infoBounds);
+    await page.mouse.click(infoBounds.x + infoBounds.width - 37,
+      infoBounds.y + 21);
+    assert.deepEqual(await editor(), savedState);
+    assert.equal(hash(), savedHash);
     checks.push("DD-038 Menu opens four-margin dialog with non-Undo warning; Cancel and X preserve map and history");
     checks.push("DD-038 resize inputs cap per edge at 64 and resulting dimension at 128 or minimum 8");
     checks.push("DD-038 Top +1 moves Building and object, saves 8×9, and clears older Undo/Redo");
+    checks.push("DD-039 Map Information shows updated 8×9 size and path; Close and X preserve saved map and history");
   }
   async function reopen() {
     const prior = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -139,7 +166,12 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     await page.locator(".dn-canvas canvas").last().waitFor({ state: "visible" });
     assert.deepEqual((await editor()).document, prior.document);
     assert.equal(hash(), prior.hash);
+    const info = await openInfo();
+    assert.match(await info.innerText(), /8 × 9 Felder/);
+    assert.ok((await info.innerText()).includes(mapFile));
+    await info.getByRole("button", { name: "Schließen" }).click();
     checks.push("DD-038 fresh host process reopens the shifted 8×9 V4 map byte unchanged");
+    checks.push("DD-039 fresh host process reads the resized map information");
   }
   return { edit, reopen };
 };
