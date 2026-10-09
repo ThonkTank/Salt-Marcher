@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:08:19.364542+00:00",
+    "updated": "2026-10-09T12:14:32.892906+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1869,11 +1869,13 @@
         "product": "Fantasy Town Generator",
         "feature": "Manuelle Kartenbearbeitung",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:14:32.892906+00:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct_partial_effect",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json"
+        ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
         "caseIds": [
@@ -1888,9 +1890,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Gebäudeverschiebung und Gesamtentwurfsabbruch direkt belegt; übrige Werkzeuge, gespeicherte Geometrie/Bindungen sowie eigene Umsetzung/Host/Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I10-I",
+          "state": "building_move_and_layout_cancel_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+          "sourceScope": "own_temporary_settlement_original",
+          "observation": "Manual editing accessible;7 building tools; Move selection→placement/rotation→new roof; Cancel Edit/Yes removes layout change;250m/Districts/11Monday restored",
+          "remaining": [
+            "Nur Verschiebung/Orientierungsabschluss und Gesamtentwurfsabbruch geprüft",
+            "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
+            "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
+            "Andere7 Gebäudewerkzeuge, Material-/Höhen-/Skalierwirkung bleiben offen"
+          ]
+        }
       },
       {
         "id": "CO-FTG-0016",
@@ -3321,7 +3336,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I09-CI",
+      "run": "CITY-00-I10-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3341,7 +3356,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json"
       ],
       "resultReferences": [
         {

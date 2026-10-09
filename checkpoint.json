@@ -3603,17 +3603,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I10-P",
-      "kind": "implementation_readiness_planning",
-      "startedAt": "2026-10-09T12:10:52.326037+00:00",
-      "focus": "Frühe Bearbeitung und Restinventur nach Zielpaketen planen",
-      "state": "completed",
-      "result": "63 CO-Pflichten nach Phasen auswerten; FTG-Edit-map-Zugriff und kleine rücknehmbare Geometrieänderung vor CITY-01 prüfen, COK-Undo nach nativer Slotfreigabe"
-    },
-    "nextRun": {
       "id": "CITY-00-I10-I",
       "kind": "reference_effect_probe",
-      "focus": "FTG-Bearbeitung und frühe Referenzlücken belegen"
+      "startedAt": "2026-10-09T12:14:32.892906+00:00",
+      "focus": "Frühe FTG-Kartenbearbeitung und phasenbezogene Lücken belegen",
+      "state": "completed",
+      "result": "Gebäudeverschiebung/Orientierungsabschluss und bestätigter Gesamtentwurfsabbruch direkt geprüft; Ausgangskamera/Beschriftung zurückgestellt;63 Pflichten nach Zielphase geordnet"
+    },
+    "nextRun": {
+      "id": "CITY-00-I10-R",
+      "kind": "requirements_review",
+      "focus": "Belegumfang, Referenzlücken und Architekturfolgen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
