@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I12: 14 frühe Regions-/Labels-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider getrennt. Territory/Edit Width2..20, Opacity/Smoothing0..1, Sorting−10..10; Label Size8..1000/Outline und Glow0..32/Curvature−1..1/Spacing−512..512; Box Scale0.25..2. Edit tatsächlich mit eigenem QA-Dreieck aktiviert. Vier Label-Controltypen ausdrücklich zu number korrigiert.663 UI/83 Fälle und historische Quellen erhalten.56 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I13: 14 frühe Overlay-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider separat. Trace Scale0.1..4/Opacity0..1/Rotation−180..180 mit eigener geladener QA-Vorlage; Grid Size16..512/Line Width2..10; Frame Scale0.25..2 mit bewusst aktiviertem Rahmen; Scale Width64..2048/Height4..256/Segments1..32/Line Width2..8/Distance0.1..10000/Font8..256/Outline0..32; Measuring Interval0..100000 mit zusätzlicher hoher Literalprobe. Alle Controltypen, Defaults,663 UI/83 Fälle und historischen Quellen erhalten.42 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -33045,8 +33045,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 4,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Trace tatsächlich mit eigener QA-PNG geladen, Quelle und SHA in trace-input.json; sichtbare Inhalte des Bildes sind keine in dieser Folge gezeichnete Landschaft.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33069,6 +33090,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.png",
             "observation": "Overlay > Trace Tool > Scale: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+            "observation": "Overlay > Trace Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/017-0444-trace-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/017-0444-trace-scale--99999-entry.png",
+            "observation": "Overlay > Trace Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/018-0444-trace-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/018-0444-trace-scale--99999-validated.png",
+            "observation": "Overlay > Trace Tool > Scale: nach Tab sichtbar 0.1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/023-0444-trace-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/023-0444-trace-scale-99999-entry.png",
+            "observation": "Overlay > Trace Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/024-0444-trace-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/024-0444-trace-scale-99999-validated.png",
+            "observation": "Overlay > Trace Tool > Scale: nach Tab sichtbar 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/029-0444-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/029-0444-slider-low.png",
+            "observation": "Overlay > Trace Tool > Scale: eigener Slider am linken Ende zeigt 0.1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/030-0444-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/030-0444-slider-high.png",
+            "observation": "Overlay > Trace Tool > Scale: eigener Slider am rechten Ende zeigt 4."
           }
         ],
         "classification": "user_function",
@@ -33088,10 +33158,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+                "observation": "Overlay > Trace Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/017-0444-trace-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/017-0444-trace-scale--99999-entry.png",
+                "observation": "Overlay > Trace Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/018-0444-trace-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/018-0444-trace-scale--99999-validated.png",
+                "observation": "Overlay > Trace Tool > Scale: nach Tab sichtbar 0.1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/023-0444-trace-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/023-0444-trace-scale-99999-entry.png",
+                "observation": "Overlay > Trace Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/024-0444-trace-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/024-0444-trace-scale-99999-validated.png",
+                "observation": "Overlay > Trace Tool > Scale: nach Tab sichtbar 4."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/029-0444-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/029-0444-slider-low.png",
+                "observation": "Overlay > Trace Tool > Scale: eigener Slider am linken Ende zeigt 0.1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/030-0444-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/030-0444-slider-high.png",
+                "observation": "Overlay > Trace Tool > Scale: eigener Slider am rechten Ende zeigt 4."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Trace Tool > Scale einzeln im Original gemessen: -99999 → 0.1, 99999 → 4 nach Tab. Auch die beiden Sliderenden zeigen 0.1/4; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+          "note": "Overlay > Trace Tool > Scale einzeln im Original gemessen: -99999 → 0.1, 99999 → 4 nach Tab. Auch die beiden Sliderenden zeigen 0.1/4; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0445",
@@ -33104,8 +33233,29 @@
           "value": 0.5,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Trace tatsächlich mit eigener QA-PNG geladen, Quelle und SHA in trace-input.json; sichtbare Inhalte des Bildes sind keine in dieser Folge gezeichnete Landschaft.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33128,6 +33278,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.png",
             "observation": "Overlay > Trace Tool > Opacity: 0.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+            "observation": "Overlay > Trace Tool > Opacity: Anfangsanzeige 0.5 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/019-0445-trace-opacity--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/019-0445-trace-opacity--99999-entry.png",
+            "observation": "Overlay > Trace Tool > Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/020-0445-trace-opacity--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/020-0445-trace-opacity--99999-validated.png",
+            "observation": "Overlay > Trace Tool > Opacity: nach Tab sichtbar 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/025-0445-trace-opacity-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/025-0445-trace-opacity-99999-entry.png",
+            "observation": "Overlay > Trace Tool > Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/026-0445-trace-opacity-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/026-0445-trace-opacity-99999-validated.png",
+            "observation": "Overlay > Trace Tool > Opacity: nach Tab sichtbar 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/031-0445-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/031-0445-slider-low.png",
+            "observation": "Overlay > Trace Tool > Opacity: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/032-0445-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/032-0445-slider-high.png",
+            "observation": "Overlay > Trace Tool > Opacity: eigener Slider am rechten Ende zeigt 1."
           }
         ],
         "classification": "user_function",
@@ -33147,10 +33346,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+                "observation": "Overlay > Trace Tool > Opacity: Anfangsanzeige 0.5 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/019-0445-trace-opacity--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/019-0445-trace-opacity--99999-entry.png",
+                "observation": "Overlay > Trace Tool > Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/020-0445-trace-opacity--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/020-0445-trace-opacity--99999-validated.png",
+                "observation": "Overlay > Trace Tool > Opacity: nach Tab sichtbar 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/025-0445-trace-opacity-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/025-0445-trace-opacity-99999-entry.png",
+                "observation": "Overlay > Trace Tool > Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/026-0445-trace-opacity-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/026-0445-trace-opacity-99999-validated.png",
+                "observation": "Overlay > Trace Tool > Opacity: nach Tab sichtbar 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/031-0445-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/031-0445-slider-low.png",
+                "observation": "Overlay > Trace Tool > Opacity: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/032-0445-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/032-0445-slider-high.png",
+                "observation": "Overlay > Trace Tool > Opacity: eigener Slider am rechten Ende zeigt 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Trace Tool > Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 0.5,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+          "note": "Overlay > Trace Tool > Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0446",
@@ -33163,8 +33421,29 @@
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -180,
+          "maximum": 180,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Trace tatsächlich mit eigener QA-PNG geladen, Quelle und SHA in trace-input.json; sichtbare Inhalte des Bildes sind keine in dieser Folge gezeichnete Landschaft.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33187,6 +33466,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/073-trace-tool.png",
             "observation": "Overlay > Trace Tool > Rotation: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+            "observation": "Overlay > Trace Tool > Rotation: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/021-0446-trace-rotation--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/021-0446-trace-rotation--99999-entry.png",
+            "observation": "Overlay > Trace Tool > Rotation: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/022-0446-trace-rotation--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/022-0446-trace-rotation--99999-validated.png",
+            "observation": "Overlay > Trace Tool > Rotation: nach Tab sichtbar -180."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/027-0446-trace-rotation-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/027-0446-trace-rotation-99999-entry.png",
+            "observation": "Overlay > Trace Tool > Rotation: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/028-0446-trace-rotation-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/028-0446-trace-rotation-99999-validated.png",
+            "observation": "Overlay > Trace Tool > Rotation: nach Tab sichtbar 180."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/033-0446-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/033-0446-slider-low.png",
+            "observation": "Overlay > Trace Tool > Rotation: eigener Slider am linken Ende zeigt -180."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/034-0446-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/034-0446-slider-high.png",
+            "observation": "Overlay > Trace Tool > Rotation: eigener Slider am rechten Ende zeigt 180."
           }
         ],
         "classification": "user_function",
@@ -33206,10 +33534,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.png",
+                "observation": "Overlay > Trace Tool > Rotation: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/021-0446-trace-rotation--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/021-0446-trace-rotation--99999-entry.png",
+                "observation": "Overlay > Trace Tool > Rotation: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/022-0446-trace-rotation--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/022-0446-trace-rotation--99999-validated.png",
+                "observation": "Overlay > Trace Tool > Rotation: nach Tab sichtbar -180."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/027-0446-trace-rotation-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/027-0446-trace-rotation-99999-entry.png",
+                "observation": "Overlay > Trace Tool > Rotation: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/028-0446-trace-rotation-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/028-0446-trace-rotation-99999-validated.png",
+                "observation": "Overlay > Trace Tool > Rotation: nach Tab sichtbar 180."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/033-0446-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/033-0446-slider-low.png",
+                "observation": "Overlay > Trace Tool > Rotation: eigener Slider am linken Ende zeigt -180."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/034-0446-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/034-0446-slider-high.png",
+                "observation": "Overlay > Trace Tool > Rotation: eigener Slider am rechten Ende zeigt 180."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Trace Tool > Rotation einzeln im Original gemessen: -99999 → -180, 99999 → 180 nach Tab. Auch die beiden Sliderenden zeigen -180/180; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/016-trace-own-png-open.json",
+          "note": "Overlay > Trace Tool > Rotation einzeln im Original gemessen: -99999 → -180, 99999 → 180 nach Tab. Auch die beiden Sliderenden zeigen -180/180; beide Eingabewege direkt belegt. Eigene QA-Bildvorlage tatsächlich geladen; Originaldialog trägt dabei den Titel Import Heightmap. Quelle und SHA separat festgehalten, keine Nutzerkarte. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0447",
@@ -33575,8 +33962,29 @@
           "value": 128,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 16,
+          "maximum": 512,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Grid Pattern None, Layer Default; nur aktiv bedienbare Größenfelder, keine aktive Raster-Zeichenwirkung behauptet.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33599,6 +34007,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/074-grid-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/074-grid-tool.png",
             "observation": "Overlay > Grid Tool > Size: 128."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.png",
+            "observation": "Overlay > Grid Tool > Size: Anfangsanzeige 128 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/037-0451-grid-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/037-0451-grid-size--99999-entry.png",
+            "observation": "Overlay > Grid Tool > Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/038-0451-grid-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/038-0451-grid-size--99999-validated.png",
+            "observation": "Overlay > Grid Tool > Size: nach Tab sichtbar 16."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/041-0451-grid-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/041-0451-grid-size-99999-entry.png",
+            "observation": "Overlay > Grid Tool > Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/042-0451-grid-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/042-0451-grid-size-99999-validated.png",
+            "observation": "Overlay > Grid Tool > Size: nach Tab sichtbar 512."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/045-0451-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/045-0451-slider-low.png",
+            "observation": "Overlay > Grid Tool > Size: eigener Slider am linken Ende zeigt 16."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/046-0451-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/046-0451-slider-high.png",
+            "observation": "Overlay > Grid Tool > Size: eigener Slider am rechten Ende zeigt 512."
           }
         ],
         "classification": "user_function",
@@ -33618,10 +34075,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.png",
+                "observation": "Overlay > Grid Tool > Size: Anfangsanzeige 128 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/037-0451-grid-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/037-0451-grid-size--99999-entry.png",
+                "observation": "Overlay > Grid Tool > Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/038-0451-grid-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/038-0451-grid-size--99999-validated.png",
+                "observation": "Overlay > Grid Tool > Size: nach Tab sichtbar 16."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/041-0451-grid-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/041-0451-grid-size-99999-entry.png",
+                "observation": "Overlay > Grid Tool > Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/042-0451-grid-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/042-0451-grid-size-99999-validated.png",
+                "observation": "Overlay > Grid Tool > Size: nach Tab sichtbar 512."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/045-0451-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/045-0451-slider-low.png",
+                "observation": "Overlay > Grid Tool > Size: eigener Slider am linken Ende zeigt 16."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/046-0451-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/046-0451-slider-high.png",
+                "observation": "Overlay > Grid Tool > Size: eigener Slider am rechten Ende zeigt 512."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Grid Tool > Size einzeln im Original gemessen: -99999 → 16, 99999 → 512 nach Tab. Auch die beiden Sliderenden zeigen 16/512; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 128,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+          "note": "Overlay > Grid Tool > Size einzeln im Original gemessen: -99999 → 16, 99999 → 512 nach Tab. Auch die beiden Sliderenden zeigen 16/512; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0452",
@@ -33634,8 +34150,29 @@
           "value": 4,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 10,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Grid Pattern None, Layer Default; nur aktiv bedienbare Größenfelder, keine aktive Raster-Zeichenwirkung behauptet.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33658,6 +34195,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/074-grid-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/074-grid-tool.png",
             "observation": "Overlay > Grid Tool > Line Width: 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.png",
+            "observation": "Overlay > Grid Tool > Line Width: Anfangsanzeige 4 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/039-0452-grid-line-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/039-0452-grid-line-width--99999-entry.png",
+            "observation": "Overlay > Grid Tool > Line Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/040-0452-grid-line-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/040-0452-grid-line-width--99999-validated.png",
+            "observation": "Overlay > Grid Tool > Line Width: nach Tab sichtbar 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/043-0452-grid-line-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/043-0452-grid-line-width-99999-entry.png",
+            "observation": "Overlay > Grid Tool > Line Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/044-0452-grid-line-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/044-0452-grid-line-width-99999-validated.png",
+            "observation": "Overlay > Grid Tool > Line Width: nach Tab sichtbar 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/047-0452-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/047-0452-slider-low.png",
+            "observation": "Overlay > Grid Tool > Line Width: eigener Slider am linken Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/048-0452-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/048-0452-slider-high.png",
+            "observation": "Overlay > Grid Tool > Line Width: eigener Slider am rechten Ende zeigt 10."
           }
         ],
         "classification": "user_function",
@@ -33677,10 +34263,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.png",
+                "observation": "Overlay > Grid Tool > Line Width: Anfangsanzeige 4 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/039-0452-grid-line-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/039-0452-grid-line-width--99999-entry.png",
+                "observation": "Overlay > Grid Tool > Line Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/040-0452-grid-line-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/040-0452-grid-line-width--99999-validated.png",
+                "observation": "Overlay > Grid Tool > Line Width: nach Tab sichtbar 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/043-0452-grid-line-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/043-0452-grid-line-width-99999-entry.png",
+                "observation": "Overlay > Grid Tool > Line Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/044-0452-grid-line-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/044-0452-grid-line-width-99999-validated.png",
+                "observation": "Overlay > Grid Tool > Line Width: nach Tab sichtbar 10."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/047-0452-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/047-0452-slider-low.png",
+                "observation": "Overlay > Grid Tool > Line Width: eigener Slider am linken Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/048-0452-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/048-0452-slider-high.png",
+                "observation": "Overlay > Grid Tool > Line Width: eigener Slider am rechten Ende zeigt 10."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Grid Tool > Line Width einzeln im Original gemessen: -99999 → 2, 99999 → 10 nach Tab. Auch die beiden Sliderenden zeigen 2/10; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 4,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/036-grid-tool.json",
+          "note": "Overlay > Grid Tool > Line Width einzeln im Original gemessen: -99999 → 2, 99999 → 10 nach Tab. Auch die beiden Sliderenden zeigen 2/10; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0453",
@@ -33860,8 +34505,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Frame bewusst von OFF auf ON aktiviert, erste markierte Stil-Kachel; sichtbarer QA-Rahmen. Danach wieder ausgeschaltet.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -33884,6 +34550,62 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/076-frame-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/076-frame-tool.png",
             "observation": "Overlay > Frame Tool > Scale: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/050-frame-enabled.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/050-frame-enabled.png",
+            "observation": "Overlay > Frame Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/051-0457-frame-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/051-0457-frame-scale--99999-entry.png",
+            "observation": "Overlay > Frame Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/052-0457-frame-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/052-0457-frame-scale--99999-validated.png",
+            "observation": "Overlay > Frame Tool > Scale: nach Tab sichtbar 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/053-0457-frame-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/053-0457-frame-scale-99999-entry.png",
+            "observation": "Overlay > Frame Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/054-0457-frame-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/054-0457-frame-scale-99999-validated.png",
+            "observation": "Overlay > Frame Tool > Scale: nach Tab sichtbar 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/055-0457-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/055-0457-slider-low.png",
+            "observation": "Overlay > Frame Tool > Scale: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/056-0457-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/056-0457-slider-high.png",
+            "observation": "Overlay > Frame Tool > Scale: eigener Slider am rechten Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/049-frame-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/049-frame-tool.png",
+            "observation": "Frame anfänglich OFF, Scale1; vor den Zahlenproben bewusst ON aktiviert."
           }
         ],
         "classification": "user_function",
@@ -33903,10 +34625,76 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/050-frame-enabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/050-frame-enabled.png",
+                "observation": "Overlay > Frame Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/051-0457-frame-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/051-0457-frame-scale--99999-entry.png",
+                "observation": "Overlay > Frame Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/052-0457-frame-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/052-0457-frame-scale--99999-validated.png",
+                "observation": "Overlay > Frame Tool > Scale: nach Tab sichtbar 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/053-0457-frame-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/053-0457-frame-scale-99999-entry.png",
+                "observation": "Overlay > Frame Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/054-0457-frame-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/054-0457-frame-scale-99999-validated.png",
+                "observation": "Overlay > Frame Tool > Scale: nach Tab sichtbar 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/055-0457-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/055-0457-slider-low.png",
+                "observation": "Overlay > Frame Tool > Scale: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/056-0457-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/056-0457-slider-high.png",
+                "observation": "Overlay > Frame Tool > Scale: eigener Slider am rechten Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/049-frame-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/049-frame-tool.png",
+                "observation": "Frame anfänglich OFF, Scale1; vor den Zahlenproben bewusst ON aktiviert."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Frame Tool > Scale einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/050-frame-enabled.json",
+          "note": "Overlay > Frame Tool > Scale einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0458",
@@ -34384,8 +35172,28 @@
           "value": 256,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 64,
+          "maximum": 2048,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -34407,6 +35215,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Width: 256."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Width: Anfangsanzeige 256 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/059-0459-scale-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/059-0459-scale-width--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/060-0459-scale-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/060-0459-scale-width--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Width: nach Tab sichtbar 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/073-0459-scale-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/073-0459-scale-width-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/074-0459-scale-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/074-0459-scale-width-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Width: nach Tab sichtbar 2048."
           }
         ],
         "classification": "user_function",
@@ -34425,10 +35268,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Width: Anfangsanzeige 256 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/059-0459-scale-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/059-0459-scale-width--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/060-0459-scale-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/060-0459-scale-width--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Width: nach Tab sichtbar 64."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/073-0459-scale-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/073-0459-scale-width-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/074-0459-scale-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/074-0459-scale-width-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Width: nach Tab sichtbar 2048."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Width einzeln im Original gemessen: -99999 → 64, 99999 → 2048 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 256,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Width einzeln im Original gemessen: -99999 → 64, 99999 → 2048 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0460",
@@ -34441,8 +35329,28 @@
           "value": 16,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 4,
+          "maximum": 256,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -34464,6 +35372,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Height: 16."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Height: Anfangsanzeige 16 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/061-0460-scale-height--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/061-0460-scale-height--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Height: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/062-0460-scale-height--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/062-0460-scale-height--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Height: nach Tab sichtbar 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/075-0460-scale-height-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/075-0460-scale-height-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Height: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/076-0460-scale-height-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/076-0460-scale-height-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Height: nach Tab sichtbar 256."
           }
         ],
         "classification": "user_function",
@@ -34482,10 +35425,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Height: Anfangsanzeige 16 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/061-0460-scale-height--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/061-0460-scale-height--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Height: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/062-0460-scale-height--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/062-0460-scale-height--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Height: nach Tab sichtbar 4."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/075-0460-scale-height-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/075-0460-scale-height-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Height: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/076-0460-scale-height-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/076-0460-scale-height-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Height: nach Tab sichtbar 256."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Height einzeln im Original gemessen: -99999 → 4, 99999 → 256 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 16,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Height einzeln im Original gemessen: -99999 → 4, 99999 → 256 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0461",
@@ -34498,8 +35486,29 @@
           "value": 5,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 1,
+          "maximum": 32,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -34521,6 +35530,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Segments: 5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Segments: Anfangsanzeige 5 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/063-0461-scale-segments--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/063-0461-scale-segments--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Segments: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/064-0461-scale-segments--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/064-0461-scale-segments--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Segments: nach Tab sichtbar 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/077-0461-scale-segments-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/077-0461-scale-segments-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Segments: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/078-0461-scale-segments-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/078-0461-scale-segments-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Segments: nach Tab sichtbar 32."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/087-0461-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/087-0461-slider-low.png",
+            "observation": "Overlay > Scale Creator > Segments: eigener Slider am linken Ende zeigt 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/088-0461-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/088-0461-slider-high.png",
+            "observation": "Overlay > Scale Creator > Segments: eigener Slider am rechten Ende zeigt 32."
           }
         ],
         "classification": "user_function",
@@ -34539,10 +35597,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Segments: Anfangsanzeige 5 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/063-0461-scale-segments--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/063-0461-scale-segments--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Segments: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/064-0461-scale-segments--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/064-0461-scale-segments--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Segments: nach Tab sichtbar 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/077-0461-scale-segments-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/077-0461-scale-segments-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Segments: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/078-0461-scale-segments-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/078-0461-scale-segments-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Segments: nach Tab sichtbar 32."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/087-0461-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/087-0461-slider-low.png",
+                "observation": "Overlay > Scale Creator > Segments: eigener Slider am linken Ende zeigt 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/088-0461-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/088-0461-slider-high.png",
+                "observation": "Overlay > Scale Creator > Segments: eigener Slider am rechten Ende zeigt 32."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Segments einzeln im Original gemessen: -99999 → 1, 99999 → 32 nach Tab. Auch die beiden Sliderenden zeigen 1/32; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 5,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Segments einzeln im Original gemessen: -99999 → 1, 99999 → 32 nach Tab. Auch die beiden Sliderenden zeigen 1/32; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0462",
@@ -34555,8 +35672,29 @@
           "value": 3,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 8,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -34578,6 +35716,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Line Width: 3."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Line Width: Anfangsanzeige 3 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/065-0462-scale-line-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/065-0462-scale-line-width--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Line Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/066-0462-scale-line-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/066-0462-scale-line-width--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Line Width: nach Tab sichtbar 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/079-0462-scale-line-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/079-0462-scale-line-width-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Line Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/080-0462-scale-line-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/080-0462-scale-line-width-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Line Width: nach Tab sichtbar 8."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/089-0462-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/089-0462-slider-low.png",
+            "observation": "Overlay > Scale Creator > Line Width: eigener Slider am linken Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/090-0462-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/090-0462-slider-high.png",
+            "observation": "Overlay > Scale Creator > Line Width: eigener Slider am rechten Ende zeigt 8."
           }
         ],
         "classification": "user_function",
@@ -34596,10 +35783,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Line Width: Anfangsanzeige 3 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/065-0462-scale-line-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/065-0462-scale-line-width--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Line Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/066-0462-scale-line-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/066-0462-scale-line-width--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Line Width: nach Tab sichtbar 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/079-0462-scale-line-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/079-0462-scale-line-width-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Line Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/080-0462-scale-line-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/080-0462-scale-line-width-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Line Width: nach Tab sichtbar 8."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/089-0462-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/089-0462-slider-low.png",
+                "observation": "Overlay > Scale Creator > Line Width: eigener Slider am linken Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/090-0462-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/090-0462-slider-high.png",
+                "observation": "Overlay > Scale Creator > Line Width: eigener Slider am rechten Ende zeigt 8."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Line Width einzeln im Original gemessen: -99999 → 2, 99999 → 8 nach Tab. Auch die beiden Sliderenden zeigen 2/8; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 3,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Line Width einzeln im Original gemessen: -99999 → 2, 99999 → 8 nach Tab. Auch die beiden Sliderenden zeigen 2/8; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0463",
@@ -34732,8 +35978,28 @@
           "value": 100,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 10000,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -34755,6 +36021,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Segment Distance: 100."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Segment Distance: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/067-0465-scale-segment-distance--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/067-0465-scale-segment-distance--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Segment Distance: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/068-0465-scale-segment-distance--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/068-0465-scale-segment-distance--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Segment Distance: nach Tab sichtbar 0.1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/081-0465-scale-segment-distance-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/081-0465-scale-segment-distance-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Segment Distance: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/082-0465-scale-segment-distance-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/082-0465-scale-segment-distance-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Segment Distance: nach Tab sichtbar 10000."
           }
         ],
         "classification": "user_function",
@@ -34773,10 +36074,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Segment Distance: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/067-0465-scale-segment-distance--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/067-0465-scale-segment-distance--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Segment Distance: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/068-0465-scale-segment-distance--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/068-0465-scale-segment-distance--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Segment Distance: nach Tab sichtbar 0.1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/081-0465-scale-segment-distance-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/081-0465-scale-segment-distance-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Segment Distance: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/082-0465-scale-segment-distance-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/082-0465-scale-segment-distance-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Segment Distance: nach Tab sichtbar 10000."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Segment Distance einzeln im Original gemessen: -99999 → 0.1, 99999 → 10000 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 100,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Segment Distance einzeln im Original gemessen: -99999 → 0.1, 99999 → 10000 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0466",
@@ -35105,8 +36451,28 @@
           "value": 16,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 8,
+          "maximum": 256,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -35128,6 +36494,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Font Size: 16."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Font Size: Anfangsanzeige 16 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/069-0469-scale-font-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/069-0469-scale-font-size--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Font Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/070-0469-scale-font-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/070-0469-scale-font-size--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Font Size: nach Tab sichtbar 8."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/083-0469-scale-font-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/083-0469-scale-font-size-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Font Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/084-0469-scale-font-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/084-0469-scale-font-size-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Font Size: nach Tab sichtbar 256."
           }
         ],
         "classification": "user_function",
@@ -35146,10 +36547,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Font Size: Anfangsanzeige 16 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/069-0469-scale-font-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/069-0469-scale-font-size--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Font Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/070-0469-scale-font-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/070-0469-scale-font-size--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Font Size: nach Tab sichtbar 8."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/083-0469-scale-font-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/083-0469-scale-font-size-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Font Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/084-0469-scale-font-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/084-0469-scale-font-size-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Font Size: nach Tab sichtbar 256."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Font Size einzeln im Original gemessen: -99999 → 8, 99999 → 256 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 16,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Font Size einzeln im Original gemessen: -99999 → 8, 99999 → 256 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0470",
@@ -35201,8 +36647,28 @@
           "value": 2,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 32,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Scale Creator vor eigener Maßstabsplatzierung; Miles, All, Aladin. Nur Vorgabefelder, keine vollständige Create-/Geometriewirkung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -35224,6 +36690,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/077-scale-creator.png",
             "observation": "Overlay > Scale Creator > Outline Width: 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+            "observation": "Overlay > Scale Creator > Outline Width: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/071-0471-scale-outline-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/071-0471-scale-outline-width--99999-entry.png",
+            "observation": "Overlay > Scale Creator > Outline Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/072-0471-scale-outline-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/072-0471-scale-outline-width--99999-validated.png",
+            "observation": "Overlay > Scale Creator > Outline Width: nach Tab sichtbar 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/085-0471-scale-outline-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/085-0471-scale-outline-width-99999-entry.png",
+            "observation": "Overlay > Scale Creator > Outline Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/086-0471-scale-outline-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/086-0471-scale-outline-width-99999-validated.png",
+            "observation": "Overlay > Scale Creator > Outline Width: nach Tab sichtbar 32."
           }
         ],
         "classification": "user_function",
@@ -35242,10 +36743,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.png",
+                "observation": "Overlay > Scale Creator > Outline Width: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/071-0471-scale-outline-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/071-0471-scale-outline-width--99999-entry.png",
+                "observation": "Overlay > Scale Creator > Outline Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/072-0471-scale-outline-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/072-0471-scale-outline-width--99999-validated.png",
+                "observation": "Overlay > Scale Creator > Outline Width: nach Tab sichtbar 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/085-0471-scale-outline-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/085-0471-scale-outline-width-99999-entry.png",
+                "observation": "Overlay > Scale Creator > Outline Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/086-0471-scale-outline-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/086-0471-scale-outline-width-99999-validated.png",
+                "observation": "Overlay > Scale Creator > Outline Width: nach Tab sichtbar 32."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Scale Creator > Outline Width einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/058-scale-creator.json",
+          "note": "Overlay > Scale Creator > Outline Width einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0472",
@@ -35498,8 +37044,29 @@
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 100000,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999",
+            "99999999999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Measuring: Use Map Scale Units OFF, Measure Area OFF; vor eigener Messgeometrie.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I13: Zahlenliterale mit Tab validiert; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -35521,6 +37088,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/078-measuring-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/078-measuring-tool.png",
             "observation": "Overlay > Measuring Tool > Interval: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/091-measuring-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/091-measuring-tool.png",
+            "observation": "Overlay > Measuring Tool > Interval: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/092-0478-measuring-interval--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/092-0478-measuring-interval--99999-entry.png",
+            "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/093-0478-measuring-interval--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/093-0478-measuring-interval--99999-validated.png",
+            "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/094-0478-measuring-interval-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/094-0478-measuring-interval-99999-entry.png",
+            "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/095-0478-measuring-interval-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/095-0478-measuring-interval-99999-validated.png",
+            "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/098-0478-measuring-interval-99999999999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/098-0478-measuring-interval-99999999999-entry.png",
+            "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe 99999999999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/099-0478-measuring-interval-99999999999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/099-0478-measuring-interval-99999999999-validated.png",
+            "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 100000."
           }
         ],
         "classification": "user_function",
@@ -35539,10 +37155,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/091-measuring-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/091-measuring-tool.png",
+                "observation": "Overlay > Measuring Tool > Interval: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/092-0478-measuring-interval--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/092-0478-measuring-interval--99999-entry.png",
+                "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/093-0478-measuring-interval--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/093-0478-measuring-interval--99999-validated.png",
+                "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/094-0478-measuring-interval-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/094-0478-measuring-interval-99999-entry.png",
+                "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/095-0478-measuring-interval-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/095-0478-measuring-interval-99999-validated.png",
+                "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/098-0478-measuring-interval-99999999999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/098-0478-measuring-interval-99999999999-entry.png",
+                "observation": "Overlay > Measuring Tool > Interval: protokollierte Zahleneingabe 99999999999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/099-0478-measuring-interval-99999999999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/099-0478-measuring-interval-99999999999-validated.png",
+                "observation": "Overlay > Measuring Tool > Interval: nach Tab sichtbar 100000."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I13",
+            "resolution": "Overlay > Measuring Tool > Interval: -99999 → 0, 99999 unverändert; 99999999999 nach Tab auf 100000 begrenzt. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I13",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/original/screens/091-measuring-tool.json",
+          "note": "Overlay > Measuring Tool > Interval: -99999 → 0, 99999 unverändert; 99999999999 nach Tab auf 100000 begrenzt. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0479",

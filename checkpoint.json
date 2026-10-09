@@ -62,33 +62,31 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "region_label_numeric_mappings_observed_review_pending",
+    "state": "overlay_numeric_mappings_checked_publication_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I12",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T10:02:54.938575+02:00",
-      "baseCommit": "489c18a9b579b851230b377490785f691309a276",
-      "state": "checked_implementation_review_pending",
-      "focus": "14 Regions-/Labels-Zahlenfragen: vorhandene Originalbelege zuerst; echte Gebietsauswahl, Zahlen-/Sliderwege und Grenzen pro Werkzeug direkt messen.",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/mapping-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/protection-and-native-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/catalog-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/catalog-complete-strict.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/core-host-continuity.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json"
-      ],
-      "finishedAt": "2026-10-09T10:30:10.741701+02:00",
-      "result": "14 frühe Regions-/Labels-Zahlenfragen direkt geklärt, acht Slider separat; vier Label-Controltypen korrigiert.104 Originalframes/normaler Ausgang0; 49 geschützte Dateien erhalten.56 frühe Fragen/R02/Aufräumen bleiben offen."
-    },
-    "nextRun": {
       "id": "HEX-00-N-I13",
       "kind": "repair_implementation",
-      "focus": "14 frühe Overlay-Zahlenfragen:0444–0446/0451–0452/0457/0459–0462/0465/0469/0471/0478. Vorhandene Belege zuerst; Trace mit eigener QA-Vorlage, jedes Feld und jeden Sliderweg direkt abgrenzen.",
-      "gate": "56 frühe Fragen, alle sechs R01-Befunde, eigener R02 und Aufräumplan/Umsetzung/Review offen; HEX-01 erst nach Freigabe."
+      "startedAt": "2026-10-09T10:40:27.359944+02:00",
+      "baseCommit": "320718cd1d4f0f4f16728a045ef185db3c82a11a",
+      "state": "implementation_checks_passed_awaiting_publication",
+      "focus": "14 frühe Overlay-Zahlenfragen, Trace mit eigener QA-Bildvorlage; vorhandene Frames zuerst, Grenzen und vorhandene Zahlen-/Sliderwege einzeln.",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/mapping-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/gate-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/protection-and-native-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/core-host-continuity.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/readiness-and-exit.json"
+      ],
+      "result": "14 Overlay-Zahlenfragen direkt geklärt, acht Slider separat; eigene geladene QA-PNG und bewusst aktiver Rahmen.101 Originalframes, normaler Ausgang0,50 geschützte Dateien unverändert.42 frühe Fragen/R02/Aufräumen offen."
+    },
+    "nextRun": {
+      "id": "HEX-00-N-I14",
+      "kind": "repair_implementation",
+      "focus": "Zehn frühe Zahlenfragen: Map Effects0482–0484, Change Map Size0517/0518, Detail Wizard0525–0529. Bestehende Frames zuerst; tatsächliche Dialoge, Kopplungen, Zahlen-/Sliderwege einzeln.",
+      "gate": "42 frühe Fragen, alle sechs R01-Befunde, eigener R02 und Aufräumplan/Umsetzung/Review offen; HEX-01 erst nach Freigabe."
     },
     "review": {
       "state": "changes_required",
@@ -119,7 +117,7 @@
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
       "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
-      "56 ausdrückliche frühe UI-Inventarfragen nach N-I12 offen; 14 Regions-/Labels-Fragen direkt geklärt. Spätere Wirkungsfragen ersetzen keine unbekannte Oberfläche/Validierung.",
+      "42 ausdrückliche frühe UI-Inventarfragen nach N-I13 offen;14 Overlay-Fragen direkt geklärt. Spätere Wirkungsfragen ersetzen keine unbekannte Oberfläche/Validierung.",
       "R01-01/06 umgesetzt, eigener R02 noch offen; 113 Altquellenfehler jetzt getrennt als historical_unverified_replaced; eigene R02-Passung weiterhin offen.",
       "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht; veröffentlichbarer Testbaum hat drei fehlende externe Fixture-Fälle."
     ],
@@ -133,8 +131,8 @@
       "build": "passed",
       "productBuildSha256": "d7c47ec29ea089169e6a7ad39f00d78c080b9f1d5e8f2daebe7c9ad024759ef8",
       "integratedCommit": "b9a6aa444a581d450334a9defac8d7ccb3b1df3a",
-      "host": "N-I12: eigene N-I11-Kern-Edit-/Neuöffnungsbelege erneut gelesen; Produkt-, Wonderdraft-, Build- und Kern-Hostquellen unverändert. Build d7c47ec2 identisch. Keine neue Host-/Hex-/Overworld-, Großkarten- oder physische Abnahme; Produktvault unverändert.",
-      "testProvenance": "N-I12 frisch:195 lokale Tests bestanden. Eigener veröffentlichbarer Quellbauma9c59b1:198 Tests,195 bestanden, dieselben drei fehlenden externen Fixture-Fälle. Check/Build in beiden Bäumen bestanden und identisch d7c47ec2; fremde Testpatches unveröffentlicht erhalten.",
+      "host": "N-I13: eigene N-I11-Kern-Edit-/Neuöffnungsbelege erneut gelesen, Quellen und Produktbuild d7c47ec2 unverändert. Keine neue Host-/Hex-/Overworld-, Großkarten- oder physische Abnahme; Produktvault unverändert.",
+      "testProvenance": "N-I13 frisch:195 lokale Tests bestanden, Check/Build bestanden, Build d7c47ec2 unverändert. Eigener veröffentlichbarer Quellbaum wird vor Push separat geprüft; fremde Testpatches unveröffentlicht erhalten.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
         "tests": 198,
@@ -142,20 +140,20 @@
         "failed": 3,
         "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json"
       },
-      "catalog": "N-I12: 14 frühe Regions-/Labels-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider getrennt. Territory/Edit Width2..20, Opacity/Smoothing0..1, Sorting−10..10; Label Size8..1000/Outline und Glow0..32/Curvature−1..1/Spacing−512..512; Box Scale0.25..2. Edit tatsächlich mit eigenem QA-Dreieck aktiviert. Vier Label-Controltypen ausdrücklich zu number korrigiert.663 UI/83 Fälle und historische Quellen erhalten.56 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+      "catalog": "N-I13: 14 frühe Overlay-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider separat. Trace Scale0.1..4/Opacity0..1/Rotation−180..180 mit eigener geladener QA-Vorlage; Grid Size16..512/Line Width2..10; Frame Scale0.25..2 mit bewusst aktiviertem Rahmen; Scale Width64..2048/Height4..256/Segments1..32/Line Width2..8/Distance0.1..10000/Font8..256/Outline0..32; Measuring Interval0..100000 mit zusätzlicher hoher Literalprobe. Alle Controltypen, Defaults,663 UI/83 Fälle und historischen Quellen erhalten.42 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "a9c59b18ffdaae428733cce57d436ec5884e42e6",
       "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation. N-I10: 3da4a99/6daac0a normal in 5225673 integriert; Building-Innenlöcher erhalten native Bodenfelder. Basis frisch lokal 194/194 und veröffentlicht 194/197 mit bekannten drei fehlenden Fixtures, neuer Build d522bd25. Eigener Kern-Edit-/Neuöffnungslauf bestanden. Danach 63a30ac (Original-Punktbearbeitungsbefund/Plan) normal in ea3551b integriert; Produkt-/Test-/Validator-/Kern-Hostquellen und Wonderdraft-Wurzel unverändert gegenüber geprüftem 5225673. Eigene Roots und fremde lokale Änderungen erhalten; keine Vaultinstallation oder vollständige Hex-Abnahme. N-I11: 7e357df/9fd67b2/b9a6aa4 am Laufstart per Fast-forward integriert; native Building-Punktbearbeitung/Bodenübermalung/Wandstil. Eigene Wurzeln und fremde lokale Änderungen erhalten. Basis neu 195/195 und neuer Build d7c47ec2; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Vaultinstallation oder vollständige Hex-Abnahme. N-I12: am Laufstart und vor Veröffentlichung abgerufen, keine neuen eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen, keine neue Hostabnahme oder Vaultinstallation.",
       "latestOriginalRun": {
-        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/manifest.json",
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/manifest.json",
         "sessions": 1,
-        "newFrames": 104,
+        "newFrames": 101,
         "normalExitCodes": [
           0
         ],
-        "scope": "14 Regions-/Labels-Zahlenfragen: eigenes QA-Dreieck für Edit Territories, acht Slider und alle Zahlenfelder getrennt gemessen; vier Label-Controltypen korrigiert. Keine vollständige Wirkung/History/Persistenz-/Neuöffnungs- oder physische Abnahme.",
+        "scope": "14 Overlay-Zahlenfragen, eigene tatsächlich geladene Trace-QA-PNG, bewusst sichtbarer Rahmen; acht Slider und Zahlenfelder getrennt. Keine vollständige Wirkung/History/Persistenz-/Neuöffnungs- oder physische Abnahme.",
         "physicalInput": false
       },
       "referenceReview": {
@@ -473,6 +471,24 @@
         "phaseApproval": false,
         "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json",
         "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integration-preservation.json"
+      },
+      "overlayNumericRepair": {
+        "run": "HEX-00-N-I13",
+        "state": "direct_mappings_observed_review_pending",
+        "resolvedEarlyQuestions": 14,
+        "remainingEarlyQuestions": 42,
+        "newFrames": 101,
+        "normalExitCode": 0,
+        "validatorErrors": 0,
+        "partialPending": 140,
+        "earlyBlocking": 61,
+        "historicalEvidenceUsages": 113,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/mapping-validation.json",
+        "protection": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/protection-and-native-proof.json",
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/local-basis.json",
+        "coreHostContinuity": "/home/aaron/.cache/dungeon-native-qa/hex-00/overlay-numeric-repair-20261009-104027/core-host-continuity.json",
+        "originalEffectApproval": false,
+        "phaseApproval": false
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
