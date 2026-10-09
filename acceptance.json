@@ -82862,7 +82862,7 @@
     }
   ],
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
-  "updated": "2026-10-08",
+  "updated": "2026-10-09",
   "strictParity": {
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
@@ -82871,6 +82871,12 @@
       "parent": "DD-037",
       "cases": 12,
       "decision": "Keine ausführbare Mod- oder Erweiterungsschnittstelle; Nutzerentscheidung für das private Projekt."
+    },
+    "scopeDecision20261009": {
+      "cases": "DD-038.01–.09",
+      "decision": "excluded",
+      "reason": "Nutzerentscheidung: Kartenvergrößerung und -verkleinerung sind für den grenzenlosen gemeinsamen Atlas unnötig.",
+      "followUp": "Kein weiterer Resize-Hostlauf; Building-Boden-Werkzeuge separat prüfen und Atlaswachstum ohne Größenaktion in ROADMAP-HEX-ATLAS.md abnehmen."
     },
     "acceptanceRule": "Pflichtfall erst nach direktem Originalbeleg, implementierter Wirkung, isoliertem Hostlauf und Nachweis am installierten Endstand geschlossen.",
     "cases": [
@@ -121757,7 +121763,7 @@
         "area": "verwaltung",
         "path": "Menu bei geöffneter Karte",
         "command": "Change Map Size",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu bei geöffneter Karte → Change Map Size",
           "options": null,
@@ -131790,7 +131796,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Top in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Top in tiles",
           "options": null,
@@ -131973,7 +131979,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Right in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Right in tiles",
           "options": null,
@@ -132137,7 +132143,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Bottom in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Bottom in tiles",
           "options": null,
@@ -132302,7 +132308,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Left in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Left in tiles",
           "options": null,
@@ -132725,7 +132731,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Cannot undo warning",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Cannot undo warning",
           "options": null,
@@ -132834,7 +132840,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "OK",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → OK",
           "options": null,
@@ -132943,7 +132949,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "Cancel",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → Cancel",
           "options": null,
@@ -138816,7 +138822,7 @@
         "area": "verwaltung",
         "path": "Menu > Change Map Size",
         "command": "X / Schließen",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Menu > Change Map Size → X / Schließen",
           "options": null,
