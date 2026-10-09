@@ -4051,17 +4051,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:19:32.364268+00:00",
-      "focus": "Processing-Ausgabebelege R",
+      "id": "CITY-00-I32-P",
+      "kind": "reference_planning",
+      "startedAt": "2026-10-09T15:23:32.148278+00:00",
+      "focus": "Frühe Generationsvorgaben",
       "state": "completed",
-      "result": "Tatsächliche Downloadkopien und alle Rawhashes bestätigt. Vollständiger14-Gruppenvergleich: buildings MultiPolygon669→651, andere13 wertgleich, übrige Rootwerte gleich. Keine interne Mutation, Neugeneration oder stabile Einzelobjekt-ID aus Export abgeleitet. Aufräumbefund: Snapshot nennt Processing-Dateigeometrie pauschal offen statt direkten Ausgabeteilbeleg."
+      "result": "Plan für eigene Karte und tatsächlichen Vorher/Nachher-Export festgelegt."
     },
     "nextRun": {
-      "id": "CITY-00-I31-CP",
-      "kind": "cleanup_planning",
-      "focus": "Belege und Snapshot CP"
+      "id": "CITY-00-I32-I",
+      "kind": "reference_implementation",
+      "focus": "Generate-/Settlement-Vorgabe direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
