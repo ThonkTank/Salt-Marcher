@@ -1643,7 +1643,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
@@ -1660,7 +1661,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Feature-Rebuild mit kontrolliertem URL-Vergleich direkt teilbelegt; Greens-Gruppe in Probe leer. Weitere Vorgaben/Wirkungen, Reproduzierbarkeit, Version und eigener Produktvergleich offen.",
+        "gap": "Features/Rebuild/Small-Größenwirkung direkt teilbelegt; Small ändert zugleich Seed. Feste Presetranges, benutzerdefinierte Größe, weitere Features/Version und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1679,6 +1680,12 @@
               "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
               "result": "I32 OFF was an immediate pending control only. I33 fresh tab shows GreensON; no durable global restoration was proved by I32."
             }
+          },
+          {
+            "run": "CITY-00-I35-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
+            "result": "Small changes size25→19 AND seed540139574→2039168945. Other feature URL values unchanged.13-group output:9 changed,4 equal; buildings544→252, greens0→2. No pure-size attribution or fixed Small19 rule."
           }
         ]
       },
@@ -4073,13 +4080,49 @@
             "result": "Groups show/hide and lock multiple elements; tooltip explicitly Not available in the demo."
           }
         ]
+      },
+      {
+        "id": "CO-WAT-0011",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Reproduzierbare Generatorlinks (Permalink)",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=0&plaza=1&temple=1&walls=1&shantytown=0&coast=0&river=0&greens=1&gates=-1",
+        "observedAt": "2026-10-09T15:40:10.557981+00:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
+        ],
+        "task": "Generationsvorgaben teilen und einen Grundplan daraus wiederherstellen",
+        "phase": "CITY-02 / CITY-08",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-007.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "From URL/Permalink/Generate auf eigener Karte liefert bytegleiche Kontrollausgabe. Aufnahme manueller Änderungen/Versionverträglichkeit, eigener Recipe-Import/Export und Host-/Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I35-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
+        }
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I34-I",
+      "run": "CITY-00-I35-I",
       "products": 3,
-      "candidates": 64,
+      "candidates": 65,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -4121,7 +4164,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
       ],
       "resultReferences": [
         {

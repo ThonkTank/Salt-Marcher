@@ -4070,17 +4070,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I35-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:37:40.456491+00:00",
-      "focus": "Small-Größenwahl",
-      "state": "completed",
-      "result": "Kontrollierter eigener Größen-/Seed-/Ausgabevergleich geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I35-I",
       "kind": "reference_implementation",
-      "focus": "Small und sichtbaren Rückweg prüfen"
+      "startedAt": "2026-10-09T15:40:10.557981+00:00",
+      "focus": "Small und Permalink-Reproduktion",
+      "state": "completed",
+      "result": "Small/Seed gekoppelt beobachtet, bytegleiche From-URL-Rückstellung und zusätzliche Pflicht CO-WAT-0011 gesichert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I35-R",
+      "kind": "reference_review",
+      "focus": "Vergleich und vollständige Pflichtzuordnung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
