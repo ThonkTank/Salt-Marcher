@@ -3972,17 +3972,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I28-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:03:37.480848+00:00",
-      "focus": "Dach-/Blockbelege R",
-      "state": "completed",
-      "result": "Neun Rawhashes und sichtbare Wirkung04/07 geprüft; Controls08 bestätigen Lots/Plain/Offset und unveränderte Raised/Solids. Blockdarstellung ist keine zusätzliche geographische Viertelbearbeitung. Andere Vorgaben und Save/Export ausdrücklich ungeprüft. Aufräumbefund: CO-WAT-0002-Snapshot noch unspezifisch partial."
-    },
-    "nextRun": {
       "id": "CITY-00-I28-CP",
       "kind": "cleanup_planning",
-      "focus": "Snapshotkorrektur planen"
+      "startedAt": "2026-10-09T15:03:50.802170+00:00",
+      "focus": "Dach-/Blockbelege CP",
+      "state": "completed",
+      "result": "Plan: Snapshot anhand acceptance um Gable-/Block-Teilwirkung ergänzen; Blockdarstellung von eigenständiger Vierteltopologie trennen. Historische I03-/I19-Belege erhalten, sämtliche Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR separat."
+    },
+    "nextRun": {
+      "id": "CITY-00-I28-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Snapshot aus acceptance aktualisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
