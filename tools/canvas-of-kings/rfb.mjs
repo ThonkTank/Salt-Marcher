@@ -2,6 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { assertProcesses, sha256, assertHeldLock, assertTarget } from './identity.mjs';
+import { assertSingleInputOptions } from './input-options.mjs';
+assertSingleInputOptions(process.argv.slice(2));
 const i = process.argv.indexOf('--session');
 if (i < 0 || !process.argv[i + 1]) throw new Error('Absolute --session required');
 const file = process.argv[i + 1];

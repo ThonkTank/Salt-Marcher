@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { assertSingleInputOptions } from '../tools/canvas-of-kings/input-options.mjs';
 // Offline fixtures only; these are never claimed as original runtime evidence.
 const testQaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cok-adapter-root-')),
   identityPath = new URL('../tools/canvas-of-kings/identity.mjs', import.meta.url),
@@ -65,4 +66,16 @@ test('RFB target cannot redirect to another port or incomplete role set', () => 
   assertTarget(session);
   assert.throws(() => assertTarget({ ...session, port: 5900 }), /contract/);
   assert.throws(() => assertTarget({ ...session, processes: session.processes.slice(1) }), /roles/);
+});
+test('repeated RFB options fail before session access or input', () => {
+  const args = ['--session', path.join(root, 'missing-session.json'),
+    '--shot', 'offline', '--click', '1,2', '--click=3,4'];
+  assert.throws(() => assertSingleInputOptions(args), /Repeated --click/);
+  assert.throws(() => assertSingleInputOptions(['--key', 'Enter', '--key', 'Escape']), /Repeated --key/);
+  assertSingleInputOptions(['--click', '1,2', '--key', 'Control+a', '--text=--click']);
+  const result = spawnSync(process.execPath,
+    ['tools/canvas-of-kings/rfb.mjs', ...args], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Repeated --click/);
+  assert.doesNotMatch(result.stderr, /ENOENT/);
 });

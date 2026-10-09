@@ -2,6 +2,10 @@
 
 Planlauf vom 09.10.2026 zu [Phase 1](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md). Dieser Plan ändert kein Produkt und gibt keinen Pflichtfall frei. Ziel ist die noch fehlende Bedien- und Datenwirkung beim Ändern der Kartengröße; die grafische Darstellung muss nur ungefähr gleichwertig sein.
 
+## Durch Nutzerentscheidung abgelöst
+
+Am 09.10.2026 hat der Nutzer Kartenvergrößerung und -verkleinerung für den geplanten grenzenlosen gemeinsamen Atlas als unnötig eingeordnet. Dieser historische Nachbesserungsplan wird nicht weiter umgesetzt; insbesondere entfällt das geplante Hostpaar für kombinierte vier Ränder. Die bereits gespeicherten Original- und Hostbelege bleiben unverändert. Aus ihnen folgt keine Abnahme einer Resize-Funktion. Building-Boden-Gesten aus diesem Arbeitsstrang bleiben für die Werkzeugparität relevant, unabhängig von `DD-038`. Der nächste Lauf richtet sich nach [Phase 1](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md) und [Hex-Atlas](ROADMAP-HEX-ATLAS.md).
+
 ## Gesicherter Ausgangspunkt
 
 - `DD-038.01/.02/.06–.09`: Menü, vier Eingaben, Warnung, obere Erweiterung, History-Grenze, Cancel/X nach Eingabe, Save und Neuöffnung besitzen direkte Original- und isolierte Hostbelege in `acceptance.json`. Eingabegrenzen stammen aus der gemessenen 12×8-Originalmatrix; ihre Verallgemeinerung bleibt Kandidat.
