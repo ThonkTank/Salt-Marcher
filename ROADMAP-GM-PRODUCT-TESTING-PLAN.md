@@ -115,12 +115,18 @@ Ein erster Locator-Klick auf das Key-Textarea wurde vom Editor-Dock abgefangen; 
 
 **GM-UX-N-003 an Dungeon-Verantwortlichen:** enger UX-Auftrag: beim Öffnen der Key-Ansicht Karte/gewählten Raum brauchbar sichtbar halten und unnötige parallele Key-Editor-Duplikation vermeiden; „Key bearbeiten“ muss direkt wieder erreichbar bleiben. Abnahme: gleiche isolierte Karte/Notiz, ein Hinweistext in der aktiven Notizansicht ohne zweiten offenen Key-Editor, sichtbarer Kartenkontext; Bearbeiten bleibt erreichbar; Speichern, App-Reload und erneutes Öffnen erhalten den Text. Issue #1 Kommentar `6084205940`. Zuständigkeit/Annahme und Umsetzung stehen aus.
 
-**Folgearbeitsstand:** Der Dungeon-Strang hat ausschließlich den technischen
-Planlauf `GM-UX-N-003-P01` in Issue #8 Kommentar `6088872377` übernommen.
-`ROADMAP-GM-UX-N-003-PLAN.md` führt den vorhandenen Dirty-Guard, Key-Dock und
-`openRoomKey`-Workspaceweg zusammen; Produktcode ist noch unverändert. Vor I01
-bleibt der unabhängige read-only Planreview offen. N-006-H01/GM-R01 läuft
-getrennt beim Cloud-GM-Produkttester auf dessen bereits installiertem Build.
+**Folgearbeitsstand:** Der Dungeon-Strang übernahm `GM-UX-N-003` in Issue #8
+`6088872377`; P01 bestand den unabhängigen Planreview. Produktcommit
+`4f8c7fe5842605e6093c21e4effc075712554e36` führt beim strukturierten
+**Raum-Key öffnen** den vorhandenen Dirty-Guard, Key-Dock und
+`openRoomKey`-Workspaceweg zusammen. Der erste Produktreview verlangte eine
+produktnahe Testbindung; der reparierte Stand prüft mit realer V4-Session und
+`StructuredKeyPanel` beide Zielquellen, Dirty-Blockade, Dock-Wiederöffnung und
+unveränderte Dokument-/Dirty-/History-/Auswahl-/Kamerawerte. Der unabhängige
+R02 bestand ohne verbleibenden Pflichtbefund (Issue #8 `6089004701`); Typprüfung,
+398/398 Tests und Build sind grün. Der exakte Cloud-H01-Reparaturablauf und
+danach GM-R01 bleiben offen. N-006-H01/GM-R01 läuft getrennt beim
+Cloud-GM-Produkttester; keine Host- oder Gesamtfreigabe aus den Automatiken.
 
 ### GM-UX-02 – Atlas-Zoomprobe auf neu integrierter Oberfläche
 

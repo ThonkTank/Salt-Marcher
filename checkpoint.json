@@ -444,7 +444,8 @@
       "testsPassed": 403,
       "focus": "Strict AtlasDraft v2 with placement/Location before-after closure and native pre-JSON checks; V1 remains separate, full Markdown and section order preserved. Actual shared FileTransaction rollback/retry fixture passed. Runtime World, Repository Location wiring and UI remain inactive.",
       "nativeOnThisBuild": false,
-      "phaseApproval": false
+      "phaseApproval": false,
+      "integratedBasis": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-integrated-basis.json"
     },
     "nextRun": {
       "id": "HEX-03-I01b",
@@ -1518,7 +1519,44 @@
         "preflightRepair": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/sync-recovery.json",
         "initialValidationNotes": [
           "First additional patch used an outdated formatter line context and failed without edits; current file read and patch reapplied successfully."
-        ]
+        ],
+        "integratedBasis": {
+          "run": "HEX-03-I01b-draft2-integrated-basis",
+          "sourceCommit": "d70dad7b766b7c21ee792981aeb475ce125af473",
+          "finishedAt": "2026-10-09T20:50:20.682805+00:00",
+          "checkPassed": true,
+          "testsPassed": 404,
+          "buildPassed": true,
+          "atlasDraftSourceUnchangedFrom": "05f4f5c63025b712c8498c62d4b6cb9f781cd796",
+          "triplet": {
+            "main.js": {
+              "bytes": 1412619,
+              "sha256": "ee9449de6990a2b59e8b49b64a1913d6c3954fe37caa0310237d3198169b3670"
+            },
+            "styles.css": {
+              "bytes": 27726,
+              "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            }
+          },
+          "nativeOnThisBuild": false,
+          "phaseApproval": false,
+          "reason": "Incoming Dungeon key-dock repair integrated before publication; final exact combined source gates repeated in clean owned QA worktree.",
+          "testLog": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-integrated-test.log"
+        },
+        "publication": {
+          "label": "hex03-draft2",
+          "candidate": "63cf6dbc2f769c5c5950cd6701b2061fa6e049d3",
+          "packetBranch": "hex/hex03-p01-20261009",
+          "serverMerge": "d70dad7b766b7c21ee792981aeb475ce125af473",
+          "localIntegratedHead": "d70dad7b766b7c21ee792981aeb475ce125af473",
+          "remoteHeadAtVerification": "d70dad7b766b7c21ee792981aeb475ce125af473",
+          "normalPushAndMerge": true,
+          "forcePush": false
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1557,7 +1595,10 @@
       "intervalMinutes": 20,
       "intervalCorrectionSource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088429400",
       "verifiedStoredSchedule": true,
-      "threadTitle": "Hex"
+      "threadTitle": "Hex",
+      "workIssue": 7,
+      "platformIssue": 11,
+      "checkpointIsAuthoritative": true
     },
     "updatedAt": "2026-10-09T20:48:30.627545+00:00"
   },
@@ -2553,16 +2594,18 @@
     },
     "gmUxN003Plan": {
       "date": "2026-10-09",
-      "state": "plan_candidate_review_pending",
-      "run": "GM-UX-N-003-P01",
+      "state": "implementation_r02_passed_h01_open",
+      "run": "GM-UX-N-003-R02",
       "plan": "ROADMAP-GM-UX-N-003-PLAN.md",
       "source": "GM-UX-003 im isolierten Cloud-GM-Produkttest; Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
       "ownership": "Dungeon-Strang beanspruchte ausschließlich GM-UX-N-003-P01 nach Issue-/PR-/Branchabgleich auf Shared-Base 71099f277c8de58f4d0a60dc62d56bbd9c8bc483; Claim Issue #8 Kommentar 6088872377. N-006-H01/GM-R01 bleibt beim Cloud-GM-Produkttester; N-005, DD-036, Hex/Atlas, City, Katalog, Migration und SMR bleiben fremd.",
       "finding": "Auf zwei isolierten Karten blieb nach Raum-Key öffnen der eingebettete strukturierte Key-Editor sichtbar, während derselbe Hinweis zusätzlich in der Raumansicht erschien; der Kartenkontext wurde stark geteilt. Nutzungshäufigkeit und Produktlatenz sind nicht gemessen.",
       "planDecision": "Nur für einen sauberen strukturierten Key den vorhandenen Dirty-Guard vor jeder Layoutmutation prüfen, das vollständige Raum-/Abschnitt-/Ankerziel erfassen, den bestehenden Key-Dock über toggleKey(false) weichen lassen und danach den unveränderten openRoomKey-Workspaceport nutzen. Auswahl, Kamera, Dokument, History, Persistenz und unstrukturierter Notizpfad bleiben unverändert.",
-      "verification": "Plan-Kandidat: JSON-, Verweis- und Diffprüfung vorgesehen; unabhängiger read-only Review des exakten Plancommits ausstehend.",
-      "limits": "Keine Produktänderung, automatisierte Produktregression, GUI-/Hostprüfung, physische Eingabe oder Save/App-Reload/Reopen-Wirkung. Keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
-      "next": "GM-UX-N-003-P01-R01: unabhängiger read-only Review des exakten Plancommits; nur bei PASS folgt ein getrenntes I01-Produktpaket."
+      "implementation": "P01-Plancommit 552846303189924208c20d95df01a75cedb03966 bestand den unabhängigen Planreview. I01 271ed2a führte Guard, Dock und bestehenden Workspaceport zusammen. R01 verlangte einen produktnahen Routingtest statt tautologischer loser Zustandswerte. Reparaturcommit 4f8c7fe5842605e6093c21e4effc075712554e36 extrahiert die tatsächliche Zielableitung des Buttonpfads und prüft sie mit realer V4-Session und StructuredKeyPanel.",
+      "review": "R01 CHANGES_REQUIRED nur für unzureichende Testbindung; kein Produktdefekt gefunden. R02 PASS auf exakt 4f8c7fe: keyTarget mit Abschnitt/Anker, echte Feature-Occurrence, dirty Blockade vor Dock/Open, clean Dock-vor-Open, echte Dokument-/Dirty-/History-/Undo-/Redo-/Auswahl-/Kamerainvarianten und bestehende Key-bearbeiten-Dockwiederöffnung sind belegt. Issue #8 Kommentare 6088964818 und 6089004701.",
+      "verification": "Fokussierter Room-Key-Bundle-Test 11/11 PASS; npm run check PASS; npm test 398/398 PASS; npm run build PASS dirty:false. main.js SHA-256 eea21a270e6b5830feeffc32c40abadac8e6b5d307cce06b75718091ddf3e7c3; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Kein externer GUI-Beleg.",
+      "limits": "Produktimplementierung und unabhängiger R02 sind automatisiert bestanden. Echter Obsidian-Dock-/Raumview-Ablauf, 1440×1000-Splitlayout, Save/App-Reload/Reopen auf Fixbuild, physische Eingabe und GM-R01 bleiben offen. Keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
+      "next": "GM-UX-N-003-H01: Cloud-GM-Produkttester wiederholt ausschließlich den veröffentlichten Reparaturablauf im isolierten Cloudvault auf integriertem 4f8c7fe-Produktstand; danach bleibt unabhängiger GM-R01."
     },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
