@@ -1,40 +1,56 @@
 import { immutable, type Point, type Polygon } from "../../model";
 import type { CityBuilding } from "./model";
+import { cityInputPoint } from "./input";
 
-/** Building-local meters → city-local meters; the Atlas placement is not involved. */
-export function cityBuildingOutline(
-  building: Pick<
-    CityBuilding,
-    "footprint" | "position" | "rotationRadians" | "scale"
-  >,
-): Polygon {
-  const { footprint, position, rotationRadians, scale } = building;
-  if (
-    !Number.isFinite(rotationRadians) ||
-    !Number.isFinite(scale.x) ||
-    !Number.isFinite(scale.y) ||
-    scale.x <= 0 ||
-    scale.y <= 0
-  )
+export type CityBuildingPose = Pick<
+  CityBuilding,
+  "position" | "rotationRadians" | "scale"
+>;
+function transform(pose: CityBuildingPose) {
+  const position = cityInputPoint(pose.position),
+    scale = cityInputPoint(pose.scale);
+  if (!Number.isFinite(pose.rotationRadians) || scale.x <= 0 || scale.y <= 0)
     throw new Error("Ungültige Stadtgeometrie: Hauspose.");
-  const c = Math.cos(rotationRadians),
-    s = Math.sin(rotationRadians);
-  const pose = (points: readonly Point[]) =>
-    points.map((p) => {
-      const x = p.x * scale.x,
+  const c = Math.cos(pose.rotationRadians),
+    s = Math.sin(pose.rotationRadians);
+  return {
+    forward(raw: Point): Point {
+      const p = cityInputPoint(raw),
+        x = p.x * scale.x,
         y = p.y * scale.y;
-      const point = {
+      // Preserve the existing outline arithmetic, including its operation order.
+      return cityInputPoint({
         x: position.x + x * c - y * s,
         y: position.y + x * s + y * c,
-      };
-      if (!Number.isFinite(point.x) || !Number.isFinite(point.y))
-        throw new Error(
-          "Ungültige Stadtgeometrie: Hauskoordinate ist nicht endlich.",
-        );
-      return point;
-    });
+      });
+    },
+    inverse(raw: Point): Point {
+      const p = cityInputPoint(raw),
+        x = p.x - position.x,
+        y = p.y - position.y;
+      return cityInputPoint({
+        x: (x * c + y * s) / scale.x,
+        y: (-x * s + y * c) / scale.y,
+      });
+    },
+  };
+}
+export function cityBuildingPoint(pose: CityBuildingPose, point: Point): Point {
+  return transform(pose).forward(point);
+}
+export function cityBuildingLocalPoint(
+  pose: CityBuildingPose,
+  point: Point,
+): Point {
+  return transform(pose).inverse(point);
+}
+/** Building-local meters → city-local meters; the Atlas placement is not involved. */
+export function cityBuildingOutline(
+  building: CityBuildingPose & Pick<CityBuilding, "footprint">,
+): Polygon {
+  const pose = transform(building);
   return immutable({
-    outer: pose(footprint.outer),
-    holes: footprint.holes.map(pose),
+    outer: building.footprint.outer.map(pose.forward),
+    holes: building.footprint.holes.map((points) => points.map(pose.forward)),
   });
 }

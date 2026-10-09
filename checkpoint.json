@@ -2004,7 +2004,7 @@
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
       "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
-      "limits": "Planreview-PASS, O01a read-only und O01b für genau ein Terrainkind eng hostgeprüft; keine Dungeondraft-Original-, City-/Dungeon-Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. Vollständiges O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
+      "limits": "Planreview-PASS, O01a read-only, O01b für genau ein Terrainkind und H01 für einen sichtbaren Terrainbefehl eng hostgeprüft; direkte Dungeondraft-Originalwirkung nur für ein Rechteck mit Undo/Redo. Keine City-/Dungeon-Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. Vollständiges O01b, weitere HEX-02-Pakete und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
       "o01a": {
         "run": "DD-036-ATLAS-O01a",
         "state": "scoped_read_only_host_passed_independent_review_passed_full_cases_open",
@@ -2030,20 +2030,39 @@
         "result": "Synthetische nichtleere .overworld und tatsächliche Dateikopie in getrennten isolierten Vaults laden dieselben zwei Terrainzellen; Welt-SHA 1a2fd3e7871517fa3b5d5883445bd06ac342daad653a097311aee4899e362ced und Kind-SHA 81bff69edd957e7cb8ee21c2efa3327ff0477bfc90d24f9712c4235287e3e07e bleiben vor/nach Öffnen gleich. Fehlendes Terrainkind und Kind mit fremder worldId zeigen den jeweils spezifischen Fehler und laden keine Zellen. Alle vier Prozesse enden normal, 32 instrumentierte Vault-/Adaptermethoden melden null Atlas-Schreibaufrufe.",
         "review": "Unabhängiger read-only Review auf Shared-Head 2bf1043: PASS ausschließlich für das Terrainkind-Teilpaket. Synthetische Quelle, kein Dungeondraft-Original; City-/Dungeon-Kinder, geschützte Key-Bytes, Save/Import und vollständige DD-036.02/.16 bleiben offen."
       },
+      "h01": {
+        "run": "DD-036-ATLAS-H01",
+        "state": "scoped_one_terrain_command_host_passed_independent_review_passed_full_cases_open",
+        "testCommit": "0d16451",
+        "reviewHead": "0d3eb7e",
+        "mainSha256": "764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json",
+        "result": "Isolierter Obsidian-Lauf mit synthetischer referenzfreier Welt: Ein sichtbarer Landklick erzeugt genau eine Terrainzelle und einen Befehl mit ownerId dd036-h01-world. Undo entfernt die Zelle, Redo stellt sie exakt wieder her; Kamerazentrum und Maßstab bleiben gleich. Die Weltdatei behält SHA-256 b532637bcea8f2367b811124832713b6d216547801d8d8a21fdc2ce20ba1ac39; 32 instrumentierte Vault-/Adaptermethoden melden null Atlas-Schreibaufrufe, kein Atlasdaten-Verzeichnis entsteht, normaler Prozessausgang.",
+        "review": "Unabhängiger read-only Review auf Shared-Head 0d3eb7e: PASS nur für eine sichtbare synthetische Terrainzelle. Dungeondraft-Originalfolge, Save/Neuöffnung, mehrere Besitzer und volle DD-036.04/.05 bleiben offen."
+      },
+      "h01Original": {
+        "run": "DD-036-H01-ORIGINAL-01",
+        "state": "scoped_one_building_rectangle_original_effect_independent_review_passed_full_cases_open",
+        "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/native-h01-result.json",
+        "result": "In isolierter unmodifizierter Dungeondraft-Kopie verschwindet ein per Building Tool gezeichneter Rechteckraum nach Hauptleisten-Undo und erscheint nach Hauptleisten-Redo wieder. Bildausschnitt mit >40-Pixelabweichung zur leeren Ausgangskarte: gezeichnet 45837, nach Undo 36, nach Redo 45690 Pixel. Die verworfene Arbeitskopie behält denselben SHA-256 wie die Quellkarte: 283ddbf85c4f12536a862ea64200763d61062d7d7a296f3d2e1cbc31b59e6ae2.",
+        "review": "Unabhängiger read-only Review PASS nur für sichtbare Rechteck-/Topbar-Wirkung. Synthetische Zeigereingabe; keine gespeicherten Zwischenstände, Tastenkürzel, anderen Befehle, physische Eingabe oder App-Exit-Code-Belege. Wrapperstatus 1 folgt dessen Stop-Sentinel-Regel und ist kein Produktfehler."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
-      "state": "plan_repaired_independent_re_review_passed",
+      "state": "i01_repaired_independent_re_review_passed",
       "run": "GM-UX-N-005-P01",
       "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
       "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
-      "ownership": "Dungeon-Strang; vor Claim keine offenen PRs, gleichnamigen Remote-Branches oder anderen Besitzer auf Shared-Head 5fc9f7f6a6a8b20fb8470ad865cd5b84be16c7c1.",
-      "scope": "Nur technischer Plan für read-only V4-Raum-Key-Suche der aktuellen Session: Treffer nennt Raum und Geschoss, Aktivierung nutzt bestehende Geschoss-/Auswahl-/Kamera-/Key-Wege ohne Kartenmutation, Leeren stellt Übersicht wieder her, Save/Reload erhält Hinweis.",
-      "review": "Unabhängiger read-only Review auf cb97060990781e39397aec495e6525f70d42e70a verlangte einen gemeinsamen nicht-committenden Key-Draft-Navigationsguard sowie Session-Subscribe/Unsubscribe mit stale-target DOM-Orakel. Der exakte Reparaturcommit fa9c31e264c3b296df68342927a617c96f5e33f2 bestand den unabhängigen Nachreview ohne weitere Pflichtlücke.",
-      "limits": "Keine Implementierung oder GUI-/Hostprüfung. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, DD-036-, Atlas-, City- oder H03-Arbeit und keine Produkt-/Fachfreigabe.",
-      "next": "GM-UX-N-005-I01 ist nach bestandenem Planreview planseitig geöffnet, aber nicht gestartet; vor Umsetzung Besitz und aktuellen Shared-Stand erneut prüfen.",
+      "ownership": "Dungeon-Strang; GM-UX-N-005-I01 wurde nach erneuter Prüfung von Issue #1, offenen PRs und gleichnamigen Remote-Branches auf Shared-Head d153a57ce128c62e243e89bed1caebd80634128c exklusiv übernommen. Keine UI-, N-006-, DD-036-, Atlas-, City-, Hex-, CE- oder Migrationsdatei gehört zum Paket.",
+      "scope": "I01 implementiert ausschließlich die hostneutrale read-only V4-Raum-Key-Projektion der aktuellen Session: leere Übersicht pro strukturiertem Raum, ein Suchtreffer pro passendem Key-Abschnitt, Raum-/Geschossangabe, sichtbarer Ausschnitt, deterministische Reihenfolge und Zielrevalidierung ohne Sessionmutation.",
+      "review": "Der Planreview auf cb97060990781e39397aec495e6525f70d42e70a und der Plan-Nachreview auf fa9c31e264c3b296df68342927a617c96f5e33f2 bleiben gültig. Der erste unabhängige I01-Review des Implementierungscommits 9b18055b4b599a35f27387ee2393694a6add0133 verlangte vollständige lange Treffer und eine Unicode-Offsetabbildung; der Review von b78ea9462d76b1600aa91dd909c7b87f3bc45e21 verlangte zusätzlich kontextkorrekte Sigma-Suche. Der exakte Reparaturstand 63f1270f124100b4b73088430584b92debcbd4cd bestand den abschließenden unabhängigen read-only Review ohne Pflichtbefund.",
+      "verification": "Fokussiert sechs Raum-Key-Such-/Snippetfälle sowie nach Integration des aktuellen Shared-Stands npm run check, npm test (325/325) und npm run build bestanden. Keine explorative Bedienprüfung; I01 besitzt keine GUI und der veröffentlichte Nebelwacht-Ablauf bleibt bis I02/H01 offen.",
+      "limits": "Nur I01-Suchkern. Kein Inhaltsgruppen-Panel, keine Ergebnisaktivierung, kein Key-Draft-Navigationsguard, kein Save/Reload-/Cloud-Hostbeleg und kein unabhängiger GM-Nachtest. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-/Host-/Produkt-/Fach-/Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
+      "next": "GM-UX-N-005-I02 ist als separates nächstes Paket planseitig offen; vor Übernahme Shared-Head, Issue #1, PRs und Branches erneut prüfen und den bestehenden Draft-/Auswahl-/Kamera-/Key-Weg wiederverwenden.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
     "gmUxN006Backlog": {
@@ -2645,7 +2664,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-I01: der Dungeon-Strang übernimmt nach veröffentlichtem N-006-P01-Review-PASS ausschließlich die reine V4-Raum-Key-Projektion und Suche aus ROADMAP-GM-UX-N-005-PLAN.md. Vor Umsetzung Shared-Head, Issue #1, PRs und Branches erneut prüfen; N-006-I01 bleibt separat planseitig offen, DD-036-O01a gehört dem getrennten Besitzer, Atlaspersistenz bleibt unberührt.",
+    "nextRun": "GM-UX-N-005-I02: nach unabhängig bestandenem I01-Suchkern ausschließlich Inhaltsgruppen-Panel und Aktivierung über bestehende Geschoss-/Auswahl-/Kamera-/Key-Wege umsetzen. Vor Übernahme Shared-Head, Issue #1, PRs und Branches erneut prüfen; N-006-I01 bleibt separat planseitig offen, DD-036 gehört dem getrennten Besitzer, Atlaspersistenz bleibt unberührt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4340,17 +4359,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R06",
-      "kind": "review",
-      "startedAt": "2026-10-09T17:49:00.752Z",
-      "focus": "Draftzustände und Historyfehlergrenze gegen P05 prüfen",
+      "id": "CITY-01-PREP-GESTURES-CLEAN-I06",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T18:08:10.923861+00:00",
+      "focus": "Vorhandenen Werkzeugkern mit offener Präzisionslücke dokumentieren",
       "state": "completed",
-      "result": "Separate Gegenproben bestanden; keine Laufzeitlücke gefunden. Dauerhafte Regressionen für Straßen-/Hausanlage und codecgültigen Szenenfehler fehlen (CITY-DRAFT-R06-01). Quellen unverändert zum geprüften I05."
+      "result": "Architektur nennt realen CityGesture/Punktposekern und ausdrücklich offenen R08-Befund. Plan benennt gemeinsame Precision-API; keine Runtimeänderung."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-DRAFT-CLEAN-P05",
-      "kind": "cleanup_plan",
-      "focus": "Aufräumen des reviewten Draftkerns planen; vorhandenen Stand und gezielte Testlücke präzisieren"
+      "id": "CITY-01-PREP-GESTURES-CLEAN-R06",
+      "kind": "cleanup_review",
+      "focus": "Dokumentationsbereinigung mit aktuellen Quellen und offenem R08 abgleichen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

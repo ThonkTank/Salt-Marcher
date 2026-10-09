@@ -511,7 +511,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T17:47:35.360507+00:00",
+    "updated": "2026-10-09T18:05:21.672058+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "core_prepared_atlas_integration_pending",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -646,7 +646,8 @@
         "state": "core_prepared_integration_pending",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/implementation.json"
         ]
       },
       {
@@ -130623,10 +130624,13 @@
         "original": {
           "sequence": "Hauptleiste → Undo",
           "options": null,
-          "effect": null,
+          "effect": "Bei einem per Building Tool gezeichneten Rechteckraum entfernt Hauptleisten-Undo den sichtbaren Raum; Redo wird verfügbar. Ein direkter QA-Ablauf, keine allgemeine Befehlsregel.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/native-h01-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/05-after-draw.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/06-after-undo.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Undo“ nimmt den letzten Kartenbefehl zurück.",
@@ -130660,10 +130664,12 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_h01_one_terrain_command_review_passed_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697; Reviewstand 0d3eb7e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
+          ],
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Die Dungeondraft-Originalwirkung ist nur für einen Rechteckbefehl direkt belegt; weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -130676,10 +130682,13 @@
         "original": {
           "sequence": "Hauptleiste → Redo",
           "options": null,
-          "effect": null,
+          "effect": "Hauptleisten-Redo stellt den zuvor per Undo entfernten Rechteckraum sichtbar wieder her; die Holztextur wird neu erzeugt. Ein direkter QA-Ablauf.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
-            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png"
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/native-h01-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/06-after-undo.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-h01-20261009/evidence/07-after-redo.png"
           ]
         },
         "target": "Nach Originalmessung offen: „Redo“ stellt den zurückgenommenen Kartenbefehl wieder her.",
@@ -130713,10 +130722,12 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_h01_one_terrain_command_review_passed_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697; Reviewstand 0d3eb7e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
+          ],
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Die Dungeondraft-Originalwirkung ist nur für einen Rechteckbefehl direkt belegt; weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
