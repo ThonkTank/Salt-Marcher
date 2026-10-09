@@ -1716,6 +1716,17 @@
       "open": "Weitere Punkte, Wände, Portale, Mehrkonturen und DD-038-Endreview.",
       "gate": "open"
     },
+    "buildingFloorTwoCellHoleOriginal": {
+      "case": "DD-038.05, 2×1-Innenloch im gemischten Building-Boden",
+      "state": "two_cell_interior_hole_original_measured_host_open_case_open",
+      "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/original-probe.md",
+      "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/00-source.dungeondraft_map",
+      "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/01-erased.dungeondraft_map",
+      "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-fresh-original-20261009/native-checked/runs/20261009-123115-3733552/evidence/screens/00-fresh.png",
+      "measured": "8×8: 2×1-Alt-Loch ergänzt einen inneren Ring. 18 Zellen samt Stilen und Farben bleiben gespeichert; Undo/Redo sind bytegleich, die frische Originalöffnung zeigt die Aussparung.",
+      "open": "Hostpaar, unabhängiger Review, 2×2 auf größerer Quellkontur, weitere Formen und DD-038-Endreview.",
+      "gate": "open"
+    },
     "terrainMaskResizeCandidate": {
       "cases": "DD-038.02–.05, vorbereitete Acht-Slot-Terrainmasken",
       "state": "scoped_host_raw_review_passed_cases_open",
