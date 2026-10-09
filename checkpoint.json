@@ -4289,17 +4289,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-I04",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T17:16:54.491334+00:00",
-      "focus": "Callbackgrenze, finite Bounds und Dungeonbaseline ergänzen",
-      "state": "completed",
-      "result": "Bestätigter Core-/Callbackvertrag, numerische Bounds und nachvollziehbare Dungeonbaseline im Plan ergänzt."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-R04",
       "kind": "cleanup_review",
-      "focus": "Szenenplan gegen konkrete Quellen und Koordinationsvertrag abschließend prüfen"
+      "startedAt": "2026-10-09T17:17:42.773613+00:00",
+      "focus": "Finalen Szenenplan gegen Quellen und bestätigte Modulgrenze prüfen",
+      "state": "completed",
+      "result": "Konkrete lokale Szene/Treffer, gemeinsame Pose/Segmenthelper, finite Bounds und Dungeonbaseline geprüft; keine Restlücke im Plan-Aufräumen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-I04",
+      "kind": "implementation",
+      "focus": "Lokale CityScene/Treffer und gemeinsame Pose/Streckenhelper mit Dungeonregressionen implementieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
