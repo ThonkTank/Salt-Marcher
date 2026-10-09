@@ -959,3 +959,7 @@ CITY-00-I44-REVIEW-CLEAN-R44 Start 2026-10-09T19:16:39.897987+00:00; Aufräumrev
 CITY-00-I45-P45 Start 2026-10-09T19:18:26.813586+00:00; Eigener Formularentwurf und Originalparameterprobe geplant, bestehende QA-Karte geschützt; Ergebniswirkung ausdrücklich getrennt.
 
 CITY-00-I45-PLAN-CLEAN-P45 Start 2026-10-09T19:18:29.410523+00:00; Aufräumplan: neuen Plan verlinken, Referenz-/Produktgrenzen und neue Tabisolation prüfen.
+
+I45-Originalplan: [FTG-Gebäudebedarfe und Anzahlgrenzen](ROADMAP-CITIES-CITY00-FTG-BUILDING-LIMITS-PLAN.md).
+
+CITY-00-I45-PLAN-CLEAN-I45 Start 2026-10-09T19:18:31.866072+00:00; Plan neben Roadmap verlinkt; eigene Formularprobe getrennt von alter QA-Karte und paralleler nativer GUI.
