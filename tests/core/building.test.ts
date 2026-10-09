@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { parseDocument, type Door, type Building, type Polygon,
   type Wall, type Surface, isRoom } from "../../src/model";
 import { Session } from "../../src/session";
-import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation } from "../../src/commands";
+import { adoptFloorAsRoom, createPortal, createBuilding, planBuildingMutation, planBuildingContourMutation, roomFromNewBuilding } from "../../src/commands";
 import { boundarySegments, alignedPortalAt, portalPose, rectangle, buildingEllipse, reanchorPortal, buildingContourEntries, buildingPolygonPoints, nearestBuildingVertex, nearestBuildingSegment, replaceBuildingContour } from "../../src/geometry";
 import { composeBuilding } from "../../src/compute";
 import { floorEraseActive } from "../../src/drawing";
@@ -203,6 +203,32 @@ test("floor erase state follows the persistent mode and transient Alt modifier",
   assert.equal(floorEraseActive("draw", true), true);
   assert.equal(floorEraseActive("erase", false), true);
   assert.equal(floorEraseActive("erase", true), true);
+});
+
+test("quick rectangle rooms get distinct numbers and keys in one undo step each", () => {
+  const document = newDocument("Schnelle Räume", 30, 20, undefined, undefined, 4);
+  const session = new Session(document);
+  const floorId = document.floors[0]!.id;
+  for (let index = 0; index < 6; index++) {
+    const building: Building = {
+      id: `quick-${index}`, kind: "building", floorId,
+      polygons: [{ outer: rectangle({ x: index * 4, y: 1 },
+        { x: index * 4 + 4, y: 5 }), holes: [] }],
+      layer: 200, fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    };
+    const room = roomFromNewBuilding(session, building);
+    session.execute({ label: "Raum zeichnen", entities: [
+      { id: room.id, before: null, after: room }], affectsRules: true });
+  }
+  const rooms = [...session.entities.values()].filter(isRoom);
+  assert.deepEqual(rooms.map(room => room.number), ["1", "2", "3", "4", "5", "6"]);
+  assert.equal(new Set(rooms.map(room => room.id)).size, 6);
+  assert.ok(rooms.every(room => "key" in room && room.key?.sections.length === 1));
+  assert.equal(session.historySize, 6);
+  session.undo();
+  assert.equal([...session.entities.values()].filter(isRoom).length, 5);
+  session.redo();
+  assert.equal([...session.entities.values()].filter(isRoom).length, 6);
 });
 
 test("building keeps multiple parts, holes and the same id when assigned a room key", () => {

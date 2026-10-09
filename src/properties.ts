@@ -79,6 +79,7 @@ export interface ToolSettings {
   layer: number;
   light: Pick<Light, "radius" | "intensity" | "color" | "shadows" | "assetId">;
   room: {
+    autoCreateOnRectangle?: boolean;
     wallAssetId?: string;
     wallAlpha?: number;
     wallBevel?: boolean;
@@ -619,6 +620,12 @@ export class Properties {
         (value) =>
           (this.defaults.floorMode = value as ToolSettings["floorMode"]),
       );
+      if (tool === "room")
+        this.field("Raum-Key beim Zeichnen anlegen", "checkbox",
+          String(this.defaults.room.autoCreateOnRectangle ?? false), (input) => {
+            this.defaults.room = { ...this.defaults.room,
+              autoCreateOnRectangle: input.checked };
+          });
       if (tool === "corridor")
         this.field(
           "Gangradius in Feldern",

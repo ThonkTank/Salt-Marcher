@@ -101,6 +101,20 @@ export function createRoom(
   });
   return room;
 }
+export function roomFromNewBuilding(session: Session, building: Building): Room {
+  if (session.version !== 4 || isRoom(building) || session.entities.has(building.id))
+    throw new Error("Der neue Raum benötigt eine freie Building-Kennung in V4.");
+  const used = new Set([...session.entities.values()].filter(isRoom).map((room) => room.number));
+  let number = 1;
+  while (used.has(String(number))) number++;
+  const { note: _unusedNote, ...base } = building;
+  return {
+    ...base,
+    number: String(number),
+    name: "Raum " + number,
+    key: { sections: [{ id: uid(), kind: "markdown", markdown: "" }] },
+  };
+}
 export function adoptFloorAsRoom(
   session: Session,
   surfaceId: string,
