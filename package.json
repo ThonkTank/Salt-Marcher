@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "adr:p01-h02": "node --test tests/adr-prototypes/p01-contract.test.mjs tests/adr-prototypes/p01-native-helper.test.mjs && node tools/adr-prototypes/p01/run.mjs",
     "build": "node build.mjs",
     "check": "tsc --noEmit",
     "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/renderer-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs"
@@ -20,6 +21,7 @@
     "@types/clipper-lib": "^6.4.0",
     "@types/node": "^22.0.0",
     "@types/pngjs": "^6.0.5",
+    "electron": "43.2.0",
     "esbuild": "^0.25.0",
     "linkedom": "^0.18.13",
     "obsidian": "^1.8.7",
