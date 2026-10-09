@@ -120,7 +120,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T17:22:32Z",
+    "updated": "2026-10-09T18:48:11Z",
     "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
@@ -499,14 +499,14 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W03-T01",
+      "run": "CE-02-I02-S01-W04",
       "state": "in_progress_verified_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
-      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory and structured transcript including both special descriptions", "real-PDF evidence for 50 equipment row labels and 224 structured or sourced-description facts", "Spear, Blowgun, Sling and Net source goldens", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
-      "verification": {"check": "passed", "tests": {"passed": 311, "failed": 0}, "build": "passed", "focusedTests": {"passed": 8, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 50, "expectedPrimary": 219}, "transcriptRecords": {"checked": 50}, "structuredAndDescriptionFacts": {"checked": 224}, "incompleteGate": "passed"},
-      "limits": "Intermediate only: 50 of 219 primary equipment occurrences and 50 transcript records are captured. Armor narrative descriptions, bounded cell matching, the other 169 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
+      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory and structured transcript including both special descriptions", "99/99 Adventuring Gear table-leaf inventory in physical PDF order", "real-PDF evidence for 149 equipment row labels and 224 structured or sourced-description facts", "Spear, Blowgun, Sling and Net source goldens", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
+      "verification": {"check": "passed", "tests": {"passed": 355, "failed": 0}, "build": "passed", "focusedTests": {"passed": 9, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 149, "expectedPrimary": 219}, "transcriptRecords": {"checked": 50}, "structuredAndDescriptionFacts": {"checked": 224}, "incompleteGate": "passed"},
+      "limits": "Intermediate only: 149 of 219 primary equipment occurrences and 50 transcript records are captured. Adventuring Gear transcript and narratives, Potion-of-Healing merge, Armor narratives, bounded cell matching, the other 70 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
   "cityPlans": {
@@ -649,7 +649,9 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/implementation.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/implementation.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/n07-review.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/n08-refinement.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/r12-review.json"
         ]
       },
       {
@@ -130420,11 +130422,12 @@
         "original": {
           "sequence": "Hauptleiste → Open",
           "options": null,
-          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Die Ausgangs- und die ausgewählte Kartendatei bleiben bytegleich. Nur eine Karte mit synthetischer Eingabe geprüft; Cancel, Dateifilter und Open Recent bleiben offen.",
+          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Escape schließt den Dialog ohne Änderung der leeren Karte. Der Dialogprozess setzt den Filter *.dungeondraft_map; dessen Annahme-/Ablehnungswirkung ist ungeprüft. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich. Synthetische Eingabe; Open Recent bleibt offen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o04-20261009/evidence/native-open-cancel-result.json"
           ]
         },
         "target": "Nach Originalmessung offen: „Open“ öffnet eine zuvor gespeicherte eigene Karte mit ihren Inhalten.",
@@ -130522,14 +130525,15 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "partial_terrain_save_draft_reopen_and_clean_repeat_save_independent_review_passed",
+          "state": "partial_terrain_save_draft_reopen_repeat_save_and_disk_transaction_recovery_independent_review_passed",
           "build": "main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json"
           ],
-          "gap": "Ein sichtbarer Terrain-Save mit 36 Zellen/fünf Kinddateien und frischer 37-Zellen-Draft-/Ctrl+S-Folge ist eng belegt. Ein zweiter sichtbarer Atlas-Save ohne Bearbeitung erhielt alle sechs gespeicherten Dateien bytegleich und den Editorzustand. City-/Dungeon-Kinder, harter Prozessabbruch mit Journal-Recovery, Open Recent und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Ein sichtbarer Terrain-Save mit 36 Zellen/fünf Kinddateien und frischer 37-Zellen-Draft-/Ctrl+S-Folge ist eng belegt. Ein zweiter sichtbarer Atlas-Save ohne Bearbeitung erhielt alle sechs gespeicherten Dateien bytegleich und den Editorzustand. Ein getrennter Platten-FileStore-Test belegt harte Prozessabbrüche an zehn CAS-Grenzen mit frischer Recovery für fünf echte Terrainkinddateien, Welt und gültigen Draft, einschließlich externem Drittwertkonflikt. Der Obsidian-Adapter, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -131780,11 +131784,12 @@
         "original": {
           "sequence": "Dateiablauf > Open → Eigene gespeicherte Karte öffnen",
           "options": null,
-          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich. Nur eine gültige Karte geprüft; Cancel und Dateifilter bleiben offen.",
+          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. In einem getrennten leeren Kartenlauf schließt Escape den Dialog ohne Kartenänderung; der Dialogprozess setzt den Filter *.dungeondraft_map, dessen Annahme-/Ablehnungswirkung ungeprüft ist. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o04-20261009/evidence/native-open-cancel-result.json"
           ]
         },
         "target": "Nach Originalmessung offen: „Eigene gespeicherte Karte öffnen“ führt den sichtbaren Datei- oder Verwaltungsablauf im passenden Kartenzustand aus.",

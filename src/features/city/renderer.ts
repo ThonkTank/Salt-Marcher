@@ -64,12 +64,47 @@ function area(
   }
   outline(context, shape.polygon, project);
 }
+/** Measure an affine radius vector with a representable local displacement, never p+radius. */
+function radiusVector(
+  origin: Point,
+  center: Point,
+  axis: "x" | "y",
+  radius: number,
+  project: Project,
+): Point {
+  const step = Math.max(
+    1,
+    radius,
+    Math.abs(origin[axis]) * Number.EPSILON * 16,
+  );
+  let coordinate = origin[axis] + step;
+  if (!Number.isFinite(coordinate)) coordinate = origin[axis] - step;
+  const delta = coordinate - origin[axis];
+  if (!Number.isFinite(delta) || delta === 0)
+    throw new Error("Straßenprobe ist numerisch nicht darstellbar.");
+  const probe = cityInputPoint(
+    project(cityInputPoint({ ...origin, [axis]: coordinate })),
+  );
+  const ratio = radius / delta;
+  const vector = cityInputPoint({
+    x: (probe.x - center.x) * ratio,
+    y: (probe.y - center.y) * ratio,
+  });
+  if (vector.x === 0 && vector.y === 0)
+    throw new Error("Straßenradius ist in der Projektion nicht auflösbar.");
+  return vector;
+}
 function road(
   context: GraphicsContext,
   shape: Extract<CityShape, { kind: "road" }>,
   project: Project,
 ) {
   const radius = shape.widthMeters / 2;
+  if (!(radius > 0))
+    throw new Error("Straßenradius ist numerisch nicht darstellbar.");
+  const centers = shape.points.map((point) => cityInputPoint(project(point)));
+  const x = radiusVector(shape.points[0]!, centers[0]!, "x", radius, project);
+  const y = radiusVector(shape.points[0]!, centers[0]!, "y", radius, project);
   for (let i = 1; i < shape.points.length; i++) {
     const a = shape.points[i - 1]!,
       b = shape.points[i]!;
@@ -78,36 +113,29 @@ function road(
       length = Math.hypot(dx, dy);
     if (!Number.isFinite(length) || length === 0)
       throw new Error("Straßensegment ist numerisch nicht darstellbar.");
-    const x = (-dy / length) * radius,
-      y = (dx / length) * radius;
+    const nx = -dy / length,
+      ny = dx / length;
+    const offset = cityInputPoint({
+      x: nx * x.x + ny * y.x,
+      y: nx * x.y + ny * y.y,
+    });
+    const first = centers[i - 1]!,
+      last = centers[i]!;
     ring(
       context,
       [
-        cityInputPoint({ x: a.x + x, y: a.y + y }),
-        cityInputPoint({ x: b.x + x, y: b.y + y }),
-        cityInputPoint({ x: b.x - x, y: b.y - y }),
-        cityInputPoint({ x: a.x - x, y: a.y - y }),
+        cityInputPoint({ x: first.x + offset.x, y: first.y + offset.y }),
+        cityInputPoint({ x: last.x + offset.x, y: last.y + offset.y }),
+        cityInputPoint({ x: last.x - offset.x, y: last.y - offset.y }),
+        cityInputPoint({ x: first.x - offset.x, y: first.y - offset.y }),
       ],
-      project,
+      (point) => point,
     ).fill(colors.road);
   }
-  for (const p of shape.points) {
-    const center = cityInputPoint(project(p));
-    const x = cityInputPoint(
-      project(cityInputPoint({ x: p.x + radius, y: p.y })),
-    );
-    const y = cityInputPoint(
-      project(cityInputPoint({ x: p.x, y: p.y + radius })),
-    );
-    const a = x.x - center.x,
-      b = x.y - center.y,
-      c = y.x - center.x,
-      d = y.y - center.y;
-    if (![a, b, c, d].every(Number.isFinite))
-      throw new Error("Straßenprojektion ist numerisch nicht darstellbar.");
+  for (const center of centers) {
     context
       .save()
-      .setTransform(a, b, c, d, center.x, center.y)
+      .setTransform(x.x, x.y, y.x, y.y, center.x, center.y)
       .circle(0, 0, 1)
       .fill(colors.road)
       .restore();
