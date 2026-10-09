@@ -3675,17 +3675,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I15-I",
-      "kind": "reference_operation_probe",
-      "startedAt": "2026-10-09T12:56:00.648423+00:00",
-      "focus": "Weitere Warp-Werkzeuge direkt prüfen",
-      "state": "completed",
-      "result": "Sieben weitere Werkzeugfolgen direkt teilbelegt; Rotate ganze Stadt/Küste/Fluss, Measure96m; alle Entwürfe verworfen, Testkopie geschlossen; keine eigene Parität"
-    },
-    "nextRun": {
       "id": "CITY-00-I15-R",
       "kind": "requirements_review",
-      "focus": "Unterschiedliche Werkzeugwirkungen gegen Plan prüfen"
+      "startedAt": "2026-10-09T12:56:34.266431+00:00",
+      "focus": "Unterschiedliche Werkzeugwirkungen gegen Plan prüfen",
+      "state": "completed",
+      "result": "29 Rohframes konsistent; I15-R01: globale Drehung/Messoverlay von lokalen Geometriebefehlen unterscheiden; eigene Parität bleibt offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I15-CP",
+      "kind": "cleanup_planning",
+      "focus": "Wirkungsrollen und geplante gemeinsame Befehle präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
