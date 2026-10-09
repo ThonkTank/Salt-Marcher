@@ -48,6 +48,15 @@
       "review": "Exact plan source 0497661e21848fd16454b088ffe4aa1230bc62d9 passed an independent read-only recheck with no remaining mandatory finding.",
       "limits": "Plan evidence only. ADR-P01 through ADR-P04, ADR-C01, device-owner receipts, cloud reviews and the separate distribution, extension, audio/background-work and three-option evidence remain open."
     },
+    "p01BoundaryRepair": {
+      "date": "2026-10-09",
+      "state": "first_candidate_no_go_product_repair_planned",
+      "plan": "ROADMAP-SALTMARCHER-P01-RENDERER-REPAIR-PLAN.md",
+      "candidateBranch": "candidate/adr-p01-linux",
+      "candidateReceipt": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "finding": "Renderer import graph reaches node:buffer and pngjs through src/textures.ts; prototype build must also resolve the existing worker alias without changing product source.",
+      "next": "Browser-native PNG decode as a separate product repair, then a fresh P01 candidate and independent review; P01 remains open."
+    },
     "open": [
       "Executable ADR-P01 through ADR-P04 and ADR-C01 proof, review, repair and cleanup runs",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
