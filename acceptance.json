@@ -152295,9 +152295,12 @@
     "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
-      "state": "open",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084269776",
-      "scope": "Viewport/render only, after completed cleanup; no camera/gesture/hex change planned."
+      "state": "resolved_observed_failure_app_reload_only",
+      "cause": "Stale installed styles.css; main.js and manifest were current. No product source repair.",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084884147",
+      "review": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json",
+      "cloudFreshProcess": "not_verified",
+      "limits": "Empty grid layout/zoom/fit only; filled terrain, full Atlas/parity/physical/large map remain open."
     }
   }
 }
