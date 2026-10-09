@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:21:16.277352+00:00",
+    "updated": "2026-10-09T12:22:45.683186+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1868,20 +1868,23 @@
         "id": "CO-FTG-0015",
         "product": "Fantasy Town Generator",
         "feature": "Manuelle Kartenbearbeitung",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
         "observedAt": "2026-10-09T12:21:16.277352+00:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "own_temporary_settlement_manual_roads_and_move_access_confirmed_full_scope_open",
         "observationKind": "direct_partial_effect",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json"
         ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
         "caseIds": [
-          "CTY-003.01"
+          "CTY-003.01",
+          "CTY-002.01",
+          "CTY-002.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1923,7 +1926,8 @@
               "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
             ]
           }
-        ]
+        ],
+        "documentationSource": "https://docs.fantasytowngenerator.com/"
       },
       {
         "id": "CO-FTG-0016",
