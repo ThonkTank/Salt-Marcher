@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I34-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:36:38.831611+00:00",
-      "focus": "Maximum-Belege CR",
-      "state": "completed",
-      "result": "Snapshot und acceptance stimmen; echte Downloadkopien, Rohhashes und Inventarbelegziele bestätigt.64 CO-/24 CTY-Pflichten offen. Eigener Tab geschlossen, Default angewendet/rückgestellte Datei bytegleich. Aufräumumfang ohne Restbefund. Als nächstes frühe Feature-/Größenpflichtlücken priorisieren oder nach geprüfter HEX-05-Übergabe CITY-01 beginnen."
-    },
-    "nextRun": {
       "id": "CITY-00-I35-P",
       "kind": "reference_planning",
-      "focus": "Frühe Größen-/Featurepflichten planen; HEX-05 prüfen"
+      "startedAt": "2026-10-09T15:37:40.456491+00:00",
+      "focus": "Small-Größenwahl",
+      "state": "completed",
+      "result": "Kontrollierter eigener Größen-/Seed-/Ausgabevergleich geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I35-I",
+      "kind": "reference_implementation",
+      "focus": "Small und sichtbaren Rückweg prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
