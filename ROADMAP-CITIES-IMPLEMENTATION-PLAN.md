@@ -774,3 +774,6 @@ CITY-01-PREP-DRAFT-PLAN-CLEAN-P05 Start 2026-10-09T17:40:53.561548+00:00; Planre
 
 
 CITY-01-PREP-DRAFT-PLAN-CLEAN-I05 Start 2026-10-09T17:41:43.653837+00:00; Plan führt bestätigte begrenzte Sync-Subscriberreparatur ohne öffentliche API-/Reihenfolgenänderung. nullPreview entfernt nur Overlay und liest aktuellen Source, never beforeRestore. Bearbeitbarkeitsprüfung vor Updatecatch erhält terminale Zustände; Router gibt terminale Draftreferenz frei, Core hat keine Listener/Timer/Capture. Keine Laufzeitänderung; finaler Planreview folgt.
+
+
+CITY-01-PREP-DRAFT-PLAN-CLEAN-R05 Start 2026-10-09T17:42:37.244058+00:00; Finaler Draftplan gegen fünf aktuelle Quellen und konkrete Postcommit-Observerprobe geprüft. Einmaliger before, eine validierte document/scene-Vorschau, clearPreview/unvollständige Kontur, terminale Zustände, Cancel ohne Restore und ein History-Apply eindeutig. Hex-Besitzer bestätigt notify-Reparatur im I05-Paket; keine parallele Dateiarbeit. Sync-Fehlerdiagnose und weitere Subscriber sowie echte Terrain-/Cityfälle geplant. JSON/Links/fremde Roots gültig,24CTY/65CO erhalten. Kein Restbefund im Plan-Aufräumen; Observerlücke noch nicht repariert, keine Produkt-/Hostfreigabe. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/plan-review.json. I05 implementiert nun den abgestimmten Draft-/Observervertrag.
