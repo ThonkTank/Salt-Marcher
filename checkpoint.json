@@ -270,13 +270,13 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "reference_r02_host_recheck_pending",
+    "state": "reference_review_passed_cleanup_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
       "kind": "review",
       "startedAt": "2026-10-09T15:53:38.991845+02:00",
       "baseCommit": "7f43d7e152671fbd96b59a134016033d71829a50",
-      "state": "reference_passed_host_recheck_pending",
+      "state": "passed",
       "focus": "Six R01 findings,681 native surfaces,13 early scoped cases; critical original replay/fresh open and changed-build kernel host",
       "id": "HEX-00-R02",
       "evidence": [
@@ -284,29 +284,30 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/catalog-reviewed.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/r02-clean-basis.json"
-      ]
+      ],
+      "endedAt": "2026-10-09T16:44:38.156626+02:00"
     },
     "nextRun": {
       "id": "HEX-00-CLEAN-P01",
       "kind": "cleanup_plan",
       "focus": "RFB input/shot preflight C01 and evidence/process reproducibility; then implementation and own cleanup review",
-      "gate": "Only after actual passed R02. HEX01..05 remain immediate next product work after cleanup."
+      "gate": "R02 reference and its own base7f43/build346 kernel passed. C01 is GUI-free helper validation; integrated19d kernel remains explicit separate obligation."
     },
     "review": {
-      "state": "passed_reference_scope",
+      "state": "passed",
       "run": "HEX-00-R02",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
       ],
       "findings": [],
-      "next": "Own reference review passed; new integrated build core host pending before run closes and cleanup starts."
+      "next": "Reference and own kernel346 on R02 base7f43 passed. C01 cleanup next; later incoming19d kernel remains separate integration recheck."
     },
     "cleanup": {
       "state": "not_started",
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
     "open": [
-      "New integrated build19d89351 core Save/fresh host recheck pending native slot return.",
+      "Incoming build19d89351 kernel recheck is separate from completed R02 base7f43/build346; pending CITY GUI release.",
       "C01 own cleanup plan/implementation/review before HEX01.",
       "79 later Wonderdraft effect/host/physical obligations retained; full parity unapproved.",
       "HEX01..05 boundless shared editable atlas is next product work; CITY01 depends on the common atlas handoff."
