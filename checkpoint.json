@@ -4512,17 +4512,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I44-IMPL-CLEAN-R44",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:16:12.773682+00:00",
-      "focus": "IMPL-CLEAN-R: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
-      "state": "completed",
-      "result": "Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I44-R44",
       "kind": "review",
-      "focus": "Korrigierten Katalog unabhängig gegen AX und Originalmanifest prüfen"
+      "startedAt": "2026-10-09T19:16:20.862788+00:00",
+      "focus": "R: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
+      "state": "completed",
+      "result": "Zuordnungsreview bestanden: Profil/Beziehungen und Uhrzeit aus AX bestätigt; I18 erhalten, Scope/IDs/Produktabnahmen unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I44-REVIEW-CLEAN-P44",
+      "kind": "cleanup_plan",
+      "focus": "Abgeschlossene Zuordnung und offene Originalprüfungen dokumentieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
