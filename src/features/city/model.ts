@@ -31,6 +31,7 @@ export interface CityBuilding {
   readonly footprint: Polygon;
   readonly position: Point;
   readonly rotationRadians: number;
+  /** Positive dimensionless axis factors; these are not meter coordinates. */
   readonly scale: Point;
   readonly plotId?: string;
 }
