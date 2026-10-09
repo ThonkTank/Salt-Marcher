@@ -457,3 +457,7 @@ CITY-00-I27-CP Start 2026-10-09T14:58:45.971880+00:00; Plan: CO-WAT-0004 im abge
 CITY-00-I27-CI Start 2026-10-09T14:59:17.271931+00:00; Ergebnis: CO-WAT-0004-Snapshot enthält Waldwirkung und bytegleiche Ausgabe, frühere Baumwirkung erhalten. Keine persistente Waldgeometrie oder eigene Produktfreigabe behauptet.
 
 CITY-00-I27-CR Start 2026-10-09T14:59:46.504135+00:00; Ergebnis: Snapshot/acceptance stimmen, Rohhashes und Manifestziele vorhanden,64 CO-/24 CTY-Pflichten erhalten. Flags wiederhergestellt, eigene Browserkopie geschlossen; Aufräumumfang ohne weiteren Befund. Kollege bestätigt Kern19d Save/Frischstart und hält nativen Slot für aktuellen Renderer-Kern und HEX-01. Nächste eigene getrennte Referenzplanung: Dächer/Vierteldarstellung, keine Wiederholung der gestoppten Undo-/Export-/Resident-Hypothesen.
+
+## CITY-00-I28-P: Dachdetails und Vierteldarstellung
+
+Start 2026-10-09T15:00:29.782588+00:00. Eigene New-River-Kopie öffnen; aktuelle sichtbare Buildings-/Graphics-/Elements-Vorgaben lesen. Je eine angebotene Dachdetail- und Vierteländerung mit vor/nach Screenshot prüfen; nur sichtbare Optionen verwenden. Eigene Flags/Parameter zurücksetzen, eigene Kopie schließen und Originaltabs erhalten. Keine interne Appgeometrie oder Persistenz aus Darstellung ableiten. Zwei erfolglose Versuche je Hypothese maximal; nur tatsächlich beobachtete Wirkung dokumentieren. Nativer Slot beim Hex-Kollegen. Danach I/R und Aufräumen P/I/R getrennt.
