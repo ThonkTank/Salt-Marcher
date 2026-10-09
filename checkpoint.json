@@ -4051,17 +4051,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I32-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:27:12.598540+00:00",
-      "focus": "Generationsbelege R",
-      "state": "completed",
-      "result": "Drei tatsächliche Downloadkopien und sämtliche Rawhashes bestätigt. Kontroll-Rebuild und Greens-Rebuild haben13 Gruppen, nicht14 wie ursprüngliche Küstenkarte. Nur buildings/fields/districts geändert; greens leer/wertgleich. Sichtbare Controls08 wieder aus, eigene Kopie geschlossen. Rebuild ist keine lokale Erhaltungsabnahme. Aufräumbefund: Snapshot CO-WAT-0001 noch unspezifisch partial."
-    },
-    "nextRun": {
       "id": "CITY-00-I32-CP",
       "kind": "cleanup_planning",
-      "focus": "Generationsbelege und Snapshot CP"
+      "startedAt": "2026-10-09T15:27:23.327234+00:00",
+      "focus": "Generationsbelege CP",
+      "state": "completed",
+      "result": "Plan: abgeleiteten CO-WAT-0001-Snapshot mit kontrolliertem Rebuild-Umfang und leerer Greens-Gruppe ergänzen. Belege unverändert erhalten;13-Gruppenvergleich, Downloadkopien, Hashes,64/24 offene Pflichten und fremde JSON-Wurzeln prüfen. Keine eigene Umsetzung aus Originalprobe ableiten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I32-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Generationsbelege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
