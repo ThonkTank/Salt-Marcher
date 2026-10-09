@@ -68,6 +68,7 @@ import { ObjectLibraryPanel } from "./features/objekte/object-library-panel";
 import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./features/objekte/object-gestures";
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
+import { buildingWearMode, type BuildingWearMode } from "./features/material/native-path-catalog";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -366,6 +367,8 @@ export class DungeonEditor {
   private propertiesHost: HTMLElement;
   private selectionPanel: HTMLDetailsElement;
   private floorPanel: HTMLDetailsElement;
+  private mapSettingsPanel: HTMLElement;
+  private wearButtons = new Map<BuildingWearMode, HTMLButtonElement>();
   private generatorPanel: HTMLElement;
   private emptyPanel: HTMLElement;
   private keyDock: HTMLElement;
@@ -637,6 +640,18 @@ export class DungeonEditor {
       floorControls,
     );
     this.compare.addEventListener("change", () => this.applyComparison());
+    this.mapSettingsPanel = element("section", "dn-wear-panel", this.inspector);
+    element("h3", "", this.mapSettingsPanel, "Building Wear");
+    const wearGallery = element("div", "dn-wear-gallery", this.mapSettingsPanel);
+    for (const mode of ["none", "dust", "grime", "noise", "scratched"] as const) {
+      const choice = this.button(mode.toUpperCase(), () => this.run(() => {
+        this.session.setBuildingWearMode(mode);
+      }), wearGallery);
+      choice.classList.add("dn-wear-choice", "is-" + mode);
+      choice.setAttribute("aria-label", "Building Wear: " + mode.toUpperCase());
+      this.wearButtons.set(mode, choice);
+    }
+    this.refreshBuildingWear();
     this.generatorPanel = element("section", "dn-generator-panel", this.inspector);
     const generatorControls = element("div", "dn-menu-content", this.generatorPanel);
     const modeName = "dn-generator-mode-" + uid();
@@ -778,7 +793,10 @@ export class DungeonEditor {
     this.buildNavigation();
     this.unsub = session.subscribe((e) => {
       if (e.floors) this.refreshFloors();
-      if (e.settings) this.objectLibrary.refreshAssets();
+      if (e.settings) {
+        this.objectLibrary.refreshAssets();
+        this.refreshBuildingWear();
+      }
       this.refresh();
       if (this.notePath && e.notes.has(this.notePath)) this.refreshText();
       const missingSelection = [...this.selection].some(
@@ -917,7 +935,8 @@ export class DungeonEditor {
         ["objects", "Objekte", "shapes", "object"],
         ["lighting", "Beleuchtung", "sun", "light"],
         ["content", "Inhalte", "book-open-text", "key"],
-        ["dungeon", "Dungeon", "settings", "floors"],
+        ["dungeon", "Dungeon", "layers-3", "floors"],
+        ["settings", "Einstellungen", "settings", "map-settings"],
       ] as const,
       tools = [
         ["selection", "select", "Auswahl", "mouse-pointer-2"],
@@ -951,6 +970,10 @@ export class DungeonEditor {
           this.showGroup(id);
           this.toggleKey(false);
           this.showPanel("floors", "Geschosse");
+        } else if (entry === "map-settings") {
+          this.showGroup(id);
+          this.toggleKey(false);
+          this.showPanel("map-settings", "Karteneinstellungen");
         } else this.setTool(entry as Tool);
       });
       button.dataset.navigationGroup = id;
@@ -1004,6 +1027,11 @@ export class DungeonEditor {
       this.toggleKey(false);
       this.showPanel("floors", "Geschosse");
     });
+    panelButton("settings", "map-settings", "Karteneinstellungen", "settings", () => {
+      this.showGroup("settings");
+      this.toggleKey(false);
+      this.showPanel("map-settings", "Karteneinstellungen");
+    });
     if (this.host.manageMap)
       panelButton("dungeon", "map", "Einstellungen", "settings", () => {
         this.showGroup("dungeon");
@@ -1048,7 +1076,7 @@ export class DungeonEditor {
     this.showPanel("generator", "Kartenassistent");
   }
   private showPanel(
-    panel: "properties" | "floors" | "content" | "generator",
+    panel: "properties" | "floors" | "content" | "generator" | "map-settings",
     title: string,
   ): void {
     this.optionTitle.textContent = title;
@@ -1057,6 +1085,7 @@ export class DungeonEditor {
       panel !== "properties" || this.tool !== "select";
     this.prefabPanel.hidden = panel !== "properties" || this.tool !== "prefab";
     this.floorPanel.hidden = panel !== "floors";
+    this.mapSettingsPanel.hidden = panel !== "map-settings";
     this.generatorPanel.hidden = panel !== "generator";
     this.emptyPanel.hidden = panel !== "content";
     this.emptyPanel.textContent =
@@ -1066,8 +1095,17 @@ export class DungeonEditor {
     for (const [id, button] of this.panelButtons) {
       const active =
         (panel === "floors" && id === "floors") ||
+        (panel === "map-settings" && id === "map-settings") ||
         (panel === "generator" && id === "generator") ||
         (panel === "content" && id === "key" && !this.keyDock.hidden);
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+  }
+  private refreshBuildingWear(): void {
+    const selected = buildingWearMode(this.session.settings);
+    for (const [mode, button] of this.wearButtons) {
+      const active = mode === selected;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
     }

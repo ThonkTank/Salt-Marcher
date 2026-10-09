@@ -111867,6 +111867,20 @@
           ],
           "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
           "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "buildSha256": "3c88c9a2f4000ffc455b5aa590f587b8c21b69f69430af61eb5a5914c7db76a6",
+          "hostGesture": "Einstellungen → Karteneinstellungen → NONE → Speichern",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-none.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-none.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515622535-parity-tools-phase1-wear-reopen/result.json"
+          ],
+          "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
+          "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         }
       },
       {
@@ -111934,6 +111948,20 @@
           ],
           "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
           "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "buildSha256": "3c88c9a2f4000ffc455b5aa590f587b8c21b69f69430af61eb5a5914c7db76a6",
+          "hostGesture": "Einstellungen → Karteneinstellungen → DUST → Speichern",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-dust.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-dust.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515622535-parity-tools-phase1-wear-reopen/result.json"
+          ],
+          "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
+          "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         }
       },
       {
@@ -112001,6 +112029,20 @@
           ],
           "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
           "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "buildSha256": "3c88c9a2f4000ffc455b5aa590f587b8c21b69f69430af61eb5a5914c7db76a6",
+          "hostGesture": "Einstellungen → Karteneinstellungen → GRIME → Speichern",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-grime.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-grime.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515622535-parity-tools-phase1-wear-reopen/result.json"
+          ],
+          "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
+          "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         }
       },
       {
@@ -112068,6 +112110,20 @@
           ],
           "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
           "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "buildSha256": "3c88c9a2f4000ffc455b5aa590f587b8c21b69f69430af61eb5a5914c7db76a6",
+          "hostGesture": "Einstellungen → Karteneinstellungen → NOISE → Speichern",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-noise.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-noise.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515622535-parity-tools-phase1-wear-reopen/result.json"
+          ],
+          "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
+          "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         }
       },
       {
@@ -112136,6 +112192,20 @@
           ],
           "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; nach frischem Originalstart erneut markiert und Rohkarte bytegleich.",
           "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "buildSha256": "3c88c9a2f4000ffc455b5aa590f587b8c21b69f69430af61eb5a5914c7db76a6",
+          "hostGesture": "Einstellungen → Karteneinstellungen → SCRATCHED → Speichern",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-scratched.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515597613-parity-tools-phase1-wear-edit/wear-scratched.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-final-20261009/evidence/1791515622535-parity-tools-phase1-wear-reopen/result.json"
+          ],
+          "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save und frischer Hoststart mit markierter Wahl und bytegleicher V4-Karte.",
+          "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         }
       },
       {

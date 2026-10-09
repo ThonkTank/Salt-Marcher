@@ -284,6 +284,31 @@ export class Session {
       rulesRevision: this.rulesRevision, label: "Objektpalette ändern",
     });
   }
+  /** Map Settings applies Building Wear immediately without an Undo step. */
+  setBuildingWearMode(mode: NonNullable<Settings["buildingWearMode"]>): void {
+    this.assertMutable();
+    const update = (settings: Settings): Settings => ({ ...settings,
+      buildingWearMode: mode, nativeBuildingWear: mode !== "none" });
+    const next = immutable(update(this.stateSettings));
+    validateSettings(next);
+    if (JSON.stringify(next) === JSON.stringify(this.stateSettings)) return;
+    const rebase = (command: Command): Command => command.settings
+      ? immutable({ ...command, settings: {
+          before: update(command.settings.before),
+          after: update(command.settings.after),
+        } })
+      : command;
+    this.past = this.past.map(rebase);
+    this.future = this.future.map(rebase);
+    this.stateSettings = JSON.stringify(next) === JSON.stringify(this.savedSettings)
+      ? this.savedSettings : next;
+    this.revision++;
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: true, content: false, revision: this.revision,
+      rulesRevision: this.rulesRevision, label: "Gebäudeabnutzung ändern",
+    });
+  }
   setLockedMany(ids: Iterable<Id>, locked: boolean): void {
     this.assertMutable();
     const changes = [...new Set(ids)].map((id) => {

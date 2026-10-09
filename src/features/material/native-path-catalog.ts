@@ -1,4 +1,5 @@
 import type { AssetDefinition, BinarySource } from "../../assets";
+import type { Settings } from "../../model";
 import { parseObjectTags, type ObjectTagDocument } from "../objekte/object-tags";
 
 /** The locally inspected Dungeondraft 1.2.0.1 Linux resource archive. */
@@ -9,6 +10,23 @@ export const NATIVE_PATH_PACK_ID = "dungeondraft-builtin-1.2.0.1";
 export const NATIVE_FLOOR_GRIME_ID = [
   "pack", NATIVE_PATH_PACK_ID, "material", "res://textures/wear/grime.png",
 ].map(encodeURIComponent).join(":");
+export type BuildingWearMode = NonNullable<Settings["buildingWearMode"]>;
+const WEAR_MODES = ["dust", "grime", "noise", "scratched"] as const;
+export const NATIVE_BUILDING_WEAR_IDS = Object.fromEntries(
+  WEAR_MODES.map((mode) => [mode, [
+    "pack", NATIVE_PATH_PACK_ID, "material", `res://textures/wear/${mode}.png`,
+  ].map(encodeURIComponent).join(":")]),
+) as Record<(typeof WEAR_MODES)[number], string>;
+export function buildingWearMode(settings: Pick<Settings,
+  "buildingWearMode" | "nativeBuildingWear">): BuildingWearMode {
+  return settings.buildingWearMode ??
+    (settings.nativeBuildingWear === false ? "none" : "grime");
+}
+export function buildingWearAssetId(settings: Pick<Settings,
+  "buildingWearMode" | "nativeBuildingWear">): string {
+  const mode = buildingWearMode(settings);
+  return NATIVE_BUILDING_WEAR_IDS[mode === "none" ? "grime" : mode];
+}
 /** Door texture used by the original anchored-door map. */
 export const NATIVE_PORTAL_DOOR_00_ID = [
   "pack", NATIVE_PATH_PACK_ID, "portal", "res://textures/portals/door_00.png",
@@ -294,7 +312,9 @@ export async function readNativePathCatalog(
   };
   for (const key of FLOOR_ORDER) floors.push(await design("tileset", key));
   for (const key of WALL_ORDER) walls.push(await design("wall", key));
-  await imageDetails("res://textures/wear/grime.png", NATIVE_FLOOR_GRIME_ID);
+  for (const mode of WEAR_MODES)
+    await imageDetails(`res://textures/wear/${mode}.png`,
+      NATIVE_BUILDING_WEAR_IDS[mode]);
   const doorPath = "res://textures/portals/door_00.png";
   await imageDetails(doorPath, NATIVE_PORTAL_DOOR_00_ID);
   portals.push({ id: NATIVE_PORTAL_DOOR_00_ID,
