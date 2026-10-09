@@ -416,23 +416,23 @@
     "state": "native_island_copy_discard_checked_review_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01d",
-      "kind": "implementation_host",
-      "startedAt": "2026-10-09T18:19:50.513518+00:00",
-      "state": "checked_native_implementation_review_pending",
-      "focus": "Copy snapshot into new world ID/native namespace without changing original; explicit discard restores saved source in same camera; abort/A↔B/fresh native tests.",
-      "finishedAt": "2026-10-09T18:52:26.835222+00:00",
-      "result": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-02-R01",
       "kind": "independent_review",
-      "focus": "Complete native island/copy/discard lifecycle, storage conflicts and visible controls, then own CLEAN-P/I/R."
+      "startedAt": "2026-10-09T18:54:25.577722+00:00",
+      "state": "requested_read_only",
+      "focus": "Independent exact c9e37ec complete early island Copy/Discard/lifecycle/storage review; original/host claims and crash/create coverage separate; no HEX03 product before findings/re-review/CLEAN."
+    },
+    "nextRun": {
+      "id": "HEX-02-N01-or-CLEAN-P01",
+      "kind": "review_result_dependent",
+      "focus": "Repair every required finding then independent re-review; if none, bounded separate cleanup plan/implementation/review before HEX03."
     },
     "review": {
-      "run": "HEX-01-R01",
-      "state": "passed_scoped",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+      "run": "HEX-02-R01",
+      "state": "requested_read_only",
+      "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+      "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
+      "scope": "Complete early HEX02 source + focused tests; native proofs separately referenced. No phase/overall Go."
     },
     "cleanup": {
       "run": "HEX-01-CLEAN-R01",
