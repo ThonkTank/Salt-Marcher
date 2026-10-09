@@ -945,3 +945,5 @@ CITY-00-I44-I44 Start 2026-10-09T19:15:52.464620+00:00; Falsche Personen-/Zeitbe
 CITY-00-I44-IMPL-CLEAN-P44 Start 2026-10-09T19:16:04.867958+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
 
 CITY-00-I44-IMPL-CLEAN-I44 Start 2026-10-09T19:16:08.585729+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
+
+CITY-00-I44-IMPL-CLEAN-R44 Start 2026-10-09T19:16:12.773682+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
