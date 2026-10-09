@@ -107,7 +107,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_plan_drafted_review_pending_ce01_physical_open",
+    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
@@ -268,10 +268,11 @@
     "ce02Plan": {
       "id": "CE-02-P01",
       "kind": "feature_plan",
-      "state": "drafted_review_pending",
+      "state": "passed_implementation_pending",
       "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
       "result": "Defines one seven-section state-retaining catalog shell, typed read-only owner providers, sequential delivery for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables, and honest unavailable states until each owner is real.",
-      "limits": "Plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
+      "review": "CE-02-P01-R01 passed independently on exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
+      "limits": "Reviewed plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
     },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-N01 passes 247 tests and all three automated real-host scenarios on exact clean SHA c1582b3; R02 closed the cleanup gate. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
@@ -280,10 +281,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-P01-R01",
-      "kind": "feature_plan_review",
+      "id": "CE-02-I01",
+      "kind": "implementation",
       "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "focus": "Independently review the seven-section state/provider plan, sequential owner delivery, honest unavailable boundaries, host gates and cleanup before CE-02-I01"
+      "focus": "Implement only the reviewed seven-section shell/state/provider boundary with the existing Monster provider and six honest unavailable providers"
     }
   },
   "repositoryWorkflow": {

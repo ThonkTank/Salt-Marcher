@@ -97,8 +97,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:29:37Z",
-    "state": "ce02_plan_drafted_review_pending_ce01_physical_open",
+    "updated": "2026-10-09T15:31:16Z",
+    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -423,13 +423,14 @@
       "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
     },
     "ce02Plan": {
-      "run": "CE-02-P01",
-      "state": "drafted_review_pending",
+      "run": "CE-02-P01-R01",
+      "state": "passed_implementation_pending",
       "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
       "result": "Plans one state-retaining seven-section shell with typed read-only owner providers and separate implementation/review packages for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
-      "limits": "Planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
+      "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
+      "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
     },
-    "next": "Independently review ROADMAP-SALTMARCHER-CE02-PLAN.md before CE-02-I01. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "next": "Implement and independently review only CE-02-I01, retaining one real Monster provider and six explicit unavailable providers. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,
