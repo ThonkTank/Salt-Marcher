@@ -147,8 +147,9 @@ Das ist ein Endanwenderbefund zur Suchbarkeit, keine Produktlatenz: Such-/CDP-Wa
 
 **Folgearbeitsstand:** Die hostneutrale Implementierung `GM-UX-N-005-I02`
 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review auf
-`84440f161914b985acbfd23fbd79cb51bd1e6360`; 353/353 Basistests, Typprüfung
-und Build sind grün. Dieser Stand schließt den Testerbefund nicht: der getrennte
+`84440f161914b985acbfd23fbd79cb51bd1e6360`; nach Shared-Integration auf
+`b8beed18e7f1553bfd5c37192769f2d43ff65b0b` sind 365/365 Basistests,
+Typprüfung und Build grün. Dieser Stand schließt den Testerbefund nicht: der getrennte
 Produktreview, der obige exakte Nebelwacht-Reproduktionslauf im isolierten
 Cloud-Host und der unabhängige GM-Nachtest bleiben offen.
 

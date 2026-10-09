@@ -196,7 +196,9 @@ ergänzte den gemeinsamen Aktivierungskoordinator samt View-/Sessionorakeln. Der
 Nachreview fand noch direkte Einfügen-/Löschen-Auswahlpfade; Reparatur
 `84440f161914b985acbfd23fbd79cb51bd1e6360` schloss sie und bestand den
 abschließenden read-only Review. Frisch bestanden: sechs fokussierte serielle
-DOM-/Editorfälle, `npm run check`, `npm test` mit 353/353 und `npm run build`.
+DOM-/Editorfälle. Nach Integration des aktuellen Shared-Stands bestanden auf
+`b8beed18e7f1553bfd5c37192769f2d43ff65b0b` außerdem `npm run check`,
+`npm test` mit 365/365 und `npm run build`.
 
 Damit sind I01 und I02 implementiert und reviewt. Der getrennte Produktreview
 `GM-UX-N-005-R01`, der exakt beschriebene Nebelwacht-Cloud-Hostlauf H01 und der
