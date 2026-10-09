@@ -78,7 +78,8 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/catalog-partial.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/catalog-complete-strict.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/core-host-continuity.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/core-host-continuity.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json"
       ],
       "finishedAt": "2026-10-09T10:30:10.741701+02:00",
       "result": "14 frühe Regions-/Labels-Zahlenfragen direkt geklärt, acht Slider separat; vier Label-Controltypen korrigiert.104 Originalframes/normaler Ausgang0; 49 geschützte Dateien erhalten.56 frühe Fragen/R02/Aufräumen bleiben offen."
@@ -133,20 +134,20 @@
       "productBuildSha256": "d7c47ec29ea089169e6a7ad39f00d78c080b9f1d5e8f2daebe7c9ad024759ef8",
       "integratedCommit": "b9a6aa444a581d450334a9defac8d7ccb3b1df3a",
       "host": "N-I12: eigene N-I11-Kern-Edit-/Neuöffnungsbelege erneut gelesen; Produkt-, Wonderdraft-, Build- und Kern-Hostquellen unverändert. Build d7c47ec2 identisch. Keine neue Host-/Hex-/Overworld-, Großkarten- oder physische Abnahme; Produktvault unverändert.",
-      "testProvenance": "N-I12 frisch:195 lokale Tests bestanden; Check/Build bestanden und identisch d7c47ec2. Veröffentlichten Baum vor Push separat prüfen; fremde Testpatches bleiben unveröffentlicht.",
+      "testProvenance": "N-I12 frisch:195 lokale Tests bestanden. Eigener veröffentlichbarer Quellbauma9c59b1:198 Tests,195 bestanden, dieselben drei fehlenden externen Fixture-Fälle. Check/Build in beiden Bäumen bestanden und identisch d7c47ec2; fremde Testpatches unveröffentlicht erhalten.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
         "tests": 198,
         "passed": 195,
         "failed": 3,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/integrated-final-checks.json"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json"
       },
       "catalog": "N-I12: 14 frühe Regions-/Labels-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider getrennt. Territory/Edit Width2..20, Opacity/Smoothing0..1, Sorting−10..10; Label Size8..1000/Outline und Glow0..32/Curvature−1..1/Spacing−512..512; Box Scale0.25..2. Edit tatsächlich mit eigenem QA-Dreieck aktiviert. Vier Label-Controltypen ausdrücklich zu number korrigiert.663 UI/83 Fälle und historische Quellen erhalten.56 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "b9a6aa444a581d450334a9defac8d7ccb3b1df3a",
-      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation. N-I10: 3da4a99/6daac0a normal in 5225673 integriert; Building-Innenlöcher erhalten native Bodenfelder. Basis frisch lokal 194/194 und veröffentlicht 194/197 mit bekannten drei fehlenden Fixtures, neuer Build d522bd25. Eigener Kern-Edit-/Neuöffnungslauf bestanden. Danach 63a30ac (Original-Punktbearbeitungsbefund/Plan) normal in ea3551b integriert; Produkt-/Test-/Validator-/Kern-Hostquellen und Wonderdraft-Wurzel unverändert gegenüber geprüftem 5225673. Eigene Roots und fremde lokale Änderungen erhalten; keine Vaultinstallation oder vollständige Hex-Abnahme. N-I11: 7e357df/9fd67b2/b9a6aa4 am Laufstart per Fast-forward integriert; native Building-Punktbearbeitung/Bodenübermalung/Wandstil. Eigene Wurzeln und fremde lokale Änderungen erhalten. Basis neu 195/195 und neuer Build d7c47ec2; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Vaultinstallation oder vollständige Hex-Abnahme.",
+      "testedProductCommit": "a9c59b18ffdaae428733cce57d436ec5884e42e6",
+      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation. N-I10: 3da4a99/6daac0a normal in 5225673 integriert; Building-Innenlöcher erhalten native Bodenfelder. Basis frisch lokal 194/194 und veröffentlicht 194/197 mit bekannten drei fehlenden Fixtures, neuer Build d522bd25. Eigener Kern-Edit-/Neuöffnungslauf bestanden. Danach 63a30ac (Original-Punktbearbeitungsbefund/Plan) normal in ea3551b integriert; Produkt-/Test-/Validator-/Kern-Hostquellen und Wonderdraft-Wurzel unverändert gegenüber geprüftem 5225673. Eigene Roots und fremde lokale Änderungen erhalten; keine Vaultinstallation oder vollständige Hex-Abnahme. N-I11: 7e357df/9fd67b2/b9a6aa4 am Laufstart per Fast-forward integriert; native Building-Punktbearbeitung/Bodenübermalung/Wandstil. Eigene Wurzeln und fremde lokale Änderungen erhalten. Basis neu 195/195 und neuer Build d7c47ec2; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Vaultinstallation oder vollständige Hex-Abnahme. N-I12: am Laufstart und vor Veröffentlichung abgerufen, keine neuen eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen, keine neue Hostabnahme oder Vaultinstallation.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/manifest.json",
         "sessions": 1,
@@ -469,7 +470,9 @@
         "localBasis": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/local-basis.json",
         "coreHostContinuity": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/core-host-continuity.json",
         "originalEffectApproval": false,
-        "phaseApproval": false
+        "phaseApproval": false,
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integrated-final-checks.json",
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/integration-preservation.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
