@@ -3736,17 +3736,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T13:35:59.890609+00:00",
-      "focus": "Zugangsbilder und Rohschutz planen",
+      "id": "CITY-00-I18-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T13:36:33.749046+00:00",
+      "focus": "Rohschutz und Belegumfang reviewen",
       "state": "completed",
-      "result": "Expliziten Fehler und ungeklärten Ladezustand getrennt beschriften; sichtbaren Schutzumfang begrenzen."
+      "result": "Aufräumreview bestanden; Bewohnerdetails weiterhin ungeprüft, Originaltabs erhalten. Keine Produktimplementierung oder Paritätsfreigabe."
     },
     "nextRun": {
-      "id": "CITY-00-I18-CI",
-      "kind": "cleanup_implementation",
-      "focus": "Caption-Ergänzung ohne Rohänderung umsetzen"
+      "id": "CITY-00-I19-P",
+      "kind": "reference_planning",
+      "focus": "HEX-05-Übergabe prüfen und nächste zugängliche Originalwirkung auswählen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
