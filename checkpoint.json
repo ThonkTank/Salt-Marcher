@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-N01-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:35:04.374590+00:00",
-      "focus": "Zwei Planreparaturen und Fremdschutz",
+      "id": "CITY-E2E-R02-RECEIPT",
+      "kind": "review_receipt",
+      "startedAt": "2026-10-09T21:40:00.212260+00:00",
+      "focus": "Veröffentlichten unabhängigen R02 zuordnen",
       "state": "completed",
-      "result": "Eigene Struktur-/JSON-/Verweis-/Diffprüfung PASS; beide R01-Punkte im Plan repariert, unabhängige R02 ausstehend."
+      "result": "Hex-R02 auf exakt 1de3cee PASS im Planscope, beide Befunde geschlossen. Planblob unverändert; gemeinsame Gates offen."
     },
     "nextRun": {
-      "id": "CITY-E2E-R02",
-      "kind": "independent_plan_review",
-      "focus": "Hex um unabhängigen Re-Review des exakten reparierten Kandidaten bitten; keine Selbstintegration oder isolierte GUIprobe."
+      "id": "CITY-E2E-R02-CLEAN-P",
+      "kind": "cleanup_planning",
+      "focus": "Receiptbindung und unveränderten geprüften Planblob schützen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4982,8 +4982,20 @@
       "endToEndPlan": {
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12",
         "plan": "ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
-        "state": "city_plan_r01_changes_repaired_independent_re_review_pending",
-        "referenceResume": "CITY-00-I48b after common plan gate and new GUI slot"
+        "state": "independent_city_plan_r02_pass_common_ratification_integration_pending",
+        "referenceResume": "CITY-00-I48b after common plan gate and new GUI slot",
+        "independentReview": {
+          "reviewer": "Hex",
+          "candidate": "1de3ceead95b9a126419b79f1201fe95d9b22c7e",
+          "result": "PASS in bounded plan scope",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089692756",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/city-e2e-peer-r02.json",
+          "closedFindings": [
+            "CITY-E2E-R01-01",
+            "CITY-E2E-R01-02"
+          ],
+          "limits": "No product/API/native/fixture/team ratification; no self-integration"
+        }
       }
     }
   },
