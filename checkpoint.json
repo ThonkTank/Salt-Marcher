@@ -3485,17 +3485,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-NR",
-      "kind": "native_reference_review",
-      "startedAt": "2026-10-09T11:10:59.362297+00:00",
-      "focus": "Originalframes gegen Plan und Inventarmetadaten prüfen",
-      "state": "completed_required_findings",
-      "result": "Originalwirkung/Abschluss bestätigt; NR01 neue Kandidatenzeit/-quelle präzisieren, NR02 unklare Samplezahl durch konkrete Referenzliste ersetzen"
-    },
-    "nextRun": {
       "id": "CITY-00-I06-NCP",
       "kind": "cleanup_planning",
-      "focus": "Metadatenreparatur ohne Originalbelegänderung planen"
+      "startedAt": "2026-10-09T11:11:20.818045+00:00",
+      "focus": "Quellenzeit und Referenzumfang gezielt bereinigen",
+      "state": "completed",
+      "result": "NR01/NR02 ohne Löschen von Originalartefakten geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-NCI",
+      "kind": "cleanup_implementation",
+      "focus": "Demoquellen-/Zeitfelder und konkrete Referenzliste reparieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
