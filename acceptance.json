@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I06: 663 UI-Einträge/83 Fälle erhalten; fünf Optionsreste und sechs modale Rohzahlen-/HTML-Fragen direkt nachgemessen und zugeordnet. 32/33 Optionskandidaten im beobachteten Kontext erfasst; initiale Pfadauswahl bleibt ungeklärt. 125 frühe UI-Fragen, eigener R02 und Aufräumreview offen. Keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I07: 663 UI-Einträge/83 Fälle erhalten; elf frühe Fragen direkt geklärt: New-Größen, getrennte Zoomwege, Ground-Pinsel/Inline-RGBA und tatsächlicher initialer Pfadstil. 33/33 begrenzte Optionskandidaten beobachtet; 114 frühe Fragen, eigener R02 und Aufräumreview offen. Keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -6855,12 +6855,41 @@
         "exactUiPath": "Toolbar > Zoom",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Zoom",
-        "controlType": "number",
+        "controlType": "dropdown",
         "default": {
           "value": "47%",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_options",
+          "choices": [
+            15,
+            20,
+            25,
+            33,
+            50,
+            66,
+            75,
+            100,
+            125,
+            150,
+            175,
+            200,
+            250,
+            300,
+            400,
+            600,
+            800
+          ],
+          "unit": "percent",
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ],
+            "factoryDefaultsAsserted": false
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -6884,6 +6913,20 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/012-editor-ready.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/012-editor-ready.png",
             "observation": "Toolbar > Zoom: 47%."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.png",
+            "observation": "Toolbar-Zoom öffnet Dropdown mit 17 festen Werten 15/20/25/33/50/66/75/100/125/150/175/200/250/300/400/600/800 Prozent."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.png",
+            "observation": "Klick auf 15-Prozent-Zeile verkleinert Karte; Toolbar zeigt 15%."
           }
         ],
         "classification": "user_function",
@@ -6904,8 +6947,25 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.png",
+                "observation": "Toolbar-Zoom öffnet Dropdown mit 17 festen Werten 15/20/25/33/50/66/75/100/125/150/175/200/250/300/400/600/800 Prozent."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.png",
+                "observation": "Klick auf 15-Prozent-Zeile verkleinert Karte; Toolbar zeigt 15%."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Toolbar Zoom ist ein Menü mit 17 festen Prozentstufen, kein numerisches Textfeld. Vorherige Inventar-Klassifikation number bleibt als Herkunft erhalten; direkte Korrektur ist explizit. Die manuelle Lupe ist ein getrenntes Control."
           },
           {
             "id": "WD-UI-0092-Q02-01",
@@ -6944,7 +7004,34 @@
               }
             ]
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Toolbar Zoom ist ein Menü mit 17 festen Prozentstufen, kein numerisches Textfeld. Vorherige Inventar-Klassifikation number bleibt als Herkunft erhalten; direkte Korrektur ist explizit. Die manuelle Lupe ist ein getrenntes Control."
+        },
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I07",
+          "prior": "number",
+          "observed": "dropdown_options",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom-initial.png",
+              "observation": "Toolbar-Zoom öffnet Dropdown mit17 festen Werten15/20/25/33/50/66/75/100/125/150/175/200/250/300/400/600/800 Prozent."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.png",
+              "observation": "Klick auf15-Prozent-Zeile verkleinert Karte; Toolbar zeigt15%."
+            }
+          ],
+          "note": "Canonical control type corrected from original inventory number to actual observed dropdown; prior classification retained here. Stable identity and historical source references unchanged."
+        }
       },
       {
         "id": "WD-UI-0093",
@@ -6957,7 +7044,23 @@
           "value": "1920 px",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 512,
+          "maximum": 8192,
+          "unit": "px",
+          "testedInputs": [
+            0,
+            99999,
+            "abc"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json"
+            ]
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -6981,6 +7084,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/002-new.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/002-new.png",
             "observation": "New > Settings > Width: 1920 px."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.png",
+            "observation": "New Width: Eingabe 0 nach Validierung als 512 px."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.png",
+            "observation": "New Width: Eingabe 99999 nach Validierung als 8192 px."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.png",
+            "observation": "New Width: abc nach Validierung als 512 px."
           }
         ],
         "classification": "user_function",
@@ -7000,10 +7124,39 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/026-width-zero-validated.png",
+                "observation": "New Width: Eingabe 0 nach Validierung als 512 px."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/030-width-upper-validated.png",
+                "observation": "New Width: Eingabe 99999 nach Validierung als 8192 px."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/034-width-invalid-validated.png",
+                "observation": "New Width: abc nach Validierung als 512 px."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Vorhandene eigene New-Dialogfolge direkt diesem Width-Control zugeordnet: 0 wird auf 512,99999 auf 8192 begrenzt. Keine Übertragung auf Resize oder Detail Map."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Vorhandene eigene New-Dialogfolge direkt diesem Width-Control zugeordnet: 0 wird auf 512,99999 auf 8192 begrenzt. Keine Übertragung auf Resize oder Detail Map."
+        }
       },
       {
         "id": "WD-UI-0094",
@@ -7016,7 +7169,22 @@
           "value": "1080 px",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 512,
+          "maximum": 8192,
+          "unit": "px",
+          "testedInputs": [
+            0,
+            99999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json"
+            ]
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -7040,6 +7208,20 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/002-new.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/002-new.png",
             "observation": "New > Settings > Height: 1080 px."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.png",
+            "observation": "New Height: Eingabe 0 nach Validierung als 512 px."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.png",
+            "observation": "New Height: Eingabe 99999 nach Validierung als 8192 px."
           }
         ],
         "classification": "user_function",
@@ -7059,10 +7241,32 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/028-height-zero-validated.png",
+                "observation": "New Height: Eingabe 0 nach Validierung als 512 px."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/032-height-upper-validated.png",
+                "observation": "New Height: Eingabe 99999 nach Validierung als 8192 px."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Vorhandene eigene New-Dialogfolge direkt diesem Height-Control zugeordnet: 0 wird auf 512,99999 auf 8192 begrenzt. Keine Übertragung auf Resize oder Detail Map."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Vorhandene eigene New-Dialogfolge direkt diesem Height-Control zugeordnet: 0 wird auf 512,99999 auf 8192 begrenzt. Keine Übertragung auf Resize oder Detail Map."
+        }
       },
       {
         "id": "WD-UI-0095",
@@ -15958,7 +16162,22 @@
           "value": 128,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 512,
+          "testedInputs": [
+            0,
+            99999,
+            10.5
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ]
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -15982,6 +16201,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/047-ground-color-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/047-ground-color-brush.png",
             "observation": "Land > Ground Color Brush > Brush Size: 128."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-repeat.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-repeat.png",
+            "observation": "Ground Color Brush Size Eingabe 0 in erweitertem Manual-Color-Panel."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-clear.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-clear.png",
+            "observation": "Tab begrenzt Ground Size auf 2; Zeiger entfernt, Zahl sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-entry.png",
+            "observation": "Ground Size Eingabe 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-validated.png",
+            "observation": "Nach Tab 512 im Ground-Control."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-entry.png",
+            "observation": "Ground Size Eingabe 10.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-validated.png",
+            "observation": "Nach Tab 11; nur diese gemessene Dezimalprobe, keine allgemeine Rundungsformel."
           }
         ],
         "classification": "user_function",
@@ -16001,10 +16262,60 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-repeat.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-repeat.png",
+                "observation": "Ground Color Brush Size Eingabe 0 in erweitertem Manual-Color-Panel."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-clear.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-low-clear.png",
+                "observation": "Tab begrenzt Ground Size auf 2; Zeiger entfernt, Zahl sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-entry.png",
+                "observation": "Ground Size Eingabe 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-high-validated.png",
+                "observation": "Nach Tab 512 im Ground-Control."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-entry.png",
+                "observation": "Ground Size Eingabe 10.5."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-size-decimal-validated.png",
+                "observation": "Nach Tab 11; nur diese gemessene Dezimalprobe, keine allgemeine Rundungsformel."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Ground-Pinsel selbst gemessen, getrennt vom Landmass Brush:0→2,99999→512,10.5→11 nach Tab. Werkzeuganzeige/Validierung; kein neuer Farbauftrag oder Neustart."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Ground-Pinsel selbst gemessen, getrennt vom Landmass Brush:0→2,99999→512,10.5→11 nach Tab. Werkzeuganzeige/Validierung; kein neuer Farbauftrag oder Neustart."
+        }
       },
       {
         "id": "WD-UI-0283",
@@ -16897,7 +17208,24 @@
           "value": 190.25,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds_by_display",
+          "OFF": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "ON": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ],
+            "context": "Inline Ground Manual Color"
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -16921,6 +17249,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > R: 190.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-entry.png",
+            "observation": "Inline Ground R, Darstellung byte: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-entry.png",
+            "observation": "Inline Ground R, Darstellung byte: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-entry.png",
+            "observation": "Inline Ground R, Darstellung raw: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-entry.png",
+            "observation": "Inline Ground R, Darstellung raw: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+            "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
           }
         ],
         "classification": "user_function",
@@ -16940,10 +17331,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-entry.png",
+                "observation": "Inline Ground R, Darstellung byte: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-entry.png",
+                "observation": "Inline Ground R, Darstellung byte: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-r-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-entry.png",
+                "observation": "Inline Ground R, Darstellung raw: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-entry.png",
+                "observation": "Inline Ground R, Darstellung raw: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-r-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+                "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Inline Ground R in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Inline Ground R in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
+        }
       },
       {
         "id": "WD-UI-0299",
@@ -16956,7 +17418,24 @@
           "value": 189.5,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds_by_display",
+          "OFF": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "ON": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ],
+            "context": "Inline Ground Manual Color"
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -16980,6 +17459,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > G: 189.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-entry.png",
+            "observation": "Inline Ground G, Darstellung byte: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-entry.png",
+            "observation": "Inline Ground G, Darstellung byte: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-entry.png",
+            "observation": "Inline Ground G, Darstellung raw: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-entry.png",
+            "observation": "Inline Ground G, Darstellung raw: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+            "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
           }
         ],
         "classification": "user_function",
@@ -16999,10 +17541,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-entry.png",
+                "observation": "Inline Ground G, Darstellung byte: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-entry.png",
+                "observation": "Inline Ground G, Darstellung byte: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-g-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-entry.png",
+                "observation": "Inline Ground G, Darstellung raw: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-entry.png",
+                "observation": "Inline Ground G, Darstellung raw: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-g-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+                "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Inline Ground G in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Inline Ground G in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
+        }
       },
       {
         "id": "WD-UI-0300",
@@ -17015,7 +17628,24 @@
           "value": 141.95,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds_by_display",
+          "OFF": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "ON": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ],
+            "context": "Inline Ground Manual Color"
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -17039,6 +17669,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > B: 141.95."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-entry.png",
+            "observation": "Inline Ground B, Darstellung byte: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-entry.png",
+            "observation": "Inline Ground B, Darstellung byte: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-entry.png",
+            "observation": "Inline Ground B, Darstellung raw: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-entry.png",
+            "observation": "Inline Ground B, Darstellung raw: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+            "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
           }
         ],
         "classification": "user_function",
@@ -17058,10 +17751,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-entry.png",
+                "observation": "Inline Ground B, Darstellung byte: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-entry.png",
+                "observation": "Inline Ground B, Darstellung byte: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-b-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-entry.png",
+                "observation": "Inline Ground B, Darstellung raw: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-entry.png",
+                "observation": "Inline Ground B, Darstellung raw: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-b-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+                "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Inline Ground B in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Inline Ground B in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..255. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
+        }
       },
       {
         "id": "WD-UI-0301",
@@ -17074,7 +17838,24 @@
           "value": 255,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds_by_display",
+          "OFF": {
+            "minimum": 0,
+            "maximum": 255
+          },
+          "ON": {
+            "minimum": 0,
+            "maximum": 1
+          },
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ],
+            "context": "Inline Ground Manual Color"
+          }
+        },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
@@ -17098,6 +17879,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > A: 255."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-entry.png",
+            "observation": "Inline Ground A, Darstellung byte: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-entry.png",
+            "observation": "Inline Ground A, Darstellung byte: Eingabe 300."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-validated.png",
+            "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-entry.png",
+            "observation": "Inline Ground A, Darstellung raw: Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-validated.png",
+            "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-entry.png",
+            "observation": "Inline Ground A, Darstellung raw: Eingabe 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-validated.png",
+            "observation": "Nach Tab 1; Regler sichtbar am entsprechenden Ende."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+            "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
           }
         ],
         "classification": "user_function",
@@ -17117,10 +17961,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-entry.png",
+                "observation": "Inline Ground A, Darstellung byte: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-entry.png",
+                "observation": "Inline Ground A, Darstellung byte: Eingabe 300."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-high-validated.png",
+                "observation": "Nach Tab 255; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-entry.png",
+                "observation": "Inline Ground A, Darstellung raw: Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-low-validated.png",
+                "observation": "Nach Tab 0; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-entry.png",
+                "observation": "Inline Ground A, Darstellung raw: Eingabe 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-a-high-validated.png",
+                "observation": "Nach Tab 1; Regler sichtbar am entsprechenden Ende."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+                "observation": "Nach OFF-RGBA 64/32/16/128 zeigt ON 0.25/0.13/0.06/0.5; Labels weiterhin R/G/B/A."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Inline Ground A in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..1. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Inline Ground A in beiden Darstellungsschalterzuständen direkt gemessen: OFF 0..255; ON 0..1. Negative/obere Literale nach Tab begrenzt. Diese Originalbelege ersetzen keine Modal-/Popup-Messung und keine Speicherung gemalter Farbe."
+        }
       },
       {
         "id": "WD-UI-0302",
@@ -17207,6 +18122,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/050-ground-color-fields.png",
             "observation": "Land > Ground Color Brush > Manual Color > [toggle by HTML field]: OFF."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-picker-scroll.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-picker-scroll.png",
+            "observation": "Inline Ground normaler RGBA-ZustandOFF; R 190.25/G 189.5/B 141.95/A 255, HTMLbebd 8 d."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-on.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-on.png",
+            "observation": "Klick schaltetON: R 0.75/G 0.74/B 0.56/A 1; gleiche HTMLfarbe, weiterhinRGBA."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-off.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-off.png",
+            "observation": "ZurückOFF:RGB 255/A 255 nach vorheriger Rohzahl-Grenzenfolge."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-sample-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-sample-validated.png",
+            "observation": "OFF-RGBA 64/32/16/128, HTML 80402010."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+            "observation": "ON-RGBA 0.25/0.13/0.06/0.5 bei weiterhinHTML 80402010."
           }
         ],
         "classification": "user_function",
@@ -17226,10 +18176,53 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Inline-Ground-Schalter unmittelbar betätigen und angezeigte RGBA-Darstellung zuordnen; kein numerisches H/S/V-Feld erfinden.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-picker-scroll.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/ground-picker-scroll.png",
+                "observation": "Inline Ground normaler RGBA-ZustandOFF; R 190.25/G 189.5/B 141.95/A 255, HTMLbebd 8 d."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-on.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-on.png",
+                "observation": "Klick schaltetON: R 0.75/G 0.74/B 0.56/A 1; gleiche HTMLfarbe, weiterhinRGBA."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-off.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-off.png",
+                "observation": "ZurückOFF:RGB 255/A 255 nach vorheriger Rohzahl-Grenzenfolge."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-sample-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-byte-a-sample-validated.png",
+                "observation": "OFF-RGBA 64/32/16/128, HTML 80402010."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/inline-raw-sample.png",
+                "observation": "ON-RGBA 0.25/0.13/0.06/0.5 bei weiterhinHTML 80402010."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Inline Ground-Schalter direkt positiv betätigt: OFF bytebezogeneRGBA,ON Rohzahl-RGBA, keine numerischenH/S/V-Felder.64/32/16/128→0.25/0.13/0.06/0.5 bei gleichemHTML 80402010. Nur Anzeigeumrechnung, keine behauptete intern gespeicherte Rundung."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Inline Ground-Schalter direkt positiv betätigt: OFF bytebezogeneRGBA,ON Rohzahl-RGBA, keine numerischenH/S/V-Felder.64/32/16/128→0.25/0.13/0.06/0.5 bei gleichemHTML 80402010. Nur Anzeigeumrechnung, keine behauptete intern gespeicherte Rundung."
+        }
       },
       {
         "id": "WD-UI-0304",
@@ -17801,7 +18794,8 @@
           "choices": [
             {
               "ordinal": 1,
-              "identity": "Original-thumbnail row 1"
+              "identity": "Original-thumbnail row 1",
+              "nativeAssetIdentity": "res://textures/paths/path_blended"
             },
             {
               "ordinal": 2,
@@ -17843,13 +18837,14 @@
           "scope": {
             "version": "1.1.8.2",
             "sessions": [
-              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/session.json"
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/session.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
             ],
             "dynamic": false,
             "assetScope": "Only the assets/profile of the cited original context; no global option universe.",
             "factoryDefaultsAsserted": false
           },
-          "completeness": "partial_explicit_inventory_obligation"
+          "completeness": "observed_scoped_options"
         },
         "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
         "gesture": {
@@ -17916,6 +18911,62 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/original/screens/path-selected-away.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/original/screens/path-selected-away.png",
             "observation": "Nach explizitem Klick auf Reihe 1 und Werkzeugrückkehr bleibt Reihe 1 auch mit entferntem Zeiger markiert; diese Markierung war im initialen Panel nicht sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-tool-initial.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-tool-initial.png",
+            "observation": "Frisches eigenes Profil/erste neue Karte:10 Style-Reihen, keine eindeutig markierte Auswahl; noch kein Style-Klick."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-initial-finish.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-initial-finish.png",
+            "observation": "Vor jedem Style-Klick mit 3 linken Punkten/rechtem Abschluss tatsächlich einen Pfad gezeichnet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/save-as-path-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/save-as-path-commit.png",
+            "observation": "Initialer Pfad über native Save As mit getrenntem Verzeichnis/Basename erfolgreich gespeichert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/extract-file-confirm.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/extract-file-confirm.png",
+            "observation": "Original Extract Map Data liest eigene Initialkarte aus; Rohtext enthält genau 1 path_blended-Pfad, keine Symbole."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-first.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-first.png",
+            "observation": "Danach expliziter Klick auf Style-Reihe 1: sichtbarer hohler Auswahlring."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-finish.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-finish.png",
+            "observation": "Zweiter tatsächlicher Pfad nach expliziter Reihe 1 abgeschlossen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-save-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-save-commit.png",
+            "observation": "Zwei-Pfad-Vergleichskarte separat gespeichert, Initialkarte nicht überschrieben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-extract-confirm.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-extract-confirm.png",
+            "observation": "Native Extraktion der Vergleichskarte enthält zwei path_blended-Pfade; beide passenden Rohdateien erhalten."
           }
         ],
         "classification": "user_function",
@@ -17935,7 +18986,7 @@
             "duePhase": "HEX-00",
             "reason": "Konkreter Teilbefund aus N-I02; die verbleibende frühe Inventarpflicht bleibt offen.",
             "probe": "Initiale Style-Auswahl anhand eines gezielten frischen Originalkontexts eindeutig zuordnen; zehn sichtbare Vorschauen und Testklick sind erfasst.",
-            "state": "open",
+            "state": "resolved",
             "evidence": [
               {
                 "role": "actual_original_runtime",
@@ -17978,28 +19029,110 @@
                 "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/original/screens/path-selected-away.json",
                 "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/original/screens/path-selected-away.png",
                 "observation": "Nach explizitem Klick auf Reihe 1 und Werkzeugrückkehr bleibt Reihe 1 auch mit entferntem Zeiger markiert; diese Markierung war im initialen Panel nicht sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-tool-initial.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-tool-initial.png",
+                "observation": "Frisches eigenes Profil/erste neue Karte:10 Style-Reihen, keine eindeutig markierte Auswahl; noch kein Style-Klick."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-initial-finish.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-initial-finish.png",
+                "observation": "Vor jedem Style-Klick mit 3 linken Punkten/rechtem Abschluss tatsächlich einen Pfad gezeichnet."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/save-as-path-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/save-as-path-commit.png",
+                "observation": "Initialer Pfad über native Save As mit getrenntem Verzeichnis/Basename erfolgreich gespeichert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/extract-file-confirm.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/extract-file-confirm.png",
+                "observation": "Original Extract Map Data liest eigene Initialkarte aus; Rohtext enthält genau 1 path_blended-Pfad, keine Symbole."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-first.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-first.png",
+                "observation": "Danach expliziter Klick auf Style-Reihe 1: sichtbarer hohler Auswahlring."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-finish.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-finish.png",
+                "observation": "Zweiter tatsächlicher Pfad nach expliziter Reihe 1 abgeschlossen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-save-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-save-commit.png",
+                "observation": "Zwei-Pfad-Vergleichskarte separat gespeichert, Initialkarte nicht überschrieben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-extract-confirm.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-extract-confirm.png",
+                "observation": "Native Extraktion der Vergleichskarte enthält zwei path_blended-Pfade; beide passenden Rohdateien erhalten."
               }
             ],
             "boundedResultNI06": "Initiale Markierung nach Laden weiter nicht eindeutig. Testklick-Markierung bleibt ohne Hover bestehen. Paketinit selektiert current_selected, beweist aber nicht den geladenen Runtime-Ausgangsstand. Keine Schließung allein aus Paketfolgerung.",
-            "nextBoundedProbe": "Vor jeder Style-Auswahl den tatsächlich gezeichneten initialen Pfad in einer eigenen frischen Originalkarte speichern und mit den zehn Vorschauen zuordnen; weitere gleiche Hover-/Klickversuche werden nicht wiederholt."
+            "nextBoundedProbe": "Vor jeder Style-Auswahl den tatsächlich gezeichneten initialen Pfad in einer eigenen frischen Originalkarte speichern und mit den zehn Vorschauen zuordnen; weitere gleiche Hover-/Klickversuche werden nicht wiederholt.",
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Frisches Originalprofil/erste neue Karte: unmarkiertes Panel verwendet trotzdem path_blended. Nativer Pfad vor Style-Klick gespeichert/extrahiert, dann Reihe 1 ausdrücklich gewählt und zweiter Pfad separat gespeichert/extrahiert: beide besitzen dieselbe path_blended-Kennung. Damit ist die tatsächliche Anfangswahl in diesem Kontext Reihe 1; die fehlende Radio-Markierung bleibt als Originalverhalten dokumentiert.10 Reihen/Scrollende stammen weiterhin aus N-I 02. Kein universeller Factory- oder geladenes-Karten-Default behauptet."
           }
         ],
         "optionsObservation": {
-          "run": "HEX-00-N-I02",
+          "run": "HEX-00-N-I07",
           "observedSelection": {
-            "beforeClick": "No uniquely marked radio ring",
-            "afterClick": "thumbnail row 1"
+            "initial": "thumbnail row1 / res://textures/paths/path_blended",
+            "initialRadio": "no unique selected marker",
+            "afterClick": "thumbnail row1 hollow ring"
           },
           "evidenceScope": "Visible state of cited original context, not a universal factory default.",
-          "state": "partial",
-          "notes": "Ordinalangaben benennen Vorschaubilder; keine erfundenen Stilnamen."
+          "state": "observed_scoped_options",
+          "notes": "Frisches Originalprofil/erste neue Karte: unmarkiertes Panel verwendet trotzdem path_blended. Nativer Pfad vor Style-Klick gespeichert/extrahiert, dann Reihe1 ausdrücklich gewählt und zweiter Pfad separat gespeichert/extrahiert: beide besitzen dieselbe path_blended-Kennung. Damit ist die tatsächliche Anfangswahl in diesem Kontext Reihe1; die fehlende Radio-Markierung bleibt als Originalverhalten dokumentiert.10 Reihen/Scrollende stammen weiterhin aus N-I02. Kein universeller Factory- oder geladenes-Karten-Default behauptet.",
+          "priorNI02": {
+            "run": "HEX-00-N-I02",
+            "observedSelection": {
+              "beforeClick": "No uniquely marked radio ring",
+              "afterClick": "thumbnail row 1"
+            },
+            "evidenceScope": "Visible state of cited original context, not a universal factory default.",
+            "state": "partial",
+            "notes": "Ordinalangaben benennen Vorschaubilder; keine erfundenen Stilnamen."
+          }
         },
         "pathSelectionBasis": {
-          "run": "HEX-00-N-I06",
-          "state": "initial_loaded_selection_ambiguous",
+          "run": "HEX-00-N-I07",
+          "state": "native_initial_path_matches_explicit_row1",
           "packageInit": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/bounded-path-selection-hints.json",
           "radioHandler": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/bounded-path-radio-hints.json",
-          "limit": "Bounded source hint only; no initial runtime selection or factory default asserted."
+          "limit": "Only fresh fixed-window QA profile / first new map; loaded-map state remains context-specific.",
+          "priorNI06": {
+            "run": "HEX-00-N-I06",
+            "state": "initial_loaded_selection_ambiguous",
+            "packageInit": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/bounded-path-selection-hints.json",
+            "radioHandler": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/bounded-path-radio-hints.json",
+            "limit": "Bounded source hint only; no initial runtime selection or factory default asserted."
+          },
+          "nativeData": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/native-path-data.json"
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Frisches Originalprofil/erste neue Karte: unmarkiertes Panel verwendet trotzdem path_blended. Nativer Pfad vor Style-Klick gespeichert/extrahiert, dann Reihe 1 ausdrücklich gewählt und zweiter Pfad separat gespeichert/extrahiert: beide besitzen dieselbe path_blended-Kennung. Damit ist die tatsächliche Anfangswahl in diesem Kontext Reihe 1; die fehlende Radio-Markierung bleibt als Originalverhalten dokumentiert.10 Reihen/Scrollende stammen weiterhin aus N-I 02. Kein universeller Factory- oder geladenes-Karten-Default behauptet."
         }
       },
       {
@@ -32613,7 +33746,23 @@
           "value": "48 %",
           "evidenceScope": "Angezeigter Kontextwert; kein globaler oder persistenter Default behauptet."
         },
-        "rangeOrChoices": null,
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1000,
+          "unit": "percent",
+          "testedInputs": [
+            -1,
+            0,
+            99999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json"
+            ]
+          }
+        },
         "validation": "Vollständige Wirkung, Grenzvalidierung, History und Persistenz bleiben bei der zugeordneten Fachprobe offen.",
         "gesture": {
           "observed": "Lupe öffnet Enter Zoom Value. Manual Zoom zeigt 48 %, während die Toolbar zuvor 47 % zeigte.",
@@ -32657,6 +33806,76 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/screens/079-zoom100-validated.png",
             "observation": "Tab validiert manuellen Zoomwert vor OK."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-entry.png",
+            "observation": "Manual Zoom Eingabe 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-validated.png",
+            "observation": "Tab bestätigt 0% im Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-commit.png",
+            "observation": "OK übernimmt 0%, Karte unsichtbar; Toolbar 0%."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-entry.png",
+            "observation": "Manual Zoom Eingabe-1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-validated.png",
+            "observation": "Nach Tab 0%."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-commit.png",
+            "observation": "OK übernimmt 0%, Toolbar 0%."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-entry.png",
+            "observation": "Manual Zoom Eingabe 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-validated.png",
+            "observation": "Tab begrenzt auf 1000%."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-commit.png",
+            "observation": "OK übernimmt 1000%; deutlich vergrößerte Karte."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-fit-reset.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-fit-reset.png",
+            "observation": "Strg+0 stellt sichtbaren eingepassten Ausschnitt 47% wieder her."
           }
         ],
         "classification": "user_function",
@@ -32675,8 +33894,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Gültiger Commitbereich und Zoomwirkung nicht gemessen; Eingabe 0 % wurde nur validiert und anschließend abgebrochen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-entry.png",
+                "observation": "Manual Zoom Eingabe 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-validated.png",
+                "observation": "Tab bestätigt 0% im Dialog."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-zero-commit.png",
+                "observation": "OK übernimmt 0%, Karte unsichtbar; Toolbar 0%."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-entry.png",
+                "observation": "Manual Zoom Eingabe-1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-validated.png",
+                "observation": "Nach Tab 0%."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-negative-commit.png",
+                "observation": "OK übernimmt 0%, Toolbar 0%."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-entry.png",
+                "observation": "Manual Zoom Eingabe 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-validated.png",
+                "observation": "Tab begrenzt auf 1000%."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-high-commit.png",
+                "observation": "OK übernimmt 1000%; deutlich vergrößerte Karte."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-fit-reset.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/manual-zoom-fit-reset.png",
+                "observation": "Strg+0 stellt sichtbaren eingepassten Ausschnitt 47% wieder her."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I07",
+            "resolution": "Manueller Dialog unmittelbar gemessen: -1→0,99999→1000 nach Tab; OK übernimmt beide Grenzen tatsächlich. 0% zeigt keine Kartengeometrie. Fit stellt 47% wieder her. Kein positiver Mindestzoom aus Dropdown 15% abgeleitet; History/Persistenz bleiben getrennt."
           },
           {
             "id": "WD-UI-0585-Q01-02",
@@ -32707,7 +33999,12 @@
               }
             ]
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I07",
+          "scope": "Only the cited original control/context and tested literals; no history, persistence or physical-input approval.",
+          "note": "Manueller Dialog unmittelbar gemessen: -1→0,99999→1000 nach Tab; OK übernimmt beide Grenzen tatsächlich. 0% zeigt keine Kartengeometrie. Fit stellt 47% wieder her. Kein positiver Mindestzoom aus Dropdown 15% abgeleitet; History/Persistenz bleiben getrennt."
+        }
       },
       {
         "id": "WD-UI-0586",
@@ -59380,7 +60677,7 @@
         {
           "uiId": "WD-UI-0315",
           "exactUiPath": "Paths > Path Tool > Style",
-          "state": "partial",
+          "state": "observed_scoped_options",
           "prior": {
             "default": {
               "value": "ten visible style rows",
@@ -59392,17 +60689,53 @@
             ]
           },
           "observedSelection": {
-            "beforeClick": "No uniquely marked radio ring",
-            "afterClick": "thumbnail row 1"
+            "initial": "thumbnail row1 / res://textures/paths/path_blended",
+            "initialRadio": "no unique selected marker",
+            "afterClick": "thumbnail row1 hollow ring"
           },
-          "remainingInventory": "Initiale Style-Auswahl anhand eines gezielten frischen Originalkontexts eindeutig zuordnen; zehn sichtbare Vorschauen und Testklick sind erfasst.",
-          "notes": "Ordinalangaben benennen Vorschaubilder; keine erfundenen Stilnamen.",
+          "remainingInventory": null,
+          "notes": "Frisches Originalprofil/erste neue Karte: unmarkiertes Panel verwendet trotzdem path_blended. Nativer Pfad vor Style-Klick gespeichert/extrahiert, dann Reihe1 ausdrücklich gewählt und zweiter Pfad separat gespeichert/extrahiert: beide besitzen dieselbe path_blended-Kennung. Damit ist die tatsächliche Anfangswahl in diesem Kontext Reihe1; die fehlende Radio-Markierung bleibt als Originalverhalten dokumentiert.10 Reihen/Scrollende stammen weiterhin aus N-I02. Kein universeller Factory- oder geladenes-Karten-Default behauptet.",
           "evidenceRefs": [
             "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/063-path-style-top.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/064-path-style-end.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/065-path-style-tooltip.json",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/066-path-style-selected.json"
-          ]
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/066-path-style-selected.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-tool-initial.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-initial-finish.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/save-as-path-commit.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/extract-file-confirm.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-first.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/path-explicit-finish.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-save-commit.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/comparison-extract-confirm.json"
+          ],
+          "priorNI02": {
+            "uiId": "WD-UI-0315",
+            "exactUiPath": "Paths > Path Tool > Style",
+            "state": "partial",
+            "prior": {
+              "default": {
+                "value": "ten visible style rows",
+                "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
+              },
+              "rangeOrChoices": null,
+              "observationLimits": [
+                "Default und weitere Palette durch vollständiges Scrollen bestätigen."
+              ]
+            },
+            "observedSelection": {
+              "beforeClick": "No uniquely marked radio ring",
+              "afterClick": "thumbnail row 1"
+            },
+            "remainingInventory": "Initiale Style-Auswahl anhand eines gezielten frischen Originalkontexts eindeutig zuordnen; zehn sichtbare Vorschauen und Testklick sind erfasst.",
+            "notes": "Ordinalangaben benennen Vorschaubilder; keine erfundenen Stilnamen.",
+            "evidenceRefs": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/063-path-style-top.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/064-path-style-end.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/065-path-style-tooltip.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/original/screens/066-path-style-selected.json"
+            ]
+          }
         },
         {
           "uiId": "WD-UI-0319",
@@ -60097,15 +61430,8 @@
         "WD-UI-0652"
       ],
       "candidateCount": 33,
-      "scopedOptionsRecorded": 27,
-      "remainingCandidateIds": [
-        "WD-UI-0256",
-        "WD-UI-0287",
-        "WD-UI-0315",
-        "WD-UI-0440",
-        "WD-UI-0458",
-        "WD-UI-0468"
-      ],
+      "scopedOptionsRecorded": 33,
+      "remainingCandidateIds": [],
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/manifest.json"
       ],
@@ -60129,13 +61455,31 @@
         "dynamic": false
       },
       "latestRepair": {
-        "run": "HEX-00-N-I06",
-        "state": "five_option_remainders_observed_one_pending_review",
-        "observedCandidates": 32,
-        "pending": [
-          "WD-UI-0315"
-        ],
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/mapping-validation.json"
+        "run": "HEX-00-N-I07",
+        "state": "all33_scoped_candidates_observed_review_pending",
+        "observedCandidates": 33,
+        "pending": [],
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/mapping-validation.json",
+        "priorNI06": {
+          "run": "HEX-00-N-I06",
+          "state": "five_option_remainders_observed_one_pending_review",
+          "observedCandidates": 32,
+          "pending": [
+            "WD-UI-0315"
+          ],
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-finish-20261009-061545/mapping-validation.json"
+        }
+      },
+      "priorRecordedCountsNI02": {
+        "scopedOptionsRecorded": 27,
+        "remainingCandidateIds": [
+          "WD-UI-0256",
+          "WD-UI-0287",
+          "WD-UI-0315",
+          "WD-UI-0440",
+          "WD-UI-0458",
+          "WD-UI-0468"
+        ]
       }
     },
     "evidenceUsageContractVersion": 1,
