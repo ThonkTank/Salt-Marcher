@@ -3756,17 +3756,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T13:36:33.749046+00:00",
-      "focus": "Rohschutz und Belegumfang reviewen",
-      "state": "completed",
-      "result": "Aufräumreview bestanden; Bewohnerdetails weiterhin ungeprüft, Originaltabs erhalten. Keine Produktimplementierung oder Paritätsfreigabe."
-    },
-    "nextRun": {
       "id": "CITY-00-I19-P",
       "kind": "reference_planning",
-      "focus": "HEX-05-Übergabe prüfen und nächste zugängliche Originalwirkung auswählen"
+      "startedAt": "2026-10-09T13:38:34.334901+00:00",
+      "focus": "Watabou-Stilwirkung und ausgegebene Geometrie planen",
+      "state": "completed",
+      "result": "Eine sichtbare Vorgabe auf Browserkopie anwenden, tatsächliche Vorher-/Nachherausgaben vergleichen; Originaltabs und nativen Slot erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I19-I",
+      "kind": "style_reference_probe",
+      "focus": "Stilvorgabe direkt anwenden und Geometrieausgaben vergleichen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
