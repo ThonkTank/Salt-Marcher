@@ -402,3 +402,8 @@ CITY-00-I23-R Ergebnis: Rawhashes und empfangene Dateien bestätigt. 03/05/09 ze
 CITY-00-I23-CP Plan: I23-Teilwirkung aus acceptance in den abgeleiteten Snapshot übernehmen; Namenskorrektur/Delete von Legendenlayout und geographischer Position trennen. Rohbelege unverändert hashen und vorhandene Manifest-Verweise prüfen, keine neuen Pflichten/Freigaben/Statusdatenbanken. CI und CR separat.
 
 CITY-00-I23-CR Ergebnis: Snapshot entspricht acceptance-Teilscope, Rohbelege unverändert, 63 CO-/24 CTY-Pflichten erhalten. Eigene Testkopie geschlossen, QA-Eintrag gelöscht und Legendenplatzierung Auto zurückgesetzt. Aufräumen ohne weiteren Befund. Nächste getrennte Originalprobe untersucht Gassen-/Straßennetzdarstellung; Atlasübergabe weiterhin erforderlich.
+
+
+## CITY-00-I24-P: Gassenanzeige und tatsächliche Geometrieausgabe
+
+Start 2026-10-09T14:22:26.418895+00:00. Eigene New-River-Browserkopie und Ausgangsbild; Show alleys unter Style/Misc vor jeder Änderung lesen. Tatsächliche JSON-Ausgabe vor und nach Aktivieren dieser angebotenen Anzeige empfangen, Dateien anhand Parser/Hashes und vollständigem Wertevergleich untersuchen. Sichtbare Gassenwirkung getrennt von topologischer Straßenbearbeitung behandeln; unveränderte Ausgabe wäre kein Nachweis persistenter Gassenobjekte. Keine internen Appdaten/Netzabrufe; bei fehlender Wirkung höchstens zwei Versuche. Ausgangsflag über sichtbares Control zurücksetzen und eigene Kopie schließen. Originaltabs erhalten, nativer Slot bleibt beim Kollegen; HEX-05 fehlt aktuell. Danach getrennter Review und Aufräumen P/I/R, alle Produktpflichten offen.
