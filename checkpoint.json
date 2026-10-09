@@ -977,7 +977,16 @@
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
     },
     "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md",
-    "gmViewportPlan": "ROADMAP-GM-UX-N004-PLAN.md"
+    "gmViewportPlan": "ROADMAP-GM-UX-N004-PLAN.md",
+    "parallelPlanning": {
+      "phase": "HEX-02",
+      "plan": "ROADMAP-HEX-02-PLAN.md",
+      "state": "concrete_plan_checked_product_not_started",
+      "finishedAt": "2026-10-09T16:09:39.216422+00:00",
+      "dependency": "GM-UX-N-004 viewport facts/repair remain separate; no terrain product edits yet.",
+      "nativeGate": "Isle flow after I01b; true save/fresh recovery after I01c.",
+      "referenceRule": "WD004.02 Escape retains land; no invented rollback semantics."
+    }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
