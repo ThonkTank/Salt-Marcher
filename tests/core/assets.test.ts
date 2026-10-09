@@ -1,12 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { isRoom, parseDocument } from "../../src/model";
 import { Session } from "../../src/session";
 import { createDoor, createObject, createLight, createPortal, createWall, duplicateFloor, resizeMap, createReferenceImage, editNote } from "../../src/commands";
 import { AssetCatalog, discoverPackAssets, PackAssetLibrary, readDungeondraftPack, type AssetCatalogStore, type BinarySource } from "../../src/assets";
 import { generateLayout } from "../../src/generators";
 import { newDocument, fixture } from "./fixtures";
+import { assetPack } from "./pack-fixtures";
 import { buildingWearMode, buildingWearAssetId,
   NATIVE_BUILDING_WEAR_IDS } from "../../src/features/material/native-path-catalog";
 
@@ -59,10 +59,7 @@ test("DD-008 five wear modes retain their identity through document and history"
 
 
 test("Dungeondraft packages keep image payloads lazy and expose stable assets", async () => {
-  const bytes = await readFile(
-      "../dungeon-auswertung/tests/fixtures/own-asset-pack/own.dungeondraft_pack",
-    ),
-    blob = new Blob([bytes]),
+  const blob = assetPack(),
     reads: [number | undefined, number | undefined][] = [],
     source = {
       size: blob.size,
@@ -79,7 +76,7 @@ test("Dungeondraft packages keep image payloads lazy and expose stable assets", 
   assert.equal(object.packId, pack.metadata.id);
   assert.match(object.id, /^pack:/);
   assert.ok(
-    reads.every(([start, end]) => (end ?? 0) - (start ?? 0) < bytes.length),
+    reads.every(([start, end]) => (end ?? 0) - (start ?? 0) < blob.size),
   );
   const image = new Uint8Array(
     await pack.asset(object.files.image!).arrayBuffer(),
@@ -88,16 +85,8 @@ test("Dungeondraft packages keep image payloads lazy and expose stable assets", 
 });
 
 test("asset library discovers composite package classes and releases ownership", async () => {
-  const files = [
-      "../dungeon-auswertung/tests/fixtures/wall-texture-probe/own-walls.dungeondraft_pack",
-      "../dungeon-auswertung/tests/fixtures/surface-parts/own-surfaces.dungeondraft_pack",
-      "../dungeon-auswertung/tests/fixtures/roof-resize-probe/own-roofs.dungeondraft_pack",
-    ],
-    library = new PackAssetLibrary();
-  for (const file of files) {
-    const bytes = await readFile(file);
-    await library.add(new Blob([bytes]));
-  }
+  const library = new PackAssetLibrary();
+  await library.add(assetPack());
   assert.ok(library.list("wall").length > 0);
   assert.ok(library.list("roof").length > 0);
   assert.ok(library.list("material").length > 0);
@@ -139,12 +128,9 @@ test("asset catalog persists package selection and reloads enabled packages", as
       this.packages.delete(hash);
     }
   }
-  const bytes = await readFile(
-      "../dungeon-auswertung/tests/fixtures/own-asset-pack/own.dungeondraft_pack",
-    ),
-    store = new CatalogMemoryStore(),
+  const store = new CatalogMemoryStore(),
     catalog = new AssetCatalog(store),
-    [added] = await catalog.add([new Blob([bytes])]);
+    [added] = await catalog.add([assetPack()]);
   assert.ok(added);
   assert.equal((await catalog.read()).packs[0]!.assetCount > 0, true);
   let library = await catalog.loadEnabled();

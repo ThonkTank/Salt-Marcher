@@ -1814,17 +1814,6 @@
       "open": "Weitere Radierformen und DD-038-Endreview.",
       "gate": "open"
     },
-    "buildingFloorEllipseHoleOriginal": {
-      "case": "DD-038.05, Alt-Ellipse auf gemischtem Building-Boden",
-      "state": "ellipse_interior_hole_original_measured_host_open_case_open",
-      "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
-      "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
-      "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/01-erased.dungeondraft_map",
-      "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-fresh-original-20261009/native/runs/20261009-125624-3751209/evidence/screens/00-fresh.png",
-      "measured": "Alt-Ellipse `(3,3)`–`(5,5)` ergänzt einen 28-Punkt-Innenring, erhält 36 Bodenzellen und übermalt nur das verdeckte Stone-Feld (4,3) mit gewähltem Wood. Undo/Redo bytegleich; frische Originalöffnung besteht.",
-      "open": "Host-GUI-Paar, separater Review, weitere Formen und DD-038-Endreview.",
-      "gate": "open"
-    },
     "terrainMaskResizeCandidate": {
       "cases": "DD-038.02–.05, vorbereitete Acht-Slot-Terrainmasken",
       "state": "scoped_host_raw_review_passed_cases_open",
@@ -3424,7 +3413,11 @@
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/review-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
-      "open": ["P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben", "Phase-7-Fachphasentor", "Abschließende Aufräumphase"],
+      "open": [
+        "P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben",
+        "Phase-7-Fachphasentor",
+        "Abschließende Aufräumphase"
+      ],
       "gate": "open"
     },
     "phase7GateReview": {
@@ -3433,10 +3426,17 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "verifiedStrands": [
+        "P7-1",
+        "P7-3",
+        "P7-4"
+      ],
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "passed_with_user_exception",
-      "open": ["Phase-7-Aufräumplan, Umsetzung und unabhängiger Review", "Folge-Roadmap für übrige Werkzeuge"]
+      "open": [
+        "Phase-7-Aufräumplan, Umsetzung und unabhängiger Review",
+        "Folge-Roadmap für übrige Werkzeuge"
+      ]
     },
     "phase7CleanupPlan": {
       "date": "2026-10-09",
@@ -3444,7 +3444,11 @@
       "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
       "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "items": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "gate": "open",
       "next": "Getrennte Umsetzung, dann unabhängiger Aufräumreview vor der Folge-Roadmap."
     },
@@ -3467,12 +3471,27 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/cleanup-independent-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/review-audit.json",
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedItems": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "verifiedItems": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "newHostPairs": 3,
       "coreTestsPassed": 167,
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "passed",
       "next": "Eigener Phase-1-Planlauf der Folge-Roadmap."
+    },
+    "buildingFloorEllipseHoleOriginal": {
+      "case": "DD-038.05, Alt-Ellipse auf gemischtem Building-Boden",
+      "state": "ellipse_interior_hole_original_measured_host_open_case_open",
+      "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
+      "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
+      "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/01-erased.dungeondraft_map",
+      "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-fresh-original-20261009/native/runs/20261009-125624-3751209/evidence/screens/00-fresh.png",
+      "measured": "Alt-Ellipse `(3,3)`–`(5,5)` ergänzt einen 28-Punkt-Innenring, erhält 36 Bodenzellen und übermalt nur das verdeckte Stone-Feld (4,3) mit gewähltem Wood. Undo/Redo bytegleich; frische Originalöffnung besteht.",
+      "open": "Host-GUI-Paar, separater Review, weitere Formen und DD-038-Endreview.",
+      "gate": "open"
     }
   },
   "cityExecution": {
@@ -3508,5 +3527,22 @@
       "state": "responsibilities_confirmed_hex_basis_then_city",
       "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
     }
+  },
+  "testFixturePortability": {
+    "date": "2026-10-09",
+    "scope": "Drei Assettests von nicht versionierten sibling-repository fixtures auf selbst enthaltene gültige GDPC package fixtures umgestellt.",
+    "files": [
+      "tests/core/assets.test.ts",
+      "tests/core/pack-fixtures.ts"
+    ],
+    "verification": {
+      "check": "passed",
+      "tests": {
+        "passed": 201,
+        "failed": 0
+      },
+      "build": "passed"
+    },
+    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme."
   }
 }
