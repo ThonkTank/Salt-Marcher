@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I02: 17 modale Controls und exakt 33 Optionsfälle direkt zugeordnet; sechs Optionskandidaten und modale Rohzahlen/HTML-Validierung noch ausdrücklich teilweise offen. R01/R02-Freigabe und N-I03-Provenienz fehlen.",
+    "inventoryStatus": "N-I04: 658 UI-Einträge; News als Community Links direkt geöffnet, Inspect als explizit bewachter Debug-Helfer eingeordnet. 95/96 Paketrollen zugeordnet, Update nach zwei begrenzten Aktivierungsversuchen weiter pending. Sechs Optionsreste, modale Rohzahlen/HTML und eigener R02 bleiben offen.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -1066,7 +1066,10 @@
             "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/session.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/input.jsonl",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/input.jsonl"
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/input.jsonl",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json"
           ]
         },
         {
@@ -4433,6 +4436,34 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/085-menu-current.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/085-menu-current.png",
             "observation": "Menu > Community Links: wörtlicher Menüeintrag; Open Recent ist in dieser leeren QA-Historie gedimmt. Kein externer Linkaufruf daraus behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
           }
         ],
         "classification": "original_menu_surface",
@@ -4456,7 +4487,48 @@
               "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/085-menu-current.png"
             }
           ]
-        }
+        },
+        "contextObservations": [
+          {
+            "run": "HEX-00-N-I04",
+            "contexts": [
+              "Startbildschirm",
+              "512 × 512 Black & White QA-Karte"
+            ],
+            "observed": "Menu > Community Links öffnet den benannten Dialog in beiden Zuständen; OK im Startkontext und X im Kartenkontext schließen ihn. Alte Kontext-/Wirkungsaussagen bleiben historisch erhalten.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ],
+            "review": "pending HEX-00-R02"
+          }
+        ]
       },
       {
         "id": "WD-UI-0048",
@@ -6272,10 +6344,79 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/013-menu.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/013-menu.png",
             "observation": "Menu > Community Links: visible."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
           }
         ],
         "classification": "user_function",
-        "observationLimits": []
+        "observationLimits": [],
+        "contextObservations": [
+          {
+            "run": "HEX-00-N-I04",
+            "contexts": [
+              "Startbildschirm",
+              "512 × 512 Black & White QA-Karte"
+            ],
+            "observed": "Menu > Community Links öffnet den benannten Dialog in beiden Zuständen; OK im Startkontext und X im Kartenkontext schließen ihn. Alte Kontext-/Wirkungsaussagen bleiben historisch erhalten.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ],
+            "review": "pending HEX-00-R02"
+          }
+        ]
       },
       {
         "id": "WD-UI-0081",
@@ -36626,6 +36767,417 @@
             "evidence": []
           }
         ]
+      },
+      {
+        "id": "WD-UI-0653",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links > [disclaimer]",
+        "context": "NI04: Startbildschirm und geladene 512 × 512 Black & White QA-Karte; aus gestopptem privaten QA-Profil kopierter Community-Cache.",
+        "commandOrControl": "[disclaimer]",
+        "controlType": "display",
+        "default": {
+          "value": "Hinweis auf unabhängige Community-Angebote",
+          "evidenceScope": "In beiden gemessenen NI04-Kontexten sichtbar; Community-Inhalt stammt aus dem privaten Update-Cache, kein unveränderlicher globaler Inhalt."
+        },
+        "rangeOrChoices": null,
+        "validation": "Benannte Oberfläche direkt sichtbar. OK schließt im Startkontext, X im Kartenkontext. Linkziele und Browserübergang nicht ausgelöst.",
+        "gesture": {
+          "observed": "Menu-Linksklick; OK-Linksklick beziehungsweise X-Linksklick separat gemessen.",
+          "operation": "Externe Links nicht angeklickt."
+        },
+        "previewOrCommit": "Dialog über der bestehenden Ansicht; Schließen führt sichtbar zu derselben Ansicht zurück. Keine Karten-/Historyänderung aus einem externen Link behauptet.",
+        "stateScope": {
+          "observed": "Community-Links-Dialog in zwei Kontexten",
+          "persistence": "Dynamischen Community-Inhalt nicht als Kartendaten/gespeicherten Default gewertet."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
+      },
+      {
+        "id": "WD-UI-0654",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links > Cartography Assets",
+        "context": "NI04: Startbildschirm und geladene 512 × 512 Black & White QA-Karte; aus gestopptem privaten QA-Profil kopierter Community-Cache.",
+        "commandOrControl": "Cartography Assets",
+        "controlType": "link",
+        "default": {
+          "value": "Cartography Assets",
+          "evidenceScope": "In beiden gemessenen NI04-Kontexten sichtbar; Community-Inhalt stammt aus dem privaten Update-Cache, kein unveränderlicher globaler Inhalt."
+        },
+        "rangeOrChoices": null,
+        "validation": "Benannte Oberfläche direkt sichtbar. OK schließt im Startkontext, X im Kartenkontext. Linkziele und Browserübergang nicht ausgelöst.",
+        "gesture": {
+          "observed": "Menu-Linksklick; OK-Linksklick beziehungsweise X-Linksklick separat gemessen.",
+          "operation": "Externe Links nicht angeklickt."
+        },
+        "previewOrCommit": "Dialog über der bestehenden Ansicht; Schließen führt sichtbar zu derselben Ansicht zurück. Keine Karten-/Historyänderung aus einem externen Link behauptet.",
+        "stateScope": {
+          "observed": "Community-Links-Dialog in zwei Kontexten",
+          "persistence": "Dynamischen Community-Inhalt nicht als Kartendaten/gespeicherten Default gewertet."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [
+          "Cartography Assets: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen."
+        ],
+        "observationQuestions": [
+          {
+            "id": "WD-UI-0654-Q04-01",
+            "sourceIndex": 0,
+            "sourceText": "Cartography Assets: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen.",
+            "kind": "original_effect",
+            "caseIds": [
+              "WD-034.01"
+            ],
+            "duePhase": "HEX-26",
+            "reason": "Keine unbekannte Dialogoberfläche mehr; die externe Linkwirkung gehört zur späteren Hilfe-/Einstellungsabnahme.",
+            "probe": "Cartography Assets: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen.",
+            "state": "open",
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "WD-UI-0655",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links > Mythkeeper",
+        "context": "NI04: Startbildschirm und geladene 512 × 512 Black & White QA-Karte; aus gestopptem privaten QA-Profil kopierter Community-Cache.",
+        "commandOrControl": "Mythkeeper",
+        "controlType": "link",
+        "default": {
+          "value": "Mythkeeper",
+          "evidenceScope": "In beiden gemessenen NI04-Kontexten sichtbar; Community-Inhalt stammt aus dem privaten Update-Cache, kein unveränderlicher globaler Inhalt."
+        },
+        "rangeOrChoices": null,
+        "validation": "Benannte Oberfläche direkt sichtbar. OK schließt im Startkontext, X im Kartenkontext. Linkziele und Browserübergang nicht ausgelöst.",
+        "gesture": {
+          "observed": "Menu-Linksklick; OK-Linksklick beziehungsweise X-Linksklick separat gemessen.",
+          "operation": "Externe Links nicht angeklickt."
+        },
+        "previewOrCommit": "Dialog über der bestehenden Ansicht; Schließen führt sichtbar zu derselben Ansicht zurück. Keine Karten-/Historyänderung aus einem externen Link behauptet.",
+        "stateScope": {
+          "observed": "Community-Links-Dialog in zwei Kontexten",
+          "persistence": "Dynamischen Community-Inhalt nicht als Kartendaten/gespeicherten Default gewertet."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [
+          "Mythkeeper: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen."
+        ],
+        "observationQuestions": [
+          {
+            "id": "WD-UI-0655-Q04-01",
+            "sourceIndex": 0,
+            "sourceText": "Mythkeeper: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen.",
+            "kind": "original_effect",
+            "caseIds": [
+              "WD-034.01"
+            ],
+            "duePhase": "HEX-26",
+            "reason": "Keine unbekannte Dialogoberfläche mehr; die externe Linkwirkung gehört zur späteren Hilfe-/Einstellungsabnahme.",
+            "probe": "Mythkeeper: Browserziel und Rückkehr bei einer eigenen Fachprobe prüfen; in NI04 nur Beschriftung und Dialogsichtbarkeit gemessen.",
+            "state": "open",
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "WD-UI-0656",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links > OK",
+        "context": "NI04: Startbildschirm und geladene 512 × 512 Black & White QA-Karte; aus gestopptem privaten QA-Profil kopierter Community-Cache.",
+        "commandOrControl": "OK",
+        "controlType": "command",
+        "default": {
+          "value": "OK",
+          "evidenceScope": "In beiden gemessenen NI04-Kontexten sichtbar; Community-Inhalt stammt aus dem privaten Update-Cache, kein unveränderlicher globaler Inhalt."
+        },
+        "rangeOrChoices": null,
+        "validation": "Benannte Oberfläche direkt sichtbar. OK schließt im Startkontext, X im Kartenkontext. Linkziele und Browserübergang nicht ausgelöst.",
+        "gesture": {
+          "observed": "Menu-Linksklick; OK-Linksklick beziehungsweise X-Linksklick separat gemessen.",
+          "operation": "Externe Links nicht angeklickt."
+        },
+        "previewOrCommit": "Dialog über der bestehenden Ansicht; Schließen führt sichtbar zu derselben Ansicht zurück. Keine Karten-/Historyänderung aus einem externen Link behauptet.",
+        "stateScope": {
+          "observed": "Community-Links-Dialog in zwei Kontexten",
+          "persistence": "Dynamischen Community-Inhalt nicht als Kartendaten/gespeicherten Default gewertet."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
+      },
+      {
+        "id": "WD-UI-0657",
+        "version": "1.1.8.2",
+        "exactUiPath": "Menu > Community Links > close button",
+        "context": "NI04: Startbildschirm und geladene 512 × 512 Black & White QA-Karte; aus gestopptem privaten QA-Profil kopierter Community-Cache.",
+        "commandOrControl": "close button",
+        "controlType": "command",
+        "default": {
+          "value": "X",
+          "evidenceScope": "In beiden gemessenen NI04-Kontexten sichtbar; Community-Inhalt stammt aus dem privaten Update-Cache, kein unveränderlicher globaler Inhalt."
+        },
+        "rangeOrChoices": null,
+        "validation": "Benannte Oberfläche direkt sichtbar. OK schließt im Startkontext, X im Kartenkontext. Linkziele und Browserübergang nicht ausgelöst.",
+        "gesture": {
+          "observed": "Menu-Linksklick; OK-Linksklick beziehungsweise X-Linksklick separat gemessen.",
+          "operation": "Externe Links nicht angeklickt."
+        },
+        "previewOrCommit": "Dialog über der bestehenden Ansicht; Schließen führt sichtbar zu derselben Ansicht zurück. Keine Karten-/Historyänderung aus einem externen Link behauptet.",
+        "stateScope": {
+          "observed": "Community-Links-Dialog in zwei Kontexten",
+          "persistence": "Dynamischen Community-Inhalt nicht als Kartendaten/gespeicherten Default gewertet."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
+      },
+      {
+        "id": "WD-UI-0658",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status",
+        "context": "Startbildschirm im NI04-Kontrollprofil: cached latest_version=\"1.1.9\", last_checked am Testtag, kein private_url. Originaldateien unverändert.",
+        "commandOrControl": "v1.1.9 update available!",
+        "controlType": "status_command",
+        "default": {
+          "value": "v1.1.9 update available!",
+          "evidenceScope": "Ausschließlich fingierter privater QA-Cache; kein Produktdefault und keine Aussage über reale Releases."
+        },
+        "rangeOrChoices": [
+          "version up to date (vorheriger gemessener Kontext)",
+          "v1.1.9 update available! (NI04-Kontrollfixture)"
+        ],
+        "validation": "Status sichtbar; zwei direkte Klickversuche ohne sichtbaren Dialog. Keine abgenommene Updatefunktion.",
+        "gesture": "Linksklick 100ms und 500ms separat protokolliert.",
+        "previewOrCommit": "Keine sichtbare Dialog-/Installationswirkung nach den beiden Klicks.",
+        "stateScope": {
+          "observed": "Nur Startbildschirm mit kontrollierter Cachebedingung",
+          "persistence": "Cachedatei und SHA-256 vor/nach Fixtureänderung außerhalb des Repos dokumentiert; keine Kartendatenänderung."
+        },
+        "caseIds": [
+          "WD-036.01"
+        ],
+        "phase": "HEX-00",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+            "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+            "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+            "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+            "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [
+          "Update-Dialog trotz kontrollierter Aktivierungsbedingung noch nicht direkt erreicht."
+        ],
+        "observationQuestions": [
+          {
+            "id": "WD-UI-0658-Q04-01",
+            "sourceIndex": 0,
+            "sourceText": "Update-Dialog trotz kontrollierter Aktivierungsbedingung noch nicht direkt erreicht.",
+            "kind": "inventory",
+            "caseIds": [
+              "WD-036.01"
+            ],
+            "duePhase": "HEX-00",
+            "reason": "Unbekannte erreichbare Dialogoberfläche bleibt frühe Pflicht; zwei erfolglose Klicks beweisen keine Nichtexistenz.",
+            "probe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks.",
+            "state": "open",
+            "evidence": []
+          }
+        ]
       }
     ],
     "uiInventoryFields": [
@@ -38713,7 +39265,12 @@
           "WD-UI-0569",
           "WD-UI-0570",
           "WD-UI-0571",
-          "WD-UI-0572"
+          "WD-UI-0572",
+          "WD-UI-0653",
+          "WD-UI-0654",
+          "WD-UI-0655",
+          "WD-UI-0656",
+          "WD-UI-0657"
         ]
       },
       {
@@ -38874,7 +39431,8 @@
           "WD-UI-0626",
           "WD-UI-0627",
           "WD-UI-0628",
-          "WD-UI-0629"
+          "WD-UI-0629",
+          "WD-UI-0658"
         ],
         "crossReferenceUi": [
           {
@@ -38914,6 +39472,176 @@
                 "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/original/screens/038-region-second-tooltip.json",
                 "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-contexts-20261008-222726/original/screens/038-region-second-tooltip.png",
                 "observation": "Tooltip im Original wörtlich gelesen: Edit Territories."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0653",
+            "reason": "News-Paketrolle direkt als Community Links geöffnet; Fachwirkung bei WD-034.01/HEX-26, frühe Rollenklärung in WD-036.01.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0654",
+            "reason": "News-Paketrolle direkt als Community Links geöffnet; Fachwirkung bei WD-034.01/HEX-26, frühe Rollenklärung in WD-036.01.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0655",
+            "reason": "News-Paketrolle direkt als Community Links geöffnet; Fachwirkung bei WD-034.01/HEX-26, frühe Rollenklärung in WD-036.01.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0656",
+            "reason": "News-Paketrolle direkt als Community Links geöffnet; Fachwirkung bei WD-034.01/HEX-26, frühe Rollenklärung in WD-036.01.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0657",
+            "reason": "News-Paketrolle direkt als Community Links geöffnet; Fachwirkung bei WD-034.01/HEX-26, frühe Rollenklärung in WD-036.01.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+                "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+                "observation": "OK schließt Community Links zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+                "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+                "observation": "X schließt Community Links zur geladenen Karte."
               }
             ]
           }
@@ -53385,9 +54113,9 @@
       },
       {
         "path": "res://scripts/ui/inspect_dialog.gdc",
-        "state": "pending",
-        "classification": null,
-        "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: Inspect enthält Description/Content sowie Yes/No und JSON/Save.make_map_data. Editor referenziert die Rolle; kein gesonderter sichtbarer Toolbar-/Menüaufruf identifiziert. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+        "state": "classified_guarded_internal_role",
+        "classification": "internal_helper",
+        "reason": "Begrenzter editor.gdc-Aufruf _unhandled_input bindet inspect_dialog.popup_centered an OS.is_debug_build() und KEY_F9. Inspect-Ressource enthält JSON/Save.make_map_data sowie Yes/No. Installiertes unverändertes Original öffnet bei geladenem Kartenkontext mit F9 keinen Dialog. Als Debug-Helfer eingeordnet, nicht als abgenommene öffentliche Editorfunktion.",
         "uiIds": [],
         "directEvidence": [
           {
@@ -53403,6 +54131,20 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
             "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/007-inspect-f9.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/007-inspect-f9.png",
+            "observation": "Erster F9-Versuch unmittelbar beim Kartenladen; keine positive Dialogbeobachtung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/008-inspect-f9-loaded.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/008-inspect-f9-loaded.png",
+            "observation": "Geladene Karte sichtbar; zweiter F9-Versuch öffnet keinen Inspektor. Keine Nichtexistenz aus dem Frame abgeleitet."
           }
         ],
         "priorClassification": {
@@ -53433,15 +54175,108 @@
           "role": "package_identifier_hints_only",
           "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
         },
-        "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+        "classificationBasis": "Expliziter statischer Debug-Guard plus tatsächlicher negativer Original-F9-Befund. Kein ausbleibender Neustart als Abwesenheitsbeweis; Debug-Dialog selbst nicht bedient oder abgenommen.",
         "activationInvestigation": {
-          "run": "HEX-00-N-I03",
-          "state": "narrowed_not_accepted",
-          "newNativeRun": false,
-          "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
-          "hint": "Inspect enthält Description/Content sowie Yes/No und JSON/Save.make_map_data. Editor referenziert die Rolle; kein gesonderter sichtbarer Toolbar-/Menüaufruf identifiziert.",
-          "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
-          "nextProbe": "Erreichbaren Daten-/Debug-Aufruf anhand der lokalen Editor-Einstiegszuordnung klären, dann Description/Content und Yes/No am Original prüfen; nicht blind wieder starten."
+          "run": "HEX-00-N-I04",
+          "state": "guarded_internal_classification_review_pending",
+          "newNativeRun": true,
+          "entryCondition": "OS.is_debug_build() && InputEventKey.pressed && scancode == KEY_F9; editor.gdc _unhandled_input lines 209–213",
+          "originalObserved": "F9 öffnet im geladenen installierten Original keinen Dialog.",
+          "inferenceLimit": "Einstufung des Guarded-Aufrufwegs, keine Aussage über vollständige interne Dialogwirkung oder sämtliche mögliche Codepfade.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/007-inspect-f9.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/007-inspect-f9.png",
+              "observation": "Erster F9-Versuch unmittelbar beim Kartenladen; keine positive Dialogbeobachtung."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/008-inspect-f9-loaded.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/008-inspect-f9-loaded.png",
+              "observation": "Geladene Karte sichtbar; zweiter F9-Versuch öffnet keinen Inspektor. Keine Nichtexistenz aus dem Frame abgeleitet."
+            }
+          ],
+          "remaining": "Eigener HEX-00-R02 prüft Guardbeleg, Rolle und Abgrenzung."
+        },
+        "classificationHistory": [
+          {
+            "run": "HEX-00-N-I03",
+            "record": {
+              "path": "res://scripts/ui/inspect_dialog.gdc",
+              "state": "pending",
+              "classification": null,
+              "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: Inspect enthält Description/Content sowie Yes/No und JSON/Save.make_map_data. Editor referenziert die Rolle; kein gesonderter sichtbarer Toolbar-/Menüaufruf identifiziert. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+              "uiIds": [],
+              "directEvidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                  "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                  "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                }
+              ],
+              "priorClassification": {
+                "path": "res://scripts/ui/inspect_dialog.gdc",
+                "state": "pending",
+                "classification": null,
+                "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden.",
+                "uiIds": [],
+                "directEvidence": [
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                    "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                    "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                  }
+                ]
+              },
+              "packageHintEvidence": {
+                "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/package-role-hints.json",
+                "role": "package_identifier_hints_only",
+                "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
+              },
+              "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+              "activationInvestigation": {
+                "run": "HEX-00-N-I03",
+                "state": "narrowed_not_accepted",
+                "newNativeRun": false,
+                "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
+                "hint": "Inspect enthält Description/Content sowie Yes/No und JSON/Save.make_map_data. Editor referenziert die Rolle; kein gesonderter sichtbarer Toolbar-/Menüaufruf identifiziert.",
+                "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+                "nextProbe": "Erreichbaren Daten-/Debug-Aufruf anhand der lokalen Editor-Einstiegszuordnung klären, dann Description/Content und Yes/No am Original prüfen; nicht blind wieder starten."
+              }
+            }
+          }
+        ],
+        "callsiteHintEvidence": {
+          "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/bounded-callsite-hints.json",
+          "role": "bounded_package_callsite_hint_not_runtime_proof",
+          "sha256": "b5c33c70cbaf4ec0cd3e1ca0e912a097425a5e370ba2c516f024f1101dbd528b",
+          "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac",
+          "format": "GDSC bytecode version 12; bounded call-site tokens interpreted using official Godot 3.0 format; diagnostic only, no instrumented runtime code attribution.",
+          "formatSources": [
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.cpp",
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.h"
+          ]
         }
       },
       {
@@ -53747,10 +54582,18 @@
       },
       {
         "path": "res://scripts/ui/news_dialog.gdc",
-        "state": "pending",
-        "classification": null,
-        "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: News enthält generische OK- und Yes/No-Container, Text/BBCode und Callback. Der Name allein beweist keinen Nachrichtenfeed; Error- und Warning-Rollen sind getrennt vorhanden. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
-        "uiIds": [],
+        "state": "mapped_surface_role",
+        "classification": "user_function",
+        "reason": "Menu > Community Links in zwei Originalkontexten geöffnet. Bounded editor call-site show_community_links verweist auf news_dialog; Dialogtitel/Disclaimer/Links und OK/X direkt beobachtet.",
+        "uiIds": [
+          "WD-UI-0047",
+          "WD-UI-0080",
+          "WD-UI-0653",
+          "WD-UI-0654",
+          "WD-UI-0655",
+          "WD-UI-0656",
+          "WD-UI-0657"
+        ],
         "directEvidence": [
           {
             "role": "actual_original_runtime",
@@ -53765,6 +54608,34 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
             "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+            "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+            "observation": "OK schließt Community Links zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+            "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+            "observation": "X schließt Community Links zur geladenen Karte."
           }
         ],
         "priorClassification": {
@@ -53795,15 +54666,124 @@
           "role": "package_identifier_hints_only",
           "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
         },
-        "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+        "classificationBasis": "Begründete Rollenentscheidung aus passendem tatsächlichem Menüaufruf und begrenztem Paket-Aufrufhinweis. Keine Laufzeitinstrumentierung oder vollständige Funktionsabnahme.",
         "activationInvestigation": {
-          "run": "HEX-00-N-I03",
-          "state": "narrowed_not_accepted",
-          "newNativeRun": false,
-          "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
-          "hint": "News enthält generische OK- und Yes/No-Container, Text/BBCode und Callback. Der Name allein beweist keinen Nachrichtenfeed; Error- und Warning-Rollen sind getrennt vorhanden.",
-          "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
-          "nextProbe": "Aufrufer von set_text/set_ok/set_yes_no im Editor anhand begrenzter lokaler Referenzmetadaten eingrenzen; die tatsächlich ausgelöste Meldung inklusive Abbruch im Original lesen."
+          "run": "HEX-00-N-I04",
+          "state": "direct_activation_recorded_review_pending",
+          "newNativeRun": true,
+          "observedEntry": "Menu > Community Links",
+          "contexts": [
+            "startup",
+            "loaded map"
+          ],
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/003-community-dialog.png",
+              "observation": "Startbildschirm: Menu > Community Links öffnet den benannten Dialog mit Disclaimer, Cartography Assets, Mythkeeper, OK und X."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/004-community-ok.png",
+              "observation": "OK schließt Community Links zum Startbildschirm."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/010-community-with-map.png",
+              "observation": "Geladene 512px-QA-Karte: derselbe Community-Links-Dialog mit denselben sichtbaren Elementen."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
+              "observation": "X schließt Community Links zur geladenen Karte."
+            }
+          ],
+          "remaining": "Dynamische Linkwirkung bei HEX-26, unabhängige Rollenprüfung in HEX-00-R02."
+        },
+        "classificationHistory": [
+          {
+            "run": "HEX-00-N-I03",
+            "record": {
+              "path": "res://scripts/ui/news_dialog.gdc",
+              "state": "pending",
+              "classification": null,
+              "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: News enthält generische OK- und Yes/No-Container, Text/BBCode und Callback. Der Name allein beweist keinen Nachrichtenfeed; Error- und Warning-Rollen sind getrennt vorhanden. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+              "uiIds": [],
+              "directEvidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                  "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                  "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                }
+              ],
+              "priorClassification": {
+                "path": "res://scripts/ui/news_dialog.gdc",
+                "state": "pending",
+                "classification": null,
+                "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden.",
+                "uiIds": [],
+                "directEvidence": [
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                    "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                    "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                  }
+                ]
+              },
+              "packageHintEvidence": {
+                "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/package-role-hints.json",
+                "role": "package_identifier_hints_only",
+                "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
+              },
+              "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+              "activationInvestigation": {
+                "run": "HEX-00-N-I03",
+                "state": "narrowed_not_accepted",
+                "newNativeRun": false,
+                "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
+                "hint": "News enthält generische OK- und Yes/No-Container, Text/BBCode und Callback. Der Name allein beweist keinen Nachrichtenfeed; Error- und Warning-Rollen sind getrennt vorhanden.",
+                "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+                "nextProbe": "Aufrufer von set_text/set_ok/set_yes_no im Editor anhand begrenzter lokaler Referenzmetadaten eingrenzen; die tatsächlich ausgelöste Meldung inklusive Abbruch im Original lesen."
+              }
+            }
+          }
+        ],
+        "callsiteHintEvidence": {
+          "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/bounded-callsite-hints.json",
+          "role": "bounded_package_callsite_hint_not_runtime_proof",
+          "sha256": "b5c33c70cbaf4ec0cd3e1ca0e912a097425a5e370ba2c516f024f1101dbd528b",
+          "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac",
+          "format": "GDSC bytecode version 12; bounded call-site tokens interpreted using official Godot 3.0 format; diagnostic only, no instrumented runtime code attribution.",
+          "formatSources": [
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.cpp",
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.h"
+          ]
         }
       },
       {
@@ -54256,7 +55236,7 @@
         "path": "res://scripts/ui/update_dialog.gdc",
         "state": "pending",
         "classification": null,
-        "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: Update enthält Link_Edit und ConfirmationDialog. HTTP-Bezeichner nennen latest_version, STABLE_VERSION, needs_update, on_update; privates gemessenes Profil hat [Update] latest_version=\"1.1.8\" und last_checked. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+        "reason": "Kontrollierter privater Update-Cache zeigt native rote Update-Meldung, zwei Klicks öffnen im Startkontext keinen sichtbaren Dialog. Paketaufruf on_update hat Nicht-Windows-/fehlendes-private_url-Bedingung, aber Dialogoberfläche bleibt ungeklärt. Pending; keine ausbleibende UI als Nichtexistenz gewertet.",
         "uiIds": [],
         "directEvidence": [
           {
@@ -54272,6 +55252,34 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
             "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+            "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+            "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+            "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+            "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
           }
         ],
         "priorClassification": {
@@ -54302,15 +55310,124 @@
           "role": "package_identifier_hints_only",
           "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
         },
-        "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+        "classificationBasis": "Aktuelle echte Originalzustände und begrenzte Paket-Aufrufhinweise, keine endgültige Rollenentscheidung.",
         "activationInvestigation": {
-          "run": "HEX-00-N-I03",
-          "state": "narrowed_not_accepted",
-          "newNativeRun": false,
-          "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
-          "hint": "Update enthält Link_Edit und ConfirmationDialog. HTTP-Bezeichner nennen latest_version, STABLE_VERSION, needs_update, on_update; privates gemessenes Profil hat [Update] latest_version=\"1.1.8\" und last_checked.",
-          "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
-          "nextProbe": "Isolierte, ausdrücklich als Testzustand dokumentierte Versionscache-Fixture nutzen, um Erreichbarkeit der Versionsschaltfläche zu prüfen. Keine produktiven Update-Links eingeben oder Updates ausführen. Dialog nur bei tatsächlicher Darstellung zuordnen."
+          "run": "HEX-00-N-I04",
+          "state": "bounded_failed_activation_pending",
+          "newNativeRun": true,
+          "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
+          "fixtureLimit": "Fingierte Version 1.1.9 ausschließlich im eigenen privaten QA-Cache, keine reale Releasebehauptung.",
+          "attempts": 2,
+          "observed": "Statusmeldung sichtbar; 100ms- und 500ms-Klick im Startkontext ohne sichtbaren Dialog. Hypothese danach beendet.",
+          "entryHint": "http.gdc on_update: Windows → safe_self_update; sonst vorhandene private_url → shell_open; ohne private_url → update_dialog.popup_centered. Keine Laufzeitinstrumentierung.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+              "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+              "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+              "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+              "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+            }
+          ],
+          "nextProbe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks."
+        },
+        "classificationHistory": [
+          {
+            "run": "HEX-00-N-I03",
+            "record": {
+              "path": "res://scripts/ui/update_dialog.gdc",
+              "state": "pending",
+              "classification": null,
+              "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden. N-I03: Update enthält Link_Edit und ConfirmationDialog. HTTP-Bezeichner nennen latest_version, STABLE_VERSION, needs_update, on_update; privates gemessenes Profil hat [Update] latest_version=\"1.1.8\" und last_checked. Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+              "uiIds": [],
+              "directEvidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                  "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                  "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                }
+              ],
+              "priorClassification": {
+                "path": "res://scripts/ui/update_dialog.gdc",
+                "state": "pending",
+                "classification": null,
+                "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden.",
+                "uiIds": [],
+                "directEvidence": [
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                    "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                    "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                  }
+                ]
+              },
+              "packageHintEvidence": {
+                "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/package-role-hints.json",
+                "role": "package_identifier_hints_only",
+                "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
+              },
+              "classificationBasis": "Nur Paket-Bezeichnerhinweise; konkrete erreichbare Originaloberfläche noch nicht bestätigt. Bleibt pending.",
+              "activationInvestigation": {
+                "run": "HEX-00-N-I03",
+                "state": "narrowed_not_accepted",
+                "newNativeRun": false,
+                "priorFailure": "Leeres Profil/Erststart und version up to date bereits ohne zusätzlichen Dialog beobachtet; nicht erneut als Existenz-/Abwesenheitsbeweis verwendet.",
+                "hint": "Update enthält Link_Edit und ConfirmationDialog. HTTP-Bezeichner nennen latest_version, STABLE_VERSION, needs_update, on_update; privates gemessenes Profil hat [Update] latest_version=\"1.1.8\" und last_checked.",
+                "inferenceLimit": "Bezeichner liefern Kandidaten, keine Kontrollfluss-/Aktivierungsbeweise. Ohne passende sichtbare Originalfolge keine abschließende Rollenklasse.",
+                "nextProbe": "Isolierte, ausdrücklich als Testzustand dokumentierte Versionscache-Fixture nutzen, um Erreichbarkeit der Versionsschaltfläche zu prüfen. Keine produktiven Update-Links eingeben oder Updates ausführen. Dialog nur bei tatsächlicher Darstellung zuordnen."
+              }
+            }
+          }
+        ],
+        "callsiteHintEvidence": {
+          "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/bounded-callsite-hints.json",
+          "role": "bounded_package_callsite_hint_not_runtime_proof",
+          "sha256": "b5c33c70cbaf4ec0cd3e1ca0e912a097425a5e370ba2c516f024f1101dbd528b",
+          "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac",
+          "format": "GDSC bytecode version 12; bounded call-site tokens interpreted using official Godot 3.0 format; diagnostic only, no instrumented runtime code attribution.",
+          "formatSources": [
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.cpp",
+            "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.h"
+          ]
         }
       },
       {
@@ -54604,7 +55721,7 @@
       "HEX00-R01-02: Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
       "HEX00-R01-03: Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
       "HEX00-R01-04: Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
-      "HEX00-R01-05: Vier Paketrollen bleiben ohne abschließende begründete Zuordnung",
+      "HEX00-R01-05: News und Inspect begründet eingeordnet; Update-Aktivierung nach zwei begrenzten NI04-Versuchen noch offen; unabhängiger Rollenreview fehlt",
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Tiefe Originalvarianten bleiben bei ihrer Fachphase und sind vor deren Produktcode direkt zu messen; keine vollständige Wonderdraft-Parität aus dem frühen Ablauf.",
       "Nach Pflichtnachbesserung eigener HEX-00-R02, anschließend eigene Aufräumplanung/-umsetzung/-review. CITY-00 bleibt eigene frühe Ergebnisreferenzphase."
