@@ -4746,7 +4746,7 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_n005_h01_cloud_partial_visible_ui_followups_open_db47c8a",
+    "state": "gm_ux_n005_n01_h01_r02_blocked_r03_not_started",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "H01 erneut auf exakt gebautem Shared-/Bundle-Commit db47c8a: Raum-Key-Suche, Raum12/Geschoss1/Key, Dirty-Guard/Verwerfen, Save/Tab-Reopen und erneute Aktivierung bestanden; Filterpersistenz, 18px Suchfeld bei leerem Dock und 30px visuell gekürzte Trefferzeile reproduziert.",
@@ -4890,7 +4890,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Kartograph/Dungeon-Strang hat N01 in a06703c implementiert; unabhängiger read-only Produktreview PASS. Der Cloud-GM-Produkttester wiederholt jetzt exakt H01 auf integriertem Build: leerer Suchstart nach Reopen, sichtbare/klickbare Raum- und Geschosszeile bei 256 px, sauberer Key-Dock weicht der Suche und Dirty-Draft bleibt bis zur ausdrücklichen Aktion geschützt. Danach bleibt GM-R01 offen; N-006 separat.",
+    "next": "GM-UX-N-005-N01-H01-R02 ist blocked (Issue #1 6087877294). Vor R03 als not started dokumentiert: eigenen Cloud-Obsidian-Prozess/Profil und isolierte Vault-Kopie bereitstellen, dann eine gebündelte H01-Abnahme mit build/hash/screenshot-Provenienz. Kartograph ist N01-Implementierungsbesitzer; Cloud-GM-Produkttester führt R03 aus.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -5208,6 +5208,27 @@
       "limits": "Atlas-Produktdateien im Gesamtbuild geändert, N-005-Suchdateien unverändert. Cloud-UI-Test auf exakt gebauten und installierten Bundle; keine physische Eingabe, keine frische Electron-Sitzung, kein GM-R01 oder Gesamtfreigabe. N-006 separat offen.",
       "issueComment": "6087535370",
       "owner": "Kartograph – Dungeon-Strang; GM-UX-N-005-N01 laut Issue #1 Kommentar 6087711097"
+    },
+    "lastRun": {
+      "id": "GM-UX-N-005-N01-H01-R02",
+      "status": "blocked",
+      "branch": "active/installed-phase1",
+      "baseCommit": "2f522daf6887bf0c51aba9036ee43b821ad069ba",
+      "productCommit": "a06703c31766a064c6a8e8510a1cb5eaa46ca549",
+      "buildDirty": false,
+      "buildSha256": {
+        "mainJs": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7",
+        "stylesCss": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifestJson": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "result": "Build/install hashgleich, UI-Teilfolge ausgeführt, aber Screenshots und DOM-Messungen wechselten widersprüchlich; mehrere alte CDP-Clients mit gleichem Obsidian-Prozess verbunden. Keine Abnahmebehauptung.",
+      "cardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+      "changedFiles": [],
+      "commit": null,
+      "issueComment": "6087877294",
+      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-n01-h01-r02/01-reload-command.png through 13-inspect-after-activation.png",
+      "limits": "Keine Karte geändert; keine Produktdatei; kein physischer Input; kein frischer Electronprozess; N01-H01 Abnahme blocked.",
+      "next": "GM-UX-N-005-N01-H01-R03 not started: separater Obsidian-Prozess, eigene User-Data-Dir und kopierte isolierte Vault."
     }
   }
 }
