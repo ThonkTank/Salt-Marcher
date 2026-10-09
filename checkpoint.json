@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_plan_repaired_review_pending",
+    "state": "smr00_adr_p01_h03_plan_reviewed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,11 +101,11 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "plan_repaired_review_pending_implementation_blocked",
+      "state": "plan_passed_implementation_pending",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
-      "limits": "Repaired plan draft at 2f7f8fa7712b99c30c452aec9cc0c25a3cc5738d awaits independent exact-head review. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run.",
-      "review": "ADR-P01-H03-P01-R01 passed exact head a9de899262163f355f627931f527c6f5bd1d16d9. A later independent read-only recheck of daa053967b4e7fa7228cfd89fd11996bb363d420 found three mandatory plan gaps: occupied capture name with RENAME_NOREPLACE, unbound helper files before first durable receipt, and missing absent-before-publication Create oracle. See Issue #1 comments 6084665817 and 6084697489. Repair and exact-head re-review are required before H03-I01."
+      "limits": "R02 passed planning review only. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run.",
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7 without further mandatory plan finding (Issue #1 comment 6084812709)."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -114,10 +114,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-P01-R02",
-      "kind": "architecture_hypothesis_plan_repair_review",
-      "owner": "independent_review_thread",
-      "focus": "Independently review exact plan repair commit 2f7f8fa7712b99c30c452aec9cc0c25a3cc5738d and the three mandatory gaps before H03-I01"
+      "id": "ADR-P01-H03-I01",
+      "kind": "architecture_hypothesis_implementation",
+      "owner": "local_implementation_thread",
+      "focus": "Implement only the reviewed Linux p01-v3 transaction contract, retained snapshot/capture state machines, parent/child recovery and complete native adversary matrix"
     }
   },
   "saltMarcherCatalogEncounter": {

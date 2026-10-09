@@ -414,6 +414,9 @@ Stellen als Planentwurf. Der erste unabhängige Review auf
 `2f7f8fa7712b99c30c452aec9cc0c25a3cc5738d` bestätigte die drei
 Reparaturziele, fand aber zwei neue Matrix-/Frühzustandswidersprüche (Issue #1,
 Kommentar 6084779594). Diese Fassung präzisiert die operationsspezifischen
-Pflichtzellen und `no-transaction` vor Staging-Anlage. Die erneute unabhängige
-Prüfung des exakten neuen Quellcommits ist offen; H03-I01 beginnt erst nach
-bestandenem R02-Review.
+Pflichtzellen und `no-transaction` vor Staging-Anlage. Der erneute unabhängige
+schreibgeschützte Review bestand auf dem exakten Shared-Head
+`25885d543c8576a3ae1d0556e7b04a51d40209c7` ohne weiteren Pflichtbefund
+(Issue #1, Kommentar 6084812709). Dies ist ausschließlich ein Plan-PASS;
+ausführbarer H03-Nachweis, Linux-Durability-Go, Plattform-ADR und P02 bleiben
+offen.
