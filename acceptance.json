@@ -123635,6 +123635,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
@@ -134854,6 +134872,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
@@ -135012,6 +135048,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
@@ -135174,6 +135228,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
@@ -135324,6 +135396,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
@@ -140774,6 +140864,24 @@
           ],
           "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
           "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
+        },
+        "followUpPhase1MapInfoNoResizeReview": {
+          "state": "scoped_review_passed_phase1_open",
+          "strictAcceptance": "scoped_verified",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-dd039-packoff-20261005/DD-039-ORIGINAL.md"
+          ],
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+          ],
+          "finding": "8×8-Dialog ohne Resize: Größe, Pfad, leere/ausgewählte Pakete, Close/X mit erhaltener Karte und History; nach X führt UI-Undo/Redo den vorherigen Befehl aus. Zwei getrennte Edit-/Neuöffnungspaare speichern je Zustand dieselben Hashes.",
+          "remaining": "Phase-1-Gesamttor offen; Paketauswahl-Bedienung unter DD-009/010 separat."
         }
       },
       {
