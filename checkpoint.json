@@ -86,13 +86,19 @@
     "currentRun": {
       "id": "CE-01-C01-P01",
       "kind": "cleanup_plan",
-      "state": "completed_static_validation_review_pending",
+      "state": "repair_completed_static_validation_review_pending",
       "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "basis": {
         "reviewedProductCommit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
         "reviewedMainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
         "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
+      },
+      "review": {
+        "state": "changes_required",
+        "reviewedCommit": "37342f98911e1e5fcbcb7f369f1e411f3bdda667",
+        "finding": "The plan identified reset draft-list drift but did not require resetCreatureCatalogFilters to derive draft keys from the canonical DRAFT_FILTERS mapping.",
+        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list."
       },
       "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
     },
