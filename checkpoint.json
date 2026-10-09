@@ -4791,16 +4791,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R47",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T20:39:04.076618+00:00",
-      "focus": "R47 COK-Effekt-/Savebelege prüfen",
-      "state": "completed",
-      "result": "R47:43 Hashes/19 Frames, sichtbare Schatten-/Schneeregler und nur environment-Save bestätigt; Quelle/5 Prozessidentitäten geschützt. PASS nur begrenzte Wirkung; Vorlagen/Reopen/eigenes Produkt offen."
-    },
-    "nextRun": {
       "id": "CITY-00-R47-CLEAN-P47",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T20:39:15.687903+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
+      "state": "completed",
+      "result": "Aufräumplan: irreführenden Raw-Bildnamen018 ausdrücklich einordnen, veraltete Plan-/Koordinationsaussagen konsolidieren, tatsächlichen20min-Heartbeat und Issue7 im eigenen Checkpoint abbilden; Rawdaten unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-R47-CLEAN-I47",
+      "kind": "cleanup_implementation",
       "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [

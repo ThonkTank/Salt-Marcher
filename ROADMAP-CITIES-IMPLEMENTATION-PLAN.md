@@ -1085,3 +1085,5 @@ CITY-00-I47-CLEAN-I47 Start 2026-10-09T19:55:27.486404+00:00; Plan mit begrenzte
 CITY-00-I47-CLEAN-R47 Start 2026-10-09T19:55:37.671020+00:00; Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat.
 
 CITY-00-R47 Start 2026-10-09T20:39:04.076618+00:00; R47:43 Hashes/19 Frames, sichtbare Schatten-/Schneeregler und nur environment-Save bestätigt; Quelle/5 Prozessidentitäten geschützt. PASS nur begrenzte Wirkung; Vorlagen/Reopen/eigenes Produkt offen.
+
+CITY-00-R47-CLEAN-P47 Start 2026-10-09T20:39:15.687903+00:00; Aufräumplan: irreführenden Raw-Bildnamen018 ausdrücklich einordnen, veraltete Plan-/Koordinationsaussagen konsolidieren, tatsächlichen20min-Heartbeat und Issue7 im eigenen Checkpoint abbilden; Rawdaten unverändert.
