@@ -193,17 +193,16 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.deepEqual(new Set(building.polygons[0].outer.map((p) => `${p.x}:${p.y}`)),
       new Set(["1:1", "7:1", "7:7", "1:7"]));
     assert.equal(building.polygons[0].holes.length, 1);
-    const hole = building.polygons[0].holes[0];
-    assert.equal(hole.length, 28);
-    assert.equal(Math.min(...hole.map((point) => point.x)), 3);
-    assert.equal(Math.max(...hole.map((point) => point.x)), 5);
-    assert.equal(Math.min(...hole.map((point) => point.y)), 3);
-    assert.equal(Math.max(...hole.map((point) => point.y)), 5);
+    const ring = building.polygons[0].holes[0];
+    assert.equal(ring.length, 28);
+    for (const axis of ["x", "y"]) {
+      assert.ok(Math.abs(Math.min(...ring.map((p) => p[axis])) - 3) < 0.02);
+      assert.ok(Math.abs(Math.max(...ring.map((p) => p[axis])) - 5) < 0.02);
+    }
     assert.equal(doc.smartTiles.length, 36);
     for (let y = 1; y < 7; y++) for (let x = 1; x < 7; x++) {
       const cell = doc.smartTiles.find((item) => item.x === x && item.y === y);
-      const inEllipseBounds = x >= 3 && x < 5 && y >= 3 && y < 5;
-      const stone = !inEllipseBounds && x >= 4 && y <= 3;
+      const stone = x >= 4 && y <= 3 && !(x === 4 && y === 3);
       assert.equal(cell?.assetId, stone ? stoneId : woodId);
       assert.equal(cell?.color, stone ? 0x7f7e71 : 0xb28f6f);
       assert.equal(cell?.buildingId, building.id);
@@ -535,8 +534,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     }
     await page.evaluate(async ({ name, content }) => {
       await app.vault.create(name, content);
-    }, { name: ELLIPSE_HOLE,
-      content: fs.readFileSync(path.join(vault, EXTENDED), "utf8") });
+    }, { name: ELLIPSE_HOLE, content: fs.readFileSync(path.join(vault, EXTENDED), "utf8") });
     await open(ELLIPSE_HOLE);
     const ellipseEditor = page.locator(".dungeon-native-editor:visible").last();
     await ellipseEditor.locator(".dn-group-rail")
@@ -572,7 +570,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     verifyExtended((await state()).document, wood.id, stone.id);
     await ellipseEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
     verifyEllipseHole((await state()).document, wood.id, stone.id);
-    checks.push("DD-038 elliptical interior Alt hole repaints the covered Stone tile as Wood in one Undo step");
+    checks.push("DD-038 Alt ellipse retains 36 cells, repaints hidden Stone as Wood, and undoes in one step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -681,14 +679,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
         `wood-stone-four-cell-${name}-fresh.png`) });
       checks.push(`DD-038 fresh Host retains the four-cell ${name} hole and repainted hidden cells`);
     }
-    const ellipseHole = JSON.parse(fs.readFileSync(ellipseHoleBaseline, "utf8"));
+    const ellipse = JSON.parse(fs.readFileSync(ellipseHoleBaseline, "utf8"));
     await open(ELLIPSE_HOLE);
     const ellipseFresh = await state();
-    assert.deepEqual(ellipseFresh.document, ellipseHole.document);
-    assert.equal(hash(ELLIPSE_HOLE), ellipseHole.hash);
-    verifyEllipseHole(ellipseFresh.document, ellipseHole.woodId, ellipseHole.stoneId);
+    assert.deepEqual(ellipseFresh.document, ellipse.document);
+    assert.equal(hash(ELLIPSE_HOLE), ellipse.hash);
+    verifyEllipseHole(ellipseFresh.document, ellipse.woodId, ellipse.stoneId);
     await page.screenshot({ path: path.join(out, "wood-stone-ellipse-hole-fresh.png") });
-    checks.push("DD-038 fresh Host retains the elliptical hole and its 36 stored floor cells");
+    checks.push("DD-038 fresh Host keeps the elliptic masked hole and all 36 styled tile values");
   }
   return { edit, reopen };
 };

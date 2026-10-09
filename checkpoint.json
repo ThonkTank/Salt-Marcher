@@ -1839,7 +1839,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur, einzellige und größere rechteckige Übermalung, die 2×1-Stilgrenze beim Radieren und ein 1×1-Innenloch sind gepaart; weitere Übermal- und Radierformen samt größeren Löchern direkt messen und Host folgen lassen; Konturpunktverschiebung ist in drei Varianten mit Original und Host separat reviewt; Punkteinfügen auf der gemischten V4-Kontur ist mit Original und Host separat reviewt; Punktentfernung auf gemischtem V4-Boden ist mit Original und Host separat reviewt; zweite Delete-Geste am Dreieck samt Boden-Zellfolge ist mit Original und Host separat reviewt; als nächsten eigenen Lauf die direkt gemessene Alt-Ellipse über der gemischten 6×6-Bodenfläche per Host-GUI paaren; weitere Punktgesten und Formen folgen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur, einzellige und größere rechteckige Übermalung, die 2×1-Stilgrenze beim Radieren und ein 1×1-Innenloch sind gepaart; weitere Übermal- und Radierformen samt größeren Löchern direkt messen und Host folgen lassen; Konturpunktverschiebung ist in drei Varianten mit Original und Host separat reviewt; Punkteinfügen auf der gemischten V4-Kontur ist mit Original und Host separat reviewt; Punktentfernung auf gemischtem V4-Boden ist mit Original und Host separat reviewt; zweite Delete-Geste am Dreieck samt Boden-Zellfolge ist mit Original und Host separat reviewt; als nächsten eigenen Lauf eine weitere gemischte Building-Boden-Geste im Original messen; weitere Punktgesten und Formen folgen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -3493,16 +3493,23 @@
     },
     "buildingFloorEllipseHoleOriginal": {
       "case": "DD-038.05, Alt-Ellipse auf gemischtem Building-Boden",
-      "state": "ellipse_host_tool_candidate_qa_lock_pending_case_open",
+      "state": "ellipse_interior_hole_scoped_review_passed_case_open",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
       "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
       "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/01-erased.dungeondraft_map",
       "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-fresh-original-20261009/native/runs/20261009-125624-3751209/evidence/screens/00-fresh.png",
       "hostTool": "tools/host/parity-tools-phase1-building-mixed.cjs",
       "coreTests": 201,
-      "measured": "Alt-Ellipse `(3,3)`–`(5,5)` ergänzt einen 28-Punkt-Innenring, erhält 36 Bodenzellen und übermalt nur das verdeckte Stone-Feld (4,3) mit gewähltem Wood. Undo/Redo bytegleich; frische Originalöffnung besteht.",
-      "open": "Der Hosthelfer bildet Alt-Ellipse, 28-Punkt-Ring, 36 Zellwerte, genau eine Stone-zu-Wood-Zelle, Undo/Redo und frische Öffnung ab; Syntax, Typprüfung, 201 Kerntests und Build bestehen. Die grafischen Edit-/Neuöffnungsläufe bleiben wegen der exklusiv bei den lokalen Kollegen gehaltenen QA-Instanz offen; danach separater Review, weitere Formen und DD-038-Endreview.",
-      "gate": "open"
+      "measured": "Original und lokaler Host: Alt-Ellipse `(3,3)`–`(5,5)` ergänzt einen 28-Punkt-Innenring, erhält 36 Bodenzellen und übermalt nur (4,3) mit Wood. Zwei Rohdatenpaare ohne funktionale Abweichung; Undo/Redo, Editlauf und frische Öffnung mit je zehn Prüfpunkten bestehen.",
+      "open": "Weitere Ellipsengrößen, Außenkanten, spätere Übermalung im Loch, kombinierte Ränder und DD-038-Endreview. P7-2 physisch ungeprüft.",
+      "gate": "open",
+      "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/implementation.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/evidence/1791543569173-parity-tools-phase1-building-mixed-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/evidence/1791543595083-parity-tools-phase1-building-mixed-reopen/result.json",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/independent-audit.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/review-audit.json"
     }
   },
   "cityExecution": {
@@ -3554,6 +3561,7 @@
       },
       "build": "passed"
     },
-    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme."
+    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme.",
+    "review": "Die Lazy-Range-Assertion behandelt offene slice-Grenzen korrekt. Sie protokolliert weiterhin nur slice-Aufrufe, nicht ob danach arrayBuffer()/text() Materialisierung auslöst; Lazy-Payload-Verhalten ist dadurch nur teilweise belegt."
   }
 }
