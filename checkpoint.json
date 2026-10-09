@@ -419,19 +419,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "concrete_location_plan_checked_not_implemented",
+    "state": "location_core_checked_world_ui_storage_inactive",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
       "id": "HEX-03-I01a",
       "kind": "location_core",
       "recordedAt": "2026-10-09T19:46:28.182629+00:00",
-      "state": "in_progress",
-      "focus": "New standalone closed native Location/Placement/Key codec plus one lifetime LocationSource, nullable absence and composable same-history commands; no World/UI/Store activation."
+      "state": "completed_checked_core_ui_storage_inactive",
+      "focus": "New standalone closed native Location/Placement/Key codec plus one lifetime LocationSource, nullable absence and composable same-history commands; no World/UI/Store activation.",
+      "finishedAt": "2026-10-09T19:49:23.151867+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json",
+      "sourceCommit": "09a242772214e4c04307d9ffddbb89a831d9210b",
+      "testsPassed": 386
     },
     "nextRun": {
-      "id": "HEX-03-I01a",
-      "kind": "location_core",
-      "focus": "Native closed Location/Placement/Key schema and one history source; keep World placements inactive until complete I01b persistence."
+      "id": "HEX-03-I01b",
+      "kind": "first_native_location_flow",
+      "focus": "Activate validated world placements only with Location/draft2/journal/copy/discard/recovery closure; connect marker/Key/drag/fit/shared history in same editor, first real native/fresh flow before extra links."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1382,6 +1386,40 @@
           "reason": "Incoming N005 Dungeon UI and scoped styles change bundle; Atlas sources unchanged, earlier native proof stays separately scoped."
         },
         "initialFormatterSecondPass": "Prettier collapsed only chained modal selector on second pass; normalized AST unchanged, settled helper syntax/format check passed."
+      },
+      "hex03LocationCore": {
+        "run": "HEX-03-I01a",
+        "state": "completed_checked_core_ui_storage_inactive",
+        "sourceCommit": "09a242772214e4c04307d9ffddbb89a831d9210b",
+        "finishedAt": "2026-10-09T19:49:23.151867+00:00",
+        "checkPassed": true,
+        "testsPassed": 386,
+        "buildPassed": true,
+        "targetedCases": 8,
+        "triplet": {
+          "main.js": {
+            "bytes": 1402761,
+            "sha256": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7"
+          },
+          "styles.css": {
+            "bytes": 27726,
+            "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "runtimeTripletUnchangedFromPreviousIntegratedBasis": true,
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "testLog": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-clean-test.log",
+        "scope": "Strict native Location/section/detail/key and placement codecs, one nullable lifetime LocationSource and immutable composable commands; real terrain+location atomic undo/redo, stale/unknown/getter/array protection. No World placement/UI/Store activation.",
+        "initialTestFixes": [
+          "Readonly cloned fixture changed to an explicitly mutable caller copy.",
+          "Test redoDepth assumption corrected to actual canRedo API; no product API added."
+        ],
+        "userVault": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
