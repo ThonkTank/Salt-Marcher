@@ -3629,17 +3629,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I13-R",
-      "kind": "requirements_review",
-      "startedAt": "2026-10-09T12:40:50.685772+00:00",
-      "focus": "Zugangslücke und Vorgabenplan prüfen",
-      "state": "completed",
-      "result": "Referenzbelege konsistent; I13-R01: Abschnittsauswahl/atomarer Vorgabenmerge im technischen Plan ergänzen, Produktfreigabe offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I13-CP",
       "kind": "cleanup_planning",
-      "focus": "Vorgabenvertrag und Belegzuordnung bereinigen"
+      "startedAt": "2026-10-09T12:41:17.952467+00:00",
+      "focus": "Vorgabenvertrag und Belegzuordnung bereinigen",
+      "state": "completed",
+      "result": "I13-R01 konkret geplant: versionierte Abschnittsmenge, validierter atomarer Merge, unveränderte übrige Abschnitte und spätere Wirkungs-/Persistenztests"
+    },
+    "nextRun": {
+      "id": "CITY-00-I13-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Geplanten Vorgabenvertrag in Architektur festhalten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
