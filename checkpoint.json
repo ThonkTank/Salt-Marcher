@@ -3730,17 +3730,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I17-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T13:28:33.291547+00:00",
-      "focus": "Belegzuordnung und neue Hypothese planen",
-      "state": "completed",
-      "result": "Caption-Ergänzung bei Rohschutz und separate künftige Pre-Save-Probe geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I17-CI",
       "kind": "cleanup_implementation",
-      "focus": "Caption-Zuordnung und Beobachtungsgrenzen ergänzen"
+      "startedAt": "2026-10-09T13:28:48.028524+00:00",
+      "focus": "Caption-Zuordnung und Grenzen berichtigen",
+      "state": "completed",
+      "result": "Sechs historische Bildnamen wahrheitsgemäß zugeordnet; Raw/Hash geschützt; neue Pre-Save-Hypothese getrennt geplant, keine dritte Post-Save-Probe."
+    },
+    "nextRun": {
+      "id": "CITY-00-I17-CR",
+      "kind": "cleanup_review",
+      "focus": "Aufräumänderung gegen Rohbelege und Pflichtstatus prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
