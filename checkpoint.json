@@ -4445,17 +4445,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R12",
-      "kind": "review",
-      "startedAt": "2026-10-09T18:46:16Z",
-      "focus": "N08-Renderer unabhängig gegen affineSollwerte/Lifecycle prüfen",
-      "state": "completed",
-      "result": "540Sollfälle,4Mehrhofebenen,100Frames/200Dispose bestehen; R11-01 lokalerScope geschlossen. Host/CTY offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-RENDERER-FINAL-CLEAN-P08",
       "kind": "cleanup_planning",
-      "focus": "Reviewabschluss/Integrationseinstieg und offene Hostpflichten bereinigen"
+      "startedAt": "2026-10-09T18:47:37.838763+00:00",
+      "focus": "Rendererreviewabschluss ohne Scopeverkürzung planen",
+      "state": "completed",
+      "result": "LokalerR12Pass und echteHostgrenzen dokumentieren; Originalinventur/Atlasanschluss als nächsteArbeit erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-FINAL-CLEAN-I08",
+      "kind": "cleanup_implementation",
+      "focus": "ReviewtenRenderer und offene Hostpflichten konsistent einordnen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
