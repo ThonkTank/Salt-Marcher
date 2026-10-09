@@ -27,8 +27,47 @@ function names(value, operation) { exact(value, ["childReceiptStaging", "temp", 
 function evidence(value, label, expectedHash, expectedLength, applicable, retained, conflict) { exact(value, ["status", "identity", "length", "hash"], label); if (!applicable) { if (value.status !== "not-applicable" || value.identity !== null || value.length !== null || value.hash !== null) throw new Error(`${label} is not applicable`); return; } if (!["absent", "pending", "present"].includes(value.status)) throw new Error(`${label} status is invalid`); if (value.status === "absent") { if (value.identity !== null || value.length !== 0 || value.hash !== null) throw new Error(`${label} absence is inconsistent`); } else if (value.status === "pending") { if (value.identity !== null || value.length !== null || value.hash !== null) throw new Error(`${label} pending is inconsistent`); } else { identity(value.identity, `${label}.identity`); boundedLength(value.length, `${label}.length`); digest(value.hash, `${label}.hash`); if (!conflict && (value.hash !== expectedHash || value.length !== expectedLength)) throw new Error(`${label} does not match bound truth`); } if (retained && value.status !== "present") throw new Error(`${label} must be retained`); }
 function stateSet(operation) { const shared = ["prepared", "committed", "rolling-back", "rolled-back", "conflict"]; if (operation === "create") return [...shared, "temp-synced", "new-published", "rollback-captured"]; if (operation === "update") return [...shared, "before-snapshotted", "ready-to-capture", "old-captured", "new-published", "rollback-captured", "rollback-published", "conflict-before-capture"]; return [...shared, "before-snapshotted", "ready-to-capture", "old-captured", "deleted", "rollback-published", "conflict-before-capture"]; }
 function lifecycle(operation, state) { const inSet = (states) => states.includes(state); const afterTemp = inSet(["temp-synced", "ready-to-capture", "old-captured", "new-published", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); const afterBefore = inSet(["before-snapshotted", "ready-to-capture", "old-captured", "new-published", "deleted", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); const afterCapture = inSet(["old-captured", "new-published", "deleted", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); return { beforeSnapshot: [operation !== "create", operation !== "create" && afterBefore], temp: [operation !== "delete", operation !== "delete" && afterTemp], capture: [operation !== "create", operation !== "create" && afterCapture], rollbackCapture: [operation !== "delete", operation !== "delete" && inSet(["rollback-captured", "rollback-published", "rolled-back", "conflict"])], rollbackTemp: [operation !== "create", operation !== "create" && inSet(["rollback-published", "rolled-back", "conflict"])], target: [true, operation !== "delete" && inSet(["new-published", "committed"])], }; }
+function targetRule(operation, state) {
+  if (state.includes("conflict")) return ["any", ["absent", "pending", "present"]];
+  const rules = {
+    create: {
+      prepared: ["absent"], "temp-synced": ["absent"], "new-published": ["after"],
+      committed: ["after"], "rolling-back": ["after"], "rollback-captured": ["absent"],
+      "rolled-back": ["absent"],
+    },
+    update: {
+      prepared: ["before"], "before-snapshotted": ["before"], "ready-to-capture": ["before"],
+      "old-captured": ["absent"], "new-published": ["after"], committed: ["after"],
+      "rolling-back": ["after"], "rollback-captured": ["absent"],
+      "rollback-published": ["before"], "rolled-back": ["before"],
+    },
+    delete: {
+      prepared: ["before"], "before-snapshotted": ["before"], "ready-to-capture": ["before"],
+      "old-captured": ["absent"], deleted: ["absent"], committed: ["absent"],
+      "rolling-back": ["absent"], "rollback-published": ["before"], "rolled-back": ["before"],
+    },
+  };
+  return [rules[operation][state][0], null];
+}
+
+function validateTarget(value, operation, state, childValue) {
+  const [truth, allowed] = targetRule(operation, state);
+  if (truth === "any") {
+    evidence(value, "target", childValue.afterHash, childValue.afterLength, true, false, true);
+    if (!allowed.includes(value.status)) throw new Error("invalid conflict target status");
+    return;
+  }
+  if (truth === "absent") {
+    evidence(value, "target", null, null, true, false, false);
+    if (value.status !== "absent") throw new Error("target must be absent after this rename");
+    return;
+  }
+  const before = truth === "before";
+  evidence(value, "target", before ? childValue.beforeHash : childValue.afterHash,
+    before ? childValue.beforeLength : childValue.afterLength, true, true, false);
+}
 function orphans(value) { if (!Array.isArray(value) || value.length > MAX_ORPHANS) throw new Error("orphan inventory is unbounded"); const seen = []; for (const item of value) { exact(item, ["name", "exists", "length", "hash", "bytes", "identity"], "orphan"); internalName(item.name, "(?:parent-staging|child-staging|parent-receipt|child-receipt)"); seen.push(item.name); if (!item.exists) { if (item.length !== 0 || item.hash !== null || item.bytes !== null || item.identity !== null) throw new Error("absent orphan is inconsistent"); } else { if (typeof item.bytes !== "string" || size(item.bytes) > MAX_BYTES || item.length !== size(item.bytes) || item.hash !== hash(item.bytes)) throw new Error("orphan content is inconsistent"); identity(item.identity, "orphan.identity"); } } unique(seen, "orphan names"); }
-export function validateChildReceipt(value) { exact(value, ["schemaVersion", "transactionId", "parentId", "child", "generation", "state", "names", "artifacts", "orphanInventory"], "child receipt"); if (value.schemaVersion !== SCHEMA_VERSION || !Number.isSafeInteger(value.generation) || value.generation < 0) throw new Error("invalid child receipt header"); token(value.transactionId, "transactionId"); token(value.parentId, "parentId"); child(value.child); if (!stateSet(value.child.operation).includes(value.state)) throw new Error("invalid state for operation"); names(value.names, value.child.operation); exact(value.artifacts, ["beforeSnapshot", "temp", "capture", "rollbackCapture", "rollbackTemp", "target"], "artifacts"); const stages = lifecycle(value.child.operation, value.state); const conflict = value.state.includes("conflict"); const expected = { beforeSnapshot: [value.child.beforeHash, value.child.beforeLength], temp: [value.child.afterHash, value.child.afterLength], capture: [value.child.beforeHash, value.child.beforeLength], rollbackCapture: [value.child.afterHash, value.child.afterLength], rollbackTemp: [value.child.beforeHash, value.child.beforeLength], target: [value.child.afterHash, value.child.afterLength] }; for (const key of Object.keys(stages)) evidence(value.artifacts[key], key, ...expected[key], ...stages[key], conflict); orphans(value.orphanInventory); if (conflict && !Object.values(value.artifacts).some((item) => item.status === "present" && (item.hash !== value.child.beforeHash && item.hash !== value.child.afterHash)) && !value.orphanInventory.some((item) => item.exists)) throw new Error("conflict needs observed competing evidence or orphan"); return freeze(structuredClone(value)); }
+export function validateChildReceipt(value) { exact(value, ["schemaVersion", "transactionId", "parentId", "child", "generation", "state", "names", "artifacts", "orphanInventory"], "child receipt"); if (value.schemaVersion !== SCHEMA_VERSION || !Number.isSafeInteger(value.generation) || value.generation < 0) throw new Error("invalid child receipt header"); token(value.transactionId, "transactionId"); token(value.parentId, "parentId"); child(value.child); if (!stateSet(value.child.operation).includes(value.state)) throw new Error("invalid state for operation"); names(value.names, value.child.operation); exact(value.artifacts, ["beforeSnapshot", "temp", "capture", "rollbackCapture", "rollbackTemp", "target"], "artifacts"); const stages = lifecycle(value.child.operation, value.state); const conflict = value.state.includes("conflict"); const expected = { beforeSnapshot: [value.child.beforeHash, value.child.beforeLength], temp: [value.child.afterHash, value.child.afterLength], capture: [value.child.beforeHash, value.child.beforeLength], rollbackCapture: [value.child.afterHash, value.child.afterLength], rollbackTemp: [value.child.beforeHash, value.child.beforeLength] }; for (const key of Object.keys(expected)) evidence(value.artifacts[key], key, ...expected[key], ...stages[key], conflict); validateTarget(value.artifacts.target, value.child.operation, value.state, value.child); orphans(value.orphanInventory); if (conflict && !Object.values(value.artifacts).some((item) => item.status === "present" && (item.hash !== value.child.beforeHash && item.hash !== value.child.afterHash)) && !value.orphanInventory.some((item) => item.exists)) throw new Error("conflict needs observed competing evidence or orphan"); return freeze(structuredClone(value)); }
 
 function aggregate(children, side) { return hash(canonical(children.map(({ targetId, operation, beforeHash, beforeLength, afterHash, afterLength }) => ({ targetId, operation, hash: side === "before" ? beforeHash : afterHash, length: side === "before" ? beforeLength : afterLength })))); }
 export const aggregateBeforeDigest = (children) => aggregate(children, "before");
