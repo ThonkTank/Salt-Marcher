@@ -13,7 +13,7 @@ run="$qa_root/runs/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$run"/{config,data/Dungeondraft,cache,map,assets,evidence/screens,evidence/maps}
 exec 9>"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/dungeon-editor-test.lock"
 flock -n 9 || { echo 'Grafikslot belegt' >&2; exit 75; }
-if pgrep -af '[D]ungeondraft\.x86_64|[X]vnc .*-[r]fbport|[Oo]bsidian.*dungeon-native-qa|dungeon-native-qa.*[Oo]bsidian' > "$run/preflight-processes.txt"; then
+if ps -eo pid=,comm=,args= | awk '$2 ~ /^Dungeondraft/ || $2 == "Xvnc" || ($2 == "obsidian" && $0 ~ /dungeon-native-qa/) { print; found=1 } END { exit !found }' > "$run/preflight-processes.txt"; then
   echo 'Grafikprozess läuft bereits' >&2
   exit 75
 fi
