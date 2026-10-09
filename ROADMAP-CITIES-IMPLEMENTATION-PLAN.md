@@ -652,3 +652,6 @@ CITY-00-I40-R Start 2026-10-09T16:16:48.611641+00:00; 27 Rohbelege/Hashes bestä
 
 
 CITY-00-I40-CP Start 2026-10-09T16:17:09.830489+00:00; Plan: Snapshotkopf auf CITY-00-I40-I und CO-FTG-0015-Zeile um abgeschlossene Draw-Kontur, bekannte Hauspose und Entwurfsabbruch ergänzen. I10/I11-Straßen-/Savebelege erhalten; angeboteneCTRLwheel-Skalierung ausdrücklich ohne Wirkung. Zwei gestoppte Trefferversuche und stabile ID-/Save-/Undo-/Produktgrenzen behalten.27 Rawhashes/alle Inventarbelegziele/65und24 offene Pflichten prüfen; keine weitere UI-Mutation oder Statusdatei. CI/CR getrennt.
+
+
+CITY-00-I40-CI Start 2026-10-09T16:18:12.594721+00:00; Snapshot enthält I11-Straßen-/Savefolge sowie I40-Draw/known-house-Pose/Entwurfsabbruch. Skaliergeste nur angeboten, keine Wirkung behauptet; gestoppte Auswahlversuche und unbekannte IDs/Bindings/Einzel-Undo bleiben erhalten. Historische Belege unverändert; kein eigener Produktcode oder neuer UI-Eingriff. Finaler Rawhash-/Verweisreview folgt.

@@ -1,14 +1,14 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I38-I; 65 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I40-I; 65 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
-CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
+CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch, eigene Hauskontur/gedrehte Pose und Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. I40-Skalierung nur als angebotene CTRLwheel-Geste; zwei erfolglose Treffer auf generierten Bereichen gestoppt, eigene neue Kontur war anschließend ein belegtes Ziel. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
 | Pflicht | Zielphase | Funktion | Originalbelegumfang |
 |---|---|---|---|
 | CO-COK-0006 | CITY-01 | Native Karten speichern und öffnen | save_and_fresh_open_observed |
 | CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | two_undo_attempts_before_manual_save_no_observed_effect; Auto-Save ungeklärt, Redo ungeprüft |
-| CO-FTG-0015 | CITY-01 | Manuelle Kartenbearbeitung | road_draw_save_reload_remove_observed |
+| CO-FTG-0015 | CITY-01 | Manuelle Kartenbearbeitung | I11 Straße zeichnen/Save/Reload/Entfernen; I40 eigene Draw-Kontur und bekannte Hauspose, Vorschau-/Gesamtentwurfsabbruch; CTRLwheel-Skalierung nur angeboten, Wirkung offen |
 | CO-FTG-0001 | CITY-02 | Siedlungsgröße und benannte Vorgaben | partial |
 | CO-FTG-0002 | CITY-02 | Straßenlayout und Bebauungsvorgaben | preset_parameter_change_observed_not_generated |
 | CO-FTG-0010 | CITY-02 | Küste, Insel und Flüsse | keine gesonderte Wirkungsprobe; direct |
