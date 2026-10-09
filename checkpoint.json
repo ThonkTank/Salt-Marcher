@@ -125,17 +125,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N03",
-      "kind": "plan_repair",
-      "state": "drafted_review_pending",
-      "focus": "Resolve N02-R01 variable and variant-specific rarity schema/filter/Inspector finding",
+      "id": "CE-02-I02-P01-N03-R01",
+      "kind": "independent_plan_re_review",
+      "state": "passed",
+      "focus": "Verify variable and variant-specific rarity without losing the earlier plan repairs",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "N02-R01 on 3b7e5c933a107da6f406aa44037decf316d09b77 found one remaining variable-rarity gap (Issue #1 comment 6085306351). N03 plan repair awaits exact-head review. No Item implementation or acceptance."
+      "result": "Independent N03-R01 passed exact 679d432e145bd9afe766393346e4b788931886ea without remaining mandatory plan findings (Issue #1 comment 6085341786). This is plan approval only; S01 and I01 remain undelivered."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -339,10 +339,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-N03-R01",
-      "kind": "independent_plan_re_review",
+      "id": "CE-02-I02-S01",
+      "kind": "source_inventory_schema_transcript",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Verify variable and variant-specific rarity is preserved through source inventory, transcript, schema, query filters, sort and Inspector with required Golden cases; confirm earlier repaired gates remain intact. Only after PASS begin S01, not I01."
+      "focus": "Create complete pinned SRD-5.1 inventory, transcript, versioned schema, canonical attribution and PDF-to-transcript source verification; independent S01-R01 PASS required before I01 product implementation"
     }
   },
   "repositoryWorkflow": {
