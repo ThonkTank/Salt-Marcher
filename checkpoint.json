@@ -4804,17 +4804,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-CLEAN-R47",
+      "id": "CITY-00-R47-CLEAN-R47",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:55:37.671020+00:00",
-      "focus": "COK-Atmosphärenprobe / R",
+      "startedAt": "2026-10-09T20:39:40.200319+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
       "state": "completed",
-      "result": "Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat."
+      "result": "Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache."
     },
     "nextRun": {
-      "id": "CITY-00-R47",
-      "kind": "reference_review",
-      "focus": "Getrennte R47-Referenzreview nach Team-Abstimmung"
+      "id": "CITY-00-P48",
+      "kind": "plan",
+      "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4859,10 +4859,12 @@
       "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088178583",
       "heartbeat": {
         "automationId": "stadt-atlasfortsetzung",
-        "intervalMinutes": 60,
+        "intervalMinutes": 20,
         "state": "active"
       },
-      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; no new product claim before team handshake"
+      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; team handshake resolved, concrete integration contracts still pending",
+      "workIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7",
+      "platformIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11"
     }
   },
   "testFixturePortability": {
