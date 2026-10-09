@@ -124,12 +124,12 @@ vorherige RG, Dateimutation, Identitäts-/Hashprüfung, nachfolgende RG und Dire
 
 | Operation | IDs in Reihenfolge | Fresh-Recovery-Orakel |
 | --- | --- | --- |
-| Create | C01 prepared→temp-synced; C02 temp-synced→new-published; C03 new-published→committed; C04 committed→rolling-back; C05 rolling-back→rollback-captured; C06 rollback-captured→rolled-back; C07 any→conflict | Ziel After nach C03, Ziel abwesend nach C06, Rollback-Capture retained |
-| Update | U01 prepared→before-snapshotted; U02 →ready-to-capture; U03 →old-captured; U04 →new-published; U05 →committed; U06 →rolling-back; U07 →rollback-captured; U08 →rollback-published; U09 →rolled-back; U10 any→conflict-before-capture/conflict | B/Capture retained; Target Before vor U03, After U04–U07, Before U08/U09 |
-| Delete | D01 prepared→before-snapshotted; D02 →ready-to-capture; D03 →deleted; D04 →committed; D05 →rolling-back; D06 →rollback-published; D07 →rolled-back; D08 any→conflict-before-capture/conflict | B/Capture retained; Target Before vor D03, abwesend D03–D05, Before D06/D07 |
+| Create | C01 prepared→temp-synced; C02 temp-synced→new-published; C03 new-published→committed; C04 committed→rolling-back; C05 rolling-back→rollback-captured; C06 rollback-captured→rolled-back; CF-prepared/CF-temp-synced/CF-new-published/CF-committed/CF-rolling-back/CF-rollback-captured/CF-rolled-back jeweils →conflict | Ziel After nach C03, Ziel abwesend nach C06, Rollback-Capture retained |
+| Update | U01 prepared→before-snapshotted; U02 before-snapshotted→ready-to-capture; U03 →old-captured; U04 →new-published; U05 →committed; U06 →rolling-back; U07 →rollback-captured; U08 →rollback-published; U09 →rolled-back; UF-prepared/UF-before-snapshotted/UF-ready-to-capture→conflict-before-capture; UF-old-captured/UF-new-published/UF-committed/UF-rolling-back/UF-rollback-captured/UF-rollback-published/UF-rolled-back→conflict | B/Capture retained; Target Before vor U03, After U04–U07, Before U08/U09 |
+| Delete | D01 prepared→before-snapshotted; D02 before-snapshotted→ready-to-capture; D03 →deleted; D04 →committed; D05 →rolling-back; D06 →rollback-published; D07 →rolled-back; DF-prepared/DF-before-snapshotted/DF-ready-to-capture→conflict-before-capture; DF-old-captured/DF-deleted/DF-committed/DF-rolling-back/DF-rollback-published/DF-rolled-back→conflict | B/Capture retained; Target Before vor D03, abwesend D03–D05, Before D06/D07 |
 
 Die formal geschlossene Matrix ist das kartesische Produkt
-`M = {C01..C07,U01..U10,D01..D08,P01..P06} × {before,during,after} × A`.
+`M = {C01..C06,CF-*,U01..U09,UF-*,D01..D07,DF-*,P01..P06} × {before,during,after} × A`.
 `A={replace-before-capture,inplace-fd-write,rebind-after-capture,target-symlink,parent-symlink,
 hardlink,root-swap,parent-swap,mount-device,receipt-missing,receipt-duplicate,receipt-corrupt,
 second-recovery}`. Zell-ID ist `H03-I02-<transition>-<phase>-<adversary>`; der Controller erzeugt
@@ -139,3 +139,16 @@ pflichtig. Erwartung jeder anwendbaren Zelle ist exakt das Tabellenorakel der Tr
 Temp vor Rename=After/nach Rename=abwesend; B/Capture/Rollback-Capture=retained present; Restore-Temp
 nach Rename=abwesend; Receipt=letzte RG oder retained conflict; Parent=P01 Before, P02/P03 After,
 P05 Before, P06 conflict. Jeder andere Hash, Name, inode oder Mischzustand ist `failed`.
+
+### N02 Fresh-Recovery-Lookup
+
+Für jede Zell-ID gilt folgende vollständige Lookup-Tabelle; `before` liefert die vorige RG,
+`during` nur die vorige RG oder die nächste atomar publizierte RG (nie Mischbytes), `after` die
+nächste RG. Target/Temp/B/C/R sind jeweils exakt die im Übergangstableau genannte Wahrheit.
+
+| Klasse | before | during | after | Parent-Digest |
+| --- | --- | --- | --- | --- |
+| normale `C/U/D 01..09` | Quell-Receipt, Quellorakel | Quell-RG oder Ziel-RG, atomare Namen | Ziel-Receipt/Zielorakel | P01=Before; P02/P03=After |
+| Rollback `C04..C06/U06..U09/D05..D07` | Quell-RG, retained B/C/R | Quell-RG oder Ziel-RG | Ziel-RG, moved Temp abwesend | P04 laufend, P05=Before |
+| Conflict `CF/UF/DF` | Quell-RG | Quell-RG oder conflict-RG | conflict-RG, konkurrierende Evidence retained | P06=conflict |
+| Parent `P01..P06` | vorige Parent-RG, Childsatz unverändert | vorige oder nächste Parent-RG | genau P01..P06-RG | P01/P05 Before; P02/P03 After; P04 laufend; P06 conflict |
