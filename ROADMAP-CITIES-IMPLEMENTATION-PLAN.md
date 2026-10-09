@@ -741,3 +741,6 @@ CITY-01-PREP-EDIT-CLEAN-R03 Start 2026-10-09T17:11:26.813059+00:00; Aufgeräumte
 
 
 CITY-01-PREP-P04 Start 2026-10-09T17:15:00.503300+00:00; Quellaudit bestätigt gemeinsame Kamera/detailLayer, aber keine Stadtzeichnung/Platzierungs-API; Overworld.placements=never[], Fit nurTerrain. Plan ROADMAP-CITIES-CITY01-SCENE-PLAN.md: lokale CityScene/Hitgeometrie, gemeinsame Hauspose mit Codec, punktbasierten Segmentabstand aus bestehenden Dungeonhelfern extrahieren. Feste Zeichen-/Trefferfolge, Loch-/Randsemantik, echte Meterbreiten/Bounds und gezielte Dungeonregressionen. Kein eigener Welttransform/Renderer/Hostvorgriff. Hex-Thread liveinProgress, laufendI01c; Modulgrenzen vorI04 abstimmen. Plan-Aufräum-P/I/R folgt.
+
+
+CITY-01-PREP-SCENE-PLAN-CLEAN-P04 Start 2026-10-09T17:15:54.932937+00:00; Planreview: Hex-Besitzer bestätigt reine CitySceneCore mit aufrufergeliefertem project/unproject, kein Placementvertrag. Präzisieren: callbacks nur Anschlussgrenze, P04-Core bleibt lokal; Bounds als finite min/max statt potenziell überlaufender Breite/Höhe; kontrollierte Ablehnung nicht darstellbarer gepufferter Ausdehnung. Gemeinsamer Streckenumbau benötigt Baselinegegenprobe für Dungeonaddresses/Gleichstände und gezielte lange Strecken, keine ungeprüfte bitweise Gleichheit. Dungeonbesitzer zur Kollision angefragt. CI/CR getrennt.

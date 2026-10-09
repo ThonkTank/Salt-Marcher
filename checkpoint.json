@@ -4289,17 +4289,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P04",
-      "kind": "implementation_planning",
-      "startedAt": "2026-10-09T17:15:00.503300+00:00",
-      "focus": "Aktuelle Atlas-/Geometrieschnittstellen und lokale CityScene planen",
-      "state": "completed",
-      "result": "Reale Kamera/detailLayer und fehlende Platzierung auditiert; lokale Szene/Treffer samt gemeinsamer Pose/Streckenhelper und Dungeonregressionen konkret geplant."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-P04",
       "kind": "cleanup_planning",
-      "focus": "Szenenplan auf fremde Schnittstellen, Posekopien und Randsemantik prüfen"
+      "startedAt": "2026-10-09T17:15:54.932937+00:00",
+      "focus": "Szenenplan gegen bestätigten Atlasvertrag und numerische Grenzen prüfen",
+      "state": "completed",
+      "result": "Callback-Anschlussgrenze bestätigt, finite Min/Maxbounds und Dungeonbaselineprüfung konkret präzisieren."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-I04",
+      "kind": "cleanup_implementation",
+      "focus": "Callbackgrenze, Bounds und Dungeonbaseline im Plan ergänzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
