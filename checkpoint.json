@@ -4340,17 +4340,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I05",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T17:45:40.580305+00:00",
-      "focus": "CityDraft und private Observerfehlerisolation implementieren",
-      "state": "completed",
-      "result": "CityDraft Vorschau/Cancel/Apply und abgestimmte notify-Isolation implementiert; Typprüfung,319Tests und Build bestanden. Separater Review und Aufräumen folgen; Atlas-/Hostabnahme offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R06",
       "kind": "review",
-      "focus": "Draftlebenszyklus und History-Fehlergrenze gegen P05 und echte Owner prüfen"
+      "startedAt": "2026-10-09T17:49:00.752Z",
+      "focus": "Draftzustände und Historyfehlergrenze gegen P05 prüfen",
+      "state": "completed",
+      "result": "Separate Gegenproben bestanden; keine Laufzeitlücke gefunden. Dauerhafte Regressionen für Straßen-/Hausanlage und codecgültigen Szenenfehler fehlen (CITY-DRAFT-R06-01). Quellen unverändert zum geprüften I05."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-DRAFT-CLEAN-P05",
+      "kind": "cleanup_plan",
+      "focus": "Aufräumen des reviewten Draftkerns planen; vorhandenen Stand und gezielte Testlücke präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
