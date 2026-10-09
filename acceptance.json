@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:36:06Z",
-    "state": "smr00_local_static_review_repaired_external_reviews_pending",
+    "updated": "2026-10-09T14:28:52Z",
+    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -21,7 +21,7 @@
       "confirmed acceptance cases, static catalog data, reference tables and Golden Masters"
     ],
     "phases": [
-      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "plan_ready_review_pending"},
+      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "prototype_plan_reviewed_execution_pending"},
       {"id": "SMR-01", "title": "Campaign identity and data lifecycle", "state": "open"},
       {"id": "SMR-02", "title": "Catalog, reference graph and world planner", "state": "partial_via_ce01"},
       {"id": "SMR-03", "title": "Party, scene and live session", "state": "open"},
@@ -54,17 +54,25 @@
       {"id": "SMR-AC-17", "title": "Tutorial, localization, keyboard and 200-percent accessibility", "state": "open"},
       {"id": "SMR-AC-18", "title": "Performance, cancellation, offline and privacy qualification", "state": "open"}
     ],
+    "adrPrototypePlan": {
+      "run": "SMR-00-P01",
+      "state": "completed_static_validation_reviewed",
+      "document": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
+      "result": "Defines sequential ADR-P01 through ADR-P04 executable proofs plus ADR-C01 composition, immutable receipts, versioned contracts, package ownership, cleanup, OS matrices and hard Go/No-Go rules without ratifying the target platform.",
+      "review": "Passed on exact source commit 0497661e21848fd16454b088ffe4aa1230bc62d9 after repairs for shared contract composition, repository-wide write/delete receipts, import identity mapping, canonical archive bytes, retry/concurrency and ratification blockers.",
+      "limits": "No executable prototype or target-platform decision exists yet. Device/cloud inputs, ADR-P01 through ADR-P04, ADR-C01 and the additional distribution, extension, audio/background-work and three-option evidence remain open."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "SMR-00-ADR-01 compares the Obsidian-plugin, standalone-desktop and incremental-hybrid paths and records the team decision with independent cloud review. Host-neutral CE-01-I03 and existing dungeon/hex/city work may continue."
+    "next": "ADR-P01 implements the isolated desktop-shell map proof on a clean candidate branch and must pass its fault, restart, renderer-boundary, OS-durability and cleanup reviews before ADR-P02 begins. The platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-  "updated": "2026-10-09T13:57:34Z",
-  "state": "ce01_i03_reviewed_r01_next",
+  "updated": "2026-10-09T14:28:52Z",
+  "state": "ce01_r01_changes_required_n01_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -262,7 +270,18 @@
       "review": "Passed after required repairs; reviewer ran no separate tests.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."
     },
-    "next": "CE-01-R01 independently reviews the complete CE-01 candidate against SaltMarcher, comparable D&D-Beyond-2014 catalog behavior and CE-AC-01/02/14; no automatic approval."
+    "ce01R01": {
+      "run": "CE-01-R01",
+      "state": "changes_required",
+      "reviewedCommit": "a04efd3df215f4c03504e2895a21c92d67b15ee2",
+      "findings": [
+        "Concurrent openCreatureCatalog calls can both pass the pre-await unique-view check and leave two catalog leaves because the command callback does not serialize or await the open operation.",
+        "A parser-accepted adversarial creature ID can make the keyboard focus querySelector throw a selector SyntaxError."
+      ],
+      "retained": "Host-neutral content boundary, draft/close race handling, ownerWindow use, combined filters and the static accessibility contract remain sound.",
+      "limits": "Reviewer ran no separate tests or GUI. Real Obsidian command, restart, physical input, damaged-data and measured-size acceptance remain open."
+    },
+    "next": "CE-01-N01 repairs unique-view concurrency and selector-safe keyboard focus with focused regressions, then receives an independent repair review before any real-host acceptance or CE-01 cleanup."
   },
   "cityPlans": {
     "schemaVersion": 1,
