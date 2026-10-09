@@ -6,7 +6,7 @@ export interface AtlasFileWrite {
   readonly before: string | null;
   readonly after: string | null;
 }
-interface Journal {
+export interface AtlasFileJournal {
   readonly kind: "atlas-file-transaction";
   readonly version: 1;
   readonly journalPath: string;
@@ -14,7 +14,7 @@ interface Journal {
   readonly state: "prepared" | "committed";
   readonly writes: readonly AtlasFileWrite[];
 }
-type Recovery = "none" | "rolled_back" | "committed";
+export type AtlasRecovery = "none" | "rolled_back" | "committed";
 const queues = new WeakMap<object, Map<string, Promise<unknown>>>();
 
 /**
@@ -71,8 +71,8 @@ export class FileTransaction {
       }),
     );
   }
-  private parse(raw: string): Journal {
-    const j = JSON.parse(raw) as Journal;
+  private parse(raw: string): AtlasFileJournal {
+    const j = JSON.parse(raw) as AtlasFileJournal;
     if (
       !j ||
       typeof j !== "object" ||
@@ -100,15 +100,23 @@ export class FileTransaction {
     const writes = this.writes(j.writes);
     if (!writes.length)
       throw new Error("Leeres Speicherjournal; Datei bleibt erhalten.");
-    return { ...j, writes };
+    return Object.freeze({ ...j, writes });
   }
-  recover(): Promise<Recovery> {
-    return this.exclusive(() => this.recoverNow());
+  recover(
+    validate?: (journal: AtlasFileJournal) => void | Promise<void>,
+  ): Promise<AtlasRecovery> {
+    return this.exclusive(() => this.recoverNow(validate));
   }
-  private async recoverNow(): Promise<Recovery> {
+  private async recoverNow(
+    validate?: (journal: AtlasFileJournal) => void | Promise<void>,
+  ): Promise<AtlasRecovery> {
     const raw = await this.store.read(this.journalPath);
     if (raw === null) return "none";
     const journal = this.parse(raw);
+    // The owner validates this exact parsed journal inside the recovery queue.
+    await validate?.(journal);
+    if ((await this.store.read(this.journalPath)) !== raw)
+      throw new FileConflict(this.journalPath);
     // Validate every target before repairing any; unknown external bytes stay untouched.
     for (const write of journal.writes) {
       const value = await this.store.read(write.path);
@@ -141,7 +149,7 @@ export class FileTransaction {
           throw new FileConflict(write.path);
       const changed = snapshot.filter((write) => write.before !== write.after);
       if (!changed.length) return false;
-      const journal: Journal = {
+      const journal: AtlasFileJournal = {
         kind: "atlas-file-transaction",
         version: 1,
         journalPath: this.journalPath,

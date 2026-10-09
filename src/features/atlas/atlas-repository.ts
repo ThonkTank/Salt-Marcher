@@ -7,7 +7,11 @@ import {
   serializeAtlasDraft,
   type DraftChunk,
 } from "./atlas-draft";
-import { FileTransaction, type AtlasFileWrite } from "./file-transaction";
+import {
+  FileTransaction,
+  type AtlasFileWrite,
+  type AtlasRecovery,
+} from "./file-transaction";
 import {
   parseOverworld,
   serializeOverworld,
@@ -193,6 +197,45 @@ export class AtlasRepository {
   }
   get hasDraft(): boolean {
     return this.draftRaw !== null;
+  }
+  /** Explicitly recover only a closed new-copy journal, even without its root file. */
+  recoverCopy(): Promise<AtlasRecovery> {
+    return this.exclusive(async () => {
+      if (!this.worldPath.endsWith(".overworld"))
+        throw new Error("Die Wiederherstellung benötigt einen Atlasnamen.");
+      const transaction = new FileTransaction(
+        this.store,
+        this.journalPath,
+        (p) => p === this.worldPath || p.startsWith("Atlasdaten/"),
+        this.scope,
+      );
+      return transaction.recover(async (journal) => {
+        if ((await this.store.read(this.draftPath)) !== null)
+          throw new FileConflict(this.draftPath);
+        const root = journal.writes.find((w) => w.path === this.worldPath);
+        if (!root || root.before !== null || root.after === null)
+          throw new Error(
+            "Kein geschlossenes Kopierjournal; Dateien bleiben erhalten.",
+          );
+        const world = parseOverworld(root.after),
+          children = new Map(
+            world.chunks.map((r) => [`Atlasdaten/${world.id}/${r.file}`, r]),
+          );
+        if (journal.writes.length !== children.size + 1)
+          throw new Error(
+            "Unvollständiges Kopierjournal; Dateien bleiben erhalten.",
+          );
+        for (const write of journal.writes) {
+          if (write.before !== null || write.after === null)
+            throw new Error("Fremder Speicherstand; Dateien bleiben erhalten.");
+          if (write === root) continue;
+          const ref = children.get(write.path);
+          if (!ref)
+            throw new Error("Fremdes Kopierziel; Dateien bleiben erhalten.");
+          parseTerrainChunk(write.after, world.id, ref);
+        }
+      });
+    });
   }
   /** Copy the captured content into a fresh identity; canonical source files stay unchanged. */
   copy(path: string, id: string, name: string): Promise<void> {

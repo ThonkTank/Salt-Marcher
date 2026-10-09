@@ -416,12 +416,11 @@
     "state": "r01_changes_required_repair_planned",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-N01-P01",
-      "kind": "repair_plan",
-      "startedAt": "2026-10-09T19:10:03.721578+00:00",
-      "finishedAt": "2026-10-09T19:10:03.721578+00:00",
-      "state": "completed",
-      "focus": "Exactly two R01 P1: target-bound missing-root Copy recovery and visible non-dismissable accepted Copy; no HEX03 scope."
+      "id": "HEX-02-N01-I01",
+      "kind": "focused_repair",
+      "startedAt": "2026-10-09T19:17:39.094198+00:00",
+      "state": "in_progress_core_checks_passed",
+      "focus": "Two P1 implemented: exact closed target recovery without root + guarded visible Busy Copy; 8 targeted Core/DOM cases passed, clean full/native pending."
     },
     "nextRun": {
       "id": "HEX-02-N01-I01",
