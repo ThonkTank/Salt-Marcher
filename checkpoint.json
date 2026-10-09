@@ -306,8 +306,17 @@
         "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
         "mainJsGrowthBytes": 172826
       },
+      "hostSmoke": {
+        "sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4",
+        "host": "Obsidian 1.13.7 Flatpak in isolated local test vault; two distinct normal-exit app processes; CDP visible UI",
+        "build": "clean; npm run check, 259/259 tests and npm run build passed",
+        "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+        "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json",
+        "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json",
+        "result": "Seven visible tabs, real Monster results, six explicit unavailable sections, pending-search switch isolation, exact installed build triplet and restored section/search state passed."
+      },
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
-      "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. No host, physical-input, screenreader or non-Linux acceptance and no CE-02 approval."
+      "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. Local automated host smoke is scoped; physical-input, screenreader, non-Linux and full CE-02 acceptance remain open."
     },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
