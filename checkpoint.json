@@ -4083,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T15:54:09.203174+00:00",
-      "focus": "Küsten-/Hafenwirkung",
-      "state": "completed",
-      "result": "Vollständige13/14-Gruppenprobe und bytegleiche Rückstellung gesichert; Hafenplan präzisiert."
-    },
-    "nextRun": {
       "id": "CITY-00-I38-R",
       "kind": "reference_review",
-      "focus": "Zusätzliche Wassergruppe und Steggrenzen prüfen"
+      "startedAt": "2026-10-09T15:54:53.712965+00:00",
+      "focus": "Küstenbelege R",
+      "state": "completed",
+      "result": "Drei echte Downloadkopien, sieben Bilder/Rawhashes und vollständige13→14-Gruppenvereinigung geprüft. water hinzugefügt,10 gemeinsame Gruppen geändert/3 gleich; planks0→8, Rückstellung bytegleich. sea0.2 bleibt ohne bewiesene Einheit. Exakte Hafenanschlusstopologie und eigene Abnahme nicht behauptet. Aufräumbefund: Snapshot führt Küstenwirkung noch unspezifisch als weitere Features offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I38-CP",
+      "kind": "cleanup_planning",
+      "focus": "Küstenbelege und Snapshot CP"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
