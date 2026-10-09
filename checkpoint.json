@@ -350,23 +350,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "implementation_checked_review_pending",
+    "state": "foundation_review_passed_cleanup_pending",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-01-I01",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T17:13:27.670995+02:00",
-      "baseCommit": "0d1dedcd4a87c8cf19087d3e274a5598faaf5e4e",
-      "state": "completed",
-      "focus": "Native Overworld create/open, meter camera, axial geometry and bounded visible Pixi grid; real host next.",
-      "finishedAt": "2026-10-09T15:37:54.379654+00:00",
-      "result": "Native create/select/pan/pointer-zoom/LOD, collision, invalid-file and fresh reopen passed; separate review next.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-01-R01",
       "kind": "review",
-      "focus": "Meter/address invariants, native gesture/persistence and actual UI clarity; clean Git basis and preserved Dungeon."
+      "state": "completed",
+      "startedAt": "2026-10-09T15:42:00.853171+00:00",
+      "baseCommit": "f05deb4dfa5d5a3cd27030598392adbc0fbdefe7",
+      "focus": "Native meter/hex/camera/persistence, fresh clean build, visible design critique and protected existing Dungeon.",
+      "finishedAt": "2026-10-09T15:43:09.278483+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json",
+      "result": "HEX01-001..008 reviewed and passed within empty foundation scope; two bounded cleanup items."
+    },
+    "nextRun": {
+      "id": "HEX-01-CLEAN-P01",
+      "kind": "cleanup_planning",
+      "focus": "Existing-name copy and readable new Atlas source; no new editor capability before HEX02."
     },
     "review": {
       "state": "passed",
@@ -938,6 +938,15 @@
         "state": "passed",
         "screensActuallyViewed": true,
         "physicalInput": false
+      },
+      "hex01Review": {
+        "run": "HEX-01-R01",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json",
+        "cleanTests": 252,
+        "cleanBuildSha256": "416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159",
+        "physicalInput": false,
+        "largeMap": false,
+        "installation": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
