@@ -53,8 +53,11 @@ genau einem finalen Produkt:
    stabile IDs bleiben geschützt.
 
 Diese Richtung ist noch nicht ratifiziert. Sie wird erst verbindlich, wenn die
-unten genannten Beweise vorliegen und die sechs lokalen/Geräte-Stränge sowie
-die zuständigen Cloud-Reviewer ihre Bereichsrisiken geprüft haben.
+unten genannten Beweise vorliegen und die drei neuen lokalen
+Integrationsstränge sowie die Gerätekollegen für Hex/Atlas, Stadt und Dungeon
+und die zuständigen Cloud-Reviewer ihre Bereichsrisiken geprüft haben. Die
+aktuellen Threadkennungen stehen in `checkpoint.json` unter
+`saltMarcherReplacement.coordination`.
 
 Eine erste statische Zielrepo-Inventur auf `b7e06f0` stützt die Richtung:
 68 von 78 ausgewerteten TypeScript-Dateien importieren Obsidian nicht direkt.
@@ -112,7 +115,9 @@ Mechanikdetails und nicht freigegebene Assets erreichen ihn technisch nicht.
 
 Current-Format-Kampagne, Karten, Dokumente und Assets werden als geschlossene
 Einheit exportiert, in einer frischen Umgebung importiert und nach Neustart
-semantisch identisch gelesen. Unbekannte zukünftige Felder bleiben erhalten.
+semantisch identisch gelesen. Vertraglich als opaque/retained ausgewiesene
+Extension- und Capability-Daten bleiben erhalten; unbekannte Kernschemafelder
+werden fail-closed validiert und nicht pauschal akzeptiert.
 
 ## Ratifikationskriterien
 

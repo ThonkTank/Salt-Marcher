@@ -193,5 +193,8 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 `SMR-00-ADR-01`: gemeinsamer Architekturentscheid über Zielplattform und
 Migrationspfad, mit unabhängigem Cloud-Architektur-/Technikreview. Parallel
-bleibt `CE-01-I03` als hostneutral gehaltener Produktbaustein möglich;
+bleibt `CE-01-I03` geteilt möglich: Query-/State-/Render-Controller und dessen
+DOM-Tests bleiben hostneutral und nutzen injizierte Ports; der bestehende
+Obsidian-`ItemView` bleibt ein dünner, ausdrücklich befristeter Adapter mit
+eigenen Übergangstests.
 Dungeon-, Hex- und Stadtpfade laufen in ihren bestehenden Roadmaps weiter.

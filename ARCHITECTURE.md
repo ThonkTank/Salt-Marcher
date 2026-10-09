@@ -1,6 +1,12 @@
 # Neuer Dungeon-Editor
 
-Auftrag: große Karten im echten Obsidian flüssig bearbeiten, alle bestehenden und zugesagten Arbeitsabläufe erhalten. Neue native Karten; kein SVG-Import und keine Legacy-Unterstützung im Produkt. Originaldateien bleiben geschützt; ausdrücklich beauftragte Einbindungsänderungen bleiben eng begrenzt. Pixelgleichheit ist kein Ziel; Lesbarkeit und Spielbedeutung sind verbindlich.
+Bisheriger Kartenauftrag und aktueller Übergangsadapter: große Karten im echten
+Obsidian flüssig bearbeiten, alle bestehenden und zugesagten Arbeitsabläufe
+erhalten. Diese Hostbindung gilt für die bestehenden Kartenbelege, nicht als
+Vorentscheidung über das Endprodukt. Neue native Karten; kein SVG-Import und
+keine Legacy-Unterstützung im Produkt. Originaldateien bleiben geschützt;
+ausdrücklich beauftragte Einbindungsänderungen bleiben eng begrenzt.
+Pixelgleichheit ist kein Ziel; Lesbarkeit und Spielbedeutung sind verbindlich.
 
 ## Plattformoffene SaltMarcher-Ablösung
 
@@ -82,7 +88,7 @@ Bytes. Echte Obsidian-Start-/Ladezeitmessung bleibt ein CE-01-Abnahmetor.
 
 ## Entscheidungen
 
-- TypeScript-Domänenmodell: versioniertes JSON, stabile Kennungen, Geometrie in Feldern (1 Feld = 5 Fuß). Markdown bleibt maßgeblich für Prosa und Regeln. Assets sind separate Dateien.
+- TypeScript-Domänenmodell: versioniertes JSON, stabile Kennungen, Geometrie in Feldern (1 Feld = 5 Fuß). Für bestehende Karten-/Obsidian-Dokumente bleibt Markdown während der ADR-Beweisphase maßgeblich für Prosa und Regeln; die kanonische Gesamtproduktgrenze zwischen nutzerlesbarem Dokument und transaktionalem Zustand entscheidet `SMR-00-ADR-01`. Assets sind separate Dateien.
 - Änderungen als explizite Befehle mit betroffenen Datensätzen und Textstellen. Gemeinsame Historie enthält keine Grafiken. Werkzeuge haben begin/update/commit/cancel; die Vorschau gehört nicht in den gespeicherten Entwurf.
 - PixiJS/WebGL zeichnet eine abgeleitete, erhaltene Szene. Kamerabewegung ändert keine Geometrie. Änderungen aktualisieren gezielt Objekte und direkte Abhängigkeiten. Kein dauerhaft laufender Zeichentakt im Stillstand.
 - Temporäres Pan folgt den direkt gemessenen Dungeondraft-Gesten Leertaste+linke Maustaste und Mitteltaste. Beide verschieben nur die Kamera und erhalten einen begonnenen Polygonentwurf; bei bestehender Auswahl leert Leertaste+Links sie, während Mitte sie erhält. Rechtsziehen startet im Editor keinen Pan. Der eigene dauerhafte Hand-Knopf bleibt als zusätzlicher Werkzeugzugang, ohne als native Geste zu gelten. Ein isolierter Obsidian-Lauf bestätigte P0-Kameradelta, unveränderten Karten-/Verlaufszustand und frische Neuöffnung. P1-Originalproben ergänzen die zeitliche Regel: Leertaste loslassen stoppt einen laufenden linken Pan sofort, späteres Drücken aktiviert ihn auch nach Left-Down, Escape beendet ihn nicht. Alle drei P1-Folgen sind im Obsidian-Host geprüft. Nach Escape kann Pointer-Capture verloren gehen; ein globaler Zeiger-Fallback hält die Geste dann bis Pointer-Up. Dessen Lauf außerhalb der Kartenfläche bleibt gesondert abzunehmen, ebenso Fokusverlust und physische Eingabe.

@@ -40,6 +40,12 @@
       "cloudReviewHandoff": "GitHub Issue #1 comments 6081912800, 6081935763, 6082129686 and 6082173824; the replaced GM cloud thread focuses architecture/technical review including the platform decision. Other cloud colleagues retain their established review/test roles and participate through Issue #1."
     },
     "verified": "Read-only audit covered current SaltMarcher vision, program capabilities, all feature requirement families, technical needs, current implementation and historical JavaFX/Obsidian references. The resulting portfolio plan defines SMR-00 through SMR-11 without claiming implementation or acceptance. SMR-00-ADR-01 is a proposed host-neutral-core plus desktop-shell migration direction and remains unratified pending prototypes and reviews from all device and cloud workstreams.",
+    "platformAdrReview": {
+      "state": "local_static_review_repaired_cloud_and_device_reviews_pending",
+      "inventory": "At b7e06f0, 68 of 78 evaluated TypeScript files had no direct Obsidian import; direct host imports were concentrated in ten entry, storage and UI files totaling about 9100 LOC.",
+      "repairs": "Legacy Obsidian wording was limited to the transition adapter; Markdown authority was scoped to existing documents pending ADR; CE-01-I03 was split into host-neutral controller/DOM work and a thin Obsidian adapter; team roles and opaque retained data were clarified.",
+      "limits": "Static inventory and local review only. ADR-P01 through ADR-P04, device-owner feedback and independent cloud reviews remain open."
+    },
     "open": [
       "Independent architecture/technical review of SMR-00 plan and acceptance matrix",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
@@ -132,7 +138,15 @@
           "limitsPassed": true
         }
       },
-      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open.",
+      "localStaticReview": {
+        "state": "findings_assigned_to_ce01_i03",
+        "findings": [
+          "A requested scroll reset may be overwritten when render captures scroll from the old DOM after change().",
+          "Catalog container queries require a proven container-type on the actual catalog host."
+        ],
+        "limit": "Static findings only; reproduce in focused state/DOM tests before changing behavior. Independent CE-01-R01 and real-host acceptance remain open."
+      }
     },
     "coordination": {
       "catalogAnalysis": "completed read-only",

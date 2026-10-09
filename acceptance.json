@@ -2,7 +2,7 @@
   "saltMarcherReplacement": {
     "schemaVersion": 1,
     "updated": "2026-10-09T13:36:06Z",
-    "state": "smr00_plan_review_pending",
+    "state": "smr00_local_static_review_repaired_external_reviews_pending",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
