@@ -149,7 +149,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:29:53.754275+00:00",
+    "updated": "2026-10-09T12:48:13.602689+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2194,13 +2194,15 @@
         "product": "Fantasy Town Generator",
         "feature": "Einstellungen und Namenslisten",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:29:53.754275+00:00",
+        "observedAt": "2026-10-09T12:40:27.142161+00:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "temporary_load_access_confirmed_save_access_unconfirmed",
         "observationKind": "direct_form_state_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/cleanup.json"
         ],
         "task": "Vorgaben speichern und Namensliste verwenden",
         "phase": "CITY-02",
@@ -2217,27 +2219,45 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Formularparameter/Entwurfsauswahl erfasst; erzeugte Karten-/Namenswirkung, Settings-Datei und eigene Umsetzung/Host/Bedienung weiterhin offen.",
+        "gap": "Namensauswahl direkt teilbelegt; Load settings zugänglich/leere Liste, dokumentiertes Save settings im geprüften temporären Formular nicht vorhanden. Ursache und Speicher-/Datei-/Teilladeeffekt sowie eigene Umsetzung/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I12-I",
-          "state": "name_set_selection_control_observed",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
-          "sourceScope": "own_original_create_draft_without_generation",
-          "observation": "Custom race/Human editor:12name sets, Generic+OldGerman selected; no generated names or settings file",
+          "run": "CITY-00-I13-I",
+          "state": "load_empty_save_access_unconfirmed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+          "sourceScope": "Existing own Hamlet; create draft only, no generation",
+          "observation": "Basic defaults Medieval Europe and Generic fantasy restored after prior reset; Load saved settings opens empty list and enabled upload from file button; All settings folder overview and General section expose no Save settings button in this temporary form; Existing town settings menu offers Render settings and Toggle UI elements; Closed own draft; CITY00 Hamlet QA,250m,Satellite,Districts,11:00 Monday preserved",
           "remaining": [
-            "No generated American/Ringed result; no preview observed on examined layout pages",
-            "No saved settings file, names-output or reload of draft parameters tested",
-            "Control labels/hints do not prove wall/placement/material/district generation effects",
-            "Angle numeric values have no explicit unit in displayed labels",
-            "Prior settlement export remains unverified; no third download attempt",
-            "No own product/host/UX acceptance"
+            "No accessible save control in examined temporary form; cause/account relation unknown",
+            "No named settings saved, downloaded or imported; no persistence/partial-merge effect proved",
+            "No file chooser opened; stopped settlement-export hypothesis not retried",
+            "No generation, own product, host or UX acceptance"
           ]
         },
         "implementationPhases": [
           "CITY-02",
           "CITY-06"
+        ],
+        "originalProbes": [
+          {
+            "run": "CITY-00-I12-I",
+            "state": "name_set_selection_control_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+            "sourceScope": "own_original_create_draft_without_generation",
+            "observation": "Custom race/Human editor:12name sets, Generic+OldGerman selected; no generated names or settings file",
+            "remaining": [
+              "No generated American/Ringed result; no preview observed on examined layout pages",
+              "No saved settings file, names-output or reload of draft parameters tested",
+              "Control labels/hints do not prove wall/placement/material/district generation effects",
+              "Angle numeric values have no explicit unit in displayed labels",
+              "Prior settlement export remains unverified; no third download attempt",
+              "No own product/host/UX acceptance"
+            ]
+          }
+        ],
+        "documentationSources": [
+          "https://docs.fantasytowngenerator.com/createSettlement/save_settings/"
         ]
       },
       {
@@ -2557,12 +2577,13 @@
         "product": "Medieval Fantasy City Generator",
         "feature": "Lokale Geometrie erneut erzeugen",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedAt": "2026-10-09T12:46:31.007466+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "direct",
+        "availability": "original_browser_test_copy_access_confirmed",
+        "observationKind": "direct_geometry_effect_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
         ],
         "task": "Viertelkontur lokal erneuern",
         "phase": "CITY-04",
@@ -2578,26 +2599,45 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Lokale Originalwirkung teilbelegt; weitere Warpoperationen, genaue Wirkungsgrenzen/Schutz, Save/Undo und eigene Produkt-/Host-/Bedienparität offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I14-I",
+          "state": "local_reroll_visual_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "observation": "Starwind Heath Reroll geometry changes western building arrangement, prior eastern warp remains visible",
+          "remaining": [
+            "Only Displace effect tested; other listed operations control-only",
+            "No numeric radius/strength or deformation falloff proved",
+            "No raw stable IDs, protected binding or overlap validity proved",
+            "Discard is observed preview cancellation; full undo/redo not tested",
+            "Reroll effect visually local; exact changed-element boundary and untouched geometry values not audited",
+            "Same unchanged URL does not serialize edited result; no saved-state reload claimed",
+            "No own product/host/result/UX acceptance"
+          ]
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0008",
         "product": "Medieval Fantasy City Generator",
         "feature": "Stadtgeometrie verformen (Warp)",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedAt": "2026-10-09T12:46:31.007466+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "direct",
+        "availability": "original_browser_test_copy_access_confirmed",
+        "observationKind": "direct_geometry_effect_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/cleanup.json"
         ],
         "task": "Straßen/Bebauung durch lokalen Eingriff verformen",
         "phase": "CITY-04",
@@ -2613,14 +2653,81 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Lokale Originalwirkung teilbelegt; weitere Warpoperationen, genaue Wirkungsgrenzen/Schutz, Save/Undo und eigene Produkt-/Host-/Bedienparität offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I14-I",
+          "state": "displace_apply_discard_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "observation": "Two Displace drags: first discarded, second Apply visibly retained;8 operation controls, only Displace effect measured",
+          "remaining": [
+            "Only Displace effect tested; other listed operations control-only",
+            "No numeric radius/strength or deformation falloff proved",
+            "No raw stable IDs, protected binding or overlap validity proved",
+            "Discard is observed preview cancellation; full undo/redo not tested",
+            "Reroll effect visually local; exact changed-element boundary and untouched geometry values not audited",
+            "Same unchanged URL does not serialize edited result; no saved-state reload claimed",
+            "No own product/host/result/UX acceptance"
+          ]
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ],
+        "operationRequirements": [
+          {
+            "name": "Bloat",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Displace",
+            "status": "open",
+            "originalEffect": "direct_partial",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Equalize",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Liquify",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Measure",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Pinch",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Rotate",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Relax",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0009",
@@ -3430,7 +3537,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I12-I",
+      "run": "CITY-00-I14-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3453,7 +3560,9 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
       ],
       "resultReferences": [
         {
@@ -133262,7 +133371,7 @@
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
         },
         "followUpPhase1PairedHistory": {
-          "state": "scoped_candidate_independent_review_pending",
+          "state": "scoped_review_passed_phase1_open",
           "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalGesture": "Building-Rechteck 6…8 × 6…8 zeichnen → Settings > Map Settings > NONE → Save → Undo → Save → Redo → Save",
           "hostGesture": "Bauwerk > Rechteck 6…8 × 6…8 zeichnen → Einstellungen > Karteneinstellungen > NONE → Speichern → Rückgängig → Speichern → Wiederholen → Speichern",
@@ -133278,8 +133387,13 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json"
           ],
-          "measuredScope": "Beide 8×8-Karten haben Building-Grenzen -2…6 × 0…6 und 6…8 × 6…8; NONE erzeugt keinen Undo-Schritt, Undo/Redo betrifft nur den Building-Zug, Redo stellt die gespeicherten Bytes je Produkt wieder her. Host NONE bleibt nach frischem Prozess markiert.",
-          "gap": "Unabhängiger Review, direkte Grafikpaarung aller vier aktiven Modi auf gleicher Assetbasis und Mehrgeschosswirkung offen; Phase-1-Tor offen."
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json"
+          ],
+          "measuredScope": "Beide 8×8-Karten haben Building-Grenzen -2…6 × 0…6 und 6…8 × 6…8; NONE erzeugt keinen Undo-Schritt, Undo/Redo betrifft nur den Building-Zug, Redo stellt die gespeicherten Bytes je Produkt wieder her. Host NONE bleibt nach frischem Prozess markiert; unabhängiger Hostreview wiederholt dies.",
+          "gap": "Direkte Grafikpaarung aller vier aktiven Modi auf gleicher Assetbasis und Mehrgeschosswirkung offen; Phase-1-Tor offen."
         }
       },
       {

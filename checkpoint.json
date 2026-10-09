@@ -1452,7 +1452,7 @@
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "dd008Plan": {
       "date": "2026-10-09",
-      "state": "original_host_history_pair_candidate_review_pending",
+      "state": "dd008_none_history_scoped_review_passed_phase1_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
       "source": "Dungeondraft 1.2.0.1: own-building-wear-scratched.dungeondraft_map; bisherige Original-Wahlprobe war leer",
       "originalHistory": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/original-history.md",
@@ -1460,7 +1460,10 @@
       "pairedAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549046997-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
-      "next": "Neues Geometrie-/History-Paar unabhängig reviewen; anschließend die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen."
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json",
+      "next": "Die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen; DD-008 und Phase 1 bleiben offen."
     },
     "gmUxN001Plan": {
       "date": "2026-10-09",
@@ -3650,17 +3653,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I13-P",
-      "kind": "early_reference_planning",
-      "startedAt": "2026-10-09T12:34:09.503448+00:00",
-      "focus": "Vorgabenladen und tatsächlichen Speicherzugang planen",
+      "id": "CITY-00-I14-CI",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T12:48:13.602689+00:00",
+      "focus": "Geplanten Verformungsvertrag und Teilpflichten eintragen",
       "state": "completed",
-      "result": "Load saved settings und ggf eigeneSettings-Ausgabe getrennt von gestoppterSiedlungs-Ausgabe prüfen; keine neueKarte/Login/Kauf"
+      "result": "Geplanter Verformungsvertrag ergänzt;8 Teilpflichten offen, nur Displace Originalteilwirkung; keine eigene API oder Hostabnahme"
     },
     "nextRun": {
-      "id": "CITY-00-I13-I",
-      "kind": "reference_settings_probe",
-      "focus": "Gespeicherte Vorgaben im Original prüfen"
+      "id": "CITY-00-I14-CR",
+      "kind": "cleanup_review",
+      "focus": "Verformungsvertrag und Rohbelege abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
