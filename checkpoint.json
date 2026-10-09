@@ -3539,17 +3539,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-P",
+      "id": "CITY-00-I07-BP",
       "kind": "reference_planning",
-      "startedAt": "2026-10-09T11:15:07.552075+00:00",
-      "focus": "Vollständige Save-As-Folge aus bisherigen Originalframes ableiten",
+      "startedAt": "2026-10-09T11:18:57.129325+00:00",
+      "focus": "FTG-Tageslichtwirkung im Browser getrennt planen",
       "state": "completed",
-      "result": "Leeres File-Feld nach Path-Enter als unvollständiger Ablauf erkannt; einfache Filename-/Save-/Neuöffnungsprobe und benannte Presets geplant"
+      "result": "Direkte Sun-/General-/Effects-Controls identifiziert, Tageslichtvergleich und Präferenzrückstellung geplant; COK wartet auf Hex-Farbenslot"
     },
     "nextRun": {
-      "id": "CITY-00-I07-I",
-      "kind": "native_original_probe",
-      "focus": "Privates Save-As samt neuer Prozessöffnung und Presetnamen prüfen"
+      "id": "CITY-00-I07-BI",
+      "kind": "browser_original_probe",
+      "focus": "FTG-Uhrparameter und Day/night-Wirkung dokumentieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
@@ -3565,6 +3565,12 @@
       "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
       "state": "responsibilities_confirmed_hex_basis_then_city",
       "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
+    },
+    "pendingNativeRun": {
+      "id": "CITY-00-I07-I",
+      "state": "waiting_for_hex_colors_slot",
+      "focus": "Vollständige COK-Save/Neuöffnungs-/Presetprobe",
+      "dependency": "Hex-Kollege hat nächsten nativen Platz für14Interface-Farben reserviert"
     }
   },
   "testFixturePortability": {
