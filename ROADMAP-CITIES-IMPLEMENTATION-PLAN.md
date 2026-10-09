@@ -6,6 +6,8 @@ Direkter Auftrag vom 09.10.2026: vollständige Funktionsgleichwertigkeit mit Can
 
 Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase1. Eigene Arbeitskopie, gemeinsame Veröffentlichung ohne Force-Push. Der Hex-Kollege besitzt derzeit HEX-00 und seine GUI-Testinstanz; keine parallele native Testinstanz starten. CITY-01 beginnt nach der festen CITY-00-Ergebnisgalerie und dem geprüften HEX-05-Übergabevertrag. Direkte Detailwirkungen werden spätestens vor ihrem zugehörigen Fachpaket geprüft; vollständige Originalinventur und Parität bleiben Pflicht für CITY-09. Bis zur Atlasübergabe wird Referenzarbeit vorgezogen.
 
+Der konkrete [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) ordnet die aktuellen Quellschnittstellen, fehlenden HEX-05-Verträge, Stadtmodule und vollständigen Abnahmesequenzen zu. Er wird nach der geprüften Atlasübergabe an den gelieferten APIs aktualisiert.
+
 ## Iststand und offene technische Basis
 
 Alle 24 CTY-Unterfälle sind offen; native Stadtmodelle, Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
@@ -621,3 +623,21 @@ CITY-00-I38-CR Start 2026-10-09T15:55:34.845432+00:00; Snapshot/acceptance/Plan 
 
 
 CITY-00-I39-P Start 2026-10-09T16:00:29.840385+00:00; Fokus: Quellprüfung und konkreter CITY-01-Anschlussplan. Auditumfang festgelegt: drei CITY-01-Pflichtfälle und ihre drei Originalzuordnungen gegen reale Kamera, Eingabe, Renderer, Dokumentparser, History und Speicher prüfen. Konkreten Anschlussplan mit vorhanden/geplant/fehlend, Besitzer und Hostnachweis liefern; keine erfundene HEX-05-API und keine zweite Editorbasis. Produktstart erst nach geprüfter HEX-05-Übergabe. Umsetzung liefert ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md und einen externen Quellhash-/Zuordnungsbeleg; Review und Aufräum-P/I/R getrennt.
+
+
+CITY-00-I39-I Start 2026-10-09T16:03:34.427799+00:00; Neun reale Quellbereiche mit SHA-256/Zeilenankern geprüft; drei CTY- und drei CO-Zuordnungen vollständig in konkretem Anschlussplan. Detailprojektion/Router/Besitzer/History fehlen noch; .city plus Elternplatzierung braucht bereits CITY-01 gemeinsame Save/Recovery. Kollege bestätigt Transaktions-/Command-Basis in HEX-02 und geprüften HEX-05-Handoff. Keine Produkt- oder Hostfreigabe. Anschlussplan: [CITY-01 Integration](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md). Audit: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/source-audit.json. Review folgt getrennt.
+
+
+CITY-00-I39-R Start 2026-10-09T16:04:44.446953+00:00; Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet. Aufräum-P/I/R folgen getrennt.
+
+
+CITY-00-I39-CP Start 2026-10-09T16:05:14.494999+00:00; Plan: Geometriehelfer aus src/geometry.ts im Plan einordnen: rectangle/inside/overlaps als punktbasierte Kandidaten, kein neuer Parallelbestand; Entity-/Portal-/Building-Helfer nicht ungeprüft auf Metergeometrie übernehmen. Polygon-Grenzsemantik und topologyEpsilon1e-9 benötigen bewusste Meterprüfung; BuildingEllipse hängt von Koordinatenspanne ab. Anschlussplan im vorderen Gesamtplan verlinken; ursprüngliches Quellaudit unverändert lassen und finalen Dokumenthash separat sichern. Umsetzung und Review getrennt.
+
+
+CITY-00-I39-CI Start 2026-10-09T16:05:51.739005+00:00; Anschlussplan nennt vorhandene rectangle/inside/overlaps und deren Rand-/Bounding-Box-Grenzen; feste Topologietoleranz, BuildingEllipse-Segmentzahl und Dungeon-Entity-/Portalbindung ausdrücklich getrennt. Keine ungeprüfte Feld→Meter-Übernahme oder zweite Geometriebibliothek. Plan direkt im Gesamtplan verlinkt; ursprüngliche Evidenz unverändert. Abschließender Hash-/Quell-/Verweisreview folgt.
+
+
+CITY-00-I39-CR Start 2026-10-09T16:06:44.885049+00:00; Originalquellaudit unverändert, historischer Planhash gegen Commit56b18a9 sowie finaler Plan-/Geometriehash bestätigt. Zehn Quellbereiche/Anker und sämtliche Planlinks gültig; drei CITY-01-Fälle und drei Originalzuordnungen erhalten. Wiederverwendung klar von Dungeon-Einheiten/Topologie getrennt, keine zweite Kamera/History/Statusdatei.65 CO-/24 CTY-Pflichten offen; Aufräumumfang ohne Restbefund. CITY-01 startet nach geprüfter HEX-05-Übergabe; bis dahin frühe manuelle Originalfunktionen gezielt vervollständigen. Nachweis: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/cleanup-review.json.
+
+
+CITY-00-I40-P Start 2026-10-09T16:08:13.049726+00:00; Fokus: FTG-Hausgeometrie für CITY-01. Eigenes CITY00 Hamlet QA im vorhandenen FTG-Tab: Ausgangsbild und sichtbaren Stand sichern, Manual edit/Buildings frisch lesen. Frühe Skalier-/Drehwirkung soweit tatsächlich angeboten an einem sichtbaren Haus als ungespeicherten Entwurf prüfen; geänderte Werte/Vorschau/Abschluss getrennt sichern. Keine Löschung, neue Siedlung oder erneute gestoppte Download-/Bewohnerhypothese. Cancel Edit/Yes verwirft Entwurf, sichtbares Haus sowie250m/Districts/11Monday prüfen. Stabile IDs, Save/Reload und Einzel-Undo aus Bildern nicht behaupten; maximal2 erfolglose Versuche je Hypothese. Nachher Originaltabs erhalten, P/I/R und Aufräum-P/I/R getrennt. Externe Belege: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/.
