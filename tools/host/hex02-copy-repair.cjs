@@ -10,11 +10,9 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
   const read = (p) => fs.readFileSync(path.join(vault, p), "utf8");
   const panel = () => page.locator(".dn-atlas:visible").last();
   const modal = () =>
-    page
-      .locator(".modal")
-      .filter({
-        has: page.getByRole("textbox", { name: "Kopiename", exact: true }),
-      });
+    page.locator(".modal").filter({
+      has: page.getByRole("textbox", { name: "Kopiename", exact: true }),
+    });
   async function settle() {
     await page.evaluate(
       () =>
