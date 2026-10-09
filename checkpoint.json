@@ -2004,9 +2004,19 @@
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
       "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
-      "limits": "Nur Planreparatur und Planreview; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. O01a ist planbar, aber nicht gestartet; O01b, HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "limits": "Planreview-PASS und O01a als enger read-only Hostnachweis; keine Original-, Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
+      "o01a": {
+        "run": "DD-036-ATLAS-O01a",
+        "state": "scoped_read_only_host_passed_independent_review_pending_full_cases_open",
+        "productCommit": "fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
+        "mainSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
+        "editEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566923401-dd036-o01a-edit/o01a-result.json",
+        "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566931299-dd036-o01a-reopen/o01a-result.json",
+        "result": "Zwei getrennte Obsidian-Prozesse öffnen referenzfreie Original-/bytegleiche Transportkopie mit world.id dd036-o01a-world; beide Dateien behalten SHA-256 e264ddbeedb32a83a5e35eb904fd044046af8f133665fcb5877409d3d9aa5efb, null beobachtete Atlas-Schreibaufrufe, kein Draft/Journal; normale Prozessausgänge. Synthetischer Hostlauf, keine Dungeondraft-Originalwirkung.",
+        "review": "Unabhängiger Review der Hostevidenz ausstehend."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
-      "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
+      "followingRun": "DD-036-O01a ist eng geprüft; O01b mit Kinddateien wartet auf den angeschlossenen Terrain-Lader und seine sichtbare Hostprüfung."
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
