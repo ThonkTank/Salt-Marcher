@@ -121,9 +121,13 @@ Receiptwrite wird in eine exklusive neue Receiptdatei geschrieben,
 Generation publiziert; anschließend wird das Receipt-Verzeichnis synchronisiert.
 Vor der ersten Parent-Publikation darf nur dessen Receipt-Stagingdatei
 entstehen, keine Child-Hilfsdatei und keine Zielmutation. Ein Kill in dieser
-Phase lässt den Zielzustand unverändert; Recovery inventarisiert die
-Stagingdatei auch bei unvollständigem Inhalt und behält sie als ungebundenen
-Orphan-Beleg. Sie wird nie als gültiges `prepared` interpretiert.
+Phase lässt den Zielzustand durch H03 unverändert. Vor Anlage der
+Stagingdatei belegen Controller-Killpunkt, vollständige Zielprüfung gegen das
+Fixture-Before-Inventar und ein leeres Transaktionsverzeichnis den Zustand
+`no-transaction`; es gibt dann weder Receipt noch Orphan. Nach Anlage
+inventarisiert Recovery die Stagingdatei auch bei unvollständigem Inhalt und
+behält sie als ungebundenen Orphan-Beleg. Sie wird nie als gültiges `prepared`
+interpretiert. Eine abweichende Zielwahrheit ist in beiden Fällen Konflikt.
 Vorherige Generationen bleiben bis zur Parent-Freigabe erhalten. H03 löscht
 Before-Snapshot, Capture oder Receiptgenerationen auch nach Parent-Commit
 nicht: sichere Reclamation gegenüber einem noch offenen fremden FD ist eine
@@ -207,7 +211,8 @@ nur logisch, nicht physisch, frei.
 
 Recovery liest in einem frischen Helper publizierte Receipts, gebundene
 Namen, Identitäten und Hashes sowie ein begrenztes Inventar aller
-Receipt-Stagingnamen im Transaktionsverzeichnis:
+Receipt-Stagingnamen im Transaktionsverzeichnis. Ohne publiziertes
+Parent-Receipt verwendet sie das gebundene Fixture-Before-Inventar als Orakel:
 
 - Ein Parent-`prepared` ohne Child-Receipt hat noch keine Child-Hilfsdatei;
   ein Child-`prepared` darf fehlende oder teilweise geschriebene gebundene
@@ -268,24 +273,25 @@ H03 und darf nicht als bestanden behauptet werden.
 
 ## Vollständige Fault- und Adversary-Matrix
 
-Create, Update und Delete sind getrennte Pflichtzeilen. Für jede Zeile werden
-mindestens folgende Killpunkte mit neuem Root und frischem Recoveryprozess
-ausgeführt:
+Create, Update und Delete sind getrennte Pflichtzeilen. Die folgenden
+Killpunkte werden je genannter Operation mit neuem Root und frischem
+Recoveryprozess ausgeführt. Ein Schritt, den die Operation nicht besitzt,
+steht als `not-applicable` mit Begründung im Matrixreceipt und ist keine
+Pflichtzelle. `not-run` bleibt für jede anwendbare Pflichtzelle ein No-Go:
 
-- vor/während/nach Before-Payload-Snapshot und Snapshot-Sync;
-- vor/während/nach Ziel-FD-Verifikation gegen den Before-Snapshot;
-- vor/nach Temp-Sync;
-- vor/während/nach dem ersten durablen Parent- und jedem Child-`prepared`,
-  einschließlich partieller Receipt-Stagingdateien;
-- vor/nach Capture;
-- vor/nach Capture-Verzeichnissync;
-- vor/nach Publikation beziehungsweise Delete;
-- vor/nach Publish-Verzeichnissync;
-- vor/nach Child-Commit;
-- vor/nach Parent-`children-committed` und Parent-`committed`;
-- vor/während/nach jedem Create-Rollback-Capture;
-- vor/während/nach Update-/Delete-Restore-Temp-Sync und Restore-Publication;
-- vor, während und nach logischer Parent-Freigabe.
+- Update/Delete: vor/während/nach Before-Payload-Snapshot und Snapshot-Sync;
+- Update/Delete: vor/während/nach Ziel-FD-Verifikation gegen den
+  Before-Snapshot;
+- Create/Update: vor/nach initialem Temp-Sync;
+- alle Operationen: vor Anlage, während und nach Anlage der ersten
+  Parent-Receipt-Stagingdatei sowie vor/während/nach durablem Parent- und
+  jedem Child-`prepared`;
+- Update/Delete: vor/nach Capture und Capture-Verzeichnissync;
+- Create/Update: vor/nach After-Publikation und Publish-Verzeichnissync;
+- alle Operationen: vor/nach Child-Commit, Parent-`children-committed` und
+  Parent-`committed` sowie vor/während/nach logischer Parent-Freigabe;
+- Create: vor/während/nach jedem Rollback-Capture;
+- Update/Delete: vor/während/nach Restore-Temp-Sync und Restore-Publication.
 
 An jedem anwendbaren Dateisystemschritt werden zusätzlich separat injiziert:
 
@@ -298,7 +304,7 @@ An jedem anwendbaren Dateisystemschritt werden zusätzlich separat injiziert:
 - beschädigte, fehlende, doppelte oder fremde Receiptgeneration;
 - zweiter Recoverylauf und konkurrierter Recoveryversuch.
 
-Jede Matrixzelle nennt `passed`, `failed` oder `not-run`, alle verbliebenen
+Jede anwendbare Matrixzelle nennt `passed`, `failed` oder `not-run`, alle verbliebenen
 Dateien und deren Hash/Identität. Eine als Host nicht sicher injizierbare
 Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
 
@@ -309,9 +315,10 @@ Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
   Nach durablem Child-`prepared` benötigt der alte Zustand ein Parent-/Child-
   `prepared`- und `rolled-back`-Receipt, Zielabwesenheit und ein Inventar des
   gebundenen Tempnamens (fehlend, teilweise oder vollständig) samt
-  Hash/Identität, falls vorhanden. Vor der ersten Parent-Publikation genügt
-  nur das verifizierte unveränderte Zielinventar mit retained Orphan-Receipt-
-  Stagingbeleg; dort existiert noch keine gültige Transaktion. Bloße
+  Hash/Identität, falls vorhanden. Vor der ersten Parent-Publikation gilt:
+  Vor Staging-Anlage belegen Controller-Killpunkt, gegen das Fixture geprüfte
+  Zielabwesenheit und leeres Transaktionsverzeichnis `no-transaction`; nach
+  Staging-Anlage kommt der retained Orphan-Receipt-Stagingbeleg hinzu. Bloße
   Zielabwesenheit ohne zugehörigen Phasenbeleg genügt nicht.
 - Update endet ausschließlich vollständig alt, vollständig neu oder als
   erhaltener Konflikt mit verifiziertem Before-Snapshot, beobachteter Capture,
@@ -403,5 +410,10 @@ fand drei verbliebene Pflichtlücken: belegter Capture-Zielname bei
 `RENAME_NOREPLACE`, Hilfsdateien vor dem ersten durablen Receipt und das
 unvollständige Create-Abwesenheitsorakel. Die vorstehende R01-Freigabe ist
 damit kein gültiges Umsetzungsgate mehr. Diese R02-Fassung repariert die drei
-Stellen als Planentwurf; ihre unabhängige Prüfung auf dem exakten neuen
-Quellcommit ist noch offen. H03-I01 beginnt erst nach bestandenem R02-Review.
+Stellen als Planentwurf. Der erste unabhängige Review auf
+`2f7f8fa7712b99c30c452aec9cc0c25a3cc5738d` bestätigte die drei
+Reparaturziele, fand aber zwei neue Matrix-/Frühzustandswidersprüche (Issue #1,
+Kommentar 6084779594). Diese Fassung präzisiert die operationsspezifischen
+Pflichtzellen und `no-transaction` vor Staging-Anlage. Die erneute unabhängige
+Prüfung des exakten neuen Quellcommits ist offen; H03-I01 beginnt erst nach
+bestandenem R02-Review.
