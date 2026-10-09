@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:41:42.711137+00:00",
+    "updated": "2026-10-09T12:46:31.007466+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2543,12 +2543,13 @@
         "product": "Medieval Fantasy City Generator",
         "feature": "Lokale Geometrie erneut erzeugen",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedAt": "2026-10-09T12:46:31.007466+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "direct",
+        "availability": "original_browser_test_copy_access_confirmed",
+        "observationKind": "direct_geometry_effect_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
         ],
         "task": "Viertelkontur lokal erneuern",
         "phase": "CITY-04",
@@ -2564,26 +2565,44 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Lokale Originalwirkung teilbelegt; weitere Warpoperationen, genaue Wirkungsgrenzen/Schutz, Save/Undo und eigene Produkt-/Host-/Bedienparität offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I14-I",
+          "state": "local_reroll_visual_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "observation": "Starwind Heath Reroll geometry changes western building arrangement, prior eastern warp remains visible",
+          "remaining": [
+            "Only Displace effect tested; other listed operations control-only",
+            "No numeric radius/strength or deformation falloff proved",
+            "No raw stable IDs, protected binding or overlap validity proved",
+            "Discard is observed preview cancellation; full undo/redo not tested",
+            "Reroll effect visually local; exact changed-element boundary and untouched geometry values not audited",
+            "Same unchanged URL does not serialize edited result; no saved-state reload claimed",
+            "No own product/host/result/UX acceptance"
+          ]
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0008",
         "product": "Medieval Fantasy City Generator",
         "feature": "Stadtgeometrie verformen (Warp)",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedAt": "2026-10-09T12:46:31.007466+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "direct",
+        "availability": "original_browser_test_copy_access_confirmed",
+        "observationKind": "direct_geometry_effect_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
         ],
         "task": "Straßen/Bebauung durch lokalen Eingriff verformen",
         "phase": "CITY-04",
@@ -2599,14 +2618,31 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Lokale Originalwirkung teilbelegt; weitere Warpoperationen, genaue Wirkungsgrenzen/Schutz, Save/Undo und eigene Produkt-/Host-/Bedienparität offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I14-I",
+          "state": "displace_apply_discard_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "observation": "Two Displace drags: first discarded, second Apply visibly retained;8 operation controls, only Displace effect measured",
+          "remaining": [
+            "Only Displace effect tested; other listed operations control-only",
+            "No numeric radius/strength or deformation falloff proved",
+            "No raw stable IDs, protected binding or overlap validity proved",
+            "Discard is observed preview cancellation; full undo/redo not tested",
+            "Reroll effect visually local; exact changed-element boundary and untouched geometry values not audited",
+            "Same unchanged URL does not serialize edited result; no saved-state reload claimed",
+            "No own product/host/result/UX acceptance"
+          ]
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0009",
@@ -3416,7 +3452,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I13-I",
+      "run": "CITY-00-I14-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3440,7 +3476,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
       ],
       "resultReferences": [
         {
