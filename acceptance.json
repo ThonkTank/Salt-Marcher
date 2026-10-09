@@ -453,8 +453,9 @@
       "result": "The production catalog view is now one seven-section, versioned workspace. The existing 2014 Monster surface performs query and detail reads through the typed SRD-5.1 provider with section/generation/AbortSignal binding; six future owner providers and their panels remain explicitly unavailable.",
       "covered": ["exact canonical section order and visible/roving tabs", "CE-01 state migration and fail-closed future schema", "isolated seven-section state normalization", "immutable Monster query DTOs", "query and detail abort/stale isolation", "empty, invalid, error, missing and unavailable result contracts", "retained CE-01 filter, chip, sort, paging, keyboard, detail and attribution behavior"],
       "verification": {"sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6", "dirty": false, "node": "v22.22.2", "check": "passed", "tests": {"passed": 259, "failed": 0}, "focusedTests": {"passed": 217, "failed": 0}, "build": "passed", "mainBytes": 1362196, "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052", "mainJsGrowthBytes": 172826},
+      "hostSmoke": {"sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4", "host": "Obsidian 1.13.7 Flatpak, isolated local vault, visible CDP UI, two normal-exit app processes", "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4", "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json", "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json", "covered": "seven visible sections, Monster results, six unavailable states, pending-search section switch, installed build triplet, fresh-process section and search restore"},
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
-      "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode, host run or physical/screenreader/platform acceptance. All CE-AC cases remain open."
+      "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode or physical/screenreader/platform acceptance. The local automated host smoke is scoped; all CE-AC cases remain open."
     },
     "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open."
   },
@@ -152299,9 +152300,12 @@
     "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
-      "state": "open",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084269776",
-      "scope": "Viewport/render only, after completed cleanup; no camera/gesture/hex change planned."
+      "state": "resolved_observed_failure_app_reload_only",
+      "cause": "Stale installed styles.css; main.js and manifest were current. No product source repair.",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084884147",
+      "review": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json",
+      "cloudFreshProcess": "not_verified",
+      "limits": "Empty grid layout/zoom/fit only; filled terrain, full Atlas/parity/physical/large map remain open."
     }
   }
 }

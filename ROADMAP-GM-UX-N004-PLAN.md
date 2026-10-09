@@ -17,3 +17,9 @@ Grundlage: [HEX-01-Fachplan](ROADMAP-HEX-01-PLAN.md), abgeschlossener [Aufräumr
 | N-004-R01 | eigener Review und Cloud-Nachtest | offene Cloudgrenze ausdrücklich erhalten; Pflichtfehler vor Wiederverwendung beheben |
 
 HEX-02 folgt mit Gelände, gemeinsamer Historie und Entwürfen auf dieser Kartenfläche. Dieses Paket legt keine zweite Kamera, keinen Kartenmodus und keinen Ersatzeditor an.
+
+## R01: belegte Ursache und begrenzter Abschluss
+
+Der [Cloud-Nachtest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084884147) bestätigte eine unvollständige QA-Installation: Programmdatei und Manifest waren aktuell, die installierte CSS-Datei war veraltet und enthielt keine geladenen Atlasregeln. Nach Sicherung und Kopie des vollständigen Build-Tripels sowie App-Reload waren Raster, Voll-/Splitlayout und sichtbare Zoom-/Einpassen-Reaktion stabil. Eigene tatsächliche Prozessneustart-/Layoutbelege bleiben getrennt. **Keine Produktänderung für N-004 erforderlich.**
+
+Der Cloud-Tester konnte keinen neuen Electron-Prozess starten; dieser Fall bleibt offen. Die Cloudprobe belegt nur das leere Raster, keine Gelände-, Gesamtatlas-, Paritäts-, Großkarten- oder physische Abnahme. HEX-02 kann auf der geprüften Kartenfläche mit dem ersten Inselablauf weitergehen.
