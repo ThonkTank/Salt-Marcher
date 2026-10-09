@@ -120,7 +120,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T17:22:32Z",
+    "updated": "2026-10-09T18:48:11Z",
     "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
@@ -499,14 +499,14 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W03-T01",
+      "run": "CE-02-I02-S01-W04",
       "state": "in_progress_verified_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
-      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory and structured transcript including both special descriptions", "real-PDF evidence for 50 equipment row labels and 224 structured or sourced-description facts", "Spear, Blowgun, Sling and Net source goldens", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
-      "verification": {"check": "passed", "tests": {"passed": 311, "failed": 0}, "build": "passed", "focusedTests": {"passed": 8, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 50, "expectedPrimary": 219}, "transcriptRecords": {"checked": 50}, "structuredAndDescriptionFacts": {"checked": 224}, "incompleteGate": "passed"},
-      "limits": "Intermediate only: 50 of 219 primary equipment occurrences and 50 transcript records are captured. Armor narrative descriptions, bounded cell matching, the other 169 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
+      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory and structured transcript including both special descriptions", "99/99 Adventuring Gear table-leaf inventory in physical PDF order", "real-PDF evidence for 149 equipment row labels and 224 structured or sourced-description facts", "Spear, Blowgun, Sling and Net source goldens", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
+      "verification": {"check": "passed", "tests": {"passed": 355, "failed": 0}, "build": "passed", "focusedTests": {"passed": 9, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 149, "expectedPrimary": 219}, "transcriptRecords": {"checked": 50}, "structuredAndDescriptionFacts": {"checked": 224}, "incompleteGate": "passed"},
+      "limits": "Intermediate only: 149 of 219 primary equipment occurrences and 50 transcript records are captured. Adventuring Gear transcript and narratives, Potion-of-Healing merge, Armor narratives, bounded cell matching, the other 70 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
   "cityPlans": {
@@ -650,7 +650,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/implementation.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/n07-review.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/implementation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/n08-refinement.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/n08-refinement.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/r12-review.json"
         ]
       },
       {
@@ -2579,7 +2580,8 @@
         "availability": "temporary_settlement",
         "observationKind": "direct_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
         "task": "Uhrzeit ändern und Aufenthaltsorte prüfen",
         "phase": "CITY-07",
@@ -2605,7 +2607,8 @@
           "state": "partial_effect_observed",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
-          "observationTimeScope": "artifact persistence times; UI action start not measured"
+          "observationTimeScope": "artifact persistence times; UI action start not measured",
+          "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         }
       },
       {
@@ -4158,10 +4161,11 @@
         "observedAt": "2026-10-09T11:22:28.268520+00:00",
         "observedVersion": null,
         "availability": "temporary_settlement_control_visible",
-        "observationKind": "direct_control_only",
+        "observationKind": "direct_partial_effect",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
         "task": "Ruhetag manuell überschreiben ändern und Ergebnis prüfen",
         "phase": "CITY-07",
@@ -4175,15 +4179,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "gap": "Same-timeRestday changes resident work/home activity; None actual behavior differs fromtooltip in thissequence. Fullcalendar/overridepersistence, own implementation/host/UX remainopen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "originalProbe": {
-          "run": "CITY-00-I07-BI",
-          "state": "control_observed_only",
-          "observation": "Manual day type None,Not rest day,Rest day; schedule effect untested",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "run": "CITY-00-I42-I",
+          "state": "rest_day_resident_transition_and_none_return_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+          "observation": "Wyddis Cobblekind, farmer, Monday11:00 currently farming at Farm; Rest day at sameMonday11:00 shows Day of rest; same resident relaxing at home at The Cobblekind Residence; Lives in Residence and Works at Farm references remain displayed; Time dialog reopens with None selected; submit unchangedMonday11:00 removes Day of rest; reopened person farming atFarm again",
+          "discrepancy": "Tooltip says None keeps existing override for rest of day; observed identical-date resubmit returned to normal working day. Single sequence, cause/version unknown.",
+          "remaining": [
+            "Not rest day on calendar-defined rest day",
+            "Automatic day boundary and overrides duration",
+            "Reload/freshprocess persistence",
+            "Full population schedules and dependencies",
+            "Own model/commands/Host/UX/physical comparison"
+          ]
         }
       },
       {
@@ -4261,7 +4272,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I40-I",
+      "run": "CITY-00-I42-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4310,7 +4321,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
       ],
       "resultReferences": [
         {
