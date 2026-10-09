@@ -3617,17 +3617,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I11-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:22:45.683186+00:00",
-      "focus": "Originalzugang und direkte CTY-Zuordnung korrigieren",
-      "state": "completed",
-      "result": "Dokumentationsquelle erhalten; direkte temporäre Quelle/Zugänglichkeit präzisiert; CTY002.01/.02 additiv zugeordnet. Alle Produkt-/Host-/UX-Fälle offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I11-CR",
       "kind": "cleanup_review",
-      "focus": "Hash-, Quellen-, CTY- und Pflichtstatus prüfen"
+      "startedAt": "2026-10-09T12:22:50.162152+00:00",
+      "focus": "Quell-/Verweis- und Rohbildschutz prüfen",
+      "state": "completed",
+      "result": "R01/R02 geschlossen; Rohhashes und vorige Gebäudeprobe erhalten, additiveCTY-Zuordnung gültig,63 CO/24CTY offen; Galerieabschluss unverändert"
+    },
+    "nextRun": {
+      "id": "CITY-00-I12-P",
+      "kind": "early_reference_planning",
+      "focus": "Frühe FTG-Generierungsvorgaben und Namens-/Layoutwirkung planen; COKUndo weiterhin nach Slotfreigabe"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
