@@ -309,26 +309,27 @@
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
-    "phase": "HEX-00",
-    "state": "reference_cleanup_passed",
-    "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
+    "phase": "HEX-01",
+    "state": "planning_passed",
+    "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-CLEAN-R01",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:00:25.074406+02:00",
-      "baseCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
-      "state": "passed",
-      "focus": "Complete before-transport validation, positive wire/metadata path, immutable original proof and new clean Git basis.",
-      "endedAt": "2026-10-09T17:03:50.235576+02:00",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json"
-      ]
+      "run": "HEX-01-P01",
+      "state": "planning_artifact_checks_passed",
+      "startedAt": "2026-10-09T17:10:55.836713+02:00",
+      "endedAt": "2026-10-09T17:10:55.836713+02:00",
+      "baseCommit": "a3baac32c6f01fdb8ef593de6bf3359ac1c757dd",
+      "plan": "ROADMAP-HEX-01-PLAN.md",
+      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+      "cleanupReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json",
+      "phaseApproval": false,
+      "kind": "planning",
+      "focus": "Create/open actual boundless Overworld with hostneutral meter/hex/camera core; visible selection and fresh reopen."
     },
     "nextRun": {
-      "id": "HEX-01-P01",
-      "kind": "planning",
-      "focus": "Boundless native Atlas create/open, meter camera,3-mile axial hexes and first host path",
-      "gate": "R02 and CLEAN-R01 passed; HEX01 plan starts now, latest integrated core host finishes before implementation candidate approval."
+      "id": "HEX-01-I01",
+      "kind": "implementation",
+      "focus": "Core and first native Atlas UI plus actual host proof",
+      "gate": "No phase approval until own R01 and cleanup."
     },
     "review": {
       "state": "passed",
@@ -350,9 +351,10 @@
       ]
     },
     "open": [
-      "Latest integrated renderer/catalog buildcc92 own kernel is running separately.",
-      "HEX01..05 common editable boundless Atlas now starts; CITY01 remains dependent.",
-      "79 later Wonderdraft obligations,113 historically unverified source usages, full parity/large-map/physical/install still open."
+      "HEX01 implementation and own actual create/negative-hex/navigation/fresh-open host proof.",
+      "HEX01 independent review and own cleanup before HEX02.",
+      "HEX02..05 common editable Atlas remains next, CITY01 depends on testedHEX05 contract.",
+      "79 later Wonderdraft obligations/full parity/physical/large-map/install remain open."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
