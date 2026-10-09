@@ -919,3 +919,5 @@ CITY-00-I43-I Start 2026-10-09T18:57:07.640Z; installierteDemo/privatesProfil/Lo
 CITY-00-I43-CLEAN-P43 Start 2026-10-09T19:08:06.372374+00:00; Plan:Originalframes/Savehashes schützen; explizittrennen,dassKategorieassetvariationbelegtist,RandomizeScale/RotationaberzusammenaktivwarenundkeineeigenenRangesisoliertwurden. PrimärAssets/Posematerialisiert; keinGeneratorredoausReferenz. ReviewNormalExit/Slot/65CO+24CTY.
 
 CITY-00-I43-CLEAN-I43 Start 2026-10-09T19:08:09.607626+00:00; CO2trenntbeideaktivierteControls/keineisoliertenRanges,PlatzierungsfolgeVorschauüberlagerungvsEscapeEndstand,ArtefaktassetpfadevsöffentlicheAPI. Originaldateien/Rohframesunverändert.
+
+CITY-00-I43-CLEAN-R43 Start 2026-10-09T19:08:13.588421+00:00; Manifest-/Frame-/Savehashes,Exit0/5verschwundeneProzessidentitäten/Slotrückgabeund65CO+24CTYopengeprüft. KeinRestbefundimAufräumen, separaterReferenzreviewR43folgt;keineerneuteGUIgeplant.

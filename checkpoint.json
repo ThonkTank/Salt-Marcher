@@ -4489,17 +4489,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I43-CLEAN-I43",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:08:09.607626+00:00",
-      "focus": "Kontroll-/Artefaktgrenzen präzisieren",
-      "state": "completed",
-      "result": "CO2Limits ergänzt, Rohbilder/Save unverändert;keineerfundeneAPI/seedpolicy."
-    },
-    "nextRun": {
       "id": "CITY-00-I43-CLEAN-R43",
       "kind": "cleanup_review",
-      "focus": "Hashes/Materialisierung/NormalExit/Kennungenverifizieren"
+      "startedAt": "2026-10-09T19:08:13.588421+00:00",
+      "focus": "BereinigteOriginalevidenz/NormalExit undKennungsschutzprüfen",
+      "state": "completed",
+      "result": "Hashes/Save/Exit0/Slotund24CTY+65COopengeprüft; nächsteR43Referenzreview."
+    },
+    "nextRun": {
+      "id": "CITY-00-I43-R43",
+      "kind": "reference_review",
+      "focus": "Kategorieasset-/PosenvariantenundMaterialisierung unabhängiggegenFrames/Save undAnforderungenprüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
