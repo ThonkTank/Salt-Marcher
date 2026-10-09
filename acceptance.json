@@ -3085,13 +3085,15 @@
         "product": "Fantasy Town Generator",
         "feature": "3D-Darstellung und Street View",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
-        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedAt": "2026-10-09T11:35:20.862216+00:00",
         "observedVersion": null,
-        "availability": "temporary_settlement_control_visible",
-        "observationKind": "direct_control_only",
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial_effect",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/evidence-cleanup.json"
         ],
         "task": "3D-Darstellung und Street View ändern und Ergebnis prüfen",
         "phase": "CITY-07",
@@ -3105,15 +3107,21 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "gap": "Street-View-Einstieg und Rückkehr belegt; Bewegung/Kollision/Synchronisierung, eigene Darstellung und Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "originalProbe": {
-          "run": "CITY-00-I07-BI",
-          "state": "control_observed_only",
-          "observation": "3D unstable checkbox; warning enables Street View; effects untested",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "run": "CITY-00-I08-I",
+          "state": "perspective_entry_and_return_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+          "observation": "3D enables Street view; start-point selection gives perspective with buildings/road/trees; Map view returns; editing disabled in3D; preference restored",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/006-street-view.jpg",
+          "remaining": [
+            "Street movement, rotation, collision and position synchronization",
+            "3D object details and complete visual parity",
+            "Own model, projection/navigation and editing UX",
+            "Product version"
+          ]
         }
       },
       {
@@ -3155,7 +3163,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I07-BI",
+      "run": "CITY-00-I08-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3172,7 +3180,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json"
       ],
       "resultReferences": [
         {

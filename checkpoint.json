@@ -3546,17 +3546,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I08-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T11:33:13.026534+00:00",
-      "focus": "3D/StreetView-Originalwirkung und sichere Rückstellung planen",
+      "id": "CITY-00-I08-CI",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T11:36:48.482218+00:00",
+      "focus": "Originalwerte und Perspektivstart zuordnen",
       "state": "completed",
-      "result": "Enger Browserablauf für bislang nur sichtbare3D-Pflicht geplant; kein nativer Slot belegt"
+      "result": "Präferenzpaare gleich; Startpunkt nur in Bildkoordinaten, Rückkehr angewandt; keine unbelegte Fortbewegung"
     },
     "nextRun": {
-      "id": "CITY-00-I08-I",
-      "kind": "browser_original_probe",
-      "focus": "3D aktivieren, sichtbare StreetView und Rückkehr prüfen"
+      "id": "CITY-00-I08-CR",
+      "kind": "cleanup_review",
+      "focus": "Bereinigung prüfen und freien COK-Slot übernehmen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
