@@ -1,4 +1,64 @@
 {
+  "saltMarcherReplacement": {
+    "date": "2026-10-09",
+    "state": "smr00_plan_review_pending",
+    "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+    "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
+    "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
+    "acceptance": "acceptance.json.saltMarcherReplacement",
+    "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "source": {
+      "repository": "ThonkTank/Salt-Marcher",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "authority": "Current vision, program capabilities, feature requirements, confirmed acceptance, static catalogs, reference tables and Golden Masters; code is behavioral reference only."
+    },
+    "portfolio": [
+      "Campaign and data lifecycle",
+      "Catalog, reference graph and world planner",
+      "Party, scene and live session",
+      "Unified hex, city and dungeon atlas",
+      "Encounter, combat, loot and rewards",
+      "Session planner and generation",
+      "Travel, calendar and authoritative time",
+      "Shops, weather and music",
+      "Actor autonomy",
+      "Passive display, extensions and portability",
+      "Tutorials, accessibility, performance, offline and privacy"
+    ],
+    "coordination": {
+      "localThreads": [
+        "01a120d7-9f9e-7082-b8a8-11646ad25402",
+        "01a120d8-2869-7371-a417-3cb239ea4bd0",
+        "01a120d8-2868-7d02-b5b9-74ef49b0b88d"
+      ],
+      "deviceColleagues": {
+        "hexAtlas": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
+        "city": "01a12022-b67b-7da2-bed5-8ebde169d475",
+        "dungeon": "01a1204f-d184-7567-bfb3-d3ab06a0d07e"
+      },
+      "goal": "Vollendet die Arbeit am Obsidian Plugin. Koordiniere dich mit deinen Kollegen",
+      "cloudReviewHandoff": "GitHub Issue #1 comments 6081912800, 6081935763, 6082129686 and 6082173824; the replaced GM cloud thread focuses architecture/technical review including the platform decision. Other cloud colleagues retain their established review/test roles and participate through Issue #1."
+    },
+    "verified": "Read-only audit covered current SaltMarcher vision, program capabilities, all feature requirement families, technical needs, current implementation and historical JavaFX/Obsidian references. The resulting portfolio plan defines SMR-00 through SMR-11 without claiming implementation or acceptance. SMR-00-ADR-01 is a proposed host-neutral-core plus desktop-shell migration direction and remains unratified pending prototypes and reviews from all device and cloud workstreams.",
+    "platformAdrReview": {
+      "state": "local_static_review_repaired_cloud_and_device_reviews_pending",
+      "inventory": "At b7e06f0, 68 of 78 evaluated TypeScript files had no direct Obsidian import; direct host imports were concentrated in ten entry, storage and UI files totaling about 9100 LOC.",
+      "repairs": "Legacy Obsidian wording was limited to the transition adapter; Markdown authority was scoped to existing documents pending ADR; CE-01-I03 was split into host-neutral controller/DOM work and a thin Obsidian adapter; team roles and opaque retained data were clarified.",
+      "limits": "Static inventory and local review only. ADR-P01 through ADR-P04, device-owner feedback and independent cloud reviews remain open."
+    },
+    "open": [
+      "Independent architecture/technical review of SMR-00 plan and acceptance matrix",
+      "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
+      "SMR-00-ADR-01 target-platform and migration-path decision",
+      "Per-slice source-to-target mapping and host persistence/security decisions"
+    ],
+    "nextRun": {
+      "id": "SMR-00-ADR-01",
+      "kind": "architecture_technical_review",
+      "owner": "three_local_threads_with_cloud_review",
+      "focus": "Compare Obsidian plugin, standalone desktop and incremental hybrid against UX, data, distribution, security, performance and migration needs; cloud supplies independent architecture/technical review"
+    }
+  },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
   "state": "ce01_i03_reviewed_r01_next",
@@ -14,7 +74,7 @@
       "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 233, "failed": 0},
+        "tests": {"passed": 234, "failed": 0},
         "domHarness": "passed",
         "build": "passed"
       },
@@ -63,20 +123,28 @@
           "limitsPassed": true
         }
       },
-      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open.",
+      "localStaticReview": {
+        "state": "resolved_by_ce01_i03",
+        "findings": [
+          "A requested scroll reset may be overwritten when render captures scroll from the old DOM after change().",
+          "Catalog container queries require a proven container-type on the actual catalog host."
+        ],
+        "resolution": "The host-neutral content owns its inline-size container; change() captures old scroll before applying explicit reset values, with focused DOM regression. Independent CE-01-R01 and real-host acceptance remain open."
+      }
     },
     "ce01I03": {
       "id": "CE-01-I03",
       "kind": "implementation",
       "state": "completed_checked_reviewed",
-      "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, deterministic keyboard focus and responsive catalog container with a focused DOM harness.",
+      "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, deterministic keyboard focus and responsive catalog container. State, content controller and DOM harness are host-neutral behind an injected port; Obsidian is a separately tested thin adapter. Scroll resets capture the old DOM before applying the requested zero position.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 233, "failed": 0},
+        "tests": {"passed": 234, "failed": 0},
         "build": "passed",
         "domHarness": "passed"
       },
-      "review": "Passed after extending debounce/restore to every free-text filter, adding timer cleanup, deterministic chip/reset focus and representative end-to-end DOM flows.",
+      "review": "Passed after extending debounce/restore to every free-text filter, adding timer cleanup, deterministic chip/reset focus, representative DOM flows, a host-neutral content port and the focused scroll-reset regression.",
       "limits": "Static and DOM candidate only. Real Obsidian restart, 900x650/1150x700 layout, physical keyboard and damaged-data host acceptance remain open; CE-AC-01/02/14 are not approved."
     },
     "coordination": {
@@ -86,7 +154,7 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed; CE-01-I02 provides the core ItemView. CE-01-I03 passes check, 233 tests, DOM harness, build and repair review. All real-host and CE-01 acceptance remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed; CE-01-I02 provides the core ItemView. CE-01-I03 passes check, 234 tests, host-neutral DOM harness, thin-adapter test, build and repair review. All real-host and CE-01 acceptance remain open.",
     "open": [
       "CE-01-R01 review, repair if required, real Obsidian acceptance, cleanup and all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
@@ -161,36 +229,38 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "remaining_contexts_mapped_three_new_selection_questions",
+    "state": "early_ui_mapping_complete_review_and_cleanup_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I17",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T13:55:56.316385+02:00",
-      "baseCommit": "fc96f780aa40111464ea4b2ebbd8a7d71f603f55",
-      "state": "checked_implementation_review_pending",
-      "focus": "Eight remaining early reference contexts: assets, selections, generator, gradient, resize anchor and lasso handles",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/start-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/receipt-reconstruction.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/native-process-close-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/mapping-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/protection-and-native-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-mapping-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-provenance.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-complete-gate.json"
-      ],
-      "completedAt": "2026-10-09T13:15:49.293315+00:00"
-    },
-    "nextRun": {
       "id": "HEX-00-N-I18",
       "kind": "repair_implementation",
-      "focus": "Drei tatsächlich neue Move-Path-Panel-Inventarfragen0667–0669 direkt schließen; fünf vorhandene Fall-/UI-Verweislücken anhand bestehender Originalbelege einordnen.",
-      "gate": "Native Originalprobe erst nach ausdrücklicher CITY-Slotrückgabe; anschließend eigener R02 und separater Aufräumzyklus, vor HEX-01 bis05."
+      "startedAt": "2026-10-09T15:28:15.902396+02:00",
+      "baseCommit": "dee15e4bc6def6458cd7536f486f2d44ac72d05d",
+      "state": "checked_implementation_review_pending",
+      "focus": "Three newly discovered selected Move Path inputs and five existing case mappings; no general variants",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/initial-fetch-noop.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/start-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/native-process-close-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/mapping-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/protection-and-native-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-partial.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-complete-gate.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/clean-git-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/clean-git-provenance.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/pre-publication-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/strict-gate-expectation.json"
+      ],
+      "completedAt": "2026-10-09T13:49:11.061386+00:00",
+      "result": "Three final selected Move Path questions directly resolved; five prior UI/case mapping gaps appended with explicit scope,681 IDs/83 cases/113 historical sources retained. No early UI question remains;13 initial reviews and reference/cleanup gates still open."
+    },
+    "nextRun": {
+      "id": "HEX-00-R02",
+      "kind": "review",
+      "focus": "Six R01 findings, full early inventory/start sequences and all retained evidence sources.",
+      "gate": "Own review and separate cleanup before HEX-01 to05 product implementation."
     },
     "review": {
       "state": "changes_required",
@@ -677,6 +747,29 @@
         "protectedFiles": 145,
         "productBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
         "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-publication-integration-preservation.json"
+      },
+      "lastRepair": {
+        "run": "HEX-00-N-I18",
+        "originalFrames": 29,
+        "originalNormalExitCode": 0,
+        "remainingEarlyUiQuestions": 0,
+        "unmappedCases": 0,
+        "localTests": {
+          "passed": 222,
+          "failed": 0
+        },
+        "validatorTests": {
+          "passed": 26,
+          "failed": 0
+        },
+        "protectedFiles": 466,
+        "productBuildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+        "limitations": "Separate local222/exact clean225 test trees; changed build346f607 checked, no new core host approval yet. R02 repeats required kernel flow; all Hex/city/large/physical/installation approvals remain open.",
+        "cleanRepositoryTests": {
+          "passed": 225,
+          "failed": 0
+        },
+        "cleanRepositoryCommit": "b967c1c9c85938521373738dbc05c498f1292589"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -1523,7 +1616,7 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "original_and_host_render_candidate_recorded_ui_and_review_open",
+      "state": "per_entity_shadow_review_passed_atlas_options_and_phase1_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
@@ -1531,8 +1624,13 @@
       "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
       "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
       "hostBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+      "hostUiReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md",
+      "hostUiAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/ui-audit.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+      "reviewBuildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
-      "next": "UI-Bedienung der Schattenwerte, Vorgaben für neue Elemente und Undo/Redo getrennt prüfen; danach unabhängigen DD-006.03/.04-Review. New-Map-Bedienung ist historisch."
+      "next": "DD-006.03/.04 im per-Element-/UI-/Save-Scope reviewt; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. Danach verbleibende Phase-1-Datei-/Ansichtsfälle; Gesamttor offen."
     },
     "dd001002Plan": {
       "date": "2026-10-09",
@@ -1556,7 +1654,7 @@
       "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
       "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
       "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json",
-      "next": "DD-001/002 und weitere New-Map-Startfälle aus dem Paritätstor genommen; DD-006.03/.04 und verbleibende Phase-1-Fälle nach Atlasnutzen prüfen.",
+      "next": "DD-001/002 und weitere New-Map-Startfälle aus dem Paritätstor genommen; DD-006.03/.04 im per-Element-Scope reviewt. Verbleibende Phase-1-Fälle nach Atlasnutzen prüfen.",
       "multilevelOriginal": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
       "multilevelCandidate": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
       "multilevelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
@@ -2060,7 +2158,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize, das Phase-1-Tor bleibt offen. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes DD-006.03/.04 und übertragbare Ansichts-/Dateifunktionen für den Atlas prüfen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt; DD-006.03/.04 im per-Element-Render-/UI-/Save-Scope. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes übertragbare Ansichts-/Dateifunktionen und globale Atlasoptionen nach Nutzerzweck prüfen; Phase-1-Gesamttor offen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -3755,17 +3853,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T13:38:34.334901+00:00",
-      "focus": "Watabou-Stilwirkung und ausgegebene Geometrie planen",
+      "id": "CITY-00-I20-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T13:57:24.991800+00:00",
+      "focus": "Scope, Rohschutz und Pflichtstatus prüfen",
       "state": "completed",
-      "result": "Eine sichtbare Vorgabe auf Browserkopie anwenden, tatsächliche Vorher-/Nachherausgaben vergleichen; Originaltabs und nativen Slot erhalten."
+      "result": "Aufräumreview bestanden; Original-History weiter offen, beide Hypothesen gestoppt, Slot zurückgegeben."
     },
     "nextRun": {
-      "id": "CITY-00-I19-I",
-      "kind": "style_reference_probe",
-      "focus": "Stilvorgabe direkt anwenden und Geometrieausgaben vergleichen"
+      "id": "CITY-00-I21-P",
+      "kind": "reference_planning",
+      "focus": "HEX-05-Übergabe prüfen; nächste noch offene zugängliche Originalwirkung planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

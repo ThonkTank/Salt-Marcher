@@ -65,6 +65,16 @@ if (test) await build({
   target: "es2022",
   sourcemap: true,
   logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/catalog-creature-view-adapter.entry.ts"],
+  outfile: ".build/catalog-creature-view-adapter.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
   plugins: [{
     name: "obsidian-view-test-stub",
     setup(builder) {

@@ -4,7 +4,7 @@ import test from "node:test";
 import { parseHTML } from "linkedom";
 import bundledSrd from "../src/features/catalog/data/srd-5.1.generated.json";
 import { CreatureCatalog, SRD_5_1_NOTICE } from "../src/features/catalog/creature-catalog";
-import { CreatureCatalogView } from "../src/features/catalog/creature-catalog-view";
+import { CreatureCatalogViewContent } from "../src/features/catalog/creature-catalog-view-content";
 
 interface DomWindow {
   readonly Event: typeof Event;
@@ -13,7 +13,7 @@ interface DomWindow {
 }
 
 async function openedView(): Promise<{
-  readonly view: CreatureCatalogView;
+  readonly view: CreatureCatalogViewContent;
   readonly root: HTMLElement;
   readonly window: DomWindow;
 }> {
@@ -30,8 +30,10 @@ async function openedView(): Promise<{
     Object.defineProperty(window.HTMLInputElement.prototype, "reportValidity", { value: () => true });
   const root = document.querySelector<HTMLElement>("#catalog")!;
   const catalog = new CreatureCatalog(bundledSrd);
-  const plugin = { creatureCatalog: { notice: SRD_5_1_NOTICE, load: async () => catalog } };
-  const view = new CreatureCatalogView({ contentEl: root } as never, plugin as never);
+  const view = new CreatureCatalogViewContent(root, {
+    notice: SRD_5_1_NOTICE,
+    load: async () => catalog,
+  });
   await view.onOpen();
   return { view, root, window: window as unknown as DomWindow };
 }
@@ -67,8 +69,11 @@ test("catalog DOM exposes advanced filters, chips, reset, ARIA sorting, notice a
   typeChip.focus();
   typeChip.click();
   assert.equal(root.ownerDocument.activeElement?.getAttribute("data-focus-key"), "chip-sizes-Large");
+  root.querySelector<HTMLElement>(".dn-catalog-results")!.scrollTop = 120;
   const hp = root.querySelector<HTMLButtonElement>('[data-focus-key="sort-hp"]')!;
   hp.click();
+  assert.equal(root.querySelector<HTMLElement>(".dn-catalog-results")!.scrollTop, 0);
+  assert.equal(view.getState().resultsScroll, 0);
   assert.equal(hp.closest("th")?.getAttribute("aria-sort"), "none");
   assert.equal(root.querySelector('[data-focus-key="sort-hp"]')?.closest("th")?.getAttribute("aria-sort"), "ascending");
   root.querySelector<HTMLButtonElement>('[data-focus-key="filter-reset"]')!.click();
