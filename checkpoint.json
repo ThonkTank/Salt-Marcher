@@ -379,21 +379,20 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "core_checked_native_terrain_next",
+    "state": "native_island_passed_budget_integration_pending",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01a",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T16:33:05.466305+00:00",
-      "state": "completed",
-      "focus": "Sparse level0 cells, safe lazy chunk reads, exact continuous stroke, common atomic AtlasHistory",
-      "finishedAt": "2026-10-09T16:38:34.970445+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex02-core-implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-02-I01b",
       "kind": "implementation_host",
-      "focus": "Actually paint island in unchanged single Atlas editor before durable save work."
+      "startedAt": "2026-10-09T16:41:19.786367+00:00",
+      "state": "in_progress",
+      "focus": "Same Atlas/camera: actual Land/Sea/Forest/Reset, preview and original-compatible stroke/Escape/undo; early native island.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-02-I01c",
+      "kind": "durable_implementation",
+      "focus": "FileStore transaction/draft, then fresh process before more tools."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -1029,6 +1028,21 @@
           "cityCodecIntegrated": true,
           "scope": "Core-only, no terrain host yet"
         }
+      },
+      "hex02NativeIsland": {
+        "run": "HEX-02-I01b",
+        "state": "native_island_passed_final_basis_checks_pending_budget_fix",
+        "nativeResult": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/host/evidence/1791564546067-hex01-atlas-edit/result.json",
+        "buildSha256": "00fb99089a73977e03bbad4fcb1cd1ddfff9593214cd30a6b1589a94fca6e112",
+        "screensActuallyViewed": 4,
+        "actualNative": true,
+        "syntheticInput": true,
+        "physicalInput": false,
+        "normalProcessExit": true,
+        "checkPassed": true,
+        "testRun": "271/272: only old catalog total-main budget failed; corrected owner packet pending integration",
+        "scope": "Live level0 Land/Sea/Forest island, original Escape/undo/textcolor, reset, negative chunks/content-fit",
+        "storage": "No Save/draft yet; current-session edits only. I01c immediately next. No user-vault installation."
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
