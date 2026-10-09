@@ -526,3 +526,5 @@ CITY-00-I32-R Start 2026-10-09T15:27:12.598540+00:00; Drei tatsächliche Downloa
 CITY-00-I32-CP Start 2026-10-09T15:27:23.327234+00:00; Plan: abgeleiteten CO-WAT-0001-Snapshot mit kontrolliertem Rebuild-Umfang und leerer Greens-Gruppe ergänzen. Belege unverändert erhalten;13-Gruppenvergleich, Downloadkopien, Hashes,64/24 offene Pflichten und fremde JSON-Wurzeln prüfen. Keine eigene Umsetzung aus Originalprobe ableiten.
 
 CITY-00-I32-CI Start 2026-10-09T15:27:34.360443+00:00; Snapshot auf I32 aktualisiert: ursprüngliche URL/Control-Differenz, Greens-Rebuild und leere Greens-Gruppe mit präziser Vergleichsgrenze dokumentiert.
+
+CITY-00-I32-CR Start 2026-10-09T15:27:47.781532+00:00; Snapshot, acceptance und technische CITY-02-Präzisierung stimmen; Rawhashes, tatsächliche Downloadkopien und Inventarbelegziele bestätigt.64 CO-/24 CTY-Pflichten weiterhin offen. Aufräumumfang ohne Restbefund. Als nächstes frühe Roads-Generationsvorgaben direkt prüfen; HEX-05-Vertrag vor Produktstart.
