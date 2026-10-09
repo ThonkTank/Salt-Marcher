@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-N02-CLEAN-P",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T21:56:51.614327+00:00",
-      "focus": "Neue Campaign-Grenze ohne Reviewduplikation prüfen",
-      "state": "completed",
-      "result": "Cleanupplan: aktive Tabelle/Reihenfolge widerspruchsfrei ohne positive Initializepflicht; E2E02 positiver Start, E2E04 breite Recovery; IDs/Geometrie/Fremdwurzeln und acceptance erhalten. Historische R01/N01-Eingänge als durch neue Ownerpräzisierung ersetzt kennzeichnen."
-    },
-    "nextRun": {
       "id": "CITY-E2E-N02-CLEAN-I",
       "kind": "cleanup_implementation",
-      "focus": "Historische Eingänge abgrenzen und aktuellen Plan prüfen"
+      "startedAt": "2026-10-09T21:57:10.304747+00:00",
+      "focus": "Historische und aktuelle Gateeingänge abgrenzen",
+      "state": "completed",
+      "result": "Historische positive Initializepflicht als ersetzt markiert; aktuelle Eingänge geprüft, Cityfixturevorschlag bytegleich erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-N02-CLEAN-R",
+      "kind": "cleanup_review",
+      "focus": "Aktuellen Diff/JSON/Verweise/Ownergrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

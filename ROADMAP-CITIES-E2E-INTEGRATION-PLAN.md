@@ -65,6 +65,8 @@ CITY-E2E-P01-CLEAN-R: Gesamtdiff gegen Basis beschränkt auf diesen Plan und che
 
 ## Nachbesserung aus unabhängigem CITY-E2E-R01
 
+Die folgenden N01-/Cleanup-Angaben dokumentieren den damaligen R01-Abschluss. Ihr positiver Party-/Preparation-/Initialize-Eingang ist durch die spätere Campaign/Data-Präzisierung N02 ersetzt; verbindlich für den aktuellen Vorschlag sind Tabelle und Reihenfolge oben. Die geschlossenen R01-Befunde werden nicht erneut geöffnet.
+
 CITY-E2E-N01: Befund [6089617467](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089617467) gegen 507b282. Technischer Reparaturplan: Nummern nur als vorläufige versionierte Zuordnung führen, vollständige Namen und eigenständigen Reise-/Clock-Ablauf erhalten; Recovery als Querschnitt plus Portabilitätsvertiefung. Harte ausführbare E2E-01-Eingänge in Tabelle und Lieferreihenfolge identisch verankern. Umsetzung in diesem Nachbesserungslauf erfolgt; keine neue Fach-/Host-/Teamfreigabe. Unabhängiger Re-Review bleibt nötig.
 
 CITY-E2E-N01-CLEAN-P: Tabellenstruktur und volle Namen der vier vorläufigen Gates prüfen; Reise/Clock darf nicht als unverbundene Tabellenzeile stehen. Harte E2E-01-Eingänge in Tabelle und Reihenfolge, Recoveryquerschnitt, unveränderte Citygeometrie/IDs sowie alle Fremdwurzeln/acceptance prüfen. Nur nötige Text-/Strukturbereinigung, keine neue Gesamtentscheidung.
@@ -76,3 +78,5 @@ CITY-E2E-N01-CLEAN-R: Aktuelle Gate-Tabelle und Reihenfolge nachgelesen: beide e
 ## Neue Ownerpräzisierung CITY-E2E-N02
 
 Neuer Scope aus [Campaign/Data 6089845918](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/16#issuecomment-6089845918), nach dem abgeschlossenen Hex-R02. Reparaturplan: positive E2E-01-Nutzung ohne LiveSession in Tabelle und Reihenfolge verankern, Party/Preparation/Initialize als negative Grenzen erhalten; positiven Initialize ausschließlich E2E-02 zuordnen und P02-Minimalpfad/Complete-Import von breiter E2E-04-Recovery unterscheiden. Umsetzung in diesem Lauf erfolgt. Frühere R01-Befunde und ID-/Geometrie-/Foreignbindingvorschlag unverändert; enger neuer Ownerreview ausstehend, keine Wiederholung des Geometrie-/R02-Reviews.
+
+CITY-E2E-N02-CLEAN-I: Frühere N01-Eingänge als historisch und durch neue Ownerpräzisierung ersetzt abgegrenzt. Aktuelle Tabelle/Reihenfolge enthalten identisch Campaignnutzung ohne LiveSession, negative Initializegrenze, P02-Minimalpfad und Complete-Import; City-ID-/Geometrie-/Foreignbindingabschnitt exakt gegen d4c8805 erhalten. Kein technischer Umbau oder Laufressource nötig.
