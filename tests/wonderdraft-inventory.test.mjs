@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
 import { PNG } from 'pngjs';
-import { validateInventory, INITIAL_PROBE_REQUIREMENTS, deriveGroupUiIds } from '../tools/wonderdraft/validate-inventory.mjs';
+import { validateInventory, INITIAL_PROBE_REQUIREMENTS, deriveGroupUiIds, evidenceRecordHash } from '../tools/wonderdraft/validate-inventory.mjs';
 
 function sample() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'wd-inventory-'));
@@ -251,6 +251,102 @@ test('historical missing imports remain active errors until explicit per-owner r
   const f = scopedFixture(); f.u.directEvidence.push({ role: 'original_gui_screenshot', version: '1.1.8.2', session: 'missing.txt', path: 'missing.png' });
   const r = f.validate(); assert.equal(r.valid, false); assert.equal(r.historicalEvidenceIssues.length, 1);
   assert.equal(r.historicalEvidenceIssues[0].state, 'still_blocks_active_evidence');
+});
+
+function historicalFixture() {
+  const f = fixture();
+  const old = { role: 'original_gui_screenshot', version: '1.1.8.2', session: 'missing.txt', path: 'missing.png' };
+  f.u.directEvidence.unshift(old);
+  f.catalog.evidenceUsageContractVersion = 1;
+  const usage = { id: 'WD-H-001', owner: f.u.id, evidenceIndex: 0, state: 'historical_unverified',
+    source: { role: old.role, version: old.version, session: old.session, path: old.path, recordSha256: evidenceRecordHash(old) },
+    assertion: { exactUiPath: f.u.exactUiPath, commandOrControl: f.u.commandOrControl, context: f.u.context },
+    originalFailure: 'missing file', reason: 'Unavailable imported frame; current original observation replaces its UI scope only',
+    replacementScope: 'Visible Width control in New Settings; no assertion about the old image',
+    replacementEvidence: [{ session: f.e.session, metadata: f.e.metadata, screenshot: f.e.screenshot }] };
+  f.catalog.evidenceUsages = [usage];
+  return { ...f, old, usage };
+}
+
+test('explicit same-owner native replacement keeps the exact old source unverified and the gate open', () => {
+  const f = historicalFixture(), before = structuredClone(f.old), r = f.validate();
+  assert.equal(r.valid, true); assert.deepEqual(f.old, before);
+  assert.equal(r.historicalEvidenceIssues.length, 1);
+  assert.equal(r.historicalEvidenceIssues[0].state, 'historical_unverified_replaced');
+  assert.equal(r.historicalEvidenceIssues[0].source, 'missing.png');
+  assert.equal(r.historicalEvidenceIssues[0].originalFailure, 'missing file');
+  assert(r.pending.includes('HEX-00 reference gate open'));
+  assert.equal(r.visualCompleteness, 'requires separate original review');
+});
+
+test('orphan, altered, duplicate or silently verified historical usages are rejected', () => {
+  for (const mutate of [f => { f.usage.owner = 'other-control'; }, f => { f.usage.evidenceIndex = 1; },
+    f => { f.usage.evidenceIndex = '0'; }, f => { f.usage.assertion.context = 'another-map'; },
+    f => { f.usage.source.path = 'different.png'; }, f => { f.usage.source.session = 'different.txt'; },
+    f => { f.usage.source.recordSha256 = 'changed'; }, f => { f.old.version = 'different'; },
+    f => { f.usage.assertion.exactUiPath = 'another-control'; }, f => { f.usage.state = 'verified'; },
+    f => { f.usage.reason = ''; }, f => { f.usage.originalFailure = ''; }, f => { f.usage.replacementScope = ''; },
+    f => { f.catalog.evidenceUsages.push(structuredClone(f.usage)); },
+    f => { f.catalog.evidenceUsageContractVersion = 2; }, f => { delete f.catalog.evidenceUsageContractVersion; },
+    f => { f.catalog.evidenceUsages = 'ignore-all-imports'; }, f => { f.catalog.evidenceUsages = [null]; }]) {
+    const f = historicalFixture(); mutate(f); assert.equal(f.validate().valid, false);
+  }
+});
+
+test('replacement must be an actual frame on the same owner and cannot ignore other missing sources', () => {
+  for (const mutate of [f => { f.usage.replacementEvidence = []; },
+    f => { f.usage.replacementEvidence[0].metadata = 'another-frame.json'; },
+    f => { f.u.directEvidence.pop(); }, f => { f.e.role = 'package_hint'; },
+    f => { f.usage.replacementEvidence.push(structuredClone(f.usage.replacementEvidence[0])); },
+    f => { f.u.directEvidence.push({ ...f.old, path: 'second-missing.png' }); }]) {
+    const f = historicalFixture(); mutate(f); assert.equal(f.validate().valid, false);
+  }
+});
+
+test('changed replacement frame, session, version hash or missing external QA still blocks', () => {
+  for (const mutate of [f => { f.m.screenshotSha256 = 'changed'; }, f => { f.m.sessionId = 'wrong'; },
+    f => { f.s.packageSha256 = 'wrong-version'; }, f => { f.e.screenshot = 'missing-current.png'; },
+    f => { f.m.width = 100; }, f => { f.m.capturedAt = '2026-10-08T18:00:00Z'; }]) {
+    const f = historicalFixture(); mutate(f); const r = f.validate();
+    assert.equal(r.valid, false); assert(r.historicalEvidenceIssues.some(i => i.state === 'still_blocks_active_evidence'));
+  }
+  const f = historicalFixture();
+  const emptyClone = validateInventory(f.catalog, () => { throw new Error('external QA unavailable'); });
+  assert.equal(emptyClone.valid, false);
+  assert(!emptyClone.historicalEvidenceIssues.some(i => i.state === 'historical_unverified_replaced'));
+});
+
+test('a readable historical image remains unverified after a scoped current replacement', () => {
+  const f = historicalFixture(), files = f.files();
+  files.set('missing.txt', Buffer.from('app_pid=123\nstarted_at=2026-10-08T21:00:00+02:00\n'));
+  files.set('missing.png', files.get('original.png'));
+  const r = validateInventory(f.catalog, file => { if (!files.has(file)) throw new Error('missing file'); return files.get(file); });
+  assert.equal(r.valid, true); assert.equal(r.historicalEvidenceIssues[0].state, 'historical_unverified_replaced');
+  assert.match(r.historicalEvidenceIssues[0].message, /lacks pinned frame\/process metadata/);
+});
+
+test('historical raw-map replacement additionally requires unchanged current saved data', () => {
+  for (const mode of ['valid', 'missing-effect', 'changed-effect', 'wrong-file']) {
+    const f = historicalFixture(); f.old.role = 'original_saved_map'; f.old.path = 'old-map.wonderdraft_map';
+    Object.assign(f.usage.source, { role: f.old.role, path: f.old.path, recordSha256: evidenceRecordHash(f.old) });
+    f.usage.replacementSavedEffects = [{ file: 'map.wonderdraft_map', sha256: createHash('sha256').update(f.raw).digest('hex') }];
+    if (mode === 'missing-effect') delete f.usage.replacementSavedEffects;
+    if (mode === 'changed-effect') f.usage.replacementSavedEffects[0].sha256 = 'changed';
+    if (mode === 'wrong-file') f.usage.replacementSavedEffects[0].file = 'absent';
+    assert.equal(f.validate().valid, mode === 'valid');
+  }
+});
+
+test('version-reference imports need their own current receipt and version assertion', () => {
+  for (const mode of ['valid', 'borrow-ui-frame', 'wrong-assertion']) {
+    const f = historicalFixture(); f.u.directEvidence = [f.e];
+    f.catalog.reference.directRuntimeEvidence = [f.old, f.e];
+    f.usage.owner = 'reference'; f.usage.assertion = { version: f.catalog.reference.version };
+    if (mode === 'borrow-ui-frame') f.catalog.reference.directRuntimeEvidence.pop();
+    if (mode === 'wrong-assertion') f.usage.assertion.version = 'unverified-other-version';
+    const r = f.validate(); assert.equal(r.valid, mode === 'valid');
+    if (mode === 'valid') assert.equal(r.historicalEvidenceIssues[0].owner, 'reference');
+  }
 });
 test('a claimed original probe requires pinned evidence, a different process and unchanged raw map', () => {
   for (const mutate of [
