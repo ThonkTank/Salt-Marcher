@@ -1093,3 +1093,5 @@ CITY-00-R47-CLEAN-I47 Start 2026-10-09T20:39:26.928811+00:00; Rawname018 ohne Um
 CITY-00-R47-CLEAN-R47 Start 2026-10-09T20:39:40.200319+00:00; Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache.
 
 CITY-00-P48 Start 2026-10-09T20:59:29.030065+00:00; Zwei getrennte Originalfolgen I48a Vorlage/Map-Save und I48b frischer Prozess mit getrennten Dialog-/Datei-/Section-/Prozessorakeln geplant. Keine GUI gestartet.
+
+CITY-00-P48-CLEAN-P48 Start 2026-10-09T20:59:41.165724+00:00; Aufräumplan: Planverweise, Start-/Copyreihenfolge und echte Reopen-Grenze prüfen; alten R47-Ausstehend-Satz aktualisieren, offene eigene Abnahmen und fremde Wurzeln erhalten.

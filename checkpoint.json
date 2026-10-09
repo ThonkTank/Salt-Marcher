@@ -4893,16 +4893,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-P48",
-      "kind": "plan",
-      "startedAt": "2026-10-09T20:59:29.030065+00:00",
-      "focus": "COK-Vorlagen/Reopen konkret planen: P",
-      "state": "completed",
-      "result": "Zwei getrennte Originalfolgen I48a Vorlage/Map-Save und I48b frischer Prozess mit getrennten Dialog-/Datei-/Section-/Prozessorakeln geplant. Keine GUI gestartet."
-    },
-    "nextRun": {
       "id": "CITY-00-P48-CLEAN-P48",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T20:59:41.165724+00:00",
+      "focus": "COK-Vorlagen/Reopen konkret planen: CP",
+      "state": "completed",
+      "result": "Aufräumplan: Planverweise, Start-/Copyreihenfolge und echte Reopen-Grenze prüfen; alten R47-Ausstehend-Satz aktualisieren, offene eigene Abnahmen und fremde Wurzeln erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-P48-CLEAN-I48",
+      "kind": "cleanup_implementation",
       "focus": "I48a auf eigener QA-Kopie nach ausdrücklich abgestimmtem GUI-Slot durchführen"
     },
     "open": [
