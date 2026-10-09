@@ -113710,6 +113710,20 @@
           "measuredScope": "Rechts -1 gemeinsam mit unten -1 nach links/oben +1: beide Masken speichern den linken oberen 8×8-Ausschnitt ohne Samplefehler.",
           "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
           "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
+        },
+        "followUpPhase1TerrainReexpandOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-same/runs/20261009-064736-3546676/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-fresh/runs/20261009-064923-3548741/evidence/result.json"
+          ],
+          "sourceMapSha256": "a56a19efa58ccf1ef87a42c2bbeeb862c7f07502b1c8be25f3dc30c8bd910a5d",
+          "cropMapSha256": "c8397d49d92bc2973fe163557dad74e08ca6b70dedf3f263444121246afb0b12",
+          "measuredScope": "Rechts -1/+1, mit unterem -1/+1 in Einzeldialogen: beide Masken verlieren rechte Samples sofort; neue rechte Samples [255,0,0,0].",
+          "freshComparison": "Nach frischer Öffnung der gespeicherten 8×8-Crop-Karte sind beide 9×9-Masken bytegleich zur Wiedererweiterung im laufenden Originalprozess.",
+          "remaining": "Host-Maskenschicht, Dialog-/Save-/Neuöffnungspaar und Review fehlen. Keine Fallfreigabe."
         }
       },
       {
@@ -113850,6 +113864,20 @@
           "measuredScope": "Unten -1 gemeinsam mit rechts -1 nach links/oben +1: beide Masken speichern den linken oberen 8×8-Ausschnitt ohne Samplefehler.",
           "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
           "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
+        },
+        "followUpPhase1TerrainReexpandOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-same/runs/20261009-064736-3546676/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-fresh/runs/20261009-064923-3548741/evidence/result.json"
+          ],
+          "sourceMapSha256": "a56a19efa58ccf1ef87a42c2bbeeb862c7f07502b1c8be25f3dc30c8bd910a5d",
+          "cropMapSha256": "c8397d49d92bc2973fe163557dad74e08ca6b70dedf3f263444121246afb0b12",
+          "measuredScope": "Unten -1/+1, mit rechtem -1/+1 in Einzeldialogen: beide Masken verlieren untere Samples sofort; neue untere Samples [255,0,0,0].",
+          "freshComparison": "Nach frischer Öffnung der gespeicherten 8×8-Crop-Karte sind beide 9×9-Masken bytegleich zur Wiedererweiterung im laufenden Originalprozess.",
+          "remaining": "Host-Maskenschicht, Dialog-/Save-/Neuöffnungspaar und Review fehlen. Keine Fallfreigabe."
         }
       },
       {

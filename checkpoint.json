@@ -1350,6 +1350,16 @@
         "next": "Optionale V4-Terrainmasken speichern und in DD-038-Resize/Host-Neuöffnung paaren; Terrain-Pinsel selbst bleibt Phase 6.",
         "gate": "open"
       },
+      "terrainReexpandOriginalProbe": {
+        "cases": "DD-038.03/.04, acht Terrain-Slots",
+        "state": "original_measured_host_open",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/original-probe.md",
+        "sameProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-same/runs/20261009-064736-3546676/evidence/result.json",
+        "freshProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/native-fresh/runs/20261009-064923-3548741/evidence/result.json",
+        "measured": "9×9→8×9→8×8→9×8→9×9; beide Terrainmasken mit sofortigem Crop und [255,0,0,0]-Neurand, acht Übergänge samplegenau; frische Wiedererweiterung maskenbytegleich.",
+        "next": "Host-V4-Maskenschicht ohne flüchtige Außensamples implementieren und gespeicherte Einzeldialogfolge paaren.",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
