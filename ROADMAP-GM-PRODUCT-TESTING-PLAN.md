@@ -216,3 +216,16 @@ Zusätzlich blieb `blaue Fackel` nach normalem Tab-Schließen/Wiederöffnen als 
 **Übergabe:** H01 ist als partieller Host-Nachtest dokumentiert, nicht als vollständige UI-Abnahme: die Raum-/Key-Ziele und Draft-Schutzgrenze bestanden; die sichtbare Treffermetadaten-/Dock-Situation und der Wiederöffnungszustand brauchen Klärung/Nacharbeit. Ich bitte den Dungeon-Paketbesitzer in Issue #1 um einen abgegrenzten Anschlussauftrag: (a) Trefferliste bei geöffnetem/leerem Key-Dock ohne Canvas-Überdeckung erreichbar halten oder beim Suchen den sauberen Dock-Zustand herstellen; dirty Draft muss weiterhin vor Ansichtsmutation stoppen; (b) bei 256-px-Inspector Raum und Geschoss der Trefferzeile vollständig sichtbar machen; (c) entscheiden, ob die Suchabfrage nach normaler Tab-Neuöffnung erhalten bleiben soll, und UI/Plan konsistent machen. Abnahme: nach Save/Close/Reopen Suche öffnen und eine sichtbare, klickbare Zeile mit „Raum 12 · Geschoss 1“ sehen; Aktivierung öffnet unveränderten Key; Dirty-Draft blockiert bis explizites Übernehmen/Verwerfen; nach Wiederöffnung gilt der vereinbarte Suchstartzustand. GM-UX-N-006-Geschossreset bleibt ein separater offener Punkt. Der H01-Lauf und der abgegrenzte Dungeon-Anschlussauftrag stehen in Issue #1 Kommentar `6087535370`. Er ergänzt den bereits bestandenen R01-PASS und ersetzt weder den unabhängigen GM-R01-Nachtest noch eine Gesamtfreigabe.
 
 **H01-Aktualitätscheck, 2026-10-09:** Der aktuell integrierte Shared-Head `c93f6eba517c9da46bbd70413898bcc6ef037b12` ändert gegenüber dem getesteten Produktcommit `95e7bd214f96fe7be894e6cc6dcecf2609c10dc3` keine Produktdatei unter `src/`, `styles.css` oder `manifest.json`. Der bereits laufende isolierte Cloud-Obsidian 1.14.4 zeigt weiterhin das Nebelwacht-Dokument; die installierten `main.js`/`styles.css`/`manifest.json`-Hashes entsprechen dem H01-Tripel. Eine zusätzliche sichtbare Momentaufnahme zeigt den persistenten `blaue Fackel`-Filter und die abgeschnittene Trefferzeile (`/workspace/scratch/gm-cloud-qa/evidence-95e7/23-current-followup-check.png`). Das ist keine neue Close/Reopen-Folge und keine erneute H01-Abnahme. Issue-Bericht `6087535370` beginnt nun mit Absender und Paketkennung.
+
+**Dungeon-Anschluss N01:** Kartograph/Dungeon-Strang übernahm den begrenzten
+Auftrag in Issue #1 `6087711097` auf Base `7d35591b`. Produktcommit `a06703c`
+initialisiert eine neue Suchpanelinstanz ausdrücklich mit leerer Übersicht,
+schließt beim Suchöffnen ausschließlich einen sauberen Key-Dock über den
+vorhandenen Weg und stoppt bei dirty Key-Draft vor jeder Ansichtsmutation.
+Raum-/Geschoss-Ortszeile und automatische Mindesthöhe bleiben im 256-px-
+Inspector sichtbar; die Ergebnisliste scrollt innerhalb des Panels. Acht
+fokussierte DOM-/Editorfälle, Typprüfung, 375/375 Tests und Build bestanden.
+Der unabhängige read-only N01-Produktreview bestand exakt
+`a06703c31766a064c6a8e8510a1cb5eaa46ca549` ohne Pflichtbefund. Das ist noch
+kein Cloud-Nachtest: Die Wiederholung des exakt beschriebenen H01-Ablaufs im
+isolierten Cloudvault bleibt offen. N-006 bleibt getrennt.
