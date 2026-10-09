@@ -983,3 +983,17 @@ CITY-00-I45-REVIEW-CLEAN-I45 Start 2026-10-09T19:22:41.063781+00:00; Reviewbefun
 CITY-00-I45-REVIEW-CLEAN-R45 Start 2026-10-09T19:22:44.655023+00:00; R45-Befund/Planlinks/Rawhashes geprüft, keine vorweggenommene Freigabe. N45 ergänzt jetzt Originalübersichten.
 
 CITY-00-I45-N45 Start 2026-10-09T19:22:59.620Z; Fehlende Vollaufnahmen ergänzt: Formularhinweis, UI-Listen209/80, alte Karte/Wyddis/Montag11h sichtbar erhalten. Kein Katalogvolltest oder Ergebnisgenerator.
+
+CITY-00-I45-N45-CLEAN-P45 Start 2026-10-09T19:24:01.688789+00:00; Aufräumplan: genaue Zählgrenze UI-Gesamtzahl vs geladene Einträge dokumentieren; Originaldaten/IDs schützen.
+
+CITY-00-I45-N45-CLEAN-I45 Start 2026-10-09T19:24:04.673654+00:00; Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung.
+
+CITY-00-I45-N45-CLEAN-R45 Start 2026-10-09T19:24:07.611554+00:00; Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten.
+
+CITY-00-I45-R46 Start 2026-10-09T19:24:15.145266+00:00; R46 schließt CITY-REF-R45-01: Vollaufnahmen und alte Rawhashes bestätigt. Formularteilbeleg bestanden, Generierungs-/Produktabnahme offen.
+
+CITY-00-I45-R46-CLEAN-P45 Start 2026-10-09T19:24:18.883021+00:00; Aufräumplan: genaue Zählgrenze UI-Gesamtzahl vs geladene Einträge dokumentieren; Originaldaten/IDs schützen.
+
+CITY-00-I45-R46-CLEAN-I45 Start 2026-10-09T19:24:21.769458+00:00; Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung.
+
+CITY-00-I45-R46-CLEAN-R45 Start 2026-10-09T19:24:24.773063+00:00; Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten.
