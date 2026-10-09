@@ -3680,17 +3680,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I15-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:57:50.497253+00:00",
-      "focus": "Geplante Rollenpräzisierung in Architektur eintragen",
-      "state": "completed",
-      "result": "I15-R01 in geplanter Architektur präzisiert; Originalteilwirkungen und offene Parametergrenzen erhalten, keine neue Produkt-API"
-    },
-    "nextRun": {
       "id": "CITY-00-I15-CR",
       "kind": "cleanup_review",
-      "focus": "Rollen-/Belegpräzisierung abschließend prüfen"
+      "startedAt": "2026-10-09T12:58:29.525304+00:00",
+      "focus": "Rollen-/Belegpräzisierung abschließend prüfen",
+      "state": "completed",
+      "result": "I15-R01 geplant bereinigt;29 Rohframes/7 Folgen/8 offene Werkzeuge und63 CO-Pflichten konsistent geprüft, keine eigene Produktabnahme"
+    },
+    "nextRun": {
+      "id": "CITY-00-I16-P",
+      "kind": "early_reference_planning",
+      "focus": "Frühe Originalwirkung nach Kollegen-Slotstand planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
