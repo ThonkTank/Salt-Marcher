@@ -1429,6 +1429,13 @@
     "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_in_progress",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "dd008Plan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_original_host_pair_open",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
+      "source": "Dungeondraft 1.2.0.1: own-building-wear-scratched.dungeondraft_map; bisherige Original-Wahlprobe war leer",
+      "next": "Gleiche Building-Geometrie in Original und Host vergleichen, kombinierte History und zwei Geschosse direkt messen."
+    },
     "gmUxN001Plan": {
       "date": "2026-10-09",
       "state": "local_review_passed_cloud_retest_open",
