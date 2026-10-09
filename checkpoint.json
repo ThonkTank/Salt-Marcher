@@ -416,23 +416,16 @@
     "state": "native_save_draft_checked_copy_discard_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01c",
-      "kind": "durable_implementation",
-      "startedAt": "2026-10-09T17:01:39.507883+00:00",
-      "state": "checked_implementation_native_passed_review_pending",
-      "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
-      "fileTransactionPacket": {
-        "state": "checked_clean",
-        "finishedAt": "2026-10-09T17:13:32.092547+00:00",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/file-transaction-implementation.json"
-      },
-      "finishedAt": "2026-10-09T18:15:54.130087+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-02-I01d",
       "kind": "implementation_host",
-      "focus": "SaveAs/Discard and A↔B after saved/reopened island is functional."
+      "startedAt": "2026-10-09T18:19:50.513518+00:00",
+      "state": "in_progress",
+      "focus": "Copy snapshot into new world ID/native namespace without changing original; explicit discard restores saved source in same camera; abort/A↔B/fresh native tests."
+    },
+    "nextRun": {
+      "id": "HEX-02-R01",
+      "kind": "independent_review",
+      "focus": "Complete native island/copy/discard lifecycle, storage conflicts and visible controls, then own CLEAN-P/I/R."
     },
     "review": {
       "run": "HEX-01-R01",
