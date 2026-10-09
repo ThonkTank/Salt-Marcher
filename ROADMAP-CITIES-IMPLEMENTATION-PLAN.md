@@ -931,3 +931,5 @@ CITY-00-I43-REVIEW-CLEAN-I43 Start 2026-10-09T19:13:16.936175+00:00; CO2-Technik
 CITY-00-I43-REVIEW-CLEAN-R43 Start 2026-10-09T19:13:33.598213+00:00; alle 47 Rawhashes, Referenzreviewlink und unverändert offene 65 CO/24 CTY geprüft. Kein Restbefund in dieser Aufräumphase. Nächster Lauf: FTG-Inventar auf veraltete Beschreibung/Belegzuordnung prüfen, bevor weitere Originaltests geplant werden. Keine neue GUI.
 
 CITY-00-I44-P44 Start 2026-10-09T19:15:28.500297+00:00; Drei Fehlzuordnungen identifiziert; konkreter Korrekturplan neben Roadmap, unveränderter Vorherkatalog extern gesichert.
+
+CITY-00-I44-PLAN-CLEAN-P44 Start 2026-10-09T19:15:37.485866+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
