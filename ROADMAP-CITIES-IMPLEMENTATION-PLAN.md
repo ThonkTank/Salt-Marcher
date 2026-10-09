@@ -1065,3 +1065,5 @@ CITY-00-I47-PLAN-CLEAN-P47 Start 2026-10-09T19:40:15.479130+00:00; Aufräumplan:
 I47-Plan: [COK-Licht und Wetter](ROADMAP-CITIES-CITY00-COK-ATMOSPHERE-PLAN.md). Alte C46-Laufbezeichnung auf R46 konsolidiert; Startzeit/Ergebnis unverändert, veröffentlichter Gitverlauf erhalten.
 
 CITY-00-I47-PLAN-CLEAN-I47 Start 2026-10-09T19:40:17.946273+00:00; Plan verlinkt; vorige Reviewbezeichnung konsolidiert, Geometrie-/Kopien-/Slotgrenzen unverändert.
+
+CITY-00-I47-PLAN-CLEAN-R47 Start 2026-10-09T19:40:20.566144+00:00; Plan/JSON/QA-Input und offene Produktabnahmen geprüft. I47 bereit; Start erst nach konkreter GUI-Slotantwort, bis dahin unabhängige Originalarbeit möglich.

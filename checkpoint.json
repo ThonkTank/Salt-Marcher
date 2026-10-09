@@ -4697,16 +4697,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-PLAN-CLEAN-I47",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:40:17.946273+00:00",
-      "focus": "COK-Atmosphärenprobe planen: CI",
-      "state": "completed",
-      "result": "Plan verlinkt; vorige Reviewbezeichnung konsolidiert, Geometrie-/Kopien-/Slotgrenzen unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I47-PLAN-CLEAN-R47",
       "kind": "cleanup_review",
+      "startedAt": "2026-10-09T19:40:20.566144+00:00",
+      "focus": "COK-Atmosphärenprobe planen: CR",
+      "state": "completed",
+      "result": "Plan/JSON/QA-Input und offene Produktabnahmen geprüft. I47 bereit; Start erst nach konkreter GUI-Slotantwort, bis dahin unabhängige Originalarbeit möglich."
+    },
+    "nextRun": {
+      "id": "CITY-00-I47-I47",
+      "kind": "reference_implementation",
       "focus": "Nach konkreter GUI-Slotfreigabe kontrollierte Original-Licht/Wetterprobe ausführen"
     },
     "open": [
