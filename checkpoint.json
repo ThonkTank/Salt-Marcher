@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
+    "state": "smr00_adr_p01_h03_i02_plan_third_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,14 +101,14 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "i02_p01_plan_review_changes_required",
+      "state": "i02_p01_third_review_changes_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
-      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
+      "i02PlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. The first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3 requires repair: its ten aggregate transition rows omit individual Parent and conflict transitions, the Update temp-synced receipt generation, complete durable receipt ordering, and an enumerated operation-state-killpoint-adversary matrix with deterministic recovery oracles."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3 and R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2. R03 on b4f50c52e926d6ee7d7016d29b2d58192c0377d8 confirms state-specific conflict IDs but still requires explicit source states for all normal and rollback transitions plus a per-transition-phase-adversary lookup of Receipt, target, temp, snapshot, capture, rollback and Parent digest instead of class-level oracles."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -117,7 +117,7 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-P01-N01",
+      "id": "ADR-P01-H03-I02-P01-N03",
       "kind": "child_state_machine_plan_repair",
       "owner": "local_implementation_thread",
       "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
@@ -125,17 +125,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N03",
-      "kind": "plan_repair",
-      "state": "drafted_review_pending",
-      "focus": "Resolve N02-R01 variable and variant-specific rarity schema/filter/Inspector finding",
+      "id": "CE-02-I02-P01-N03-R01",
+      "kind": "independent_plan_re_review",
+      "state": "passed",
+      "focus": "Verify variable and variant-specific rarity without losing the earlier plan repairs",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "N02-R01 on 3b7e5c933a107da6f406aa44037decf316d09b77 found one remaining variable-rarity gap (Issue #1 comment 6085306351). N03 plan repair awaits exact-head review. No Item implementation or acceptance."
+      "result": "Independent N03-R01 passed exact 679d432e145bd9afe766393346e4b788931886ea without remaining mandatory plan findings (Issue #1 comment 6085341786). This is plan approval only; S01 and I01 remain undelivered."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -339,10 +339,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-N03-R01",
-      "kind": "independent_plan_re_review",
+      "id": "CE-02-I02-S01",
+      "kind": "source_inventory_schema_transcript",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Verify variable and variant-specific rarity is preserved through source inventory, transcript, schema, query filters, sort and Inspector with required Golden cases; confirm earlier repaired gates remain intact. Only after PASS begin S01, not I01."
+      "focus": "Create complete pinned SRD-5.1 inventory, transcript, versioned schema, canonical attribution and PDF-to-transcript source verification; independent S01-R01 PASS required before I01 product implementation"
     }
   },
   "repositoryWorkflow": {
@@ -4252,17 +4252,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-CLEAN-R01",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T16:48:58.646070+00:00",
-      "focus": "Aufgeräumten Modell-/Codec-Vertrag und Codegleichheit prüfen",
+      "id": "CITY-01-PREP-I02",
+      "kind": "implementation",
+      "startedAt": "2026-10-09T16:55:47.454518+00:00",
+      "focus": "Reine CitySource und geprüfte Citychanges implementieren",
       "state": "completed",
-      "result": "Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen."
+      "result": "Gemeinsame History mit sechs echten Besitzerregressionen implementiert; Typprüfung, Tests und Build bestanden. Review folgt."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-P02",
-      "kind": "implementation_planning",
-      "focus": "Reine Stadtbefehle auf vorhandener AtlasHistory planen und Modulgrenze abstimmen"
+      "id": "CITY-01-PREP-R03",
+      "kind": "review",
+      "focus": "Stadtbefehle unabhängig gegen Plan und Konflikt-/Kopiergrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
