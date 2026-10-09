@@ -2,7 +2,8 @@
 
 Status: **Lifecycle-/Zeit-, Ownership- und Host/Security/Platform-Re-reviews
 `PASS`; Passive-Display-Phasensplit auf Exact-SHA `PASS` und vom Source-Owner
-ratifiziert; direkte Music/Weather/Shops-Rekonfirmation noch offen; ohne
+ratifiziert; Music/Weather/Shops-Consumer-Rekonfirmation auf Exact-SHA lokal
+dokumentiert; ohne
 Implementierungs-, Host- oder Persistenzfreigabe.**
 
 ## Fachliche Quellen
@@ -78,6 +79,15 @@ zwingendes SMR-10-Gate. Der Exact-SHA-Wiederreview 6088985728 bestätigt die
 vollständige Umsetzung dieser Gate-Trennung im Kandidaten
 `0254d575e61df130b3f85dbcef810faef54ce0d5`; der Source-Owner ratifiziert
 diesen exakten Stand in 6088996383.
+
+Music/Weather/Shops ratifiziert auf demselben Exact-SHA ausschließlich die
+eigene immutable Focus-/LiveScene-Consumergrenze: Nur `active` darf
+Scene-Fachdaten liefern; `none`, `pending`, `unavailable`, stale, fremde oder
+beschädigte Referenzen bleiben fail-closed, und Consumer erhalten keine
+Scene-Interna. Diese Ratifikation ist ein lokaler Plan-/Checkpoint-Nachweis,
+keine Passive-Display-, Host-, Persistenz- oder Implementierungsfreigabe und
+ersetzt keine spätere direkte Issue-#6-Veröffentlichung, sobald der Zugang
+wieder verfügbar ist.
 
 ## Umfang und Nichtziele
 
@@ -825,8 +835,11 @@ Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
   Maskenidentität, Teilnahmeprojektion, Pending-Reconciliation und Completion.
 - Scene/Time/Travel ratifiziert Primary/Focus-Trennung, SceneClock-Verweis,
   Split/Rejoin, Location/Travel-Grenze und Nicht-WorldEffect-Semantik.
-- Music/Weather/Shops ratifizieren ihre immutable Focus-/LiveScene-Consumer sowie
-  `none`/stale-/Fehlerverhalten.
+- Music/Weather/Shops ratifizieren auf Exact-SHA
+  `0254d575e61df130b3f85dbcef810faef54ce0d5` ihre immutable
+  Focus-/LiveScene-Consumer sowie `none`/stale-/Fehlerverhalten. Der
+  ratifizierte Umfang bleibt auf diese Consumergrenze begrenzt; er gibt weder
+  Passive Display noch Host, Persistenz oder Implementierung frei.
 - Scene/Time/Travel ratifiziert die providerunabhängige immutable Source-
   Projektion und den absent/disabled Default-Deny-Zustand. Der spätere SMR-10-
   Passive-Display-Owner ratifiziert vor jeder Consumer-Bridge oder Aktivierung
