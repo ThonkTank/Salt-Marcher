@@ -152103,5 +152103,119 @@
       "gate": "passed",
       "next": "Eigener Phase-1-Planlauf der ROADMAP-PARITY-TOOLS.md; vollständige Parität anderer Werkzeuge bleibt offen."
     }
+  },
+  "hexAtlas": {
+    "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
+    "currentPhase": "HEX-01",
+    "state": "foundation_review_passed_cleanup_pending",
+    "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
+    "requirements": [
+      {
+        "id": "HEX01-001",
+        "requirement": "Atlas anlegen ohne Größenabfrage",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Command palette and actual modal fields; stable native document."
+      },
+      {
+        "id": "HEX01-002",
+        "requirement": "Metermaßstab und stabile Hex-Adressen",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Both orientations, signed coordinates, neighbor scale and origin."
+      },
+      {
+        "id": "HEX01-003",
+        "requirement": "Grenzenlose Navigation ohne Datenanlage",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Middle, Space and Hand pan beyond initial viewport; document bytes identical."
+      },
+      {
+        "id": "HEX01-004",
+        "requirement": "Zeiger-Zoom und sichtbare Übersicht",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Pointer anchor, viewport-only ×3 grid, actual729-mile screenshot; no terrain allocation."
+      },
+      {
+        "id": "HEX01-005",
+        "requirement": "Frischer Start erhält Kennung und Adresse",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Two orientations reopened in a separate native process; IDs/addresses/bytes match."
+      },
+      {
+        "id": "HEX01-006",
+        "requirement": "Vorhandene und unbekannte Dateien erhalten",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Duplicate creation does not overwrite; unknown field shows error without mutation."
+      },
+      {
+        "id": "HEX01-007",
+        "requirement": "Vorhandener Dungeon bleibt öffnungsfähig",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Stable room entity and file preserved; actual screenshot. Shared Atlas composition remains HEX05."
+      },
+      {
+        "id": "HEX01-008",
+        "requirement": "Bedienbare Kartenfläche",
+        "state": "passed_scoped",
+        "reviewRun": "HEX-01-R01",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
+        ],
+        "observed": "Native screenshots reviewed: map dominance, compact controls, visible focus, legible mile and hex labels."
+      }
+    ],
+    "cleanupFindings": [
+      {
+        "id": "HEX01-C01",
+        "priority": 2,
+        "state": "open",
+        "title": "Vorhandener Atlasname benötigt eine verständliche Meldung",
+        "observed": "FileConflict says Extern geändert for an already existing creation path; no overwrite occurs.",
+        "required": "Keep entered modal, explain existing name and ask for another name. Verify exact saved bytes."
+      },
+      {
+        "id": "HEX01-C02",
+        "priority": 3,
+        "state": "open",
+        "title": "Neue Kernmodule lesbar formatieren",
+        "required": "Format only new Atlas modules and their focused test; no math, storage or gesture changes."
+      }
+    ],
+    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open."
   }
 }
