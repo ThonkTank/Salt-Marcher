@@ -1,6 +1,6 @@
 # Folge-Roadmap: übrige Dungeondraft-Abläufe angleichen
 
-Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Phase-7-Fachphasentor ist mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Diese Folge-Roadmap beginnt erst nach der getrennten abschließenden Aufräumphase. Bis dahin ist sie **Planung, keine Abnahme**.
+Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fach- und Aufräumtore sind mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Als nächster eigener Arbeitslauf folgt der Phase-1-Plan; für diese Folge-Roadmap liegt noch keine Fachabnahme vor.
 
 Maßstab ist der Pflichtkatalog `acceptance.json` für Dungeondraft 1.2.0.1 „Opulent Kirin“: derzeit 707 `required`-Unterfälle. Zwölf `excluded`-Fälle und fünf `editor_addition`-Fälle sind keine Paritätstore. Bereits belegte Teilabläufe werden als Regression übernommen, aber nicht pauschal auf ganze Werkzeuge ausgeweitet. Bedienfolge, Optionen, Zustandswechsel und gespeicherte Funktion müssen dem Original entsprechen; die Dungeon-Grafik darf ungefähr gleichwertig sein.
 
