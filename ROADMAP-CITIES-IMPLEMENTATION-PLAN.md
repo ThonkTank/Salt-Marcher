@@ -389,3 +389,8 @@ CITY-00-I22-R Ergebnis: fünf Übergabelücken korrekt als fehlende Lieferung st
 CITY-00-I22-CP Plan: Auditmanifest an benanntem Commit prüfen, seine Quellhashes gegen genau diesen Gitstand statt bewegtes HEAD validieren. Aktuelle Startregel/CLP-02-Verweise und übrige JSON-Wurzeln erhalten; keine historische Referenz löschen, keine künstliche API-Spezifikation oder zusätzliche Statusdatei erzeugen. CI sichert diesen Nachweis, CR prüft ihn unabhängig.
 
 CITY-00-I22-CR Ergebnis: sechs Quellbelege am benannten Basiscommit und unverändertes Manifest bestätigt. CLP-02 und volle Inventur-/Paritätspflichten erhalten. Aufräumumfang ohne Restbefund. Bis HEX-05 weiter direkte Originalpflichten: nächster Planungslauf untersucht Landmarken-Korrektur/Position anhand sichtbar angebotener Controls; kein Persistenzanspruch aus Seed-Neuladen.
+
+
+## CITY-00-I23-P: Landmarkenposition und Korrektur
+
+Start 2026-10-09T14:16:25.053056+00:00. Neue eigene New-River-Browserkopie; Originalkarten erhalten. Einen eindeutig benannten QA-Ort innerhalb sichtbarer Stadtfläche über Add landmark anlegen. Sichtbare Markierung und angebotene direkte Auswahl-/Kontextaktionen untersuchen; nur tatsächlich angebotene Korrektur/Entfernung durchführen. Bei fehlender Wirkung höchstens zwei Folgen pro Hypothese, keine geratenen Shortcuts. Legend-Darstellung als bekannte Namensanzeige nutzen; tatsächliche SVG-Ausgaben vor/nach Korrektur als XML lesen, ohne lokale SVG-Vorschausperre zu umgehen. Sicht-/Ausgabewirkung getrennt von Speicherung, stabiler ID und eigener Umsetzung führen. Eigene Kopie danach schließen; Review und Aufräumen P/I/R getrennt. Nativer Slot bleibt beim Hex-Kollegen, HEX-05 weiterhin nicht geliefert.

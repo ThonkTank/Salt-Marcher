@@ -3869,17 +3869,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I22-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T14:15:17.033437+00:00",
-      "focus": "Provenienz und Übergabevertrag unabhängig prüfen",
-      "state": "completed",
-      "result": "Manifest unverändert, sechs Quellhashes geprüft, volle Pflichten erhalten. Kein Restbefund im Aufräumumfang."
-    },
-    "nextRun": {
       "id": "CITY-00-I23-P",
       "kind": "reference_planning",
-      "focus": "Landmarkenposition und Korrektur im Original mit sichtbaren Controls planen"
+      "startedAt": "2026-10-09T14:16:25.053056+00:00",
+      "focus": "Landmarkenposition und angebotene Korrektur planen",
+      "state": "completed",
+      "result": "Begrenzte Probe in eigener Browserkopie mit sichtbaren Controls und tatsächlichen SVG-Dateien geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I23-I",
+      "kind": "landmark_edit_reference_probe",
+      "focus": "Markierung, Kontextaktionen und Korrektur direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
