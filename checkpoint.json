@@ -419,7 +419,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "location_core_checked_world_ui_storage_inactive",
+    "state": "location_core_published_awaiting_team_handshake_heartbeat",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
       "id": "HEX-03-I01a",
@@ -430,12 +430,19 @@
       "finishedAt": "2026-10-09T19:49:23.151867+00:00",
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json",
       "sourceCommit": "09a242772214e4c04307d9ffddbb89a831d9210b",
-      "testsPassed": 386
+      "testsPassed": 386,
+      "publication": {
+        "candidate": "1d83833df0b398f517157f55cfdc94467b0c6be0",
+        "shared": "5ae20ae9b85982911c1f526de289468e08417cfc",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex03-core-publication.json",
+        "mergedBuildHostAcceptance": false
+      }
     },
     "nextRun": {
       "id": "HEX-03-I01b",
       "kind": "first_native_location_flow",
-      "focus": "Activate validated world placements only with Location/draft2/journal/copy/discard/recovery closure; connect marker/Key/drag/fit/shared history in same editor, first real native/fresh flow before extra links."
+      "focus": "Activate validated world placements only with Location/draft2/journal/copy/discard/recovery closure; connect marker/Key/drag/fit/shared history in same editor, first real native/fresh flow before extra links.",
+      "dependency": "Team milestone/owner/hand-off consolidation before a new product claim; per-run native slot coordination."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -478,10 +485,24 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "Explicitly handed to City for isolated CO-COK-0004 light/weather Original; Root no native GUI until normal exit and explicit return.",
+      "nativeGuiSlot": "City normal Exit0 and explicit return confirmed by Issue6088178583; no Root GUI running. Coordinate a fresh exclusive slot before any next native run.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
-      "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
+      "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088219207",
+      "cityHex03PlanReview": {
+        "state": "passed_scoped_plan",
+        "candidate": "cb869951a1bb5aad43fa422794247268669e04b2",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088027708",
+        "sharedCityApiRatified": false
+      },
+      "teamHandshake": {
+        "state": "awaiting_team_consolidation_no_new_product_claim",
+        "prioritySource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087962175",
+        "ownResponse": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088219207",
+        "nextVisibleSlice": "HEX03 native Location marker/Key/drag/shared history/full persistence/fresh process",
+        "sharedMilestone": "HEX03 -> HEX04 -> HEX05: Hex/Location/Dungeon editing by zoom, one camera/history, Save and fresh reopen; CITY01..04 follows",
+        "handoff": "After runnable HEX03: exact build/flow to Atlas-QA and independent review. City integration after ratified HEX04/05 contracts."
+      }
     },
     "verification": {
       "check": "Clean Git41cac27 passed",
@@ -1419,7 +1440,13 @@
           "Readonly cloned fixture changed to an explicitly mutable caller copy.",
           "Test redoDepth assumption corrected to actual canRedo API; no product API added."
         ],
-        "userVault": "unchanged"
+        "userVault": "unchanged",
+        "publication": {
+          "candidate": "1d83833df0b398f517157f55cfdc94467b0c6be0",
+          "shared": "5ae20ae9b85982911c1f526de289468e08417cfc",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex03-core-publication.json",
+          "mergedBuildHostAcceptance": false
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1446,7 +1473,18 @@
       "dependency": "GM-UX-N-004 viewport facts/repair remain separate; no terrain product edits yet.",
       "nativeGate": "Isle flow after I01b; true save/fresh recovery after I01c.",
       "referenceRule": "WD004.02 Escape retains land; no invented rollback semantics."
-    }
+    },
+    "continuation": {
+      "mode": "heartbeat",
+      "automationId": "hex-atlas-fortsetzen",
+      "status": "ACTIVE",
+      "intervalHours": 6,
+      "targetThreadId": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
+      "userRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088100769",
+      "goalPause": "requested_by_user_switch_to_heartbeat; final tool follows metadata publication",
+      "policy": "One bounded due step after Team handshake; no repeated unchanged status or autonomous Goal continuation."
+    },
+    "updatedAt": "2026-10-09T19:56:03.384926+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
