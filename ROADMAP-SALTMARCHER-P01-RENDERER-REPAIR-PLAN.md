@@ -8,7 +8,7 @@ Planlauf vom 09.10.2026 zum [P01-Prototyp](ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md
 
 ## Getrennte Produktreparatur
 
-1. `TexturePool.acquireColorableObject` dekodiert die vorhandenen PNG-Blobdaten mit Browser-Bild- und Canvas-APIs zu RGBA. Eingaben, Alpha, Farbumrechnung, Cache-Key, Freigabe und Fehlerzustand bleiben fachlich gleich; keine Vaultdatei wird geändert.
+1. `TexturePool.acquireColorableObject` dekodiert die vorhandenen PNG-Blobdaten mit einer browserfähigen, reinen JavaScript-PNG-Bibliothek zu **unpremultiplied RGBA**. Canvas-Dekodierung würde die Farbkanäle transparenter Pixel verändern und ist für diesen Pfad kein gleichwertiger Ersatz. Eingaben, Alpha, Farbumrechnung, Cache-Key, Freigabe und Fehlerzustand bleiben fachlich gleich; keine Vaultdatei wird geändert.
 2. Ein gezielter Browsertest vergleicht denselben PNG-Input vor und nach der Umstellung auf Pixel- und Alphaebene. Er belegt mindestens ein transparentes und ein halbtransparentes Farbfeld. Ein isolierter Hostlauf prüft ein färbbares Objekt und frische Neuöffnung.
 3. `npm run check`, `npm test`, `npm run build` und ein separater P01-Renderer-Bundlegraph ohne `node:*`, `pngjs`, `obsidian` und `electron` sind Pflicht. Der P01-Kandidat wird erst nach dieser Reparatur auf neuem Branch wiederholt. Save, Crash-Recovery, Plattformmatrix und das gesamte P01-Tor bleiben bis zu ihren eigenen Belegen offen.
 
