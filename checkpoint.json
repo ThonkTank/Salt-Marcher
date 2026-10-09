@@ -157,7 +157,7 @@
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "3d7f45dd2da2f295b21a5aa1baf7128fc0e38fab",
-      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation. N-I10: 3da4a99/6daac0a normal in 5225673 integriert; Building-Innenlöcher erhalten native Bodenfelder. Basis frisch lokal 194/194 und veröffentlicht 194/197 mit bekannten drei fehlenden Fixtures, neuer Build d522bd25. Eigener Kern-Edit-/Neuöffnungslauf bestanden. Danach 63a30ac (Original-Punktbearbeitungsbefund/Plan) normal in ea3551b integriert; Produkt-/Test-/Validator-/Kern-Hostquellen und Wonderdraft-Wurzel unverändert gegenüber geprüftem 5225673. Eigene Roots und fremde lokale Änderungen erhalten; keine Vaultinstallation oder vollständige Hex-Abnahme. N-I11: 7e357df/9fd67b2/b9a6aa4 am Laufstart per Fast-forward integriert; native Building-Punktbearbeitung/Bodenübermalung/Wandstil. Eigene Wurzeln und fremde lokale Änderungen erhalten. Basis neu 195/195 und neuer Build d7c47ec2; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Vaultinstallation oder vollständige Hex-Abnahme. N-I12: am Laufstart und vor Veröffentlichung abgerufen, keine neuen eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen, keine neue Hostabnahme oder Vaultinstallation. N-I13: am Laufstart und vor Veröffentlichung abgerufen, keine eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen; keine neue Hostabnahme oder Vaultinstallation. N-I14: am Laufstart abgerufen, zunächst keine Änderungen. Vor Veröffentlichung20e9f6f mit CITY-P01/CP/CI/CR und Building-Punkt-Einfügen/Entfernen normal in3d7f45d integriert. Eigene Hex-/Wonderdraftroots, Stadt-/Dungeonroots und fremde lokale Änderungen erhalten. Basis frisch lokal197/197 und veröffentlicht197/200 mit denselben drei fehlenden Fixtures, neuer Builde1a4ad3a. Eigener frischer Kern-Obsidian-Edit-/Neuöffnungslauf bestanden; keine Vaultinstallation oder vollständige Atlasabnahme. Anschließend4eaac5b (CITY00-Kandidaten/FTG-Erstellungsprobe und Dungeon-Review/Plan) normal indb19a23 integriert; Produkt-/Test-/Validator-/Kern-Hostbasis gegenüber geprüftem3d7f45d unverändert, keine Wiederholung unveränderter Checks oder neue Abnahme aus Kandidaten. Beide fremden Pfade erhalten. Anschließendaa5567a mit38 Stadt-Funktionsanforderungen, FTG-Hamlet-Referenzen und getrennten Stadt-Review-/Aufräumpaketen normal integriert; eigener Originalstand/Produkt-/Test-/Kern-Hostbasis unverändert, Stadtpflichten weiterhin offen. Nach einer Push-Kollision2aed1c9 samt44 Stadtpflichten/Watabou-Galerie und separatem Dungeon-Outline-Host-/Reviewpaket normal in15472f5 integriert. Produkt/Test/Originalvalidator/Kernhostbasis unverändert; nur separater Building-Punkthosthelfer zusätzlich erweitert und Syntax geprüft. Keine eigene neue Fachabnahme aus den fremden Belegen.",
+      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation. N-I10: 3da4a99/6daac0a normal in 5225673 integriert; Building-Innenlöcher erhalten native Bodenfelder. Basis frisch lokal 194/194 und veröffentlicht 194/197 mit bekannten drei fehlenden Fixtures, neuer Build d522bd25. Eigener Kern-Edit-/Neuöffnungslauf bestanden. Danach 63a30ac (Original-Punktbearbeitungsbefund/Plan) normal in ea3551b integriert; Produkt-/Test-/Validator-/Kern-Hostquellen und Wonderdraft-Wurzel unverändert gegenüber geprüftem 5225673. Eigene Roots und fremde lokale Änderungen erhalten; keine Vaultinstallation oder vollständige Hex-Abnahme. N-I11: 7e357df/9fd67b2/b9a6aa4 am Laufstart per Fast-forward integriert; native Building-Punktbearbeitung/Bodenübermalung/Wandstil. Eigene Wurzeln und fremde lokale Änderungen erhalten. Basis neu 195/195 und neuer Build d7c47ec2; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Vaultinstallation oder vollständige Hex-Abnahme. N-I12: am Laufstart und vor Veröffentlichung abgerufen, keine neuen eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen, keine neue Hostabnahme oder Vaultinstallation. N-I13: am Laufstart und vor Veröffentlichung abgerufen, keine eingehenden Commits. Basis lokal195/195 und veröffentlichbar195/198 mit denselben drei fehlenden Fixtures, Build d7c47ec2 unverändert. Eigene N-I11-Kernbelege erneut gelesen; keine neue Hostabnahme oder Vaultinstallation. N-I14: am Laufstart abgerufen, zunächst keine Änderungen. Vor Veröffentlichung20e9f6f mit CITY-P01/CP/CI/CR und Building-Punkt-Einfügen/Entfernen normal in3d7f45d integriert. Eigene Hex-/Wonderdraftroots, Stadt-/Dungeonroots und fremde lokale Änderungen erhalten. Basis frisch lokal197/197 und veröffentlicht197/200 mit denselben drei fehlenden Fixtures, neuer Builde1a4ad3a. Eigener frischer Kern-Obsidian-Edit-/Neuöffnungslauf bestanden; keine Vaultinstallation oder vollständige Atlasabnahme. Anschließend4eaac5b (CITY00-Kandidaten/FTG-Erstellungsprobe und Dungeon-Review/Plan) normal indb19a23 integriert; Produkt-/Test-/Validator-/Kern-Hostbasis gegenüber geprüftem3d7f45d unverändert, keine Wiederholung unveränderter Checks oder neue Abnahme aus Kandidaten. Beide fremden Pfade erhalten. Anschließendaa5567a mit38 Stadt-Funktionsanforderungen, FTG-Hamlet-Referenzen und getrennten Stadt-Review-/Aufräumpaketen normal integriert; eigener Originalstand/Produkt-/Test-/Kern-Hostbasis unverändert, Stadtpflichten weiterhin offen. Nach einer Push-Kollision2aed1c9 samt44 Stadtpflichten/Watabou-Galerie und separatem Dungeon-Outline-Host-/Reviewpaket normal in15472f5 integriert. Produkt/Test/Originalvalidator/Kernhostbasis unverändert; nur separater Building-Punkthosthelfer zusätzlich erweitert und Syntax geprüft. Keine eigene neue Fach
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/manifest.json",
         "sessions": 1,
@@ -3400,7 +3400,11 @@
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/review-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
-      "open": ["P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben", "Phase-7-Fachphasentor", "Abschließende Aufräumphase"],
+      "open": [
+        "P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben",
+        "Phase-7-Fachphasentor",
+        "Abschließende Aufräumphase"
+      ],
       "gate": "open"
     },
     "phase7GateReview": {
@@ -3409,10 +3413,17 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "verifiedStrands": [
+        "P7-1",
+        "P7-3",
+        "P7-4"
+      ],
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "passed_with_user_exception",
-      "open": ["Phase-7-Aufräumplan, Umsetzung und unabhängiger Review", "Folge-Roadmap für übrige Werkzeuge"]
+      "open": [
+        "Phase-7-Aufräumplan, Umsetzung und unabhängiger Review",
+        "Folge-Roadmap für übrige Werkzeuge"
+      ]
     },
     "phase7CleanupPlan": {
       "date": "2026-10-09",
@@ -3420,7 +3431,11 @@
       "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
       "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "items": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "gate": "open",
       "next": "Getrennte Umsetzung, dann unabhängiger Aufräumreview vor der Folge-Roadmap."
     },
@@ -3443,7 +3458,11 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/cleanup-independent-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/review-audit.json",
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedItems": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "verifiedItems": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "newHostPairs": 3,
       "coreTestsPassed": 167,
       "physicalInput": "skipped_at_user_request_unverified",
@@ -3484,5 +3503,22 @@
       "state": "responsibilities_confirmed_hex_basis_then_city",
       "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
     }
+  },
+  "testFixturePortability": {
+    "date": "2026-10-09",
+    "scope": "Drei Assettests von nicht versionierten sibling-repository fixtures auf selbst enthaltene gültige GDPC package fixtures umgestellt.",
+    "files": [
+      "tests/core/assets.test.ts",
+      "tests/core/pack-fixtures.ts"
+    ],
+    "verification": {
+      "check": "passed",
+      "tests": {
+        "passed": 201,
+        "failed": 0
+      },
+      "build": "passed"
+    },
+    "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme."
   }
 }
