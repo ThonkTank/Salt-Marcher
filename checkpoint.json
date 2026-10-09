@@ -3756,17 +3756,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T13:45:16.907193+00:00",
-      "focus": "Gestaltungsvertrag und Belegformat planen",
-      "state": "completed",
-      "result": "Farbrollen/Stilflags mit transienter Vorschau und atomarem Apply an gemeinsamer Atlasbasis geplant; bytegleicher JSON-Alias."
-    },
-    "nextRun": {
       "id": "CITY-00-I19-CI",
       "kind": "cleanup_implementation",
-      "focus": "Architekturpräzisierung und JSON-Zuordnung umsetzen"
+      "startedAt": "2026-10-09T13:45:31.654832+00:00",
+      "focus": "Style-Vertrag und Belegformat präzisieren",
+      "state": "completed",
+      "result": "Geplante Farbrollen/Flags, transienter Entwurf und Atlas-Apply in Architektur ergänzt; JSON-Alias bytegleich, Rohbelege erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I19-CR",
+      "kind": "cleanup_review",
+      "focus": "Gestaltungsplan und Rohschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
