@@ -2165,7 +2165,8 @@
         "availability": "unknown",
         "observationKind": "direct_form_state_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json"
         ],
         "task": "Vorgaben speichern und Namensliste verwenden",
         "phase": "CITY-02",
@@ -2199,7 +2200,11 @@
             "Prior settlement export remains unverified; no third download attempt",
             "No own product/host/UX acceptance"
           ]
-        }
+        },
+        "implementationPhases": [
+          "CITY-02",
+          "CITY-06"
+        ]
       },
       {
         "id": "CO-FTG-0023",

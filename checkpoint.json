@@ -3624,17 +3624,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I12-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:31:40.257836+00:00",
-      "focus": "Architekturauftrag und zweiphasige Namensplanung präzisieren",
-      "state": "completed",
-      "result": "R01 vollerDreiproduktauftrag/parametrischerBesitz inARCH und R02 CITY02/CITY06 additiv geplant; Rohbelege/IDs unverändert"
-    },
-    "nextRun": {
       "id": "CITY-00-I12-CI",
       "kind": "cleanup_implementation",
-      "focus": "Geplante Architektur und Lückensnapshot korrigieren"
+      "startedAt": "2026-10-09T12:32:28.978167+00:00",
+      "focus": "Dreiproduktauftrag und geplante Besitzerregeln vereinheitlichen",
+      "state": "completed",
+      "result": "ARCH auf vollenFunktionsauftrag präzisiert; geplanterStufen-/Namensbesitz dokumentiert; CO0022 mitCITY02/CITY06, Snapshot aktualisiert"
+    },
+    "nextRun": {
+      "id": "CITY-00-I12-CR",
+      "kind": "cleanup_review",
+      "focus": "Architekturauftrag, doppelte Phasen und Belegschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
