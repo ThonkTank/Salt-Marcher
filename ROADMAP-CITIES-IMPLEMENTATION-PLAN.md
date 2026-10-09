@@ -29,7 +29,7 @@ Alle 24 CTY-Unterfälle sind offen. Das reine native Stadtmodell mit Codec ist v
 | CITY-08 | Ausschnitt/Exportsettings unabhängig von Kamera; PNG/JPEG/SVG/JSON ausdrücklich, Raster und Vorlagen sowie zusätzliche FTG-Exportformate nach Inventar. Alle Formate verwenden denselben materialisierten Szenenstand; SVG Vektoren/Texte und JSON metrische Geometrie separat prüfen. Räumlicher Index, Viewport-Culling und Bedarfsladen; Workerabbruch, Dispose. | 5.000 Gebäude, mehrere Städte/Innenräume; p95 Navigation ≤33 ms, Vorschau ≤100 ms nach Laden; Save/Reload; Export entspricht demselben Dokumentstand. |
 | CITY-09 | Vollständiges Inventar gegen denselben Endbuild prüfen; gemeinsame HEX-28-Abnahme. Isolierter Testvault, Sicherung vor Installation. | Alle Pflichtfähigkeiten, Konflikt/Undo/Neustart/Export, installierter Build, Ergebnisvergleich und physische Bedienung jeweils eigene Belege. |
 
-Neue Modulpfade sind geplant, keine bereits vorhandenen APIs. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
+Stadtmodell und Codec unter `src/features/city/` samt `newCityDocument`, `parseCityDocument` und `serializeCityDocument` sind vorbereitet und reviewt. Die übrigen Stadtmodulpfade und Hostanschlüsse sind geplant. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
 
 ## Drei Referenzen und bisher zusätzlich fehlende Fähigkeiten
 
@@ -678,3 +678,6 @@ CITY-01-PREP-R02 Start 2026-10-09T16:44:07.400Z; Beide R01-Gegenfälle erneut am
 
 
 CITY-01-PREP-CLEAN-P01 Start 2026-10-09T16:46:15.720458+00:00; Plan: Nur drei R02-Reste bereinigen: dimensionslose Achsenskalierung direkt am Modelltyp kommentieren; Gesamtplan trennt existierende Modell-/Codec-APIs von geplanten Modulen; Architektur nennt dichte native Listen ohne Zusatz-/Accessorfelder. Kein Laufzeitumbau/Geometriekopie/öffentlicher API-Zuwachs. Generierten JS-Code vor/nach Kommentar vergleichen; frühere Rawbelege erhalten und abschließend CTY/CO/Verweise/Quellgrenzen prüfen. CI/CR getrennt.
+
+
+CITY-01-PREP-CLEAN-I01 Start 2026-10-09T16:47:08.177038+00:00; Dimensionslose Skalierung am Modelltyp gekennzeichnet; existierende Modell-/Codec-APIs von geplanten Stadtmodulen getrennt; Architektur dokumentiert dichte native Listen und kontrollierte Ablehnung. Keine ausführbare Änderung oder neue öffentliche Schnittstelle. JS-/Typquellgleichheit und abschließender Review folgen.
