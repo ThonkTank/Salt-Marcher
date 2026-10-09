@@ -2370,17 +2370,19 @@
         "product": "Fantasy Town Generator",
         "feature": "Gebäudebedarfe und Anzahlgrenzen",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T19:18:45.432Z",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct_control_only",
+        "availability": "temporary_settlement",
+        "observationKind": "direct_form_state_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
         "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-FTG-BUILDING-LIMITS-PLAN.md; CITY-02/06: Initialzahl-vor-Limit, Fraktionsausnahme und Arbeitsplatz-Override als explizite Generierungsregeln unterstützen; Parameter/Endgeometrie materialisiert speichern. Keine aktuellen gemeinsamen APIs voraussetzen.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -2389,11 +2391,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Nur der Formularordner Buildings ist sichtbar. Bedarfsvorgaben, Anzahlgrenzen und erzeugte Verteilungswirkung sowie eigene Umsetzung/Host/Bedienung bleiben ungeprüft.",
+        "gap": "Gebäudetyp-/Bedarfs-/Limitparameter und zwei Änderungen im Formular direkt belegt. Deklarierte Ausnahmeregeln noch ohne erzeugte Anzahlwirkung. Rundung, vollständige Typen-/Abhängigkeitsmatrix, eigene Umsetzung/Host/Bedienung bleiben offen.",
         "originalProbe": {
-          "run": "CITY-00-I01",
-          "state": "buildings_folder_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "run": "CITY-00-I45-I45",
+          "state": "direct_form_state_partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+          "observation": "209 individual building types listed; Abandoned shrine Initial number0 and blank Limit; changed to2 and1, both accepted in draft; Limit tooltip: initial number still placed above limit; faction buildings excluded; minimum settlement size and coast/river/raw resource requirements; item/service quality and price multipliers; simulation resources explicitly do not affect generation; Overall inside shop default10 percent/outside50 percent, custom control off; Always place workplace enabled; tooltip bypasses dependencies at high unemployment; 80 dependency groups listed; Animal produce provider per other buildings7.2 Cattle/Pig/Sheep groups; Changed dependency type to Per population; one per100 people displayed; First-building threshold and custom shop percentage controls visible",
+          "limits": [
+            "Single temporary settlement per user; no replacement generated to preserve existing QA map",
+            "Tooltips are declared policy, not measured result counts",
+            "Only two selected types/groups inspected; no full209/80 matrix",
+            "Graph cycles, rounding, factions, workforce override and generated distribution unmeasured",
+            "Own implementation/host/usability/physical comparison open"
+          ],
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/review.json",
+          "fullOverviewSupplement": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json",
+          "countScope": "UI pagination totals209/80; only first10/20 entries visible, not full catalog verified"
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -130582,8 +130595,8 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "partial_terrain_save_draft_reopen_repeat_save_vaultstore_recovery_and_one_native_hard_crash_independent_review_passed",
-          "build": "Save/Draft/Noop/J02: main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948. J03: Testcommit 0711828446c2504065f08010547bbedd5d0df9df, main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f.",
+          "state": "partial_terrain_save_draft_reopen_repeat_save_vaultstore_recovery_and_two_native_hard_crash_boundaries_independent_review_passed",
+          "build": "Save/Draft/Noop/J02: main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948. J03/J04: Testcommits 0711828446c2504065f08010547bbedd5d0df9df und 2eeb4737b0b7d1ba87807e8a15cf928eb3e35406, main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f.",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json",
@@ -130591,9 +130604,11 @@
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573040825-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573051667-dd036-s01-recovery-reopen/s01-recovery-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573051667-dd036-s01-recovery-reopen/s01-recovery-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j04-20261009/clean-committed8/evidence/1791573501885-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j04-20261009/clean-committed8/evidence/1791573508679-dd036-s01-recovery-reopen/s01-recovery-result.json"
           ],
-          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. J03 beendet einen isolierten Obsidian-Prozess per SIGKILL nach dem dritten von sechs geänderten Atlaszielen und belegt den Rollback durch einen frischen Obsidian-/VaultStore-Prozess. Weitere direkte Host-Abbruchgrenzen, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. J03 beendet einen isolierten Obsidian-Prozess per SIGKILL nach dem dritten von sechs geänderten Atlaszielen und belegt den Rollback durch einen frischen Obsidian-/VaultStore-Prozess. J04 beendet Obsidian nach dem committed-Journal-CAS und belegt durch frischen VaultStore-Start den erhaltenen Nachherstand ohne Draft/Journal. Weitere direkte Host-Abbruchgrenzen, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -152347,7 +152362,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "r01_changes_required_repair_planned",
+    "state": "r01_repairs_native_checked_re_review_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152484,9 +152499,10 @@
         "state": "checked_native_implementation",
         "implementationRun": "HEX-02-I01c",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
         ],
-        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. Independent R01 pending."
+        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. R01 found two P1; N01 core/native repair checked, independent R02/CLEAN pending."
       },
       {
         "id": "HEX02-006",
@@ -152494,9 +152510,10 @@
         "state": "checked_native_implementation",
         "implementationRun": "HEX-02-I01d",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
         ],
-        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 pending."
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 found two P1; N01 core/native repair checked, independent R02/CLEAN pending."
       },
       {
         "id": "HEX02-007",
@@ -152548,18 +152565,22 @@
       {
         "id": "HEX02-R01-01",
         "priority": 1,
-        "state": "open",
+        "state": "implementation_native_checked_re_review_pending",
         "title": "Kopie nach Prozessverlust ohne Hauptdatei gezielt wiederherstellen",
         "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
-        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
+        "implementation": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
       },
       {
         "id": "HEX02-R01-02",
         "priority": 1,
-        "state": "open",
+        "state": "implementation_native_checked_re_review_pending",
         "title": "Angenommene Kopie bis Abschluss sichtbar und gegen native Dismisswege geschützt",
         "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
-        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
+        "implementation": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
       }
     ]
   }
