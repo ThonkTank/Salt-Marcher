@@ -3611,17 +3611,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T11:54:21.887865+00:00",
-      "focus": "Nativebelege und Eingabereparatur abschließend prüfen",
-      "state": "completed",
-      "result": "R01 geschlossen;75Originalhashes und Karte unverändert;207Tests/check/build belegt. Originalumfang und HEX-05/Stadtprodukt weiterhin offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I09-P",
       "kind": "reference_planning",
-      "focus": "Offene CITY-00-Fähigkeiten und Demo-/Vollversionszugang bündeln, nächste wirkungsvolle Probe planen"
+      "startedAt": "2026-10-09T11:57:44.082756+00:00",
+      "focus": "Ergebnisgalerie und klare Gate-Grenzen planen",
+      "state": "completed",
+      "result": "Vier feste Galerieformen und Quellenprüfung geplant; spätere Funktion/Host/UX-Pflichten bleiben erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-I",
+      "kind": "reference_gallery",
+      "focus": "Original-Ergebnisbilder sammeln und Kriterien zuordnen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
