@@ -69,7 +69,7 @@
       "kind": "repair_implementation",
       "startedAt": "2026-10-09T08:25:31.894660+02:00",
       "baseCommit": "93db5ae8fe68d9a2e270000cfd8d17ada1e7c4ee",
-      "state": "local_checks_passed_integration_and_publication_pending",
+      "state": "completed_checks_passed_review_pending",
       "focus": "Fünf Windrose-Controls / sechs frühe Fragen: Originalbelege zuerst, nur fehlende Grenzen und Inner-Circles-Zahleneinordnung; keine Übertragung anderer Werkzeugwerte oder Fachfreigabe.",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/manifest.json",
@@ -78,9 +78,13 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/protection-and-native-proof.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/catalog-partial.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/catalog-complete.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/local-basis.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/integrated-final-checks.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/core-host-continuity.json"
       ],
-      "result": "Sechs Windrose-Inventarfragen direkt geklärt; vier Zahlenfeld-Klassifikationen korrigiert und reiner Inner-Circles-Slider nativ0..2 belegt. 92 frühe Fragen offen; keine Fachfreigabe."
+      "result": "Sechs frühe Windrose-Fragen direkt geklärt; 58 neue Originalframes, vier Zahlenfelder korrekt eingeordnet, Inner-Circles-Slider nativ0..2. 44 geschützte Dateien/fremde Tests/Installationsnotiz erhalten. Lokale193/193, veröffentlichte193/196 mit denselben drei fehlenden externen Fixtures; beide Builds42ce7de2. Eingehende Dungeonbelege normal integriert; R02/Fachfreigabe/Aufräumen bleiben offen.",
+      "finishedAt": "2026-10-09T08:48:58.445839+02:00"
     },
     "nextRun": {
       "id": "HEX-00-N-I10",
@@ -130,22 +134,22 @@
       "tests": 193,
       "build": "passed",
       "productBuildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
-      "integratedCommit": "b5669b3aeaac99d176c13c8402de4494fbb02e5e",
+      "integratedCommit": "bbb88c73446221922c98251997824d2445195e64",
       "host": "N-I08: eigener V4-Kernablauf nach Integration auf Build 42ce7de2 in isoliertem Obsidian bearbeitet und frisch geöffnet: Raum-/Eingangs-Key, exakter Markdowntext, Undo/Redo und Save/Reopen bestanden. Synthetische Hosteingabe; keine neue Overworld-/Hex-Funktionsabnahme, Großkarte oder physische Eingabe. Produktvault unverändert.",
-      "testProvenance": "193 lokale Tests bestanden; fremde Testpatches unveröffentlicht erhalten. Exakter integrierter Quellbaum 9351586: 196 Tests, 193 bestanden, dieselben drei fehlenden externen Fixture-Fälle.",
+      "testProvenance": "N-I09 frisch:193 lokale Tests bestanden; fremde Testpatches unveröffentlicht erhalten. Exakter integrierter Quellbaumbbb88c7:196 Tests,193 bestanden, dieselben drei fehlenden externen Fixture-Fälle. Check/Build in beiden Bäumen bestanden und identisch42ce7de2.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
         "tests": 196,
         "passed": 193,
         "failed": 3,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/integrated-final-checks.json"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/integrated-final-checks.json"
       },
       "catalog": "N-I09: sechs Windrose-Inventarfragen an fünf Controls direkt geklärt. Vier Zahlenfelder korrekt eingeordnet; Directions4..32, LineWidth2..16, InnerRadius0..1024, OuterRadius32..9999; reiner Inner-Circles-Slider nativ0..2. 663 UI/83 Fälle und alte Quellen erhalten. 92 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "9351586d205700735accc8c3639035e94a94e31c",
-      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin.",
+      "testedProductCommit": "bbb88c73446221922c98251997824d2445195e64",
+      "incomingReviewIntegration": "72df56b/2f95c8b/92916b1/583dfd2 normal in9351586 integriert; native V4-Nachzeichnung, Paketwahlregression und gemischte Building-Böden. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis erneut lokal193/193 und veröffentlicht193/196 mit drei bekannten fehlenden Fixtures; beide Builds identisch42ce7de2. Eingehende Mixed-Floor-Hostbelege lokal nicht vorhanden und nicht als neue eigene Abnahme gezählt; eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Produktvault-Installation. Anschließend7535287 (Original-Steinübermalung, separater Mixed-Floor-Hosthelfer) normal inb5669b3 integriert. Produkt-, Test-, Validator- und Kern-Hostquellen unverändert gegenüber geprüftem9351586; Build42ce7de2 und die eigenen Kernbelege gelten weiterhin. N-I09: b900099/93db5ae am Laufstart per Fast-forward integriert; b84e400 normal inbbb88c7 integriert. Incoming betrifft Dungeon-Abnahmen/Plan und separaten Mixed-Floor-Helfer; Produkt-/Test-/Wonderdraft-/Kern-Hostquellen unverändert. Eigene Roots/fremde Testpatches/Installationsnotiz erhalten. Neue eigene Basisprüfungen dokumentiert; N-I08-Kern-Hostbelege erneut gelesen, keine neue Host-/Hex-Abnahme oder Installation.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/manifest.json",
         "sessions": 1,
@@ -392,7 +396,10 @@
         "protection": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/protection-and-native-proof.json",
         "localBasis": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/local-basis.json",
         "originalEffectApproval": false,
-        "phaseApproval": false
+        "phaseApproval": false,
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/integrated-final-checks.json",
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/integration-preservation.json",
+        "coreHostContinuity": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/core-host-continuity.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
