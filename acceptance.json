@@ -113835,6 +113835,20 @@
           ],
           "measuredScope": "Original 12×8: links -5 → -4, 999 → 64 und -1,5 → -2; die Host-Kernfunktion bildet diese Werte ab.",
           "remaining": "Linke Host-GUI-Eingabe, Smart-Tile-Crop und unabhängiger Review offen."
+        },
+        "followUpPhase1LeftCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×8 mit zehn Smart-Tile-Zellen → Left in tiles -3 → Save → Left in tiles +3 → Save; dieselbe gespeicherte 9×8-Beschnittkarte frisch öffnen → Left in tiles +3 → Save",
+          "sourceMapSha256": "957071b40c6051a68c319fc2bb7526e3209d3c2bdf3462eb528de5d3ca9660eb",
+          "cropMapSha256": "2cf22625f78031d805d951a0ce43cb78c323bf0e089520fbdbf524afc447e806",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/native-same/runs/20261009-061149-3504837/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/native-fresh/runs/20261009-061232-3505500/evidence/result.json"
+          ],
+          "measuredScope": "Links -3: gespeicherte Zellen 10→6; links +3 im selben wie im frischen Prozess bleiben sechs. Vier Polygone verschieben alle X-Punkte um -768 native Einheiten und kehren nach +3 exakt zurück.",
+          "remaining": "Host-Zellschicht, weitere Inhalte, kombinierte Randfolge und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {

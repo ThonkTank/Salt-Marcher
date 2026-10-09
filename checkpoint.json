@@ -1291,12 +1291,23 @@
         "measured": "12×10→12×8→12×10: belegte Zellen 10→5→5 im selben Prozess und 5→5 nach frischer Öffnung; alle Polygon-Y-Punkte beim Beschnitt um -512 native Einheiten und bei Wiedererweiterung exakt zurück.",
         "gate": "open"
       },
+      "resizeLeftOriginalProbe": {
+        "cases": "DD-038.05",
+        "state": "original_measured_host_open",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/original-probe.md",
+        "sameProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/native-same/runs/20261009-061149-3504837/evidence/result.json",
+        "freshProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/native-fresh/runs/20261009-061232-3505500/evidence/result.json",
+        "sourceMapSha256": "957071b40c6051a68c319fc2bb7526e3209d3c2bdf3462eb528de5d3ca9660eb",
+        "cropMapSha256": "2cf22625f78031d805d951a0ce43cb78c323bf0e089520fbdbf524afc447e806",
+        "measured": "12×8→9×8→12×8: belegte Zellen 10→6→6 im selben Prozess und 6→6 nach frischer Öffnung; alle Polygon-X-Punkte beim Beschnitt um -768 native Einheiten und bei Wiedererweiterung exakt zurück.",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 linken Smart-Tile-Beschnitt nochmals direkt kontrollieren; danach eine getrennte persistente/flüchtige Zellschicht randabhängig im Host umsetzen und mit Originalfolgen paaren. Terrain und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039 braucht noch die Regression mit ausgewähltem Paket. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 optionale persistente und flüchtige Smart-Tile-Zellschicht randabhängig im Host umsetzen und mit allen vier Originalfolgen paaren. Danach kombinierte Ränder, Terrain und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039 braucht noch die Regression mit ausgewähltem Paket. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
