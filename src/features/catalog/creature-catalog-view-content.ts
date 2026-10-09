@@ -1,6 +1,5 @@
 import {
   type Creature,
-  type CreatureCatalog,
   type CreatureCatalogPage,
   type CreatureCatalogQuery,
   type CreatureCatalogSort,
@@ -23,6 +22,8 @@ import {
   type CreatureCatalogTextFilter,
   type CreatureCatalogViewState,
 } from "./creature-catalog-view-state";
+import type { CatalogSectionProvider } from "./catalog-provider";
+import { createCatalogSectionFrame } from "./catalog-section-frame";
 import { CreatureCatalogDebouncer } from "./creature-catalog-view-model";
 
 interface FocusState {
@@ -38,7 +39,7 @@ function modifier(score: number): string {
 
 export interface CreatureCatalogViewPort {
   readonly notice: string;
-  load(): Promise<CreatureCatalog>;
+  readonly provider: CatalogSectionProvider<"creatures", CreatureCatalogViewState, Creature, Creature>;
 }
 
 interface UniqueCatalogLeaf {
@@ -73,8 +74,10 @@ export function createUniqueCatalogOpener<Leaf extends UniqueCatalogLeaf>(
 }
 
 export class CreatureCatalogViewContent {
-  private catalog?: CreatureCatalog;
   private page?: CreatureCatalogPage;
+  private selected?: Creature;
+  private detailStatus?: { readonly title: string; readonly message: string; readonly retryable: boolean };
+  private facets: Readonly<Record<string, readonly string[]>> = Object.freeze({});
   private state: CreatureCatalogViewState = restoreCreatureCatalogViewState({});
   private generation = 0;
   private abort = new AbortController();
@@ -82,6 +85,7 @@ export class CreatureCatalogViewContent {
   private lifecycleAbort = new AbortController();
   private readonly debouncers = new Map<CreatureCatalogTextFilter, CreatureCatalogDebouncer>();
   private validationError?: string;
+  private opened = false;
 
   constructor(
     private readonly contentEl: HTMLElement,
@@ -95,20 +99,22 @@ export class CreatureCatalogViewContent {
 
   async setState(state: Record<string, unknown>): Promise<void> {
     this.state = restoreCreatureCatalogViewState(state);
-    if (this.contentEl.isConnected) await this.loadCatalog();
+    if (this.opened) await this.refresh(true);
   }
 
   async onOpen(): Promise<void> {
+    this.opened = true;
     this.contentEl.classList.add("dn-creature-catalog");
     this.contentEl.addEventListener("keydown", (event) => {
       if (event.key !== "Escape" || !this.state.selectedId) return;
       event.preventDefault();
       this.change({ selectedId: undefined, detailScroll: 0 });
     }, { signal: this.lifecycleAbort.signal });
-    await this.loadCatalog();
+    await this.refresh(true);
   }
 
   async onClose(): Promise<void> {
+    this.opened = false;
     this.captureScroll();
     this.state = applyCreatureCatalogDrafts(this.state);
     this.abort.abort();
@@ -119,16 +125,71 @@ export class CreatureCatalogViewContent {
     this.contentEl.replaceChildren();
   }
 
-  private async loadCatalog(): Promise<void> {
+  private async refresh(showLoading = false): Promise<void> {
     const generation = ++this.generation;
     this.abort.abort();
     this.abort = new AbortController();
-    this.renderMessage("Monsterkatalog wird geladen …", "status");
+    const request = { section: "creatures" as const, generation, signal: this.abort.signal };
+    if (showLoading) this.renderMessage("Monsterkatalog wird geladen …", "status");
+    const query = this.query();
+    this.validationError = creatureCatalogRangeError(this.state);
+    if (this.validationError) {
+      this.page = { rows: [], total: 0, offset: query.offset ?? 0,
+        limit: query.limit ?? CREATURE_CATALOG_PAGE_SIZE };
+      this.selected = undefined;
+      this.render();
+      return;
+    }
     try {
-      const catalog = await this.port.load();
+      const result = await this.port.provider.query(this.state, request);
       if (generation !== this.generation || this.abort.signal.aborted) return;
-      this.catalog = catalog;
-      this.refresh();
+      if (result.status === "error") {
+        this.renderError(result.message, result.retryable);
+        return;
+      }
+      if (result.status === "invalid") {
+        this.validationError = result.message;
+        this.page = { rows: [], total: 0, offset: query.offset ?? 0,
+          limit: query.limit ?? CREATURE_CATALOG_PAGE_SIZE };
+        this.selected = undefined;
+        this.render();
+        return;
+      }
+      if (result.status === "missing") {
+        this.renderError(result.reason, true, "Monsterkatalog fehlt");
+        return;
+      }
+      if (result.status === "unavailable") {
+        this.renderError(result.reason, false, "Monsterkatalog nicht verfügbar");
+        return;
+      }
+      const lastPage = Math.max(0, Math.ceil(result.total / CREATURE_CATALOG_PAGE_SIZE) - 1);
+      if ((this.state.page ?? 0) > lastPage) {
+        this.state = { ...this.state, page: lastPage };
+        await this.refresh();
+        return;
+      }
+      this.page = { rows: result.rows, total: result.total, offset: result.offset, limit: result.limit };
+      this.facets = result.facets ?? Object.freeze({});
+      this.selected = undefined;
+      this.detailStatus = undefined;
+      if (this.state.selectedId) {
+        const detail = await this.port.provider.detail(this.state.selectedId, request);
+        if (generation !== this.generation || this.abort.signal.aborted) return;
+        if (detail.status === "error") {
+          this.detailStatus = { title: "Monsterdetails nicht verfügbar",
+            message: detail.message, retryable: detail.retryable };
+        } else if (detail.status === "missing") {
+          this.detailStatus = { title: "Monster nicht gefunden",
+            message: "Der ausgewählte Statblock ist in der Datenquelle nicht vorhanden.", retryable: false };
+        } else if (detail.status === "unavailable") {
+          this.detailStatus = { title: "Monsterdetails nicht verfügbar",
+            message: detail.reason, retryable: false };
+        } else if (creatureMatchesQuery(detail.detail, query))
+          this.selected = detail.detail;
+        else this.state = { ...this.state, selectedId: undefined, detailScroll: 0 };
+      }
+      this.render();
     } catch (error) {
       if (generation !== this.generation || this.abort.signal.aborted) return;
       this.renderError(error);
@@ -137,34 +198,6 @@ export class CreatureCatalogViewContent {
 
   private query(): CreatureCatalogQuery {
     return creatureCatalogQueryForState(this.state);
-  }
-
-  private refresh(): void {
-    if (!this.catalog) return;
-    const query = this.query();
-    this.validationError = creatureCatalogRangeError(this.state);
-    if (this.validationError) {
-      this.page = { rows: [], total: 0, offset: query.offset ?? 0, limit: query.limit ?? CREATURE_CATALOG_PAGE_SIZE };
-      this.render();
-      return;
-    }
-    try {
-      let page = this.catalog.search(query);
-      const lastPage = Math.max(0, Math.ceil(page.total / CREATURE_CATALOG_PAGE_SIZE) - 1);
-      if ((this.state.page ?? 0) > lastPage) {
-        this.state = { ...this.state, page: lastPage };
-        page = this.catalog.search(this.query());
-      }
-      if (this.state.selectedId) {
-        const selected = this.catalog.detail(this.state.selectedId);
-        if (!selected || !creatureMatchesQuery(selected, this.query()))
-          this.state = { ...this.state, selectedId: undefined, detailScroll: 0 };
-      }
-      this.page = page;
-      this.render();
-    } catch (error) {
-      this.renderError(error);
-    }
   }
 
   private renderMessage(text: string, role: "status" | "alert"): void {
@@ -177,18 +210,19 @@ export class CreatureCatalogViewContent {
     this.contentEl.append(message);
   }
 
-  private renderError(error: unknown): void {
+  private renderError(error: unknown, retryable = true,
+    headingText = "Monsterkatalog nicht verfügbar"): void {
     this.resetRenderEvents();
     this.contentEl.replaceChildren();
     const alert = this.contentEl.ownerDocument.createElement("section");
     alert.className = "dn-catalog-message is-error";
     alert.setAttribute("role", "alert");
     const heading = this.contentEl.ownerDocument.createElement("h2");
-    heading.textContent = "Monsterkatalog nicht verfügbar";
+    heading.textContent = headingText;
     const detail = this.contentEl.ownerDocument.createElement("p");
     detail.textContent = String(error);
-    const retry = this.button("Erneut versuchen", () => void this.loadCatalog());
-    alert.append(heading, detail, retry);
+    alert.append(heading, detail);
+    if (retryable) alert.append(this.button("Erneut versuchen", () => void this.refresh(true)));
     this.contentEl.append(alert);
   }
 
@@ -225,16 +259,13 @@ export class CreatureCatalogViewContent {
   }
 
   private render(): void {
-    if (!this.catalog || !this.page) return;
+    if (!this.page) return;
     const focus = this.captureFocus();
     this.resetRenderEvents();
     const doc = this.contentEl.ownerDocument;
     this.contentEl.replaceChildren();
 
-    const header = doc.createElement("header");
-    header.className = "dn-catalog-header";
-    const title = doc.createElement("h1");
-    title.textContent = "Monsterkatalog";
+    const frame = createCatalogSectionFrame(doc, "Monsterkatalog", "Monsterergebnisse", "Monster-Statblock");
     const license = this.button("Quelle & Lizenz", () => {
       const notice = this.contentEl.querySelector<HTMLElement>(".dn-catalog-notice");
       if (!notice) return;
@@ -243,7 +274,7 @@ export class CreatureCatalogViewContent {
     });
     license.dataset.focusKey = "license";
     license.setAttribute("aria-expanded", "false");
-    header.append(title, license);
+    frame.headerActions.append(license);
 
     const notice = doc.createElement("aside");
     notice.className = "dn-catalog-notice";
@@ -286,31 +317,21 @@ export class CreatureCatalogViewContent {
 
     const chips = this.renderFilterChips();
 
-    const body = doc.createElement("div");
-    body.className = "dn-catalog-body";
-    const results = this.renderResults();
-    const detail = this.renderDetail();
-    body.append(results, detail);
-    this.contentEl.append(header, notice, filters, chips, body);
-    results.scrollTop = this.state.resultsScroll ?? 0;
-    detail.scrollTop = this.state.detailScroll ?? 0;
+    frame.controls.append(notice, filters, chips);
+    this.renderResults(frame.results, frame.footer);
+    this.renderDetail(frame.detail);
+    this.contentEl.append(frame.root);
+    frame.results.scrollTop = this.state.resultsScroll ?? 0;
+    frame.detail.scrollTop = this.state.detailScroll ?? 0;
     this.restoreFocus(focus);
   }
 
   private values(field: "type" | "subtype" | "size" | "alignment" | "biomes"): readonly string[] {
-    const values = this.catalog?.creatures.flatMap((creature) => {
-      const value = creature[field];
-      return Array.isArray(value) ? [...value] : value ? [value] : [];
-    }) ?? [];
-    return [...new Set(values)]
-      .sort((left, right) => left.localeCompare(right, "en"));
+    return this.facets[field] ?? [];
   }
 
-  private renderResults(): HTMLElement {
+  private renderResults(panel: HTMLElement, footer: HTMLElement): void {
     const doc = this.contentEl.ownerDocument;
-    const panel = doc.createElement("section");
-    panel.className = "dn-catalog-results";
-    panel.setAttribute("aria-label", "Monsterergebnisse");
     const table = doc.createElement("table");
     const head = doc.createElement("thead"), headRow = doc.createElement("tr");
     const columns: readonly [string, CreatureCatalogSort | undefined][] = [
@@ -335,8 +356,6 @@ export class CreatureCatalogViewContent {
     table.append(head, body);
     panel.append(table);
 
-    const footer = doc.createElement("footer");
-    footer.className = "dn-catalog-footer";
     const status = doc.createElement("span");
     status.setAttribute("role", this.validationError ? "alert" : "status");
     const first = (this.state.page ?? 0) * CREATURE_CATALOG_PAGE_SIZE + ((this.page?.rows.length ?? 0) ? 1 : 0);
@@ -355,7 +374,6 @@ export class CreatureCatalogViewContent {
     next.disabled = ((this.state.page ?? 0) + 1) * CREATURE_CATALOG_PAGE_SIZE >= (this.page?.total ?? 0);
     footer.append(status, previous, next);
     panel.append(footer);
-    return panel;
   }
 
   private renderRow(creature: Creature): HTMLTableRowElement {
@@ -389,18 +407,26 @@ export class CreatureCatalogViewContent {
     return row;
   }
 
-  private renderDetail(): HTMLElement {
+  private renderDetail(panel: HTMLElement): void {
     const doc = this.contentEl.ownerDocument;
-    const panel = doc.createElement("article");
-    panel.className = "dn-catalog-detail";
-    panel.setAttribute("aria-label", "Monster-Statblock");
-    const creature = this.state.selectedId ? this.catalog?.detail(this.state.selectedId) : undefined;
+    if (this.detailStatus) {
+      const heading = doc.createElement("h2");
+      heading.textContent = this.detailStatus.title;
+      const message = doc.createElement("p");
+      message.setAttribute("role", this.detailStatus.retryable ? "alert" : "status");
+      message.textContent = this.detailStatus.message;
+      panel.append(heading, message);
+      if (this.detailStatus.retryable)
+        panel.append(this.button("Details erneut laden", () => void this.refresh()));
+      return;
+    }
+    const creature = this.selected;
     if (!creature) {
       const empty = doc.createElement("p");
       empty.className = "dn-catalog-detail-empty";
       empty.textContent = "Monster auswählen, um den Statblock anzuzeigen.";
       panel.append(empty);
-      return panel;
+      return;
     }
     const heading = doc.createElement("h2");
     heading.textContent = creature.name;
@@ -440,7 +466,6 @@ export class CreatureCatalogViewContent {
       details.append(title, text);
       panel.append(details);
     }
-    return panel;
   }
 
   private detailLine(parent: HTMLElement, label: string, value: string): void {
@@ -482,7 +507,7 @@ export class CreatureCatalogViewContent {
   private change(change: Partial<CreatureCatalogViewState>): void {
     this.captureScroll();
     this.state = { ...this.state, ...change };
-    this.refresh();
+    void this.refresh();
   }
 
   private renderFilterChips(): HTMLElement {
@@ -496,7 +521,7 @@ export class CreatureCatalogViewContent {
         this.debouncers.get(chip.key as CreatureCatalogTextFilter)?.dispose();
         const fallback = chips[index + 1] ?? chips[index - 1];
         this.state = removeCreatureCatalogFilter(this.state, chip.key, chip.value);
-        this.refresh();
+        void this.refresh();
         this.focusControl(fallback ? this.chipFocusKey(fallback) : "search");
       });
       button.className = "dn-catalog-chip";
@@ -507,7 +532,7 @@ export class CreatureCatalogViewContent {
     const reset = this.button("Filter zurücksetzen", () => {
       this.disposeDebouncers();
       this.state = resetCreatureCatalogFilters(this.state);
-      this.refresh();
+      void this.refresh();
       this.focusControl("search");
     });
     reset.className = "dn-catalog-reset";

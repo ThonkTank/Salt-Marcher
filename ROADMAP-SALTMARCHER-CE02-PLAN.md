@@ -251,7 +251,8 @@ CE-02-I01 darf ausschließlich besitzen:
   `src/features/catalog/`;
 - gezielte Anpassungen an
   `src/features/catalog/creature-catalog-view-content.ts`,
-  `src/features/catalog/creature-catalog-view.ts` und nur bei tatsächlichem
+  `src/features/catalog/creature-catalog-view.ts`, die eng begrenzten
+  Katalog-Selektoren in `styles.css` für sichtbare Tabwahl/Fokus und nur bei tatsächlichem
   Hostbedarf `src/ui/view-types.ts`/`src/main.ts`;
 - passende Core-, DOM- und Adaptertests;
 - `tools/host/ce02-catalog.cjs` erst für den späteren Hostlauf;

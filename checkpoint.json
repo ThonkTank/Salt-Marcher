@@ -122,33 +122,28 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
+    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-R02",
-      "kind": "cleanup_repair_review",
-      "state": "passed",
-      "focus": "Independently verify the sole draft-pair source, shared content path, retained UX and exact-candidate automated host evidence",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
-      "result": "Passed without a remaining mandatory finding after all seven text inputs were routed through the sole canonical pair source and one content input/publish path.",
+      "id": "CE-02-I01",
+      "kind": "implementation",
+      "state": "completed_checked_reviewed",
+      "focus": "Implement only the reviewed seven-section shell/state/provider boundary with the existing Monster provider and six honest unavailable providers",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Seven-section state-retaining workspace, real read-only Monster provider and six explicit unavailable providers are implemented; initial review findings were repaired and re-review is pending.",
       "verification": {
-        "sourceRevision": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
+        "sourceRevision": "7f5bf59b2babf6dfbce6a90e3fc1495e73543715+dirty",
         "check": "passed",
-        "tests": {"passed": 247, "failed": 0},
+        "tests": {"passed": 259, "failed": 0},
         "build": "passed",
-        "mainBytes": 1338655,
-        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
-        "mainJsGrowthBytes": 149285,
-        "runs": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
-        ]
+        "mainBytes": 1361064,
+        "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+        "mainJsGrowthBytes": 171694
       },
-      "review": "Independent read-only re-review on c9dfde7 confirmed code, 247 tests, build identity and all three normal-exit host receipts.",
-      "limits": "The cleanup gate is closed, but CE-01 remains without full approval because physical input, screenreader and non-Linux platform acceptance remain open."
+      "review": "Independent read-only review passed after two repair rounds closed productive provider routing, complete status/retry handling, shared frame ownership, fail-closed state, runtime/owner isolation and asynchronous activation races.",
+      "limits": "No new data owner, host acceptance or CE-02 approval. Physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -178,7 +173,7 @@
     "ce01I02": {
       "id": "CE-01-I02",
       "kind": "implementation",
-      "state": "completed_checked_review_pending",
+      "state": "completed_checked_reviewed",
       "result": "Registered dungeon-creature-catalog ItemView and Monsterkatalog command with unique-leaf focus, retained serializable session, core filters, deterministic sort, 50-row paging, mouse/keyboard selection, full read-only statblock and directly reachable license notice.",
       "verification": {
         "check": "passed",
@@ -289,17 +284,33 @@
       "review": "CE-02-P01-R01 passed independently on exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
       "limits": "Reviewed plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-N01 passes 247 tests and all three automated real-host scenarios on exact clean SHA c1582b3; R02 closed the cleanup gate. Physical input, screenreader and other-platform acceptance remain open.",
+    "ce02I01": {
+      "id": "CE-02-I01",
+      "kind": "implementation",
+      "state": "completed_checked_review_pending",
+      "result": "One accessible seven-section catalog workspace now migrates the unversioned CE-01 Monster state, retains isolated typed section state, routes Monster query/detail reads through the real immutable SRD-5.1 provider with generation/abort isolation, and exposes six honest unavailable providers without invented data.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 259, "failed": 0},
+        "focusedTests": {"passed": 217, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1361064,
+        "mainJsGrowthBytes": 171694
+      },
+      "review": "Passed independently after two repair rounds. The final review confirmed top-level fail-closed restore, differentiated query/detail status and retry, one shared section frame, activation-race isolation with one load, defensive state copies, owner discriminants and scoped styling ownership.",
+      "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. No host, physical-input, screenreader or non-Linux acceptance and no CE-02 approval."
+    },
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 passed its independent implementation review; its six placeholder providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
-      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; all CE-02 through CE-07 runs",
+      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I01",
-      "kind": "implementation",
+      "id": "CE-02-I02-P01",
+      "kind": "feature_plan",
       "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "focus": "Implement only the reviewed seven-section shell/state/provider boundary with the existing Monster provider and six honest unavailable providers"
+      "focus": "Plan and independently review only Item provenance, schema, generator, immutable read-only provider and acceptance boundaries before any Item data import"
     }
   },
   "repositoryWorkflow": {

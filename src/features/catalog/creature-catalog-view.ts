@@ -1,16 +1,16 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import type DungeonPlugin from "../../main";
 import { CREATURE_CATALOG_VIEW } from "../../ui/view-types";
-import { CreatureCatalogViewContent } from "./creature-catalog-view-content";
+import { CatalogWorkspaceViewContent } from "./catalog-workspace-view-content";
 
 export class CreatureCatalogView extends ItemView {
-  private readonly content: CreatureCatalogViewContent;
+  private readonly content: CatalogWorkspaceViewContent;
 
   constructor(leaf: WorkspaceLeaf, plugin: DungeonPlugin) {
     super(leaf);
-    this.content = new CreatureCatalogViewContent(this.contentEl, {
+    this.content = new CatalogWorkspaceViewContent(this.contentEl, {
       notice: plugin.creatureCatalog.notice,
-      load: () => plugin.creatureCatalog.load(),
+      loadCreatures: () => plugin.creatureCatalog.load(),
     });
   }
 
@@ -19,7 +19,7 @@ export class CreatureCatalogView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Monsterkatalog";
+    return "Katalog";
   }
 
   getIcon(): string {
