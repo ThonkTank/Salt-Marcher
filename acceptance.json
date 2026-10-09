@@ -145461,6 +145461,17 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
           ],
           "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_paired_p0_p1_scope",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556129222-parity-tools-phase1-navigation-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556141720-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review.md",
+          "remaining": "Canvasrand, Fokusverlust, Touchpad, physische Eingabe, P2-Gesten und Atlas-Zielshell offen; Phase-1-Gesamttor offen."
         }
       },
       {
@@ -145528,6 +145539,17 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
           ],
           "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_paired_p0_p1_scope",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556129222-parity-tools-phase1-navigation-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556141720-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review.md",
+          "remaining": "Canvasrand, Fokusverlust, Touchpad, physische Eingabe, P2-Gesten und Atlas-Zielshell offen; Phase-1-Gesamttor offen."
         }
       },
       {
