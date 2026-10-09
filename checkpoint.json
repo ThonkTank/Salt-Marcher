@@ -413,26 +413,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "native_save_draft_checked_copy_discard_open",
+    "state": "native_island_copy_discard_checked_review_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01c",
-      "kind": "durable_implementation",
-      "startedAt": "2026-10-09T17:01:39.507883+00:00",
-      "state": "checked_implementation_native_passed_review_pending",
-      "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
-      "fileTransactionPacket": {
-        "state": "checked_clean",
-        "finishedAt": "2026-10-09T17:13:32.092547+00:00",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/file-transaction-implementation.json"
-      },
-      "finishedAt": "2026-10-09T18:15:54.130087+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-02-I01d",
       "kind": "implementation_host",
-      "focus": "SaveAs/Discard and A↔B after saved/reopened island is functional."
+      "startedAt": "2026-10-09T18:19:50.513518+00:00",
+      "state": "checked_native_implementation_review_pending",
+      "focus": "Copy snapshot into new world ID/native namespace without changing original; explicit discard restores saved source in same camera; abort/A↔B/fresh native tests.",
+      "finishedAt": "2026-10-09T18:52:26.835222+00:00",
+      "result": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-02-R01",
+      "kind": "independent_review",
+      "focus": "Complete native island/copy/discard lifecycle, storage conflicts and visible controls, then own CLEAN-P/I/R."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -446,7 +441,7 @@
     },
     "open": [
       "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
-      "HEX02-I01d Copy/abort, A↔B and explicit Discard, then R01/CLEAN; HEX03..05 location/City/Dungeon common Atlas remains open.",
+      "HEX02-R01/CLEAN after native Copy/Discard/A↔B/fresh completion; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open."
     ],
@@ -456,11 +451,11 @@
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Genau eine grafische QA-Instanz.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
-      "nextJointGate": "Publish I01c; I01d and R01/CLEAN before HEX03..05 fixed shared camera/router/placement contracts.",
+      "nextJointGate": "HEX02-R01/CLEAN, then HEX03..05 shared camera/router/placement and first Location/City/Dungeon integration",
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "Root holds one local native slot for HEX02; City core-model prep only, Cloud host separate.",
+      "nativeGuiSlot": "Explicitly handed to Citylocal for human-authorized isolated COK-RFB Original; Root no local GUI until explicit return; DD036-J02 coordinate same slot via Issue1.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
@@ -1167,6 +1162,35 @@
         },
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json",
         "normalNativeExits": 5,
+        "screensActuallyViewed": true,
+        "physicalInput": false,
+        "userVault": "unchanged"
+      },
+      "hex02CopyDiscard": {
+        "run": "HEX-02-I01d",
+        "state": "checked_native_implementation_review_pending",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json",
+        "cleanIntegratedSource": "82da95538c0910f56a0c5a4ff31c01d5a968a046",
+        "cleanTestsPassed": 359,
+        "checkPassed": true,
+        "buildPassed": true,
+        "triplet": {
+          "main.js": {
+            "bytes": 1392990,
+            "sha256": "03264e25401b439900f98ab4193891982ad645440b5cf9fdddf6dddba5cd2278"
+          },
+          "styles.css": {
+            "bytes": 26762,
+            "sha256": "9c98763ef1aca2dc88a0a5d90dd4dc24601b31368852a1974f169a303d08078c"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "nativeProductSource": "57b4cb10e688b6803ff0fefa1fe8526d8e3fb9a3",
+        "nativeAndIntegratedTripletIdentical": true,
+        "normalNativeExits": 2,
         "screensActuallyViewed": true,
         "physicalInput": false,
         "userVault": "unchanged"

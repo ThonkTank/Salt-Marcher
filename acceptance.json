@@ -152299,7 +152299,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "native_save_draft_checked_copy_discard_open",
+    "state": "native_island_copy_discard_checked_review_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152443,12 +152443,12 @@
       {
         "id": "HEX02-006",
         "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
-        "state": "open",
-        "implementationRun": "HEX-02-I01a/I01b",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01d",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
         ],
-        "observed": "I01d after safe durable kernel."
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 pending."
       },
       {
         "id": "HEX02-007",
@@ -152486,7 +152486,7 @@
         }
       }
     ],
-    "limits": "Early native sparse level0 island Save/Draft/fresh/conflict verified; Copy/Discard/A↔B I01d and independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
+    "limits": "Early native level0 island Save/Draft/fresh/conflict plus Copy/Discard/A↔B checked. Independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
