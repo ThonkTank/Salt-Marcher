@@ -4,6 +4,7 @@ const COMMAND = "dungeon-editor:open-creature-catalog";
 module.exports = ({ page, fs, path, assert, crypto, qa, out, checks, sleep }) => {
   const baseline = path.join(qa, "ce01-catalog-baseline.json");
   const root = () => page.locator(".dn-creature-catalog:visible").last();
+  const serializable = (value) => JSON.parse(JSON.stringify(value));
 
   async function openViaPalette() {
     const paletteButton = page.locator([
@@ -174,7 +175,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks, sleep }) =>
     assert.equal(currentBuild.sha256, saved.build.sha256);
     assert.deepEqual(currentBuild.files, saved.build.files);
     const current = await assertOneLeaf();
-    assert.deepEqual(current.state, saved.state);
+    assert.deepEqual(serializable(current.state), saved.state);
     assert.equal(await root().locator('[data-focus-key="search"]').inputValue(), "dragon");
     assert.ok((await root().locator(".dn-catalog-detail h2").count()) === 1);
     await layout(900, 650, "restart-900x650");
