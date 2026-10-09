@@ -729,3 +729,6 @@ CITY-01-PREP-I03 Start 2026-10-09T17:06:09.576602+00:00; Abschluss 2026-10-09T17
 
 
 CITY-01-PREP-R04 Start 2026-10-09T17:09:21.880Z; Separate Modulgegenproben bestätigen finale Referenzprüfung im Paket, Schutz ungültiger Anfangsdaten vor Löschung, keine IDwiederverwendung, Nodearray-Metadaten abgelehnt, IDgetter nicht aufgerufen, ungültiges Loch abgelehnt und exaktes Undo. Quellen unverändert gegenüber294Tests/Typprüfung/Build. Keine Pflichtlücke im reinen Fachaktionsumfang. Aufräumen: reine Aktionen in Architektur/Plänen von UI trennen und unbelegte Codec-Pfadvalidierung im Anschlussplan korrigieren. Fach-/Hostabnahmen weiter offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/review.json.
+
+
+CITY-01-PREP-EDIT-CLEAN-P03 Start 2026-10-09T17:10:19.775367+00:00; Plan: existierende editCity/CityEdit mit einmaligen Schreibzielen, reservierten AnfangsIDs und finalem Codecvertrag in ARCHITECTURE dokumentieren. Gesamt-/Anschlussplan unterscheiden reinen Fachcode von fehlenden Gesten/Host/Save; Codec-Pfadprüfung entfernen, da heutiges Cityschema keine Pfadfelder besitzt. Private Aktions-/Listenprüfung ist Eingabegrenze, Geometrie/Referenzen bleiben ausschließlich Codec; kein Umbau ohne Bedarf. Keine ausführbare Änderung. Danach JSON/Links/Quellhashes und offene Pflichten prüfen; CI/CR getrennt.
