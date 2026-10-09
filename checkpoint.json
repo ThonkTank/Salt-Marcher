@@ -3603,17 +3603,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:08:48.968725+00:00",
-      "focus": "Galerieabschluss und offene Pflichten erneut prüfen",
-      "state": "completed",
-      "result": "R01–R03 geschlossen;6 Hashes/4 Formen,63 Pflichten/24 CTY unverändert, fremde Wurzeln erhalten. Keine Produktparitätsfreigabe"
-    },
-    "nextRun": {
       "id": "CITY-00-I10-P",
       "kind": "implementation_readiness_planning",
-      "focus": "Restinventur nach Produktphasen ordnen und HEX-05-Übergabe abstimmen"
+      "startedAt": "2026-10-09T12:10:52.326037+00:00",
+      "focus": "Frühe Bearbeitung und Restinventur nach Zielpaketen planen",
+      "state": "completed",
+      "result": "63 CO-Pflichten nach Phasen auswerten; FTG-Edit-map-Zugriff und kleine rücknehmbare Geometrieänderung vor CITY-01 prüfen, COK-Undo nach nativer Slotfreigabe"
+    },
+    "nextRun": {
+      "id": "CITY-00-I10-I",
+      "kind": "reference_effect_probe",
+      "focus": "FTG-Bearbeitung und frühe Referenzlücken belegen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
