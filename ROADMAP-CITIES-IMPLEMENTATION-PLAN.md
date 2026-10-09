@@ -29,7 +29,7 @@ Alle 24 CTY-Unterfälle sind offen. Das reine native Stadtmodell mit Codec ist v
 | CITY-08 | Ausschnitt/Exportsettings unabhängig von Kamera; PNG/JPEG/SVG/JSON ausdrücklich, Raster und Vorlagen sowie zusätzliche FTG-Exportformate nach Inventar. Alle Formate verwenden denselben materialisierten Szenenstand; SVG Vektoren/Texte und JSON metrische Geometrie separat prüfen. Räumlicher Index, Viewport-Culling und Bedarfsladen; Workerabbruch, Dispose. | 5.000 Gebäude, mehrere Städte/Innenräume; p95 Navigation ≤33 ms, Vorschau ≤100 ms nach Laden; Save/Reload; Export entspricht demselben Dokumentstand. |
 | CITY-09 | Vollständiges Inventar gegen denselben Endbuild prüfen; gemeinsame HEX-28-Abnahme. Isolierter Testvault, Sicherung vor Installation. | Alle Pflichtfähigkeiten, Konflikt/Undo/Neustart/Export, installierter Build, Ergebnisvergleich und physische Bedienung jeweils eigene Belege. |
 
-Stadtmodell und Codec unter `src/features/city/` samt `newCityDocument`, `parseCityDocument` und `serializeCityDocument` sind vorbereitet und reviewt. Die übrigen Stadtmodulpfade und Hostanschlüsse sind geplant. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
+Stadtmodell und Codec unter `src/features/city/` samt `newCityDocument`, `parseCityDocument` und `serializeCityDocument` sind vorbereitet und reviewt. Auch [CitySource und cityDocumentChange](ROADMAP-CITIES-CITY01-COMMANDS-PLAN.md) verwenden bereits die gelieferte gemeinsame AtlasHistory; echte Terrain-/Cityowner sind auf gemeinsame Befehle und Konfliktablehnung geprüft. Die übrigen Stadtmodulpfade, Werkzeuge und Hostanschlüsse sind geplant. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
 
 ## Drei Referenzen und bisher zusätzlich fehlende Fähigkeiten
 
@@ -705,3 +705,6 @@ CITY-01-PREP-R03 Start 2026-10-09T16:58:10.229Z; Separate gebündelte Modulgegen
 
 
 CITY-01-PREP-COMMAND-CLEAN-P02 Start 2026-10-09T16:58:46.360612+00:00; Plan: vorhandene CitySource/cityDocumentChange und Owner-/JSONgrenze in ARCHITECTURE ergänzen, vorhandene Befehlsvorbereitung von geplanter UI-/Speicherintegration im Gesamt- und Anschlussplan trennen. Snapshotkopien und Wiederprüfung bleiben als bewusste Grenzvalidierung bestehen; kein unbelegter Performanceumbau. Keine Laufzeitänderung. Abschließend Quellenhashes, JSON/Links/fremde Roots und offene Abnahmen prüfen; CI/CR getrennt.
+
+
+CITY-01-PREP-COMMAND-CLEAN-I02 Start 2026-10-09T16:59:36.296592+00:00; Architektur beschreibt vorhandene CitySource/cityDocumentChange mit einmaligem Owner, ausschließlich gemeinsamer History, strikter Konversion und Gestenanfangsstand. Gesamt-/Anschlussplan trennen diesen Code von noch geplanten Werkzeugen/Host/Save. Keine zusätzliche Cityrevision behauptet; Quellen/Kopien unverändert. Eingehendes HEX-I01b erweitert TerrainSource nur um ensureVisible; gemeinsame API unverändert, aktuelle Basisprüfungen vor Abschluss erneut ausführen. CR folgt.
