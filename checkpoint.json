@@ -4081,17 +4081,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:55:34.845432+00:00",
-      "focus": "Küstenbelege CR",
+      "id": "CITY-00-I39-P",
+      "kind": "integration_audit_planning",
+      "startedAt": "2026-10-09T16:00:29.840385+00:00",
+      "focus": "CITY-01-Anschluss an aktuelle Atlasbasis planen",
       "state": "completed",
-      "result": "Snapshot/acceptance/Plan stimmen. Echte Downloadkopien, Rawhashes und Inventarbelegziele gültig;65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen, Coast aus angewendet, Kontrollausgabe bytegleich. Aufräumumfang ohne Restbefund. Nächster Lauf prüft frühe Stadtpflichten und bereitet konkrete CITY-01-Schnittstellen nach Atlasstand vor; geprüfter HEX-05-Vertrag bleibt Starttor."
+      "result": "Auditumfang festgelegt: drei CITY-01-Pflichtfälle und ihre drei Originalzuordnungen gegen reale Kamera, Eingabe, Renderer, Dokumentparser, History und Speicher prüfen. Konkreten Anschlussplan mit vorhanden/geplant/fehlend, Besitzer und Hostnachweis liefern; keine erfundene HEX-05-API und keine zweite Editorbasis. Produktstart erst nach geprüfter HEX-05-Übergabe."
     },
     "nextRun": {
-      "id": "CITY-00-I39-P",
-      "kind": "reference_planning",
-      "focus": "Frühe Pflichten und konkrete CITY-01-Schnittstellen vorbereiten; HEX-05 prüfen"
+      "id": "CITY-00-I39-I",
+      "kind": "integration_audit",
+      "focus": "Reale Schnittstellen und Stadtpflichten prüfen; konkreten Anschlussplan liefern"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

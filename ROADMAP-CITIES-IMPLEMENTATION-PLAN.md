@@ -618,3 +618,6 @@ CITY-00-I38-CP Start 2026-10-09T15:55:06.520420+00:00; Plan: CO-WAT-0001-Snapsho
 CITY-00-I38-CI Start 2026-10-09T15:55:20.952772+00:00; Snapshot enthält Küstenwirkung mit zusätzlicher water-Gruppe und planks0→8; exakte Hafen-/Übergangstopologie und Einheiten weiterhin offen. Vorige Referenzumfänge erhalten.
 
 CITY-00-I38-CR Start 2026-10-09T15:55:34.845432+00:00; Snapshot/acceptance/Plan stimmen. Echte Downloadkopien, Rawhashes und Inventarbelegziele gültig;65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen, Coast aus angewendet, Kontrollausgabe bytegleich. Aufräumumfang ohne Restbefund. Nächster Lauf prüft frühe Stadtpflichten und bereitet konkrete CITY-01-Schnittstellen nach Atlasstand vor; geprüfter HEX-05-Vertrag bleibt Starttor.
+
+
+CITY-00-I39-P Start 2026-10-09T16:00:29.840385+00:00; Fokus: Quellprüfung und konkreter CITY-01-Anschlussplan. Auditumfang festgelegt: drei CITY-01-Pflichtfälle und ihre drei Originalzuordnungen gegen reale Kamera, Eingabe, Renderer, Dokumentparser, History und Speicher prüfen. Konkreten Anschlussplan mit vorhanden/geplant/fehlend, Besitzer und Hostnachweis liefern; keine erfundene HEX-05-API und keine zweite Editorbasis. Produktstart erst nach geprüfter HEX-05-Übergabe. Umsetzung liefert ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md und einen externen Quellhash-/Zuordnungsbeleg; Review und Aufräum-P/I/R getrennt.
