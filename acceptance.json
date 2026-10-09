@@ -123621,6 +123621,20 @@
           ],
           "measuredScope": "Menü → Karteninformationen öffnet nach Resize den lesenden Dialog im Kartenfenster.",
           "remaining": "Unabhängiger Endbuild-Review offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {
@@ -134826,6 +134840,20 @@
           ],
           "measuredScope": "Nach 8×8 → 8×9 und Save zeigt die Information 8×9; nach frischem Hoststart erneut 8×9.",
           "remaining": "Unabhängiger Endbuild-Review offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {
@@ -134970,6 +134998,20 @@
           ],
           "measuredScope": "Die Information zeigt nach Resize und frischem Hoststart den vollständigen aktuellen Dateipfad.",
           "remaining": "Unabhängiger Endbuild-Review offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {
@@ -135118,6 +135160,20 @@
           ],
           "measuredScope": "Nach Resize zeigen getrennte Karten entweder „keine“ oder Name und Autor des gespeicherten QA-Pakets; Größe und Pfad stimmen in Bearbeitung und Frischstart.",
           "remaining": "Paketauswahl war als Sitzungseinstellung vorbereitet; unabhängiger DD-039-Endbuild-Review und Phase-1-Tor bleiben offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {
@@ -135254,6 +135310,20 @@
           ],
           "measuredScope": "Schließen lässt Dokument, Dateihash und History nach Resize unverändert.",
           "remaining": "Unabhängiger Endbuild-Review offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {
@@ -140690,6 +140760,20 @@
           ],
           "measuredScope": "X lässt Dokument, Dateihash und History nach Resize unverändert.",
           "remaining": "Unabhängiger Endbuild-Review offen."
+        },
+        "followUpPhase1MapInfoNoResizeImplementation": {
+          "state": "implementation_candidate_pending_independent_review",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostGesture": "Menü → Karteninformationen auf unveränderter 8×8-Karte; leere und ausgewählte Paketliste; Schließen/X; Speichern und frische Öffnung.",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json"
+          ],
+          "measuredScope": "Dialog zeigt 8×8, vollständigen Pfad und nur ausgewählte Pakete; Close/X erhalten Dokument, Dateihash und vorherigen Undo-Status; zwei gespeicherte Karten öffnen hashgleich im frischen Prozess.",
+          "remaining": "Unabhängiger DD-039-Review und Phase-1-Fachreview offen; Paketauswahl-Bedienung gehört zu DD-009/010."
         }
       },
       {

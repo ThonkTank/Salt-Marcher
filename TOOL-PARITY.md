@@ -735,3 +735,7 @@ Das [Kantenmittelpunktpaar](/home/aaron/.cache/dungeon-native-qa/parity-tools-ph
 ## Scopeentscheidung: Kartengröße im grenzenlosen Atlas
 
 Nutzerentscheidung vom 09.10.2026: Kartenvergrößerung und -verkleinerung sind für den gemeinsamen grenzenlosen Atlas unnötig. `DD-038.01–.09` verlassen das Paritätstor; der kombinierte Randfall erhält kein weiteres Hostpaar. Die vorstehenden Resize-Messungen bleiben historische Belege, keine Zielanforderung oder Freigabe. Building-Boden-Gesten bleiben weiterhin Werkzeugparität; Atlaswachstum ohne Größenaktion und unveränderte Inhalte außerhalb von Ausschnitten gehören zur Hex-Atlas-Abnahme.
+
+## DD-039-Karteninformation ohne Resize: Hostkandidat
+
+Der [isolierte Hostlauf](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md) prüft den Informationsdialog auf unveränderter 8×8-Karte mit vollständigem Pfad, leerer und ausgewählter QA-Paketliste. Schließen und X erhalten Dokument, Dateihash und vorherigen Undo-Status. Im frischen Hostprozess bleiben beide Kartendateien hashgleich; laut [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json) unterscheiden sie sich ausschließlich in `settings.assetPacks`. Die Bilder zeigen `8 × 8 Felder`, „keine“ beziehungsweise `QA Wall Pack · Independent QA`. Das Produktbundle ist unverändert. Dieser Umsetzungskandidat ersetzt die Resize-abhängige Regression für DD-039, aber ein getrennter Review und das Phase-1-Tor bleiben offen.
