@@ -41,3 +41,19 @@ test("catalog Enter flush and dispose cancel pending publication", () => {
   assert.equal(pending.size, 0);
   assert.deepEqual(published, ["enter"]);
 });
+
+test("catalog timers are invoked without borrowing the debouncer receiver", () => {
+  let timer = 0 as unknown as CatalogTimer;
+  const debouncer = new CreatureCatalogDebouncer(200,
+    function schedule(this: unknown, callback) {
+      assert.equal(this, undefined);
+      timer = 1 as unknown as CatalogTimer;
+      return timer;
+    },
+    function cancel(this: unknown, current) {
+      assert.equal(this, undefined);
+      assert.equal(current, timer);
+    });
+  debouncer.schedule(() => undefined);
+  debouncer.dispose();
+});
