@@ -40,8 +40,26 @@ function displayText(value: string): string {
   return value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 }
 
-function comparable(value: string): string {
-  return displayText(value).toLocaleLowerCase("de");
+interface FoldedText {
+  readonly value: string;
+  readonly starts: readonly number[];
+  readonly ends: readonly number[];
+}
+
+function foldText(value: string): FoldedText {
+  let folded = "", offset = 0;
+  const starts: number[] = [], ends: number[] = [];
+  for (const character of value) {
+    const start = offset;
+    offset += character.length;
+    const part = character.toLocaleLowerCase("de");
+    folded += part;
+    for (let index = 0; index < part.length; index++) {
+      starts.push(start);
+      ends.push(offset);
+    }
+  }
+  return { value: folded, starts, ends };
 }
 
 function numericRoomNumber(value: string): number {
@@ -65,11 +83,15 @@ function roomsInSearchOrder(session: Session): readonly RoomV4[] {
   );
 }
 
-function snippet(text: string, matchIndex: number): string {
-  if (text.length <= SNIPPET_LENGTH) return text;
-  let start = Math.max(0, matchIndex - 48);
-  const end = Math.min(text.length, start + SNIPPET_LENGTH);
-  start = Math.max(0, end - SNIPPET_LENGTH);
+function snippet(text: string, matchStart: number, matchEnd: number): string {
+  const length = Math.max(SNIPPET_LENGTH, matchEnd - matchStart);
+  if (text.length <= length) return text;
+  let start = Math.max(0, matchStart - Math.min(48, length - (matchEnd - matchStart))),
+    end = Math.min(text.length, start + length);
+  if (end < matchEnd) {
+    start = Math.max(0, matchEnd - length);
+    end = Math.min(text.length, start + length);
+  }
   return `${start ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
 }
 
@@ -95,13 +117,16 @@ export function searchRoomKeys(session: Session, rawQuery: string): RoomKeySearc
       })),
     };
   }
-  const needle = comparable(query), entries: RoomKeySectionMatch[] = [];
+  const needle = foldText(query).value, entries: RoomKeySectionMatch[] = [];
   for (const room of rooms) {
     const floor = session.floors.get(room.floorId)!;
     for (const section of room.key.sections) {
       const text = displayText(stripFeatureBoundaries(sectionMarkdown(session, section))),
-        matchIndex = comparable(text).indexOf(needle);
+        folded = foldText(text), matchIndex = folded.value.indexOf(needle);
       if (matchIndex < 0) continue;
+      const matchStart = folded.starts[matchIndex],
+        matchEnd = folded.ends[matchIndex + needle.length - 1];
+      if (matchStart === undefined || matchEnd === undefined) continue;
       entries.push({
         kind: "section",
         roomId: room.id,
@@ -111,7 +136,7 @@ export function searchRoomKeys(session: Session, rawQuery: string): RoomKeySearc
         roomNumber: room.number,
         roomName: room.name,
         sectionTitle: sectionTitle(session, section),
-        snippet: snippet(text, matchIndex),
+        snippet: snippet(text, matchStart, matchEnd),
       });
     }
   }

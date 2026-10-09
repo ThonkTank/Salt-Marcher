@@ -112,6 +112,22 @@ test("room key search includes passage text and revalidates damaged targets", ()
   assert.equal(roomKeySearchTargetExists(session, { ...match, floorId: "missing" }), false);
 });
 
+test("room key snippets retain length-changing Unicode folds and long complete matches", () => {
+  const session = new Session(newDocument("Ausschnitte", 20, 20, undefined, undefined, 4)),
+    floor = session.floors.values().next().value!,
+    room = createRoom(session, floor.id, outline(2), "QA/Räume"),
+    section = structuredRoom(session, room.id).key.sections[0]!;
+  assert.equal(section.kind, "markdown");
+  const longMatch = "Q".repeat(130);
+  editMarkdownSection(session, room.id, section.id, "",
+    `${"İ".repeat(100)}needle${"z".repeat(200)}\n${"x".repeat(200)}${longMatch}${"y".repeat(200)}`);
+
+  const unicode = searchRoomKeys(session, "needle").entries[0] as RoomKeySectionMatch,
+    long = searchRoomKeys(session, longMatch.toLocaleLowerCase("de")).entries[0] as RoomKeySectionMatch;
+  assert.match(unicode.snippet, /needle/);
+  assert.equal(long.snippet.includes(longMatch), true);
+});
+
 test("room key search is explicitly unavailable for non-V4 sessions", () => {
   const session = new Session(newDocument("Alt", 12, 12, undefined, undefined, 3));
   assert.deepEqual(searchRoomKeys(session, "Hinweis"), {
