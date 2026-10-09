@@ -316,25 +316,25 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "cleanup_implementation_checked_review_pending",
+    "state": "reference_cleanup_passed",
     "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-CLEAN-I01",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T16:55:16.360403+02:00",
-      "baseCommit": "1c1c0704d2737c22048dd3e234f8fd88d14aa62f",
-      "state": "checked_implementation_review_pending",
-      "focus": "C01 complete read-only validation before process/socket/input; self-contained CLI no-connection cases.",
-      "endedAt": "2026-10-09T16:59:47.900471+02:00",
+      "id": "HEX-00-CLEAN-R01",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T17:00:25.074406+02:00",
+      "baseCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
+      "state": "passed",
+      "focus": "Complete before-transport validation, positive wire/metadata path, immutable original proof and new clean Git basis.",
+      "endedAt": "2026-10-09T17:03:50.235576+02:00",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-implementation.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json"
       ]
     },
     "nextRun": {
-      "id": "HEX-00-CLEAN-R01",
-      "kind": "cleanup_review",
-      "focus": "Independent preflight/transport and preservation review",
-      "gate": "Implementation basis checks first."
+      "id": "HEX-01-P01",
+      "kind": "planning",
+      "focus": "Boundless native Atlas create/open, meter camera,3-mile axial hexes and first host path",
+      "gate": "R02 and CLEAN-R01 passed; HEX01 plan starts now, latest integrated core host finishes before implementation candidate approval."
     },
     "review": {
       "state": "passed",
@@ -346,17 +346,19 @@
       "next": "Reference and own kernel346 on R02 base7f43 passed. C01 cleanup next; later incoming19d kernel remains separate integration recheck."
     },
     "cleanup": {
-      "state": "planned",
+      "state": "passed",
       "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
       "finding": "HEX00-R01-C01",
-      "implementation": "checked_review_pending",
-      "review": "not_started"
+      "implementation": "passed",
+      "review": "passed",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json"
+      ]
     },
     "open": [
-      "Incoming build19d89351 kernel recheck is separate from completed R02 base7f43/build346; pending CITY GUI release.",
-      "C01 own cleanup plan/implementation/review before HEX01.",
-      "79 later Wonderdraft effect/host/physical obligations retained; full parity unapproved.",
-      "HEX01..05 boundless shared editable atlas is next product work; CITY01 depends on the common atlas handoff."
+      "Latest integrated renderer/catalog buildcc92 own kernel is running separately.",
+      "HEX01..05 common editable boundless Atlas now starts; CITY01 remains dependent.",
+      "79 later Wonderdraft obligations,113 historically unverified source usages, full parity/large-map/physical/install still open."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -376,18 +378,17 @@
       "check": "Integrated a666b73 passed after npm ci for incoming linkedom dependency.",
       "tests": "241/241 local, foreign test patches preserved; clean actual Git basis next.",
       "build": "Both integrated local and clean Git build passed; no user-vault installation.",
-      "productBuildSha256": "021ff0fe6386f548fa6b4a0b1b9a8aa3a38329758a4461cbc153d9bda505f495",
+      "productBuildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
       "integratedCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
       "host": "Build19d89351 own core passed and visually inspected; incoming portable renderer build021ff0fe short own core pending. No Hex/City, large-map, physical or install approval.",
       "testProvenance": "N-I17: saubere eigene Git-Kopie von747eaac bestanden222/222, Check/Build bestanden, unverändertes Produkt5b086c04. Vorheriger git-archive-Lauf221/222 scheiterte ausschließlich an fehlenden Git-Metadaten im neuen Katalog-Build; Fehlbeleg erhalten, keine Test-/Produktänderung zur Korrektur. Lokaler219-Lauf mit unveränderten fremden Testpatches getrennt.",
       "cleanTreeTest": {
         "state": "passed",
-        "tests": 239,
-        "passed": 239,
+        "tests": 245,
+        "passed": 245,
         "failed": 0,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/r02-clean-basis.json",
-        "testedCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
-        "root": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/clean-git-tree"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-clean-basis.json",
+        "testedCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
       },
       "catalog": "HEX00 strict provenance/mapping validator passed:681UI/83cases/96roles,13 initial scopes reviewed.79 later obligations remain,113 historical usages preserved.525 protected files unchanged.",
       "physicalInput": "not_run",
@@ -854,6 +855,43 @@
         "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/integrated-host-review.json",
         "screensActuallyViewed": true,
         "physicalInput": false
+      },
+      "cleanupReview": {
+        "run": "HEX-00-CLEAN-R01",
+        "state": "passed",
+        "startedAt": "2026-10-09T17:00:25.074406+02:00",
+        "endedAt": "2026-10-09T17:03:50.235576+02:00",
+        "baseCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
+        "findingIds": [
+          "HEX00-R01-C01"
+        ],
+        "reviewedFiles": [
+          "tools/wonderdraft/rfb.mjs",
+          "tools/wonderdraft/rfb-preflight.mjs",
+          "tests/wonderdraft-rfb-preflight.test.mjs",
+          "package.json",
+          "tools/wonderdraft/README.md"
+        ],
+        "decisions": [
+          "All request parameters and both PNG/JSON collision checks precede process verification, socket construction and every input.",
+          "Transport consumes validated coordinates/key codes/times; valid pointer/key/text wire and metadata hashes pass the synthetic fixture.",
+          "16 invalid CLI requests containing a valid early click produce zero connections and zero input journal; existing PNG/JSON unchanged.",
+          "Original54 R02 frames/map and525 prior protected files remain unchanged. No negative live Original input."
+        ],
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-clean-basis.json",
+        "cleanTests": 245,
+        "catalog": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-catalog.json",
+        "protectedFiles": 525,
+        "referenceGate": "passed",
+        "laterObligations": 79,
+        "historicalUsages": 113,
+        "integrationHost19": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/integrated-host-review.json",
+        "latestIntegratedHostCC": "running separately; helper changes do not modify product renderer",
+        "remainingFindings": [],
+        "limits": [
+          "Synthetic transport is not Original or physical acceptance.",
+          "Full Wonderdraft/City/Hex/large-map parity and user installation remain open."
+        ]
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
