@@ -4469,17 +4469,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-RENDERER-FINAL-CLEAN-R08",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T18:48:25.008135+00:00",
-      "focus": "LokalenRendererabschluss und echteRestpflichten verifizieren",
+      "id": "CITY-00-I42-CLEAN-I42",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T18:52:43.417488+00:00",
+      "focus": "Referenzbefund ohneerfundeneZeitAPI einordnen",
       "state": "completed",
-      "result": "R12/Links/JSON/Runtimehashes geprüft;lokalerRendererkern abgeschlossen, volle24CTY/Hostpflichten offen."
+      "result": "CO42Plan undBeleggrenzen präzisiert; Originalframes unverändert."
     },
     "nextRun": {
-      "id": "CITY-00-I42",
-      "kind": "reference_implementation",
-      "focus": "Restinventur derOriginalfunktionen fortsetzen; COKnurbei konkreterGUI-Freigabe, sonstFTG/Watabou-Browserlücken"
+      "id": "CITY-00-I42-CLEAN-R42",
+      "kind": "cleanup_review",
+      "focus": "Hashes/AX-Belege/Kennungs- undFremdwurzelschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
