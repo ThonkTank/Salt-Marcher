@@ -350,23 +350,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "foundation_review_passed_cleanup_pending",
+    "state": "cleanup_planned",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-01-R01",
-      "kind": "review",
-      "state": "completed",
-      "startedAt": "2026-10-09T15:42:00.853171+00:00",
-      "baseCommit": "f05deb4dfa5d5a3cd27030598392adbc0fbdefe7",
-      "focus": "Native meter/hex/camera/persistence, fresh clean build, visible design critique and protected existing Dungeon.",
-      "finishedAt": "2026-10-09T15:43:09.278483+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json",
-      "result": "HEX01-001..008 reviewed and passed within empty foundation scope; two bounded cleanup items."
-    },
-    "nextRun": {
       "id": "HEX-01-CLEAN-P01",
       "kind": "cleanup_planning",
-      "focus": "Existing-name copy and readable new Atlas source; no new editor capability before HEX02."
+      "startedAt": "2026-10-09T15:44:35.609915+00:00",
+      "finishedAt": "2026-10-09T15:44:35.609915+00:00",
+      "state": "completed",
+      "focus": "Two bounded R01 cleanup items, no new capability.",
+      "result": "Plan and references checked; implementation and native review remain separate."
+    },
+    "nextRun": {
+      "id": "HEX-01-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "focus": "Existing-name notice, readable new source, native collision/reopen."
     },
     "review": {
       "state": "passed",
@@ -962,7 +960,8 @@
         "HEX-05/CITY-03: unmittelbare gemeinsame Bearbeitung"
       ],
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
-    }
+    },
+    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
