@@ -1001,3 +1001,7 @@ CITY-00-I45-R46-CLEAN-R45 Start 2026-10-09T19:24:24.773063+00:00; Aufräumreview
 CITY-01-INTEGRATION-P01 Start 2026-10-09T19:25:50.379517+00:00; Quellenbasierter Vorschlag mit Pre-render-Zeitpunkt, gemeinsamem Pointer/History und noch fehlender Citypersistenz vorgelegt; keine API ratifiziert.
 
 CITY-01-INTEGRATION-CLEAN-P01 Start 2026-10-09T19:25:53.821846+00:00; Aufräumplan: Plan verlinken und bestehende Hooks strikt von noch zu vereinbarender Persistenz/Placementgrenze trennen.
+
+Atlasbesitzer angefragter [CITY-01-Integrationsvorschlag](ROADMAP-CITIES-ATLAS-INTEGRATION-PROPOSAL.md): vor Render zeichnen, Source einmal registrieren, gemeinsame Gesten/Persistenz; keine API vorweggenommen.
+
+CITY-01-INTEGRATION-CLEAN-I01 Start 2026-10-09T19:25:56.754856+00:00; Vorschlag im Stadtplan verlinkt; HEX05-Voraussetzung und offene Owner-/Persistenzentscheidungen erhalten.
