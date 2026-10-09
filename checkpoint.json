@@ -5038,7 +5038,7 @@
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "H01 erneut auf exakt gebautem Shared-/Bundle-Commit db47c8a: Raum-Key-Suche, Raum12/Geschoss1/Key, Dirty-Guard/Verwerfen, Save/Tab-Reopen und erneute Aktivierung bestanden; Filterpersistenz, 18px Suchfeld bei leerem Dock und 30px visuell gekürzte Trefferzeile reproduziert.",
-    "executedUiRuns": 12,
+    "executedUiRuns": 13,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -5403,6 +5403,16 @@
         "evidence": "/workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png; /workspace/scratch/gm-cloud-qa/239-atlas-two-pane-548.png; /workspace/scratch/gm-cloud-qa/240-atlas-exact-548-pane-dom.png",
         "next": "Fixbuild von Hex abwarten; derselbe Cloud-Host und 548px Splitpane werden für getrennten Nachtest verwendet.",
         "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
+      },
+      {
+        "id": "GM-UX-OBS-04",
+        "status": "cloud_observation_owner_triage_requested",
+        "kind": "Eigene UI-Beobachtung im isolierten Cloud-Testvault; keine bestätigte Fehlfunktion",
+        "build": "Obsidian 1.14.4; Produktcommit 6bfb1f393722cd469dc4fd5f15d8dea12a154f6b; main.js c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "scenario": "GM-UX-01-C/D-Fortsetzung, isolierte Nebelwacht-Kartenkopie, 1440x1000",
+        "observation": "Spielansicht > Geschoss 1 > Raum 12 zeigte keinen Key. Nach Rückkehr zum Editor fand Inhalte > Raum-Keys durchsuchen den gespeicherten improvisierten Nordtür-Hinweis und aktivierte Raum 12. Das kann beabsichtigte Trennung von GM-Notizen und Spieleransicht sein; es wurde nicht als Produktfehler eingestuft.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/37-play-session-view.png, 39-play-floor-switch.png, 40-play-room12-click.png, 44-search-improvised-note.png, 45-search-hit-activated.png",
+        "followUp": "Issue #8: Dungeon-Verantwortlicher soll die erwartete GM-/Spieler-Sichtbarkeitsgrenze klären und, falls GM-Zugriff während des Leitens erwartet wird, einen ausdrücklichen GM-Zugriffspfad samt Abnahmekriterien ohne Offenlegung an Spieler vorschlagen; bis zur Entscheidung keine Implementierung beauftragt."
       }
     ],
     "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png–393-current-422-key-reopened.png; earlier full GM-UX-01 run/evidence retained.",
@@ -5532,6 +5542,29 @@
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-n01-h01-r03/",
       "issueComment": "6087877294",
       "nextOwner": "Cloud-GM-Produkttester; Dungeon-N01-Implementierungsbesitzer Kartograph"
+    },
+    "latestContinuation": {
+      "id": "GM-UX-01-C-RESTORE-20261009-01",
+      "status": "completed_bounded_slice_overall_scenario_partial",
+      "branch": "active/installed-phase1",
+      "integratedPublicationBase": "eba8fdcb8c5a40f1618116bbaa3c3dd57c4d957b",
+      "productBuildCommit": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+      "build": "npm run build passed, dirty:false, Node v24.19.0; Obsidian 1.14.4, 1440x1000; built and installed plugin triplet byte-identical",
+      "artifactSha256": {
+        "main.js": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "sourceCardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+      "isolatedCopySha256AfterSave": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+      "steps": "Isolierte Karte öffnen; Geschoss 1 und Raum 12 wählen; improvisierten Key-Hinweis übernehmen; Verbindung Raum 11/12 verschieben und Undo/Redo; synthetische GM-Testassets aktivieren, Wooden Crate platzieren/duplizieren und Undo/Redo; speichern, schließen und frisch im Tab wiederöffnen; Zustand prüfen; Spielansicht öffnen und Raum-Key-Suchweg zurück zum Hinweis prüfen; temporäre Türänderung zurück auf gespeicherten Zustand setzen.",
+      "result": "Gespeicherter Key, Türposition und zwei Kisten überlebten Tab-Reopen; Suchtreffer aktivierte Raum 12/Geschoss 1. In Spielansicht zeigte Raumklick keinen Key. Quelle blieb byteidentisch; ausschließlich isolierte Kopie geändert.",
+      "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/",
+      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "commit": null,
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+      "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine GM-/Spieler-Sichtbarkeitsentscheidung, keine Gesamtfreigabe; volle GM-UX-01 bleibt partial. Keine Implementierungsänderung.",
+      "next": "Dungeon-Verantwortlicher klärt OBS-04-Sichtbarkeitsgrenze in Issue #8; danach nächster bislang nicht belegter GM-UX-01-Teilabschnitt."
     }
   }
 }
