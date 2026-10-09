@@ -4607,16 +4607,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-REVIEW-CLEAN-P45",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:22:38.455169+00:00",
-      "focus": "Originalbelege reviewen: CLEAN-P",
-      "state": "completed",
-      "result": "Aufräumplan: Reviewbefund verknüpfen, Nachbesserung auf frische Vollaufnahmen ohne Generierung begrenzen."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-REVIEW-CLEAN-I45",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:22:41.063781+00:00",
+      "focus": "Originalbelege reviewen: CLEAN-I",
+      "state": "completed",
+      "result": "Reviewbefund und präziser Vollaufnahmeplan verknüpft; alte Rawdateien geschützt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-REVIEW-CLEAN-R45",
+      "kind": "cleanup_review",
       "focus": "CITY-REF-R45-01 mit frischen vollständigen AX-Aufnahmen schließen"
     },
     "open": [

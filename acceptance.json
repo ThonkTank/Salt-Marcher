@@ -2402,7 +2402,9 @@
             "Only two selected types/groups inspected; no full209/80 matrix",
             "Graph cycles, rounding, factions, workforce override and generated distribution unmeasured",
             "Own implementation/host/usability/physical comparison open"
-          ]
+          ],
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/review.json",
+          "openEvidenceFinding": "CITY-REF-R45-01: vollständige Übersichtsaufnahmen für Typenzahlen/Zugangsregel fehlen; konkrete Parameter sind vollständig gespeichert."
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"

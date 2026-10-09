@@ -977,3 +977,5 @@ CITY-00-I45-CLEAN-R45 Start 2026-10-09T19:21:07.610814+00:00; Rohhashes/Planlink
 CITY-00-I45-R45 Start 2026-10-09T19:22:35.160257+00:00; Parameterteilbelege bestanden; CITY-REF-R45-01 verlangt vollständige Übersichtssnapshots statt No-change-Diffs.
 
 CITY-00-I45-REVIEW-CLEAN-P45 Start 2026-10-09T19:22:38.455169+00:00; Aufräumplan: Reviewbefund verknüpfen, Nachbesserung auf frische Vollaufnahmen ohne Generierung begrenzen.
+
+CITY-00-I45-REVIEW-CLEAN-I45 Start 2026-10-09T19:22:41.063781+00:00; Reviewbefund und präziser Vollaufnahmeplan verknüpft; alte Rawdateien geschützt.
