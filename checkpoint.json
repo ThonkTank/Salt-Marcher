@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_contract_review_passed_child_state_machine_next",
+    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,13 +101,14 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "contract_review_passed_child_state_machine_next",
+      "state": "i02_p01_plan_review_changes_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
+      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair: Parent/Child binding, aggregates, complete state/operation oracles, target and rename lifecycle, retained evidence, global name uniqueness including orphans, identity/hash/length rules, deep immutability and adversarial Golden DTOs are covered. The isolated contract suite passed 9 tests; the integrated tree passed typecheck, 276 tests and build."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. The first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3 requires repair: its ten aggregate transition rows omit individual Parent and conflict transitions, the Update temp-synced receipt generation, complete durable receipt ordering, and an enumerated operation-state-killpoint-adversary matrix with deterministic recovery oracles."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -116,10 +117,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-P01",
-      "kind": "child_state_machine_plan",
+      "id": "ADR-P01-H03-I02-P01-N01",
+      "kind": "child_state_machine_plan_repair",
       "owner": "local_implementation_thread",
-      "focus": "Plan the bounded native Child-State-Machines and pure Create/Update/Delete fault matrix against the reviewed p01-v3 contract; do not claim executable H03 evidence, Linux durability Go, platform selection or P02 authorization"
+      "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
     }
   },
   "saltMarcherCatalogEncounter": {
