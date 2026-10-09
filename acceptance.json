@@ -62765,7 +62765,7 @@
         {
           "id": "HEX00-R01-C01",
           "priority": 2,
-          "state": "open",
+          "state": "resolved",
           "due": "HEX-00-CLEAN",
           "title": "RFB-Preflight liegt teilweise nach der Eingabe",
           "evidence": [
@@ -62777,6 +62777,11 @@
             "run": "HEX-00-CLEAN-I01",
             "state": "implemented_review_pending",
             "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-implementation.json"
+          },
+          "resolvedBy": {
+            "run": "HEX-00-CLEAN-R01",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json",
+            "decision": "Complete request preflight before process/socket/input;16 CLI no-connection cases plus valid synthetic transport and immutable original proof."
           }
         }
       ],
