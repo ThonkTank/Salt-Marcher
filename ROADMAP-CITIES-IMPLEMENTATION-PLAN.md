@@ -672,3 +672,6 @@ CITY-01-PREP-R01 Start 2026-10-09T16:39:42.180Z; Zwei konkrete Reviewlücken bel
 
 
 CITY-01-PREP-N01 Start 2026-10-09T16:40:57.836912+00:00; Abschluss 2026-10-09T16:42:58.872325+00:00; Gemeinsame Listenprüfung lehnt Zusatzfelder, Sparse-Arrays, berechnete Indizes und Array-Unterklassen kontrolliert ab. Beide R01-Lücken behoben; Regression umfasst alle sechs Sammlungen, verschachtelte Konturen, Getter und Zusatzfeld statt fehlendem Index. Typprüfung,276Tests (11 City-Fälle) und Build grün; keine gemeinsame Atlasquelle verändert. R02 folgt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json.
+
+
+CITY-01-PREP-R02 Start 2026-10-09T16:44:07.400Z; Beide R01-Gegenfälle erneut am reparierten Codec kontrolliert abgelehnt; kanonischer Roundtrip unverändert.276Tests einschließlich11 City-Fällen, Typprüfung und Build an unveränderten geprüften Quellen bestätigt. Modellvertrag ohne weitere Fachlücke im begrenzten Vorbereitungsumfang. Aufräumreste: dimensionslose Skalierung im Typ kommentieren, pauschal geplante Modulpfade im Gesamtplan korrigieren und dichte Listen in Architektur dokumentieren. Alle Host-/Atlas-/Paritätspflichten bleiben offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/r02-review.json. Aufräum-P/I/R folgen getrennt.
