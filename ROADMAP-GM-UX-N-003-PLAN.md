@@ -99,3 +99,31 @@ Eingabe, Nutzungshäufigkeit, Produktlatenz und UX-/Host-/Fach-/Paritäts-/
 Gesamtfreigabe offen. Ein unabhängiger Planreview muss vor I01 bestätigen, dass
 der vorgeschlagene Ablauf den vorhandenen Dirty-Guard und Workspaceweg nutzt
 und keinen zweiten Keyzustand einführt.
+
+## Implementierungs- und Reviewstand
+
+Der exakte P01-Plancommit
+`552846303189924208c20d95df01a75cedb03966` bestand den unabhängigen
+read-only Planreview ohne Pflichtbefund. I01 führte anschließend den
+strukturierten Open-Ablauf in `src/editor.ts` zusammen. Der erste Produktreview
+des Commits `271ed2a09691da6c724de1a650533be27c66a258` fand keinen Produktdefekt,
+verlangte aber eine echte Bindung der Regression an Session, Key-Panel und
+Zielableitung statt loser, tautologischer Zustandswerte.
+
+Der Reparaturcommit `4f8c7fe5842605e6093c21e4effc075712554e36`
+extrahiert die vom Button verwendete Zielableitung. Der fokussierte Test nutzt
+eine reale V4-Session und einen realen `StructuredKeyPanel`, blockiert einen
+dirty Textarea-Entwurf vor Dock/Open, prüft ein vollständiges `keyTarget` mit
+Raum/Abschnitt/Anker sowie eine echte Feature-Occurrence und misst Dokument,
+Dirty, History, Undo/Redo, Auswahl und Kamerawert vor und nach dem Ablauf. Der
+bestehende `toggleKey(true)`-Weg öffnet **Key bearbeiten** wieder.
+
+Der unabhängige R02 bestand exakt diesen Reparaturcommit ohne verbleibende
+Pflichtlücke. Fokussiert bestanden 11/11 Fälle; `npm run check`, `npm test`
+(398/398) und `npm run build` bestanden. Der gebaute Produktstand trägt
+`main.js` SHA-256
+`eea21a270e6b5830feeffc32c40abadac8e6b5d307cce06b75718091ddf3e7c3`.
+Damit ist nur H01 geöffnet: Der Cloud-GM-Produkttester wiederholt den bereits
+veröffentlichten sichtbaren Reparaturablauf im isolierten Testvault. Danach
+bleibt GM-R01. Kein echter Hostlauf, keine physische Eingabe und keine UX-,
+Host-, Fach-, Paritäts- oder Gesamtfreigabe sind aus I01/R02 abgeleitet.
