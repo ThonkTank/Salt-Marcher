@@ -3624,17 +3624,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I12-P",
-      "kind": "early_reference_planning",
-      "startedAt": "2026-10-09T12:25:09.921751+00:00",
-      "focus": "Generierungsvorgaben ohne ersetzte Originalprobe planen",
-      "state": "completed",
-      "result": "Exportstop aus I04 respektieren; Vorgaben/benanntePresets/Namen und mögliche nichtdestruktive Vorschau erfassen, keine Generate-Aktion; bestehende Karte erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I12-I",
       "kind": "reference_controls_probe",
-      "focus": "Originalformular und erreichbare Vorschau prüfen"
+      "startedAt": "2026-10-09T12:29:53.754275+00:00",
+      "focus": "Generatorstufen und Namensvorgaben direkt erfassen",
+      "state": "completed",
+      "result": "American/Ringed konkreteStufenwerte, Custom60/40 nachBlur und12 Namenssets/OldGerman-Auswahl belegt; Formular zurückgesetzt, bestehende Karte erhalten; keine Generierung"
+    },
+    "nextRun": {
+      "id": "CITY-00-I12-R",
+      "kind": "requirements_review",
+      "focus": "Stufen-/Namensbelege gegen Plan und technische Zuordnung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

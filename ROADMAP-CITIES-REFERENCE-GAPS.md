@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I11-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I12-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007 benötigt noch eine freigegebene native Sitzung. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -10,9 +10,9 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | control_observed_only |
 | CO-FTG-0015 | CITY-01 | Manuelle Kartenbearbeitung | road_draw_save_reload_remove_observed |
 | CO-FTG-0001 | CITY-02 | Siedlungsgröße und benannte Vorgaben | partial |
-| CO-FTG-0002 | CITY-02 | Straßenlayout und Bebauungsvorgaben | keine gesonderte Wirkungsprobe; direct |
+| CO-FTG-0002 | CITY-02 | Straßenlayout und Bebauungsvorgaben | preset_parameter_change_observed_not_generated |
 | CO-FTG-0010 | CITY-02 | Küste, Insel und Flüsse | keine gesonderte Wirkungsprobe; direct |
-| CO-FTG-0022 | CITY-02 | Einstellungen und Namenslisten | keine gesonderte Wirkungsprobe; documentation |
+| CO-FTG-0022 | CITY-02 | Einstellungen und Namenslisten | name_set_selection_control_observed |
 | CO-WAT-0001 | CITY-02 | Stadtlayout und Größenoptionen | partial |
 | CO-FTG-0016 | CITY-04 | Lokale Neugeneration | keine gesonderte Wirkungsprobe; documentation |
 | CO-WAT-0007 | CITY-04 | Lokale Geometrie erneut erzeugen | partial |

@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:22:45.683186+00:00",
+    "updated": "2026-10-09T12:29:53.754275+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1484,12 +1484,13 @@
         "product": "Fantasy Town Generator",
         "feature": "Straßenlayout und Bebauungsvorgaben",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:29:53.754275+00:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "direct",
+        "observationKind": "direct_form_state_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
         ],
         "task": "Gewundenes, Raster- und Ringlayout erzeugen",
         "phase": "CITY-02",
@@ -1506,9 +1507,24 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "gap": "Direkte Formularparameter/Entwurfsauswahl erfasst; erzeugte Karten-/Namenswirkung, Settings-Datei und eigene Umsetzung/Host/Bedienung weiterhin offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I12-I",
+          "state": "preset_parameter_change_observed_not_generated",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+          "sourceScope": "own_original_create_draft_without_generation",
+          "observation": "Town4000: American Continue/0/0/50m/3/3 vs Ringed Curve around origin/5/5/37m/2/5; Custom60+residual40 after blur; no generated layout",
+          "remaining": [
+            "No generated American/Ringed result; no preview observed on examined layout pages",
+            "No saved settings file, names-output or reload of draft parameters tested",
+            "Control labels/hints do not prove wall/placement/material/district generation effects",
+            "Angle numeric values have no explicit unit in displayed labels",
+            "Prior settlement export remains unverified; no third download attempt",
+            "No own product/host/UX acceptance"
+          ]
+        }
       },
       {
         "id": "CO-FTG-0003",
@@ -2144,11 +2160,13 @@
         "product": "Fantasy Town Generator",
         "feature": "Einstellungen und Namenslisten",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:29:53.754275+00:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct_form_state_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
+        ],
         "task": "Vorgaben speichern und Namensliste verwenden",
         "phase": "CITY-02",
         "caseIds": [
@@ -2164,9 +2182,24 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Direkte Formularparameter/Entwurfsauswahl erfasst; erzeugte Karten-/Namenswirkung, Settings-Datei und eigene Umsetzung/Host/Bedienung weiterhin offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I12-I",
+          "state": "name_set_selection_control_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
+          "sourceScope": "own_original_create_draft_without_generation",
+          "observation": "Custom race/Human editor:12name sets, Generic+OldGerman selected; no generated names or settings file",
+          "remaining": [
+            "No generated American/Ringed result; no preview observed on examined layout pages",
+            "No saved settings file, names-output or reload of draft parameters tested",
+            "Control labels/hints do not prove wall/placement/material/district generation effects",
+            "Angle numeric values have no explicit unit in displayed labels",
+            "Prior settlement export remains unverified; no third download attempt",
+            "No own product/host/UX acceptance"
+          ]
+        }
       },
       {
         "id": "CO-FTG-0023",
@@ -3358,7 +3391,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I11-I",
+      "run": "CITY-00-I12-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3380,7 +3413,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json"
       ],
       "resultReferences": [
         {
