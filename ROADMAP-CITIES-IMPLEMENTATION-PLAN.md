@@ -690,3 +690,6 @@ CITY-01-PREP-P02 Start 2026-10-09T16:53:43.876966+00:00; Fokus: reine Stadtbefeh
 
 
 CITY-01-PREP-PLAN-CLEAN-P02 Start 2026-10-09T16:54:08.160940+00:00; Plan-Aufräumfokus: Befehlsplan gegen tatsächliche AtlasHistory/TerrainSource, bestehende immutable-Hilfe und CTY/HEX05-Grenzen prüfen. Geplante Snapshots müssen vorhandene Tiefkopiehilfe verwenden; register/hydrate ohne unregister erfordert einmalige Quelle je Besitzerlebensdauer. Diese beiden Implementierungsdetails explizit ergänzen, Verweise/JSON/fremde Roots prüfen; danach getrennt CI/CR.
+
+
+CITY-01-PREP-PLAN-CLEAN-I02 Start 2026-10-09T16:54:33.124584+00:00; Befehlsplan verwendet ausdrücklich die bestehende generic immutable-Hilfe auf frisch aufgebautem Change. Fehlendes unregister wird als einmalige Quelle je Stadt-/Historylebensdauer beschrieben; weitere Verbraucher teilen die Quelle, erneute Konstruktion kollidiert kontrolliert. Keine Registry, zweite History oder Hostcodeänderung. Abschließender Quellen-/Verweis-/JSONreview folgt.

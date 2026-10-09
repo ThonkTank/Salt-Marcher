@@ -4203,17 +4203,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-PLAN-CLEAN-P02",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T16:54:08.160940+00:00",
-      "focus": "Befehlsplan auf Kopiehilfe und Ownerlebensdauer prüfen",
-      "state": "completed",
-      "result": "Konkrete Präzisierungen: vorhandene immutable-Hilfe wiederverwenden, einmalige Quelle je Besitzerlebensdauer; keine History-Erweiterung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-PLAN-CLEAN-I02",
       "kind": "cleanup_implementation",
-      "focus": "Kopiehilfe und einmalige Besitzerlebensdauer im Plan präzisieren"
+      "startedAt": "2026-10-09T16:54:33.124584+00:00",
+      "focus": "Kopiehilfe und einmalige Besitzerlebensdauer präzisieren",
+      "state": "completed",
+      "result": "Vorhandene immutable-Hilfe und einmalige CitySource-Lebensdauer ohne unregister ausdrücklich im Plan."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-PLAN-CLEAN-R02",
+      "kind": "cleanup_review",
+      "focus": "Aufgeräumten Befehlsplan gegen Quellen und Abnahmegrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
