@@ -4044,17 +4044,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-I",
-      "kind": "reference_probe",
-      "startedAt": "2026-10-09T15:18:47.917996+00:00",
-      "focus": "Processing-Ausgabe vollständig vergleichen",
-      "state": "completed",
-      "result": "Processing Offset/None: tatsächliche JSON298842/293445 Bytes; nur buildings geändert, MultiPolygon669→651. Andere13 Gruppen wertgleich; gleiche Gruppenkennung buildings ist kein Beleg stabiler Einzelobjekt-IDs. Exportversion0.11.5 keine bestätigte UI-Version."
-    },
-    "nextRun": {
       "id": "CITY-00-I31-R",
       "kind": "reference_review",
-      "focus": "Dateiumfang von interner Mutation/IDs abgrenzen"
+      "startedAt": "2026-10-09T15:19:32.364268+00:00",
+      "focus": "Processing-Ausgabebelege R",
+      "state": "completed",
+      "result": "Tatsächliche Downloadkopien und alle Rawhashes bestätigt. Vollständiger14-Gruppenvergleich: buildings MultiPolygon669→651, andere13 wertgleich, übrige Rootwerte gleich. Keine interne Mutation, Neugeneration oder stabile Einzelobjekt-ID aus Export abgeleitet. Aufräumbefund: Snapshot nennt Processing-Dateigeometrie pauschal offen statt direkten Ausgabeteilbeleg."
+    },
+    "nextRun": {
+      "id": "CITY-00-I31-CP",
+      "kind": "cleanup_planning",
+      "focus": "Belege und Snapshot CP"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
