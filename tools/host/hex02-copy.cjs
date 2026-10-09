@@ -96,14 +96,30 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await item.hover();
     await settle();
     await page.screenshot({ path: path.join(out, "menu-before-choice.png") });
-    let debugSession, exceptions = [];
+    let debugSession, exceptions = [], scripts = [], runtimeProbe;
     if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
       debugSession = await page.context().newCDPSession(page);
+      debugSession.on("Debugger.scriptParsed", (script) => scripts.push(script));
       await debugSession.send("Debugger.enable");
-      debugSession.on("Debugger.paused", (event) => {
-        exceptions.push({reason:event.reason, data:event.data, frames:event.callFrames.map(f=>({name:f.functionName,url:f.url,location:f.location}))});
-        void debugSession.send("Debugger.resume");
+      debugSession.on("Debugger.paused", async (event) => {
+        const record = {reason:event.reason, data:event.data, frames:event.callFrames.map(f=>({name:f.functionName,url:f.url,location:f.location}))};
+        if (event.reason === "other") {
+          record.runtime = await debugSession.send("Debugger.evaluateOnCallFrame", {
+            callFrameId:event.callFrames[0].callFrameId,
+            expression:'JSON.stringify({app:!!this.app,open:String(Re.Modal.prototype.open),close:String(Re.Modal.prototype.close),ctor:String(Re.Modal),copyOpen:String(_b.prototype.open)})',
+            returnByValue:true,
+          });
+        }
+        exceptions.push(record);
+        await debugSession.send("Debugger.resume");
       });
+      for (const script of scripts.filter(s=>s.url.includes("plugin:dungeon-editor"))) {
+        const {scriptSource} = await debugSession.send("Debugger.getScriptSource", {scriptId:script.scriptId});
+        const offset = scriptSource.indexOf("new _b(this.app,r.terrain.world.name");
+        if (offset < 0) continue;
+        const lines = scriptSource.slice(0,offset).split("\n");
+        runtimeProbe = {url:script.url,breakpoint:await debugSession.send("Debugger.setBreakpoint",{location:{scriptId:script.scriptId,lineNumber:lines.length-1,columnNumber:lines.at(-1).length}})};
+      }
       await debugSession.send("Debugger.setPauseOnExceptions", {state:"all"});
       await page.evaluate(() => {
         const log = (window.__hexMenuEvents = []);
@@ -142,7 +158,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
       await settle();
       await debugSession.send("Debugger.setPauseOnExceptions", {state:"none"});
       await debugSession.detach();
-      fs.writeFileSync(path.join(out, "menu-exception-diagnostic.json"), JSON.stringify(exceptions,null,2));
+      fs.writeFileSync(path.join(out, "menu-exception-diagnostic.json"), JSON.stringify({runtimeProbe,scripts:scripts.filter(s=>s.url.includes("plugin:")).map(s=>({url:s.url,scriptId:s.scriptId})),exceptions},null,2));
       fs.writeFileSync(path.join(out, "menu-event-diagnostic.json"), JSON.stringify(await page.evaluate(() => {
         window.__hexMenuObserver.disconnect();
         return {events:window.__hexMenuEvents, modals:[...document.querySelectorAll(".modal-container")].map(el=>el.outerHTML)};
