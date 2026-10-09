@@ -714,3 +714,6 @@ CITY-01-PREP-COMMAND-CLEAN-R02 Start 2026-10-09T17:00:39.825702+00:00; Architekt
 
 
 CITY-01-PREP-P03 Start 2026-10-09T17:02:42.690100+00:00; Konkreter Plan für editCity/CityEdit: Straße ergänzen/Knoten ziehen/Kante ersetzen oder entfernen, Hauspose/Grundriss/Entfernung, erster Platz. Vollständiger geprüfter Anfangsstand, strikte Operationsgrenze und abschließende Paketvalidierung ermöglichen abhängige Referenzänderungen ohne Zwischencommit. Caller-IDs, unbeteiligte Daten und lokale Einheiten bleiben erhalten; ein gemeinsamer CityDocumentchange, keine History-/Host-/Speicheränderung. Plan: ROADMAP-CITIES-CITY01-EDIT-PLAN.md. Plan-Aufräum-P/I/R folgt.
+
+
+CITY-01-PREP-EDIT-PLAN-CLEAN-P03 Start 2026-10-09T17:03:46.375318+00:00; Planreview findet Paketgrenze: finale Codecprüfung allein könnte durch add/remove oder mehrfaches Ersetzen eine ungültige Payload oder Kennungswiederverwendung unsichtbar machen. Plan präzisieren: jedes Element höchstens einmal als Schreibziel je Paket; neue Kennungen gegen gesamte Anfangsstadt reservieren, inklusive explizit entfernter Elemente. Referenzänderung unterschiedlicher Ziele weiter gemeinsam zulassen. Operationen besitzen keine persistente Transaktion oder fremde Bindungen. CI/CR getrennt; Hex-Besitzer bestätigt kollisionsfreien Fachaktionsumfang.
