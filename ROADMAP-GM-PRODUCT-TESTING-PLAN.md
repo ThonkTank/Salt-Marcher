@@ -149,11 +149,14 @@ Das ist ein Endanwenderbefund zur Suchbarkeit, keine Produktlatenz: Such-/CDP-Wa
 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review auf
 `84440f161914b985acbfd23fbd79cb51bd1e6360`; nach Shared-Integration auf
 `b8beed18e7f1553bfd5c37192769f2d43ff65b0b` sind 365/365 Basistests,
-Typprüfung und Build grün. Dieser Stand schließt den Testerbefund nicht: der getrennte
-Produktreview, der obige exakte Nebelwacht-Reproduktionslauf im isolierten
-Cloud-Host und der unabhängige GM-Nachtest bleiben offen.
+Typprüfung und Build grün. Der getrennte Produktreview R01 bestand den exakten
+I02-Stand `84440f1` ohne Pflichtbefund (Issue #1 `6087430151`); die vier
+Implementierungsdateien sind auf Shared `b65937e` unverändert. Dieser Stand
+schließt den Testerbefund nicht: Der obige exakte Nebelwacht-Reproduktionslauf
+läuft getrennt im isolierten Cloud-Host, anschließend bleibt der unabhängige
+GM-Nachtest offen.
 
-Die Nebelwacht-Spielansicht ist damit nur teilweise als Sessionoberfläche beurteilt: Ebenenwechsel klappt, direkte Rauminformation per Raumklick nicht; der Key ist über den Dungeon-Editor auffindbar. GM-UX-N-005 ist übernommen, aber bis R01, H01 und GM-R01 nicht geschlossen. Kollegenbelege zu N-004-Ursache/Fix sind getrennt; oben stehen nur meine Cloud-Beobachtungen.
+Die Nebelwacht-Spielansicht ist damit nur teilweise als Sessionoberfläche beurteilt: Ebenenwechsel klappt, direkte Rauminformation per Raumklick nicht; der Key ist über den Dungeon-Editor auffindbar. GM-UX-N-005 bleibt trotz bestandenem R01 bis H01 und GM-R01 offen. Kollegenbelege zu N-004-Ursache/Fix sind getrennt; oben stehen nur meine Cloud-Beobachtungen.
 
 ### GM-UX-01 Ausbau, Improvisation und Wiederöffnung auf Shared-Head 972913f
 

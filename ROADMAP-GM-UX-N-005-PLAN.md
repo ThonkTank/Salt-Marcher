@@ -200,9 +200,20 @@ DOM-/Editorfälle. Nach Integration des aktuellen Shared-Stands bestanden auf
 `b8beed18e7f1553bfd5c37192769f2d43ff65b0b` außerdem `npm run check`,
 `npm test` mit 365/365 und `npm run build`.
 
-Damit sind I01 und I02 implementiert und reviewt. Der getrennte Produktreview
-`GM-UX-N-005-R01`, der exakt beschriebene Nebelwacht-Cloud-Hostlauf H01 und der
-unabhängige Produkttester-Nachtest bleiben offen. Es wurde kein explorativer
+Der getrennte `GM-UX-N-005-R01` bestand den unabhängigen read-only Produktreview
+des exakten I02-Implementierungsstands
+`84440f161914b985acbfd23fbd79cb51bd1e6360` ohne Pflichtbefund; dokumentiert
+in Issue-#1-Kommentar `6087430151`. Der Reviewer bestätigte auf Shared
+`b65937e4fe668e8d60eb148671cdfa2979b3be79`, dass die vier geprüften
+Implementierungsdateien seit dem Kandidaten unverändert sind. Datenquelle,
+flüchtiger UI-Zustand, Accessibility, Zielrevalidierung, vorhandene
+Navigationswege, Dirty-Draft-Guard und Nichtmutation wurden gegen Plan und
+Regressionen geprüft.
+
+Damit sind I01, I02 und R01 bestanden. Der exakt beschriebene
+Nebelwacht-Cloud-Hostlauf H01 läuft getrennt beim GM-Produkttester; sein Ergebnis
+wird hier nicht vorweggenommen. Danach bleibt der unabhängige
+Produkttester-Nachtest GM-R01 offen. Es wurde in diesem Metadatenabgleich kein
 Bedientest ausgeführt. Die verlinkten Acceptance-Einträge `EB-003` und
-`NATIVE-21` bleiben aus diesem hostneutralen Teilnachweis unverändert; es folgt
-keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.
+`NATIVE-21` bleiben unverändert; es folgt keine UX-, Host-, Fach-, Paritäts-
+oder Gesamtfreigabe.

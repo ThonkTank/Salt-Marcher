@@ -1194,6 +1194,16 @@
         "screensActuallyViewed": true,
         "physicalInput": false,
         "userVault": "unchanged"
+      },
+      "hex02ReviewIntegratedBasis": {
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/r01-integrated-basis.json",
+        "cleanSource": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
+        "checkPassed": true,
+        "testsPassed": 365,
+        "buildPassed": true,
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "atlasSourceUnchangedFromReviewCandidate": true
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -2132,7 +2142,7 @@
         "mainSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
         "result": "Isolierter frischer Obsidian-Prozess auf sauberem Testcommit öffnet eine tatsächlich gespeicherte 36-Zellen-Welt mit fünf referenzierten Terrainkinddateien. Ein sichtbarer erneuter Atlas-Save ohne Bearbeitung erhält alle sechs Dateien bytegleich; world.id, 34 aktuell geladene Zellen, fünf Referenzen, Kamera, Undo-Tiefe 0 und Status Gespeichert bleiben gleich. Draft und Journal fehlen vor und nach Save; normaler Prozessausgang.",
-        "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, harte Recovery im Obsidian-Adapter und volle DD-036.03 bleiben offen; der externe FileTransaction-Abbruch steht gesondert unter s01Journal."
+        "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, direkter harter Obsidian-Abbruch und volle DD-036.03 bleiben offen; externe Abbrüche und vorbereitete Host-Recovery stehen getrennt unter s01Journal/s01HostJournal."
       },
       "s01Journal": {
         "run": "DD-036-S01-J01",
@@ -2141,6 +2151,16 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json",
         "result": "Die fünf tatsächlich gespeicherten Terrainkinddateien einer 36-Zellen-QA-Welt, ihr Weltmanifest und ein validierter Fünf-Chunk-Draft bilden sieben Zielschreibungen. Zehn getrennte Node-Prozesse enden unmittelbar nach je einer abgeschlossenen CAS-Grenze; frische Prozesse rollen prepared nach Journalanlage und jeder der sieben Zielschreibungen vollständig auf Before zurück, behalten den committed-Nachherstand und finden nach Journal-Cleanup nichts mehr. Ein externer dritter Wert nach Teilwrite blockiert Recovery ohne weitere Byteänderung und erhält das Journal.",
         "review": "Unabhängiger read-only Re-Review PASS für den externen plattenbasierten FileTransaction-Baustein. Draftvalidierung, sämtliche Einzeldatei-/Journalhashes und idempotentes zweites Recover geprüft. Kein Obsidian-VaultStore oder sichtbarer Host, keine fsync-/Power-Loss-/torn-write-Garantie, keine City-/Dungeon-Kinder, kein I01d-Verwerfen und kein vollständiges DD-036.03-/HEX-02-Go."
+      },
+      "s01HostJournal": {
+        "run": "DD-036-S01-J02",
+        "state": "scoped_preseeded_vaultstore_recovery_host_passed_independent_review_passed_full_case_open",
+        "testCommit": "6c4a093",
+        "cleanReviewHead": "3d1025736503c0c2f50b97f6b54bf43143a2ce35",
+        "mainSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json",
+        "result": "Elf getrennte frische Obsidian-Prozesse öffnen synthetisch vorbereitete J01-Zwischenstände der tatsächlich gespeicherten Fünf-Chunk-Welt über AtlasRepository und VaultStore. Prepared-Grenzen 1–8 rollen alle sieben Zieldateien auf Before zurück, erhalten den gültigen Draft und entfernen das Journal; sichtbarer Status Entwurf gesichert. Committed 9 und Cleanup 10 behalten After ohne Draft/Journal, Status Gespeichert. Ein externer dritter Wert nach Teilwrite erhält sämtliche Bytes und das Journal, verhindert das Öffnen und zeigt den konkreten Konflikt. Alle Läufe verwenden denselben sauberen Build, elf verschiedene App-PIDs und normale Ausgänge.",
+        "review": "Unabhängiger read-only Re-Review auf Clean-Head 3d102573 PASS für den engen Obsidian/VaultStore-Open-Recovery-Nachweis ohne Pflichtlücke; alle Einzeldatei-/Journalhashes, Build-Tripel und Prozessausgänge geprüft. Die Zwischenstände wurden vor den Hostläufen aus J01-Writes eingesetzt; ein harter Obsidian-Prozessabbruch selbst, fsync/Power-Loss/torn writes, City-/Dungeon-Kinder, I01d-Verwerfen und volle DD-036.03-/HEX-02-Freigabe bleiben offen."
       },
       "o01Original": {
         "run": "DD-036-O01-ORIGINAL-03",
@@ -2163,16 +2183,16 @@
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
-      "state": "i02_repaired_independent_re_review_passed_r01_host_gm_retest_open",
-      "run": "GM-UX-N-005-I02",
+      "state": "r01_independent_product_review_passed_h01_in_progress_gm_retest_open",
+      "run": "GM-UX-N-005-R01",
       "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
       "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
       "ownership": "Dungeon-Strang; GM-UX-N-005-I02 wurde nach erneuter Prüfung von Shared-Head f48155a72a404bf21e43d3fe475302cc091a13e4, Issue #1, offenen PRs und gleichnamigen Remote-Branches exklusiv übernommen. Das Paket ändert nur Dungeon-Suchpanel, bestehenden Editor-/Key-Guard, fokussierte Tests und N-005-Metadaten; N-006-, DD-036-, Atlas-, City-, Hex-, CE- und Migrationsarbeit bleibt fremd.",
       "scope": "I01 bleibt der hostneutrale V4-Suchkern. I02 ergänzt das Inhaltsgruppen-Panel, unmittelbare Filterung, Übersicht/Leeren, Live-Aktualisierung und stale Abbruch. Trefferaktivierung nutzt bestehende Geschoss-, Auswahl-, StructuredKeyPanel- und Renderer-Fokuswege. Der gemeinsame Dirty-Draft-Guard stoppt Geschoss-, Auswahl-, Canvas-, Abschnitts- und Trefferwechsel vor Mutation; nur ausdrückliches Übernehmen oder Verwerfen erlaubt den Wiederholungsversuch.",
-      "review": "I01-Reviews bleiben gültig. Der unabhängige I02-Erstreview von 8b484dd17600955fae8cc2023bd457b901126429 fand implizite Key-Commits und fehlende Editororakel. Reparatur b0ede7e51eed0557b51a6896ae3804a28c94bd6c entfernte sie und ergänzte Aktivierungs-/Guardregressionen; der Nachreview fand noch Einfügen/Löschen als direkte Auswahlbypässe. Der exakte Reparaturstand 84440f161914b985acbfd23fbd79cb51bd1e6360 schloss diese Wege und bestand den abschließenden unabhängigen read-only Review ohne Pflichtbefund.",
+      "review": "I01- und I02-Implementierungsreviews bleiben gültig. Der getrennte unabhängige Produktreview GM-UX-N-005-R01 bestand den exakten I02-Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund; Issue #1 Kommentar 6087430151. Auf Shared b65937e4fe668e8d60eb148671cdfa2979b3be79 waren src/editor.ts, src/key-panel.ts, src/room-key-search-panel.ts und src/room-key-search.ts gegenüber dem Kandidaten unverändert. Geprüft wurden Sessionquelle, flüchtige UI, Accessibility, Zielrevalidierung, bestehende Navigationswege, Dirty-Draft-Guard und Nichtmutation.",
       "verification": "Sechs fokussierte serielle DOM-/Editorfälle bestanden einschließlich Raum/Geschoss/Snippet, Leeren, Live-Refresh, stale Ziel, V3-Grenze, sauberer Aktivierung und dirty Erstversuch/Wiederholung mit Textarea-, Geschoss-, Auswahl-, Kamera-, Dokument-, History-, Dirty- und Revisionsorakeln. Nach Integration des aktuellen Shared-Stands bestanden auf b8beed18e7f1553bfd5c37192769f2d43ff65b0b npm run check, npm test (365/365) und npm run build. Keine explorative Bedienprüfung oder GUI ausgeführt.",
-      "limits": "I01/I02 hostneutral implementiert und reviewt. Der getrennte Produktreview R01, der exakte Save/Reload-/Nebelwacht-Cloud-Hostlauf H01 und der unabhängige GM-Nachtest bleiben offen. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-, Host-, Produkt-, Fach-, Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
-      "next": "GM-UX-N-005-R01: unabhängiger Produktreview des veröffentlichten I01/I02-Stands; erst nach PASS folgt exakt der beschriebene Nebelwacht-Cloud-Hostlauf H01 im isolierten Testvault.",
+      "limits": "I01/I02 hostneutral implementiert und R01 unabhängig bestanden. Der exakte Save/Reload-/Nebelwacht-Cloud-Hostlauf H01 läuft getrennt beim GM-Produkttester; Ergebnis und GM-R01 bleiben offen. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-, Host-, Produkt-, Fach-, Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
+      "next": "GM-UX-N-005-H01: der GM-Produkttester führt getrennt exakt den veröffentlichten Nebelwacht-Cloud-Hostablauf aus; Ergebnis nicht vorwegnehmen. Erst danach darf GM-UX-N-005-GM-R01 die Folgeaufgabe unabhängig nachtesten.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
     "gmUxN006Backlog": {
@@ -2774,7 +2794,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-R01: den veröffentlichten I01/I02-Produktstand unabhängig gegen Datenquelle, Navigation, Accessibility, geschützte Texte/IDs und Nichtmutation reviewen. Erst nach PASS folgt der exakt beschriebene Nebelwacht-Cloud-Hostlauf H01; N-006-I01, DD-036 und Atlaspersistenz bleiben getrennt.",
+    "nextRun": "GM-UX-N-005-H01: der GM-Produkttester führt getrennt exakt den veröffentlichten Nebelwacht-Cloud-Hostablauf aus. H01 und danach GM-R01 nicht vorwegnehmen; N-006-I01, DD-036 und Atlaspersistenz bleiben getrennt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4667,7 +4687,7 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "reproduced_I01_I02_reviewed_R01_host_GM_retest_open",
+        "status": "reproduced_I01_I02_R01_passed_H01_in_progress_GM_retest_open",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
         "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
         "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
@@ -4679,7 +4699,7 @@
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
         "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 und der hostneutrale I01-Suchkern (Issue #1 6086279018) bleiben unabhängig bestanden. I02 wurde auf Shared-Basis f48155a exklusiv in Issue #1 6086963703 übernommen; Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review. Nach Shared-Integration bestanden auf b8beed18e7f1553bfd5c37192769f2d43ff65b0b 365/365 Tests, Typprüfung und Build. R01, der exakte Nebelwacht-Cloud-Hostlauf und der unabhängige GM-Nachtest bleiben offen; keine Host-/UX-/Fachfreigabe behauptet."
+        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 und der hostneutrale I01-Suchkern (Issue #1 6086279018) bleiben unabhängig bestanden. I02 wurde auf Shared-Basis f48155a exklusiv in Issue #1 6086963703 übernommen; Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review. Nach Shared-Integration bestanden auf b8beed18e7f1553bfd5c37192769f2d43ff65b0b 365/365 Tests, Typprüfung und Build. Der getrennte Produktreview R01 bestand den exakten I02-Stand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund (Issue #1 6087430151); die vier Implementierungsdateien waren auf Shared b65937e4fe668e8d60eb148671cdfa2979b3be79 unverändert. Der exakte Nebelwacht-H01-Lauf läuft getrennt beim GM-Produkttester; Ergebnis und unabhängiger GM-R01-Nachtest bleiben offen. Keine Host-/UX-/Fachfreigabe behauptet."
       },
       {
         "id": "GM-UX-006",
