@@ -869,3 +869,5 @@ CITY-01-PREP-R11 Start 2026-10-09T18:40:26Z; unabhängige Quell-/Modulgegenprobe
 CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07 Start 2026-10-09T18:41:31.652212+00:00; Fokus:Reviewbefund statt veralteter offenerR11-Darstellung dokumentieren. Plan:Architektur auf geprüften Pflichtbefund und geplante N08 aktualisieren; Belegquelle/Runtimehash binden, keine Runtimeänderung im Aufräumen.
 
 CITY-01-PREP-RENDERER-REVIEW-CLEAN-I07 Start 2026-10-09T18:41:45.685386+00:00; Architektur nennt jetzt den tatsächlich reproduzierten R11-Befund und geplante numerische Korrektur; zuvor offenerReview-Verweis bereinigt. Keine Runtime-/Abnahmeänderung.
+
+CITY-01-PREP-RENDERER-REVIEW-CLEAN-R07 Start 2026-10-09T18:42:07.715397+00:00; Befundgegenprobe und unveränderte352Tests-Runtimehashes geprüft; eingehende5832001nurJSON integriert. Alle24CTYoffen. Review-Aufräumen abgeschlossen; CITY-RENDERER-R11-01 bleibt Pflicht für N08/R12.
