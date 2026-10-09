@@ -3580,18 +3580,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-I",
-      "kind": "native_original_probe",
-      "startedAt": "2026-10-09T11:37:30.179Z",
-      "focus": "COK Save/Neuöffnung und benannte Presets",
-      "state": "completed",
-      "result": "12221Byte-Karte gespeichert, SHA unverändert, neuer Prozess zeigt Straße/Market;13Path/6Plot Namen,2Originalexit0; Slot freigegeben",
-      "endedAt": "2026-10-09T11:49:19.144Z"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-R",
       "kind": "reference_review",
-      "focus": "Save/Neuöffnung, Demo-Grenzen und Quellen prüfen"
+      "startedAt": "2026-10-09T11:51:14.010374+00:00",
+      "focus": "Save/Neuöffnung und Steuerungsprovenienz prüfen",
+      "state": "completed",
+      "result": "Save und frische Öffnung belegt;75Hashes intakt. R01: doppelte RFB-Optionen vor Verbindung ablehnen. Demo-/Produktabnahmen offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-CP",
+      "kind": "cleanup_planning",
+      "focus": "RFB-Eingabeambiguität mit gezielter Regression bereinigen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
