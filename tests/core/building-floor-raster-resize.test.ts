@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { newDocument, parseDocument, serializeDocument, type Building } from "../../src/model";
-import { duplicateFloor, planBuildingMutation, resizeMap } from "../../src/commands";
+import { duplicateFloor, planBuildingContourMutation, planBuildingMutation, resizeMap } from "../../src/commands";
 import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
-import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase } from "../../src/features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointMove } from "../../src/features/material/building-floor-cells";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
 const STONE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart_double%2Ftileset_stone.png";
@@ -231,4 +231,50 @@ test("adjacent native floor styles share one contour while keeping per-cell styl
   assert.equal(session.smartTiles?.length, 9);
   session.redo();
   assert.equal(session.smartTiles?.length, 18);
+});
+
+test("native point move repaints the bounding raster in the selected style with one Undo", () => {
+  const document = newDocument("Mixed point", 8, 8);
+  const floorId = document.floors[0]!.id;
+  const before: Building = { ...building("mixed", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const original = buildingFloorCells(before, 8, 8).map((cell) => cell.x < 4
+    ? cell : { ...cell, assetId: STONE, color: 0x7f7e71 });
+  const session = new Session({ ...document, entities: [before], smartTiles: original });
+  const after: Building = { ...before, polygons: [{ outer: [
+    { x: 1, y: 0 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const command = planBuildingContourMutation({ entities: [...session.entities.values()],
+    before, after, edit: { kind: "move", contour: 0, index: 0 },
+    wallStyle: { wall: before.wall, wallAlpha: 255, wallBevel: false,
+      wallWidth: 0, wallAssetId: undefined } });
+  assert.ok(command);
+  const withWall = planBuildingContourMutation({ entities: [...session.entities.values()],
+    before, after, edit: { kind: "move", contour: 0, index: 0 },
+    wallStyle: { wall: 0x333333, wallAlpha: 255, wallBevel: true,
+      wallWidth: 0.2, wallAssetId: "pack:battlements" } });
+  const walled = withWall?.entities?.find((change) => change.id === before.id)?.after;
+  assert.equal(walled?.kind === "building" && walled.wallAssetId,
+    "pack:battlements");
+  const moved = command.entities?.find((change) => change.id === before.id)?.after;
+  assert.equal(moved?.kind, "building");
+  if (moved?.kind !== "building") return;
+  session.execute({ ...command, smartTiles: { before: session.smartTiles,
+    after: buildingFloorCellsAfterPointMove(session.smartTiles, moved, 8, 8,
+      { assetId: STONE, color: 0x7f7e71 }) } });
+  assert.equal(session.historySize, 1);
+  assert.equal(session.smartTiles?.length, 24);
+  assert.ok(session.smartTiles?.every((cell) => cell.assetId === STONE &&
+    cell.color === 0x7f7e71 && cell.buildingId === before.id));
+  assert.deepEqual(new Set(session.smartTiles?.map((cell) => `${cell.x}:${cell.y}`)),
+    new Set(Array.from({ length: 24 }, (_, i) =>
+      `${1 + i % 6}:${Math.floor(i / 6)}`)));
+  const saved = parseDocument(serializeDocument(session.document()));
+  assert.deepEqual(saved.smartTiles, session.document().smartTiles);
+  session.undo();
+  assert.deepEqual(session.smartTiles, original);
+  assert.deepEqual(session.entities.get(before.id), before);
+  session.redo();
+  assert.deepEqual(parseDocument(serializeDocument(session.document())), saved);
 });

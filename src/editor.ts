@@ -69,7 +69,7 @@ import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./fe
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
-import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase } from "./features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointMove } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -2523,9 +2523,7 @@ export class DungeonEditor {
         .map((id) => this.session.entities.get(id))
         .filter((entity): entity is Entity =>
           entity?.kind === "door" && entity.anchor?.boundaryId === before.id),
-      after = g.buildingEdge
-        ? applyBuildingWallStyle(proposal.after, this.currentBuildingWallStyle())
-        : proposal.after,
+      after = applyBuildingWallStyle(proposal.after, this.currentBuildingWallStyle()),
       preview = previewBuildingMutationWithPortals(portals, before,
         after, proposal.edit);
     this.renderer.previewBuildingShape(preview.building, grip.contour, preview.portals);
@@ -2544,10 +2542,24 @@ export class DungeonEditor {
         entities: [...this.session.entities.values()],
         before: g.entity,
         ...proposal,
-        ...(g.buildingEdge
-          ? { wallStyle: this.currentBuildingWallStyle() } : {}),
+        wallStyle: this.currentBuildingWallStyle(),
       });
-      if (command) this.session.execute(command);
+      if (command) {
+        const after = command.entities?.find((change) =>
+          change.id === g.entity!.id)?.after,
+          material = this.settings.material;
+        if (this.session.version === 4 && after?.kind === "building" &&
+            after.floorTileRaster && isNativeFloorAssetId(material?.assetId) &&
+            proposal.edit.kind === "move") {
+          const previous = this.session.smartTiles;
+          const next = buildingFloorCellsAfterPointMove(previous, after,
+            this.session.settings.width, this.session.settings.height,
+            { assetId: material!.assetId!, color: this.settings.surfaces.floor.color });
+          this.session.execute(next === previous ? command : {
+            ...command, smartTiles: { before: previous, after: next },
+          });
+        } else this.session.execute(command);
+      }
     }
     this.hoveredBuildingVertex = undefined;
     this.renderer.setBuildingPointHover();

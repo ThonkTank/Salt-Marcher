@@ -542,7 +542,7 @@ export function planBuildingContourMutation(
         !recordsEqual(without(beforePoints, edit.index), afterPoints)))
   )
     throw new Error("Ungültige Punktbearbeitung.");
-  const finalAfter = request.wallStyle && edit.kind !== "move"
+  const finalAfter = request.wallStyle
     ? applyBuildingWallStyle(after, request.wallStyle)
     : after;
   validateBuildingContourAfter(finalAfter);

@@ -76,3 +76,30 @@ export function buildingFloorCellsAfterDraw(
     .map((cell) => cell.buildingId && owners.has(cell.buildingId)
       ? { ...cell, buildingId: building.id } : cell), ...painted];
 }
+
+/** Native point dragging repaints the complete outer bounding rectangle. */
+export function buildingFloorCellsAfterPointMove(
+  cells: readonly SmartTileCell[] | undefined,
+  building: Building,
+  width: number, height: number,
+  paint: { assetId: string; color: number },
+): readonly SmartTileCell[] | undefined {
+  if (!building.floorTileRaster || building.polygons.length !== 1 ||
+      building.polygons[0]?.holes.length || !isNativeFloorAssetId(paint.assetId))
+    return cells;
+  const outer = building.polygons[0]!.outer;
+  const minX = Math.max(0, Math.floor(Math.min(...outer.map((p) => p.x))));
+  const maxX = Math.min(width, Math.ceil(Math.max(...outer.map((p) => p.x))));
+  const minY = Math.max(0, Math.floor(Math.min(...outer.map((p) => p.y))));
+  const maxY = Math.min(height, Math.ceil(Math.max(...outer.map((p) => p.y))));
+  const painted: SmartTileCell[] = [];
+  for (let y = minY; y < maxY; y++)
+    for (let x = minX; x < maxX; x++)
+      painted.push({ floorId: building.floorId, buildingId: building.id,
+        x, y, assetId: paint.assetId, color: paint.color });
+  const positions = new Set(painted.map((cell) => `${cell.x}:${cell.y}`));
+  const retained = (cells ?? []).filter((cell) =>
+    cell.buildingId !== building.id && (cell.floorId !== building.floorId ||
+      !positions.has(`${cell.x}:${cell.y}`)));
+  return [...retained, ...painted];
+}
