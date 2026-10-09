@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-N01",
-      "kind": "plan_refinement",
-      "startedAt": "2026-10-09T21:34:08.908369+00:00",
-      "focus": "Zwei Pflichtbefunde aus unabhängigem Hex-Review",
-      "state": "completed",
-      "result": "Vorläufige versionierte Gatezuordnung, Reise/Clock und Recoveryquerschnitt erhalten; harte E2E01-Eingänge in Tabelle/Reihenfolge ergänzt."
-    },
-    "nextRun": {
       "id": "CITY-E2E-N01-CLEAN-P",
       "kind": "cleanup_planning",
-      "focus": "Gatezuordnung, Eingänge und Fremdschutz prüfen"
+      "startedAt": "2026-10-09T21:34:24.030626+00:00",
+      "focus": "Tabellenstruktur und vollständige Gateeingänge",
+      "state": "completed",
+      "result": "Konkrete Struktur-/Scope-/Schutzprüfung geplant."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-N01-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Gemeinsame Tabelle gliedern; Name/Version/Eingänge prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

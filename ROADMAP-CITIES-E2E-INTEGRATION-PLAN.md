@@ -67,3 +67,5 @@ CITY-E2E-P01-CLEAN-R: Gesamtdiff gegen Basis beschränkt auf diesen Plan und che
 ## Nachbesserung aus unabhängigem CITY-E2E-R01
 
 CITY-E2E-N01: Befund [6089617467](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089617467) gegen 507b282. Technischer Reparaturplan: Nummern nur als vorläufige versionierte Zuordnung führen, vollständige Namen und eigenständigen Reise-/Clock-Ablauf erhalten; Recovery als Querschnitt plus Portabilitätsvertiefung. Harte ausführbare E2E-01-Eingänge in Tabelle und Lieferreihenfolge identisch verankern. Umsetzung in diesem Nachbesserungslauf erfolgt; keine neue Fach-/Host-/Teamfreigabe. Unabhängiger Re-Review bleibt nötig.
+
+CITY-E2E-N01-CLEAN-P: Tabellenstruktur und volle Namen der vier vorläufigen Gates prüfen; Reise/Clock darf nicht als unverbundene Tabellenzeile stehen. Harte E2E-01-Eingänge in Tabelle und Reihenfolge, Recoveryquerschnitt, unveränderte Citygeometrie/IDs sowie alle Fremdwurzeln/acceptance prüfen. Nur nötige Text-/Strukturbereinigung, keine neue Gesamtentscheidung.
