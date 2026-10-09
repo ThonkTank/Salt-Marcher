@@ -1,4 +1,35 @@
 {
+  "saltMarcherCatalogEncounter": {
+    "date": "2026-10-09",
+    "state": "ce00_plan_candidate_implementation_next",
+    "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
+    "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
+    "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
+    "currentRun": {
+      "id": "CE-00-P01",
+      "kind": "planning",
+      "state": "completed_static_validation_pending",
+      "focus": "SaltMarcher source mapping, D&D Beyond minimum parity, ownership, phases and coordination"
+    },
+    "coordination": {
+      "catalogAnalysis": "completed read-only",
+      "encounterAnalysis": "completed read-only",
+      "dndBeyondBenchmark": "completed from official sources",
+      "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
+      "automation": "hourly continuation enabled"
+    },
+    "verified": "No product function claimed. Plan records current SaltMarcher gaps: normative seven-section catalog differs from current selector; runtime Encounter is Scene-group based and DMG-2014-only.",
+    "open": [
+      "All CE-01 through CE-07 implementation, review and cleanup runs",
+      "Official pinned DMG-2024 budget table and golden masters",
+      "Real Obsidian host, restart, keyboard and damaged-data acceptance"
+    ],
+    "nextRun": {
+      "id": "CE-00-I01",
+      "kind": "implementation",
+      "focus": "Portable creature types, SRD manifest validation and pure combined-filter query with focused tests"
+    }
+  },
   "repositoryWorkflow": {
     "date": "2026-10-08",
     "authorization": "Direkte Nutzeranweisung: beauftragten Fortschritt regelmäßig pushen und eingehende Repository-Änderungen lokal integrieren.",

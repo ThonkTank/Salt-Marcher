@@ -1,4 +1,56 @@
 {
+  "saltMarcherCatalogEncounter": {
+    "schemaVersion": 1,
+    "updated": "2026-10-09T11:55:00Z",
+    "state": "ce00_plan_candidate_implementation_open",
+    "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
+    "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
+    "sourceRepository": "ThonkTank/Salt-Marcher",
+    "targetBranch": "active/installed-phase1",
+    "scope": [
+      "Monster",
+      "Items",
+      "gespeicherte Encounter",
+      "NPCs",
+      "Fraktionen",
+      "Orte",
+      "Encounter-Tabellen",
+      "Encounter Builder",
+      "Initiative und Combat Tracker"
+    ],
+    "rules": {
+      "dmg2014": "planned_from_saltmarcher_not_yet_implemented",
+      "dmg2024": "official_table_provenance_required_before_implementation_approval",
+      "mixedMode": "forbidden"
+    },
+    "reference": {
+      "saltMarcherAnalysis": "completed_read_only_current_implementation_has_known_normative_gaps",
+      "dndBeyond": "official_sources_mapped_in_plan",
+      "catalogFinding": "Normative seven sections are authoritative; current SaltMarcher selector omits Items and saved Encounters and adds Characters.",
+      "encounterFinding": "Current SaltMarcher runtime is Scene-group based and DMG-2014-only; it is not by itself D&D Beyond parity."
+    },
+    "coordination": {
+      "testSlot": "one graphical host or original instance per device; separate devices may test in parallel",
+      "sharedBranch": "fetch and integrate before every package and publication; preserve foreign IDs/evidence; no force-push"
+    },
+    "cases": [
+      {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open"},
+      {"id": "CE-AC-02", "title": "Catalog detail without state loss", "state": "open"},
+      {"id": "CE-AC-03", "title": "Separate reproducible 2014 and 2024 evaluation", "state": "open"},
+      {"id": "CE-AC-04", "title": "Live party and roster recomputation", "state": "open"},
+      {"id": "CE-AC-05", "title": "Individual and group initiative semantics", "state": "open"},
+      {"id": "CE-AC-06", "title": "Persistent stable initiative ordering", "state": "open"},
+      {"id": "CE-AC-07", "title": "Round progression and undo", "state": "open"},
+      {"id": "CE-AC-08", "title": "HP, temporary HP and healing rules", "state": "open"},
+      {"id": "CE-AC-09", "title": "Exact combat restart recovery", "state": "open"},
+      {"id": "CE-AC-10", "title": "Live participant changes preserve state", "state": "open"},
+      {"id": "CE-AC-11", "title": "Auditable statblock rolls", "state": "open"},
+      {"id": "CE-AC-12", "title": "Conditions and immunity warning", "state": "open"},
+      {"id": "CE-AC-13", "title": "Independent plan lifecycle actions", "state": "open"},
+      {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open"}
+    ],
+    "next": "CE-00-I01 portable catalog types, manifest validation, pure search/filter logic and focused tests; no UI or domain approval."
+  },
   "cityPlans": {
     "schemaVersion": 1,
     "updated": "2026-10-09T11:30:17.614823+00:00",

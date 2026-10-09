@@ -2,6 +2,32 @@
 
 Auftrag: große Karten im echten Obsidian flüssig bearbeiten, alle bestehenden und zugesagten Arbeitsabläufe erhalten. Neue native Karten; kein SVG-Import und keine Legacy-Unterstützung im Produkt. Originaldateien bleiben geschützt; ausdrücklich beauftragte Einbindungsänderungen bleiben eng begrenzt. Pixelgleichheit ist kein Ziel; Lesbarkeit und Spielbedeutung sind verbindlich.
 
+## Geplante Katalog- und Encounter-Erweiterung
+
+Die [SaltMarcher-Migrationsroadmap](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
+ordnet den am 9. Oktober 2026 beauftragten Ausbau. Die folgenden Entscheidungen
+sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
+
+- Der Monsterkatalog ist vaultweite, versionierte Referenzwahrheit mit
+  Quellen-/Regelversionskennzeichnung. SRD-5.1-Daten behalten Manifest,
+  Inhaltshash und CC-BY-4.0-Attribution; Homebrew bleibt eine getrennte Quelle.
+- Gespeicherte Encounter-Pläne enthalten stabile Kreaturen-IDs, Mengen,
+  Gruppierungsbedeutung und redaktionelle Felder, aber keine duplizierten
+  Statblocks. Ein laufender Kampf besitzt davon getrennt Initiative, Runde,
+  Zug, HP, Zustände, Würfelprotokoll und begrenztes Undo.
+- Jeder Encounter speichert `dmg2014` oder `dmg2024`. Beide Rechner verwenden
+  getrennte gepinnte Tabellen und Ergebnisbegriffe. 2024 darf vor direkter
+  offizieller Tabellenprovenienz nicht als fachlich bestanden erscheinen.
+- Dungeon-Featuredefinitionen und Raum-Key-Texte bleiben bestehen. Spätere
+  stabile Encounter-/Kreaturenverweise ergänzen sie optional und verändern
+  vorhandenen Markdown-Wortlaut nicht stillschweigend.
+- Katalog und Encounter werden als gemeinsame GM-Arbeitsfläche angebunden.
+  Auswahl und Details bleiben lesend; nur ausdrücklich bezeichnete Aktionen
+  verändern Plan, Kampf, Szene oder Raum-Key.
+- Die Begrenzung grafischer Testinstanzen gilt pro Gerät. Getrennte Kollegen
+  dürfen auf getrennten Geräten parallel prüfen; auf einem Gerät läuft nur eine
+  grafische Host-/Originalinstanz.
+
 ## Entscheidungen
 
 - TypeScript-Domänenmodell: versioniertes JSON, stabile Kennungen, Geometrie in Feldern (1 Feld = 5 Fuß). Markdown bleibt maßgeblich für Prosa und Regeln. Assets sind separate Dateien.
