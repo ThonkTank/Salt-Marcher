@@ -828,3 +828,6 @@ CITY-01-PREP-N06-REVIEW-CLEAN-I06 Start 2026-10-09T18:15:52.557951+00:00; Plan n
 
 
 CITY-01-PREP-N06-REVIEW-CLEAN-R06 Start 2026-10-09T18:15:56.309331+00:00; Eigene Links/JSON und N06-Quellenhashes geprüft. Bestehende Signatur unverändert; R09 offen für gezielte N07. Fokus:Finale Reviewbereinigung gegen Quellen prüfen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
+
+
+CITY-01-PREP-N07 Start 2026-10-09T18:16:37.056677+00:00; CITY-GESTURE-R09-01 repariert: EPS-gewichtete X-/Y-Eingabefehler tragen gemäß tatsächlichen abs(cos/sin)-Koeffizienten zur inversen Achse bei; unabhängige Achse ohne Koeffizient vergrößert ihre Fehlergrenze nicht. Vorhandene Signatur unverändert, keine neue Schnittstelle oder Atlas-/Hoständerung. Dauerhafte X/Y-Kleinständerungen trotz großer ungewählter Achse mit Undo/Redo; separate2echte Änderungen und8No-ops bestehen. HEX-02-I01c-Speicherpaket424f45b vor Checks integriert;check,347Tests/build bestanden. R10 und anschließendes Aufräumen stehen noch aus; neuer Anschluss erst Teamabgleich. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/n07-refinement.json.

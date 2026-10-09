@@ -561,3 +561,42 @@ test("Scale roundoff handling preserves meaningful tiny changes, negative grips 
   );
   negative.cancel();
 });
+
+test("An unselected large axis does not hide a real independent millimeter-house scale change", () => {
+  for (const axes of ["x", "y"] as const) {
+    const { history, source } = setup(),
+      before = source.read();
+    const house = {
+      ...before.buildings[0]!,
+      position: { x: 0, y: 0 },
+      scale: { x: 0.001, y: 0.001 },
+    };
+    history.execute({
+      label: "small house",
+      changes: [cityDocumentChange(before, { ...before, buildings: [house] })],
+    });
+    const posed = source.read(),
+      start = cityBuildingPoint(house, { x: 8, y: 10 });
+    const gesture = new CityGesture(
+      source,
+      building("scale-building", axes),
+      start,
+    );
+    const point =
+      axes === "x"
+        ? { x: start.x + 1e-10, y: 1e6 }
+        : { x: 1e6, y: start.y + 1e-10 };
+    const after = gesture.update(point).document;
+    assert(after.buildings[0]!.scale[axes] > house.scale[axes]);
+    assert.equal(
+      after.buildings[0]!.scale[axes === "x" ? "y" : "x"],
+      house.scale[axes === "x" ? "y" : "x"],
+    );
+    assert(gesture.apply("small selected-axis change"));
+    assert.equal(history.undoDepth, 2);
+    history.undo();
+    assert.deepEqual(source.read(), posed);
+    history.redo();
+    assert.deepEqual(source.read(), after);
+  }
+});

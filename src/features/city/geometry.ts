@@ -27,13 +27,15 @@ function transform(pose: CityBuildingPose) {
     precision(raw: Point): Point {
       const p = cityInputPoint(raw);
       // Scale terms before summing to avoid unnecessary coordinate-sum overflow.
-      const error =
-        8 *
-        (Math.abs(p.x) * Number.EPSILON +
-          Math.abs(p.y) * Number.EPSILON +
-          Math.abs(position.x) * Number.EPSILON +
-          Math.abs(position.y) * Number.EPSILON);
-      return cityInputPoint({ x: error / scale.x, y: error / scale.y });
+      const xError =
+        Math.abs(p.x) * Number.EPSILON + Math.abs(position.x) * Number.EPSILON;
+      const yError =
+        Math.abs(p.y) * Number.EPSILON + Math.abs(position.y) * Number.EPSILON;
+      // Each inverse component only receives errors through its actual rotation weights.
+      return cityInputPoint({
+        x: (8 * (Math.abs(c) * xError + Math.abs(s) * yError)) / scale.x,
+        y: (8 * (Math.abs(s) * xError + Math.abs(c) * yError)) / scale.y,
+      });
     },
     inverse(raw: Point): Point {
       const p = cityInputPoint(raw),
