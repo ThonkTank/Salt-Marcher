@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I05-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T10:47:04.304138+00:00",
-      "focus": "Beleggrenzen am funktionalen Originaleintrag festhalten",
-      "state": "completed",
-      "result": "Adoption, Ausschnitt und ungemessene Navigation explizit getrennt; Originalframes erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I05-CR",
       "kind": "cleanup_review",
-      "focus": "Hashes, Graphgrenzen und offene Abnahme prüfen"
+      "startedAt": "2026-10-09T10:47:08.792213+00:00",
+      "focus": "Unveränderte Belege und ehrlichen Teilumfang verifizieren",
+      "state": "completed",
+      "result": "Keine Pflichtlücke dieses Pakets; vollständiger Stadtpfad weiterhin offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-P",
+      "kind": "reference_tool_planning",
+      "focus": "Freigegebenen produktspezifischen COK-RFB-Adapter planen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
