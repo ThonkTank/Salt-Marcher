@@ -1067,3 +1067,5 @@ I47-Plan: [COK-Licht und Wetter](ROADMAP-CITIES-CITY00-COK-ATMOSPHERE-PLAN.md). 
 CITY-00-I47-PLAN-CLEAN-I47 Start 2026-10-09T19:40:17.946273+00:00; Plan verlinkt; vorige Reviewbezeichnung konsolidiert, Geometrie-/Kopien-/Slotgrenzen unverändert.
 
 CITY-00-I47-PLAN-CLEAN-R47 Start 2026-10-09T19:40:20.566144+00:00; Plan/JSON/QA-Input und offene Produktabnahmen geprüft. I47 bereit; Start erst nach konkreter GUI-Slotantwort, bis dahin unabhängige Originalarbeit möglich.
+
+CITY-HEX03-OWNER-R01 Start 2026-10-09T19:42:25.334736+00:00; Exakter cb869951-HEX03-Plan aus Citysicht ohne Pflichtlücke: drei Anschlussauflagen, frühe native Folge, vollständige Copy/Discard/Recovery enthalten. Keine Produkt/API-Freigabe.

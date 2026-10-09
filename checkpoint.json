@@ -4697,17 +4697,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-PLAN-CLEAN-R47",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:40:20.566144+00:00",
-      "focus": "COK-Atmosphärenprobe planen: CR",
+      "id": "CITY-HEX03-OWNER-R01",
+      "kind": "owner_plan_review",
+      "startedAt": "2026-10-09T19:42:25.334736+00:00",
+      "focus": "HEX03-Plan aus Stadtanschlusssicht: R",
       "state": "completed",
-      "result": "Plan/JSON/QA-Input und offene Produktabnahmen geprüft. I47 bereit; Start erst nach konkreter GUI-Slotantwort, bis dahin unabhängige Originalarbeit möglich."
+      "result": "Exakter cb869951-HEX03-Plan aus Citysicht ohne Pflichtlücke: drei Anschlussauflagen, frühe native Folge, vollständige Copy/Discard/Recovery enthalten. Keine Produkt/API-Freigabe."
     },
     "nextRun": {
-      "id": "CITY-00-I47-I47",
-      "kind": "reference_implementation",
-      "focus": "Nach konkreter GUI-Slotfreigabe kontrollierte Original-Licht/Wetterprobe ausführen"
+      "id": "CITY-HEX03-OWNER-CLEAN-P01",
+      "kind": "cleanup_plan",
+      "focus": "Freigegebene COK-Licht/Wetterprobe auf eigener QA-Kopie durchführen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
