@@ -4612,17 +4612,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-R46-CLEAN-R45",
+      "id": "CITY-01-INTEGRATION-CLEAN-R01",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:24:24.773063+00:00",
-      "focus": "R-R: Referenzvollaufnahmen und Funktionsgrenzen",
+      "startedAt": "2026-10-09T19:25:59.973810+00:00",
+      "focus": "Stadtanschluss auf vorhandenen Atlasdateien: CLEAN-R",
       "state": "completed",
-      "result": "Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten."
+      "result": "Verweise und zentrale Quellgrenzen geprüft: changed nach Render, Draft terrain-only, CitySource gemeinsame History. Vorschlag bereit zur konkreten HEX04/05-Abstimmung."
     },
     "nextRun": {
-      "id": "CITY-01-INTEGRATION-P01",
-      "kind": "integration_plan",
-      "focus": "Konkreten Stadtintegrationsvorschlag auf existierenden Atlasdateien erstellen"
+      "id": "CITY-01-INTEGRATION-R01",
+      "kind": "integration_review",
+      "focus": "Integrationsvorschlag mit Atlasbesitzer gegen HEX04/05-Plan reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
