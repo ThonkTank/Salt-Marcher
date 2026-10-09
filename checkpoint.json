@@ -8,7 +8,7 @@
     "currentRun": {
       "id": "CE-00-N01",
       "kind": "repair_implementation",
-      "state": "completed_checked_review_pending",
+      "state": "completed_checked_r02_passed",
       "focus": "Repair CE-00-R01 provenance, attribution, immutability, query validation, ordering and bundle findings",
       "result": "Exact manifest and independent artifact hash pinned; full linked notice and change provenance recorded; reference graph deeply immutable; invalid runtime queries rejected; ordering locale-independent; CE-01 eager-startup and notice packaging blocked pending explicit measured plan.",
       "files": [
@@ -22,6 +22,14 @@
         "sourceSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
         "check": "passed",
         "tests": "211/211 passed",
+        "build": "passed"
+      },
+      "integratedVerification": {
+        "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
+        "incomingCommits": 12,
+        "preserved": "City, Hex, resize, Canvas of Kings and GM testing changes integrated without conflict",
+        "check": "passed",
+        "tests": "212/212 passed",
         "build": "passed"
       }
     },

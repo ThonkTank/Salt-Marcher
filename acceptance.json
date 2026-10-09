@@ -97,6 +97,14 @@
       "result": "No remaining R01 findings. Manifest and byte hash guards, notice/gate, deep immutability, runtime query validation, deterministic ordering and honest bundle status statically confirmed.",
       "testsRunByReviewer": false
     },
+    "integratedVerification": {
+      "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
+      "incomingCommits": 12,
+      "check": "passed",
+      "tests": {"passed": 212, "failed": 0},
+      "build": "passed",
+      "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
+    },
     "next": "CE-01-P01 plan the read-only Monster workspace, visible notice and measured lazy/release-asset strategy; all end-user acceptance remains open."
   },
   "cityPlans": {
