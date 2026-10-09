@@ -152389,7 +152389,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "concrete_location_plan_checked_not_implemented",
+    "state": "location_core_checked_world_ui_storage_inactive",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152569,8 +152569,13 @@
       {
         "id": "HEX03-001",
         "requirement": "Geschlossener Orts-/Platzierungs-/Key-Codec mit unverändertem Markdown",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "checked_core",
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01a",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json"
+        ],
+        "observed": "Eight focused native codec/history cases; exact Markdown/IDs, closed before-JSON schema, same-history terrain+location atomic command. No native World/UI/storage activation or phase Go."
       },
       {
         "id": "HEX03-002",
