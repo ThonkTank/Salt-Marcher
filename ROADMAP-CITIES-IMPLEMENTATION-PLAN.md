@@ -584,3 +584,5 @@ CITY-02-Präzisierung aus I36: Größenfeld bindet an validierten Entwurfszustan
 CITY-00-I36-R Start 2026-10-09T15:45:57.635904+00:00; Vier echte Downloadkopien, elf Bilder/Rawhashes und13-Gruppenvergleich bestätigt. Size+Rebuild-Versuch nur sichtbarer/URL-Nichteffekt; Enter erzeugt neuen Seed. Reiner Größenvergleich über From URL hält Seed,8 Gruppen geändert/5 gleich. Versuchsbilder03/04/05 korrekt begrenzt; Rückstellung bytegleich. Aufräumbefund: Snapshot nennt Customgröße noch offen.
 
 CITY-00-I36-CP Start 2026-10-09T15:46:09.219407+00:00; Plan: CO-WAT-0001-Snapshot um direkten Customgrößen-/Seedumfang ergänzen, Einheiten/Bereiche weiter offen. Ursprüngliche Small- und Rebuild-Belege nicht umdeuten; Versuchsnamen nicht als erfolgreichen Size19-Apply behaupten. Hashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen. CI/CR getrennt.
+
+CITY-00-I36-CI Start 2026-10-09T15:46:21.202296+00:00; Snapshot enthält Eingabesemantik Enter/neuer Seed sowie gehaltene Größe per From URL. Parametergrenzen, Einheiten, weitere Features und eigene Abnahme weiterhin offen. Historische Belege erhalten.
