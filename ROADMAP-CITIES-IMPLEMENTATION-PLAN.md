@@ -635,3 +635,6 @@ CITY-00-I39-CP Start 2026-10-09T16:05:14.494999+00:00; Plan: Geometriehelfer aus
 
 
 CITY-00-I39-CI Start 2026-10-09T16:05:51.739005+00:00; Anschlussplan nennt vorhandene rectangle/inside/overlaps und deren Rand-/Bounding-Box-Grenzen; feste Topologietoleranz, BuildingEllipse-Segmentzahl und Dungeon-Entity-/Portalbindung ausdrücklich getrennt. Keine ungeprüfte Feld→Meter-Übernahme oder zweite Geometriebibliothek. Plan direkt im Gesamtplan verlinkt; ursprüngliche Evidenz unverändert. Abschließender Hash-/Quell-/Verweisreview folgt.
+
+
+CITY-00-I39-CR Start 2026-10-09T16:06:44.885049+00:00; Originalquellaudit unverändert, historischer Planhash gegen Commit56b18a9 sowie finaler Plan-/Geometriehash bestätigt. Zehn Quellbereiche/Anker und sämtliche Planlinks gültig; drei CITY-01-Fälle und drei Originalzuordnungen erhalten. Wiederverwendung klar von Dungeon-Einheiten/Topologie getrennt, keine zweite Kamera/History/Statusdatei.65 CO-/24 CTY-Pflichten offen; Aufräumumfang ohne Restbefund. CITY-01 startet nach geprüfter HEX-05-Übergabe; bis dahin frühe manuelle Originalfunktionen gezielt vervollständigen. Nachweis: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/cleanup-review.json.
