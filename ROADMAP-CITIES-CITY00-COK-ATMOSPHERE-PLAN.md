@@ -10,6 +10,8 @@ Technische CITY-07-Zuordnung: Gestaltung/Atmosphäre gehört zum gespeicherten S
 
 R47 prüft sichtbare Wirkung und native Savewerte getrennt, Geometrieschutz, ursprüngliche Kopie, Version-/Demogrenze und offene Produkt-/Host-/Bedienabnahme. Nach Planung, Umsetzung und Review jeweils getrennte Aufräum-P/I/R. Normales Originalexit via UI mit Exit0 und verschwundenen eigenen Prozessidentitäten verifizieren; erst dann GUI-Slot ausdrücklich zurückgeben. Abbruch bleibt gesondert gekennzeichnet. QA ausschließlich außerhalb Repo/Vault.
 
-I47 Ergebnis: einzelne Schatten-/Schneeregler tatsächlich wirksam, nur environment geändert. Keine Vorlage angewandt; Schnee0 nur sichtbar zurückgestellt, finaler Save bleibt0.6; keine vollständige Schattenwiederherstellung, kein Fresh-Reopen. Quelle geschützt; Demo normal beendet/GUI zurück. Rawmanifest: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json`. R47 separat ausstehend.
+I47 Ergebnis: einzelne Schatten-/Schneeregler tatsächlich wirksam, nur environment geändert. Keine Vorlage angewandt; Schnee0 nur sichtbar zurückgestellt, finaler Save bleibt0.6; keine vollständige Schattenwiederherstellung, kein Fresh-Reopen. Quelle geschützt; Demo normal beendet/GUI zurück. Rawmanifest: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json`. R47 ist als begrenzte Referenzreview abgeschlossen; vollständige Vorlagenfunktion bleibt offen.
 
 R47: begrenzte Regler-/Savewirkung bestanden, vollständige Vorlagenfunktion weiterhin offen. Review: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json`. Raw-Bildkennung018-restoration-saved ist nur der damalige Dateiname, kein Beweis erfolgreichen Speicherns. Künftig Paketkoordination in Issue7; gemeinsame Produktfolge bleibt HEX03→04→05→CITY01–04.
+
+Folgeplan P48: [Vorlagen und frisches Öffnen](ROADMAP-CITIES-CITY00-COK-TEMPLATE-REOPEN-PLAN.md).
