@@ -1,8 +1,9 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
-Status: **Campaign/Data-Peerreviews R01/R02 `CHANGES_REQUIRED`; reparierter
-Plankandidat vor erneutem Exact-SHA-Review; nicht ratifiziert und ohne
-Implementierungs-, Host- oder Persistenzfreigabe.**
+Status: **Campaign/Data-Peerreviews R01/R02 und unabhängiger Architekturreview
+R03 `CHANGES_REQUIRED`; Owner-abgestimmter Reparaturkandidat vor erneutem
+Exact-SHA-Review; nicht ratifiziert und ohne Implementierungs-, Host- oder
+Persistenzfreigabe.**
 
 ## Fachliche Quellen
 
@@ -42,7 +43,13 @@ beide Punkte. Der fokussierte R02-Wiederreview dokumentierte in
 [Issue #1, Kommentar 6087780040](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087780040)
 eine weitere Pflichtlücke: permanente Character-Löschung darf keine noch
 lebenden Scene-, Masken- oder Combat-Referenzen hinterlassen. Diese Fassung
-repariert auch diese Löschgrenze; keiner der Vorgänger besitzt einen PASS.
+repariert auch diese Löschgrenze. Der vollständige Architekturreview R03 in
+[Issue #1, Kommentar 6087888192](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087888192)
+forderte die explizite Auflösung widersprüchlicher Lösch- und Aktivierungsquellen,
+vollständige Rejoin-/History-Verträge und eine Acceptance-Faultmatrix. Die
+Campaign/Data-Entscheidung in Kommentar 6087908963 und die Music/Weather/Shops-
+Ratifikation in Kommentar 6087913612 binden diese Reparatur. Keiner der
+Vorgänger besitzt einen Architektur-PASS.
 
 ## Umfang und Nichtziele
 
@@ -70,6 +77,7 @@ Ausdrücklich außerhalb dieses Besitzes bleiben:
 | --- | --- | --- |
 | Campaign-Identität und Nutzbarkeitsrevision | SMR-01 | kann ohne initialisierte Live Session gültig existieren |
 | Roster, CharacterId, aktuelle Party-Mitgliedschaft und Charakterprofil | Party | eine Campaign hat höchstens eine aktuelle Party; Profile bleiben Party-Wahrheit |
+| PartyCommandHistory | Party-History | letzte 100 bestätigte Party-/Rosteraktionen mit owner-lokalen Vorher-/Nachher-Fakten und unveränderlichen Receipts; nicht SMR-07 Campaign History |
 | LiveSceneId, Primary-Rolle, Scene-Zuordnung, Focus und SceneRevision | SMR-03 Scene | besitzt keine Party-Mitgliedschaft, Uhr, Karte oder Maskenfachlogik |
 | SceneClock und Zeitrevision | SMR-07 | genau eine unabhängige Uhr je existierender LiveScene |
 | Encounter, Chase oder weitere Runtime-Maske | jeweiliger Maskenbesitzer | Scene hält nur ratifizierte Identität, Teilnahmeprojektion und Reconciliation-Status |
@@ -125,20 +133,25 @@ wird nie entfernt.
 - Aktivierung nennt eine konkrete Ziel-LiveSceneId, die aus einer validierten
   Focus-Projektion gewonnen wurde, sowie erwartete Campaign-, Party-, Scene-
   und Focus-Revisionen. Ein späterer Focuswechsel lenkt den Befehl niemals auf
-  eine andere Scene um.
+  eine andere Scene um. Die bestätigte programmweite Regel und TN-07, nach der
+  Aktivierung unmittelbar der fokussierten Scene zuordnet, ersetzt hier die
+  ältere phasenlokale `unassigned`-Aktivierung aus `requirements-scene.md` und
+  `requirements-party-window.md`. `pending` bezeichnet ausschließlich eine
+  gespeicherte abhängige Reconciliation und ist kein regulärer unassigned-
+  Partyzustand.
 - Deaktivierung ist im Party-Besitzer autoritativ. Die Figur wird aus jeder
   Scene und allen Masken entfernt. Fehler in nichtdestruktiven abhängigen
   Projektionen rollen die Party-Entscheidung nicht zurück, sondern erzeugen
   ausschließlich betroffene, sichtbare Reconciliation-Pflichten.
-- Permanente Charakterlöschung ist dagegen ein bestätigter, unteilbarer
-  Mehrbesitzerbefehl: Vor der sichtbaren Löschung des Party-Records müssen
-  sämtliche teilnehmenden Scene-, Masken- und Combat-Besitzer die Entfernung
-  jeder lebenden CharacterId-Referenz erfolgreich validiert, vorbereitet und
-  in denselben durablen Publish-Entscheid eingebracht haben. Scheitert oder
-  fehlt ein erforderlicher Besitzer vor Publish, bleibt der Character samt
-  Referenzen unverändert erhalten und der Befehl scheitert sichtbar. Nach
-  Publish darf weder eine Fachprojektion noch eine Retry-/Undo-History die
-  gelöschte CharacterId als lebend oder wiederherstellbar ausgeben.
+- Permanente Charakterlöschung veröffentlicht genau einmal eine autoritative
+  Party-Löschung samt nichtrekonstruktivem Tombstone und geschlossenem
+  `ReferenceOwnerManifest`. Verfügbare Besitzer entfernen ihre Live-Referenz im
+  selben Publish; registrierte unavailable Besitzer werden darin quarantined
+  und sichtbar pending. Ein unbekannter oder nicht registrierter möglicher
+  Referenzbesitzer ist vor Publish fail-closed. Tombstone-Guards an jeder
+  Projektion verhindern trotz alter quarantined Bytes Live-Mitgliedschaft,
+  Teilnahme, Undo-Ergebnis oder Resurrection. Erst vollständige Closure aller
+  Manifesteinträge erlaubt den getrennten irreversiblen physischen Purge.
 - Eine Scene-Bewegung erhält Party-Mitgliedschaft und verschiebt eine Figur
   atomar zwischen genau zwei Scene-Zuordnungen. Ein Split kann eine neue Scene
   anlegen; der gemeinsame Befehl lässt den Location-Eigentümer dieselbe
@@ -152,11 +165,13 @@ wird nie entfernt.
   Auswahl vor Veröffentlichung, führen erwartete Party- und Scene-Revisionen
   mit und wiederholen einen unbekannten Ausgang nicht blind.
 
-Während einer abhängigen Reconciliation wird eine betroffene Figur nicht aus
-einer veralteten Scene- oder Maskenprojektion als aktuell angezeigt. Stattdessen
-zeigt die Live Session ihre stabile CharacterId, die beabsichtigte Zielgrenze
-und einen strukturierten Pending-/Retry-Zustand. Unbetroffene Scenes und Masken
-bleiben verwendbar.
+Während einer nichtdestruktiven abhängigen Reconciliation wird eine betroffene
+Figur nicht aus einer veralteten Scene- oder Maskenprojektion als aktuell
+angezeigt. Stattdessen zeigt die Live Session ihre stabile CharacterId, die
+beabsichtigte Zielgrenze und einen strukturierten Pending-/Retry-Zustand.
+Nach permanenter Löschung zeigt sie nur Tombstone-/Closure-Status ohne
+rekonstruktiven Character-Payload oder live auflösbare CharacterId. Unbetroffene
+Scenes und Masken bleiben verwendbar.
 
 ### Party-, Roster- und Adventuring-Day-Projektion
 
@@ -174,14 +189,15 @@ einen strukturierten Pending-Zustand. Namen sind nicht identitätsstiftend.
   getrennte Party-Befehle. XP und Rest verändern keine Scene-Zuordnung; nur
   Aktivierung, Deaktivierung, Löschung oder ein ausdrücklicher Scene-Move tun
   dies über die gemeinsame Grenze.
-- Charakterlöschung entfernt sämtliche lebenden Scene-/Masken-/Combat-
-  Referenzen in derselben bestätigten Veröffentlichungsgrenze, bevor der
-  Party-Record sichtbar verschwindet. Abgeschlossene historische Fakten bleiben
-  nach SMR-01 erhalten, zeigen die permanent entfernte Identität aber als
-  `[UNKNOWN]`; nur ein noch tatsächlich recoverable Trash-Objekt darf verlinkt
-  bleiben. Eine betroffene Undo-History darf die gelöschte CharacterId weder
-  wiederherstellen noch erneut referenzierbar machen; erneute Anlage erzeugt
-  immer eine neue stabile CharacterId.
+- Charakterlöschung entfernt verfügbare Live-Referenzen und die lebende Party-
+  Projektion in derselben bestätigten Grenze. Unavailable Ownerdaten bleiben
+  ausschließlich quarantined und werden durch Tombstone/Manifest nie als live
+  auflösbar. Abgeschlossene historische Fakten zeigen die permanent entfernte
+  Identität als `[UNKNOWN]`; nur ein noch tatsächlich recoverable Trash-Objekt
+  darf verlinkt bleiben. Undo darf die CharacterId weder wiederherstellen noch
+  erneut referenzierbar machen; erneute Anlage erzeugt eine neue CharacterId.
+  Export/Import übernimmt höchstens nichtrekonstruktive Tombstone-/Closure-
+  Belege und niemals gelöschten Party-Payload oder quarantined Live-Referenzen.
 - Adventuring-Day-Budget und -Fortschritt sind reine, revisionierte Party-
   Berechnungen. Eigene Eingabezeilen bleiben transient und verändern weder
   Roster noch aktuelle Party oder Scene-Zuordnung.
@@ -243,8 +259,26 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
 - Wird eine nicht-Primary Scene leer, entfernt derselbe bestätigte Rejoin die
   leere Scene an der gemeinsamen Party-/Scene-Veröffentlichungsgrenze. Ist die
   leere Quelle Primary, gilt die oben definierte ausdrückliche
-  Primary-Übertragung. Masken- oder andere nachgelagerte Owner dürfen danach
-  sichtbar pending bleiben und blockieren die autoritative Zuordnung nicht.
+  Primary-Übertragung.
+- Ein Rejoin nennt erwartete Source-/Target-Scene- und SceneClock-Revisionen
+  sowie eine ausdrückliche GM-Zeitauflösung: bestätigte Source-Zeit, bestätigte
+  Target-Zeit oder ein manuell bestätigter Auflösungswert. Sie setzt Target-
+  Zeit/Revision vorwärts, archiviert/finalisiert die SourceClock und dreht weder
+  Worldzustand, Geschichte noch eine andere Scene zurück.
+- Derselbe Entscheid beschreibt den alten und neuen Primary- und Focus-Zustand.
+  War Source fokussiert, wechselt Focus mit monotoner FocusRevision auf Target;
+  war Target fokussiert, bleibt es Target mit neuer Revision; war eine dritte
+  Scene fokussiert, bleibt sie unverändert. Source wird nie wieder `active`
+  projiziert.
+- Jeder Scene-gebundene Masken-/Encounter-Owner deklariert vor Publish
+  `archive`, `complete`, `transfer-to-target` oder `quarantine-pending`. Ein
+  unavailable Owner darf den Character-Move nicht zurückrollen, aber seine
+  Daten werden unter CommandId/Receipt quarantined und können keine lebende
+  SourceScene-Referenz projizieren. Reconnect finalisiert genau einmal.
+- Source-spezifische AmbienceOverrides sowie Weather-/Shop-Verfügbarkeiten
+  werden archiviert oder suspendiert, niemals auf Target übertragen. Erst eine
+  frische Target-Focus-/Scene-Projektion darf Target-Overrides oder Autonomie
+  aktivieren; Campaign-weite ManualDecisions bleiben unverändert.
 - Location-Wechsel ersetzt nur abgeleitete Location-Projektionen. Persistente
   Inhalte am alten Ort bleiben beim Orteigentümer; gepinnte oder mit genau
   einer Partyuntergruppe reisende Inhalte folgen nur mit eigener stabiler
@@ -264,18 +298,15 @@ MaskKind, OwnerIdentity, OwnerRevision, Teilnehmerreferenzen und Lifecycle-
 Status. Der Maskenbesitzer hält fachlichen Ablauf, History und Persistenz. Scene
 führt keine kopierten Combat-/Chase-Zustände.
 
-Eine bestätigte Teilnehmerbewegung oder Deaktivierung entfernt die CharacterId
-aus allen betroffenen Masken, blockiert aber die autoritative Party-/Scene-
-Entscheidung nicht. Fehlgeschlagene nichtdestruktive abhängige Maskenupdates
-werden sichtbar pending; veraltete Masken werden nicht als synchron
-dargestellt. Für permanente Charakterlöschung gilt stattdessen die unteilbare
-Löschgrenze: Jeder Masken-/Combat-Besitzer mit einer lebenden Referenz ist ein
-erforderlicher Publish-Teilnehmer; sein Ausfall lässt Character und Referenzen
-vor Publish unverändert und erzeugt keinen Zustand „gelöscht, Cleanup pending“.
-Completion einer Maske beendet niemals die LiveScene. Fehlende oder ausgefallene
-Maskenprovider lassen Scene, Party, Notizen und andere Masken weiter nutzbar,
-verhindern aber eine permanente Löschung, solange sie eine lebende Referenz
-besitzen.
+Eine bestätigte Teilnehmerbewegung, Deaktivierung oder logische Löschung
+entfernt die CharacterId aus allen verfügbaren betroffenen Masken, blockiert
+aber die autoritative Party-/Scene-Entscheidung nicht. Fehlgeschlagene
+abhängige Updates werden sichtbar pending; Tombstone-Guards verhindern bei
+Löschung zusätzlich jede Live-Projektion aus quarantined Altbytes. Completion
+einer Maske beendet niemals die LiveScene und verändert keine andere Maske.
+Fehlende oder ausgefallene Maskenprovider lassen Scene, Party, Notizen und
+andere Masken weiter nutzbar; bei Löschung müssen sie vor Publish registriert
+und quarantined sein und später genau ein ClosureReceipt liefern.
 
 ## Mehrbesitzer-Commit und Recovery
 
@@ -297,20 +328,53 @@ Entscheid die genaue Scene-/Masken-Reconciliation-Pflicht. Die UI zeigt weder
 eine alte Zuordnung als aktuell noch eine unbestätigte neue Zuordnung als
 fertig. Retry wendet die primäre Mutation nicht erneut an.
 
-Permanente Charakterlöschung ist ausdrücklich keine solche vorgezogene
-Party-Mutation. Ihre Stage-/Validate-Receipts schließen Party sowie jeden
-Scene-, Masken- und Combat-Besitzer mit lebender CharacterId-Referenz ein. Der
-gemeinsame Publish-Entscheid macht Referenzentfernung und Party-Record-Löschung
-zusammen sichtbar; vor Publish ist alles alt und gültig, danach existiert keine
-lebende Referenz mehr. Recovery rollt den vollständigen vorbereiteten Befehl
-zurück oder finalisiert ihn vorwärts. Ein `pending`-Cleanup nach sichtbarer
-Löschung, partieller Erfolg oder Undo auf dieselbe CharacterId ist unzulässig.
+Bei permanenter Charakterlöschung schreibt derselbe Publish-Entscheid die
+autoritative Party-Löschung, einen Tombstone und ein geschlossenes
+`ReferenceOwnerManifest`. Das Manifest enthält ausschließlich CommandId,
+CampaignId, CharacterId, OwnerId, Referenz-/Revisionsbeleg und Closure-Status,
+niemals Profil, Werte, Medien oder anderen rekonstruierbaren Payload. Erfasst
+werden alle registrierten Besitzer lebender Character-Referenzen, insbesondere
+Party, Scene, Masken/Combat, SMR-06 Preparation, SMR-07/Travel sowie jeder
+retained Capability-Owner; ein möglicher unbekannter Owner blockiert Publish.
+
+Jeder Manifesteintrag ist vor Publish entweder `removed` oder
+`unavailable-quarantined`. Danach erzwingt jeder Lese-, Undo-, Import- und
+Recovery-Rand den Tombstone: quarantined Bytes sind nicht live auflösbar und
+können keinen neuen Effekt erzeugen. Beim Reconnect entfernt der Owner seine
+Alt-Referenz mit ursprünglicher CommandId genau einmal und schreibt ein
+`ClosureReceipt`. Erst vollständige Closure erlaubt physischen Payload- und
+Tombstone-Purge. Recovery rollt vor Publish alles zurück und finalisiert danach
+nur vorwärts; Retry wiederholt weder Party-Löschung noch abhängige Effekte.
 
 Restore behält Campaign-, Character-, LiveScene-, Masken- und
 Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
 campaignlokale Identität und interne Referenz atomar bei erhaltener Topologie.
 Copy folgt der SMR-01-Closure-Regel. Trashing oder Löschen einer Campaign darf
 keine Ersatz-Campaign, Scene oder Party implizit aktivieren.
+
+## Party-Command-History und kausales Undo/Redo
+
+`PartyCommandHistory` besitzt pro Campaign und Installation die letzten 100
+chronologischen bestätigten Party-/Rosteraktionen: manuelle XP-Änderung, Rest,
+Membership, Move einschließlich Scene-Erzeugung, Quick Fields, Profiländerung
+und persönliche Loot-Korrektur. Navigation, Filter, Expansion, Focus und
+Fenstergeometrie erzeugen keine History-Schritte. SMR-07 Campaign History bleibt
+getrennt und wird nicht als rücksetzbare Party-History missbraucht.
+
+Campaign-Mutation, owner-lokale Vorher-/Nachher-Fakten, Pending-Marker und das
+unveränderliche CommandReceipt sind atomar. Undo/Redo benutzen eigene stabile
+CommandIds und Receipts, erhöhen Revisionen und liefern aktuelle Projektionen;
+ein unbekannter Ausgang wird vor einem neuen Versuch mit der ursprünglichen
+CommandId aufgelöst. Eine neue Aktion nach Undo verwirft den Redo-Zweig.
+
+Undo/Redo kehrt nur kausal betroffene Felder um. Spätere inkompatible Scene-,
+Clock-, Journey-, Combat- oder Profiländerung erzeugt einen sichtbaren Konflikt
+statt fremde Arbeit zurückzurollen; notwendige Journey-/Combat-Reconciliation
+läuft unter demselben Campaign-Receipt. Eine durch den Move neu erzeugte Scene
+wird nur entfernt, solange sie unverändert und unbenutzt ist; eine bereits
+geöffnete neue Scene verlangt vorher Rückkehr zur Source. Permanente Löschung
+ist nie auf dieselbe CharacterId rücksetzbar. Import oder Campaign-Ersatz
+invalidiert die vorherige lokale History am staged Ziel.
 
 ## Live-Session- und Präsentationsgrenze
 
@@ -328,58 +392,95 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
 
 ## Acceptance vor jeder Implementierungsfreigabe
 
-1. Eine neue, kopierte und importierte Campaign bleibt ohne LiveScene gültig;
-   ausdrückliches Continue initialisiert genau eine Primary Scene idempotent.
+1. Eine neue, kopierte und importierte Campaign bleibt ohne LiveScene gültig.
+   Ausdrückliches Continue mit einer bereits aktiven, geordneten Party erzeugt
+   genau eine Primary Scene, ordnet alle aktiven IDs in Partyreihenfolge zu und
+   publiziert Scene, Focus und Clock zusammen. Stale/unavailable Party vor
+   Validate publiziert nichts; gleiche CommandId liefert dasselbe Receipt.
+   Vollständiger LiveSession-Import ruft Init nie auf, beschädigter Import
+   erzeugt keine synthetische leere Scene.
 2. Innerhalb einer initialisierten Campaign bleibt bei leerer Party genau eine
    leere Primary Scene; direkte Löschung ist unmöglich.
 3. Aktivierung mit validiertem Focus ordnet genau der gebundenen Ziel-Scene zu;
    ein Focus-Race wird stale abgewiesen und lenkt nie auf den neuen Focus um.
+   Ein regulärer `unassigned`-Aktivzustand ist unmöglich; `pending` entsteht nur
+   nach gespeicherter autoritativer Änderung mit abhängiger Reconciliation.
 4. A/B/A: jede aktive Partyfigur erscheint in genau einer Scene, inaktive in
    keiner; Campaignwechsel vermischt keine IDs, Focus- oder Maskenzustände.
 5. Split und Rejoin bewahren Party-Mitgliedschaft, bewegen jede CharacterId
    genau einmal, räumen nur die bestätigte leere Source auf, übertragen die
    Primary-Rolle ausdrücklich und löschen keine ortsgebundenen Inhalte.
-6. Deaktivierung bleibt bei Fehlern nichtdestruktiver abhängiger Projektionen
+6. Rejoin mit divergenten Source-/Target-Uhren verlangt eine ausdrückliche
+   GM-Zeitentscheidung und erwartete Clock-Revisionen. Fälle mit Focus auf
+   Source, Target und dritter Scene, Primary auf Source/Target, unavailable
+   Maskenprovider sowie Crash/Restart liefern jeweils genau den festgelegten
+   Focus-/Primary-/Clock-/Maskenausgang; keine Live-Projektion referenziert die
+   entfernte Source. Source-Ambience/Weather/Shop-Verfügbarkeit wird nie auf
+   Target übertragen und Target aktiviert erst aus frischer Projektion.
+7. Deaktivierung bleibt bei Fehlern nichtdestruktiver abhängiger Projektionen
    genau einmal Party-autoritativ; nur betroffene Contexts werden pending,
    stale Contexts werden nicht als synchron gezeigt und Retry dupliziert nichts.
-   Permanente Löschung veröffentlicht dagegen erst, wenn alle lebenden Scene-,
-   Masken- und Combat-Referenzen in derselben Grenze entfernt werden können;
-   Providerfehler lassen den Character samt Referenzen unverändert, und nach
-   Erfolg kann Undo dieselbe CharacterId nicht wiederherstellen.
-7. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
+8. Permanente Löschung mit unavailable Combat vor Publish schreibt Party-
+   Löschung, nichtrekonstruktiven Tombstone und vollständiges Owner-Manifest
+   genau einmal. Restart projiziert keine quarantined Referenz live; Reconnect
+   entfernt sie mit einem ClosureReceipt, Retry wiederholt die Party-Löschung
+   nicht, Undo scheitert, und erst vollständige Closure erlaubt Purge. Ein
+   unbekannter möglicher Owner ist fail-closed. Export/Import führt weder
+   gelöschten Payload noch quarantined Live-Referenzen wieder ein; History zeigt
+   `[UNKNOWN]` oder einen tatsächlich recoverable Trash-Link.
+9. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
    Teilnehmer teilen. Ein Scene-Move entfernt die Figur aus allen betroffenen
    Masken, ohne andere Teilnehmer oder Masken zu ändern.
-8. Focuswechsel ändert ausschließlich Focus/Fokusprojektion. Primary Scene,
+10. Focuswechsel ändert ausschließlich Focus/Fokusprojektion. Primary Scene,
    Partyzuordnung, Uhren, Travel, WorldEffects und Campaign-weite manuelle
    Music-Entscheidungen bleiben unverändert; ein LiveScene-Override wird nur
    nach frischer Projektion suspendiert/aktiviert.
-9. `none`, stale, beschädigte oder fremde Focus-/Scene-Referenzen speisen keine
+11. `none`, stale, beschädigte oder fremde Focus-/Scene-Referenzen speisen keine
    Music-, Weather-, Shop-, Karten- oder Passive-Display-Projektion mit alten
    Daten. Unabhängige manuelle Arbeit bleibt nutzbar.
-10. Campaignwechsel und Neustart stellen nach ausdrücklichem Continue Focus,
+12. Campaignwechsel und Neustart stellen nach ausdrücklichem Continue Focus,
     Scenes, Masken, SceneClock-Verweise und Pending-Reconciliation vollständig
     wieder her; unbestätigte Drafts werden nicht zu Fachwahrheit.
-11. Restore bewahrt alle Identitäten. Import remappt alle campaignlokalen IDs
+13. Restore bewahrt alle Identitäten. Import remappt alle campaignlokalen IDs
     und Referenzen in eine unabhängige Campaign, ohne Topologieverlust oder
     Rückreferenz; Konflikte bleiben fail-closed.
-12. Ausfall eines Masken-, Music-, Weather-, Shop-, Karten- oder
+14. Ausfall eines Masken-, Music-, Weather-, Shop-, Karten- oder
     Passive-Display-Providers lässt Scene, Party, Notizen, bestätigte Arbeit
     und Preservation nutzbar. Complete Export bleibt nur dann Complete, wenn
     er jedes erforderliche verifizierte Medium und alle retained
     Capability-Daten enthält und nichts still auslässt. Fehlende oder
     unrecoverable Daten erlauben ausschließlich einen getrennt bezeichneten
     Salvage-Export, dessen Manifest jede betroffene stabile Identität,
-    erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade.
-13. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
+    erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade. Import und
+    Recovery eines Salvage bleiben als Salvage erkennbar, bewahren zulässige
+    Identitäten/Metadaten und initialisieren keine fehlende Session still.
+15. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
     optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
     inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
-14. XP-Zuteilung/Korrektur, ausgewählte Short-/Long-Rests und
+16. XP-Zuteilung/Korrektur, ausgewählte Short-/Long-Rests und
     Adventuring-Day-Berechnung ändern keine Scene-Zuordnung. Eine planning-only
     expected Party verändert weder Roster-Mitgliedschaft noch LiveScene.
-15. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
+17. Wiederholter Prepared-Scene-Import erzeugt unabhängige Runtime-Kopien mit
+    Source-Provenienz; spätere Planner-Änderung wirkt nicht zurück, und nur
+    aktive aktuell unzugeordnete Teilnehmer werden übernommen.
+18. Completion einer Maske beendet weder LiveScene noch andere Masken und
+    verändert keine fremden Teilnehmer oder Ownerdaten.
+19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Move und
+    permanente Löschung injiziert Fehler vor, während und nach Stage, Validate,
+    owner-lokalem Prepare, Publish, Verify und Finalize sowie Crash/Restart und
+    unbekannten Ausgang. Vor Publish ist ausschließlich Discard/Rollback, nach
+    Publish ausschließlich Roll-forward sichtbar; nie partielle Fachwahrheit.
+    Unbekanntes Ergebnis wird nur mit ursprünglicher CommandId/Receipt geklärt.
+20. PartyCommandHistory bewahrt 100 Schritte über Fenster-, Navigations- und
+    Prozessneustart, verwirft den Redo-Zweig nach neuer Aktion und nutzt für
+    Undo/Redo neue CommandIds/Receipts. Spätere inkompatible Änderungen erzeugen
+    Konflikte. Eine durch Move erzeugte Scene verschwindet nur unverändert und
+    unbenutzt; Journey-/Combat-Reconciliation dupliziert nichts; permanente
+    Löschung bleibt irreversibel.
+21. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
     getakteten Scenes, acht Masken und 50 Teilnehmern erfüllt die TN-21-
     Livebudgets; die großen Profile truncaten oder vermischen keine Wahrheit.
-16. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
+22. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
     nicht-farbige Zustände erhalten dieselben Scene-/Party-Aktionen und
     vollständige zugängliche Namen.
 
