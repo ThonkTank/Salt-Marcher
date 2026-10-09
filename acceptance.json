@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:40:27.142161+00:00",
+    "updated": "2026-10-09T12:41:42.711137+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2167,7 +2167,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/cleanup.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/cleanup.json"
         ],
         "task": "Vorgaben speichern und Namensliste verwenden",
         "phase": "CITY-02",
