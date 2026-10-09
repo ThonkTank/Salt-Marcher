@@ -893,3 +893,11 @@ CITY-00-I42-I Start 2026-10-09T18:49:04Z; eigeneFTG-Testkarte, WyddisCobblekind 
 CITY-00-I42-CLEAN-P42 Start 2026-10-09T18:52:25.376327+00:00; Originalframes unverändert erhalten; technischeZuordnung mitexpliziterKalenderpolitik undgemeinsamemZeitbesitz präzisieren. Tooltipabweichung alsEinzelprobe/ungeklärteSemantik, keinegewollteBugparität; Originalzustandrestauriert, keineproduktweiteEvidenz ausReferenz. ReviewprüftFramehashes und24CTY/65COKennungen.
 
 CITY-00-I42-CLEAN-I42 Start 2026-10-09T18:52:43.417488+00:00; CO42ordnetKalender-/Overridepolitik explizitdergemeinsamenZeitgrenzezu. SichtbarePersonen-/Gebäudereferenzen sindkeineserialisiertenIDs. TooltipabweichungnurEinzelprobe, Version/Persistenzweiteroffen; keineeigeneSceneClockoderProduktänderung.
+
+CITY-00-I42-CLEAN-R42 Start 2026-10-09T18:53:16.493790+00:00; Originalframehashes, AXWorking/Resting/WorkingbeigleichemMontag11h undrestaurierterStatus geprüft;Screenshot04visuellbestätigt.24CTY/65COopen/unveränderteKennungen. Cleanupabgeschlossen, separaterAnforderungsreviewR42stehtaus; tatsächlicheGUIFreigabevomAtlasbesitzer liegtvor, isolierterCOKStart erstnachdiesemReferenzreview. IncomingCatalogdatenC54nichtalsneugetesteterProduktbuildbehauptet.
+
+CITY-00-I42-R42 Start 2026-10-09T18:54:16.074861+00:00; gleicherbenannterBewohner/Montag11h undWohn-/Arbeitsreferenzen inallen3Frames; Ausgangs-/Rückkehrscreenshotbytegleich. TooltipabweichungkorrektalsEinzelprobegeführt, keinintentionalerBug/Versions-/IDs-/Persistenznachweis. LokalerReferenzevidenzreviewohnePflichtbefund, volleFunktionweiterpartial/offen. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/review.json. Aufräum-P/I/R folgt.
+
+CITY-00-I42-REVIEW-CLEAN-P42 Start 2026-10-09T18:54:30.807584+00:00; Plan:explizitfesthalten,dassI42wederNone-clearnochNone-preservealsgewollteeigeneSemantikbestätigt; lediglichKalender-/OverridepolitikundWohn-/ArbeitsreferenzenPflicht. BestehendeEvidenzreviewverknüpfen,Originalhashes/65CO/24CTYprüfen. KeineProduktänderung.
+
+CITY-00-I42-REVIEW-CLEAN-I42 Start 2026-10-09T18:54:46.255992+00:00; bestehenderCO42ProbehatReviewverweisundexpliziteSemantikgrenze:keineNone-clear/-preserveProduktentscheidungausEinzelprobe. Originalframesunverändert, keinezusätzlicheDatenbank/API.

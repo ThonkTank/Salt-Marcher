@@ -4469,17 +4469,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I42-CLEAN-I42",
+      "id": "CITY-00-I42-REVIEW-CLEAN-I42",
       "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T18:52:43.417488+00:00",
-      "focus": "Referenzbefund ohneerfundeneZeitAPI einordnen",
+      "startedAt": "2026-10-09T18:54:46.255992+00:00",
+      "focus": "Reviewlink undSemantikgrenze ergänzen",
       "state": "completed",
-      "result": "CO42Plan undBeleggrenzen präzisiert; Originalframes unverändert."
+      "result": "BestehenderCO42Entry präzisiert, Original-/Produktabnahmegetrennt."
     },
     "nextRun": {
-      "id": "CITY-00-I42-CLEAN-R42",
+      "id": "CITY-00-I42-REVIEW-CLEAN-R42",
       "kind": "cleanup_review",
-      "focus": "Hashes/AX-Belege/Kennungs- undFremdwurzelschutz prüfen"
+      "focus": "JSON/Kennungen/Rawbelegschutz undSemantikgrenze prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
