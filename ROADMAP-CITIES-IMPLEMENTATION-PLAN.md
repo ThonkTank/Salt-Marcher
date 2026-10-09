@@ -155,3 +155,7 @@ R01/R02 gezielt reparieren: Exportmenü und beide unbestätigten Dateiversuche a
 ## CITY-00-I05-P: Familienstammbaum
 
 Offen ist CO-FTG-0026: bislang nur die Schaltfläche, keine Graphwirkung. Im bestehenden CITY00 Hamlet QA Bewohner Thawn Cobblekind über CITY00 Protected House öffnen, Relations ansehen und Family tree aufrufen. Sichtbare Namen und Eltern-/Geschwisterkanten gegen die bestehenden Relations-Belege vergleichen. Graphnavigation nur soweit sichtbare Controls sie anbieten; keine verborgenen Anwendungsdaten lesen. Screenshots und AX unter city00-i05-20261009 sichern. Versionsstand bleibt unbekannt. Ergebnis beschreibt ausschließlich Originalwirkung, nicht eigene Abnahme. Technische Umsetzung in CITY-06: ein gemeinsamer Personen-/Beziehungsgraph mit stabilen Personen-IDs, abgeleitete Stammbaumdarstellung und direkte Auswahl; keine zweite Familienkopie. Review prüft Kantenrichtung, Belegumfang und verbleibende Lücken; anschließend getrennte Aufräumplanung/-umsetzung/-review.
+
+## CITY-00-I05-CP: Stammbaumbelege aufräumen
+
+Originalframes unverändert lassen. CO-FTG-0026 bekommt explizite Grenzen: Adoption nur im Relations-Text belegt, Graphkarten oben teilweise angeschnitten, keine Aussage über Kantenbeschriftung. CITY-06 benötigt Beziehungen mit Art und Richtung als gemeinsame Datenreferenzen; die Baumansicht wird daraus abgeleitet und öffnet vorhandene Bewohnerdaten. Sichtbarer Originalgraph darf keine zweite Familien-Datenhaltung legitimieren. Umsetzungsbeleg und Aufräumreview prüfen Manifesthashes, Semantik und offenen Status.
