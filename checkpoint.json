@@ -9,15 +9,15 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "architecture_pass_owner_ratification_pending",
+      "state": "architecture_repair_published_re_review_and_owner_ratification_pending",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
       "integratedShared": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
-      "planCandidateCommit": "840663fd83046457321283d9dad57db4a30ca8c7",
+      "planCandidateCommit": "4d1a50b580dee9df8e2553b51395d26a0a6b19c8",
       "reviewedCandidate": "840663fd83046457321283d9dad57db4a30ca8c7",
-      "review": "Independent exact-SHA review PASS is recorded in Issue comment 6088324877 with no P0/P1/P2. Direct owner RATIFY is recorded for Scene/Time/Travel in 6088364139 and Campaign/Data in 6088373177. Party, Encounter/mask, Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat cannot directly read or write Issue #1 because its GitHub token is invalid and API connectivity fails, recorded in 6088336057.",
-      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Party, Encounter/mask, Preparation, Music/Weather/Shops, Passive Display and Host/Recovery ratifications remain required."
+      "review": "Cloud Architecture/Technical exact-SHA review CHANGES_REQUIRED on 840663fd83046457321283d9dad57db4a30ca8c7 is recorded in Issue comment 6088433662: P1 empty-Scene cleanup after deactivation/deletion and P1 monotone revision versus reversible in-world time. Both repairs are published in semantic candidate 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 and await independent exact-SHA re-review. Earlier PASS 6088324877 and direct Scene/Time/Travel RATIFY 6088364139 are superseded for the changed lifecycle/time scope; Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope.",
+      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. The new candidate needs independent exact-SHA re-review and direct ratification by Party, Scene/Time/Travel and affected Encounter/mask/consumer owners. Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat still cannot directly reach api.github.com."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
