@@ -4918,16 +4918,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48a-CLEAN-I48",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T21:16:32.775761+00:00",
-      "focus": "COK-Vorlagen Originalfolge C",
-      "state": "completed",
-      "result": "Gemessene2Regler vs vollständige Vorlagenfelder sowie visueller Cancel getrennt dokumentiert; genaue I48b-Quellkopien verlinkt, keine API-/Produktänderung."
-    },
-    "nextRun": {
       "id": "CITY-00-I48a-CLEAN-R48",
       "kind": "cleanup_review",
+      "startedAt": "2026-10-09T21:16:51.071531+00:00",
+      "focus": "COK-Vorlagen Originalfolge R",
+      "state": "completed",
+      "result": "Rawhashes/Quelle/finale Bytegleichheit/Templateumfang/5 Prozessende geprüft,24CTY/65CO offen. I48b eigener nächster Prozesslauf nach erneuter Slotabsprache; R48 folgt danach."
+    },
+    "nextRun": {
+      "id": "CITY-00-I48b",
+      "kind": "reference_implementation",
       "focus": "I48b frischer Originalprozess mit eigenen finalen Map-/Templatekopien nach neuer GUI-Slotabsprache"
     },
     "open": [
