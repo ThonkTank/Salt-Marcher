@@ -87,3 +87,21 @@ Start 09.10.2026 nach geprüftem Planungspush 37181e1. Fokus: Plan als ausführb
 3. CLP-03: Vollständige Funktionsgleichwertigkeit benötigt eine Abschlussregel jenseits der 24 alten CTY-Fälle. In CI Vollständigkeits-/Abdeckungsreview des Dreiproduktinventars und messbare Bedienverbesserung definieren.
 
 Ergebnis: drei konkrete Planungsschwächen; kein Produktcode betroffen. Nächster eigener Lauf CITY-P01-CI; danach CITY-P01-CR prüft jeden Punkt gegen den geänderten Plan.
+
+## Bereinigte Verträge CITY-P01-CI
+
+### CLP-01: Referenzinventar
+
+`acceptance.json.cityPlans.functionalInventory` erhält pro Originalfähigkeit `id` (CO-COK-0001 / CO-WAT-0001 / CO-FTG-0001), `product`, `feature`, `sourceUrl`, `observedAt`, `observedVersion` (null bis direkt bekannt), `availability` (free/premium/local/unknown), `observationKind` (documentation/direct), `originalEvidence`, `task`, `phase`, `caseIds`, `technicalPlan`, `implementationEvidence`, `hostEvidence`, `comparisonEvidence`, `usabilityEvidence`, `review` und `status`. Dokumentationskandidaten bleiben `open`; direkte Originalprobe alleine erlaubt nur `original_observed`, niemals `accepted`. `accepted` setzt Host-/Funktionsvergleich und Review auf demselben benannten Build voraus. UI-/Gestenunterschiede sind erlaubt; verlorene Fähigkeiten nicht. IDs werden nie durch Neuordnung geändert. Neue Fähigkeiten erweitern den Bestand statt bestehende Kennungen umzudeuten.
+
+### CLP-02: HEX-05-Übergabe
+
+Vor CITY-01 gemeinsam mit dem Hex-Pfad prüfen: (a) ein kamerageführter grenzenloser Raum mit Metertransform und präziser Hin-/Rückabbildung, (b) stabile Dokument-/Platzierungskennungen mit Elternbindung und aufgelösten Datei-Konflikten, (c) ein gemeinsam rücknehmbarer Befehl für mehrere Dokumente und alle Journalfehlerstellen, (d) Trefferprüfung/Zeichenziel bleiben während Zoom-/Ladegrenzen stabil, (e) frische Öffnung reproduziert Raum und Keys. Fehlender Vertrag bleibt Voraussetzung; CITY-Code erzeugt dafür keine zweite Kamera, Sitzung oder Speichertransaktion. Übergabe mit konkreten API-/Testverweisen im aktuellen Checkpoint dokumentieren. Nur notwendige gemeinsame Änderungen mit dem zuständigen Kollegen abstimmen.
+
+### CLP-03: Abschlussregel
+
+CITY-00 hat zwei getrennte Tore: alle öffentlich dokumentierten Produktbereiche sind inventarisiert, und alle Pflichtbereiche besitzen direkte Originalproben einschließlich der Galerie. Premium-/Zugangslücken bleiben offen. Nach jeder direkten Probe weitere entdeckte Fähigkeiten nachtragen; vor CITY-09 aktuelle Referenzversionen erneut prüfen. Jede Fähigkeit wird genau einer Phase und mindestens einer eigenen Zielaufgabe zugeordnet; jedes CTY-Kriterium bleibt separat prüfbar. CITY-09 schließt erst, wenn Inventarvollständigkeitsreview und sämtliche Pflichtfähigkeiten auf dem Endbuild bestanden sind und HEX-28 den gemeinsamen Atlasweg bestätigt.
+
+Bedienverbesserung: pro vergleichbarer Aufgabe mindestens drei gleich vorbereitete Versuche, gleiche Eingabegeräte und vergleichbare Kartengröße; Medianzeit, Aktionszahl und Fehler erfassen. Ziel: keine zusätzlichen notwendigen Modus-/Kartenwechsel, keine höhere Fehlerrate und geringere Medianzeit oder weniger notwendige Aktionen pro Kernaufgabe. Kein pauschaler Geschwindigkeitsanspruch aus Einzelversuchen. Noch fehlende physische Beobachtung bleibt offen. Produktumfang ohne direkten Originalzugang wird nicht als gleichwertig freigegeben.
+
+CI-Ergebnis: CLP-01/02/03 konkretisiert; keine Produktfähigkeit implementiert oder abgenommen. Nächster eigener Lauf CR prüft Schema, Übergabe und Abschlussregel gegen Nutzerauftrag und Roadmap.

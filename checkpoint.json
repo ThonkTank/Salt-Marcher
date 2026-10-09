@@ -3351,17 +3351,17 @@
     "state": "overall_plan_statically_checked",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-P01-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:13:03.737634+02:00",
-      "focus": "Inventarschema, HEX-05-Übergabevertrag und Abschlusskriterien",
-      "state": "completed",
-      "result": "CLP-01 bis CLP-03 geplant; Produktcode unberührt"
-    },
-    "nextRun": {
       "id": "CITY-P01-CI",
       "kind": "cleanup_implementation",
-      "focus": "Drei konkret geplante Planlücken schließen"
+      "startedAt": "2026-10-09T12:13:44.877952+02:00",
+      "focus": "Referenzinventarschema, Atlas-Übergabe und Abschlussregel konkretisieren",
+      "state": "completed",
+      "result": "CLP-01/02/03 im Plan umgesetzt; keine Produktabnahme"
+    },
+    "nextRun": {
+      "id": "CITY-P01-CR",
+      "kind": "cleanup_review",
+      "focus": "Drei Planbereinigungen gegen Nutzerauftrag und Roadmap prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
