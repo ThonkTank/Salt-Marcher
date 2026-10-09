@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:29:38Z",
-    "state": "smr00_adr_p01_h03_contract_review_changes_required",
+    "updated": "2026-10-09T16:44:55Z",
+    "state": "smr00_adr_p01_h03_contract_review_passed_child_state_machine_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -97,20 +97,21 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-I01-R01",
-      "state": "contract_candidate_review_changes_required",
+      "run": "ADR-P01-H03-I01-R03",
+      "state": "contract_review_passed_child_state_machine_next",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
-      "contractCandidate": "e95f3eba325b3aa55620d39a617074ede425405d",
-      "review": "The R02 plan remains passed, but independent contract review rejected exact candidate e95f3eba325b3aa55620d39a617074ede425405d. Mandatory gaps are the absent parent receipt/sorted child-set and aggregate digest contract, incomplete state/operation identity-hash-name oracles, non-distinct internal names, unstructured orphan evidence and insufficient adversarial tests.",
-      "limits": "R02 passed planning review only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+      "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
+      "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
+      "review": "The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d was rejected. Independent read-only re-review passed exact replacement f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d after repairing global orphan-name collisions. Parent/Child references and aggregate binding, complete state/operation oracles, target and rename lifecycle, moved versus retained evidence, conflict evidence, global typed names, identity/null/hash/length rules, deep immutability and adversarial Golden DTOs are covered. The isolated contract suite passed 9 tests; the integrated tree passed typecheck, 276 tests and build. The delta adds no helper, product source or executable evidence.",
+      "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Repair and independently re-review only the p01-v3 parent/child contract and adversarial Golden DTO matrix. Do not build the native helper or claim executable H03 evidence before the exact-head contract review passes; ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Plan the bounded native Child-State-Machines and pure Create/Update/Delete fault matrix against reviewed p01-v3 before implementation. Do not claim executable H03 evidence, Linux durability Go, platform selection or P02 authorization."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
