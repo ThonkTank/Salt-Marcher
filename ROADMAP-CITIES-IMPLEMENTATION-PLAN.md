@@ -127,3 +127,11 @@ Offen: direkte Stadtübersicht, aktuelle Version, Größen-/Layout-/Darstellungs
 Konkreter Lauf: den auf der offiziellen itch-Seite tatsächlich eingebetteten Generator öffnen; Start-URL samt Seed/Größe/Features sichern. Eine ummauerte Küsten-/Flussstadt in Übersicht und Detail erfassen; Kontextmenü und Versionsanzeige direkt lesen. Nur beobachtete Optionswege nutzen. Ergebnisbilder, Menü-AX und Manifest mit Dateihashes in der bestehenden city-plans-QA-Wurzel sichern. Weitere echte Wirkungs-/Speicherproben getrennt durchführen, statt Menüs zu vollständiger Funktionsabnahme umzudeuten.
 
 Review: Referenzbilder lesbar und reproduzierbare Vorgaben bekannt; jede neu entdeckte Fähigkeit mit stabiler CO-WAT-Kennung, Zielaufgabe und Phase ergänzen; keine Referenztor-/Produktfreigabe aus diesem Teilpaket. Aufräumen danach getrennt planen, umsetzen und reviewen.
+
+## CITY-00-I03-CP: Belegmetadaten bereinigen
+
+R01: Genau vier Menübilder (Kontext, Features, Roads, Export) und zwei Ergebnisbilder benennen; das siebte Bild stammt aus dem separaten Reloadreview. Alle Dateien im Manifest mit Hashes aufnehmen, ohne frühere Prüfnachweise zu überschreiben.
+
+R02: Aktivierte Citadel-/Temple-/Plaza-Vorgaben getrennt von tatsächlich visuell identifizierten Merkmalen notieren. Das Bild belegt Stadtumriss, Hausformen, Straßen, Mauer/Türme, Fluss/Küste und Hafenanlagen. Die Identität eines Tempels oder anderer besonderer Gebäude bleibt einer eigenen Wirkungsprobe vorbehalten.
+
+CI aktualisiert Belegmanifest und Checkpoint; CR prüft alle sieben Bilder/Hashes, die unveränderten 44 CO-Anforderungen sowie die korrigierten Beleggrenzen. Die Originalgesamt-/Produkt-/Bedienabnahme bleibt offen.
