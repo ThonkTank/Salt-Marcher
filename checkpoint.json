@@ -3880,17 +3880,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I23-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T14:20:21.379074+00:00",
-      "focus": "Belegumfang und Pflichtschutz prüfen",
-      "state": "completed",
-      "result": "Belege korrekt begrenzt; Snapshot noch veraltet, im getrennten Aufräumen aktualisieren."
-    },
-    "nextRun": {
       "id": "CITY-00-I23-CP",
       "kind": "cleanup_planning",
-      "focus": "Snapshot und Rohbelegschutz planen"
+      "startedAt": "2026-10-09T14:20:41.215696+00:00",
+      "focus": "Abgeleiteten Snapshot und Nachweisgrenzen planen",
+      "state": "completed",
+      "result": "I23-Snapshotkorrektur und Hash-/Verweisprüfung geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I23-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Snapshot berichtigen und Rohbelege schützen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
