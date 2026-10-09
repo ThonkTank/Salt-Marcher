@@ -93,3 +93,32 @@ Nachbesserungslauf repariert und erneut geprüft. Physische Eingabe und jede
 nicht ausgeführte Plattform-/Screenreaderprüfung bleiben offen. Erst nach
 bestandenem H01-Review darf `CE-01-C01` mit eigenem Plan, Umsetzung und Review
 beginnen.
+
+## Ergebnis vom 9. Oktober 2026
+
+Der automatisierte H01-Scope ist auf dem sauberen Commit
+`aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05` unabhängig geprüft und
+freigegeben. `npm run check`, 242/242 Tests und `npm run build` bestanden;
+`main.js` ist 1.339.676 Byte groß, liegt mit 150.306 Byte Wachstum unter dem
+180.000-Byte-Limit und besitzt in allen drei Läufen denselben SHA-256
+`3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad`.
+
+Maßgebliche Receipts:
+
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit`
+
+Jeder Lauf bindet eine eigene systemd-Unit und Invocation-ID sowie MainPID,
+Obsidian-PIDs, Startticks und Cgroup. Alle drei Receipts belegen normalen
+`app.quit()`-Ausstieg, `Result=success`, `ExecMainStatus=0` und keine erzwungene
+Terminierung. Der reale Hostlauf fand zwei Produktfehler: browsernative Timer
+wurden mit einem unzulässigen Empfänger aufgerufen, und normalisierte
+`undefined`-Werte überschrieben nach leerem Restore die expliziten
+Sortier-/Richtungs-/Seitendefaults. Beide Fehler und die Hostharness-Belege
+wurden repariert und regressionsgetestet.
+
+Dieses Ergebnis schließt ausschließlich den automatisierten Real-Host-Scope.
+Physische Tastatur/Maus, Screenreader und nicht ausgeführte Plattformen bleiben
+offen und werden durch Playwright nicht ersetzt. CE-01 erhält deshalb noch
+keine vollständige Fachfreigabe.

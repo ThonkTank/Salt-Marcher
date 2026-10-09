@@ -110,8 +110,8 @@
       "sharedBranch": "fetch and integrate before every package and publication; preserve foreign IDs/evidence; no force-push"
     },
     "cases": [
-      {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open"},
-      {"id": "CE-AC-02", "title": "Catalog detail without state loss", "state": "open"},
+      {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open", "automatedRealHost": "passed"},
+      {"id": "CE-AC-02", "title": "Catalog detail without state loss", "state": "open", "automatedRealHost": "passed"},
       {"id": "CE-AC-03", "title": "Reproducible DMG-2014 evaluation", "state": "open"},
       {"id": "CE-AC-04", "title": "Live party and roster recomputation", "state": "open"},
       {"id": "CE-AC-05", "title": "Individual and group initiative semantics", "state": "open"},
@@ -123,7 +123,7 @@
       {"id": "CE-AC-11", "title": "Auditable statblock rolls", "state": "open"},
       {"id": "CE-AC-12", "title": "Conditions and immunity warning", "state": "open"},
       {"id": "CE-AC-13", "title": "Independent plan lifecycle actions", "state": "open"},
-      {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open"}
+      {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open", "automatedRealHost": "passed", "physicalInput": "open"}
     ],
     "implementationCandidate": {
       "run": "CE-00-I01",
@@ -297,7 +297,29 @@
       "review": "Passed after the repair review required explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
     },
-    "next": "CE-01-H01 follows ROADMAP-SALTMARCHER-CE01-H01-PLAN.md for the real Obsidian command, focus, close/reopen, fresh-process, damaged-payload and measured 900x650/1150x700 acceptance. Only after its review may the separate CE-01-C01 cleanup begin."
+    "ce01H01": {
+      "run": "CE-01-H01",
+      "state": "automated_scope_completed_checked_reviewed",
+      "commit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
+      "result": "Three distinct isolated real Obsidian processes passed visible command-palette opening, overlapping single-leaf behavior, paging/keyboard/filter/chip/detail/license/focus state, exact restart restore, clean close/reopen defaults, both measured layouts and damaged-payload same-leaf retry.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 242, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1339676,
+        "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
+        "mainJsGrowthBytes": 150306,
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit"
+        ]
+      },
+      "repairs": "Real-host execution found and repaired unbound browser timer invocation and restored-default state being overwritten by normalized undefined values; focused regressions cover both.",
+      "review": "Independent read-only review approved the automated scope after lifecycle receipts bound unique systemd and Obsidian process identities and normal non-forced exit for all three runs.",
+      "limits": "CE-AC-01, CE-AC-02 and CE-AC-14 remain open until the remaining product lifecycle and physical acceptance gates are completed. Playwright input is not physical keyboard/mouse evidence; screenreader and other-platform checks were not run."
+    },
+    "next": "CE-01-C01 reconciles the reviewed automated H01 evidence while preserving physical-input, screenreader and other-platform gates as open; CE-02 planning may proceed without treating CE-01 as fully approved."
   },
   "cityPlans": {
     "schemaVersion": 1,

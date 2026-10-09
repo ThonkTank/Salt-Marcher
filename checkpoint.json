@@ -77,30 +77,36 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_n01_reviewed_host_acceptance_next",
+    "state": "ce01_h01_automated_reviewed_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-I03",
-      "kind": "implementation",
-      "state": "completed_checked_reviewed",
-      "focus": "Complete D&D-2014 catalog filters, chips/reset, debounced drafts, correctable validation, responsive/A11y behavior and DOM harness",
-      "result": "The ItemView now projects every planned 2014 monster filter, supports multiple discrete values, removable chips and sort/selection-preserving reset. All free-text drafts publish stale-safe after 200 ms or immediately on Enter, survive restore including an empty draft, and fold atomically into applied state for host persistence and close. Invalid ranges remain correctable. Focus fallbacks, keyboard flows and responsive descendant breakpoints are DOM-covered. Real Obsidian and 900x650/1150x700 acceptance remain open.",
-      "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
+      "id": "CE-01-H01",
+      "kind": "real_host_acceptance",
+      "state": "automated_scope_completed_checked_reviewed",
+      "focus": "Verify the catalog command, unique leaf, retained state, responsive layouts, fresh-process restore and damaged-payload retry in isolated real Obsidian processes",
+      "result": "Three isolated real Obsidian runs on one exact clean SHA passed edit, restart and damaged-payload scenarios. Host execution exposed and repaired unsafe browser timer invocation and loss of explicit default sort state after restore. Physical keyboard/mouse, screenreader and other-platform acceptance remain open.",
+      "plan": "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
       "verification": {
         "check": "passed",
-        "tests": {
-          "passed": 235,
-          "failed": 0
-        },
-        "domHarness": "passed",
-        "build": "passed"
+        "tests": {"passed": 242, "failed": 0},
+        "build": "passed",
+        "sourceRevision": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
+        "mainBytes": 1339676,
+        "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
+        "mainJsGrowthBytes": 150306,
+        "runs": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit"
+        ]
       },
       "review": {
-        "state": "passed_after_repair",
-        "findings": "All free-text drafts, empty restore, timer cleanup, chip/reset focus and representative DOM flows confirmed; real host sizing remains open."
-      }
+        "state": "passed_automated_scope",
+        "findings": "Independent read-only review confirmed exact clean build identity, UI/layout evidence, restart/default state, fault recovery and three distinct normally exited Obsidian processes."
+      },
+      "limits": "Automated input is not physical keyboard/mouse evidence. Physical input, screenreader and non-Linux platform acceptance remain open; CE-01 is not fully approved."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -210,6 +216,21 @@
       "review": "Passed after explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions were added.",
       "limits": "Real Obsidian restart, physical keyboard, damaged data and measured 900x650/1150x700 acceptance remain open."
     },
+    "ce01H01": {
+      "id": "CE-01-H01",
+      "kind": "real_host_acceptance",
+      "state": "automated_scope_completed_checked_reviewed",
+      "commit": "aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05",
+      "result": "Visible command-palette opening, overlapping single-leaf behavior, catalog interactions, state retention, 900x650/1150x700 layouts, exact fresh-process restore, clean close/reopen defaults and damaged-payload same-leaf retry passed in real isolated Obsidian.",
+      "repairs": "The host run found and repaired browser timer receiver binding and undefined normalized values overwriting explicit default sort/direction/page state; both received regressions.",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit",
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen",
+        "/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit"
+      ],
+      "review": "Independent read-only review approved the automated scope after lifecycle receipts proved three distinct real Obsidian processes and normal exit without forced termination.",
+      "limits": "Physical keyboard/mouse, screenreader and other-platform acceptance remain open and are not replaced by automation."
+    },
     "coordination": {
       "catalogAnalysis": "completed read-only",
       "encounterAnalysis": "completed read-only",
@@ -217,17 +238,17 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both and passed independent re-review plus the integrated 239-test/check/build gates. All real-host and CE-01 acceptance remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both. CE-01-H01 then passed the independently reviewed automated real-Obsidian edit/restart/fault scope on exact clean SHA aa6d92d with 242 tests; only physical input, screenreader, other-platform acceptance and cleanup remain open.",
     "open": [
-      "CE-01-H01 real Obsidian acceptance, CE-01-C01 cleanup and all CE-02 through CE-07 runs",
+      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-01-C01 cleanup; all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
-      "Real Obsidian host, restart, keyboard and damaged-data acceptance"
+      "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-H01",
-      "kind": "real_host_acceptance",
+      "id": "CE-01-C01",
+      "kind": "cleanup",
       "plan": "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
-      "focus": "Verify command-palette opening, canonical focus, filter/detail state, close/reopen, fresh process, damaged asset behavior, physical keyboard and 900x650/1150x700 layouts in real Obsidian without closing unrelated applications"
+      "focus": "Reconcile the reviewed H01 evidence and retained host harness without closing physical, screenreader or platform gates; then prepare CE-02 while physical input awaits user execution"
     }
   },
   "repositoryWorkflow": {
