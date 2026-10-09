@@ -4044,17 +4044,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:15:56.893932+00:00",
-      "focus": "Processing-Ausgabe konkret planen",
-      "state": "completed",
-      "result": "Zwei reale Downloads und vollständiger Gruppenvergleich mit Rücksetzung geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I31-I",
       "kind": "reference_probe",
-      "focus": "Processing Offset/None-Ausgabe empfangen und vergleichen"
+      "startedAt": "2026-10-09T15:18:47.917996+00:00",
+      "focus": "Processing-Ausgabe vollständig vergleichen",
+      "state": "completed",
+      "result": "Processing Offset/None: tatsächliche JSON298842/293445 Bytes; nur buildings geändert, MultiPolygon669→651. Andere13 Gruppen wertgleich; gleiche Gruppenkennung buildings ist kein Beleg stabiler Einzelobjekt-IDs. Exportversion0.11.5 keine bestätigte UI-Version."
+    },
+    "nextRun": {
+      "id": "CITY-00-I31-R",
+      "kind": "reference_review",
+      "focus": "Dateiumfang von interner Mutation/IDs abgrenzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
