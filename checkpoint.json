@@ -62,28 +62,31 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "focused_reference_repair_planned",
+    "state": "scoped_reference_contract_implemented_review_pending",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-P01",
-      "kind": "repair_plan",
-      "startedAt": "2026-10-09T03:08:39+02:00",
-      "state": "completed_planned",
-      "baseCommit": "5eca8d66c948f90fbcfe9d2e7d55a4f9077142d9",
-      "focus": "Begrenzter technischer Nachbesserungsplan für HEX00-R01-01..06; keine Umsetzung oder Fachfreigabe",
+      "kind": "repair_implementation",
+      "startedAt": "2026-10-09T03:16:20+02:00",
+      "state": "completed_implemented_review_pending",
+      "baseCommit": "e3cdd18b688f918c0925b56c0d15ada3a185466e",
+      "focus": "R01-01/06: expliziter Fragen-/Frühprobenvertrag, konsistente Gruppenindizes und Validatorregressionen",
+      "id": "HEX-00-N-I01",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/manifest.json",
-        "ROADMAP-HEX-00-REPAIR-PLAN.md",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/plan-validation.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/migration-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/catalog-final.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/basis-checks.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/published-basis-checks.json"
       ],
-      "endedAt": "2026-10-09T03:14:44.878049+02:00",
-      "result": "Sechs Reviewbefunde technisch eingegrenzt; drei eigene Nachbesserungsumsetzungen, R02 und getrenntes Aufräumen festgelegt. Keine Pflicht geschlossen und keine Fachfreigabe."
+      "endedAt": "2026-10-09T03:38:13.813204+02:00",
+      "result": "R01-01/06-Datenvertrag und Gruppenprüfung umgesetzt: alle 164 UI-Ausgangsaussagen erhalten, 172 UI-Teilfragen und 50 frühe Folgepflichten; 13 strukturierte Startproben mit Rohkarten/frischen Prozessen. 19 gezielte Tests bestehen. Keine Fachfreigabe.",
+      "integratedCommit": "7db890bc27f2dfc310fd62ab4e64f5c7334c1a98"
     },
     "nextRun": {
-      "id": "HEX-00-N-I01",
+      "id": "HEX-00-N-I02",
       "kind": "repair_implementation",
-      "focus": "R01-01/06: expliziter Pflicht-/Frühprobenvertrag, Gruppenindizes und gezielte Validatorregressionen; spätere Pflichtbefunde bleiben offen.",
-      "gate": "Keine Fachfreigabe im Umsetzungsrun; R01-02..05 anschließend gezielt beheben, eigener R02 und Aufräumreview vor HEX-01."
+      "focus": "R01-02/03: modale Picker-Kontexte und 33 benannte Optionen gezielt anhand vorhandener Belege vervollständigen. Weitere ausdrücklich frühe Inventarfragen bleiben sichtbar; keine allgemeine neue Inventurschleife.",
+      "gate": "R01-04/05 danach eigener Lauf; alle sechs Befunde bis R02 offen. Eigene Aufräumphase vor HEX-01."
     },
     "review": {
       "state": "changes_required",
@@ -114,7 +117,9 @@
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
       "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
-      "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht. Sauberer Testbaum hat drei fehlende externe Asset-Fixture-Fälle; keine neue Produkt-/Host-/physische Abnahme."
+      "145 ausdrückliche frühe Inventarfragen nach Klassifikation noch offen; unbekannte Wertebereiche/Contexts werden nicht als spätere Wirkungsfrage freigegeben. Bereits belegte Werte zunächst gezielt zuordnen.",
+      "R01-01/06 umgesetzt, eigener R02 noch offen; 111 historische Belegfehler weiter blockierend bis explizite aktive Ablösung in R01-04.",
+      "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht; veröffentlichbarer Testbaum hat drei fehlende externe Fixture-Fälle."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -122,27 +127,25 @@
     },
     "verification": {
       "check": "passed",
-      "tests": 164,
+      "tests": 173,
       "build": "passed",
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "integratedCommit": "6704cf72755b67d9526a1d2933b5c7d52991562b",
+      "integratedCommit": "7db890bc27f2dfc310fd62ab4e64f5c7334c1a98",
       "host": "Gebundener Eingang/Raum-Key, exaktes Undo/Redo, Save und frischer Obsidian-Prozess auf integriertem Build b3211281 bestanden.",
-      "testProvenance": "164 lokale Tests bestanden; zwei unveränderte fremde Teständerungen nicht veröffentlicht. Vorheriger sauberer Baum 167 Tests/164 bestanden/drei fehlende externe Fixtures. Veröffentlichte Testquellen seit dieser Prüfung identisch.",
+      "testProvenance": "173 lokale Tests bestanden; geschützte fremde Fixture-Teständerungen unveröffentlicht. HEAD plus eigene Änderungen ohne fremde Teständerungen: 176 Tests, 173 bestanden, drei bekannte fehlende externe Fixture-Fälle.",
       "cleanTreeTest": {
-        "state": "fixture_missing",
-        "baseCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
-        "tests": 167,
-        "passed": 164,
+        "state": "three_known_fixture_failures",
+        "tests": 176,
+        "passed": 173,
         "failed": 3,
-        "reason": "Fehlende ../dungeon-auswertung/tests/fixtures/own-asset-pack/own.dungeondraft_pack und wall-texture-probe/own-walls.dungeondraft_pack; Quellcheckout und fremde Tests unverändert.",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/publish-test.log"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/published-basis-checks.json"
       },
       "catalog": "576 Einträge mit lokalen Originalbelegen und 92 Rollen bestehen Herkunfts-/Zuordnungsprüfung. Alle 337 neuen Frames geprüft. Gesamtkatalog 635 Einträge/83 Fälle: 111 erhaltene importierte Belegprobleme, keine neuen Fall-/Framefehler.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
-      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert.",
+      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert. adbc951/4c5808e/df1c6f3/b6edbbe/3cf3210 im N-I01 integriert: Phase-7-Aufräumen/Hosthilfen und Dokumentation; Produkt, Tests und Wonderdraft-Helfer unverändert. N-I01-Prüfquellen identisch; Basis-/Kern-Hostnachweise weitergeführt. 7db890b anschließend integriert: ausschließlich übriger Dungeon-Werkzeugplan, geprüfte Quellen unverändert.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json",
         "sessions": 4,
@@ -178,6 +181,17 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/plan-validation.json",
         "phaseApproval": false,
         "newOriginalOrHostRun": false
+      },
+      "scopedReferenceContract": {
+        "run": "HEX-00-N-I01",
+        "validatorTests": 19,
+        "migration": "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/migration-validation.json",
+        "catalog": "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/catalog-final.json",
+        "initialProofsRecorded": 13,
+        "originalAndGateApproval": "pending R02; six findings retained",
+        "host": "two existing core receipts reread; no new host run",
+        "physicalInput": "not_run",
+        "installation": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
