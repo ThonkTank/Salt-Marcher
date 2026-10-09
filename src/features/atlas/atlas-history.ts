@@ -170,6 +170,17 @@ export class AtlasHistory {
     return () => this.listeners.delete(listener);
   }
   private notify(): void {
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) {
+      try {
+        listener();
+      } catch (error) {
+        // State and stacks are already committed; diagnostics must not reject them.
+        try {
+          console.error("AtlasHistory subscriber failed", error);
+        } catch {
+          // A broken diagnostic sink must not block the remaining subscribers.
+        }
+      }
+    }
   }
 }

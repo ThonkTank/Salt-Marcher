@@ -134,12 +134,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W03",
+      "id": "CE-02-I02-S01-W03-T01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory the bounded 37-row Weapons table in physical PDF order while preserving the incomplete gate",
+      "focus": "Transcribe all 37 Weapons rows and special descriptions with PDF-backed literal facts while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "After the W02 Armor package, captured all 37 Weapons table occurrences in physical PDF order. The real pinned PDF now verifies 50 total equipment occurrence labels; Weapons transcript and special descriptions remain open. Overall coverage is 50 of 219 primary equipment occurrences and 13 transcript records. S01 remains incomplete and I01 blocked."
+      "result": "All 37 Weapons rows now have structured transcripts with ordered properties, literal damage, positive weights and both special-weapon descriptions. The real pinned PDF verifies 50 total equipment occurrence labels and 224 structured or sourced-description facts. Overall coverage is 50 of 219 primary equipment occurrences and 50 transcript records. Bounded table-cell matching and independent review remain open; S01 remains incomplete and I01 blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -336,7 +336,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold, but no source occurrence or transcript record is complete and no Item product feature is available. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold with 50 equipment occurrences and transcripts; the complete corpus, bounded matching, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -344,10 +344,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W03-T01",
+      "id": "CE-02-I02-S01-W04",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Transcribe all 37 Weapons rows with costs, positive weights, literal damage and ordered properties; add PDF-backed Spear, Blowgun and Net goldens and keep complete false"
+      "focus": "Inventory the bounded 99-row Adventuring Gear table in physical PDF order with exact occurrence identities and keep complete false"
     }
   },
   "repositoryWorkflow": {
@@ -2004,7 +2004,7 @@
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
       "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
-      "limits": "Planreview-PASS und O01a als enger read-only Hostnachweis; keine Original-, Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
+      "limits": "Planreview-PASS, O01a read-only und O01b für genau ein Terrainkind eng hostgeprüft; keine Dungeondraft-Original-, City-/Dungeon-Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. Vollständiges O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
       "o01a": {
         "run": "DD-036-ATLAS-O01a",
         "state": "scoped_read_only_host_passed_independent_review_passed_full_cases_open",
@@ -2015,8 +2015,23 @@
         "result": "Zwei getrennte Obsidian-Prozesse öffnen referenzfreie Original-/bytegleiche Transportkopie mit world.id dd036-o01a-world; beide Dateien behalten SHA-256 e264ddbeedb32a83a5e35eb904fd044046af8f133665fcb5877409d3d9aa5efb, null beobachtete Atlas-Schreibaufrufe, kein Draft/Journal; normale Prozessausgänge. Synthetischer Hostlauf, keine Dungeondraft-Originalwirkung.",
         "review": "Unabhängiger read-only Nachreview auf Shared-Head 018a310 bestand den engen O01a-Nachweis nach Erweiterung der Vault-/Adapter-Schreibinstrumentierung auf 32 Methoden; beide Hostläufe zeigen keine Atlas-Schreibaufrufe. Keine Freigabe für O01b oder vollständige DD-036-Fälle."
       },
+      "o01bTerrain": {
+        "run": "DD-036-ATLAS-O01b-Terrain-Teilnachweis",
+        "state": "scoped_terrain_child_host_passed_independent_review_passed_full_o01b_open",
+        "testCommit": "948f0d3",
+        "reviewHead": "2bf1043",
+        "mainSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/original/evidence/1791567719360-dd036-o01b-original-edit/o01b-result.json",
+          "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/transport/evidence/1791567727327-dd036-o01b-transport-edit/o01b-result.json",
+          "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/missing/evidence/1791567734162-dd036-o01b-missing-edit/o01b-result.json",
+          "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/foreign/evidence/1791567741590-dd036-o01b-foreign-edit/o01b-result.json"
+        ],
+        "result": "Synthetische nichtleere .overworld und tatsächliche Dateikopie in getrennten isolierten Vaults laden dieselben zwei Terrainzellen; Welt-SHA 1a2fd3e7871517fa3b5d5883445bd06ac342daad653a097311aee4899e362ced und Kind-SHA 81bff69edd957e7cb8ee21c2efa3327ff0477bfc90d24f9712c4235287e3e07e bleiben vor/nach Öffnen gleich. Fehlendes Terrainkind und Kind mit fremder worldId zeigen den jeweils spezifischen Fehler und laden keine Zellen. Alle vier Prozesse enden normal, 32 instrumentierte Vault-/Adaptermethoden melden null Atlas-Schreibaufrufe.",
+        "review": "Unabhängiger read-only Review auf Shared-Head 2bf1043: PASS ausschließlich für das Terrainkind-Teilpaket. Synthetische Quelle, kein Dungeondraft-Original; City-/Dungeon-Kinder, geschützte Key-Bytes, Save/Import und vollständige DD-036.02/.16 bleiben offen."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
-      "followingRun": "DD-036-O01a ist eng geprüft; O01b mit Kinddateien wartet auf den angeschlossenen Terrain-Lader und seine sichtbare Hostprüfung."
+      "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
@@ -4325,17 +4340,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P05",
-      "kind": "implementation_planning",
-      "startedAt": "2026-10-09T17:35:42.174Z",
-      "focus": "Transiente CityDraft-Lebensdauer und gemeinsame Historyfehlergrenze planen",
+      "id": "CITY-01-PREP-R06",
+      "kind": "review",
+      "startedAt": "2026-10-09T17:49:00.752Z",
+      "focus": "Draftzustände und Historyfehlergrenze gegen P05 prüfen",
       "state": "completed",
-      "result": "CityDraft-API konkret geplant; echte postcommit-Subscriberlücke belegt, koordinierte Reparatur erforderlich vor verlässlichem Apply."
+      "result": "Separate Gegenproben bestanden; keine Laufzeitlücke gefunden. Dauerhafte Regressionen für Straßen-/Hausanlage und codecgültigen Szenenfehler fehlen (CITY-DRAFT-R06-01). Quellen unverändert zum geprüften I05."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-P05",
-      "kind": "cleanup_planning",
-      "focus": "Draftplan auf Zustandsübergänge und koordinierte Historyreparatur prüfen"
+      "id": "CITY-01-PREP-DRAFT-CLEAN-P05",
+      "kind": "cleanup_plan",
+      "focus": "Aufräumen des reviewten Draftkerns planen; vorhandenen Stand und gezielte Testlücke präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

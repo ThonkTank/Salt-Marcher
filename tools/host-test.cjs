@@ -18,9 +18,10 @@ const root = path.resolve(__dirname, ".."),
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
   dd036O01a = process.argv.includes("--dd036-o01a"),
+  dd036O01b = process.argv.find((arg) => /^--dd036-o01b=(original|transport|missing|foreign)$/.test(arg))?.split("=")[1],
   hex02Save = process.argv.includes("--hex02-save"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
-  hex01Atlas = process.argv.includes("--hex01-atlas") || process.argv.includes("--hex01-layout") || hex02Terrain || dd036O01a,
+  hex01Atlas = process.argv.includes("--hex01-atlas") || process.argv.includes("--hex01-layout") || hex02Terrain || dd036O01a || !!dd036O01b,
   ce01Catalog = process.argv.includes("--ce01-catalog") || process.argv.includes("--ce01-catalog-damaged"),
   ce01CatalogDamaged = process.argv.includes("--ce01-catalog-damaged"),
   ce02Catalog = process.argv.includes("--ce02-catalog"),
@@ -84,7 +85,7 @@ const restart = process.argv.includes("--restart"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (dd036O01a ? "-dd036-o01a" : hex02Save ? "-hex02-save" : hex02Terrain ? "-hex02-terrain" : hex01Atlas ? "-hex01-atlas" : p01BrowserTexture ? "-p01-browser-texture" : ce02Catalog ? "-ce02-catalog" : ce01Catalog ? (ce01CatalogDamaged ? "-ce01-catalog-damaged" : "-ce01-catalog") : parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1MapInfo ? "-parity-tools-phase1-map-info" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (dd036O01b ? "-dd036-o01b-" + dd036O01b : dd036O01a ? "-dd036-o01a" : hex02Save ? "-hex02-save" : hex02Terrain ? "-hex02-terrain" : hex01Atlas ? "-hex01-atlas" : p01BrowserTexture ? "-p01-browser-texture" : ce02Catalog ? "-ce02-catalog" : ce01Catalog ? (ce01CatalogDamaged ? "-ce01-catalog-damaged" : "-ce01-catalog") : parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1MapInfo ? "-parity-tools-phase1-map-info" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -285,6 +286,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     if (hex01Atlas) fs.rmSync(vault + "/Atlanten", { recursive: true, force: true });
+    if (dd036O01b) fs.rmSync(vault + "/Atlasdaten", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
     if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures || parityPhase6Repair || parityPhase6RepairSelection || parityToolsPhase1NewMap || parityToolsPhase1StartOptions || parityToolsPhase1Wizard || gmUxN001)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
@@ -305,6 +307,37 @@ function prepare() {
     fs.mkdirSync(path.dirname(original), { recursive: true });
     fs.writeFileSync(original, JSON.stringify(document, null, 2) + "\n");
     fs.copyFileSync(original, transport);
+  }
+  if (dd036O01b && !restart) {
+    const worldId = "dd036-o01b-world";
+    const atlas = path.join(vault, "Atlanten/O01b Welt.overworld");
+    const terrain = path.join(vault, "Atlasdaten", worldId, "terrain/0_0_0.json");
+    fs.mkdirSync(path.dirname(atlas), { recursive: true });
+    if (dd036O01b === "original") {
+      const document = { kind: "overworld", version: 1, id: worldId, name: "O01b Welt", orientation: "pointy", origin: { x: 0, y: 0 }, metersPerMile: 1609.344, minHexMiles: 3, levelFactor: 3,
+        chunks: [{ level: 0, q: 0, r: 0, file: "terrain/0_0_0.json", cellCount: 2, extent: { minQ: 0, maxQ: 1, minR: 0, maxR: 0 } }], placements: [] };
+      const child = { kind: "atlas-terrain", version: 1, worldId, level: 0, q: 0, r: 0, cells: [
+        { q: 0, r: 0, surface: "land", terrain: "plain", color: "#dbc998" },
+        { q: 1, r: 0, surface: "land", terrain: "forest", color: "#66866a" },
+      ] };
+      fs.writeFileSync(atlas, JSON.stringify(document, null, 2) + "\n");
+      fs.mkdirSync(path.dirname(terrain), { recursive: true });
+      fs.writeFileSync(terrain, JSON.stringify(child, null, 2) + "\n");
+    } else {
+      const source = path.join(path.dirname(qa), "original/vault");
+      assert(fs.existsSync(path.join(source, "Atlanten/O01b Welt.overworld")),
+        "Run O01b original before transport or failure variants");
+      fs.copyFileSync(path.join(source, "Atlanten/O01b Welt.overworld"), atlas);
+      if (dd036O01b !== "missing") {
+        fs.mkdirSync(path.dirname(terrain), { recursive: true });
+        fs.copyFileSync(path.join(source, "Atlasdaten", worldId, "terrain/0_0_0.json"), terrain);
+        if (dd036O01b === "foreign") {
+          const child = JSON.parse(fs.readFileSync(terrain, "utf8"));
+          child.worldId = "foreign-world";
+          fs.writeFileSync(terrain, JSON.stringify(child, null, 2) + "\n");
+        }
+      }
+    }
   }
   for (const f of ["main.js", "manifest.json", "styles.css"])
     fs.copyFileSync(
@@ -640,7 +673,7 @@ async function main() {
             sha256: crypto.createHash("sha256").update(bytes).digest("hex") }];
         })),
       } : {}),
-      mode: (dd036O01a ? "dd036-o01a-" : hex02Save ? "hex02-save-" : hex02Terrain ? "hex02-terrain-" : hex01Atlas ? "hex01-atlas-" : ce02Catalog ? "ce02-catalog-" : ce01Catalog ? (ce01CatalogDamaged ? "ce01-catalog-damaged-" : "ce01-catalog-") : parityPhase4Objects ? "parity-phase4-objects-" : parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      mode: (dd036O01b ? "dd036-o01b-" + dd036O01b + "-" : dd036O01a ? "dd036-o01a-" : hex02Save ? "hex02-save-" : hex02Terrain ? "hex02-terrain-" : hex01Atlas ? "hex01-atlas-" : ce02Catalog ? "ce02-catalog-" : ce01Catalog ? (ce01CatalogDamaged ? "ce01-catalog-damaged-" : "ce01-catalog-") : parityPhase4Objects ? "parity-phase4-objects-" : parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -820,6 +853,10 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (dd036O01b) {
+    await require("./host/dd036-o01b.cjs")({ ...scenarioContext, variant: dd036O01b })();
+    return;
+  }
   if (dd036O01a) {
     await require("./host/dd036-o01a.cjs")(scenarioContext)();
     return;

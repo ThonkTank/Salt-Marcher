@@ -5,7 +5,7 @@
   "capturedPrimaryOccurrences": 50,
   "sections": [
     { "id": "armor", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 63, "lastPdfPage": 64, "firstPrintedPage": 63, "lastPrintedPage": 64, "expectedOccurrences": 13, "capturedOccurrences": 13, "inventoryComplete": true, "transcriptComplete": false, "complete": false },
-    { "id": "weapons", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 65, "lastPdfPage": 66, "firstPrintedPage": 65, "lastPrintedPage": 66, "expectedOccurrences": 37, "capturedOccurrences": 37, "inventoryComplete": true, "transcriptComplete": false, "complete": false },
+    { "id": "weapons", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 65, "lastPdfPage": 66, "firstPrintedPage": 65, "lastPrintedPage": 66, "expectedOccurrences": 37, "capturedOccurrences": 37, "inventoryComplete": true, "transcriptComplete": true, "complete": false },
     { "id": "adventuring-gear", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 68, "lastPdfPage": 69, "firstPrintedPage": 68, "lastPrintedPage": 69, "expectedOccurrences": 99, "capturedOccurrences": 0, "complete": false },
     { "id": "equipment-packs", "feed": "equipment", "sourceKind": "standalone-entry", "firstPdfPage": 70, "lastPdfPage": 70, "firstPrintedPage": 70, "lastPrintedPage": 70, "expectedOccurrences": 7, "capturedOccurrences": 0, "complete": false },
     { "id": "tools", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 70, "lastPdfPage": 70, "firstPrintedPage": 70, "lastPrintedPage": 70, "expectedOccurrences": 35, "capturedOccurrences": 0, "complete": false },
