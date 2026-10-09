@@ -1095,3 +1095,7 @@ CITY-00-R47-CLEAN-R47 Start 2026-10-09T20:39:40.200319+00:00; Aufräumreview PAS
 CITY-00-P48 Start 2026-10-09T20:59:29.030065+00:00; Zwei getrennte Originalfolgen I48a Vorlage/Map-Save und I48b frischer Prozess mit getrennten Dialog-/Datei-/Section-/Prozessorakeln geplant. Keine GUI gestartet.
 
 CITY-00-P48-CLEAN-P48 Start 2026-10-09T20:59:41.165724+00:00; Aufräumplan: Planverweise, Start-/Copyreihenfolge und echte Reopen-Grenze prüfen; alten R47-Ausstehend-Satz aktualisieren, offene eigene Abnahmen und fremde Wurzeln erhalten.
+
+P48-Folgeplan: [COK-Vorlagen/Reopen](ROADMAP-CITIES-CITY00-COK-TEMPLATE-REOPEN-PLAN.md).
+
+CITY-00-P48-CLEAN-I48 Start 2026-10-09T20:59:52.329422+00:00; P48 neben Roadmap verlinkt; überholten R47-Ausstehend-Satz konsolidiert. Rawdaten/Kopien bleiben unverändert, kein neues Produkt/API.
