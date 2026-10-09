@@ -88,6 +88,25 @@
         "pounds": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
       }
     },
+    "speed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "unit", "value"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "unit": { "enum": ["ft/round", "mph"] },
+        "value": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
+      }
+    },
+    "carryingCapacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "pounds"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "pounds": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+      }
+    },
     "sourcedText": {
       "type": "object",
       "additionalProperties": false,
@@ -154,6 +173,8 @@
         "attunement": { "enum": ["required", "not-required", "unspecified"] },
         "cost": { "$ref": "#/$defs/cost" },
         "weight": { "$ref": "#/$defs/weight" },
+        "speed": { "$ref": "#/$defs/speed" },
+        "carryingCapacity": { "$ref": "#/$defs/carryingCapacity" },
         "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } },
         "description": { "type": "array", "items": { "$ref": "#/$defs/sourcedText" } },
         "damage": { "$ref": "#/$defs/damage" },

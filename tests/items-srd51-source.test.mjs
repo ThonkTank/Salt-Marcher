@@ -64,8 +64,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 191);
-  assert.equal(result.validation.recordCount, 191);
+  assert.equal(result.validation.occurrenceCount, 199);
+  assert.equal(result.validation.recordCount, 199);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -258,11 +258,12 @@ test("pack-only helper dispositions are explicit and cannot invent primary ident
     readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
   ]);
-  assert.deepEqual(checkedInventory.helperDispositions.map(item => item.helperIndex), [
+  const packOnly = checkedInventory.helperDispositions.filter(item => item.disposition === "pack-prose-only");
+  assert.deepEqual(packOnly.map(item => item.helperIndex), [
     "string-10-feet", "alms-box", "block-of-incense", "censer", "vestments",
     "little-bag-of-sand", "small-knife",
   ]);
-  assert.equal(checkedInventory.helperDispositions.every(item =>
+  assert.equal(packOnly.every(item =>
     item.disposition === "pack-prose-only" && item.canonicalId === null), true);
   const invented = structuredClone(checkedInventory);
   invented.helperDispositions[0].canonicalId = "srd51:equipment:equipment-packs:1";
@@ -334,4 +335,63 @@ test("Tools Vehicles row remains a sourced cross-reference without a primary ite
   damaged.crossReferences[0].targetSectionIds.push("missing-section");
   assert.throws(() => validateTranscriptData(checkedTranscript, damaged, { allowIncomplete: true }),
     /unbekannten Zielabschnitt missing-section/);
+});
+
+test("mounts preserve eight physical rows and reconcile the Donkey or mule helper expansion", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "mounts-other-animals");
+  const records = checkedTranscript.records.filter(record => record.subcategory === "mount-or-animal");
+  assert.deepEqual(occurrences.map(item => item.sourceLabel), [
+    "Camel", "Donkey or mule", "Elephant", "Horse, draft", "Horse, riding", "Mastiff", "Pony", "Warhorse",
+  ]);
+  assert.deepEqual(occurrences.map(item => item.id),
+    Array.from({ length: 8 }, (_, index) => `srd51:equipment:mounts-other-animals:${index + 1}`));
+  assert.deepEqual(occurrences.map(item => [item.firstPdfPage, item.lastPdfPage]), [
+    [71, 71], [71, 71], [71, 71], [72, 72], [72, 72], [72, 72], [72, 72], [72, 72],
+  ]);
+  assert.deepEqual(records.map(record => record.id), occurrences.map(item => item.id));
+  assert.deepEqual(records.map(record => record.cost.sourceText),
+    ["50 gp", "8 gp", "200 gp", "50 gp", "75 gp", "25 gp", "30 gp", "400 gp"]);
+  assert.deepEqual(records.map(record => record.speed), [
+    { sourceText: "50 ft.", unit: "ft/round", value: "50" },
+    { sourceText: "40 ft.", unit: "ft/round", value: "40" },
+    { sourceText: "40 ft.", unit: "ft/round", value: "40" },
+    { sourceText: "40 ft.", unit: "ft/round", value: "40" },
+    { sourceText: "60 ft.", unit: "ft/round", value: "60" },
+    { sourceText: "40 ft.", unit: "ft/round", value: "40" },
+    { sourceText: "40 ft.", unit: "ft/round", value: "40" },
+    { sourceText: "60 ft.", unit: "ft/round", value: "60" },
+  ]);
+  assert.deepEqual(records.map(record => record.carryingCapacity), [
+    { sourceText: "480 lb.", pounds: 480 }, { sourceText: "420 lb.", pounds: 420 },
+    { sourceText: "1,320 lb.", pounds: 1320 }, { sourceText: "540 lb.", pounds: 540 },
+    { sourceText: "480 lb.", pounds: 480 }, { sourceText: "195 lb.", pounds: 195 },
+    { sourceText: "225 lb.", pounds: 225 }, { sourceText: "540 lb.", pounds: 540 },
+  ]);
+  assert.equal(records.every(record => !("weight" in record)), true);
+  assert.equal(records.filter(record => record.name === "Donkey or mule").length, 1);
+  const expansions = checkedInventory.helperDispositions.filter(item =>
+    item.disposition === "expanded-primary-occurrences");
+  assert.deepEqual(expansions.map(item => [item.helperIndex, item.helperName]),
+    [["donkey", "Donkey"], ["mule", "Mule"]]);
+  assert.equal(expansions.every(item => item.sourceText === "Donkey or mule"
+    && item.canonicalId === "srd51:equipment:mounts-other-animals:2"
+    && item.sourceOccurrenceIds.join() === item.canonicalId), true);
+  assert.match(records[0].description[0].text, /base carrying capacity/);
+
+  const missingCanonical = structuredClone(checkedInventory);
+  missingCanonical.helperDispositions.find(item => item.helperIndex === "donkey").canonicalId = null;
+  assert.throws(() => validateTranscriptData(checkedTranscript, missingCanonical, { allowIncomplete: true }),
+    /kanonische Primär-ID/);
+  const mismatchedSpeed = structuredClone(checkedTranscript);
+  mismatchedSpeed.records.find(record => record.name === "Camel").speed.value = "40";
+  assert.throws(() => validateTranscriptData(mismatchedSpeed, checkedInventory, { allowIncomplete: true }),
+    /speed stimmt nicht/);
+  const mismatchedCapacity = structuredClone(checkedTranscript);
+  mismatchedCapacity.records.find(record => record.name === "Elephant").carryingCapacity.pounds = 132;
+  assert.throws(() => validateTranscriptData(mismatchedCapacity, checkedInventory, { allowIncomplete: true }),
+    /carryingCapacity\.pounds stimmt nicht/);
 });
