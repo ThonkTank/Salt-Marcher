@@ -130479,11 +130479,12 @@
         "original": {
           "sequence": "Hauptleiste → Save",
           "options": null,
-          "effect": null,
+          "effect": "Auf einer kopierten leeren Karte erzeugt ein Building-Rechteck einen Raum. Hauptleisten-Save zeigt „Success!“ und schreibt Polygon und Wand in die Kartenkopie. Ein frischer Dungeondraft-Prozess öffnet eine Kopie der gespeicherten Datei per Startargument mit sichtbarem Raum. Ein weiterer Save zeigt wieder „Success!“; Shapes, Walls und Tile-Zellen bleiben gleich, die Tile-Lookup-Reihenfolge und der Datei-Hash ändern sich. Open Recent, Atlas-Save und vollständige Parität sind damit nicht belegt.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/12-loaded-map.png"
+            "/home/aaron/.cache/dungeon-native-qa/audit-20261004/karten-verwaltung/dd036-native-20261004-223413/evidence/12-loaded-map.png",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-s01-20261009/evidence/native-save-reopen-result.json"
           ]
         },
         "target": "Save schreibt die 8×8-QA-Karte als eigene Datei und macht sie in Open Recent sichtbar.",
