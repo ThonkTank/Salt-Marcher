@@ -15,6 +15,7 @@ import "./core/object-library.test";
 import "./core/colorable-raw-png.test";
 import "./core/v4.test";
 import "./core/room-key-search.test";
+import "./core/dungeon-view-state.test";
 import "./core/creature-catalog.test";
 import "./core/creature-catalog-view-state.test";
 import "./core/creature-catalog-view-model.test";

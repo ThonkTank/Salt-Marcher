@@ -1,4 +1,14 @@
 {
+  "gmProductFollowups": {
+    "date": "2026-10-09",
+    "GM-UX-N-006": {
+      "state": "i01_core_completed_i02_review_host_and_gm_retest_open",
+      "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-006-PLAN.md",
+      "productCommit": "a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2",
+      "confirmed": "Der hostneutrale exakte View-State-Codec und das monotone flüchtige Mehr-Leaf-Register bestehen ihre drei fokussierten Regressionen sowie npm run check, npm test (378/378) und npm run build.",
+      "notConfirmed": "Keine DungeonView-/DungeonEditor-Wirkung, keine zweimalige Tab-Neuöffnung im Cloud-Obsidian-Host, kein unabhängiger Produktreview und kein Produkttester-Nachtest. Keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
+    }
+  },
   "saltMarcherReplacement": {
     "schemaVersion": 1,
     "updated": "2026-10-09T17:14:05Z",
@@ -152362,7 +152372,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "r01_r02_pass_scoped_cleanup_open",
+    "state": "passed_scoped_early_level0_island",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152511,7 +152521,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json",
           "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506"
         ],
-        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. R01 found two P1; N01 core/native repair checked, independent R02 PASS; CLEAN pending.",
+        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. R01 found two P1; N01 core/native repair checked, independent R02 PASS; Own bounded CLEAN-P/I/R passed.",
         "reviewRun": "HEX-02-R01/R02"
       },
       {
@@ -152524,18 +152534,20 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json",
           "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506"
         ],
-        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 found two P1; N01 core/native repair checked, independent R02 PASS; CLEAN pending.",
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 found two P1; N01 core/native repair checked, independent R02 PASS; Own bounded CLEAN-P/I/R passed.",
         "reviewRun": "HEX-02-R01/R02"
       },
       {
         "id": "HEX02-007",
         "requirement": "Eigener Fachreview und getrennte Aufräumläufe",
-        "state": "open",
+        "state": "passed_scoped",
         "implementationRun": "HEX-02-I01a/I01b",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+          "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506",
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-review.json"
         ],
-        "observed": "R01/CLEAN-P/I/R after complete usable save/reopen flow."
+        "observed": "Independent complete R01 and exact P1 R02 passed; distinct bounded cleanup completed; no total Atlas or parity Go.",
+        "reviewRun": "HEX-02-R01/R02 + own CLEAN-P/I/R"
       }
     ],
     "cleanupFindings": [
@@ -152565,21 +152577,29 @@
       {
         "id": "HEX02-C01",
         "priority": 3,
-        "state": "implementation_checked_review_open",
+        "state": "resolved",
         "title": "Zwei neue Anschlussdateien lesbar formatieren",
         "required": "AST and native buildtriplet unchanged; only atlas-view.ts and own hex02-copy-repair.cjs.",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json",
+        "resolvedBy": {
+          "run": "HEX-02-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-review.json"
+        }
       },
       {
         "id": "HEX02-C02",
         "priority": 3,
-        "state": "implementation_checked_review_open",
+        "state": "resolved",
         "title": "Aktuelle Review-/Cleanup-/Nachweiszuordnung abschließen",
         "required": "Own hex roots/current architecture only; preserve historical and foreign evidence/IDs.",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json",
+        "resolvedBy": {
+          "run": "HEX-02-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-review.json"
+        }
       }
     ],
-    "limits": "Early native level0 island Save/Draft/fresh/conflict plus Copy/Discard/A↔B checked; independent R01/R02 required findings closed. Separate CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
+    "limits": "HEX02 early native level0 island Save/Draft/fresh/conflict and Copy/Discard/A↔B passed in stated scope; independent R01/R02 required findings plus own separate CLEAN closed. Shared Location/City/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open. Latest integrated N005 build is Core/check/build only; native receipts retain their exact source/triplet.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
