@@ -3427,17 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T10:42:27.821438+00:00",
-      "focus": "Belegintegrität und korrigierte Zuordnung prüfen",
-      "state": "completed_no_required_findings_in_package",
-      "result": "Sieben Belege unverändert, 45 eindeutige offene Pflichten, Export/Wetter/Integration getrennt; CTY und fremde Wurzeln erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I04-NR",
       "kind": "reference_rereview",
-      "focus": "R01/R02 schließen und verbleibende Originalaufgaben priorisieren"
+      "startedAt": "2026-10-09T10:42:55.611878+00:00",
+      "focus": "R01/R02 gegen Umsetzung erneut prüfen",
+      "state": "completed_no_required_findings_in_package",
+      "result": "Pflichtlücken dieses FTG-Belegpakets geschlossen; vollständige CITY-00-Referenzinventur bleibt offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I05-P",
+      "kind": "reference_planning",
+      "focus": "Familienstammbaum eines vorhandenen FTG-Bewohners direkt prüfen; COK wartet auf zulässigen Zugang und freien GUI-Platz"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
