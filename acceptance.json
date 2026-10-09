@@ -113929,6 +113929,20 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1BuildingFloorOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "Building Tool > Floor: zwei 2×2-Böden; gespeicherte 18×12-Karte → links -1 → Save → links +1 → Save; exakt gespeicherte 17×12-Crop-Karte frisch öffnen → links +1 → Save",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/native-same/runs/20261009-063607-3534581/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/native-fresh/runs/20261009-063651-3535366/evidence/result.json"
+          ],
+          "sourceMapSha256": "efea1f4909d962413d29496a0d14d1a5183eaa1789ca9cbd675aebad6f88a185",
+          "cropMapSha256": "814bf8d74821e466540dac3e6cce5d31ce9ad944532a34258c26eb6336b7fc1a",
+          "measured": "Zwei erhaltene Shape-Polygone, Tile-Zellen 8→4→4 im selben und frischen Originalprozess.",
+          "gap": "Aktueller Building-Befehl erzeugt keine Zellfolge; Boden-Hostfolge nach Crop/Neuöffnung offen. Keine Fallfreigabe."
         }
       },
       {

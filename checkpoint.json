@@ -1325,6 +1325,16 @@
         "next": "Kombinierte Originalfolge mit Zwischenaufnahme je Dialogfeld erneut ansetzen; dann Hostpaar. Zeichnen/Bearbeiten, Pakettextur, Terrain und weitere Entitäten bleiben offen.",
         "gate": "open"
       },
+      "buildingFloorResizeOriginalProbe": {
+        "cases": "DD-038.05 und gezeichneter Building-Floor-Boden",
+        "state": "original_measured_host_open",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/original-probe.md",
+        "sameProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/native-same/runs/20261009-063607-3534581/evidence/result.json",
+        "freshProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/native-fresh/runs/20261009-063651-3535366/evidence/result.json",
+        "measured": "18×12→17×12→18×12, zwei Shape-Polygone erhalten, belegte Tile-Zellen 8→4→4 im laufenden wie im frischen Originalprozess.",
+        "next": "Building-Zeichen-/Editbefehl mit gespeicherter Zellfolge verbinden; aktuellen Host auf demselben gezeichneten Boden nach Resize und frischer Öffnung vergleichen.",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
