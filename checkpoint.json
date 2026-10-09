@@ -13,7 +13,7 @@
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
-      "integratedShared": "ee89305661ab19c43d9d994a7f72dee94a872a15",
+      "integratedShared": "fbed51f59963e7d12384390ee2f0722d0c28ea33",
       "planCandidateCommit": "e23f27494be13d27f8688d399b55c235fe3e718c",
       "reviewedCandidate": "4bfa7d80bd5b611c9b1e312dec0558959012ee18",
       "review": "Independent architecture R03 re-review in Issue comment 6088021905 required explicit GM authority for mask completion/transfer, owner-independent capability-bound purge, a revisioned owner registry, Prepared-Scene import without regular unassigned members, precise delete portability and Undo/Redo fault coverage. The repair incorporates Campaign/Data erasure decision 6088033502; focused owner and independent architecture re-reviews remain required.",
