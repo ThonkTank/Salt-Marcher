@@ -117541,6 +117541,20 @@
           "measuredScope": "18×12 Wood/Diamond: nach Alt-Radieren gleichartigen Wood-Boden entlang gemeinsamer Kante nachzeichnen; wieder acht Zellen und eine volle Wood-Kontur. Gespeicherte Radier- und Wiederaufbaukarte stimmen in allen Zellen, Stilpfaden, Farben und Konturen mit dem Original überein. Zwei Host-Undo-Schritte und frische Öffnung der gespeicherten Zustände bestanden.",
           "remaining": "Gemischte Stile auf gemeinsamer Kontur, reine Übermalung, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorMixedCandidate": {
+          "state": "adjacent_wood_stone_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/implementation.md",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525118340-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525232937-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/independent-audit.json",
+          "regressionEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-regression-20261009/evidence/1791525400605-parity-tools-phase1-building-floor-edit/result.json",
+          "regressionReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-regression-20261009/evidence/1791525416848-parity-tools-phase1-building-floor-reopen/result.json",
+          "measuredScope": "8×8, angrenzende 3×3-Smart-Wood-/Smart-Stone-Gesten ohne Wand: eine gemeinsame Kontur und 18 Zellen. Gespeicherte Kontur, Positionen, Stilpfade und Farben entsprechen dem Original vollständig; Undo/Redo, Save und frische Neuöffnung bestanden.",
+          "remaining": "Reine Übermalung, Radieren an der Stilgrenze, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",

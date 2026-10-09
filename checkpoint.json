@@ -1449,6 +1449,20 @@
       "open": "Gemischte Bodenstile auf gemeinsamer Kontur, Konturpunkte, andere Formen, kombinierte Ränder und vollständiger DD-038-Review.",
       "gate": "open"
     },
+    "buildingFloorMixedCandidate": {
+      "cases": "DD-038.05, angrenzende Smart-Wood-/Smart-Stone-Building-Böden",
+      "state": "mixed_style_scoped_host_raw_review_passed_case_open",
+      "buildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/implementation.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/independent-audit.json",
+      "originalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525118340-parity-tools-phase1-building-mixed-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525232937-parity-tools-phase1-building-mixed-reopen/result.json",
+      "coreTests": 196,
+      "measured": "Angrenzende 3×3-Böden in 8×8: eine Kontur und neun Wood-/neun Stone-Zellen; Kontur und alle Zellwerte stimmen im gespeicherten Original und Host überein. Host-Undo/Redo und frische Öffnung bestanden.",
+      "open": "Übermalung, Stilgrenze beim Radieren, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview.",
+      "gate": "open"
+    },
     "terrainMaskResizeCandidate": {
       "cases": "DD-038.02–.05, vorbereitete Acht-Slot-Terrainmasken",
       "state": "scoped_host_raw_review_passed_cases_open",
@@ -1465,7 +1479,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur anhand der bestehenden Originalkarte im Host paaren; Konturpunktbearbeitung und andere Formen direkt im Original messen und Host folgen lassen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur sind anhand der Originalkarte gepaart; Übermalung und Radieren an der Stilgrenze direkt messen und Host folgen lassen; Konturpunktbearbeitung und andere Formen direkt im Original messen und Host folgen lassen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

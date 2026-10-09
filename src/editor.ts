@@ -3025,6 +3025,8 @@ export class DungeonEditor {
         defaults.wallWidth, defaults.opacity ?? 1,
         defaults.effect ?? "none", material ?? null,
       ]),
+      nativeMixedFloor = category === "floor" && this.session.version === 4 &&
+        isNativeFloorAssetId(material?.assetId),
       sources = [...this.session.entities.values()].filter(
         (entity): entity is Surface | Building => {
           const source =
@@ -3036,7 +3038,17 @@ export class DungeonEditor {
             entity.floorId === floorId &&
             !entity.locked &&
             (erase ||
-              styleKey(entity as Surface | Building) === desiredStyle)
+              styleKey(entity as Surface | Building) === desiredStyle ||
+              (nativeMixedFloor && entity.kind === "building" &&
+                !!entity.floorTileRaster &&
+                isNativeFloorAssetId(entity.material?.assetId) &&
+                entity.layer === defaults.layer &&
+                entity.wall === floorWallStyle.wall &&
+                entity.wallWidth === floorWallStyle.wallWidth &&
+                (entity.wallAssetId ?? null) === (floorWallStyle.wallAssetId ?? null) &&
+                (entity.wallAlpha ?? 255) === floorWallStyle.wallAlpha &&
+                (entity.wallBevel ?? false) === floorWallStyle.wallBevel &&
+                (entity.floorAlpha ?? 255) === Math.round((defaults.opacity ?? 1) * 255)))
           );
         },
       ),
@@ -3138,7 +3150,8 @@ export class DungeonEditor {
             const previous = this.session.smartTiles;
             const next = buildingFloorCellsAfterDraw(previous, target,
               result.mergedIds, shape,
-              this.session.settings.width, this.session.settings.height);
+              this.session.settings.width, this.session.settings.height,
+              { assetId: material!.assetId!, color: defaults.color });
             if (plan.command || next !== previous)
               this.session.execute({ ...(plan.command ?? { label: "Grundriss zeichnen" }),
                 ...(next !== previous ? { smartTiles: { before: previous, after: next } } : {}),

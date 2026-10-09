@@ -52,11 +52,13 @@ export function buildingFloorCellsAfterDraw(
   mergedIds: readonly string[],
   shape: readonly Polygon[] | undefined,
   width: number, height: number,
+  paint?: { assetId: string; color: number },
 ): readonly SmartTileCell[] | undefined {
   const previous = cells ?? [];
   const owners = new Set(mergedIds);
   const painted = shape?.length
-    ? buildingFloorCells({ ...building, polygons: shape }, width, height) : [];
+    ? buildingFloorCells({ ...building, polygons: shape }, width, height)
+      .map((cell) => paint ? { ...cell, ...paint } : cell) : [];
   const key = (cell: SmartTileCell) => `${cell.floorId}:${cell.x}:${cell.y}`;
   const existing = new Map(previous.map((cell) => [key(cell), cell]));
   const changedPaint = painted.some((cell) => {

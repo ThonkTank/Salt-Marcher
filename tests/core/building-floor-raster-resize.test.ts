@@ -7,6 +7,7 @@ import { Session } from "../../src/session";
 import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase } from "../../src/features/material/building-floor-cells";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
+const STONE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart_double%2Ftileset_stone.png";
 function building(id: string, floorId: string, y: number): Building {
   return { id, floorId, kind: "building", polygons: [{ outer: [
     { x: 0, y }, { x: 2, y }, { x: 2, y: y + 2 }, { x: 0, y: y + 2 },
@@ -150,4 +151,47 @@ test("drawing beside a retained contour leaves a prior crop gap empty", () => {
     ], holes: [] }], 18, 12);
   assert.deepEqual(new Set(next?.map((cell) => `${cell.x}:${cell.y}`)),
     new Set(["1:0", "1:1", "2:0", "2:1"]));
+});
+
+test("adjacent native floor styles share one contour while keeping per-cell style", () => {
+  const document = newDocument("Mixed floor", 8, 8);
+  const session = new Session(document), floorId = document.floors[0]!.id;
+  const wood = { ...building("wood", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 4, y: 1 }, { x: 4, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  session.execute({ label: "Grundriss zeichnen", entities: [{ id: wood.id,
+    before: null, after: wood }], smartTiles: { before: undefined,
+    after: buildingFloorCells(wood, 8, 8) } });
+  const stoneShape = [{ outer: [
+    { x: 4, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 4, y: 4 },
+  ], holes: [] }];
+  const result = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    mergeTouching: true, sources: [wood], shape: stoneShape, erase: false });
+  assert.equal(result.mode, "draw");
+  if (result.mode !== "draw") return;
+  assert.deepEqual(result.mergedIds, ["wood"]);
+  const plan = planBuildingMutation({ entities: [...session.entities.values()],
+    floorId, result, expectedRevision: session.revision,
+    currentRevision: session.revision });
+  assert.ok(plan.command);
+  const after = plan.command.entities?.find((change) => change.id === wood.id)?.after;
+  assert.equal(after?.kind, "building");
+  if (after?.kind !== "building") return;
+  const previous = session.smartTiles;
+  session.execute({ ...plan.command, smartTiles: { before: previous,
+    after: buildingFloorCellsAfterDraw(previous, after, result.mergedIds,
+      stoneShape, 8, 8, { assetId: STONE, color: 0x7f7e71 }) } });
+  assert.equal(session.entities.size, 1);
+  assert.equal(after.polygons.length, 1);
+  assert.equal(session.smartTiles?.length, 18);
+  assert.equal(session.smartTiles?.filter((cell) => cell.assetId === STYLE).length, 9);
+  assert.equal(session.smartTiles?.filter((cell) => cell.assetId === STONE).length, 9);
+  assert.ok(session.smartTiles?.filter((cell) => cell.assetId === STONE)
+    .every((cell) => cell.color === 0x7f7e71 && cell.buildingId === wood.id));
+  assert.deepEqual(parseDocument(serializeDocument(session.document())).smartTiles,
+    session.document().smartTiles);
+  session.undo();
+  assert.equal(session.smartTiles?.length, 9);
+  session.redo();
+  assert.equal(session.smartTiles?.length, 18);
 });
