@@ -1043,12 +1043,23 @@
         "coreTests": 177,
         "state": "partial_candidate_review_pending"
       },
+      "wizardCandidate": {
+        "cases": "DD-003.01–.02",
+        "buildSha256": "970dedecd9f30117c06b6d9011621893c6fb35081180cad968557c3240df02cf",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512619629-parity-tools-phase1-wizard-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512632080-parity-tools-phase1-wizard-reopen/result.json",
+        "newMapRegression": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-regression-new-map-20261009/evidence/1791512822104-parity-tools-phase1-new-map-reopen/result.json",
+        "startOptionsRegression": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-regression-start-options-20261009/evidence/1791512937116-parity-tools-phase1-start-options-reopen/result.json",
+        "coreTests": 177,
+        "state": "partial_candidate_review_pending"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-003 Start mit Kartenassistent im Original und Host schließen; Originalpersistenz, Grenzwerte und Namenskonflikte für DD-002 sowie Grafikpaare für DD-006/007 nachholen. Die übrigen Pflichtfälle folgen vor dem unabhängigen 77-Fälle-Review.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-002 Originalpersistenz, Grenzwerte und Namenskonflikte sowie Grafikpaare für DD-006/007 nachholen; anschließend DD-008 globale Kartenabnutzung und DD-038 Kartengröße direkt im Original messen und umsetzen. Die übrigen Pflichtfälle folgen vor dem unabhängigen 77-Fälle-Review.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

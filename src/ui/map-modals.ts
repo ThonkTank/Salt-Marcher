@@ -782,9 +782,7 @@ export class CreateDungeonModal extends Modal {
       wallShadows = true,
       objectShadows = true,
       disableBuildingWear = this.plugin.disableBuildingWearForNewMap,
-      startKind: GeneratorKind | "empty" = "empty",
-      generatorSeed = 1,
-      generatorAmount = 12;
+      startWizard = this.plugin.startWizardForNewMap;
     const assetPacks = new Set(
         catalog.packs
           .filter((record) => record.enabled)
@@ -907,29 +905,12 @@ export class CreateDungeonModal extends Modal {
         }),
       );
     new Setting(this.contentEl)
-      .setName("Startinhalt")
-      .setDesc("Der Vorschlag ist nach dem Anlegen normal bearbeitbar.")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("empty", "Leere Karte")
-          .addOption("dungeon", "Dungeonvorschlag")
-          .addOption("cave", "Höhlenvorschlag")
-          .onChange((value) => (startKind = value as typeof startKind)),
-      );
-    new Setting(this.contentEl)
-      .setName("Generator-Startwert")
-      .addText((input) =>
-        input.setValue(String(generatorSeed)).onChange((value) => {
-          generatorSeed = Number(value);
-        }),
-      );
-    new Setting(this.contentEl)
-      .setName("Generator-Räume oder Formdetails")
-      .addText((input) =>
-        input.setValue(String(generatorAmount)).onChange((value) => {
-          generatorAmount = Number(value);
-        }),
-      );
+      .setName("Mit Kartenassistent starten")
+      .addToggle((toggle) =>
+        toggle.setValue(startWizard).onChange((value) => {
+          startWizard = value;
+          this.plugin.startWizardForNewMap = value;
+        }));
     if (catalog.packs.length) {
       this.contentEl.createEl("h3", { text: "Assetpakete dieser Karte" });
       for (const record of catalog.packs)
@@ -961,15 +942,10 @@ export class CreateDungeonModal extends Modal {
                 assetPacks: [...assetPacks],
                 builtInAssets,
               },
-              startKind === "empty"
-                ? undefined
-                : {
-                    kind: startKind,
-                    seed: generatorSeed,
-                    amount: generatorAmount,
-                  },
+              undefined,
               { wallShadows, objectShadows, buildingWear: 0,
                 nativeBuildingWear: !disableBuildingWear },
+              startWizard,
             );
             this.close();
           } catch (error) {
