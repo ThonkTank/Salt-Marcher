@@ -421,27 +421,26 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "i01b_draft2_checked_repository_location_and_ui_pending",
+    "state": "i01b_repository_checked_marker_key_ui_pending",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "HEX-03-I01b-draft2",
-      "kind": "combined_location_terrain_draft_contract",
-      "state": "completed_checked_storage_contract_repository_ui_inactive",
-      "startedAt": "2026-10-09T20:37:29.868Z",
-      "finishedAt": "2026-10-09T20:47:37.559908+00:00",
-      "sourceCommit": "05f4f5c63025b712c8498c62d4b6cb9f781cd796",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json",
-      "testsPassed": 403,
-      "focus": "Strict AtlasDraft v2 with placement/Location before-after closure and native pre-JSON checks; V1 remains separate, full Markdown and section order preserved. Actual shared FileTransaction rollback/retry fixture passed. Runtime World, Repository Location wiring and UI remain inactive.",
+      "id": "HEX-03-I01b-repository",
+      "kind": "repository_location_integration",
+      "state": "checked_core_repository_host_activation_pending",
+      "startedAt": "2026-10-09T20:57:29.938Z",
+      "finishedAt": "2026-10-09T21:13:16.501922+00:00",
+      "sourceCommit": "adebea3d1358c13d6843da10e29a424dd79ca71e",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json",
+      "testsPassed": 417,
+      "focus": "Location owners/World placements use one History and full Repository V2 Save/Copy/Discard/Recovery; actual host opt-in remains closed until marker/Key UI. Native fresh flow is next, before link comfort.",
       "nativeOnThisBuild": false,
-      "phaseApproval": false,
-      "integratedBasis": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-integrated-basis.json"
+      "phaseApproval": false
     },
     "nextRun": {
-      "id": "HEX-03-I01b",
-      "kind": "repository_location_integration",
-      "focus": "Connect current world placements and same-owner history snapshots to Location files/V2 draft/full Save/Copy/Discard/Recovery; then same-editor marker/Key/drag/fit and first native/fresh flow before any link comfort.",
-      "dependency": "Team coordination complete; Atlas-QA pause does not block implementation. Native slot is coordinated only with City on Laptop2; independent native acceptance waits for explicit QA availability."
+      "id": "HEX-03-I01b-marker",
+      "kind": "visible_location_editor_integration",
+      "focus": "Connect same-canvas Location marker/create/select, right Key/ordered exact Markdown, pointer drag and content fit to checked Repository; shared terrain+Location Undo/Redo and full Save/Copy/Discard/Recovery. Then native two-Location edit and separate fresh process before extra links.",
+      "dependency": "No general team round; fresh local GUI slot must be coordinated with City on Laptop2. Storage and owner contracts are ready; independent native QA uses separate Laptop1 and needs its own concrete runnable handoff."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1547,6 +1546,32 @@
           "normalPushAndMerge": true,
           "forcePush": false
         }
+      },
+      "repositoryLocationIntegration": {
+        "run": "HEX-03-I01b-repository",
+        "sourceRevision": "adebea3d1358c13d6843da10e29a424dd79ca71e",
+        "checkPassed": true,
+        "testsPassed": 417,
+        "buildPassed": true,
+        "focusedCases": 11,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json",
+        "triplet": {
+          "main.js": {
+            "bytes": 1422945,
+            "sha256": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f"
+          },
+          "styles.css": {
+            "bytes": 27726,
+            "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "uiActivation": false
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1590,7 +1615,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T20:48:30.627545+00:00"
+    "updatedAt": "2026-10-09T21:13:16.501922+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",

@@ -152408,7 +152408,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "location_core_checked_world_ui_storage_inactive",
+    "state": "location_repository_checked_marker_key_native_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152619,11 +152619,12 @@
         "requirement": "Gemeinsames Save/Draft/Discard/Copy/Recovery samt frischem Prozess",
         "state": "open",
         "plan": "ROADMAP-HEX-03-PLAN.md",
-        "implementationRun": "HEX-03-I01b-draft2",
+        "implementationRun": "HEX-03-I01b-repository",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json"
         ],
-        "observed": "V2 exact native terrain/placement/Location delta contract checked, six new cases and shared FileTransaction rollback/retry fixture. Repository/UI/Copy/Discard/Recovery hookup and native/fresh full flow remain required; no phase Go."
+        "observed": "Full opt-in Repository terrain/placement/Location Save/Draft/Discard/Copy/Recovery checked in eleven focused cases and clean check/test417/build. Exact baselines, unloaded retention, internal recovery owner guards, fresh repository and late Key draft proved. Marker/Key host activation and native fresh-process full flow remain required; no phase Go."
       },
       {
         "id": "HEX03-006",

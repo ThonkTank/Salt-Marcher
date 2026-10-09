@@ -54,3 +54,9 @@ Native Ortfunktion, vollständiger gemeinsamer Zoom, Cityerzeugung, sämtliche H
 ## I01b-Zwischenstand: gemeinsamer Entwurfcodec
 
 HEX-03-I01b-draft2 auf `05f4f5c` erfasst Version2 mit Ortsbytes und Placements sowie Terrain; sechs neue Fälle, tatsächlicher FileTransaction-Rollback/Retry und saubere check/test403/build bestanden. Version1 bleibt separat lesbar. Das ist noch kein Repository-/Marker-/Key-/Hostanschluss. Nächster Schritt bleibt der vollständige gemeinsame Speicherweg, unmittelbar danach der erste native Ortsablauf. Neue Fachübergaben werden in Issue #7 geführt, Bereichsrisiken zur Plattform in Issue #11; Issue #1 dient nur dem übergreifenden Index.
+
+## I01b-Zwischenstand: Repository-Speicheranschluss
+
+`HEX-03-I01b-repository` auf `adebea3` verbindet Worldplacements und Locationowner mit der gemeinsamen History und vollständigem V2 Save/Copy/Discard/Recovery. Elf gezielte Fälle und sauberer check/test417/build bestanden: ungeladene Orte bleiben erhalten, Kopien erhalten eigene Orts-/Placement-IDs und umgebogene interne Keyziele, späte Keybearbeitung bleibt nach Save als neuer Entwurf bestehen. Ortsjournal-Besitzprüfung gilt auch bei interner Transaction-Recovery; Konflikte erhalten fremde Bytes. Der aufgelöste Pfadadapter ist noch kein Vault-ID-Index oder nativer Renamebeleg.
+
+**Unmittelbar weiter mit Marker/Key/Drag/Fit und dem ersten Obsidian-Ortsablauf samt frischem Prozess.** Der bestehende Host bleibt bis zum vollständigen UI-Anschluss geschlossen; die Speicherstrecke ist ausdrücklich opt-in. Keine Link-/Komfortarbeit davor, keine HEX-03-Phasenfreigabe aus Kernprüfungen. Fachreview, Nachbesserung und Aufräumen bleiben getrennte Läufe.
