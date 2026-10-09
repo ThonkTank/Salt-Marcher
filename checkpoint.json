@@ -4351,17 +4351,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-R06",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:59:39.900617+00:00",
-      "focus": "Finalen Gestenplan mit Quellen und No-op-Gegenprobe prüfen",
-      "state": "completed",
-      "result": "Planverträge/Links/JSON und aktuelle Quellenhashes geprüft; No-op-Pivotrundung tatsächlich reproduziert und Originalpose-Regel festgelegt. Keine Restlücke im Plan-Aufräumen, kein Produkt-/Hostnachweis."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I06",
       "kind": "implementation",
-      "focus": "CityGesture und gemeinsame Cityposepunkte samt realen Draft-/Historyregressionen implementieren"
+      "startedAt": "2026-10-09T18:00:16.650006+00:00",
+      "focus": "CityGesture und gemeinsame Hausposepunkte implementieren",
+      "state": "completed",
+      "result": "Haus/Knoten/Viazüge, pivotfeste Drehung/Achsgriffe, feste Zieladresse und ein CityDraft implementiert.144Outlinevergleiche exakt;check,336Tests und Build bestanden. Separater R08 und Aufräumen folgen;Host offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R08",
+      "kind": "review",
+      "focus": "Werkzeugadapter gegen Gestenplan, numerische Grenzen und aktuelle Atlasverträge reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

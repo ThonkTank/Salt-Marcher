@@ -28,3 +28,4 @@ import "./core/city-commands.test";
 import "./core/city-edit.test";
 import "./core/city-scene.test";
 import "./core/city-draft.test";
+import "./core/city-gestures.test";
