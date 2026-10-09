@@ -358,7 +358,7 @@
     },
     "ce01C01Implementation": {
       "run": "CE-01-C01-I01",
-      "state": "completed_checked_host_passed_review_pending",
+      "state": "completed_checked_host_passed_review_changes_required",
       "commit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
       "result": "One shared mapping now owns restore drafts and reset draft keys, while one host-neutral helper owns sort, direction and page defaults; the content controller no longer duplicates those rules.",
       "verification": {
@@ -376,7 +376,15 @@
       },
       "limits": "Independent cleanup review pending. Automated host input does not close physical keyboard/mouse, screenreader or other-platform acceptance."
     },
-    "next": "Independently review CE-01-C01-I01. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce01C01Review": {
+      "run": "CE-01-C01-R01",
+      "state": "changes_required",
+      "reviewedCommit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
+      "finding": "CreatureCatalogViewContent still names six text-filter draft keys manually and implements the name draft through a separate search path, so CREATURE_CATALOG_DRAFT_FILTERS is not yet the only pair source.",
+      "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
+      "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md"
+    },
+    "next": "Review and implement CE-01-C01-N01, then independently re-review the cleanup. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

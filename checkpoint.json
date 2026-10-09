@@ -99,32 +99,19 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_implementation_host_passed_review_pending_physical_input_open",
+    "state": "ce01_c01_review_changes_required_repair_plan_review_pending",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-I01",
-      "kind": "cleanup_implementation",
-      "state": "completed_checked_host_passed_review_pending",
-      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, derive reset keys from the same mapping and retain the repeatable H01 harness",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "result": "Restore defaults, seven draft pairs and reset draft keys now share one host-neutral mapping. Focused state/DOM coverage and all three automated real-Obsidian H01 scenarios passed on the exact clean candidate.",
-      "verification": {
-        "sourceRevision": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
-        "check": "passed",
-        "tests": {"passed": 246, "failed": 0},
-        "build": "passed",
-        "mainBytes": 1339259,
-        "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
-        "mainJsGrowthBytes": 149889,
-        "runs": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit"
-        ]
-      },
-      "limits": "Independent cleanup review is pending. Automated input is not physical keyboard/mouse evidence; physical input, screenreader and non-Linux platform acceptance remain open."
+      "id": "CE-01-C01-N01-P01",
+      "kind": "cleanup_repair_plan",
+      "state": "completed_static_validation_review_pending",
+      "focus": "Remove the remaining content-level knowledge of six explicit draft keys and the separate name-search draft path",
+      "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "reviewFinding": "CreatureCatalogViewContent still names six filter/draft pairs manually while the name search is a seventh special path, so the exported mapping is not yet the only pair source.",
+      "retained": "The 5759cc9 candidate passed check, 246 tests, build and all three exact-candidate real-host scenarios; defaults, restore/reset behavior, harness scope and open host limits remain valid.",
+      "limits": "Repair planning only. No cleanup approval or CE-01 approval; physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -263,10 +250,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01-R01",
-      "kind": "cleanup_review",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Independently review the exact cleanup diff, shared restore/reset draft mapping, focused tests, build inventory and all three exact-candidate real-host receipts"
+      "id": "CE-01-C01-N01",
+      "kind": "cleanup_repair",
+      "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "focus": "Review the repair plan, then make every catalog text input derive its draft key from CREATURE_CATALOG_DRAFT_FILTERS and repeat all exact-candidate gates"
     }
   },
   "repositoryWorkflow": {
