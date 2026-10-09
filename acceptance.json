@@ -127610,6 +127610,18 @@
           "measuredScope": "8×8 Wood/Stone: Delete am oberen linken Griff entfernt einen Punkt und speichert ein Dreieck mit zwölf Stone-Zellen, die den neuen Umriss mit positiver Fläche schneiden. Ein Mittelpunktfilter ergäbe nur neun Zellen. Undo 18 gemischte Zellen, Redo zwölf Stone. Frische Originalöffnung erhält belegte Zellen; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
           "remaining": "Löschzug und vier frühere Punktfälle sind mit Host-Rohdaten ohne Abweichung gepaart und separat reviewt; Undo/Redo und frische Hostöffnungen bestehen. Weitere Punktentfernungen, aktive Wandvorlage, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingLastOutlineOriginalProbe": {
+          "state": "last_outline_delete_original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-probe.md",
+          "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-audit.json",
+          "originalDeleted": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/01-deleted.dungeondraft_map",
+          "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/02-undo.dungeondraft_map",
+          "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/03-redo.dungeondraft_map",
+          "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native-fresh/runs/20261009-121752-3721714/evidence/screens/00-fresh.png",
+          "measuredScope": "8×8: Delete am Stone-Dreieckgriff entfernt den letzten Shape-Umriss und zwölf belegte Zellen. Undo stellt beides wieder her, Redo entfernt beides. Frische Originalöffnung bleibt leer; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
+          "remaining": "Host-GUI-/Rohdatenvergleich, weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
