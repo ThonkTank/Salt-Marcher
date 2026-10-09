@@ -145553,6 +145553,17 @@
           "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510197843-parity-tools-phase1-navigation-edit/navigation-pair.json",
           "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510204224-parity-tools-phase1-navigation-reopen/result.json",
           "comparison": "Im isolierten Host 64→80→64; Weltpunkt unter dem Zeiger, V4-Dokument, History, Dirty und Dateihash bleiben gleich. Frischer Prozess liest dieselbe Karte. Fachentscheidung offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_measured_wheel_step_only",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555459952-parity-tools-phase1-navigation-edit/navigation-pair.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555468161-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/review.md",
+          "remaining": "Weitere Zoomstufen, Radsignale, Touchpad, Canvasrand, Fokusverlust und physische Eingabe offen; Phase-1-Gesamttor offen."
         }
       },
       {

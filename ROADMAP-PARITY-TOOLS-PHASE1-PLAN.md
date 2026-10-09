@@ -35,6 +35,8 @@ Der eigenständige GUI-Prüfer `tools/host/parity-tools-phase1-map-info.cjs` pr�
 
 ## Fachreview und Tor
 
+Der [getrennte Teilreview zu `DD-041.04`](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/review.md) bestätigt den direkt gemessenen Strg+Rad-Einzelschritt 100→125→100 % mit festem Zeiger-Weltpunkt, unveränderter V4-Datei und frischer Hostöffnung. Weitere Zoomstufen, Radsignale, Touchpad, Rand/Fokus und physische Eingabe sowie das Phase-1-Gesamttor bleiben offen.
+
 Der getrennte Review liest jeden der 47 verbleibenden Einträge gegen Original- und Hostrohbeleg. Er prüft mindestens leeren Start, bearbeitete Karte, Abbruchpfade, Undo/Redo, Save As/Recent, Schatten/Abnutzung, Zoom/Guide/Ruler und frische Neuöffnung. Eine kombinierte V4-Folge erhält Raum-ID, Feature-Verweis, wortgleiche Key-Bytes und gespeicherte Bildgrößen; eine große Karte deckt Ansichtswechsel und Speichern ab. `npm run check`, `npm test`, `npm run build` und passende isolierte Hostläufe ergänzen die Bedienprüfung. Produktiver Vault und Fremdänderungen bleiben unangetastet; nur eine grafische Testinstanz läuft.
 
 Jeder Fall erhält in `acceptance.json` Originalversion, Ablauf, direkten Rohbeleg, Host-Build, Entscheidung und konkrete Restlücke. `TOOL-PARITY.md` hält den lesbaren Fachbefund. Eine Lücke führt zu getrenntem Nachbesserungsplan, Umsetzung und erneutem Review. Erst nach bestandener Fachphase folgen eigener Aufräumplan, Umsetzung und Review vor Phase 2. Vor jedem Paket und vor jedem Push wird der gemeinsame GitHub-Branch abgerufen und integriert.

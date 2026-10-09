@@ -1632,6 +1632,17 @@
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
       "next": "DD-006.03/.04 im per-Element-/UI-/Save-Scope reviewt; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. Danach verbleibende Phase-1-Datei-/Ansichtsfälle; Gesamttor offen."
     },
+    "dd04104NavigationReview": {
+      "date": "2026-10-09",
+      "state": "measured_wheel_step_review_passed_phase1_open",
+      "case": "DD-041.04",
+      "original": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/review.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555459952-parity-tools-phase1-navigation-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555468161-parity-tools-phase1-navigation-reopen/result.json",
+      "reviewBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+      "next": "Weitere Zoomstufen, Radsignale, Touchpad, Canvasrand, Fokusverlust und physische Eingabe gesondert; übrige Phase-1-Fälle und Gesamttor offen."
+    },
     "dd001002Plan": {
       "date": "2026-10-09",
       "state": "superseded_by_single_atlas_user_decision",
