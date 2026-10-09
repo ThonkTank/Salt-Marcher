@@ -499,3 +499,7 @@ CITY-00-I30-CP Start 2026-10-09T15:14:35.119600+00:00; Plan: CO-WAT-0002-Snapsho
 CITY-00-I30-CI Start 2026-10-09T15:14:47.857614+00:00; Snapshot enthält Processing/Raised/Solids-Sichtwirkung und getrennte Dateigeometrie-/Persistenzlücke; historische Belege und Complex-Grenze erhalten.
 
 CITY-00-I30-CR Start 2026-10-09T15:15:05.214804+00:00; Snapshot und acceptance stimmen;10 Rawhashes und alle Belegziele geprüft.64 CO-/24 CTY-Pflichten erhalten, eigene Vorgaben zurückgesetzt und Kopie geschlossen. Aufräumumfang ohne Restbefund. Nächste Originalprobe plant tatsächliche Processing-Ausgabe vor/nach, keine weitere Complex-Wiederholung.
+
+## CITY-00-I31-P: tatsächliche Processing-Ausgabe
+
+Start 2026-10-09T15:15:56.893932+00:00. Eigene New-River-Kopie und aktuelle Lots/Plain/Offset/Flags ablesen. Echte JSON-Ausgaben bei Processing Offset und None über sichtbares Originalexportmenü empfangen und bytegleich in externen QA-Root kopieren. Vollständige Vergleichsmenge aller14 Gruppen, Anzahl/Geometrietypen und etwaige zusätzliche Kennungen prüfen; Wertgleichheit von nicht veränderten Gruppen belegen. Keine internen Appdaten lesen, keine Save-/ID-Erhaltung aus Export ableiten. Processing über Originalcontrol zurücksetzen, eigene Kopie schließen, Originaltabs erhalten. Höchstens zwei fehlgeschlagene Versuche; kein Complex-Versuch. Anschließend getrennt Review und Aufräumen P/I/R.
