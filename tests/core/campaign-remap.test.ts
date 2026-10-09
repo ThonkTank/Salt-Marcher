@@ -74,8 +74,8 @@ const registry = (changes: Partial<CampaignOwnerRegistryV1> = {}): CampaignOwner
     ownerId: inventory.ownerId, ownerRevision: inventory.ownerRevision,
     schemaRevision: inventory.schemaRevision, snapshotRevision: inventory.snapshotRevision,
     referenceSchemas: inventory.referenceSchemas,
-    recordTypes: [...new Set(inventory.records.map((record) => record.recordType))].sort(),
-    recordIds: inventory.records.map((record) => record.id).sort(),
+    records: inventory.records.map((record) => ({ id: record.id, recordType: record.recordType }))
+      .sort((a, b) => a.id.localeCompare(b.id)),
   })),
   ...changes,
 });
@@ -170,10 +170,18 @@ test("trusted registry fixes the full record set and allowed record types", () =
     index === 0 ? { ...record, recordType: "arbitrary-valid-token" } : record) };
   assert.throws(() => stageCampaignRemap(source, registry(), delivery({
     inventories: [arbitraryAtlas, ...inventories.slice(1)],
-  }), "Ziel", factories()), /Nicht erlaubter Recordtyp/);
+  }), "Ziel", factories()), /stale/);
   const reservedRegistry = registry({ owners: registry().owners.map((value) =>
-    value.ownerId === "atlas" ? { ...value, recordTypes: ["campaign", ...value.recordTypes] } : value) });
-  assert.throws(() => stageCampaignRemap(source, reservedRegistry, delivery(), "Ziel", factories()), /Recordtypen/);
+    value.ownerId === "atlas" ? { ...value, records: value.records.map((record, index) =>
+      index === 0 ? { ...record, recordType: "campaign" } : record) } : value) });
+  assert.throws(() => stageCampaignRemap(source, reservedRegistry, delivery(), "Ziel", factories()), /Reservierter/);
+  const swappedAtlas = { ...inventories[0]!, records: [
+    { ...inventories[0]!.records[0]!, recordType: inventories[0]!.records[1]!.recordType },
+    { ...inventories[0]!.records[1]!, recordType: inventories[0]!.records[0]!.recordType },
+  ] };
+  assert.throws(() => stageCampaignRemap(source, registry(), delivery({
+    inventories: [swappedAtlas, ...inventories.slice(1)],
+  }), "Ziel", factories()), /stale/);
   const wrongRegistryDelivery = delivery({ registryRevision: "registry.v2" });
   assert.throws(() => stageCampaignRemap(source, registry(), wrongRegistryDelivery, "Ziel", factories()), /anderen Quelle/);
 });

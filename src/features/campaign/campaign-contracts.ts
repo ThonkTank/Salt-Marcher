@@ -160,8 +160,10 @@ export interface CampaignOwnerRegistryEntryV1 {
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
   readonly referenceSchemas: readonly string[];
-  readonly recordTypes: readonly string[];
-  readonly recordIds: readonly CampaignLocalId[];
+  readonly records: readonly {
+    readonly id: CampaignLocalId;
+    readonly recordType: string;
+  }[];
 }
 /** Trusted only when obtained from the separate integration registry port, never from a delivery. */
 export interface CampaignOwnerRegistryV1 {

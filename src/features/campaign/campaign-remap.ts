@@ -43,16 +43,16 @@ function supportedSchemas(value: unknown): readonly string[] {
     throw new Error("Ungültige unterstützte Referenzschemas.");
   return Object.freeze(result);
 }
-function supportedTypes(value: unknown): readonly string[] {
-  const result = array(value, "Recordtypen").map((type) => identityType(String(type))).sort();
-  if (!result.length || result.some((type) => type === "campaign" || type === "namespace") ||
-      new Set(result).size !== result.length)
-    throw new Error("Ungültige erlaubte Recordtypen.");
-  return Object.freeze(result);
-}
-function registryRecordIds(value: unknown): readonly CampaignLocalId[] {
-  const result = array(value, "Registry-Record-IDs").map((id) => campaignLocalId(String(id))).sort();
-  if (new Set(result).size !== result.length)
+function registryRecords(value: unknown): readonly { readonly id: CampaignLocalId; readonly recordType: string }[] {
+  const result = array(value, "Registry-Records").map((raw) => {
+    if (!raw || typeof raw !== "object") throw new Error("Ungültiger Registry-Record.");
+    const record = raw as { id?: unknown; recordType?: unknown },
+      id = campaignLocalId(String(record.id)), recordType = identityType(String(record.recordType));
+    if (recordType === "campaign" || recordType === "namespace")
+      throw new Error("Reservierter Registry-Recordtyp.");
+    return Object.freeze({ id, recordType });
+  }).sort((a, b) => a.id.localeCompare(b.id));
+  if (new Set(result.map((record) => record.id)).size !== result.length)
     throw new Error("Doppelte Registry-Record-ID.");
   return Object.freeze(result);
 }
@@ -154,26 +154,24 @@ export function stageCampaignRemap(
     schemaRevision: string;
     snapshotRevision: string;
     referenceSchemas: readonly string[];
-    recordTypes: readonly string[];
-    recordIds: readonly CampaignLocalId[];
+    records: readonly { readonly id: CampaignLocalId; readonly recordType: string }[];
   }>();
   const registeredRecords = new Set<string>([source.campaignId, source.namespace]);
   for (const raw of expected) {
     if (!raw || typeof raw !== "object") throw new Error("Ungültiger Registry-Owner.");
     const value = raw as CampaignOwnerRegistryV1["owners"][number], id = ownerId(value.ownerId),
-      recordIds = registryRecordIds(value.recordIds);
+      records = registryRecords(value.records);
     if (expectedById.has(id)) throw new Error("Doppelter Registry-Owner.");
-    for (const recordId of recordIds) {
-      if (registeredRecords.has(recordId)) throw new Error("Registry-Identität kollidiert.");
-      registeredRecords.add(recordId);
+    for (const record of records) {
+      if (registeredRecords.has(record.id)) throw new Error("Registry-Identität kollidiert.");
+      registeredRecords.add(record.id);
     }
     expectedById.set(id, {
       ownerRevision: revisionToken(value.ownerRevision, "Ownerrevision"),
       schemaRevision: revisionToken(value.schemaRevision, "Schemarevision"),
       snapshotRevision: revisionToken(value.snapshotRevision, "Snapshotrevision"),
       referenceSchemas: supportedSchemas(value.referenceSchemas),
-      recordTypes: supportedTypes(value.recordTypes),
-      recordIds,
+      records,
     });
   }
   const inventoryById = new Map<string, CampaignOwnerInventoryV1>();
@@ -191,12 +189,10 @@ export function stageCampaignRemap(
         inventory.schemaRevision !== revisions.schemaRevision ||
         inventory.snapshotRevision !== revisions.snapshotRevision ||
         JSON.stringify(inventory.referenceSchemas) !== JSON.stringify(revisions.referenceSchemas) ||
-        JSON.stringify(inventory.records.map((record) => record.id).sort()) !==
-          JSON.stringify(revisions.recordIds))
+        JSON.stringify(inventory.records.map((record) => ({
+          id: record.id, recordType: record.recordType,
+        })).sort((a, b) => a.id.localeCompare(b.id))) !== JSON.stringify(revisions.records))
       throw new Error("Ownerinventar ist stale.");
-    for (const record of inventory.records)
-      if (!revisions.recordTypes.includes(record.recordType))
-        throw new Error("Nicht erlaubter Recordtyp.");
   }
 
   const records = new Map<string, { owner: string; type: string }>(),
