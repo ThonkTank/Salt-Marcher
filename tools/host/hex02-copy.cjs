@@ -96,7 +96,47 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await item.hover();
     await settle();
     await page.screenshot({ path: path.join(out, "menu-before-choice.png") });
+    if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
+      await page.evaluate(() => {
+        const log = (window.__hexMenuEvents = []);
+        const describe = (el) => ({
+          tag: el?.tagName,
+          cls: el?.className,
+          text: el?.textContent?.slice(0, 120),
+        });
+        for (const target of [window, document.querySelector(".menu"), ...document.querySelectorAll(".menu-item")]) {
+          for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+            for (const capture of [true, false]) {
+              target.addEventListener(type, (e) => log.push({
+                type, capture, current: describe(e.currentTarget), target: describe(e.target),
+                x: e.clientX, y: e.clientY, prevented: e.defaultPrevented, stopped: e.cancelBubble,
+                path: e.composedPath().slice(0, 5).map(describe),
+              }), {capture, once:true});
+            }
+          }
+        }
+        const observer = new MutationObserver((records) => {
+          for (const record of records) {
+            for (const [action, nodes] of [["added", record.addedNodes], ["removed", record.removedNodes]]) {
+              for (const node of nodes) {
+                if (node instanceof Element && (node.matches(".modal-container, .menu") || node.querySelector(".modal-container")))
+                  log.push({action, node:describe(node)});
+              }
+            }
+          }
+        });
+        observer.observe(document.body, {subtree:true, childList:true});
+        window.__hexMenuObserver = observer;
+      });
+    }
     await item.click();
+    if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
+      await settle();
+      fs.writeFileSync(path.join(out, "menu-event-diagnostic.json"), JSON.stringify(await page.evaluate(() => {
+        window.__hexMenuObserver.disconnect();
+        return {events:window.__hexMenuEvents, modals:[...document.querySelectorAll(".modal-container")].map(el=>el.outerHTML)};
+      }), null, 2));
+    }
   }
   async function copyDialog() {
     await menu("Speichern unter");
