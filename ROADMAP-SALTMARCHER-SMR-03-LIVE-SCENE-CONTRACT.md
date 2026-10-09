@@ -53,7 +53,10 @@ Vorgänger besitzt einen Architektur-PASS. Der R03-Wiederreview in Kommentar
 6088021905 präzisierte Maskenautorität, dauerhaft fehlende Owner, Registry-
 Vollständigkeit, Prepared-Import, Delete-Portabilität und Undo-Faults; die
 Campaign/Data-Entscheidung 6088033502 bindet die capability-gebundene Erasure-
-Grenze dieser Fassung.
+Grenze dieser Fassung. Der zweite R03-Wiederreview in Kommentar 6088109268
+forderte exakte Target-/Survivor-Bindung, post-Publish Slot-Revisionssemantik
+und die TN-05/TN-27-Auflösung; Campaign/Data-Entscheidung 6088120065 bindet
+transportierte Tokens als nicht ausführbare Evidenz und lokales Import-Rebinding.
 
 ## Umfang und Nichtziele
 
@@ -365,13 +368,25 @@ eigene Closure-Teilnehmer. Ein möglicher unbekannter Owner blockiert Publish.
 Stage pinnt eine immutable `ReferenceOwnerRegistryProjection` mit CampaignId,
 RegistryRevision, jedem Owner, seinen vollständigen Character-referenzierenden
 Payloadklassen und je Klasse einer capability-gebundenen unveränderlichen
-Erasure-Referenz. Diese Referenz ist an CampaignId, OwnerId, RegistryRevision,
-Payloadklasse und erwarteten Byte-/Hashbeleg gebunden; sie ist kein durch
-SMR-03 interpretierbarer Pfad, SQL-Schlüssel oder frei nutzbarer Locator. Der
-Lifecycle darf ausschließlich die idempotente Host-Erasure-Capability aufrufen
-und öffnet oder verändert niemals fremden Owner-Speicher selbst. Ein Owner darf
-erst nach bestätigter Closure aus der Registry verschwinden. Registry- und
-Slotbindung werden direkt vor Publish beziehungsweise Erasure revalidiert.
+Erasure-Slotdefinition samt eigener SlotRevision. Der daraus lokal gemintete
+immutable `ErasureToken` bindet DeletionCommandId, CampaignId, CharacterId,
+OwnerId, owner-definierte exakte ErasureUnitId/TargetScope, Payloadklasse,
+SlotRevision, erwarteten Before-Hash sowie den erwarteten Survivor-Set-/Root-
+Hash. Er ist kein durch SMR-03 interpretierbarer Pfad, SQL-Schlüssel oder frei
+nutzbarer Locator. Der Lifecycle darf ausschließlich die idempotente Host-
+Erasure-Capability mit genau diesem Token aufrufen und öffnet oder verändert
+niemals fremden Owner-Speicher selbst. Ein Owner darf erst nach bestätigter
+Closure aus der Registry verschwinden.
+
+Die globale RegistryRevision beweist ausschließlich die vollständige
+Pre-Publish-Enumeration und wird unmittelbar vor Publish stale-validiert. Nach
+dem durablen Publish bleibt der gepinnte Manifest-Snapshot autoritativ. Erasure
+revalidiert Tombstone, TargetScope, Hashbelege und die per-Owner/per-Slot-
+Revision; eine unabhängige globale Registry-Fortschreibung invalidiert einen
+unveränderten Slot nicht. Ändert sich ein betroffener Slot, führt ein
+ausdrücklicher idempotenter Rebind-/Closure-Pfad die alten und neuen Scope-/
+Hashbelege zusammen und rollt die Party-Löschung nie zurück. Neu registrierte
+Owner müssen Tombstone-IDs ablehnen und dürfen keine neue Referenz erwerben.
 
 Jeder Manifesteintrag ist vor Publish entweder `removed` oder
 `unavailable-quarantined`. Danach erzwingt jeder Lese-, Undo-, Import- und
@@ -382,7 +397,10 @@ Alt-Referenz mit ursprünglicher CommandId genau einmal und schreibt ein
 die gebundene Erasure-Capability ausschließlich seine manifestierten
 Payloadklassen byteweise, ohne sie fachlich zu interpretieren, und schreibt
 dasselbe nichtrekonstruktive ClosureReceipt. Dieses enthält nur Command-,
-Owner-, Registry-/OwnerRevision-, Hash- und Outcome-Belege.
+Character-, Owner-, TargetScope-, Slot-/OwnerRevision-, Before-, After- und
+Survivor-Hash- sowie Outcome-Belege. After-/Survivor-Belege müssen zeigen, dass
+genau die Target-Unit fehlt und alle übrigen Records derselben Payloadklasse
+byte- und semantisch unverändert blieben.
 
 PartyCommandHistory und immutable Receipts behalten nach Löschung nur
 nichtrekonstruktive Belege. Rekonstruktive Vorher-/Nachher-Fakten, Profile, XP,
@@ -393,12 +411,26 @@ vollständige semantische und Byte-Closure erlaubt physischen Payload- und
 Tombstone-Purge. Recovery rollt vor Publish alles zurück und finalisiert danach
 nur vorwärts; Retry wiederholt weder Party-Löschung noch abhängige Effekte.
 
-Solange Closure oder Purge pending ist, ist Complete Export blockiert. Nur ein
-ausdrücklich gewählter Salvage-Export darf genau die manifestierten quarantined
-Bytes auslassen, nennt jede Identität und Auswirkung und enthält weder
-rekonstruktiven gelöschten Payload noch einen fehlenden Tombstone-/Closure-
-Beleg. Frühere GM-kontrollierte Exporte bleiben die oben beschriebene externe,
-nicht widerrufbare Ausnahme.
+Solange Closure oder Purge pending ist, bleibt Complete Export nach TN-27 nur
+dann zulässig, wenn er sämtliche quarantined opaken Bytes zusammen mit
+Tombstone, Manifest, Scope-/Hashbelegen und Erasure-Vertrag vollständig und
+verifiziert einschließt. Sie bleiben im Paket und nach Import quarantined,
+können nie live aufgelöst werden und müssen vor Aktivierung der betroffenen
+Capability lokal geschlossen werden. Kann diese geschlossene Quarantäne nicht
+vollständig bewiesen werden, ist Complete blockiert; nur ein ausdrücklich
+gewählter Salvage-Export darf genau manifestierte quarantined Bytes auslassen
+und nennt jede Identität und Auswirkung.
+
+Ein exportierter ErasureToken ist ausschließlich nicht ausführbare Provenienz-
+und Closure-Evidenz. Nach vollständigem Campaign-ID-Remap validiert der
+Zielhost die importierten quarantined Bytes gegen sein neues Registry-Snapshot
+und mintet lokal einen neuen, eng an Target-Campaign, Target-Character,
+Target-Owner und Target-Slot gebundenen Token. Der Source-Token wird niemals
+ausgeführt oder auf den Zielslot umgebogen; Source-Slots, externe Exportpakete
+und fremde Campaigns bleiben unerreichbar. Ohne erfolgreiche lokale Rebind-/
+Quarantänevalidierung scheitert Complete Import fail-closed; Salvage bleibt
+getrennt offengelegt. Frühere GM-kontrollierte Exporte bleiben die oben
+beschriebene externe, nicht widerrufbare Ausnahme.
 
 Restore behält Campaign-, Character-, LiveScene-, Masken- und
 Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
@@ -485,11 +517,17 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
    Manifest genau einmal. Registry-Install/Enable/Disable/Reconnect-Races
    brechen stale ab. Restart projiziert keine quarantined Referenz live;
    Reconnect oder capability-gebundene Erasure bei einem nie wiederkehrenden
-   Owner schreibt genau ein ClosureReceipt. Retry löscht Party nicht zweimal,
-   Undo scheitert, und nur semantischer plus Byte-Audit aller History-, Recovery-,
-   Staging-, Temp-, retained- und Exportkopien erlaubt Purge. Ein unbekannter
-   möglicher Owner ist fail-closed; History zeigt `[UNKNOWN]` oder recoverable
-   Trash und enthält keinen rekonstruierbaren Vorher-/Nachher-Payload.
+   Owner schreibt genau ein ClosureReceipt. Mit mindestens zwei Characters und
+   mehreren Records derselben Payloadklasse beweisen TargetScope-, Before-,
+   After- und Survivor-Hashes byte- und semantisch, dass ausschließlich die
+   gebundene Target-Unit verschwindet. Retry löscht Party nicht zweimal, Undo
+   scheitert, und nur Audit aller History-, Recovery-, Staging-, Temp-, retained-
+   und Exportkopien erlaubt Purge. Ein unbekannter Owner ist fail-closed;
+   History zeigt `[UNKNOWN]` oder recoverable Trash ohne rekonstruierbaren Fakt.
+   Nach Publish ändern Install/Enable/Disable eines fremden Owners den gepinnten
+   Manifest-Snapshot nicht; unveränderter Slot schließt weiter, betroffener
+   Reconnect/Update nutzt genau einen Rebind/Closure-Pfad und neuer Owner lehnt
+   die Tombstone-ID ab—ohne Rollback oder zweite Party-Löschung.
 9. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
    Teilnehmer teilen. Ein Scene-Move entfernt die Figur aus allen betroffenen
    Masken, ohne andere Teilnehmer oder Masken zu ändern.
@@ -516,10 +554,14 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade. Import und
     Recovery eines Salvage bleiben als Salvage erkennbar, bewahren zulässige
     Identitäten/Metadaten und initialisieren keine fehlende Session still.
-    Pending Delete-Closure blockiert Complete; Salvage darf nur manifestierte
-    quarantined Bytes auslassen. Ein vor der Löschung erzeugter externer GM-
-    Export darf als neue remappte Campaign importiert werden und mutiert die
-    gelöschte Quell-Campaign nicht.
+    Pending Delete-Closure erlaubt Complete nur mit vollständig verifizierten
+    opaken quarantined Bytes plus Tombstone/Manifest/Erasure-Vertrag; Import
+    hält sie offline, behandelt Source-Tokens als nicht ausführbare Evidenz und
+    mintet erst nach Campaign-Remap und lokaler Registry-/Quarantänevalidierung
+    einen eng gebundenen Target-Token. Ohne sichere lokale Bindung scheitert
+    Complete Import; Salvage darf nur manifestierte Bytes auslassen. Ein vor
+    der Löschung erzeugter externer GM-Export darf als neue remappte Campaign
+    importiert werden und mutiert die gelöschte Quell-Campaign nicht.
 15. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
     optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
     inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
