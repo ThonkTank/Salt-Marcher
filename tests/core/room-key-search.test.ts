@@ -128,6 +128,19 @@ test("room key snippets retain length-changing Unicode folds and long complete m
   assert.equal(long.snippet.includes(longMatch), true);
 });
 
+test("room key search canonicalizes context-sensitive Greek sigma", () => {
+  const session = new Session(newDocument("Sigma", 20, 20, undefined, undefined, 4)),
+    floor = session.floors.values().next().value!,
+    room = createRoom(session, floor.id, outline(2), "QA/Räume"),
+    section = structuredRoom(session, room.id).key.sections[0]!;
+  assert.equal(section.kind, "markdown");
+  editMarkdownSection(session, room.id, section.id, "", "Das Zeichen ΟΣ bleibt sichtbar.");
+
+  const match = searchRoomKeys(session, "ος").entries[0] as RoomKeySectionMatch;
+  assert.equal(match.roomId, room.id);
+  assert.match(match.snippet, /ΟΣ/);
+});
+
 test("room key search is explicitly unavailable for non-V4 sessions", () => {
   const session = new Session(newDocument("Alt", 12, 12, undefined, undefined, 3));
   assert.deepEqual(searchRoomKeys(session, "Hinweis"), {

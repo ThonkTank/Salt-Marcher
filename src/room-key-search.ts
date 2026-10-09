@@ -52,7 +52,10 @@ function foldText(value: string): FoldedText {
   for (const character of value) {
     const start = offset;
     offset += character.length;
-    const part = character.toLocaleLowerCase("de");
+    // Unicode's final sigma is context-sensitive when lowercasing whole words.
+    // Canonicalizing both lowercase sigma forms keeps per-code-point offsets while
+    // retaining case-insensitive matching for uppercase and lowercase Greek text.
+    const part = character.toLocaleLowerCase("de").replaceAll("ς", "σ");
     folded += part;
     for (let index = 0; index < part.length; index++) {
       starts.push(start);
