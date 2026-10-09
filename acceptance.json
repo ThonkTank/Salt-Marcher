@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:14:32.892906+00:00",
+    "updated": "2026-10-09T12:21:16.277352+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1869,13 +1869,14 @@
         "product": "Fantasy Town Generator",
         "feature": "Manuelle Kartenbearbeitung",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:14:32.892906+00:00",
+        "observedAt": "2026-10-09T12:21:16.277352+00:00",
         "observedVersion": null,
         "availability": "unknown",
         "observationKind": "direct_partial_effect",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json"
         ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
@@ -1891,22 +1892,38 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gebäudeverschiebung und Gesamtentwurfsabbruch direkt belegt; übrige Werkzeuge, gespeicherte Geometrie/Bindungen sowie eigene Umsetzung/Host/Bedienvergleich offen.",
+        "gap": "Gebäudeverschiebung/Entwurfsabbruch und Straße zeichnen/speichern/frischladen/gezielt entfernen direkt belegt; übrige Werkzeuge, stabile Bindungen, Einzel-Undo und eigene Umsetzung/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I10-I",
-          "state": "building_move_and_layout_cancel_observed",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+          "run": "CITY-00-I11-I",
+          "state": "road_draw_save_reload_remove_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
           "sourceScope": "own_temporary_settlement_original",
-          "observation": "Manual editing accessible;7 building tools; Move selection→placement/rotation→new roof; Cancel Edit/Yes removes layout change;250m/Districts/11Monday restored",
+          "observation": "Nine road type controls; Road creation/saved reload/own segment removal and second saved reload;250m/Districts/11Monday restored",
           "remaining": [
-            "Nur Verschiebung/Orientierungsabschluss und Gesamtentwurfsabbruch geprüft",
-            "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
-            "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
-            "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
+            "Temporary-settlement browser reload only; no account/fullprocess or own Atlas persistence",
+            "Road geometry seen visually; no serialization or stable IDs examined",
+            "Other road types, snapping-distance effects, crossings/joins, per-action undo and road point drag not tested",
+            "Background vegetation differs after saved layout/load; no claim of whole-map pixel identity",
+            "No resident/building binding or product/host/UX acceptance"
           ]
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I10-I",
+            "state": "building_move_and_layout_cancel_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+            "sourceScope": "own_temporary_settlement_original",
+            "observation": "Manual editing accessible;7 building tools; Move selection→placement/rotation→new roof; Cancel Edit/Yes removes layout change;250m/Districts/11Monday restored",
+            "remaining": [
+              "Nur Verschiebung/Orientierungsabschluss und Gesamtentwurfsabbruch geprüft",
+              "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
+              "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
+              "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
+            ]
+          }
+        ]
       },
       {
         "id": "CO-FTG-0016",
@@ -3337,7 +3354,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I10-I",
+      "run": "CITY-00-I11-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3358,7 +3375,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json"
       ],
       "resultReferences": [
         {
