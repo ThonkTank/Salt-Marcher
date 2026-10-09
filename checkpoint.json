@@ -69,7 +69,7 @@
       "kind": "repair_implementation",
       "startedAt": "2026-10-09T05:16:37.183517+02:00",
       "baseCommit": "1e9fd99dec90bd5a529e9f1b4e00ede101cc404d",
-      "state": "checked_ready_to_publish",
+      "state": "completed_checked",
       "focus": "R01-05: inspect/news/update mit begrenzten Aufrufer-/Aktivierungsproben am unveränderten Original prüfen. Keine Options-/Aufräum-/Reviewfreigabe.",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/manifest.json",
@@ -87,7 +87,8 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/final-complete-gate-validation.json"
       ],
       "result": "658 UI-Einträge mit gültiger aktueller Belegzuordnung; 95/96 Rollen eingeordnet. News/Community Links in zwei Originalkontexten direkt bedient; Inspect debug-guarded eingeordnet, eigener Review ausstehend. Update-Status aus fingiertem privatem Cache sichtbar, zwei Klickversuche ohne Dialog; bleibt pending. 19 echte Frames, beide Originalprozesse normal beendet. Eingehende Dungeon-Wear-/Resize-Arbeit integriert; Basisprüfung lokal und auf veröffentlichtem Quellbaum wiederholt.",
-      "endedAt": "2026-10-09T05:38:04.098119+02:00"
+      "endedAt": "2026-10-09T05:38:04.098119+02:00",
+      "publication": "Geprüfter Lauf auf active/installed-phase1 veröffentlicht; exakter Remote-Beleg im QA-manifest.json. Eigener Fachreview bleibt ausstehend."
     },
     "nextRun": {
       "id": "HEX-00-N-I05",
