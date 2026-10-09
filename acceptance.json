@@ -113557,6 +113557,17 @@
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
         },
+        "followUpPhase1TerrainMaskCandidate": {
+          "state": "seeded_host_masks_scoped_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "c57b6b708705f4e160560539f97573c181adffc826417799a3aa4ac41355b6c3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/independent-audit.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521956369-parity-tools-phase1-terrain-masks-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521961573-parity-tools-phase1-terrain-masks-reopen/result.json",
+          "measuredScope": "Vorbereitete Acht-Slot-Masken; links/oben +1, rechts/unten -1/+1 über Größen-Dialog, Save und frische Öffnung. Acht gespeicherte Host-/Originalstände, 16 vollständige Maskenvergleiche bytegleich.",
+          "remaining": "Terrain-Pinsel und Textur-Slots, kombinierte Ränder, Building-Floor-Zellen, andere Entitäten und DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainOriginalProbe": {
           "state": "original_measured_host_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
@@ -113695,6 +113706,17 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1TerrainMaskCandidate": {
+          "state": "seeded_host_masks_scoped_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "c57b6b708705f4e160560539f97573c181adffc826417799a3aa4ac41355b6c3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/independent-audit.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521956369-parity-tools-phase1-terrain-masks-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521961573-parity-tools-phase1-terrain-masks-reopen/result.json",
+          "measuredScope": "Vorbereitete Acht-Slot-Masken; links/oben +1, rechts/unten -1/+1 über Größen-Dialog, Save und frische Öffnung. Acht gespeicherte Host-/Originalstände, 16 vollständige Maskenvergleiche bytegleich.",
+          "remaining": "Terrain-Pinsel und Textur-Slots, kombinierte Ränder, Building-Floor-Zellen, andere Entitäten und DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainOriginalProbe": {
           "state": "original_measured_host_open",
@@ -113849,6 +113871,17 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1TerrainMaskCandidate": {
+          "state": "seeded_host_masks_scoped_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "c57b6b708705f4e160560539f97573c181adffc826417799a3aa4ac41355b6c3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/independent-audit.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521956369-parity-tools-phase1-terrain-masks-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521961573-parity-tools-phase1-terrain-masks-reopen/result.json",
+          "measuredScope": "Vorbereitete Acht-Slot-Masken; links/oben +1, rechts/unten -1/+1 über Größen-Dialog, Save und frische Öffnung. Acht gespeicherte Host-/Originalstände, 16 vollständige Maskenvergleiche bytegleich.",
+          "remaining": "Terrain-Pinsel und Textur-Slots, kombinierte Ränder, Building-Floor-Zellen, andere Entitäten und DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainOriginalProbe": {
           "state": "original_measured_host_open",
@@ -114016,6 +114049,17 @@
           "cropMapSha256": "814bf8d74821e466540dac3e6cce5d31ce9ad944532a34258c26eb6336b7fc1a",
           "measured": "Zwei erhaltene Shape-Polygone, Tile-Zellen 8→4→4 im selben und frischen Originalprozess.",
           "gap": "Aktueller Building-Befehl erzeugt keine Zellfolge; Boden-Hostfolge nach Crop/Neuöffnung offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1TerrainMaskCandidate": {
+          "state": "seeded_host_masks_scoped_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "c57b6b708705f4e160560539f97573c181adffc826417799a3aa4ac41355b6c3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/independent-audit.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521956369-parity-tools-phase1-terrain-masks-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/evidence/1791521961573-parity-tools-phase1-terrain-masks-reopen/result.json",
+          "measuredScope": "Vorbereitete Acht-Slot-Masken; links/oben +1, rechts/unten -1/+1 über Größen-Dialog, Save und frische Öffnung. Acht gespeicherte Host-/Originalstände, 16 vollständige Maskenvergleiche bytegleich.",
+          "remaining": "Terrain-Pinsel und Textur-Slots, kombinierte Ränder, Building-Floor-Zellen, andere Entitäten und DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainOriginalProbe": {
           "state": "original_measured_host_open",

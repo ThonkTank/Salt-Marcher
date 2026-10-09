@@ -42,6 +42,7 @@ import {
   applyBuildingWallStyle,
   type BuildingWallStyle,
 } from "./features/bau/building-wall-style";
+import { resizeTerrainMasks } from "./features/material/terrain-mask-resize";
 
 export function createRoom(
   session: Session,
@@ -858,12 +859,20 @@ export function resizeMap(
     const x = cell.x + margins.left, y = cell.y + margins.top;
     return x < 0 || y < 0 ? [] : [{ ...cell, x, y }];
   });
+  const terrainMasks = session.terrainMasks;
+  const movedMasks = terrainMasks === undefined ? undefined : resizeTerrainMasks(
+    terrainMasks, before.width, before.height, width, height,
+    margins.left, margins.top,
+  );
   session.execute({
     label: "Karteneinstellungen ändern",
     settings: { before, after },
     entities: changes,
     ...(smartTiles !== undefined
       ? { smartTiles: { before: smartTiles, after: movedTiles! } }
+      : {}),
+    ...(terrainMasks !== undefined
+      ? { terrainMasks: { before: terrainMasks, after: movedMasks! } }
       : {}),
   });
   if (values.some((value) => value !== 0)) session.clearHistory();

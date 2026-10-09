@@ -317,6 +317,12 @@ export interface SmartTileCell {
   readonly assetId: string;
   readonly color: number;
 }
+/** RGBA splat samples at four samples per field axis, encoded as Base64. */
+export interface TerrainMask {
+  readonly floorId: Id;
+  readonly splat: string;
+  readonly splat2?: string;
+}
 export interface MapDocument {
   readonly format: "dungeon-map";
   readonly version: 3 | 4;
@@ -327,6 +333,8 @@ export interface MapDocument {
   readonly content: DungeonContent;
   /** Optional V4 raster; older maps retain their original representation. */
   readonly smartTiles?: readonly SmartTileCell[];
+  /** Optional V4 terrain weights; absent on cards without a terrain raster. */
+  readonly terrainMasks?: readonly TerrainMask[];
 }
 export type MapDocumentV2 = Omit<MapDocument, "version"> & {
   readonly version: 2;
@@ -724,6 +732,11 @@ export function validateDocument(doc: MapDocument): void {
       throw new Error("Smart-Tile-Zellen benötigen Kartenformat V4.");
     validateSmartTileCells(doc.smartTiles, doc.settings.width, doc.settings.height, floors);
   }
+  if (doc.terrainMasks !== undefined) {
+    if (doc.version !== 4)
+      throw new Error("Terrainmasken benötigen Kartenformat V4.");
+    validateTerrainMasks(doc.terrainMasks, doc.settings.width, doc.settings.height, floors);
+  }
   for (const e of entities.values())
     validateEntity(e, floors, (id) => entities.get(id), doc.version);
   for (const e of entities.values()) if (e.keyTarget) {
@@ -751,6 +764,37 @@ export function validateSmartTileCells(
     const key = `${cell.floorId}:${cell.x}:${cell.y}`;
     if (positions.has(key)) throw new Error("Doppelte Smart-Tile-Zelle.");
     positions.add(key);
+  }
+}
+export function decodeTerrainMask(value: string, width: number, height: number): Uint8Array {
+  const expected = width * height * 64;
+  if (typeof value !== "string" || value.length !== Math.ceil(expected / 3) * 4 ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value))
+    throw new Error("Ungültige Terrainmaske.");
+  let binary: string;
+  try { binary = atob(value); }
+  catch { throw new Error("Ungültige Terrainmaske."); }
+  if (binary.length !== expected) throw new Error("Ungültige Terrainmaske.");
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+export function encodeTerrainMask(bytes: Uint8Array): string {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192)
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  return btoa(binary);
+}
+export function validateTerrainMasks(
+  masks: readonly TerrainMask[], width: number, height: number,
+  floors: ReadonlyMap<Id, Floor>,
+): void {
+  if (!Array.isArray(masks)) throw new Error("Ungültige Terrainmasken.");
+  const seen = new Set<Id>();
+  for (const mask of masks) {
+    if (!mask || !floors.has(mask.floorId) || seen.has(mask.floorId))
+      throw new Error("Ungültige Terrainmaske.");
+    seen.add(mask.floorId);
+    decodeTerrainMask(mask.splat, width, height);
+    if (mask.splat2 !== undefined) decodeTerrainMask(mask.splat2, width, height);
   }
 }
 export function validateContent(

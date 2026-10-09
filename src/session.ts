@@ -6,11 +6,13 @@ import {
   type DungeonContent,
   type Settings,
   type SmartTileCell,
+  type TerrainMask,
   immutable,
   validateDocument,
   validateEntity,
   validateSettings,
   validateSmartTileCells,
+  validateTerrainMasks,
   validateFloor,
   validateContent,
   safePath,
@@ -39,6 +41,10 @@ export interface Command {
     readonly before: readonly SmartTileCell[] | undefined;
     readonly after: readonly SmartTileCell[] | undefined;
   };
+  readonly terrainMasks?: {
+    readonly before: readonly TerrainMask[] | undefined;
+    readonly after: readonly TerrainMask[] | undefined;
+  };
   readonly content?: {
     readonly before: DungeonContent;
     readonly after: DungeonContent;
@@ -53,6 +59,7 @@ export interface ChangeEvent {
   readonly floors: boolean;
   readonly settings: boolean;
   readonly smartTiles?: boolean;
+  readonly terrainMasks?: boolean;
   readonly paletteOnly?: boolean;
   readonly content: boolean;
   readonly revision: number;
@@ -152,6 +159,8 @@ export class Session {
   private stateContent: DungeonContent;
   private stateSmartTiles?: readonly SmartTileCell[];
   private savedSmartTiles?: readonly SmartTileCell[];
+  private stateTerrainMasks?: readonly TerrainMask[];
+  private savedTerrainMasks?: readonly TerrainMask[];
   readonly id: Id;
   readonly version: 3 | 4;
   revision = 0;
@@ -167,6 +176,7 @@ export class Session {
     this.stateSettings = doc.settings;
     this.stateContent = doc.content;
     this.stateSmartTiles = doc.smartTiles;
+    this.stateTerrainMasks = doc.terrainMasks;
     for (const f of doc.floors) this.levels.set(f.id, f);
     for (const e of doc.entities) {
       this.records.set(e.id, e);
@@ -177,6 +187,7 @@ export class Session {
     this.savedSettings = this.stateSettings;
     this.savedContent = this.stateContent;
     this.savedSmartTiles = doc.smartTiles;
+    this.savedTerrainMasks = doc.terrainMasks;
   }
   get settings(): Settings {
     return this.stateSettings;
@@ -192,6 +203,9 @@ export class Session {
   }
   get smartTiles(): readonly SmartTileCell[] | undefined {
     return this.stateSmartTiles;
+  }
+  get terrainMasks(): readonly TerrainMask[] | undefined {
+    return this.stateTerrainMasks;
   }
   private visibleSmartTiles(): readonly SmartTileCell[] | undefined {
     return this.stateSmartTiles?.filter((cell) =>
@@ -211,6 +225,7 @@ export class Session {
       this.stateSettings !== this.savedSettings ||
       this.stateContent !== this.savedContent ||
       JSON.stringify(this.visibleSmartTiles()) !== JSON.stringify(this.savedSmartTiles) ||
+      JSON.stringify(this.stateTerrainMasks) !== JSON.stringify(this.savedTerrainMasks) ||
       [...this.notes.values()].some((n) => n.base !== n.current)
     );
   }
@@ -371,6 +386,7 @@ export class Session {
         command.floors?.length ||
         command.settings ||
         command.smartTiles ||
+        command.terrainMasks ||
         command.content ||
         command.texts?.some((p) => p.before !== p.after || p.create)
       )
@@ -560,6 +576,15 @@ export class Session {
       if (smartTiles !== undefined)
         validateSmartTileCells(smartTiles, settings.width, settings.height, nextFloors, true);
     }
+    let terrainMasks = this.stateTerrainMasks;
+    if (c.terrainMasks) {
+      const before = inverse ? c.terrainMasks.after : c.terrainMasks.before;
+      terrainMasks = inverse ? c.terrainMasks.before : c.terrainMasks.after;
+      if (!equal(before, this.stateTerrainMasks))
+        throw new Error("Veraltete Terrainmasken.");
+    }
+    if (terrainMasks !== undefined && (c.terrainMasks || c.settings || floorChanges.length))
+      validateTerrainMasks(terrainMasks, settings.width, settings.height, nextFloors);
     const nextEntities = entityChanges.length ? new Map(this.records) : this.records;
     if (entityChanges.length)
       for (const change of entityChanges)
@@ -640,6 +665,7 @@ export class Session {
       ? this.savedContent
       : content;
     this.stateSmartTiles = smartTiles;
+    this.stateTerrainMasks = terrainMasks;
     for (const [path, current] of noteValues)
       this.notes.get(path)!.current = current;
     this.revision++;
@@ -651,6 +677,7 @@ export class Session {
       floors: !!floorChanges.length,
       settings: !!c.settings,
       smartTiles: !!c.smartTiles,
+      terrainMasks: !!c.terrainMasks,
       content: !!c.content,
       revision: this.revision,
       rulesRevision: this.rulesRevision,
@@ -680,6 +707,9 @@ export class Session {
       content: this.stateContent,
       ...(this.stateSmartTiles !== undefined
         ? { smartTiles: this.visibleSmartTiles() }
+        : {}),
+      ...(this.stateTerrainMasks !== undefined
+        ? { terrainMasks: this.stateTerrainMasks }
         : {}),
     };
   }
@@ -732,6 +762,7 @@ export class Session {
     this.savedSettings = snapshot.document.settings;
     this.savedContent = snapshot.document.content;
     this.savedSmartTiles = snapshot.document.smartTiles;
+    this.savedTerrainMasks = snapshot.document.terrainMasks;
     const equal = (a: unknown, b: unknown) =>
       a === b || JSON.stringify(a) === JSON.stringify(b);
     if (equal(this.stateSettings, this.savedSettings))

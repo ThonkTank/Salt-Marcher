@@ -26,6 +26,7 @@ import {
   type MapObject,
   type ReferenceImage,
   isRoom,
+  decodeTerrainMask,
 } from "./model";
 import { Session } from "./session";
 import { objectSelectionFrame, selectionFrame, type SelectionFrame, type TransformSelection } from "./selection";
@@ -135,6 +136,7 @@ export class MapRenderer {
   readonly app = new Application();
   private world = new Container();
   private mapBackground = new Graphics();
+  private terrainMaskLayer = new Graphics();
   private smartTileLayer = new Graphics();
   private grid = new Graphics();
   private referenceLayer = new Container();
@@ -331,6 +333,7 @@ export class MapRenderer {
     this.detailLayer.sortableChildren = true;
     this.world.addChild(
       this.mapBackground,
+      this.terrainMaskLayer,
       this.smartTileLayer,
       this.referenceLayer,
       this.areaShadowLayer,
@@ -394,7 +397,7 @@ export class MapRenderer {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
         return e?.kind === "building";
       });
-      if (event.floors || rebuildForSettings || event.smartTiles) {
+      if (event.floors || rebuildForSettings || event.smartTiles || event.terrainMasks) {
         this.rebuild();
         if (rebuildForSettings) this.drawMapMask();
       }
@@ -628,6 +631,7 @@ export class MapRenderer {
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
         this.sync(e.id);
     this.syncVisualOrder();
+    this.drawTerrainMasks();
     this.drawSmartTiles();
     this.drawGrid();
     this.drawSelection();
@@ -1620,6 +1624,39 @@ export class MapRenderer {
         continue;
       graphics.rect(cell.x, cell.y, 1, 1).fill(cell.color);
     }
+  }
+  private drawTerrainMasks(): void {
+    const graphics = this.terrainMaskLayer.clear();
+    const mask = this.session.terrainMasks?.find((item) => item.floorId === this.floorId);
+    if (!mask) return;
+    const { width, height } = this.session.settings;
+    const primary = decodeTerrainMask(mask.splat, width, height);
+    const secondary = mask.splat2
+      ? decodeTerrainMask(mask.splat2, width, height) : undefined;
+    const colors = [0x887653, 0x6f8055, 0x77716a, 0xb2a27c,
+      0x526d62, 0x998569, 0x757e83, 0x9e927b];
+    const pixelWidth = width * 4;
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const weights = Array<number>(secondary ? 8 : 4).fill(0);
+        for (let sy = 0; sy < 4; sy++)
+          for (let sx = 0; sx < 4; sx++) {
+            const offset = ((y * 4 + sy) * pixelWidth + x * 4 + sx) * 4;
+            for (let channel = 0; channel < 4; channel++) {
+              weights[channel]! += primary[offset + channel]!;
+              if (secondary) weights[channel + 4]! += secondary[offset + channel]!;
+            }
+          }
+        // The default red sample leaves the ordinary map background visible.
+        if (weights[0] === 16 * 255 && weights.slice(1).every((value) => value === 0))
+          continue;
+        const total = weights.reduce((sum, value) => sum + value, 0);
+        if (!total) continue;
+        const channel = (shift: number) => Math.round(weights.reduce((sum, value, index) =>
+          sum + value * ((colors[index]! >> shift) & 255), 0) / total);
+        const color = (channel(16) << 16) | (channel(8) << 8) | channel(0);
+        graphics.rect(x, y, 1, 1).fill(color);
+      }
   }
   setGridVisible(visible: boolean): void {
     this.appearance.grid = visible;
