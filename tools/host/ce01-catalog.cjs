@@ -6,7 +6,12 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks, sleep }) =>
   const root = () => page.locator(".dn-creature-catalog:visible").last();
 
   async function openViaPalette() {
-    await page.keyboard.press("Control+P");
+    const paletteButton = page.locator([
+      '.side-dock-ribbon-action[aria-label="Befehlspalette öffnen"]:visible',
+      '.side-dock-ribbon-action[aria-label="Open command palette"]:visible',
+    ].join(", ")).last();
+    await paletteButton.waitFor({ state: "visible", timeout: 12000 });
+    await paletteButton.click();
     const prompt = page.locator(".prompt-input:visible").last();
     await prompt.waitFor({ state: "visible" });
     await prompt.fill("Monsterkatalog öffnen");
