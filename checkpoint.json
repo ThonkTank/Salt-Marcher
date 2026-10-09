@@ -4469,17 +4469,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I42-CLEAN-R42",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T18:53:16.493790+00:00",
-      "focus": "Referenzaufbereitung undEvidenzschutz prüfen",
-      "state": "completed",
-      "result": "Hashes/AX/Screenshot und24CTY/65COopen geprüft; getrenntenReferenzreviewR42 vorbereiten."
-    },
-    "nextRun": {
       "id": "CITY-00-I42-R42",
       "kind": "reference_review",
-      "focus": "Ruhetag-Befund/Tooltipabweichung gegenFrames undAnforderungszuordnung reviewen; danachCOKGUI-Lauf öffentlich starten"
+      "startedAt": "2026-10-09T18:54:16.074861+00:00",
+      "focus": "Ruhetagwirkung/Tooltipabweichung gegenOriginalframes prüfen",
+      "state": "completed",
+      "result": "LokalerEvidenzreviewbesteht; Working/Resting/WorkingbeigleicherZeit, Rückkehrbildbytegleich. Vollkalender/Parität offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I42-REVIEW-CLEAN-P42",
+      "kind": "cleanup_planning",
+      "focus": "Reviewabschluss undkeineungeprüfteNone-Semantik bereinigen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
