@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I34-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:35:59.517218+00:00",
-      "focus": "Maximum-Belege R",
-      "state": "completed",
-      "result": "Tatsächliche Downloadkopien, acht Bilder/Rawhashes und13-Gruppenvergleich bestätigt. Maximum erzeugt hub=1 ohne gates-Parameter, roads5→10, vier weitere Gruppen geändert; übrige8 gleich. Rückstellung bytegleich. Keine Original-Maximalformel oder Torzählung aus Linienanzahl abgeleitet. Aufräumbefund: Snapshot führt Maximum-Wirkung noch offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I34-CP",
       "kind": "cleanup_planning",
-      "focus": "Maximum-Belege und Snapshot CP"
+      "startedAt": "2026-10-09T15:36:12.128528+00:00",
+      "focus": "Maximum-Belege CP",
+      "state": "completed",
+      "result": "Plan: CO-WAT-0010-Snapshot um Maximum/hub und bytegleiche Rückstellung ergänzen, genaue Grenzregel/Torzählung weiterhin offen. Beide früheren Number3/I32-Beleggrenzen erhalten.13 Gruppen, Hashes, Belegziele und64/24 offene Pflichten prüfen. CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I34-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Maximum-Belege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
