@@ -8,6 +8,18 @@
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "smr01CampaignData": {
+      "state": "e2e01_campaign_context_p01_review_pending",
+      "requirementPlan": "ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md",
+      "implementationPlan": "ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md",
+      "reviewedRequirementCandidate": "11e256309d43bcd1c14db66ffc41945c9360aec8",
+      "gateCatalog": "ROADMAP-E2E-GATES-CANDIDATE.md",
+      "gateCatalogCommit": "cc93c31870f461527b2f8953fe88e433dada7cd1",
+      "sharedBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+      "scope": "Host-neutral CampaignLifecycle, CampaignContext, A-to-B-to-A isolation, reopen identity preservation and complete campaign-local copy/import remap model for E2E-01.",
+      "limits": "Plan only. No product code, Campaign-to-Atlas adapter, shared History/Transaction, P02 persistence, P04 archive import, host evidence or E2E-01 PASS.",
+      "next": "Obtain an independent plan review before implementation."
+    },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
       "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
