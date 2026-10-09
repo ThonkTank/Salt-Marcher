@@ -807,3 +807,6 @@ CITY-01-PREP-I06 Start 2026-10-09T18:00:16.650006+00:00; CityGesture bewegt Haus
 
 
 CITY-01-PREP-R08 Start 2026-10-09T18:06:15.198040+00:00; Separater Review reproduziert CITY-GESTURE-R08-01:6von8 gedrehten Achsgriffen ändern Pose/History bei ausschließlich ungewählter Achse (Größenordnung1e-15). Quellenhashes unverändert zuI06. Gegenprobe: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/r08-axis-probe.json; Review: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/review.json. N06 führt aus Double-Rundung/Koordinatengröße abgeleitete Fehlergrenze ein, erhält echte kleine Änderungen und lehnt Spiegelung/Nullhebel weiterhin ab. Kein Coreabschluss oder Hostnachweis.
+
+
+CITY-01-PREP-GESTURES-CLEAN-R06 Start 2026-10-09T18:08:26.898821+00:00; Getrennte CP/CI dokumentieren realen Gesturekern und offene R08-Lücke. Konkrete N06-Precision-Regel aus EPS-gewichteten Eingabe-/Posekoordinaten, ohne feste Meter-/Pixelklemmung. Quellhashes/Links/JSON geprüft, keine Runtimeänderung. Befund bleibt offen fürN06. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/cleanup-review.json.
