@@ -5,7 +5,7 @@ import { createConnection } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { assertRun, originalIdentity, startTicks, sha256 } from './identity.mjs';
+import { assertRun, originalIdentity, startTicks, sha256, assertHeldLock } from './identity.mjs';
 const { values } = parseArgs({ options: Object.fromEntries(['run', 'app', 'steam-manifest', 'xvnc', 'wm'].map(k => [k, { type: 'string' }])) });
 const required = name => {
   if (!values[name] || !path.isAbsolute(values[name])) throw new Error(`Absolute --${name} required`);
@@ -26,6 +26,8 @@ if (process.env.COK_QA_LOCKED !== '1') {
   child.on('exit', code => { process.exitCode = code ?? 1; });
 } else await main();
 async function main() {
+  const owner = { pid: process.pid, startTicks: startTicks(process.pid), executable: process.execPath };
+  assertHeldLock(lock, owner);
   const original = await originalIdentity(app, values['steam-manifest']);
   for (const file of [xvnc, wm]) fs.accessSync(file, fs.constants.X_OK);
   for (const id of fs.readdirSync('/proc').filter(id => /^\d+$/.test(id))) {
@@ -42,7 +44,7 @@ async function main() {
   const session = { id: randomUUID(), role: 'actual_original_runtime', product: 'Canvas of Kings Demo', run,
     startedAt: new Date().toISOString(), executable: app, executableSha256: original.files[0].sha256, original,
     inputKind: 'synthetic_local_rfb', physicalInput: false, display: `:${display}`, port: 5900 + display, width: 1280, height: 960,
-    lock, profile: Object.fromEntries(['home', 'config', 'data', 'cache', 'runtime'].map(k => [k, path.join(run, k)])),
+    lock, owner, profile: Object.fromEntries(['home', 'config', 'data', 'cache', 'runtime'].map(k => [k, path.join(run, k)])),
     displayIsolation: { sessionBus: path.join(busDir, 'bus'), busServiceActivation: false, waylandDisplay: '', rfbHost: '127.0.0.1' },
     rendering: 'original_default_no_software_override', processes: [], state: 'starting',
     emergencyGuard: 'MemAvailable < 256 MiB or full PSI > 50% over two seconds',
