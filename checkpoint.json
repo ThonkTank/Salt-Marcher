@@ -3546,17 +3546,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I08-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T11:36:48.482218+00:00",
-      "focus": "Originalwerte und Perspektivstart zuordnen",
-      "state": "completed",
-      "result": "Präferenzpaare gleich; Startpunkt nur in Bildkoordinaten, Rückkehr angewandt; keine unbelegte Fortbewegung"
-    },
-    "nextRun": {
       "id": "CITY-00-I08-CR",
       "kind": "cleanup_review",
-      "focus": "Bereinigung prüfen und freien COK-Slot übernehmen"
+      "startedAt": "2026-10-09T11:37:05.949757+00:00",
+      "focus": "Belegzuordnung und Rückstellung abschließen",
+      "state": "completed",
+      "result": "14Hashes intakt, Originalwerte gleich, Kartenbearbeitung zurück; Hex-Kollege hat nativen Slot ausdrücklich freigegeben"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-I",
+      "kind": "native_original_probe",
+      "focus": "COK vollständige Save/Preset/Neuöffnungsfolge beginnen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
@@ -3575,7 +3575,7 @@
     },
     "pendingNativeRun": {
       "id": "CITY-00-I07-I",
-      "state": "waiting_for_hex_colors_slot",
+      "state": "native_slot_explicitly_released_by_hex",
       "focus": "Vollständige COK-Save/Neuöffnungs-/Presetprobe",
       "dependency": "Hex-Kollege hat nächsten nativen Platz für14Interface-Farben reserviert"
     }
