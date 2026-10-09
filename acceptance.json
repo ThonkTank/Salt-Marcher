@@ -130530,7 +130530,7 @@
           "remaining": "Drei Original-/Host-Rohdatenpaare, frische Hostöffnung und getrennter Review bestehen. Weitere Lochformen, Außenkanten, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingFloorEllipseHoleOriginalProbe": {
-          "state": "ellipse_host_tool_candidate_qa_lock_pending_case_open",
+          "state": "ellipse_interior_hole_scoped_host_raw_pair_passed_review_open_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
@@ -130542,7 +130542,12 @@
           "hostTool": "tools/host/parity-tools-phase1-building-mixed.cjs",
           "offlineVerification": "Hosthelfer-Syntax, Typprüfung, 201 Kerntests und Build bestanden; keine grafische Hostausführung in dieser Cloud-Sitzung.",
           "measuredScope": "8×8-Karte mit gemischter 6×6-Kontur: Alt-Ellipse `(3,3)`–`(5,5)` erzeugt einen 28-Punkt-Innenring und erhält 36 Zellpositionen. Nur das verdeckte Feld (4,3) wechselt von Stone zu Wood im gewählten Farbwert. Original-Undo/Redo bytegleich; frische Originalöffnung zeigt die Aussparung.",
-          "remaining": "Der Hosthelfer ist für Edit, Undo/Redo, Speichern und frische Öffnung ergänzt. Die tatsächlichen Host-GUI-Läufe bleiben wegen der exklusiven lokalen QA-Instanz offen; anschließend getrennter Review. Weitere Ellipsengrößen, Außenkanten, spätere Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Lokaler Host-GUI-Editlauf und frische Neuöffnung mit je zehn Prüfpunkten bestehen; zwei Rohdatenpaare stimmen in allen 36 Zellen überein, der Innenring weicht höchstens 0,0045 Felder ab. Getrennter Review, weitere Ellipsengrößen, Außenkanten, spätere Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft.",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/evidence/1791543569173-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/evidence/1791543595083-parity-tools-phase1-building-mixed-reopen/result.json",
+          "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/independent-audit.json"
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
