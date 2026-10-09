@@ -4122,17 +4122,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I40-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T16:15:52.829607+00:00",
-      "focus": "FTG-Hauskontur und bekannte Platzierungsfolge direkt prüfen",
-      "state": "completed",
-      "result": "FTG-Draw schließt eigene Vierpunktkontur; neu erzeugtes bekanntes Haus ausgewählt/verschoben/sichtbar gedreht. Zweite Platzierungsvorschau per Cancel entfernt, eine gedrehte Kontur bleibt; Gesamtentwurf per CancelEdit/Yes verworfen.CTRL-Mausrad-Skalierung direkt angeboten, Wirkung nicht geprüft. Zwei frühere Treffer ohne Auswahl gestoppt; neue bekannte Kontur ist eigener belegter Auswahlfall.250m/Districts/11Monday zurückgestellt; Originaltabs erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I40-R",
       "kind": "reference_review",
-      "focus": "Rohbelege, Vorschau-/Commitgrenze und eingeschränkten Skaliernachweis reviewen"
+      "startedAt": "2026-10-09T16:16:48.611641+00:00",
+      "focus": "FTG-Rohbelege und Vorschau-/Pose-/Skaliergrenzen reviewen",
+      "state": "completed",
+      "result": "27 Rohbelege/Hashes bestätigt; abgeschlossene Vierpunktkontur, neue bekannte Auswahl, sichtbare Dreh-/Verschiebewirkung und getrennt verworfene zweite Vorschau korrekt begrenzt.CTRLwheel nur angebotene Geste, keine Skalierabnahme. Zwei ältere Treffer ohne Auswahl gestoppt; neue Kontur belegt separates Ziel. Gesamtentwurf verworfen,250m/Satellite/Districts/11Monday gelesen. Aufräumbefund: Referenzsnapshot führt weiterhin nur I11-Straßenwirkung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I40-CP",
+      "kind": "cleanup_planning",
+      "focus": "Abgeleiteten FTG-Snapshot ohne Überdehnung aktualisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
