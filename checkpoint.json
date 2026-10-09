@@ -2023,13 +2023,16 @@
     },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
-      "state": "claimed_separate_plan_pending",
+      "state": "plan_candidate_independent_review_pending",
       "run": "GM-UX-N-006-P01",
+      "plan": "ROADMAP-GM-UX-N-006-PLAN.md",
       "source": "GM-UX-006 im getrennten Cloud-GM-Produkttest; Issue #1 Kommentar 6085700084",
-      "ownership": "Dungeon-Strang; bei Claim keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer.",
+      "ownership": "Dungeon-Strang; vor Fortsetzung auf Shared-Head 2a055f10800c63678ca9fe991b0dd31a02483744 keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer. N-005-I01 wird durch denselben Dungeon-Strang unmittelbar nach veröffentlichtem N-006-P01-Review-PASS übernommen und bis dahin nicht parallel begonnen.",
       "finding": "Auf isolierter Nebelwacht-Kopie blieben Geschoss Geheimgang, Räume 13–15, Türen, Key und Gang gespeichert; nach Schließen und Wiederöffnen war in zwei Läufen jeweils Erdgeschoss aktiv.",
-      "planDecision": "Den aktuellen Workspace-/View-State-Vertrag lesen und belegt zwischen Wiederherstellung der letzten aktiven Ebene und einem absichtlichen Erdgeschoss-Start mit klar sichtbarer Wiederaufnahme entscheiden.",
-      "limits": "Nur nachfolgender Planbesitz; noch keine Produktänderung, GUI-/Hostprüfung oder Entscheidung. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe."
+      "planDecision": "Das letzte gültige aktive Geschoss derselben Karte automatisch über den bestehenden Obsidian-FileView-State plus einen flüchtigen, gleich codierten Tab-Reopen-Handoff wiederherstellen. Kein belegter Grund für absichtlichen Erdgeschoss-Reset oder zusätzliche Wiederaufnahmeoberfläche; kein Karten-, Draft-, History- oder Plugin-Datenzustand.",
+      "review": "Unabhängiger read-only Review des exakten Plankandidaten ausstehend.",
+      "limits": "Nur technischer Plan; noch keine Produktänderung oder GUI-/Hostprüfung. Frischer Prozess ohne wiederhergestelltes Leaf fällt weiterhin auf das erste Geschoss zurück. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe.",
+      "next": "Exakten Plancommit unabhängig gegen Testerbefund, FileView-Lifecycle, Nichtmutation, Tab-Reopen und N-005-Anschluss reviewen; Pflichtlücken reparieren."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2617,7 +2620,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-006-P01: als eigener Dungeon-Planlauf den Workspace-/View-State-Vertrag prüfen und belegt entscheiden, ob die zuletzt aktive Ebene beim erneuten Öffnen wiederhergestellt wird oder ein absichtlicher Erdgeschoss-Start eine klar sichtbare Wiederaufnahme benötigt. N-005-I01, DD-036 und Atlaspersistenz bleiben getrennt; keine Implementierungs- oder Hostfreigabe aus der Planung.",
+    "nextRun": "GM-UX-N-006-P01-R01: den exakten Plan zur automatischen Wiederherstellung des aktiven Geschosses über gemeinsamen FileView-/flüchtigen Tab-Reopen-State unabhängig reviewen und Pflichtlücken reparieren. N-005-I01 folgt beim selben Dungeon-Besitzer erst nach veröffentlichtem Planreview-PASS; DD-036 und Atlaspersistenz bleiben getrennt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
