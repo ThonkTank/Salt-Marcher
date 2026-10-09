@@ -60,10 +60,14 @@ ausgeschrieben. Die Reihenfolge ist deterministisch: Geschossreihenfolge des
 Dokuments, numerische Raumnummer, Raumkennung, Abschnittsreihenfolge. Gleiche
 Raumnummern oder gleiche Texte werden nicht zusammengelegt.
 
-Beschädigte oder während einer Aktualisierung verschwundene IDs erzeugen keinen
-stalen Treffer: Die Projektion wird aus der aktuellen Sessionrevision neu
-gebildet. Ein nicht strukturiertes Dokument zeigt einen ehrlichen
-Nicht-verfügbar-Hinweis und wird weder migriert noch verändert.
+Das Suchpanel abonniert beim Öffnen `Session.subscribe`, projiziert bei jeder
+relevanten Raum-, Geschoss- oder Abschnittsänderung die bestehende Abfrage neu
+und meldet sich bei Panel-/Editorabbau wieder ab. Eingabetext und Fokus bleiben
+bei einem Refresh erhalten; Übersicht, Zähler und Treffer stammen danach nur
+aus der neuen Sessionrevision. Ein zwischen Rendern und Klick verschwundenes
+Ziel wird bei Aktivierung nochmals geprüft, sichtbar als nicht mehr verfügbar
+gemeldet und mutationsfrei verworfen. Ein nicht strukturiertes Dokument zeigt
+einen ehrlichen Nicht-verfügbar-Hinweis und wird weder migriert noch verändert.
 
 ## Sichtbarer Ablauf im bestehenden Editor
 
@@ -80,10 +84,19 @@ Nicht-verfügbar-Hinweis und wird weder migriert noch verändert.
    vorhandenen `StructuredKeyPanel`; keine eigene Kamera, Auswahl oder Key-
    Ansicht. Danach ist das richtige Geschoss sichtbar, der Raum gewählt und
    fokussiert, der Key-Dock offen und der passende Abschnitt angesprungen.
-4. Die Navigation darf keinen offenen Key-Entwurf stillschweigend übernehmen
-   oder verwerfen. Ist der aktuelle `StructuredKeyPanel` dirty, bleibt der
-   Trefferwechsel blockiert und fordert sichtbar „Übernehmen“ oder „Verwerfen“.
-   Ohne offenen Entwurf erzeugt Aktivierung keinen Befehl und keinen Save.
+4. Vor **jedem** Geschoss-, Auswahl- oder Abschnittswechsel läuft ein gemeinsamer
+   Key-Draft-Guard. `StructuredKeyPanel` stellt dafür seinen heutigen privaten
+   Dirty-Befund als reine Abfrage bereit. `DungeonEditor.switchFloor`,
+   `selectMany` und `StructuredKeyPanel.focus` verwenden denselben Guard statt
+   einen dirty Entwurf durch ihre heutigen impliziten `commitNote()`-/`commit()`-
+   Aufrufe zu übernehmen. Bei dirty bleibt der gesamte Navigationsschritt vor
+   der ersten Ansichtsmutation stehen, Textarea, Geschoss, Auswahl, Kamera,
+   Dokument und History bleiben unverändert; die Textarea erhält Fokus und der
+   sichtbare Hinweis fordert „Übernehmen“ oder „Verwerfen“. Nur diese bereits
+   vorhandenen ausdrücklichen Aktionen dürfen den Entwurf anwenden oder
+   zurücksetzen. Danach löst ein erneuter Trefferklick die normale Navigation
+   aus. Bei clean ist der Guard ein No-op; Aktivierung erzeugt keinen Befehl und
+   keinen Save.
 5. Nach erfolgter Aktivierung bleibt „Raum-Keys durchsuchen“ direkt erreichbar.
    Die Suchabfrage darf beim Wechsel im selben Editorprozess flüchtig erhalten
    bleiben; nach Editor-Neuöffnung startet die Übersicht leer. Das ist UI-
@@ -123,7 +136,7 @@ erweitert:
 | Lauf | Umfang | Gate |
 | --- | --- | --- |
 | `GM-UX-N-005-I01` | Reine V4-Projektion und Suche auf der bestehenden Sessionquelle | Gezielte Unitfälle für leere Übersicht, eindeutigen Begriff, Unicode/Großschreibung, mehrere Geschosse, doppelte Nummern, mehrere passende Abschnitte, Passage-/Featuretext und beschädigte Ziele. Keine Sessionmutation. |
-| `GM-UX-N-005-I02` | Inhaltsgruppen-Panel und Aktivierung über vorhandene Geschoss-/Auswahl-/Kamera-/Key-Wege | DOM-/Editorregressionen für Tippen, Leeren, Tastaturfokus, Ergebnisstatus, dirty Key-Draft-Blockade und exakte Dokument-/History-/Dirty-Gleichheit. Keine parallele Raumansicht. |
+| `GM-UX-N-005-I02` | Inhaltsgruppen-Panel und Aktivierung über vorhandene Geschoss-/Auswahl-/Kamera-/Key-Wege | DOM-/Editorregressionen für Tippen, Leeren, Tastaturfokus, Ergebnisstatus und Session-Subscribe/Unsubscribe. Ein nach Rendern geänderter oder entfernter Zielraum verschwindet beziehungsweise bricht beim Klick sichtbar und mutationsfrei ab. Der erste Trefferklick bei dirty Key-Draft lässt Textarea, Geschoss, Auswahl, Kamera, Dokument, History und Dirty-Status exakt stehen; erst ausdrückliches Übernehmen/Verwerfen erlaubt den zweiten Klick. Keine parallele Raumansicht. |
 | `GM-UX-N-005-R01` | Unabhängiger Produktreview | Datenquelle, Navigation, Accessibility, geschützte Texte/IDs und Nichtmutation auf dem exakten Implementierungscommit prüfen; Pflichtlücken vor Hostlauf nachbessern. |
 | `GM-UX-N-005-H01` | Genau der veröffentlichte Nebelwacht-Reproduktions- und Abnahmeablauf im isolierten Cloud-Obsidian-Host | Sauberer Build/Tripel, sichtbare Schritte, Vorher-/Nachherhash, normaler Exit und frische Neuöffnung. Synthetische Fernsteuerung bleibt keine physische Eingabeabnahme. |
 | `GM-UX-N-005-GM-R01` | Unabhängiger Produkttester-Nachtest | Der Tester wiederholt ausschließlich seine beschriebene Suche. Erst dieser Nachtest darf das Folgeaufgabenticket schließen. |
