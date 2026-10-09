@@ -12,7 +12,7 @@ Ein Linux-Helper hält genau einen Root-FD und nutzt `openat2` mit `RESOLVE_BENE
 
 ## Zustandsmaschinen
 
-Der Helper akzeptiert nur den reviewten p01-v3 DTO. Vor jeder Hilfsdatei steht ein durables Parent-/Child-`prepared`. Create folgt `prepared → temp-synced → new-published → committed`; Update folgt `prepared → before-snapshotted → ready-to-capture → old-captured → new-published → committed`; Delete folgt `prepared → before-snapshotted → ready-to-capture → deleted → committed`. Jeder Abbruch schreibt `conflict`; Rollback verwendet nur die vertraglichen `rolling-back`, `rollback-captured`, `rollback-published`, `rolled-back`-Übergänge. Temp, Snapshot, Capture, Rollback-Capture und Staging bleiben retained.
+Der Helper akzeptiert nur den reviewten p01-v3 DTO. Vor jeder Hilfsdatei steht ein durables Parent-/Child-`prepared`. Create folgt `prepared → temp-synced → new-published → committed`; Update folgt `prepared → before-snapshotted → ready-to-capture → old-captured → new-published → committed`; Delete folgt `prepared → before-snapshotted → ready-to-capture → old-captured → deleted → committed`. Jeder Abbruch schreibt `conflict`; Rollback verwendet nur die vertraglichen `rolling-back`, `rollback-captured`, `rollback-published`, `rolled-back`-Übergänge. Before-Snapshot, Capture, Rollback-Capture und Receiptgenerationen bleiben retained; durch `RENAME_NOREPLACE` verschobene Temp- und Restore-Temp-Namen sind anschließend ausdrücklich abwesend.
 
 ## Fault- und Adversary-Matrix
 
@@ -47,108 +47,82 @@ unerwartetes `errno` oder ein Fallback auf `rename`, `link`, Replace oder Pfadst
 sofortiger No-Go. Vor und nach jedem Namenwechsel prüft der Helper `fstatat`/`fstat` auf regulären
 Typ, gleiches Gerät/Mount, erwartetes device/inode/linkCount=1 und den unveränderten Root-FD.
 
-## Ausführbare Übergangstabelle
+## Normative N03-Transitions- und Faultmatrix
 
-Jede Zeile publiziert vor der Mutation eine neue, exklusive und synchronisierte
-Receiptgeneration; danach folgt `fsync(receipt-dir)`. `P` bedeutet Parent-`prepared`, `C` ein
-Child-Receipt, `B` den aus dem Request geschriebenen Before-Snapshot und `T` die After-Temp.
+Die einzige normative Übergangs- und Zellspezifikation dieses Plans ist
+`ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json`. Frühere R01-, R02- und
+R03-Tabellenregeln sind durch dieses Artefakt ersetzt und dürfen nicht als
+Fallback verwendet werden. Das JSON ist Planung, kein Helper, Testreceipt oder
+Evidence.
 
-| Operation | Übergang | Precondition | Postcondition und Recovery-Orakel |
-| --- | --- | --- | --- |
-| Create | `prepared → temp-synced` | P/C prepared, Ziel abwesend | T=After synchron; Recovery hält Ziel abwesend oder Konflikt |
-| Create | `temp-synced → new-published → committed` | T=After, Ziel abwesend | T nach Rename abwesend, Ziel=After; Recovery vervollständigt After |
-| Create rollback | `rolling-back → rollback-captured → rolled-back` | eigenes Ziel=After | Rollback-Capture=After retained, Ziel abwesend |
-| Update | `prepared → before-snapshotted` | P/C prepared, Payload=Before | B=Before synchron und retained |
-| Update | `before-snapshotted → ready-to-capture` | B=Before, Ziel=Before/Identität | T=After synchron; Abweichung ist Konflikt ohne Rename |
-| Update | `ready-to-capture → old-captured → new-published → committed` | Capture-Ziel frei | Capture=Before retained, Ziel=After, T abwesend |
-| Update rollback | `rolling-back → rollback-captured → rollback-published → rolled-back` | eigenes Ziel=After | Rollback-Capture=After und B=Before retained; Restore-Temp nach Rename abwesend, Ziel=Before |
-| Delete | `prepared → before-snapshotted → ready-to-capture` | wie Update ohne T | B=Before, Ziel=Before |
-| Delete | `ready-to-capture → deleted → committed` | Capture-Ziel frei | Capture=Before retained, Ziel abwesend |
-| Delete rollback | `rolling-back → rollback-published → rolled-back` | Capture=Before, Ziel abwesend | Restore-Temp nach Rename abwesend, Ziel=Before |
+Das Artefakt enthält 87 einzeln benannte Transitionen. Jede nennt Operation,
+einen einzigen Quellzustand, einen einzigen Zielzustand, Mutation, vollständige
+durable Receiptfolge und für `before`, `during` und `after` jeweils einen
+vollständigen Vektor aus Receipt, Target, Temp, BeforeSnapshot, Capture,
+RollbackCapture, RestoreTemp, Parentzustand/-digest und terminalem
+Fresh-Recovery-Ergebnis. Die Phasen sind im JSON abschließend definiert:
+`before` liegt vor der Mutation, `during` nach Mutation und erforderlichem
+Datei-/Directory-Sync bei noch nicht publizierter Zielgeneration, `after`
+nach Publikation und Receipt-Directory-Sync.
 
-`conflict-before-capture` und `conflict` dürfen keine Wahrheit entfernen: B, Capture und
-Rollback-Capture bleiben, während konkurrierende Evidence einen beliebigen, aber vollständig
-gebundenen Hash/Länge/Identität enthält. Eine Recovery darf nur `prepared` zum aggregierten Before
-oder `children-committed`/`committed` zum aggregierten After vervollständigen; jede Mischlage,
-dritte Wahrheit, fehlende Generation oder fremde Identität endet retained `conflict`.
+Die Contract-Ausrichtung ist bindend:
 
-## Killpoints, Recovery und Adversary
+- Create besitzt nur `prepared → temp-synced → new-published → committed`;
+  nicht vorhandene Before-/Capture-/Restore-Namen sind `not-applicable`.
+- Update besitzt keinen `temp-synced`-Zustand. Die After-Temp wird in
+  `before-snapshotted → ready-to-capture` erzeugt und gebunden.
+- Delete besitzt ausdrücklich
+  `ready-to-capture → old-captured → deleted → committed`.
+- Jeder zulässige Rollback-Startzustand ist eine eigene Transition. Auch
+  Fortsetzungen aus `rolling-back` sind nach ihrer Startprovenienz getrennt,
+  damit der p01-v3-Artefaktvektor deterministisch bleibt.
+- Jeder zulässige Child-Konfliktquellzustand führt in einer eigenen Transition
+  zu `conflict-before-capture` oder `conflict`. Jeder Parent-Rollback- und
+  Parent-Konfliktquellzustand ist ebenfalls einzeln aufgeführt.
+- Der Parent bindet weiterhin den stabil sortierten vollständigen Vierer-Satz
+  `draft`, `journal`, `map`, `note` und dessen p01-v3 Before-/After-
+  Aggregatdigests.
 
-Für jede Tabellenzeile führt der Controller mit frischem Root alle Punkte `before`, `during` und
-`after` aus: Parent-Staging, Parent-prepared, Child-prepared, B-Write/B-fdatasync,
-Zielverifikation, T-Write/T-fdatasync, Capture, jeder Publish-Rename, jeder Directory-fsync,
-Child-commit, Parent-children-committed, Parent-committed und jeder Rollback-Schritt. Nicht
-anwendbare Zellen erhalten `not-applicable` mit Begründung; jede anwendbare Zelle muss `passed`
-oder `failed` werden, `not-run` ist No-Go. Nach Controller-Kill startet ausschließlich ein frischer
-Helper Recovery zweimal; der zweite Lauf muss denselben Terminalzustand, dieselben retained Namen
-und denselben Digest liefern.
+## Geschlossene Zellerzeugung
 
-Zu jedem Killpoint startet der separat aufgezeichnete Adversary genau eine Mutation: Replace vor
-Capture, in-place write über vorab offenen FD während Verifikation, Neubelegung nach Capture,
-Target-/Parent-Symlink, Hardlink, Root-/Parent-Austausch, Receipt-Duplikat/Korruption und – sofern
-der Host es sicher zulässt – Mount-/Gerätewechsel. Jeder Lauf prüft errno, Root-/Parent-FD,
-device/inode/linkCount, alle gebundenen Namen und das begrenzte Orphan-Inventar. Nicht sicher
-injizierbarer Mountfall bleibt `not-run` und damit H03-No-Go, nie übersprungen.
+Die Matrix besitzt genau drei Dimensionen: eine der 87 Transitionen, genau eine
+der drei Phasen und genau eines der 13 Adversary-Overlays. Daraus entstehen
+3.393 zulässige Zell-IDs. Für jede Zell-ID wird genau ein Base-Vektor mit genau
+einem transition- und phasenspezifischen Overlay-Eintrag per der im JSON
+definierten Deep-Merge-Regel kombiniert. Jedes Overlay partitioniert in jeder
+Phase sämtliche 87 Transition-IDs exakt einmal in `results` oder
+`notApplicable`; Klassenbereiche, implizite Defaultregeln und Fallbacks sind
+unzulässig.
 
-## Ressourcen, Determinismus und Gates
+Jeder anwendbare Overlay-Eintrag enthält genau eine `oracleId`. Sie verweist
+auf genau einen deduplizierten, unveränderlichen Resultat-Patch im
+`overlayOracles`-Inventar mit konkretem Konfliktzustand,
+Target-/Receipt-Effekt, retained Wahrheiten, Parent-`conflict`/-Digest und
+identischem zweiten Recoveryergebnis. Die Deduplizierung ist rein
+referenziell; sie führt keine semantische Klasse oder Ableitungsregel ein.
+Unzulässige Dimensionen enthalten pro Transition und Phase
+`not-applicable` samt Grund. `mount-device` ist ein Pflichtoverlay; kann der
+Host es nicht sicher injizieren, lautet das Ergebnis `not-run` und damit H03
+`No-Go`.
 
-Der Controller begrenzt Childzahl auf den V3-Satz, Bytes auf `MAX_BYTES`, Orphans auf
-`MAX_ORPHANS`, Prozesslaufzeit und Receiptgenerationen pro Szenario. Er beendet nur eigene
-Prozesse; nie fremde Anwendungen. Jeder Abbruch speichert Ursache, Killpoint, errno, gebundene
-Hashes/Identitäten und retained Inventar. Nach zwei vollständigen Matrixfehlversuchen oder 45
-Minuten derselben Hypothese wird nicht weiter variiert: der Status ist anhand der vollständigen
-Matrix `failed`/No-Go.
+Ein späterer Controller muss die JSON-Zell-ID lexikalisch unverändert in sein
+externes Receipt übernehmen und jede anwendbare Zelle als `passed`,
+`failed` oder `not-run` ausgeben. `not-run` ist für jede Pflichtzelle
+No-Go. Zweite Recovery muss Zustand, retained Namen und Digest exakt
+reproduzieren. Kein Helper darf aus dem Markdown zusätzliche Zustände,
+Applicability oder Orakel ableiten.
 
-I02-P01 endet erst nach unabhängiger Planprüfung. Erst deren PASS autorisiert I02-Implementierung;
-deren exakter Commit benötigt anschließend getrennte Code-/Security-/Evidence-Reviews. Befunde
-erzeugen einen separaten Repair-Plan und Repair-Commit. Erst nach Matrix-PASS folgt ein eigener
-Cleanup-Plan; weder dieser Plan noch ein späterer PASS autorisiert H03-Go, P02 oder Plattform-Go.
+## Planhistorie und nächstes Gate
 
-## R01-Reparatur: erzeugbare Receipt- und Matrixzellen
+R01 auf `e0cff1d0d112633fa3f6288d95973de936a5dbc3`, R02 auf
+`2c5e765a62c6a1f8210a0bd53255b97df5b821d2` und R03 auf
+`b4f50c52e926d6ee7d7016d29b2d58192c0377d8` wurden unabhängig geprüft und
+wegen der jeweils dokumentierten Matrix-/Orakellücken nicht freigegeben. N03
+ersetzt ausschließlich die fehlerhaften Planregeln; der reviewte p01-v3-
+Contract und die frühere Historie bleiben unverändert.
 
-Die folgenden Tabellen ersetzen jede implizite Sammelregel. `RG(n)` bedeutet: exklusive neue
-Receiptgeneration schreiben, `fdatasync`, `renameat2(RENAME_NOREPLACE)`, dann `fsync(receipt-dir)`;
-der jeweilige Zustand ist erst danach sichtbar. Jede Zeile besitzt damit eine prüfbare Generation.
-
-| Parent-ID | Vorbedingung | Mutation nach RG | nächste RG/fsync | Fresh-Recovery-Orakel |
-| --- | --- | --- | --- | --- |
-| P01 prepared | kein Child-Schritt | Parent prepared | RG(parent prepared), dir-fsync | Before, kein Child oder retained vorbereitete Wahrheit |
-| P02 children-committed | alle vier Child committed, After-Digest | Parent children-committed | RG, dir-fsync | aggregiertes After vervollständigen |
-| P03 committed | P02 sichtbar | Parent committed | RG, dir-fsync | aggregiertes After, idempotent |
-| P04 rolling-back | P01/P02/P03, keine fremde Wahrheit | Parent rolling-back | RG, dir-fsync | operationale Rollbacks fortsetzen oder conflict |
-| P05 rolled-back | alle Child rolled-back, Before-Digest | Parent rolled-back | RG, dir-fsync | aggregiertes Before, retained Artefakte |
-| P06 conflict | dritte Wahrheit/Receiptverlust/fremde Identität | keine Überschreibung | RG(conflict), dir-fsync | retained conflict, unverändert beim zweiten Lauf |
-
-Für jede Childoperation erzeugt der Controller exakt diese Transition-IDs; jeder Pfeil bedeutet
-vorherige RG, Dateimutation, Identitäts-/Hashprüfung, nachfolgende RG und Directory-fsync.
-
-| Operation | IDs in Reihenfolge | Fresh-Recovery-Orakel |
-| --- | --- | --- |
-| Create | C01 prepared→temp-synced; C02 temp-synced→new-published; C03 new-published→committed; C04 committed→rolling-back; C05 rolling-back→rollback-captured; C06 rollback-captured→rolled-back; CF-prepared/CF-temp-synced/CF-new-published/CF-committed/CF-rolling-back/CF-rollback-captured/CF-rolled-back jeweils →conflict | Ziel After nach C03, Ziel abwesend nach C06, Rollback-Capture retained |
-| Update | U01 prepared→before-snapshotted; U02 before-snapshotted→ready-to-capture; U03 →old-captured; U04 →new-published; U05 →committed; U06 →rolling-back; U07 →rollback-captured; U08 →rollback-published; U09 →rolled-back; UF-prepared/UF-before-snapshotted/UF-ready-to-capture→conflict-before-capture; UF-old-captured/UF-new-published/UF-committed/UF-rolling-back/UF-rollback-captured/UF-rollback-published/UF-rolled-back→conflict | B/Capture retained; Target Before vor U03, After U04–U07, Before U08/U09 |
-| Delete | D01 prepared→before-snapshotted; D02 before-snapshotted→ready-to-capture; D03 →deleted; D04 →committed; D05 →rolling-back; D06 →rollback-published; D07 →rolled-back; DF-prepared/DF-before-snapshotted/DF-ready-to-capture→conflict-before-capture; DF-old-captured/DF-deleted/DF-committed/DF-rolling-back/DF-rollback-published/DF-rolled-back→conflict | B/Capture retained; Target Before vor D03, abwesend D03–D05, Before D06/D07 |
-
-Die formal geschlossene Matrix ist das kartesische Produkt
-`M = {C01..C06,CF-*,U01..U09,UF-*,D01..D07,DF-*,P01..P06} × {before,during,after} × A`.
-`A={replace-before-capture,inplace-fd-write,rebind-after-capture,target-symlink,parent-symlink,
-hardlink,root-swap,parent-swap,mount-device,receipt-missing,receipt-duplicate,receipt-corrupt,
-second-recovery}`. Zell-ID ist `H03-I02-<transition>-<phase>-<adversary>`; der Controller erzeugt
-sie lexikographisch. Applicability: Capture-Klassen nur U03/U04/D03 und deren Recovery; After-capture
-nur C02/U03/U04/D03; Mount nur wenn sicher privilegiert, sonst `not-run`=No-Go; übrige Zellen sind
-pflichtig. Erwartung jeder anwendbaren Zelle ist exakt das Tabellenorakel der Transition plus:
-Temp vor Rename=After/nach Rename=abwesend; B/Capture/Rollback-Capture=retained present; Restore-Temp
-nach Rename=abwesend; Receipt=letzte RG oder retained conflict; Parent=P01 Before, P02/P03 After,
-P05 Before, P06 conflict. Jeder andere Hash, Name, inode oder Mischzustand ist `failed`.
-
-### N02 Fresh-Recovery-Lookup
-
-Für jede Zell-ID gilt folgende vollständige Lookup-Tabelle; `before` liefert die vorige RG,
-`during` nur die vorige RG oder die nächste atomar publizierte RG (nie Mischbytes), `after` die
-nächste RG. Target/Temp/B/C/R sind jeweils exakt die im Übergangstableau genannte Wahrheit.
-
-| Klasse | before | during | after | Parent-Digest |
-| --- | --- | --- | --- | --- |
-| normale `C/U/D 01..09` | Quell-Receipt, Quellorakel | Quell-RG oder Ziel-RG, atomare Namen | Ziel-Receipt/Zielorakel | P01=Before; P02/P03=After |
-| Rollback `C04..C06/U06..U09/D05..D07` | Quell-RG, retained B/C/R | Quell-RG oder Ziel-RG | Ziel-RG, moved Temp abwesend | P04 laufend, P05=Before |
-| Conflict `CF/UF/DF` | Quell-RG | Quell-RG oder conflict-RG | conflict-RG, konkurrierende Evidence retained | P06=conflict |
-| Parent `P01..P06` | vorige Parent-RG, Childsatz unverändert | vorige oder nächste Parent-RG | genau P01..P06-RG | P01/P05 Before; P02/P03 After; P04 laufend; P06 conflict |
+N03 endet erst nach unabhängiger read-only Prüfung des exakten Candidate-SHA.
+Erst ein PASS autorisiert einen getrennten I02-Implementierungslauf. Weder
+dieser Plan noch sein Review erzeugt einen Helper, eine Test- oder
+Evidence-Datei, ein Linux-Durability-Go, eine Plattformentscheidung oder eine
+P02-Autorisierung.
