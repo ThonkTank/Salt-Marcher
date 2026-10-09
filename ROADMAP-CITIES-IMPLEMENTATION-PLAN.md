@@ -927,3 +927,5 @@ CITY-00-I43-R43 Start 2026-10-09T19:12:50.494468+00:00; unabhängige Neuberechnu
 CITY-00-I43-REVIEW-CLEAN-P43 Start 2026-10-09T19:13:05.334816+00:00; Plan: den CO2-Techniktext lesbar machen und die eigene Persistenzpolitik als Umsetzungspflicht kennzeichnen. Originaldateien/Frames nicht ändern; Review verknüpfen, Kennungen und fremde JSON-Wurzeln erhalten. Cleanup-Review prüft Hashes und offene Produktabnahmen.
 
 CITY-00-I43-REVIEW-CLEAN-I43 Start 2026-10-09T19:13:16.936175+00:00; CO2-Technikplan lesbar präzisiert: geplante eigene stabile IDs/Apply/Persistenz sind vom Original-Teilbeleg getrennt. Originaldaten unverändert; keine neue Runtime oder Schnittstelle.
+
+CITY-00-I43-REVIEW-CLEAN-R43 Start 2026-10-09T19:13:33.598213+00:00; alle 47 Rawhashes, Referenzreviewlink und unverändert offene 65 CO/24 CTY geprüft. Kein Restbefund in dieser Aufräumphase. Nächster Lauf: FTG-Inventar auf veraltete Beschreibung/Belegzuordnung prüfen, bevor weitere Originaltests geplant werden. Keine neue GUI.
