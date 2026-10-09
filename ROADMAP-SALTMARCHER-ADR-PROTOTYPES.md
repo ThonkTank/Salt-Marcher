@@ -84,13 +84,16 @@ erst auf einer sauberen, mit dem aktuellen gemeinsamen Branch integrierten
 Basis. Änderungen anderer Geräte oder Stränge werden vor jedem Lauf erneut
 abgerufen; veröffentlichter Verlauf wird nicht umgeschrieben. Jeder geprüfte
 Zwischenstand wird ohne Force-Push auf seinem Kandidatenbranch veröffentlicht.
-Nur der Koordinator integriert nach bestandenem Review die kleine Roadmap- und
-Evidence-Änderung in den gemeinsamen Branch. Ein No-Go verbleibt mit seinen
-Belegen auf dem Kandidatenbranch; ein eigener Aufräumcommit entfernt den
-vollständig paketlokalen ausführbaren Prototypcode und seine temporären
-Abhängigkeiten, bevor etwas zur Integration vorgeschlagen wird. Kein Folgepaket
-setzt den gelöschten Code oder eine Integration des Vorgänger-Harness voraus;
-es bindet ausschließlich dessen reviewten Aggregatbeleg als Eingangsoracle.
+Nur der Koordinator integriert nach bestandenem Review die kleine Roadmap-,
+Contracts- und Evidence-Änderung in den gemeinsamen Branch. Ein No-Go
+verbleibt mit seinen Belegen auf dem Kandidatenbranch; ein eigener
+Aufräumcommit entfernt den
+paketlokalen ausführbaren Prototypcode und seine temporären Abhängigkeiten,
+bevor etwas zur Integration vorgeschlagen wird. Die reviewten, versionierten
+Port-, DTO- und Schema-Verträge unter `tools/adr-prototypes/contracts/**` sowie
+der Aggregatbeleg bleiben erhalten. Ein Folgepaket setzt keinen gelöschten
+Harness voraus; es bindet die erhaltenen Verträge und den reviewten
+Aggregatbeleg als Eingangsoracle.
 
 P01 bis P04 bleiben wegen ihrer fachlichen Eingangsorakel in dieser Reihenfolge
 sequenziell; kein Folgepaket beginnt vor dem Aufräumreview des Vorgängers. Jedes
@@ -106,6 +109,31 @@ eines funktionierenden Kandidaten dürfen die unten geforderte Anzahl haben;
 nach höchstens zwei erfolglosen Versuchen oder 45 Minuten an derselben
 Hypothese wird anhand der vorhandenen Belege Go, No-Go oder eine neue
 Hypothese entschieden.
+
+### Versionierte Verträge und abschließende Composition
+
+Jedes Paket ergänzt nur additive, explizit versionierte JSON-Schemas und
+TypeScript-Port-/DTO-Typen unter `tools/adr-prototypes/contracts/**`. Eine
+Schemaänderung nach einem bestandenen Paket erzeugt eine neue Version und
+erzwingt die Wiederholung aller davon abhängigen Contract-Tests; stilles
+Überschreiben ist verboten. Die ausführbaren Adapter bleiben paketlokal und
+dürfen beim Aufräumen entfernt werden, die Verträge und Golden DTO Fixtures
+nicht.
+
+Nach P04 und vor jedem `Go zur bevorzugten Richtung` folgt ein eigener
+`ADR-C01`-Composition-Lauf. Er baut aus den erhaltenen Verträgen einen kleinen
+neuen Harness mit genau einer Main-/Utility-, einer typisierten Preload-, einer
+Renderer- und einer Speichergrenze. Ohne Stub- oder Direktzugriff führt er in
+einem Profil nacheinander P01-Karte öffnen/ändern/speichern, P02-Campaign-Write,
+P03-sichere Projektion und P04-Export/Import aus. Correlation-ID, Revision,
+Schema-Version und semantischer Digest werden an jeder Grenze durchgängig
+geprüft. Der Lauf besitzt eigenen Plan, Review, Faultmatrix, Aggregatbeleg und
+Aufräumcommit; eine zweite Utility-/Speicherautorität oder paketlokale
+Sonderbrücke ist `No-Go`. Sein exklusiver Besitz ist
+`tools/adr-prototypes/composition/**`,
+`tools/adr-prototypes/evidence/c01-aggregate.json`,
+`tests/adr-prototypes/c01-*.test.*` und nur vorübergehend die exakt gepinnten
+Dev-Abhängigkeiten in `package.json`/`package-lock.json`.
 
 ### Reproduzierbarkeit und Receipt
 
@@ -179,18 +207,29 @@ Wiederholungen je Plattformzustand. Kaltstart, Crash-Resume und große
 Dateioperationen besitzen mindestens zehn voneinander unabhängige gemessene
 Profile. Ein Timeout ist immer ein Fehler; verworfene Ausreißer sind verboten.
 
-Die Prototypen verwenden die bindenden Obergrenzen als Entscheidungstore:
+Sicherheits-, Datenintegritäts-, Berechtigungs- und Exactly-once-Invarianten
+sind unabhängig von der Fixturegröße harte Entscheidungstore. Die folgenden
+Zeitwerte sind dagegen bis zu einer fachlich normativen Population nur
+provisorische Mess- und Vergleichsbudgets:
 
-| Bereich                                      | Hartes Prototyptor                                                                           | Quelle                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------- |
-| direkte Eingabe                              | Anerkennung p95 <= 100 ms                                                                    | `TN-21`               |
-| häufige Liveaktion / erste nützliche Anzeige | p95 <= 1 s, Timeout 10 s                                                                     | `TN-21`               |
-| bestätigter sicherer Write                   | p95 <= 1 s, Timeout 10 s; Verlust bestätigter Arbeit = 0                                     | `TN-15`               |
-| Crash-Resume der Prototypfixture             | p95 <= 5 s; nächste Mutation danach dauerhaft möglich; schließt `TN-16`/`RP-R` nicht         | `TN-16`-Richtung      |
-| passive Projektion                           | Feedback p95 <= 100 ms; vollständige sichere Projektion p95 <= 1 s; Leaks = 0                | `TN-21`, `TN-24`      |
-| Abbruch vor Commit                           | Bestätigung p95 <= 1 s; keine neue Wirkung; Bereinigung <= 10 s                              | `TN-22`               |
-| Kartennavigation                             | Render-/Navigationsbild p95 <= 33 ms; Werkzeugvorschau <= 100 ms                             | bestehendes Atlasziel |
-| Ressourcen                                   | RSS, CPU, Handles und temporäre Bytes vollständig messen; kein Produktlimit aus dem Prototyp | `TN-20` bleibt offen  |
+| Bereich                                      | Provisorisches Mess-/Vergleichsbudget                            | Harte Invariante                              |
+| -------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| direkte Eingabe                              | Anerkennung p95 <= 100 ms                                        | keine Mutation vor bestätigtem Befehl         |
+| häufige Liveaktion / erste nützliche Anzeige | p95 <= 1 s, Lauf-Timeout 10 s                                    | Timeout wird sichtbar und verändert nichts    |
+| bestätigter sicherer Write                   | Anerkennung p95 <= 1 s, Lauf-Timeout 10 s                        | Verlust bestätigter Arbeit = 0                |
+| Crash-Resume der Prototypfixture             | p95 <= 5 s                                                       | alte oder neue vollständige Wahrheit          |
+| passive Projektion                           | Feedback p95 <= 100 ms; vollständige Projektion p95 <= 1 s       | private Leaks = 0                             |
+| Abbruch vor Commit                           | Bestätigung p95 <= 1 s; Bereinigung <= 10 s                      | keine neue fachliche Wirkung                  |
+| Kartennavigation                             | Render-/Navigationsbild p95 <= 33 ms; Werkzeugvorschau <= 100 ms | Rendererprivilegien = 0                       |
+| Ressourcen                                   | RSS, CPU, Handles und temporäre Bytes vollständig messen         | keine unbeschränkte Verstärkung oder Leckspur |
+
+Eine Budgetüberschreitung ist ein protokollierter Performancebefund und
+verhindert eine Performanceaussage, aber allein kein Plattform-No-Go. Ein
+Performancewert wird erst zum harten Go/No-Go, wenn ein eigener
+Kalibrierungsreceipt die normative Population, das Hardwareprofil, mindestens
+einen Referenzlauf, Warmups/Samples und die Herleitung der Schwelle bindet.
+P01 bis P04 erfüllen mit ihren synthetischen Populationen weder `TN-16` noch
+`TN-19`, `TN-20` oder `TN-21`.
 
 Für neue Tests gelten keine feste Speicherobergrenze und keine hohe
 Startreserve. Ein Lauf stoppt nur bei der im Repository freigegebenen
@@ -205,7 +244,7 @@ Urteil ableiten.
 
 ### Paketgates und Bundle-Isolation
 
-Jeder P01-P04-Umsetzungs-, Nachbesserungs- und Aufräumkandidat muss
+Jeder P01-P04- und C01-Umsetzungs-, Nachbesserungs- und Aufräumkandidat muss
 `npm run check`, `npm test` und `npm run build` bestehen. Prototypabhängigkeiten
 sind exakt gepinnte Dev-Abhängigkeiten. Vor und nach dem Lauf werden
 Obsidian-`main.js`, `manifest.json` und `styles.css` gehasht; der Prototyp darf
@@ -228,11 +267,13 @@ Quell-/Toolchainmanifest:
 | P02 Commit-, Kill- und Recovery-Matrix                           | Pflicht         | Pflicht         | Pflicht         |
 | P03 zweites Fenster, Fokuswechsel und Negativkanäle              | Pflicht         | Pflicht         | Pflicht         |
 | P04 Export/Import                                                | Quelle und Ziel | Quelle und Ziel | Quelle und Ziel |
+| C01 integrierte Vertragskomposition                              | Pflicht         | Pflicht         | Pflicht         |
 
 P04 prüft alle neun gerichteten Kombinationen aus Linux, Windows und macOS,
 einschließlich gleicher Quell-/Zielplattform. Ein Receipt benennt jeweils
-Quelle, Ziel und Exporthash. Ein lokaler Dateitransfer darf keinen nicht
-deklarierten Metadatenkanal ersetzen.
+Quelle, Ziel, kanonischen Manifest-/Entry-Digest, Archivhash und
+Toolchainprofil. Ein lokaler Dateitransfer darf keinen nicht deklarierten
+Metadatenkanal ersetzen.
 
 P01 und P03 laufen je Plattform mindestens bei 1366 x 768, 1920 x 1080 und
 200 % Skalierung. Die ersten kompakten Abläufe werden zusätzlich bei 900 x 650
@@ -256,6 +297,7 @@ keine P01-Ziele.
 ### Besitzdateien des späteren Umsetzungslaufs
 
 - `tools/adr-prototypes/p01/**`
+- `tools/adr-prototypes/contracts/p01-v1/**`
 - `tools/adr-prototypes/evidence/p01-aggregate.json`
 - `tests/adr-prototypes/p01-*.test.*`
 - `package.json` und `package-lock.json` nur für exakt gepinnte
@@ -269,32 +311,101 @@ oben definierte Boundary-No-Go.
 
 ### Ports und Prozessgrenzen
 
-P01 verwendet den vorhandenen `FileStore`/`MapRepository`-Vertrag. Main bindet
-beim Öffnen einen undurchsichtigen, nicht erratbaren `MapHandle` an genau einen
-kanonisch aufgelösten Testroot, eine Map-ID, den erwarteten Hash und die
-zulässigen Asset-IDs. Der Desktop-Adapter läuft außerhalb des Renderers und
-bietet über einen engen, validierten Preload ausschließlich:
+P01 legt `FileStore` und den unveränderten `MapRepository` vollständig in die
+privilegierte Utility-Grenze. Nur dort existieren Kartenpfad, `.journal`,
+`.draft`, die durch `MapRepository.assertAllowed` zugelassenen Markdown-
+Notizpfade und Rohbytes. Main bindet beim Öffnen einen undurchsichtigen, nicht
+erratbaren `MapHandle` an genau einen kanonisch aufgelösten Testroot, eine
+Map-ID, die erwartete Revision und zulässige Asset-IDs. Der validierte Preload
+bietet dem Renderer ausschließlich fachliche DTO-Operationen:
 
-- `readMap(mapHandle, expectedHash)`;
-- `compareAndWriteMap(mapHandle, beforeHash, bytes)`;
-- `readAsset(mapHandle, assetId, expectedHash)`;
-- `subscribeMapInvalidation(mapHandle, revision)`.
+- `openMap({ mapId, expectedRevision })` liefert Handle, validierten Snapshot,
+  Revision und Digest;
+- `executeMapCommand({ mapHandle, expectedRevision, command })` liefert ein
+  typisiertes Ergebnis, nie Pfade oder Bytes;
+- `saveMap({ mapHandle, expectedRevision })` führt Draft-, Journal-, Karten-
+  und Notizspeicherung innerhalb der Utility-Grenze aus;
+- `readAsset({ mapHandle, assetId, expectedHash })` und
+  `subscribeMapInvalidation({ mapHandle, revision })`.
 
-Handle, Größe, Hash, Revision und Ergebnis werden beidseitig validiert und als
-unveränderliche DTOs übertragen. Der Renderer erhält weder Pfade noch `fs`,
-`process`, `require`, SQLite oder eine allgemeine IPC-Sendeoberfläche. Main
-öffnet rootgebunden ohne Linkfolge, weist Symlink/Hardlink sowie Identitäts-
-oder Rootwechsel ab und prüft dieselbe Dateidentität unmittelbar vor Commit
-erneut. Schreiben bleibt compare-and-write in eine exklusive temporäre Datei,
-gefolgt von durable sync, atomarem Replace und Verzeichnissync. Ein Konflikt
-wird sichtbar abgewiesen und nie überschrieben. Faults vor/nach jedem
-Write-/Sync-/Replace-Schritt müssen alte oder neue vollständige Bytes, nie
-einen Teilstand ergeben. Ein negativer Architekturtest prüft Importgraph,
-laufende Globals, Path-/Link-/TOCTOU-Angriffe und Crashpunkte.
+Handle, Schema-Version, Größe, Hash, Revision und Ergebnis werden beidseitig
+validiert und als unveränderliche DTOs übertragen. Der Renderer erhält weder
+Pfade noch `fs`, `process`, `require`, SQLite oder eine allgemeine
+IPC-Sendeoberfläche. Jeder Map-, Journal-, Draft-, Notiz- und Assetpfad wird
+rootgebunden ohne Linkfolge geöffnet; Symlink/Hardlink, Identitäts-, Root- und
+Mountwechsel werden sowohl beim Binden als auch unmittelbar vor jedem
+Dateisystemschritt abgewiesen. Recovery-, Denied-path- und TOCTOU-Faults laufen
+für jede dieser Pfadklassen, nicht nur für die `.dungeon`-Datei.
+
+Der plattformspezifische `FileStore.compareAndWrite` verwendet ein dauerhaftes
+Transaktionsreceipt sowie gleichverzeichnisige, exklusiv erzeugte Temp- und
+Backupnamen. Linux bindet den Root per Verzeichnis-FD und `openat2` mit
+`RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS`, schreibt mit `O_CREAT|O_EXCL`, synchronisiert
+Dateien per `fdatasync`/`fsync`, veröffentlicht per `renameat2` mit
+`RENAME_NOREPLACE` und synchronisiert das Verzeichnis per `fsync`. macOS
+verwendet `openat`/`O_NOFOLLOW`, `F_FULLFSYNC`, `renameatx_np(RENAME_EXCL)` und
+nachgewiesenen Verzeichnissync. Windows verwendet root-relative Handles mit
+`CreateFileW(FILE_FLAG_OPEN_REPARSE_POINT)`, verweigert Write/Delete-Sharing,
+erzeugt mit `CREATE_NEW`, synchronisiert per `FlushFileBuffers` und
+veröffentlicht über `SetFileInformationByHandle`/`FileRenameInfoEx` mit
+Write-through-Semantik. Das Receipt bindet Before-/After-Hash, Dateidentität und
+jeden Zustand `prepared`, `old-captured`, `new-published`, `committed`.
+
+Der Ablauf ist je Pfad fest: Receipt `prepared` durable schreiben; den aktuellen
+Zielnamen ohne Überschreiben auf den exklusiven Backupnamen bewegen und den
+Verzeichniszustand synchronisieren; Backupbytes/-identität gegen `before`
+prüfen; die bereits synchronisierte Tempdatei nur bei weiterhin freiem Zielnamen
+ohne Replace veröffentlichen; Verzeichnis synchronisieren; Receipt
+`new-published` und danach `committed` durable setzen. Erst dann dürfen Backup
+und Receipt eines alleinstehenden Writes entfernt werden. Gehört der Write zu
+einem `MapRepository`-Receipt, bleiben Child-Backup und Child-Receipt trotz
+lokalem `committed` gesperrt erhalten. Sie werden ausschließlich durch eine
+Parent-Freigabe nach durablem repositoryweitem `committed` oder nach vollständig
+verifiziertem repositoryweitem Rollback gelöscht. Recovery entscheidet
+ausschließlich aus Receipt, Namen, Identitäten und Before-/After-Hashes: vor
+Capture bleibt `old`, nach Capture wird entweder das alte Backup
+wiederhergestellt oder ein vollständig hashgleiches neues Ziel als `new`
+abgeschlossen. Ein dritter Hash, ein neu belegter Zielname oder eine nicht
+zuzuordnende Phase bleibt als Konflikt erhalten und wird nie überschrieben. Das
+`MapRepository`-Journal koordiniert darauf aufbauend die alte/neue Wahrheit
+über Map und Notizen.
+
+Das unveränderte `MapRepository`-Journal bildet zusammen mit einem
+P01-Repository-Receipt das repositoryweite Commit-Orakel. Wenn der
+`FileStore`-Adapter den vorhandenen Journalwrite `prepared` empfängt, validiert
+er dessen vollständigen, stabil geordneten Write-Satz aus Karte und allen
+zulässigen Notizen. Bevor er den Write bestätigt, schreibt er ein dauerhaftes
+Begleitreceipt, das die unveränderten Journalbytes, den Draftzustand, alle
+Child-Receipts und jeden Before-/After-Hash sowie je einen aggregierten
+Before-/After-Digest bindet. Das ändert weder `MapRepository` noch dessen
+Journalformat. Erst nachdem alle Karten- und Notizwrites samt Verzeichnissen
+synchronisiert sind, darf das vorhandene Journal durable `committed` werden;
+erst danach darf `saveMap` Erfolg bestätigen und den dazugehörigen Draft
+zurückziehen. Recovery rollt `prepared` vollständig auf den aggregierten
+Before-Zustand einschließlich seines Drafts zurück und prüft dessen Digest.
+Bei `committed` stellt sie den vollständigen After-Zustand her, prüft dessen
+Digest und zieht erst dann den dazu passenden Draft zurück. Ein unbekannter
+oder gemischter dritter Hash ist ein fail-closed Konflikt und darf weder
+Rendererbestätigung noch Teilpublikation erzeugen. Faults nach jedem Karten-,
+Notiz-, Draft-, Journal- und Receipt-Schritt belegen, dass niemals eine neue
+Karte mit alter Notiz oder altem Draft und niemals eine alte Karte mit neuer
+Notiz sichtbar bleibt. Zusätzliche Faults zwischen jedem Child-`committed` und
+der Parent-Freigabe belegen, dass alle erforderlichen Backups bis zur
+repositoryweiten Entscheidung erhalten bleiben.
+
+Ein Adapter gilt nur auf einem lokalen Dateisystem, für das die jeweilige
+Primitive und Verzeichnissync-Grenze im Receipt nachgewiesen sind. Fehlt eine
+Primitive oder kann ein konkurrierender nicht kooperierender Writer zwischen
+Validierung und Veröffentlichung unbemerkt gewinnen, ist die Plattform
+`No-Go`; ein generisches `rename()`-Versprechen genügt nicht. Faults vor und
+nach Capture, Datei-Sync, Publication, Verzeichnis-Sync und Receipt-Commit
+müssen nach Recovery exakt alte oder neue vollständige Bytes und ein
+`old`-/`new`-Receipt, nie Teilstand oder stilles Überschreiben ergeben.
 
 ### Fixtures und Ablauf
 
-1. `tools/large-fixture.cjs::prepareLargeV4` erzeugt die normative P01-Kopie.
+1. `tools/large-fixture.cjs::prepareLargeV4` erzeugt die deterministische
+   aktuelle P01-Inventurfixture; sie ist keine normative Produktpopulation.
    Ihr Manifest muss vor Timing exakt 4 Flächen, 193 Räume, 64 Portale,
    4.001 Objekte und 33 Lichter, zusammen 4.295 Entitäten, ausweisen. Die
    ältere Bezeichnung „4.293-Entitäten-Szene“ ist nur historischer
@@ -312,7 +423,7 @@ laufende Globals, Path-/Link-/TOCTOU-Angriffe und Crashpunkte.
    dem erwarteten Zustand überein. Undo stellt den gesamten vorherigen Digest,
    Redo den gesamten neuen Digest her.
 
-### Harte P01-Abnahme
+### P01-Abnahme
 
 - Keine gebaute Rendererabhängigkeit erreicht `obsidian`, `node:*`,
   `better-sqlite3`, `electron` oder einen dynamischen allgemeinen IPC-Kanal.
@@ -320,7 +431,8 @@ laufende Globals, Path-/Link-/TOCTOU-Angriffe und Crashpunkte.
   importieren.
 - Das unveränderte Produktionsmodell verarbeitet beide Fixtures; keine Kopie
   von Model-, Session-, Command- oder Rendererlogik liegt im Prototyp.
-- Große Karte: öffnen p95 <= 1 s warm und <= 5 s kalt, Geschosswechsel p95
+- Große Karte, provisorisches Vergleichsbudget: öffnen p95 <= 1 s warm und
+  <= 5 s kalt, Geschosswechsel p95
   <= 1 s, Pan-/Zoom-/Drag-Anerkennung p95 <= 100 ms, tatsächliches
   Navigationsbild p95 <= 33 ms und 0 zusätzliche Renderbilder in einem
   gemessenen Intervall von 1 s ohne Invalidation.
@@ -332,11 +444,14 @@ laufende Globals, Path-/Link-/TOCTOU-Angriffe und Crashpunkte.
 
 ### P01 Go/No-Go
 
-`Go` erlaubt P02 nur, wenn alle P01-Tore in unabhängigem Review reproduziert
-sind. `No-Go` gilt bei notwendigem Kernrewrite, Rendererprivilegien, Format-/ID-
-Änderung, nicht erklärter Fixtureabweichung, Datenverlust oder Überschreitung
-eines harten Budgets. Ein No-Go verwirft keine bestehende Kartenarbeit; es hält
-die Plattformempfehlung offen und fordert eine neue Architekturhypothese.
+`Go` erlaubt P02 nur, wenn alle harten P01-Invarianten in unabhängigem Review
+reproduziert und alle provisorischen Budgets gemessen sind. `No-Go` gilt bei
+notwendigem Kernrewrite, Rendererprivilegien, Format-/ID-Änderung, nicht
+erklärter Fixtureabweichung, Datenverlust oder fehlender OS-Durable-Garantie.
+Eine nicht kalibrierte Budgetüberschreitung bleibt Performancebefund und
+blockiert nur die Performanceaussage. Ein No-Go verwirft keine bestehende
+Kartenarbeit; es hält die Plattformempfehlung offen und fordert eine neue
+Architekturhypothese.
 
 ## ADR-P02 – Atomarer Campaign-Write und Crash-Reconciliation
 
@@ -351,6 +466,7 @@ Campaign-, Scene- oder Ledger-Modell ausgegeben.
 ### Besitzdateien des späteren Umsetzungslaufs
 
 - `tools/adr-prototypes/p02/**`
+- `tools/adr-prototypes/contracts/p02-v1/**`
 - `tools/adr-prototypes/evidence/p02-aggregate.json`
 - `tests/adr-prototypes/p02-*.test.*`
 - `package.json` und `package-lock.json` nur für die exakt gepinnte lokale
@@ -363,23 +479,35 @@ einem neuen Testprofil und ist nie Quelle für P01-Karten.
 
 Der Prototyp definiert ausschließlich in seinem Toolpfad:
 
-- `CampaignTransactionPort.execute(commandId, expectedRevision, command)`;
-- `CampaignReceiptPort.read(commandId)`;
+- `CampaignTransactionPort.execute(request)` mit `commandId`, `commandDigest`,
+  `expectedRevision` und `command`;
+- `CampaignReceiptPort.reconcile(request)` mit demselben Identitätstripel;
 - `CampaignBackupPort.create/verify/restore`;
-- die Ergebnisse `applied`, `rejected`, `outcome_unknown` und
-  `already_applied` mit unveränderlichen, validierten DTOs.
+- die Ergebnisse `not_applied`, `applied`, `already_applied`, `rejected`,
+  `revision_conflict` und `outcome_unknown` mit unveränderlichen, validierten
+  DTOs.
 
 Die Datenbankoperation läuft außerhalb des Renderers. `commandId` ist stabil,
-der erwartete Campaign-Stand wird optimistisch geprüft. Mutation, History,
-neue Campaignrevision und dauerhaftes Ergebnis-/Idempotenz-Record für
-`commandId` werden in derselben Transaktion committed oder gemeinsam
-zurückgerollt. Ein unbekannter Ausgang wird ausschließlich per Receipt gelesen;
-er wird nie blind erneut ausgeführt. Nach einem Fault zwischen `COMMIT` und
-Antwort muss der Receipt-Lookup deshalb `applied` beziehungsweise beim erneuten
-Execute `already_applied` liefern. Fault Injection beendet den Utility-Prozess
-an mindestens diesen Punkten: vor `BEGIN`, nach erster Zeile, nach Historyzeile
-vor `COMMIT`, direkt nach `COMMIT`, vor Receipt-Antwort und während Backup.
-Jeder Punkt läuft zehnmal mit einem neuen Profil.
+`commandDigest` ist SHA-256 über das kanonische Command-DTO, und der erwartete
+Campaign-Stand wird optimistisch geprüft. Mutation, History, neue
+Campaignrevision und dauerhaftes Ergebnis-/Idempotenz-Record mit
+`commandId+commandDigest+expectedRevision` werden in derselben Transaktion
+committed oder gemeinsam zurückgerollt. Eine vorhandene `commandId` mit anderem
+Digest oder anderer Ausgangsrevision wird immer `rejected` und nie ausgeführt.
+
+Das formale Reconciliation-Protokoll liest Receipt und aktuelle Revision in
+einem konsistenten Snapshot. Passendes Receipt liefert `applied`; erneutes
+`execute` desselben Tripels liefert `already_applied`. Fehlt das Receipt, ist
+wegen des gemeinsamen Commits bewiesen, dass dieser Befehl nicht angewendet
+wurde: bei unveränderter Revision lautet das Ergebnis `not_applied` und genau
+dasselbe Tripel darf bewusst erneut gesendet werden; bei abweichender Revision
+lautet es `revision_conflict` und es gibt keinen automatischen Retry.
+`outcome_unknown` bedeutet ausschließlich, dass der Receipt-Store selbst nicht
+verlässlich lesbar ist, und erlaubt niemals einen Retry. Fault Injection beendet
+den Utility-Prozess mindestens vor `BEGIN`, nach `BEGIN` vor Mutation, nach
+erster Zeile, nach Historyzeile vor `COMMIT`, direkt nach `COMMIT`, vor
+Receipt-Antwort und während Backup. Jeder Punkt läuft zehnmal mit einem neuen
+Profil.
 
 ### Fixtures und Ablauf
 
@@ -390,12 +518,15 @@ Jeder Punkt läuft zehnmal mit einem neuen Profil.
   sichtbar sein; Mischzustände sind verboten.
 - Nach jedem Fault werden Datenbankintegrität, Campaignrevision, beide Objekte,
   History, Receipt und Dateireste vor einem Reconciliation-Versuch gelesen.
+  Vor-`BEGIN`- und Rollback-Fälle müssen `not_applied` liefern; nach
+  `COMMIT`/vor Antwort muss `applied` und erneutes Execute `already_applied`
+  liefern. Die Mutation ist damit sicher null- oder genau einmal sichtbar.
 - Ein verifizierter Online-Backupstand wird in einen dritten Root restauriert.
   Erst der semantisch identische Restore darf das Backup als erfolgreich
   markieren. Die beschädigte oder unterbrochene Quelle bleibt unverändert
   erhalten.
 
-### Harte P02-Abnahme
+### P02-Abnahme
 
 - Nach jedem Fault existiert exakt die vollständige alte oder vollständige
   neue Wahrheit. Teilfolgen, doppelte History und Mutation des namensgleichen
@@ -403,12 +534,14 @@ Jeder Punkt läuft zehnmal mit einem neuen Profil.
 - Jede als gespeichert bestätigte Mutation ist nach hartem Prozessende
   vorhanden; Verlust bestätigter Arbeit ist `0`. Vor Dauerhaftigkeit zeigt der
   Renderer ausschließlich pending/unsafe.
-- Safe-Write-Anerkennung p95 <= 1 s, Timeout 10 s. Crash-Resume auf der
-  repräsentativen Fixture p95 <= 5 s und akzeptiert danach eine weitere
-  dauerhaft bestätigte Mutation.
-- Reconciliation desselben `commandId` wendet die Mutation höchstens einmal
-  an. Ein Folgekommando nach abgewiesenem oder fehlgeschlagenem Kommando bleibt
-  möglich.
+- Provisorisches Vergleichsbudget: Safe-Write-Anerkennung p95 <= 1 s, Timeout
+  10 s; Crash-Resume auf der repräsentativen Fixture p95 <= 5 s und akzeptiert
+  danach eine weitere dauerhaft bestätigte Mutation.
+- Reconciliation desselben Tripels wendet die Mutation höchstens einmal an.
+  Wiederverwendung der `commandId` mit anderem Digest/anderer Ausgangsrevision,
+  Retry nach `revision_conflict` oder Retry bei `outcome_unknown` erreicht
+  keinen Mutationshandler. Ein Folgekommando nach abgewiesenem oder
+  fehlgeschlagenem Kommando bleibt möglich.
 - Datenbank-, WAL-/Journal-, Backup- und temporäre Dateien sind vollständig im
   Testroot inventarisiert. Backupfehler verändern weder Quelle noch letzten
   verifizierten Backupstand.
@@ -435,6 +568,7 @@ ist eine explizite synthetische Projektion.
 ### Besitzdateien des späteren Umsetzungslaufs
 
 - `tools/adr-prototypes/p03/**`
+- `tools/adr-prototypes/contracts/p03-v1/**`
 - `tools/adr-prototypes/evidence/p03-aggregate.json`
 - `tests/adr-prototypes/p03-*.test.*`
 - `package.json` und `package-lock.json` nur für P03-Befehle und die
@@ -490,7 +624,7 @@ Log, DOM, Accessible Name, Screenshotmetadaten oder URL auftreten; weder das
 private Raster-Canary noch ein anderes privates Asset darf in den gerenderten
 Pixeln vorkommen. GM-Fehlertexte werden in begrenzte neutrale Codes übersetzt.
 
-### Harte P03-Abnahme
+### P03-Abnahme
 
 - Verbotene Information am passiven Kanal: `0` Bytes/Identitäten in jeder
   Erfolgs-, Fehler-, Fokus-, Asset- und Restartfolge.
@@ -504,9 +638,10 @@ Pixeln vorkommen. GM-Fehlertexte werden in begrenzte neutrale Codes übersetzt.
   Popup, Download, Berechtigungen, Clipboard, WebStorage/Cache, Crash-Report,
   CSP und Netzwerk erreichen keinen geschützten Sink und hinterlassen keine
   privaten persistenten Bytes.
-- Fokusfeedback p95 <= 100 ms; vollständige neue sichere Projektion p95 <= 1 s.
-  Zwischen Fokuswechsel und neuer Projektion erscheint nur neutral leer oder
-  die richtige neue Generation, nie ein altes unsicheres Frame.
+- Provisorisches Vergleichsbudget: Fokusfeedback p95 <= 100 ms; vollständige
+  neue sichere Projektion p95 <= 1 s. Zwischen Fokuswechsel und neuer Projektion
+  erscheint nur neutral leer oder die richtige neue Generation, nie ein altes
+  unsicheres Frame.
 - Verlust, Crash oder Neustart des zweiten Fensters beeinflusst Campaign-
   Wahrheit, Running Scene und GM-Fenster nicht. Wiederöffnung liest nur die
   aktuelle sichere Generation.
@@ -537,6 +672,7 @@ Entwicklungsdaten.
 ### Besitzdateien des späteren Umsetzungslaufs
 
 - `tools/adr-prototypes/p04/**`
+- `tools/adr-prototypes/contracts/p04-v1/**`
 - `tools/adr-prototypes/evidence/p04-aggregate.json`
 - `tests/adr-prototypes/p04-*.test.*`
 - `package.json` und `package-lock.json` nur für exakt gepinnte,
@@ -554,10 +690,31 @@ Längen, SHA-256, Medientyp, Eigentümerklasse und Kennzeichnung für
 `opaque-retained`. Das Manifest selbst ist gehasht. Kernschemafelder werden
 fail-closed validiert; nur vertraglich gekennzeichnete opaque Daten werden
 uninterpretiert erhalten.
-Archivpfade und Eintragsreihenfolge sind kanonisch; Zeitstempel, Plattformbits
-und sonstige nichtfachliche Dateimetadaten werden auf deklarierte feste Werte
-normalisiert. Derselbe logische Stand muss deshalb auf allen drei Plattformen
-dasselbe Exporthash erzeugen.
+
+Das Byteformat ist ein exakt gepinntes ZIP-Store-Profil ohne Kompression:
+UTF-8-/NFC-Pfade, codepunktweise sortierte Einträge, keine Verzeichniseinträge
+oder Daten-Descriptoren, weder ZIP64 noch Extra-Felder oder Kommentare, feste
+DOS-Zeit `1980-01-01T00:00:00`, Dateiart/-rechte `0100644` und bytegenau
+kanonisches Manifest-JSON. Implementierung, Node-Version und
+ZIP-Bibliotheksversion sind im Lockfile und Receipt gebunden; Tests prüfen
+lokale und zentrale Header sowie CRC32 bytegenau. Nur unter diesem Profil ist
+derselbe vollständige Archiv-SHA-256 auf allen drei Plattformen ein Tor. Falls
+eine Plattform dieses Profil nicht erzeugen kann, vergleicht die ADR
+ausschließlich den kanonischen Manifest-/Entry-Digest und führt den
+Archivbytehash getrennt pro Toolchain; sie behauptet dann keinen OS-identischen
+Archivhash.
+
+Die ID-Klassen sind vor dem Export fest: Campaign-ID und alle
+campaign-lokalen Identitäten werden beim Import neu geprägt; inhaltshashbasierte
+Asset-IDs bleiben stabil; eine bereits vorhandene byteidentische globale
+Definition verwendet deren Ziel-ID, eine abweichende importierte Definition
+erhält eine neue Ziel-ID. Das Manifest enthält eine kanonisch nach Klasse und
+Quell-ID sortierte Source→Target-Bijektion: jede Quell-ID besitzt genau ein
+Ziel, kein Ziel gehört zu zwei Quellen, und jeder Verweis nennt seine
+ID-Klasse. Der Referenzdigest umfasst Mapping und sämtliche normalisierten
+Kanten. Für den semantischen Vergleich werden Ziel-IDs ausschließlich über
+diese Bijektion auf Quell-IDs zurückgeführt; rohe ID-Gleichheit wird nicht als
+Roundtriporacle missbraucht.
 
 Die deterministische Fixture `ADR-R1` enthält mindestens:
 
@@ -600,29 +757,49 @@ atomaren Commit auf die gewählte Ziel-ID abgebildet. Ablehnung oder Abbruch
 verändert weder Campaigns noch Definitionen; kein Konflikt darf dauerhaft nur
 als unreferenzierter Stagingrest verschwinden.
 
-### Harte P04-Abnahme
+Campaign und globale Definitionen werden durch genau eine Utility-eigene
+Importautorität veröffentlicht. Alle Datei-/Assetbytes werden zuerst unter
+ihrem Inhaltshash in einen unveränderlichen Staging-/Blobroot geschrieben und
+durable synchronisiert; sie sind fachlich noch unsichtbar. Danach committed
+eine einzige SQLite-Transaktion mit `BEGIN IMMEDIATE` neue Definitionen,
+Campaign, Source→Target-Mapping, alle Referenzen und das Importreceipt samt
+vorbereiteten Digests. Dieser DB-Commit ist der einzige Veröffentlichungspunkt;
+vorhandene Definitionen werden niemals in place mutiert. `importId` plus
+Manifestdigest ist der Idempotenzschlüssel. Fehlende Transaktion bedeutet
+`not_applied` und macht unreferenzierte Blobs bereinigbar, vorhandenes passendes
+Receipt bedeutet vollständig `applied`, ein anderer Digest unter derselben ID
+wird abgewiesen. Faults nach jedem Blob-, Sync-, `BEGIN`-, Tabellen-, Receipt-,
+`COMMIT`- und Antwortschritt beweisen nach Recovery entweder vollständige neue
+Wahrheit oder keinerlei sichtbare Wirkung; ein teilveröffentlichter
+Campaign-/Definitionsstand ist `No-Go`.
 
-- Nach Entfernung der Quelle besitzt der Import semantisch identische
-  Campaign-, Karten-, Runtime-, Trash-, Definitionen-/Mapping- und
-  opaque-retained-Digests sowie bytegleiche Assethashes. Die neue Campaign-ID
-  ist unabhängig; keine Campaign-eigene Referenz zeigt zur Quelle.
+### P04-Abnahme
+
+- Nach Entfernung der Quelle besitzt der Import über die geprüfte Bijektion
+  semantisch identische Campaign-, Karten-, Runtime-, Trash-, Definitionen-/
+  Mapping- und opaque-retained-Digests sowie bytegleiche Assethashes. Ein
+  Negativscan findet die Quell-Campaign-ID und alle nur in der Quelle gültigen
+  lokalen/Definitions-IDs außerhalb des expliziten Mapping-/Provenienzblocks
+  nullmal; jede Zielreferenz löst sich innerhalb der Zielwahrheit auf.
 - Rejection, Abbruch und jeder Fault lassen bestehende Campaigns und
   installationweite Definitionen byte- und semantikgleich. Stagingreste sind
-  nach spätestens 10 s entfernt oder als genau ein explizit resumierbares,
-  nicht zur Campaign-Wahrheit gehörendes Artefakt markiert.
-- Abbruch vor Commit bestätigt p95 <= 1 s. Fortschritt erscheint innerhalb
-  1 s; erwartete Dauer über 10 s zeigt bestimmbaren Fortschritt und expliziten
-  Abbruch.
-- Auf `ADR-R1` dauern Export und Import je Plattform jeweils <= 60 s;
-  temporärer Platz bleibt <= 120 % von Eingabe plus Ausgabe, und es gibt
-  höchstens einen aktiven plus einen wartenden Job. RSS, CPU, Handles und
-  Speicherdruck werden vollständig gemessen, aber nicht in ein neues festes
-  Speicherlimit umgedeutet. Diese Prototypgrenzen ersetzen nicht `TN-19` oder
-  `TN-20`: die spätere `RP-R`-Qualifikation bleibt bei <= 10 min, `RP-L` bei
-  <= 60 min und das vollständige Ressourcenprofil offen.
-- Alle neun gerichteten OS-Kombinationen bestehen mit demselben Exporthash und
-  semantischem Zieloracle. Der Kernlauf besteht mit deaktiviertem Netzwerk und
-  meldet unerklärte ausgehende Verbindungen als Fehler.
+  fachlich unsichtbar; ihre Entfernung beziehungsweise explizite resumierbare
+  Markierung wird gegen das provisorische 10-s-Vergleichsbudget gemessen.
+- Provisorisches Vergleichsbudget: Abbruch vor Commit bestätigt p95 <= 1 s.
+  Fortschritt erscheint innerhalb 1 s; erwartete Dauer über 10 s zeigt
+  bestimmbaren Fortschritt und expliziten Abbruch.
+- Auf `ADR-R1` werden Export/Import gegen das provisorische Vergleichsbudget von
+  jeweils 60 s und temporärer Platz gegen 120 % von Eingabe plus Ausgabe
+  gemessen. Diese Werte sind wegen der nicht normativen 512-MiB-Population kein
+  Performance-No-Go. Hart bleiben höchstens ein aktiver plus ein wartender Job,
+  begrenzte Eingaben/Verstärkung und vollständige Messung von RSS, CPU, Handles
+  und Speicherdruck. `TN-19`, `TN-20`, `RP-R` und `RP-L` bleiben offen.
+- Alle neun gerichteten OS-Kombinationen bestehen mit demselben kanonischen
+  Manifest-/Entry-Digest und semantischem Zieloracle. Der vollständige
+  Exporthash muss nur beim oben definierten identischen ZIP-Profil gleich sein,
+  sonst wird er pro Toolchain ausgewiesen. Der Kernlauf besteht mit
+  deaktiviertem Netzwerk und meldet unerklärte ausgehende Verbindungen als
+  Fehler.
 - Jeder feindliche Fall wird vor Commit abgewiesen; Pfadescape, Ausführung,
   Netzwerkauflösung, stilles Weglassen, unbeschränkte Verstärkung und
   unbestätigte Mutation bestehender Definitionen sind jeweils `0`.
@@ -630,8 +807,9 @@ als unreferenzierter Stagingrest verschwinden.
 ### P04 Go/No-Go
 
 `Go` erfordert vollständigen Roundtrip, Fault-/Angriffsmatrix,
-Plattformpaarungen, Ressourcenmessung sowie Temp-/Queue-Tore und unabhängigen
-Restore-/Importreview.
+Plattformpaarungen, Ressourcenmessung, das harte Queue-/Verstärkungstor und
+unabhängigen Restore-/Importreview. Die provisorischen Zeit-/Platzbudgets
+begründen keine TN-Erfüllung.
 Ein fehlendes Asset, eine nicht geschlossene Referenz, Quellenabhängigkeit,
 Teilmutation, stilles Salvage, unbekanntes Kernschema, Egress oder ungebundene
 Ressourcennutzung ist `No-Go`.
@@ -645,17 +823,22 @@ Die Reihenfolge ist verbindlich:
 3. `ADR-P03` verwendet diese Prozess-/Rollenbasis für das passive Fenster.
 4. `ADR-P04` schließt Daten, Karten, Assets, Runtime und retained Capability-
    Daten portabel zusammen.
+5. `ADR-C01` beweist alle vier Vertragsversionen gemeinsam auf genau einer
+   Main-/Utility-/Preload-/Renderer-/Speichergrenze.
 
 P02 wird erst nach abgeschlossenem P01-Aufräumreview spezifiziert und
 umgesetzt. P03 baut erst auf dem reviewten Prozess-/Receiptmodell aus P02 auf.
 P04 beginnt erst, wenn P01- und P02-Digests als feste Eingangsorakel vorliegen.
-Ein späterer Prototyp darf kein früheres No-Go verdecken.
+C01 beginnt erst nach dem P04-Review und verwendet die erhaltenen
+Vertragsartefakte; sein Aufräumen entfernt den Composition-Harness, nicht die
+Verträge. Ein späterer Prototyp darf kein früheres No-Go verdecken.
 
 ### Außerhalb P01-P04 verbleibende Ratifikationsblocker
 
-Auch vier bestandene Prototypen reichen nicht für den Plattformentscheid. Vor
-Ratifikation benötigen folgende Dimensionen eigene ausführbare, reviewte
-Risikobelege und Besitzpläne; sie dürfen nicht still in P01-P04 wachsen:
+Auch vier bestandene Prototypen plus Composition-Lauf reichen nicht für den
+Plattformentscheid. Vor Ratifikation benötigen folgende Dimensionen eigene
+ausführbare, reviewte Risikobelege und Besitzpläne; sie dürfen nicht still in
+P01-P04/C01 wachsen:
 
 - **Distribution:** signierter oder nachvollziehbar identifizierter
   Plattformbuild, frische Installation, Update, fehlgeschlagenes Update mit
@@ -680,9 +863,12 @@ ADR-Entscheids`, wenn:
 
 - P01 bis P04 nach etwaiger Nachbesserung jeweils unabhängig ohne Pflichtbefund
   reviewt sind;
+- ADR-C01 alle vier Pakete ohne Sonderbrücke auf einer gemeinsamen Grenze
+  zusammengesetzt hat und unabhängig ohne Pflichtbefund reviewt ist;
 - die Plattform- und Darstellungs-Matrix vollständig ist;
-- jeder unveränderliche Aggregatbeleg nennt den exakten geprüften
-  Paketkandidaten-SHA und dessen Lockfile-Digest; alle vier belegen denselben
+- jeder unveränderliche P01-P04- und C01-Aggregatbeleg nennt den exakten
+  geprüften Paketkandidaten-SHA und dessen Lockfile-Digest; alle fünf belegen
+  denselben
   gehashten Produktquellen-/Fixture-Eingabestand. Paketlokale
   Dev-Abhängigkeitsunterschiede sind explizit, eine Änderung dieses gemeinsamen
   Eingabestands erzwingt die Wiederholung aller betroffenen früheren Pakete;
@@ -691,8 +877,9 @@ ADR-Entscheids`, wenn:
 - die drei lokalen Integrationsstränge die Scope-/Migrationsgrenzen bestätigt
   und die Cloud-Reviewer Architektur, Sicherheit, Daten und Accessibility
   unabhängig geprüft haben;
-- kein Prototyp im Produktbundle, installierten Plugin oder Nutzervault liegt
-  und der Aufräumreview alle temporären Fähigkeiten inventarisiert hat.
+- kein ausführbarer Prototyp im Produktbundle, installierten Plugin oder
+  Nutzervault liegt, die versionierten Verträge weiter prüfbar sind und der
+  Aufräumreview alle temporären Fähigkeiten inventarisiert hat.
 
 Danach dokumentiert ein eigener ADR-Ratifikationslauf die tatsächlichen
 Receipts, die Dreioptionenmatrix, alle zusätzlichen Blocker, Abweichungen und
