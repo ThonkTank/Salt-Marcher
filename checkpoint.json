@@ -3952,17 +3952,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I26-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:53:12.962042+00:00",
-      "focus": "Snapshot und Verweise planen",
-      "state": "completed",
-      "result": "Gezielte Snapshotkorrektur geplant; historische Zählungen und sämtliche Originalbelege erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I26-CI",
       "kind": "cleanup_implementation",
-      "focus": "Snapshot aus authoritative acceptance aktualisieren"
+      "startedAt": "2026-10-09T14:53:41.596934+00:00",
+      "focus": "Abgeleiteten Lückensnapshot berichtigen",
+      "state": "completed",
+      "result": "Snapshot enthält getrennte Objektkombination und Demo-gesperrte Layerfähigkeit; aktuelle Anzahl64."
+    },
+    "nextRun": {
+      "id": "CITY-00-I26-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshotgleichheit, Hashes und fremde Wurzeln nachprüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
