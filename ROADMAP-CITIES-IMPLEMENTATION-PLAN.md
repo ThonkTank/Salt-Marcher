@@ -511,3 +511,5 @@ CITY-00-I31-R Start 2026-10-09T15:19:32.364268+00:00; Tatsächliche Downloadkopi
 CITY-00-I31-CP Start 2026-10-09T15:22:24.093531+00:00; Plan: Snapshot mit Processing-Ausgabe669→651 ergänzen und interne Mutation/ID-/Savewirkung weiterhin offen führen. Frühere Sichtbelege erhalten; Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR getrennt.
 
 CITY-00-I31-CI Start 2026-10-09T15:22:35.068212+00:00; Snapshot enthält echte buildings-Ausgabewirkung669→651 sowie interne Geometrie-/ID-/Savegrenze; frühere Darstellungsbelege und Complex-Beobachtung erhalten.
+
+CITY-00-I31-CR Start 2026-10-09T15:22:47.637875+00:00; Snapshot und acceptance stimmen, echte Downloadkopien/Rawhashes und sämtliche Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Eigener Wert wiederhergestellt und Kopie geschlossen. Aufräumumfang ohne Restbefund. Nächste Referenzplanung prüft frühe Generationsvorgaben auf eigener Karte; HEX-05-Handoff bleibt Voraussetzung für Stadtproduktstart.
