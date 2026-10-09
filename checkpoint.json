@@ -4421,17 +4421,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-P07",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T18:32:56.440371+00:00",
-      "focus": "Dokumentationsgrenzen und Auffindbarkeit planen",
-      "state": "completed",
-      "result": "Ein Link und bestehende Koordinationsfelder bereinigen; keine zusätzliche Statusdatei oder Produktänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-I07",
       "kind": "cleanup_implementation",
-      "focus": "Rendererplan verlinken und bestätigten Scope dokumentieren"
+      "startedAt": "2026-10-09T18:33:16.307329+00:00",
+      "focus": "Planverweis und bestätigten Scope bereinigen",
+      "state": "completed",
+      "result": "Rendererplan verlinkt; Governance präzisiert und Atlasbesitzernachricht abgegrenzt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-R07",
+      "kind": "cleanup_review",
+      "focus": "Links/JSON/Besitzschutz und offene Pflichtabnahmen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4455,7 +4455,7 @@
         "state": "published_awaiting_consolidated_team_response",
         "provided": "Citydocument-/Elementidentitäten, materialisierte Metergeometrie, lesende CityScene/Hit-Projektion und gemeinsame AtlasHistory-Grenze",
         "notProvided": "LiveScene/SceneClock/Focus/Split/Rejoin/Travel/Zeit-/Placement-/Router-/Detail-Lifecycle-API",
-        "gate": "Kein neues Schnittstellen-/Featurepaket vor gemeinsamem Teamabgleich; vorhandenes N06 inklusive ausstehendem R09 sicher abschließen.",
+        "gate": "Governance Issue1/6086785648: bestätigten eigenen City-Scope fortsetzen; neue gemeinsame Verträge nach Besitzerbestätigung und unabhängigem Review.",
         "ownerFeedback": {
           "updatedAt": "2026-10-09T18:23:09.542226+00:00",
           "candidate": "934eba515308674447c24d85d15190af132be366",
@@ -4464,6 +4464,12 @@
           "localPackage": "I06/N06/N07/R10 plus cleanup completed; local reviewer with independent module counterprobes, not an external reviewer",
           "noImplementationApproval": true
         }
+      },
+      "rendererBoundary": {
+        "confirmedBy": "Atlasbesitzer, lokale Nachricht 09.10.2026",
+        "scope": "Wiederverwendbarer City-Szenenbeitrag, caller-project(localMeters)->screen, Meterbreiten, bestehende Scene/Hit-Konturen; keine eigene Kamera/Application/History/Placementkopie",
+        "open": "Frame-/Parent-/Lifecycle-/Pointervertrag erst HEX04/05; keine MapSnapshot/Travel/LiveScene-API",
+        "plan": "ROADMAP-CITIES-CITY01-RENDERER-PLAN.md"
       }
     }
   },
