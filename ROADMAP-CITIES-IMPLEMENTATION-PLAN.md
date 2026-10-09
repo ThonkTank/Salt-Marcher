@@ -1053,3 +1053,5 @@ CITY-00-I46-CLEAN-R46 Start 2026-10-09T19:36:08.707285+00:00; Hash-/Plan-/Scopep
 CITY-00-I46-R46 Start 2026-10-09T19:38:18.497531+00:00; R46 bestanden: Zweierauswahl/Cancel/Apply/Rücksetzung, 18 Rawhashes und identisches sichtbares Wyddis-Profil. Ganze Daten-/Hostparität offen.
 
 CITY-00-I46-REVIEW-CLEAN-P46 Start 2026-10-09T19:38:22.320998+00:00; Aufräumplan: sichtbares Profilgleichheitsmaß von serialisierten IDs/Persistenz trennen; Reviewlink und Rohbelege erhalten.
+
+CITY-00-I46-REVIEW-CLEAN-I46 Start 2026-10-09T19:38:24.745516+00:00; Reviewumfang und Profilgleichheitsgrenze lesbar ergänzt; keine Produktdaten-/APIänderung.
