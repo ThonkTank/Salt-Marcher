@@ -491,7 +491,7 @@
       "policy": "GitHub-Arbeiten vor Veröffentlichung integrieren; Dungeon- und Hex-Checkpoint getrennt erhalten; stabile fremde Kennungen und Originalbelege nicht überschreiben.",
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Hex und Stadt koordinieren grafische QA nur auf ihrem gemeinsamen zweiten Laptop.",
-      "hostTopology": "Atlas-QA arbeitet allein auf diesem Laptop; Hex und Stadt arbeiten auf dem zweiten Laptop. Dungeon, Cloud-GM und Katalog arbeiten auf dem Tower-PC. Zwischen diesen Geräten besteht keine gemeinsame GUI-Slot-Abhängigkeit.",
+      "hostTopology": "Atlas-QA arbeitet allein auf diesem Laptop; Hex und Stadt arbeiten auf dem zweiten Laptop. Chronik, Music/Weather/Shops und Campaign/Data arbeiten auf Aarons Tower-PC. Kartograph/Dungeon, Cloud-GM und Katalog laufen auf OpenAI-Servern. Zwischen diesen Geräten besteht keine gemeinsame GUI-Slot-Abhängigkeit.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
       "nextJointGate": "HEX03 runnable Location/Key/persistence/fresh host -> exact handoff Atlas-QA and independent reviewer -> HEX04/05 Dungeon same-camera editing -> CITY01..04.",
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
