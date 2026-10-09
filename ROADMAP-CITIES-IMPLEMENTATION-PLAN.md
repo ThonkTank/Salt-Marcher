@@ -825,3 +825,6 @@ CITY-01-PREP-N06-REVIEW-CLEAN-P06 Start 2026-10-09T18:15:49.061830+00:00; Rotati
 
 
 CITY-01-PREP-N06-REVIEW-CLEAN-I06 Start 2026-10-09T18:15:52.557951+00:00; Plan nennt Gewichtung mit abs(cos/sin); Architektur trennt reparierten R08 vom offenen R09. Keine Runtimeänderung. Fokus:Dokumentation und konkrete Gewichtung ergänzen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-R06 Start 2026-10-09T18:15:56.309331+00:00; Eigene Links/JSON und N06-Quellenhashes geprüft. Bestehende Signatur unverändert; R09 offen für gezielte N07. Fokus:Finale Reviewbereinigung gegen Quellen prüfen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
