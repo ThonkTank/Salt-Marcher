@@ -1,9 +1,9 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
-Status: **Campaign/Data-Peerreviews R01/R02 und unabhängiger Architekturreview
-R03 `CHANGES_REQUIRED`; Owner-abgestimmter Reparaturkandidat vor erneutem
-Exact-SHA-Review; nicht ratifiziert und ohne Implementierungs-, Host- oder
-Persistenzfreigabe.**
+Status: **Lifecycle-/Zeit-Re-review und Ownership-Grenzreview `PASS`;
+Host/Security/Platform-Feasibility-Review `CHANGES_REQUIRED`; owner-abgestimmter
+Cancellation-Reparaturkandidat vor erneutem Exact-SHA-Hostreview; ohne
+Implementierungs-, Host- oder Persistenzfreigabe.**
 
 ## Fachliche Quellen
 
@@ -25,7 +25,7 @@ Maßgeblich ist SaltMarcher-Revision
   `docs/session/domain/domain-live-session.md` und
   `docs/session/contract/contract-live-session-persistence.md`;
 - `docs/project/architecture/program-technical-needs.md`, insbesondere
-  TN-01 bis TN-03, TN-05, TN-07, TN-11, TN-15 bis TN-19, TN-21, TN-24,
+  TN-01 bis TN-03, TN-05, TN-07, TN-11, TN-15 bis TN-19, TN-21, TN-22, TN-24,
   TN-27, TN-28, TN-31, TN-34 und TN-36.
 
 Im Zielrepository bindet dieser Kandidat die reviewte SMR-07-Vertragssemantik
@@ -64,6 +64,11 @@ providerunabhängigen, nicht ausführbaren Core-Quarantäne-Slot. Der vierte
 R03-Wiederreview 6088273526 fand den providerlos fehlenden Abschlussweg;
 Campaign/Data-Entscheidung 6088282319 bindet dafür ausschließlich die explizite
 target-lokale Core-Envelope-Discard-Grenze.
+Der separate Host/Security/Platform-Feasibility-Review 6088759311 bestätigte die
+übrigen Hostgrenzen, forderte aber einen linearisierbaren Cancellation-Vertrag,
+stale-Worker-Schutz, ehrliche post-Publish-Semantik, TN-22-Ressourcengrenzen und
+die zugehörige Faultmatrix. Campaign/Data ratifizierte diese enge Reparatur in
+6088774539 für Import, Commit, Recovery, Quarantäne und Discard.
 
 ## Umfang und Nichtziele
 
@@ -410,6 +415,37 @@ Recovery rollt vorbereitete Beiträge zurück. Nach Publish wird ausschließlich
 vorwärts verifiziert/finalisiert. Ein unbekannter Ausgang wird über dieselbe
 CommandId und das Receipt aufgelöst, niemals als neuer Befehl wiederholt.
 
+Cancellation ist ein commandgebundener Intent, kein zweiter Fachbefehl. Ein
+Command ist nur bis zu seinem durablen Publish-Entscheid cancellable. Cancel und
+Publish linearisieren genau einmal an derselben durablen Grenze; ein bereits
+begonnener nicht cancellable irreversibler Abschnitt wird als solcher sichtbar
+gemeldet und niemals als erfolgreich wirkungslos abgebrochen dargestellt.
+
+Gewinnt Cancel vor Publish, schreibt dasselbe CommandReceipt den Ausgang
+`cancelled-before-publish`. Die alte bestätigte Fachwahrheit bleibt vollständig
+unverändert. Stage- und owner-lokale Prepare-Beiträge werden verworfen oder
+recoverbar zurückgerollt; jede Participant-, Worker- und Callback-Generation
+wird für diesen Command geschlossen. Eine verspätete Antwort, ein alter Handle
+oder ein reconnectender Participant darf danach weder Publish noch eine
+abhängige Wirkung erzeugen. Bei Import bleiben Source, bestehende Campaigns und
+shared Definitions byte- und semantisch unverändert.
+
+Gewinnt Publish, ist ausschließlich Roll-forward zulässig. Ein nachfolgender
+Interrupt darf das lokale Warten beenden, aber weder bestätigte Wirkung
+zurückrollen noch einen Cancellation-Erfolg melden. Verify-, Finalize- und
+Closure-Pflichten bleiben mit ursprünglicher CommandId und ursprünglichem
+Receipt sichtbar pending und werden nur darüber aufgelöst; temporäre
+Nichtverfügbarkeit oder erneutes Cancel erzeugt keinen Ersatzbefehl.
+
+Für anwendbare Hintergrundarbeit gilt TN-22: Vor Publish wird Cancel innerhalb
+von einer Sekunde p95 bestätigt. Spätestens zehn Sekunden danach existieren
+keine lebenden Tasks, Handles oder Queueeinträge und keine unmarkierten
+temporären Artefakte des abgebrochenen Versuchs. Ein zulässiges resumable
+Artefakt ist ausdrücklich markiert, liegt außerhalb bestätigter Campaign-
+Wahrheit und innerhalb des Temp-Budgets. Tombstone, Manifest, Publish-/Closure-
+Receipt und andere bestätigte Recovery-Evidenz sind keine temporären Artefakte
+und werden durch Cleanup niemals entsorgt.
+
 Wo Party gemäß bestätigtem Cross-Workflow-Vertrag die primäre autoritative
 Änderung vor abhängigen Contexts veröffentlicht, enthält derselbe Publish-
 Entscheid die genaue Scene-/Masken-Reconciliation-Pflicht. Die UI zeigt weder
@@ -728,7 +764,16 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     Discard/Rollback, nach Publish ausschließlich Roll-forward sichtbar; nie
     partielle Fachwahrheit. Der ursprüngliche Ausgang wird vor einem neuen
     Versuch geklärt; keine zweite Umkehr oder doppelte Journey-/Combat-
-    Reconciliation.
+    Reconciliation. Dieselbe Matrix injiziert frühes und mittleres Cancel,
+    Cancel-versus-Publish-Race, verspätete Participant-/Workerantwort,
+    Crash/Restart/unknown outcome während Cancel sowie wiederholte Cancel-/Retry-
+    Zyklen. Gewinnt Cancel, bleiben Source, bestehende Campaigns, shared
+    Definitions und alle Survivor-Records byte- und semantisch unverändert;
+    stale Antworten publizieren nichts. Gewinnt Publish, bleibt nur der
+    ursprüngliche Roll-forward-Ausgang sichtbar. Die Abnahme misst TN-22-
+    Acknowledgement und beweist nach zehn Sekunden null lebende Tasks, Handles
+    oder Queueeinträge sowie null unmarkierte Temp-Artefakte, ohne Tombstone,
+    Manifest, Receipt oder zulässige resumable Evidenz zu verlieren.
 20. PartyCommandHistory bewahrt 100 Schritte über Fenster-, Navigations- und
     Prozessneustart, verwirft den Redo-Zweig nach neuer Aktion und nutzt für
     Undo/Redo neue CommandIds/Receipts. Spätere inkompatible Änderungen erzeugen
