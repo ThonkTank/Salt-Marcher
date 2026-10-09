@@ -901,3 +901,5 @@ CITY-00-I42-R42 Start 2026-10-09T18:54:16.074861+00:00; gleicherbenannterBewohne
 CITY-00-I42-REVIEW-CLEAN-P42 Start 2026-10-09T18:54:30.807584+00:00; Plan:explizitfesthalten,dassI42wederNone-clearnochNone-preservealsgewollteeigeneSemantikbestätigt; lediglichKalender-/OverridepolitikundWohn-/ArbeitsreferenzenPflicht. BestehendeEvidenzreviewverknüpfen,Originalhashes/65CO/24CTYprüfen. KeineProduktänderung.
 
 CITY-00-I42-REVIEW-CLEAN-I42 Start 2026-10-09T18:54:46.255992+00:00; bestehenderCO42ProbehatReviewverweisundexpliziteSemantikgrenze:keineNone-clear/-preserveProduktentscheidungausEinzelprobe. Originalframesunverändert, keinezusätzlicheDatenbank/API.
+
+CITY-00-I42-REVIEW-CLEAN-R42 Start 2026-10-09T18:55:03.984815+00:00; unveränderteRawhashes/Reviewlink/24CTY+65COopen/fremdeWurzeln geprüft. KeinRestbefund imI42Aufräumen. NächstePlanung:frischfreigegebenerisolierterCOKVariantenvergleich,keineUndoRetry.
