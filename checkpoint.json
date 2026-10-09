@@ -1,33 +1,17 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce00_catalog_foundation_reviewed_ce01_plan_next",
+    "state": "dnd2014_only_scope_applied_ce01_plan_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-00-N01",
-      "kind": "repair_implementation",
-      "state": "completed_checked_r02_passed",
-      "focus": "Repair CE-00-R01 provenance, attribution, immutability, query validation, ordering and bundle findings",
-      "result": "Exact manifest and independent artifact hash pinned; full linked notice and change provenance recorded; reference graph deeply immutable; invalid runtime queries rejected; ordering locale-independent; CE-01 eager-startup and notice packaging blocked pending explicit measured plan.",
-      "files": [
-        "src/features/catalog/creature-catalog.ts",
-        "src/features/catalog/data/srd-5.1.generated.json",
-        "src/features/catalog/SRD-5.1-ATTRIBUTION.md",
-        "tests/core/creature-catalog.test.ts",
-        "NOTICE.md"
-      ],
+      "id": "CE-SCOPE-2014",
+      "kind": "scope_correction",
+      "state": "completed_checked",
+      "focus": "Remove all D&D-2024 and dual-rule-mode requirements after direct user clarification",
+      "result": "Migration now targets D&D 2014 exclusively. Plan, architecture, acceptance, catalog query model and hourly automation contain no 2024 calculator, budget-table or rule-selector work.",
       "verification": {
-        "sourceSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
-        "check": "passed",
-        "tests": "211/211 passed",
-        "build": "passed"
-      },
-      "integratedVerification": {
-        "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
-        "incomingCommits": 12,
-        "preserved": "City, Hex, resize, Canvas of Kings and GM testing changes integrated without conflict",
         "check": "passed",
         "tests": "212/212 passed",
         "build": "passed"
@@ -40,10 +24,10 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "automation": "hourly continuation enabled"
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passes check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the entire feature to D&D 2014 only; the scope correction passes check, 212 tests and build. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
     "open": [
       "All CE-01 through CE-07 implementation, review and cleanup runs",
-      "Official pinned DMG-2024 budget table and golden masters",
+      "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
@@ -1448,15 +1432,19 @@
     "mapInfoNoResizePreparation": {
       "date": "2026-10-09",
       "cases": "DD-039.01–.06",
-      "state": "host_edit_reopen_passed_pending_independent_review",
+      "state": "dd039_scoped_review_passed_phase1_open",
       "helper": "tools/host/parity-tools-phase1-map-info.cjs",
       "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
       "checks": "Edit und frische Öffnung über GUI bestanden; Rohdatenvergleich: beide 8×8-Dateien hashgleich wiedergeöffnet, einzige Differenz assetPacks. Auf integriertem Vorlauf Check, 212/212 Tests und Build bestanden.",
-      "next": "Getrennten DD-039-Review auf dem integrierten Build durchführen; erst danach Fallentscheidung.",
+      "next": "DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; Phase 1 bleibt offen.",
       "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json"
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
     },
     "resizeScopeDecision": {
       "date": "2026-10-09",
@@ -1920,7 +1908,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen. DD-039-Hostpaar ohne Resize (Edit, frische Öffnung, Rohdaten) ist Umsetzungskandidat; als nächstes eigener unabhängiger DD-039-Review auf integriertem Build. DD-008 benötigt identische Original-/Host-Geometrie, kombinierte History und Mehrgeschossprobe; anschließend übrige Pflichtfälle in Roadmap-Reihenfolge bearbeiten. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize, das Phase-1-Tor bleibt offen. Als nächstes DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; danach DD-001/002, DD-006/007 und offene Ansichts-/Dateimenüfälle in Roadmap-Reihenfolge. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

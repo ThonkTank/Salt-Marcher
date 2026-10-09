@@ -84,6 +84,18 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     await page.mouse.click(bounds.x + bounds.width - 37, bounds.y + 21);
     assert.deepEqual(await state(), before);
     assert.equal(hash(), beforeHash);
+    const toolbar = page.locator(".dungeon-native-editor:visible").last();
+    await toolbar.getByRole("button", { name: "Rückgängig" }).click();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.settings.wallShadows === true);
+    assert.equal((await state()).document.settings.wallShadows, true);
+    await toolbar.getByRole("button", { name: "Wiederholen" }).click();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.settings.wallShadows === false);
+    assert.deepEqual((await state()).document, before.document);
+    assert.equal(hash(), beforeHash);
     fs.copyFileSync(mapFile, path.join(vault, EMPTY_PACK_MAP));
     fs.writeFileSync(baseline, JSON.stringify({ document: before.document,
       hash: beforeHash }, null, 2));
@@ -108,7 +120,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     fs.writeFileSync(selectedBaseline, JSON.stringify({
       document: selected.document, hash: selectedHash }, null, 2));
     checks.push("DD-039 8×8 Map Information shows size, path, empty pack and selected pack without resize");
-    checks.push("DD-039 Close and X preserve saved map and prior Undo state");
+    checks.push("DD-039 Close and X preserve the saved map; Undo/Redo still executes the prior command");
   }
   async function reopen() {
     const prior = JSON.parse(fs.readFileSync(baseline, "utf8"));

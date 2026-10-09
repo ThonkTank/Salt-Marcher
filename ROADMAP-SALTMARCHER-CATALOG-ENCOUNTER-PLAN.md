@@ -14,10 +14,10 @@ Stadtstand bleibt erhalten.
   referenzieren stabile Encounter- und Kreaturenkennungen; Statblocks werden
   nicht in jede `.dungeon`-Datei kopiert.
 - SRD-5.1-Daten aus SaltMarcher dürfen mit ihrer CC-BY-4.0-Provenienz übernommen
-  werden. Nutzerinhalte und spätere 2024-Daten bleiben getrennte Quellen.
-- Ein Encounter speichert seinen Regelmodus ausdrücklich. `dmg2014` und
-  `dmg2024` besitzen getrennte Schwierigkeitsregeln; ein stiller Mischmodus ist
-  unzulässig.
+  werden. Nutzerinhalte bleiben eine getrennte Quelle.
+- Das Plugin unterstützt ausschließlich die D&D-2014-Regeln. Encounter verwenden
+  immer die DMG-2014-Schwellen und Monsterzahlmultiplikatoren; es gibt keinen
+  Regelmodus, keinen 2024-Rechner und keine Regelversionsauswahl.
 - Katalog, Plan und Laufzeitkampf sind getrennte Wahrheiten. Ein gespeicherter
   Plan enthält Zusammenstellung und Notizen; Initiative, HP, Runde, Zustände,
   Würfelprotokoll und Undo gehören zum fortsetzbaren Laufzeitstand.
@@ -44,30 +44,24 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 - D&D Beyond Encounters (DMG 2014):
   <https://dndbeyond-support.wizards.com/hc/en-us/articles/46363685344148-What-is-happening-to-the-Encounters-tool>
-- D&D Beyond Combat Encounters on Maps (DMG 2024):
-  <https://dndbeyond-support.wizards.com/hc/en-us/articles/46385529638164-Combat-Encounters-on-Maps>
 - D&D Beyond Monsterkatalog: <https://www.dndbeyond.com/monsters>
 - D&D Beyond Encounter-Ablauf:
   <https://www.dndbeyond.com/posts/1135-tutorial-how-to-build-encounters-and-run-them-on-d>
 
 ## Offene Punkte vor Fachfreigabe
 
-1. Die exakten DMG-2024-Budgetwerte und Grenzsemantik müssen aus einer
-   zitierbaren offiziellen Regelquelle als feste Golden-Master-Tabelle
-   aufgenommen werden. Bis dahin darf nur `dmg2014` als fachlich berechnet
-   gelten; die UI darf 2024 nicht als bestanden ausgeben.
-2. SaltMarcher bringt einen vollständigen SRD-5.1-Katalog und 2014-Mathematik,
-   aber nicht alle aktuellen D&D-Beyond-Filter und nicht den 2024-Regelmodus.
-   Die zusätzlichen Filter und der zweite Rechner sind echte Erweiterungen.
-3. Das aktuelle Plugin besitzt einfache Kreaturdefinitionen in Karteninhalten,
+1. SaltMarcher bringt einen vollständigen SRD-5.1-Katalog und die benötigte
+   2014-Mathematik, aber nicht alle vergleichbaren D&D-Beyond-2014-Filter. Die
+   zusätzlichen Filter sind eine echte Erweiterung.
+2. Das aktuelle Plugin besitzt einfache Kreaturdefinitionen in Karteninhalten,
    aber noch keinen vaultweiten Monster- oder Encounter-Speicher. Migration und
    ID-Verknüpfung müssen vorhandene Definitionen unverändert lesbar lassen.
-4. Homebrew-Schema, Importformat und Konfliktauflösung brauchen vor dem ersten
+3. Homebrew-Schema, Importformat und Konfliktauflösung brauchen vor dem ersten
    Schreib-Import einen eigenen Vertrag. Read-only SRD und manuell angelegte
    Datensätze dürfen nicht dieselbe Quellenkennung behaupten.
-5. Würfelausdrücke aus Statblock-Prosa benötigen einen begrenzten Parser mit
+4. Würfelausdrücke aus Statblock-Prosa benötigen einen begrenzten Parser mit
    sichtbarer Rohformel; Freitext darf nicht als Code ausgeführt werden.
-6. Vollständige Maus-/Tastatur-, Obsidian-Neustart- und beschädigte-Daten-
+5. Vollständige Maus-/Tastatur-, Obsidian-Neustart- und beschädigte-Daten-
    Abnahme bleibt auf echten Hosts erforderlich.
 
 ## Phasen
@@ -76,7 +70,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 - Architektur, Datenbesitz, IDs, Versionen und Migrationsgrenzen festlegen.
 - SaltMarcher-Dateien und D&D-Beyond-Funktionsmatrix den Abnahmefällen zuordnen.
-- SRD-Lizenz/Attribution, 2014-Tabellen und offizielle 2024-Tabellen pinnen.
+- SRD-Lizenz/Attribution und die DMG-2014-Tabellen pinnen.
 - Ergebnis: geprüfter Plan und offene Abnahmefälle; keine Funktionsfreigabe.
 
 ### CE-01 – Read-only Monsterkatalog
@@ -85,7 +79,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 - Validierung toleriert keine beschädigten Einträge und meldet Quelle/Version.
 - Volltextsuche; kombinierbare Filter für CR, Typ, Subtyp, Größe, Habitat,
   Alignment, AC, HP, Bewegung, Sinne, Verwundbarkeit, Resistenz, Immunität,
-  Zustandsimmunität, Quelle, Regelversion und Legacy.
+  Zustandsimmunität und Quelle. Eine Regelversionsauswahl entfällt vollständig.
 - Sortierung, Paging, Reset, aktive Filter und vollständiger Statblock behalten
   Suche, Auswahl und Scrollposition.
 
@@ -107,8 +101,8 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 - Partyzeilen mit Level, Anzahl, Aktivzustand und frei benannten NPCs.
 - Monster aus derselben Katalogansicht hinzufügen; gruppierte Menge und einzelne
   Exemplare bleiben semantisch verschieden.
-- Live-Berechnung von Basis-XP, angepasstem XP beziehungsweise 2024-Budget und
-  Schwierigkeit. Regelmodus ist Pflichtfeld.
+- Live-Berechnung von Basis-XP, angepasstem XP und Schwierigkeit ausschließlich
+  nach DMG 2014. Es gibt keinen auswählbaren Regelmodus.
 - Plan anlegen, automatisch speichern, laden, duplizieren, neu starten, suchen,
   sortieren und löschen; Name, Kurzfassung, Beschreibung und Notizen erhalten.
 
@@ -148,10 +142,10 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 1. `dragon` plus CR-, Größen-, Typ- und Quellenfilter liefert nur die
    Schnittmenge; Reset stellt den Katalog wieder her.
-2. Jede Zeile zeigt Name, Quelle/Regelversion, Typ, Größe, CR, AC, HP und XP;
+2. Jede Zeile zeigt Name, Quelle, Typ, Größe, CR, AC, HP und XP;
    der Statblock öffnet ohne Verlust des Katalogzustands.
-3. Derselbe Encounter wird im 2014- und 2024-Modus reproduzierbar nach der
-   jeweils gepinnten offiziellen Tabelle bewertet.
+3. Ein Golden-Master-Encounter wird reproduzierbar nach den gepinnten
+   DMG-2014-Schwellen und Monsterzahlmultiplikatoren bewertet.
 4. Party-, Aktiv- und Mengenänderungen aktualisieren die Bewertung unmittelbar.
 5. Drei einzeln hinzugefügte Goblins besitzen drei Initiativen; eine Gruppe mit
    Menge drei besitzt eine gemeinsame Initiative und individuelle HP.

@@ -14,7 +14,7 @@ const PINNED_MANIFEST = Object.freeze({
   attribution: "This work includes material taken from the System Reference Document 5.1 (SRD 5.1) by Wizards of the Coast LLC and available under CC BY 4.0.",
 } as const);
 
-export type CreatureRulesVersion = "2014" | "2024";
+export type CreatureRulesVersion = "2014";
 export type CreatureCatalogSort = "name" | "cr" | "xp" | "ac" | "hp";
 
 export interface CreatureAction {
@@ -90,8 +90,6 @@ export interface CreatureCatalogQuery {
   readonly immunities?: string;
   readonly conditionImmunities?: string;
   readonly sourceIds?: readonly string[];
-  readonly rulesVersions?: readonly CreatureRulesVersion[];
-  readonly legacy?: boolean;
   readonly sort?: CreatureCatalogSort;
   readonly direction?: "asc" | "desc";
   readonly offset?: number;
@@ -269,9 +267,7 @@ export function creatureMatchesQuery(creature: Creature, query: CreatureCatalogQ
     contains(creature.damageResistances, query.resistances) &&
     contains(creature.damageImmunities, query.immunities) &&
     contains(creature.conditionImmunities, query.conditionImmunities) &&
-    oneOf(creature.sourceId, query.sourceIds) &&
-    (!query.rulesVersions?.length || query.rulesVersions.includes(creature.rulesVersion)) &&
-    (query.legacy === undefined || creature.legacy === query.legacy);
+    oneOf(creature.sourceId, query.sourceIds);
 }
 
 export class CreatureCatalog {
@@ -334,13 +330,6 @@ function validatedQuery(input: CreatureCatalogQuery): CreatureCatalogQuery {
       throw new Error(`query.${key} muss Text sein.`);
   for (const key of ["sizes", "types", "subtypes", "habitats", "alignments", "sourceIds"] as const)
     if (query[key] !== undefined) strings(query[key], `query.${key}`);
-  if (query.rulesVersions !== undefined) {
-    const versions = strings(query.rulesVersions, "query.rulesVersions");
-    if (versions.some((version) => version !== "2014" && version !== "2024"))
-      throw new Error("query.rulesVersions enthält eine unbekannte Regelversion.");
-  }
-  if (query.legacy !== undefined && typeof query.legacy !== "boolean")
-    throw new Error("query.legacy muss boolesch sein.");
   const sorts: readonly CreatureCatalogSort[] = ["name", "cr", "xp", "ac", "hp"];
   if (query.sort !== undefined && !sorts.includes(query.sort as CreatureCatalogSort))
     throw new Error("query.sort enthält eine unbekannte Sortierung.");
