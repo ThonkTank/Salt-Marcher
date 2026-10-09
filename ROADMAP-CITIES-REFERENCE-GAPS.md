@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I25-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I27-I; 64 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -36,7 +36,8 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-WAT-0006 | CITY-06 | Landmarken setzen | legend_name_inline_rename_delete_and_actual_svg_observed; Position-Menü ist Legendenlayout, Pin/Persistenz offen |
 | CO-COK-0001 | CITY-07 | Pfad-/Flächenplatzierung | named_path_and_plot_effect_observed |
 | CO-COK-0002 | CITY-07 | Zufallsvarianten von Objektkategorien | keine gesonderte Wirkungsprobe; documentation |
-| CO-COK-0003 | CITY-07 | Zusammen bewegte Objektgruppen | keine gesonderte Wirkungsprobe; documentation |
+| CO-COK-0003 | CITY-07 | Zusammen bewegte Objektgruppen | Auto Combine angeboten; Hütte/Stumpf bodengleich platziert, nur Hütte bewegt und gespeichert; geeigneter Träger/gemeinsame Bewegung offen |
+| CO-COK-0012 | CITY-07 | Layergruppen gemeinsam einblenden und gegen Bearbeitung sperren | Groups-Tooltip direkt; in Demo nicht verfügbar, vollständige Originalwirkung offen |
 | CO-COK-0004 | CITY-07 | Licht und Wettervorlagen | keine gesonderte Wirkungsprobe; documentation |
 | CO-COK-0009 | CITY-07 | Höhenversatz von Pfaden und Plots | control_observed_only |
 | CO-COK-0010 | CITY-07 | Eigene Assets und Asset Editor | control_observed_only |
@@ -55,7 +56,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0041 | CITY-07 | 3D-Darstellung und Street View | perspective_entry_and_return_observed |
 | CO-FTG-0042 | CITY-07 | Ruhetag manuell überschreiben | control_observed_only |
 | CO-WAT-0002 | CITY-07 | Dächer und Vierteldarstellung | partial |
-| CO-WAT-0004 | CITY-07 | Wälder und Stadtumgebung | tree_flag_actual_json_0_to13_points_other13_equal; Forest-Control danach bedienbar, Waldwirkung offen |
+| CO-WAT-0004 | CITY-07 | Wälder und Stadtumgebung | Bäume0→13 Punkte; Waldflag off/on/off mit sichtbaren Außenflächen, tatsächliches JSON bytegleich299585B/all14; Konturbearbeitung/Persistenz offen |
 | CO-WAT-0009 | CITY-07 | Farb-/Stilvorgaben | vivid_apply_color_file_geometry_equal_tint_partial |
 | CO-COK-0005 | CITY-08 | Exportbereich, Raster und Vorlagen | keine gesonderte Wirkungsprobe; documentation |
 | CO-FTG-0020 | CITY-08 | Bild-, CSV- und JSON-Ausgabe | partial |

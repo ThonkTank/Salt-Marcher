@@ -8,14 +8,19 @@ export class CreatureCatalogDebouncer {
 
   constructor(
     private readonly delay = 200,
-    private readonly scheduleTimer: CatalogSchedule = setTimeout,
-    private readonly cancelTimer: CatalogCancel = clearTimeout,
+    private readonly scheduleTimer: CatalogSchedule = (callback, milliseconds) =>
+      setTimeout(callback, milliseconds),
+    private readonly cancelTimer: CatalogCancel = (timer) => clearTimeout(timer),
   ) {}
 
   schedule(publish: () => void): void {
     const generation = ++this.generation;
-    if (this.timer !== undefined) this.cancelTimer(this.timer);
-    this.timer = this.scheduleTimer(() => {
+    if (this.timer !== undefined) {
+      const cancelTimer = this.cancelTimer;
+      cancelTimer(this.timer);
+    }
+    const scheduleTimer = this.scheduleTimer;
+    this.timer = scheduleTimer(() => {
       this.timer = undefined;
       if (generation === this.generation) publish();
     }, this.delay);
@@ -32,7 +37,10 @@ export class CreatureCatalogDebouncer {
 
   private cancelPending(): void {
     this.generation++;
-    if (this.timer !== undefined) this.cancelTimer(this.timer);
+    if (this.timer !== undefined) {
+      const cancelTimer = this.cancelTimer;
+      cancelTimer(this.timer);
+    }
     this.timer = undefined;
   }
 }

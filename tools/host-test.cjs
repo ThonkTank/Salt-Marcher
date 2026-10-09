@@ -17,6 +17,8 @@ const root = path.resolve(__dirname, ".."),
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
+  ce01Catalog = process.argv.includes("--ce01-catalog") || process.argv.includes("--ce01-catalog-damaged"),
+  ce01CatalogDamaged = process.argv.includes("--ce01-catalog-damaged"),
   v2Open = process.argv.includes("--v2-open"),
   patternOutline = process.argv.includes("--pattern-outline"),
   patternAlpha = process.argv.includes("--pattern-alpha") || patternOutline,
@@ -65,6 +67,7 @@ const restart = process.argv.includes("--restart"),
   parityToolsPhase1MapInfo = process.argv.includes("--parity-tools-phase1-map-info"),
   gmUxN001 = process.argv.includes("--gm-ux-n001"),
   gmUxN002 = process.argv.includes("--gm-ux-n002"),
+  p01BrowserTexture = process.argv.includes("--p01-browser-texture"),
   parityToolsPhase1SmartTiles = process.argv.includes("--parity-tools-phase1-smart-tiles"),
   parityToolsPhase1TerrainMasks = process.argv.includes("--parity-tools-phase1-terrain-masks"),
   parityToolsPhase1BuildingFloor = process.argv.includes("--parity-tools-phase1-building-floor"),
@@ -76,7 +79,7 @@ const restart = process.argv.includes("--restart"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1MapInfo ? "-parity-tools-phase1-map-info" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (p01BrowserTexture ? "-p01-browser-texture" : ce01Catalog ? (ce01CatalogDamaged ? "-ce01-catalog-damaged" : "-ce01-catalog") : parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1MapInfo ? "-parity-tools-phase1-map-info" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -91,6 +94,7 @@ let browser,
   page,
   timer,
   scope,
+  lifecycle,
   stopping = false,
   guardFailure;
 const checks = [],
@@ -180,6 +184,7 @@ function processes() {
     .filter((p) => /^\d+$/.test(p))
     .flatMap((p) => {
       try {
+        const stat = fs.readFileSync("/proc/" + p + "/stat", "utf8");
         return [
           {
             pid: Number(p),
@@ -193,12 +198,33 @@ function processes() {
               .trim()
               .split(":")
               .at(-1),
+            executable: fs.readlinkSync("/proc/" + p + "/exe"),
+            startTicks: stat.slice(stat.lastIndexOf(")") + 2)
+              .split(" ")[19],
           },
         ];
       } catch {
         return [];
       }
     });
+}
+function systemdProperties() {
+  try {
+    return Object.fromEntries(cp.execFileSync("systemctl", ["--user", "show", unit + ".service",
+      "--property=Id,InvocationID,MainPID,ControlPID,ActiveState,SubState,Result,ExecMainCode,ExecMainStatus"],
+    { encoding: "utf8", timeout: 5000 }).trim().split("\n").filter(Boolean)
+      .map((line) => {
+        const separator = line.indexOf("=");
+        return [line.slice(0, separator), line.slice(separator + 1)];
+      }));
+  } catch (error) {
+    return { unavailable: error instanceof Error ? error.message : String(error) };
+  }
+}
+function qaProcesses() {
+  return processes().filter((candidate) =>
+    candidate.args[0]?.startsWith("/app/obsidian") &&
+    candidate.args.some((arg) => arg === "--user-data-dir=" + qa + "/config/obsidian"));
 }
 function resolveQaAppCgroup() {
   const matching = processes().filter((process) =>
@@ -496,6 +522,7 @@ async function shutdown() {
   if (stopping) return;
   stopping = true;
   clearInterval(timer);
+  let requestedNormalQuit = false;
   if (page && !page.isClosed())
     try {
       if (
@@ -506,6 +533,7 @@ async function shutdown() {
           vault,
         )
       ) {
+        requestedNormalQuit = true;
         await page.evaluate(() =>
           setTimeout(() => window.electron.remote.app.quit(), 0),
         );
@@ -535,6 +563,7 @@ async function shutdown() {
     } catch {}
   }
   if (remaining.length) await sleep(1000);
+  const systemdBeforeCleanup = systemdProperties();
   await browser?.close().catch(() => {});
   if (scope) {
     try {
@@ -551,6 +580,17 @@ async function shutdown() {
       timeout: 5000,
     });
   } catch {}
+  if (lifecycle) {
+    lifecycle.exit = {
+      requestedNormalQuit,
+      normalExitObserved: remaining.length === 0,
+      forcedTerminationPids: remaining.map((candidate) => candidate.pid),
+      finishedAt: new Date().toISOString(),
+      systemdBeforeCleanup,
+      systemdAfterCleanup: systemdProperties(),
+    };
+    fs.writeFileSync(out + "/process-lifecycle.json", JSON.stringify(lifecycle, null, 2));
+  }
 }
 process.on("SIGTERM", () => {
   guardFailure = "External timeout or termination";
@@ -573,7 +613,20 @@ async function main() {
         .createHash("sha256")
         .update(fs.readFileSync(pluginRoot + "/main.js"))
         .digest("hex"),
-      mode: (parityPhase4Objects ? "parity-phase4-objects-" : parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
+      ...(ce01Catalog ? {
+        sourceRevision: cp.execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: pluginRoot, encoding: "utf8",
+        }).trim(),
+        dirty: cp.execFileSync("git", ["status", "--porcelain"], {
+          cwd: pluginRoot, encoding: "utf8",
+        }).trim().length > 0,
+        files: Object.fromEntries(["main.js", "manifest.json", "styles.css"].map((name) => {
+          const bytes = fs.readFileSync(path.join(pluginRoot, name));
+          return [name, { bytes: bytes.length,
+            sha256: crypto.createHash("sha256").update(bytes).digest("hex") }];
+        })),
+      } : {}),
+      mode: (ce01Catalog ? (ce01CatalogDamaged ? "ce01-catalog-damaged-" : "ce01-catalog-") : parityPhase4Objects ? "parity-phase4-objects-" : parityPhase3Wear ? "parity-phase3-wear-" : parityPhase3Building ? "parity-phase3-building-" : parityPhase2Points ? "parity-phase2-points-" : parityPhase1Repair ? "parity-phase1-repair-" : parityPhase1Shapes ? "parity-phase1-shapes-" : parityPhase1 ? "parity-phase1-" : phase5Feature ? "phase5-feature-" : phase4Key ? "phase4-key-" : phase3Object ? "phase3-object-" : phase2Object ? "phase2-object-" : v2Open ? "v2-open-" : patternAlpha ? "pattern-alpha-" : prefabForget ? "prefab-forget-" : objectAlpha ? "object-alpha-" : pathLibrary ? "path-library-" : selectionSmoke ? "selection-" : compactSmoke ? "compact-" : large ? "large-" : "") + (restart ? "restart" : "edit"),
       memoryPolicy: "normal OS management; only emergency global pressure stop",
     }),
   );
@@ -612,7 +665,7 @@ async function main() {
       "--env=XDG_CONFIG_HOME=" + qa + "/config",
       "--env=XDG_CACHE_HOME=" + qa + "/cache",
       "--env=XDG_DATA_HOME=" + qa + "/data",
-      "md.obsidian.Obsidian",
+      "md.obsidian.Obsidian//stable",
       "--user-data-dir=" + qa + "/config/obsidian",
       "--remote-debugging-port=" + debugPort,
       "--remote-debugging-address=127.0.0.1",
@@ -623,6 +676,12 @@ async function main() {
     ],
     { stdio: "inherit" },
   );
+  lifecycle = {
+    unit: unit + ".service",
+    runnerPid: process.pid,
+    startedAt: new Date().toISOString(),
+    systemd: systemdProperties(),
+  };
   await Promise.race([workflow(), guard]);
 }
 async function workflow() {
@@ -649,6 +708,15 @@ async function workflow() {
     await sleep(100);
   }
   assert(page, "Obsidian window");
+  const resolvedProcess = resolveQaAppCgroup();
+  lifecycle.app = {
+    cgroup: resolvedProcess.group,
+    serviceName: resolvedProcess.serviceName,
+    processes: qaProcesses().map(({ pid, executable, startTicks, group, args }) => ({
+      pid, executable, startTicks, group, args,
+    })),
+  };
+  fs.writeFileSync(out + "/process-lifecycle.json", JSON.stringify(lifecycle, null, 2));
   page.setDefaultTimeout(12000);
   page.on("pageerror", (e) => errors.push(e.stack || e.message));
   page.on("console", (e) => {
@@ -738,6 +806,19 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (p01BrowserTexture) {
+    const scenario = require("./host/p01-browser-texture.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (ce01Catalog) {
+    const scenario = require("./host/ce01-catalog.cjs")(scenarioContext);
+    if (ce01CatalogDamaged) await scenario.damaged();
+    else if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityToolsPhase1BuildingPoint) {
     const scenario = require("./host/parity-tools-phase1-building-point.cjs")(scenarioContext);
     if (restart) await scenario.reopen();

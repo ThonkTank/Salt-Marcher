@@ -96,7 +96,10 @@ export class CreatureCatalogViewContent {
   async setState(state: Record<string, unknown>): Promise<void> {
     const normalized = normalizeCreatureCatalogViewState(state);
     this.state = {
-      sort: "name", direction: "asc", page: 0, ...normalized,
+      ...normalized,
+      sort: normalized.sort ?? "name",
+      direction: normalized.direction ?? "asc",
+      page: normalized.page ?? 0,
       textDraft: normalized.textDraft ?? normalized.text,
       movementDraft: normalized.movementDraft ?? normalized.movement,
       sensesDraft: normalized.sensesDraft ?? normalized.senses,
