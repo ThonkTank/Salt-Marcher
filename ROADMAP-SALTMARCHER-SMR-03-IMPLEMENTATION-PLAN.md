@@ -1,7 +1,8 @@
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **Exact-SHA-Review `CHANGES_REQUIRED`; eng begrenzter Repair-Kandidat
-vor Re-review; kein Produktcode-, Persistenz-, Host- oder Implementierungs-Go.**
+Status: **Exact-SHA-Re-review des Planrepairs `PASS`; I01-A bleibt ein
+getrennt zu beanspruchender und zu reviewender Implementierungsslice; kein
+Persistenz-, Host- oder Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
@@ -17,6 +18,10 @@ vor Re-review; kein Produktcode-, Persistenz-, Host- oder Implementierungs-Go.**
 - I01-Planreview: Issue #6, Kommentar `6089122945`,
   `CHANGES_REQUIRED` für gemeinsame Rejoin-/Clock-Publikation,
   Prepared-Runtime-Kopie und vollständige Acceptance-/Slice-Zuordnung.
+- I01-Planrepair `c03217a4c755844b921b963c42b4da9e5ae32477`:
+  Exact-SHA-Re-review in Issue #6, Kommentar `6089170030`, `PASS`; ARCH-01 bis
+  ARCH-03 sind im Plan-Scope geschlossen. Dies ist kein Produktcode- oder
+  Realnachweis.
 - Fachliche Product-Truth: SaltMarcher
   `9de85c1a26f526acbc1af332ac5962e185c0aab2`, insbesondere die im Fachvertrag
   benannten Party-, Scene-, Live-Session- und Program-Technical-Needs-Quellen.
