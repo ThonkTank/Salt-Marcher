@@ -4122,17 +4122,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I40-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T16:16:48.611641+00:00",
-      "focus": "FTG-Rohbelege und Vorschau-/Pose-/Skaliergrenzen reviewen",
-      "state": "completed",
-      "result": "27 Rohbelege/Hashes bestätigt; abgeschlossene Vierpunktkontur, neue bekannte Auswahl, sichtbare Dreh-/Verschiebewirkung und getrennt verworfene zweite Vorschau korrekt begrenzt.CTRLwheel nur angebotene Geste, keine Skalierabnahme. Zwei ältere Treffer ohne Auswahl gestoppt; neue Kontur belegt separates Ziel. Gesamtentwurf verworfen,250m/Satellite/Districts/11Monday gelesen. Aufräumbefund: Referenzsnapshot führt weiterhin nur I11-Straßenwirkung."
-    },
-    "nextRun": {
       "id": "CITY-00-I40-CP",
       "kind": "cleanup_planning",
-      "focus": "Abgeleiteten FTG-Snapshot ohne Überdehnung aktualisieren"
+      "startedAt": "2026-10-09T16:17:09.830489+00:00",
+      "focus": "FTG-Snapshot mit unveränderten Originalgrenzen abgleichen",
+      "state": "completed",
+      "result": "Snapshotkopf auf CITY-00-I40-I und CO-FTG-0015-Zeile um abgeschlossene Draw-Kontur, bekannte Hauspose und Entwurfsabbruch ergänzen. I10/I11-Straßen-/Savebelege erhalten; angeboteneCTRLwheel-Skalierung ausdrücklich ohne Wirkung. Zwei gestoppte Trefferversuche und stabile ID-/Save-/Undo-/Produktgrenzen behalten.27 Rawhashes/alle Inventarbelegziele/65und24 offene Pflichten prüfen; keine weitere UI-Mutation oder Statusdatei."
+    },
+    "nextRun": {
+      "id": "CITY-00-I40-CI",
+      "kind": "cleanup_implementation",
+      "focus": "I40-Originalumfang in Snapshot übernehmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
