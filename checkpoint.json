@@ -4930,17 +4930,25 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-N02-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:57:31.861354+00:00",
-      "focus": "Neuen Ownerdiff und Fremdschutz abschließen",
+      "id": "CITY-E2E-I01-SEED",
+      "kind": "implementation",
+      "startedAt": "2026-10-09T23:12:36.576281+00:00",
+      "focus": "Materialize assigned City seed in common fixture path using actual City v1 codec, hash and snapshot/reference oracles",
       "state": "completed",
-      "result": "Eigene JSON/Verweis/Diffprüfung PASS; neue Campaigngrenze repariert, IDs/Geometrie/Fremdwurzeln erhalten, enges Owner-R03 ausstehend."
+      "result": "Assigned Cityseed materialized through real codec; check/test/build PASS (421/421). Byte/hash/canonical/snapshot/reference oracles; host/import/E2E and separate review/cleanup open.",
+      "checks": {
+        "typecheck": "PASS",
+        "tests": "421/421",
+        "build": "PASS",
+        "nativeHost": "not_run",
+        "independentReview": "pending",
+        "cleanup": "pending"
+      }
     },
     "nextRun": {
-      "id": "CITY-E2E-R03",
-      "kind": "independent_owner_review",
-      "focus": "Campaign/Data eng um Review d4c8805→N02-Head bitten; alte R02 nicht wiederholen, keine Selbstintegration/GUI."
+      "id": "CITY-E2E-R01-SEED",
+      "kind": "review",
+      "focus": "Review new seed against Steward6090818808, planned IDs/geometries and actual codec/snapshot boundary; then separate cleanup P/I/R"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
