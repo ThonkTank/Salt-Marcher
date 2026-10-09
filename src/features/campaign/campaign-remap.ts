@@ -36,10 +36,16 @@ function identityReferenceId(value: unknown): string {
     throw new Error("Ungültige Referenz-ID.");
   return value;
 }
+function supportedSchemas(value: unknown): readonly string[] {
+  const result = array(value, "Referenzschemas").map((schema) => referenceSchema(String(schema))).sort();
+  if (!result.length || new Set(result).size !== result.length)
+    throw new Error("Ungültige unterstützte Referenzschemas.");
+  return Object.freeze(result);
+}
 function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInventoryV1 {
   if (!value || typeof value !== "object" || value.version !== 1)
     throw new Error("Ungültiges Ownerinventar.");
-  const records = array(value.records, "Ownerrecords").map((raw) => {
+  const schemas = supportedSchemas(value.referenceSchemas), records = array(value.records, "Ownerrecords").map((raw) => {
     if (!raw || typeof raw !== "object") throw new Error("Ungültiger Ownerrecord.");
     const record = raw as CampaignOwnerInventoryV1["records"][number];
     return Object.freeze({
@@ -51,10 +57,12 @@ function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInvento
         const reference = referenceRaw as typeof record.references[number];
         if (reference.scope !== "campaign-local" && reference.scope !== "shared")
           throw new Error("Unklassifizierte Recordreferenz.");
+        const schema = referenceSchema(reference.schema);
+        if (!schemas.includes(schema)) throw new Error("Nicht unterstütztes Referenzschema.");
         return Object.freeze({
           id: identityReferenceId(reference.id),
           scope: reference.scope,
-          schema: referenceSchema(reference.schema),
+          schema,
         });
       })),
     });
@@ -62,10 +70,22 @@ function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInvento
   const payloadEvidence = array(value.payloadEvidence, "Payloadbelege").map((raw) => {
     if (!raw || typeof raw !== "object") throw new Error("Ungültiger Payloadbeleg.");
     const evidence = raw as CampaignOwnerInventoryV1["payloadEvidence"][number];
+    const schema = referenceSchema(evidence.referenceSchema);
+    if (!schemas.includes(schema)) throw new Error("Nicht unterstütztes Referenzschema.");
+    let media: { readonly metadataDigest: string; readonly byteDigest: string } | null = null;
+    if (evidence.media !== null) {
+      if (!evidence.media || typeof evidence.media !== "object")
+        throw new Error("Ungültiger Medienbeleg.");
+      media = Object.freeze({
+        metadataDigest: payloadDigest(evidence.media.metadataDigest),
+        byteDigest: payloadDigest(evidence.media.byteDigest),
+      });
+    }
     return Object.freeze({
       recordId: campaignLocalId(String(evidence.recordId)),
       digest: payloadDigest(evidence.digest),
-      referenceSchema: referenceSchema(evidence.referenceSchema),
+      referenceSchema: schema,
+      media,
     });
   });
   if (!Number.isSafeInteger(value.recordCount) || value.recordCount < 0 || value.recordCount !== records.length)
@@ -81,6 +101,7 @@ function checkedInventory(value: CampaignOwnerInventoryV1): CampaignOwnerInvento
     ownerRevision: revisionToken(value.ownerRevision, "Ownerrevision"),
     schemaRevision: revisionToken(value.schemaRevision, "Schemarevision"),
     snapshotRevision: revisionToken(value.snapshotRevision, "Snapshotrevision"),
+    referenceSchemas: schemas,
     availability: "confirmed",
     emptyConfirmed: value.emptyConfirmed,
     recordCount: value.recordCount,
@@ -109,6 +130,7 @@ export function stageCampaignRemap(
     ownerRevision: string;
     schemaRevision: string;
     snapshotRevision: string;
+    referenceSchemas: readonly string[];
   }>();
   for (const raw of expected) {
     if (!raw || typeof raw !== "object") throw new Error("Ungültiger erwarteter Owner.");
@@ -118,6 +140,7 @@ export function stageCampaignRemap(
       ownerRevision: revisionToken(value.ownerRevision, "Ownerrevision"),
       schemaRevision: revisionToken(value.schemaRevision, "Schemarevision"),
       snapshotRevision: revisionToken(value.snapshotRevision, "Snapshotrevision"),
+      referenceSchemas: supportedSchemas(value.referenceSchemas),
     });
   }
   const inventoryById = new Map<string, CampaignOwnerInventoryV1>();
@@ -133,7 +156,8 @@ export function stageCampaignRemap(
     if (!inventory) throw new Error("Ownerabdeckung ist unvollständig.");
     if (inventory.ownerRevision !== revisions.ownerRevision ||
         inventory.schemaRevision !== revisions.schemaRevision ||
-        inventory.snapshotRevision !== revisions.snapshotRevision)
+        inventory.snapshotRevision !== revisions.snapshotRevision ||
+        JSON.stringify(inventory.referenceSchemas) !== JSON.stringify(revisions.referenceSchemas))
       throw new Error("Ownerinventar ist stale.");
   }
 
@@ -141,10 +165,10 @@ export function stageCampaignRemap(
     scopes = new Map<string, "campaign-local" | "shared">(),
     shared = new Set<string>();
   for (const inventory of inventories) {
-    const evidence = new Map<string, string>();
+    const evidence = new Map<string, CampaignOwnerInventoryV1["payloadEvidence"][number]>();
     for (const item of inventory.payloadEvidence) {
       if (evidence.has(item.recordId)) throw new Error("Doppelter Payloadbeleg.");
-      evidence.set(item.recordId, item.digest);
+      evidence.set(item.recordId, item);
     }
     if (evidence.size !== inventory.records.length)
       throw new Error("Payloadabdeckung ist unvollständig.");
@@ -152,6 +176,9 @@ export function stageCampaignRemap(
       if (records.has(record.id) || scopes.get(record.id) === "shared")
         throw new Error("Doppelte oder kollidierende lokale Identität.");
       if (!evidence.has(record.id)) throw new Error("Payloadbeleg fehlt.");
+      const recordEvidence = evidence.get(record.id)!;
+      if ((record.recordType === "audio-source") !== (recordEvidence.media !== null))
+        throw new Error("AudioSource-Metadaten- oder Bytebeleg fehlt oder ist fremd.");
       records.set(record.id, { owner: inventory.ownerId, type: record.recordType });
       scopes.set(record.id, "campaign-local");
     }

@@ -18,11 +18,11 @@
       "sharedBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
       "candidateBranch": "codex/e2e01-campaign-context-i01",
       "scope": "Host-neutral CampaignLifecycle, CampaignContext, A-to-B-to-A isolation, reopen identity preservation and complete campaign-local copy/import remap model for E2E-01.",
-      "implementation": "Validated opaque campaign, context, command and receipt identities; immutable snapshots and projections; staged idempotent create/rename commands with cancel-before-publish, publish-wins, same-command status recovery and late-result guards; owner-confirmed inventory coverage and an invisible Campaign/Data remap participant with independent Campaign/Namespace/local IDs.",
+      "implementation": "Validated opaque campaign, context, command and receipt identities; immutable snapshots and projections; staged idempotent create/rename commands with cancel-before-publish, publish-wins, same-command status recovery and late-result guards; owner-confirmed inventory coverage with revision-bound supported reference schemas and AudioSource metadata/byte evidence; and an invisible Campaign/Data remap participant with independent Campaign/Namespace/local IDs.",
       "verification": {
         "check": "passed",
         "tests": {
-          "passed": 431,
+          "passed": 432,
           "failed": 0
         },
         "build": "passed"

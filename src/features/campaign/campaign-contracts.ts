@@ -135,6 +135,10 @@ export interface CampaignPayloadEvidenceV1 {
   readonly recordId: CampaignLocalId;
   readonly digest: string;
   readonly referenceSchema: string;
+  readonly media: {
+    readonly metadataDigest: string;
+    readonly byteDigest: string;
+  } | null;
 }
 export interface CampaignOwnerInventoryV1 {
   readonly version: 1;
@@ -143,6 +147,7 @@ export interface CampaignOwnerInventoryV1 {
   readonly ownerRevision: string;
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
+  readonly referenceSchemas: readonly string[];
   readonly availability: OwnerAvailability;
   readonly emptyConfirmed: boolean;
   readonly recordCount: number;
@@ -154,6 +159,7 @@ export interface CampaignExpectedOwnerV1 {
   readonly ownerRevision: string;
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
+  readonly referenceSchemas: readonly string[];
 }
 export interface CampaignDeliveryV1 {
   readonly version: 1;

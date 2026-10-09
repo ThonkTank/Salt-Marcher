@@ -19,13 +19,16 @@ const sourceId = campaignId("00000000-0000-4000-8000-000000000001"),
   locationId = campaignLocalId("00000000-0000-4000-8000-000000000202"),
   dungeonId = campaignLocalId("00000000-0000-4000-8000-000000000203"),
   encounterId = campaignLocalId("00000000-0000-4000-8000-000000000204"),
+  audioId = campaignLocalId("00000000-0000-4000-8000-000000000205"),
+  cueId = campaignLocalId("00000000-0000-4000-8000-000000000206"),
   digest = (letter: string) => `sha256:${letter.repeat(64)}`;
 const source = campaignSnapshot({
   schemaVersion: 1, campaignId: sourceId, revision: campaignRevision(7),
   name: "Salzmarsch", namespace: sourceNamespace, lifecycle: "active",
 });
-const evidence = (recordId: typeof worldId, letter: string) => ({
+const evidence = (recordId: typeof worldId, letter: string, audio = false) => ({
   recordId, digest: digest(letter), referenceSchema: "refs.v1",
+  media: audio ? { metadataDigest: digest("d"), byteDigest: digest("e") } : null,
 });
 const owner = (
   ownerId: string,
@@ -34,8 +37,11 @@ const owner = (
   version: 1, sourceCampaignId: sourceId, ownerId,
   ownerRevision: `${ownerId}.owner.v1`, schemaRevision: `${ownerId}.schema.v1`,
   snapshotRevision: `${ownerId}.snapshot.v1`, availability: "confirmed",
+  referenceSchemas: [...new Set(["refs.v1", ...records.flatMap((record) =>
+    record.references.map((reference) => reference.schema))])].sort(),
   emptyConfirmed: records.length === 0, recordCount: records.length, records,
-  payloadEvidence: records.map((record, index) => evidence(record.id, String.fromCharCode(97 + index))),
+  payloadEvidence: records.map((record, index) =>
+    evidence(record.id, String.fromCharCode(97 + index), record.recordType === "audio-source")),
 });
 const inventories: readonly CampaignOwnerInventoryV1[] = [
   owner("atlas", [
@@ -53,13 +59,19 @@ const inventories: readonly CampaignOwnerInventoryV1[] = [
       { id: "catalog:srd51:goblin", scope: "shared", schema: "catalog-entry.v1" },
     ] },
   ]),
-  owner("media", []),
+  owner("media", [
+    { id: audioId, recordType: "audio-source", references: [] },
+    { id: cueId, recordType: "music-cue", references: [
+      { id: audioId, scope: "campaign-local", schema: "audio-source.v1" },
+    ] },
+  ]),
 ];
 const delivery = (changes: Partial<CampaignDeliveryV1> = {}): CampaignDeliveryV1 => ({
   version: 1, sourceCampaignId: sourceId, sourceNamespace,
   expectedOwners: inventories.map((inventory) => ({
     ownerId: inventory.ownerId, ownerRevision: inventory.ownerRevision,
     schemaRevision: inventory.schemaRevision, snapshotRevision: inventory.snapshotRevision,
+    referenceSchemas: inventory.referenceSchemas,
   })),
   inventories,
   ...changes,
@@ -70,6 +82,8 @@ const factories = () => {
     "00000000-0000-4000-8000-000000000302",
     "00000000-0000-4000-8000-000000000303",
     "00000000-0000-4000-8000-000000000304",
+    "00000000-0000-4000-8000-000000000305",
+    "00000000-0000-4000-8000-000000000306",
   ].map(campaignLocalId);
   return {
     campaignId: () => targetId,
@@ -91,8 +105,8 @@ test("complete owner delivery produces one immutable closure and only an invisib
     { entityType: "campaign", sourceId, targetId },
     { entityType: "namespace", sourceId: sourceNamespace, targetId: targetNamespace },
   ]);
-  assert.equal(stage.plan.closure.length, 6);
-  assert.equal(new Set(stage.plan.closure.map((entry) => entry.targetId)).size, 6);
+  assert.equal(stage.plan.closure.length, 8);
+  assert.equal(new Set(stage.plan.closure.map((entry) => entry.targetId)).size, 8);
   assert.equal(Object.isFrozen(stage), true);
   assert.equal(Object.isFrozen(stage.plan.closure), true);
   assert.deepEqual(delivery(), before);
@@ -122,11 +136,25 @@ test("dangling, unclassified and shared-local collisions fail closed", () => {
     index === 0 ? { ...record, references: [{ id: danglingId, scope: "campaign-local" as const, schema: "location.v1" }] } : record) };
   assert.throws(() => stageCampaignRemap(source, delivery({ inventories: [danglingAtlas, ...inventories.slice(1)] }), "Ziel", factories()), /hängt frei/);
   const collisionDungeon = { ...inventories[1]!, records: inventories[1]!.records.map((record, index) =>
-    index === 0 ? { ...record, references: [{ id: worldId, scope: "shared" as const, schema: "world.v1" }] } : record) };
+    index === 0 ? { ...record, references: [{ id: worldId, scope: "shared" as const, schema: "encounter-plan.v1" }] } : record) };
   assert.throws(() => stageCampaignRemap(source, delivery({ inventories: [inventories[0]!, collisionDungeon, inventories[2]!] }), "Ziel", factories()), /kollidiert/);
   const invalidScope = structuredClone(inventories[0]) as unknown as { records: { references: { scope: string }[] }[] };
   invalidScope.records[0]!.references[0]!.scope = "mystery";
   assert.throws(() => stageCampaignRemap(source, delivery({ inventories: [invalidScope as unknown as CampaignOwnerInventoryV1, ...inventories.slice(1)] }), "Ziel", factories()), /Unklassifizierte/);
+});
+
+test("media inventory requires supported reference schemas plus AudioSource metadata and byte evidence", () => {
+  const unsupportedMedia = { ...inventories[2]!, records: inventories[2]!.records.map((record) =>
+    record.recordType === "music-cue" ? { ...record, references: record.references.map((reference) =>
+      ({ ...reference, schema: "audio-source.v2" })) } : record) };
+  assert.throws(() => stageCampaignRemap(source, delivery({
+    inventories: [inventories[0]!, inventories[1]!, unsupportedMedia],
+  }), "Ziel", factories()), /Nicht unterstütztes Referenzschema/);
+  const missingMediaEvidence = { ...inventories[2]!, payloadEvidence: inventories[2]!.payloadEvidence.map((value) =>
+    value.recordId === audioId ? { ...value, media: null } : value) };
+  assert.throws(() => stageCampaignRemap(source, delivery({
+    inventories: [inventories[0]!, inventories[1]!, missingMediaEvidence],
+  }), "Ziel", factories()), /AudioSource/);
 });
 
 test("source reuse, duplicate target IDs and foreign deliveries cannot form a remap", () => {
