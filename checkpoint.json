@@ -103,10 +103,15 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation6.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-local-basis.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-published-source.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-published-basis.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-published-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation8.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-published-source.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-published-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-host-basis-equivalence.json"
       ],
       "finishedAt": "2026-10-09T12:57:55.237659+02:00",
-      "result": "Zehn frühe Preferences-Fragen direkt geklärt;51 Frames/sechs Config-Snapshots/normaler Ausgang0.22 frühe Fragen,R02/Aufräumen offen. Building-Bodenübermalung und selbständige Asset-Testfixtures integriert. Frische Basis198/198 lokal und201/201 im exakten Repositorybaum, Check/Build bestanden; eigener Kernhost Edit4/Neuöffnung2Checks. Keine Hex-/Atlas-Funktion implementiert."
+      "result": "Zehn frühe Preferences-Fragen direkt geklärt;51 Frames/sechs Config-Snapshots/normaler Ausgang0.22 frühe Fragen,R02/Aufräumen offen. Frische gemeinsame Basis203/203 lokal und206/206 im exakten Repositorybaum einschließlichCOK5, Check/Build bestanden; eigener Kernhost Edit4/Neuöffnung2Checks auf identischem Produktbuild. Keine Hex-/Atlas-Funktion implementiert."
     },
     "nextRun": {
       "id": "HEX-00-N-I16",
@@ -152,30 +157,33 @@
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Genau eine grafische QA-Instanz.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
-      "nextJointGate": "HEX-00 verbleibende22 frühen Fragen begrenzt schließen, eigener R02 und Aufräumen; danach HEX-01 bis05 als nutzbare gemeinsame grenzenlose Atlasbasis. CITY01 verwendet diese Basis, kein separater Editor; Dungeonstand fortlaufend integrieren/regressionsprüfen."
+      "nextJointGate": "HEX-00 verbleibende22 frühen Fragen begrenzt schließen, eigener R02 und Aufräumen; danach HEX-01 bis05 als nutzbare gemeinsame grenzenlose Atlasbasis. CITY01 verwendet diese Basis, kein separater Editor; Dungeonstand fortlaufend integrieren/regressionsprüfen.",
+      "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
+      "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
+      "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung."
     },
     "verification": {
       "check": "N-I15 nach allen Integrationen frisch bestanden",
-      "tests": "198/198 lokal mit erhaltenen fremden Testpatches; exakter Repositorybaum201/201 frisch bestanden.",
+      "tests": "203/203 lokal mit erhaltenen fremden Testpatches; exakter Repositorybaum206/206 einschließlich fünf COK-Adaptertests frisch bestanden.",
       "build": "Frisch bestanden, identischer Buildd54f25cf; keine Installation.",
       "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
-      "integratedCommit": "c9a7c62cdc1d510f48df1c903b258fc546a31ef9",
+      "integratedCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf",
       "host": "Nach eingehender Building-Bodenübermalung frischer eigener Kern-Obsidian-Edit-/Neuöffnungslauf bestanden aufBuildd54f25cf: vier Edit-/zwei Neuöffnungschecks, beide Prozessausgänge0. Keine Hex-/Stadt-/Overworld-, Großkarten-, physische oder Gesamtparitätsabnahme; Produktvault unverändert.",
-      "testProvenance": "N-I15 final aufc9a7c62:198/198 lokal mit exakt erhaltenen fremden Testpatches, exakter Repositorybaum201/201 frisch bestanden. Alle drei früher externen Assetfälle bleiben mit selbständigen GDPC-Fixtures erhalten; gültige PNG-Payload und tatsächliche offene slice-Grenzen berücksichtigt. Check/Build grün, identischer Produktbuildd54f25cf. Nur Slice-Bereiche, keine vollständige Blob-Materialisierung/Lazy-Payload-Wirkung nachgewiesen; synthetische Fixtures ersetzen keine Original-/GUI-Abnahme.",
+      "testProvenance": "N-I15 final auf571e40d:203/203 lokal mit exakt erhaltenen fremden Testpatches, exakter Repositorybaum206/206 frisch bestanden. COK5 laufen jetzt im Standardtest; selbständige GDPC-Fixtures, gültige PNG-Payload und tatsächliche offene Slice-Grenzen erhalten die drei Assetfälle. Check/Build grün, identischer Produktbuildd54f25cf. Nur Slice-Bereiche, keine vollständige Blob-Materialisierung/Lazy-Payload-Wirkung nachgewiesen; Adaptertests bleiben offline, keine Original-/GUI-Abnahme daraus.",
       "cleanTreeTest": {
         "state": "passed",
-        "tests": 201,
-        "passed": 201,
+        "tests": 206,
+        "passed": 206,
         "failed": 0,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-published-basis.json",
-        "testedCommit": "c9a7c62cdc1d510f48df1c903b258fc546a31ef9"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-published-basis.json",
+        "testedCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf"
       },
       "catalog": "N-I15: zehn frühe Preferences-Fragen in acht Controls direkt geklärt: Undo0..64,BackupEvery1..60 Minuten/Limit1..64,Font8..28,Density0.1..10,Rotation0.1..90 Grad; einzelne Pfeilschritte belegt. EdgeDelay0..1/Speed50..1000 native Skalare über einzeln Apply und sechs unveränderte eigene Config-Snapshots, keine physikalische Einheit behauptet. Alle Kennungen/Defaults/Controltypen/Quellen,663 UI/83 Fälle erhalten.22 frühe Fragen,R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "c9a7c62cdc1d510f48df1c903b258fc546a31ef9",
-      "incomingReviewIntegration": "N-I15: bad35f1 am Start integriert; Dungeon-Bodenübermalung in Building-Aussparungen und Stadt-COK-Adapter später normal integriert. Eigener frischer Kern-Obsidian-Edit-/Neuöffnungslauf auf9584fcf/Buildd54f25cf bestand4+2Checks. Weitere Integrationen enthalten COK-Lock-/Zielreparatur, selbständige Assetfixtures mit gültigen PNGs und präzisierte Slice-Bereichsprüfung sowie getrennte Dungeon-Ellipsenbelege. Aktueller geprüfter Quellbaumc9a7c62:198/198 lokal und201/201 exakt veröffentlicht; Produkt/Kernhostbasis unverändert gegenüber frischem Host. Ein Stash-Konflikt wegen der fremden lokalen Testentfernung wurde durch ausschließlich deren exakte Bytewiederherstellung plus lokale Installationsnotiz gelöst; eingehende Tests bleiben in HEAD/index. Alle eigenen/fremden Roots und66 ältere Dateien erhalten. Separater COK-Adapter5/5 offline und Building-Mixed-Helfer Syntax geprüft. Keine eigene neue COK-/Ellipsen-/Hex-Freigabe oder Installation.",
+      "testedProductCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf",
+      "incomingReviewIntegration": "N-I15: sämtliche eingehenden Dungeon-/Stadt-/Fixturepfade normal bis0c4718a in571e40d integriert. Eigener frischer Kernhost auf9584fcf/Buildd54f25cf bestandEdit4/Neuöffnung2Checks; Produkt-/Kernhostquellen und sonstige Packagefelder unverändert, nur Standardtestscript ergänzt COK5. Aktueller exakt geprüfter Quellbaum571e40d:203/203 lokal und206/206 Repositorytests, Check/Build grün. Fremde Testpatches und Installationsnotiz bytegleich erhalten; neue Stadt-/Dungeon-/Fixturewurzeln erhalten. Stash-Konflikt wurde ausschließlich durch exakte fremde Bytewiederherstellung gelöst; eingehende Tests bleiben inHEAD/index.66 ältere Dateien erhalten. Separate Dungeon-Hosthelfer Syntax geprüft; fremde Originalreviews bleiben getrennt. Veröffentlichung wegen mehrerer Shared-Branch-Kollisionen über geprüften Paketbranch und regulären Servermerge, kein Force-Push oder Verlauf-Umschreiben.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
         "sessions": 1,
@@ -549,10 +557,10 @@
         "cleanup": "not_started",
         "physicalInput": false,
         "installation": "unchanged",
-        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/lazy-published-basis.json",
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-published-basis.json",
         "hostRegression": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json",
         "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation.json",
-        "latestIntegrationProof": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation6.json"
+        "latestIntegrationProof": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation8.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
