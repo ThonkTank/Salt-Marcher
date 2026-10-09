@@ -3409,21 +3409,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I03-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:31:15.996124+02:00",
-      "focus": "R01/R02 nach Metadatenbereinigung",
-      "state": "completed_passed_bounded_cleanup",
-      "result": "Beide Metadatenbefunde R01/R02 geschlossen; sieben Belege korrekt, Reload pixelgleich; gesamte CITY00 weiterhin offen",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest-cleaned.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/cleanup-review.json"
-      ]
-    },
-    "nextRun": {
       "id": "CITY-00-I04-P",
       "kind": "reference_planning",
-      "focus": "Canvas-of-Kings-Zugang und Referenzumfang prüfen; weitere FTG/Watabou-Wirkungs-/Exportproben planen"
+      "startedAt": "2026-10-09T12:33:25.808263+02:00",
+      "focus": "Vorhandene Canvas-of-Kings-Demo und koordinierten Original-QA-Zugang planen",
+      "state": "completed_access_coordination_pending",
+      "result": "Steam-Demo3122210 installiert; Rollen Hex/Stadt bestätigt; direkter Native-QA-Zugang angefragt, kein paralleler Host gestartet"
+    },
+    "nextRun": {
+      "id": "CITY-00-I04-I",
+      "kind": "reference_implementation",
+      "focus": "Canvas-of-Kings-Ergebnisbilder/Funktionen über bestätigten Originalzugang prüfen; FTG/Watabou-Restproben weiterführen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

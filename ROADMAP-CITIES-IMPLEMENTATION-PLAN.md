@@ -135,3 +135,11 @@ R01: Genau vier Menübilder (Kontext, Features, Roads, Export) und zwei Ergebnis
 R02: Aktivierte Citadel-/Temple-/Plaza-Vorgaben getrennt von tatsächlich visuell identifizierten Merkmalen notieren. Das Bild belegt Stadtumriss, Hausformen, Straßen, Mauer/Türme, Fluss/Küste und Hafenanlagen. Die Identität eines Tempels oder anderer besonderer Gebäude bleibt einer eigenen Wirkungsprobe vorbehalten.
 
 CI aktualisiert Belegmanifest und Checkpoint; CR prüft alle sieben Bilder/Hashes, die unveränderten 44 CO-Anforderungen sowie die korrigierten Beleggrenzen. Die Originalgesamt-/Produkt-/Bedienabnahme bleibt offen.
+
+## CITY-00-I04-P: Canvas of Kings und gemeinsame Abschlusskoordination
+
+Lokaler Zugang ist geprüft: Steam-App 3122210 (`Canvas of Kings Demo`) ist unter dem vorhandenen Steam-Verzeichnis installiert. Die Vollversion wird daraus nicht abgeleitet. Offizielle Produktbeschreibung nennt Pfad-/Flächenplatzierung, Objektvariation und Gruppenbewegung, Licht/Wetter sowie Ausgabeausschnitt/Raster/Vorlagen. Direkte Demo-Wirkungsproben und Unterschiede zur Vollversion bleiben offen.
+
+Technischer nächster Lauf: vorhandenen spezialisierten Original-QA-Zugang und gemeinsame native Sperre mit dem Hex-Kollegen klären; dessen bestätigtes Veröffentlichungsfenster erhalten. Keine parallele native Instanz starten. Native CUA ist in diesem Stadtlauf deaktiviert; das ist kein Nachweis fehlender Produktfunktionen. Öffentlich sichtbare originale Ergebnisbilder können für den Grafikvergleich gesichert werden, ersetzen aber keine eigenen Wirkungsproben der Demo. Originalzugang, Demo-/Vollversionsumfang, tatsächliche Bildausschnitte und Versionsstand im Katalog getrennt festhalten.
+
+Gemeinsamer Produktabschluss: Hex-Kollege besitzt HEX-00 und HEX-01 bis HEX-05; Stadtlauf besitzt CITY-00 bis CITY-09. Dungeonarbeit wird im bestehenden GitHub-Thema 1 nach aktuellem Bearbeiter/Übergaben abgefragt. Jede Familie erhält ihre eigenen Checkpoint-/Abnahmewurzeln. Ein identischer Endbuild muss Dungeonpflichten, Hex-/Stadtablauf, Speicher-/Konflikt-/Undoverhalten, Ergebnis-/Bedienvergleiche, Ausgabe, Installation und physische Bedienung erfüllen. Noch nicht zugängliche Original- oder Hostabnahmen bleiben offen; weitere unmittelbar nutzbare Arbeit wird fortgesetzt.
