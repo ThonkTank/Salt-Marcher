@@ -69,6 +69,9 @@ module.exports = ({
     await settle();
     assert.equal((await state()).selected, "hex02-geometry-room");
     await chooseTool("Punkte");
+    await page.mouse.click(p.x, p.y);
+    await settle();
+    assert.equal((await state()).selected, "hex02-geometry-room");
     const snap = panel().getByRole("button", { name: "Snap", exact: true });
     if ((await snap.getAttribute("aria-pressed")) === "true")
       await snap.click();
