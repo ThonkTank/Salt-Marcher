@@ -1105,3 +1105,5 @@ CITY-00-P48-CLEAN-R48 Start 2026-10-09T21:00:03.993621+00:00; Plan-/Link-/JSON-/
 CITY-00-I48a Start 2026-10-09T21:05:00.623Z; Eigene momenv geschrieben, Open sofort Light/Weather34/0.6→230/0, Cancel sichtbar erhalten; finaler Menu/Save bytegleich Quelle. Normal Exit0/5 Prozesse weg/GUI zurück. I48b/R48 offen.
 
 CITY-00-I48a-CLEAN-P48 Start 2026-10-09T21:16:18.825990+00:00; Aufräumplan: Templateumfang gegen gemessene2Regler trennen, Cancel nur visuell/finale Bytegleichheit präzisieren, Rawschutz/Prozessende prüfen und Reopeninput eindeutig verlinken.
+
+CITY-00-I48a-CLEAN-I48 Start 2026-10-09T21:16:32.775761+00:00; Gemessene2Regler vs vollständige Vorlagenfelder sowie visueller Cancel getrennt dokumentiert; genaue I48b-Quellkopien verlinkt, keine API-/Produktänderung.
