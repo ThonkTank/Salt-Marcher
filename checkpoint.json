@@ -2218,6 +2218,16 @@
         "result": "Ein isolierter Obsidian-Prozess wird nach dem dritten von sechs geänderten Atlaszielen per SIGKILL beendet. Das vorbereitete Journal, drei geänderte und zwei unveränderte Terrainkinder sowie der gültige Draft behalten nach dem Kill exakt ihre Hashes; die unveränderte Weltdatei bleibt gleich. Ein neuer Obsidian-Prozess rollt alle Teilwrites über AtlasRepository/VaultStore auf Before zurück, entfernt das Journal und zeigt Entwurf gesichert. Beide Prozesse nutzten denselben sauberen Build; nur der zweite endete normal.",
         "review": "Unabhängiger read-only Review PASS auf Testcommit 0711828 für diese eine echte Host-Abbruchgrenze nach abgeschlossenem CAS. Keine vollständige native Abbruchmatrix, fsync-/Power-Loss-/torn-write-Garantie, City-/Dungeon-Kinder, I01d-Verwerfen oder vollständige DD-036.03-/HEX-02-Freigabe."
       },
+      "s01CommittedCrash": {
+        "run": "DD-036-S01-J04",
+        "state": "scoped_one_native_committed_crash_recovery_independent_review_passed_full_case_open",
+        "testCommit": "2eeb4737b0b7d1ba87807e8a15cf928eb3e35406",
+        "mainSha256": "260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+        "crashEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j04-20261009/clean-committed8/evidence/1791573501885-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
+        "recoveryEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j04-20261009/clean-committed8/evidence/1791573508679-dd036-s01-recovery-reopen/s01-recovery-result.json",
+        "result": "Ein isolierter Obsidian-Prozess wird per SIGKILL nach dem abgeschlossenen committed-Journal-CAS und vor dem Journal-Cleanup beendet. Alle fünf geänderten Terrainkinder stehen auf After, der Draft fehlt, die unveränderte Weltdatei bleibt gleich. Alle Datei- und Journalhashes bleiben nach dem Kill gleich. Ein neuer Obsidian-Prozess behält After, entfernt das Journal und zeigt Gespeichert ohne Draft/Dirty; nur dieser zweite Prozess endete normal.",
+        "review": "Unabhängiger read-only Review PASS auf sauberem Testcommit 2eeb473 für genau diese direkte committed-Abbruchgrenze mit identischem Buildtripel, neuer cgroup/PID und allen acht Hashes. Keine vollständige native Abbruchmatrix, fsync-/Power-Loss-/torn-write-Garantie, City-/Dungeon-Kinder, I01d-Verwerfen oder vollständige DD-036.03-/HEX-02-Freigabe."
+      },
       "o01Original": {
         "run": "DD-036-O01-ORIGINAL-03",
         "state": "scoped_topbar_open_original_effect_independent_review_passed_full_cases_open",
