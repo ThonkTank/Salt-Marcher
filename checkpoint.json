@@ -13,7 +13,7 @@
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
-      "integratedShared": "9a6d5a2b276019df2ee6206e201db06e82d52edd",
+      "integratedShared": "29dd23002bb4d38c49f58bfc27c7b4974c1f7c37",
       "planCandidateCommit": "48b228cfc79d8d3fbcae2054d9958ae0916e7778",
       "reviewedCandidate": "038ce292e311024bebc30ffba4cbb63b0b46b72d",
       "review": "Independent architecture R03 third re-review in Issue comment 6088191105 required non-contradictory closure export states and provider-absent import bootstrap. The repair incorporates clarified Campaign/Data state and Core RetainedQuarantineSlot decision 6088202673; focused owner and independent architecture re-reviews remain required.",
