@@ -4101,17 +4101,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-P",
-      "kind": "integration_audit_planning",
-      "startedAt": "2026-10-09T16:00:29.840385+00:00",
-      "focus": "CITY-01-Anschluss an aktuelle Atlasbasis planen",
+      "id": "CITY-00-I39-R",
+      "kind": "integration_audit_review",
+      "startedAt": "2026-10-09T16:04:44.446953+00:00",
+      "focus": "CITY-01-Plan gegen tatsächliche Quelle und Pflichtfälle reviewen",
       "state": "completed",
-      "result": "Auditumfang festgelegt: drei CITY-01-Pflichtfälle und ihre drei Originalzuordnungen gegen reale Kamera, Eingabe, Renderer, Dokumentparser, History und Speicher prüfen. Konkreten Anschlussplan mit vorhanden/geplant/fehlend, Besitzer und Hostnachweis liefern; keine erfundene HEX-05-API und keine zweite Editorbasis. Produktstart erst nach geprüfter HEX-05-Übergabe."
+      "result": "Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet."
     },
     "nextRun": {
-      "id": "CITY-00-I39-I",
-      "kind": "integration_audit",
-      "focus": "Reale Schnittstellen und Stadtpflichten prüfen; konkreten Anschlussplan liefern"
+      "id": "CITY-00-I39-CP",
+      "kind": "cleanup_planning",
+      "focus": "Geometriewiederverwendung und Einheitenkopplung konkret einordnen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
