@@ -3580,17 +3580,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T11:51:14.010374+00:00",
-      "focus": "Save/Neuöffnung und Steuerungsprovenienz prüfen",
-      "state": "completed",
-      "result": "Save und frische Öffnung belegt;75Hashes intakt. R01: doppelte RFB-Optionen vor Verbindung ablehnen. Demo-/Produktabnahmen offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I07-CP",
       "kind": "cleanup_planning",
-      "focus": "RFB-Eingabeambiguität mit gezielter Regression bereinigen"
+      "startedAt": "2026-10-09T11:51:44.924851+00:00",
+      "focus": "Doppelte Eingabeoptionen früh ablehnen",
+      "state": "completed",
+      "result": "COK-Vorparser, CLI-Regressionsfall und README geplant; generischer Transport und Originalartefakte erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Vorparser und Regression implementieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
