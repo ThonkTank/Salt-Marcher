@@ -4512,17 +4512,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I44-R44",
-      "kind": "review",
-      "startedAt": "2026-10-09T19:16:20.862788+00:00",
-      "focus": "R: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
-      "state": "completed",
-      "result": "Zuordnungsreview bestanden: Profil/Beziehungen und Uhrzeit aus AX bestätigt; I18 erhalten, Scope/IDs/Produktabnahmen unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I44-REVIEW-CLEAN-P44",
       "kind": "cleanup_plan",
-      "focus": "Abgeschlossene Zuordnung und offene Originalprüfungen dokumentieren"
+      "startedAt": "2026-10-09T19:16:32.577778+00:00",
+      "focus": "REVIEW-CLEAN-P: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
+      "state": "completed",
+      "result": "Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I44-REVIEW-CLEAN-I44",
+      "kind": "cleanup_implementation",
+      "focus": "Planlinks und Scopegrenzen konsolidieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
