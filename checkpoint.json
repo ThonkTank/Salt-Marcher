@@ -3733,17 +3733,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T13:35:45.539926+00:00",
-      "focus": "Belegumfang und Zugangsgrenze prüfen",
-      "state": "completed",
-      "result": "I18-R01: Rohbilder wahrheitsgemäß als Fehler-/Ladezustand beschriften; zweites Beobachtungsende nicht als terminalen Requestfehler deuten. Keine Originalfunktion abgenommen."
-    },
-    "nextRun": {
       "id": "CITY-00-I18-CP",
       "kind": "cleanup_planning",
-      "focus": "Caption-Grenzen und Rohschutz planen"
+      "startedAt": "2026-10-09T13:35:59.890609+00:00",
+      "focus": "Zugangsbilder und Rohschutz planen",
+      "state": "completed",
+      "result": "Expliziten Fehler und ungeklärten Ladezustand getrennt beschriften; sichtbaren Schutzumfang begrenzen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I18-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Caption-Ergänzung ohne Rohänderung umsetzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
