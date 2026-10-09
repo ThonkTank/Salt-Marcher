@@ -4697,17 +4697,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-PLAN-CLEAN-R46",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:30:39.201603+00:00",
-      "focus": "Bewohner-Massenbearbeitung: CR",
+      "id": "CITY-00-I46-REVIEW-CLEAN-P46",
+      "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:38:22.320998+00:00",
+      "focus": "Massenbearbeitungsbeleg reviewen: P",
       "state": "completed",
-      "result": "Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen."
+      "result": "Aufräumplan: sichtbares Profilgleichheitsmaß von serialisierten IDs/Persistenz trennen; Reviewlink und Rohbelege erhalten."
     },
     "nextRun": {
-      "id": "CITY-00-I46-I46",
-      "kind": "reference_implementation",
-      "focus": "Aktuelle Population-Mehrfachauswahl und zugänglichen Editor im Original prüfen"
+      "id": "CITY-00-I46-REVIEW-CLEAN-I46",
+      "kind": "cleanup_implementation",
+      "focus": "COK-Licht-/Wetterprobe mit Atlasbesitzer-GUI-Slot abstimmen und konkret planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4934,7 +4934,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-N-005-N01-H01-R02 ist blocked (Issue #1 6087877294). Vor R03 als not started dokumentiert: eigenen Cloud-Obsidian-Prozess/Profil und isolierte Vault-Kopie bereitstellen, dann eine gebündelte H01-Abnahme mit build/hash/screenshot-Provenienz. Kartograph ist N01-Implementierungsbesitzer; Cloud-GM-Produkttester führt R03 aus.",
+    "next": "GM-UX-N-005-N01-H01-R03 not started auf Base e3d6f81. Separate Electron/User-Data-Dir nicht startbar (DISPLAY leer, ausführbare Umgebung ohne Obsidian-Binary/Hoststart-Capability). Gebündelter Test auf bestehendem isolierten Cloudhost/Vault nach Beenden nur verwaister Playwright-CDP-Clients; wenn UI-Provenienz unstet bleibt, blocked. Kartograph bleibt Dungeon-N01-Besitzer.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -5273,6 +5273,21 @@
       "evidence": "/workspace/scratch/gm-cloud-qa/evidence-n01-h01-r02/01-reload-command.png through 13-inspect-after-activation.png",
       "limits": "Keine Karte geändert; keine Produktdatei; kein physischer Input; kein frischer Electronprozess; N01-H01 Abnahme blocked.",
       "next": "GM-UX-N-005-N01-H01-R03 not started: separater Obsidian-Prozess, eigene User-Data-Dir und kopierte isolierte Vault."
+    },
+    "r03PreRun": {
+      "id": "GM-UX-N-005-N01-H01-R03",
+      "status": "not started",
+      "branch": "active/installed-phase1",
+      "baseCommit": "e3d6f8153d73d60f50fa7f85bddb560007469b0e",
+      "productCommit": "a06703c31766a064c6a8e8510a1cb5eaa46ca549",
+      "n01FilesByteEqual": true,
+      "host": "Bestehender isolierter Obsidian-1.14.4-Cloudhost über CDP 9228, QA-Vaultdatei /workspace/scratch/gm-cloud-qa/vault/Dungeons/GM-UX-01 Nebelwacht/Karte.dungeon; kein frischer Electron-Prozess.",
+      "separateHostBlocker": "DISPLAY leer; Obsidian-Binary nicht in ausführbarer Umgebung vorhanden; cloud_environment capabilities=[]; bestehender Host über CDP erreichbar.",
+      "cleanup": "Nur vor UI-Lauf die sechs eigenen, 30+ Minuten alten verwaisten Playwright/CDP-Clients beenden; Obsidian-Prozess bleibt aktiv.",
+      "acceptance": "Leerer Suchstart nach Close/Reopen; sauberes Key-Dock weicht Suche und liefert 231px Feld; bei 256px Inspector volle Raum-/Geschosszeile, Anklickbarkeit; Aktivierung öffnet Raum12/Geschoss1/unveränderten Key; dirty draft blockiert Suche/Room-Wechsel bis Verwerfen/Übernehmen; Kartenhash unverändert.",
+      "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-n01-h01-r03/",
+      "issueComment": "6087877294",
+      "nextOwner": "Cloud-GM-Produkttester; Dungeon-N01-Implementierungsbesitzer Kartograph"
     }
   }
 }
