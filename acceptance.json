@@ -731,7 +731,8 @@
         "implementation": {
           "state": "partial",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json"
           ],
           "remaining": "Atlas placement/scene/selection/common history, native file registration and save/reopen host sequence not implemented."
         },
