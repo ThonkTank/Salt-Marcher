@@ -301,7 +301,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:56:09.039401+00:00",
+    "updated": "2026-10-09T14:52:25.394917+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1415,8 +1415,10 @@
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json"
+        ],
         "task": "Prop auf Turm gemeinsam verschieben",
         "phase": "CITY-07",
         "caseIds": [],
@@ -1429,9 +1431,17 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Auto Combine angeboten, bodengleiche Hütte/Stumpf bewegen sich nicht gemeinsam. Geeigneter erhöhter Träger, kombinierte Bewegung und Save/Reload sowie eigener Vergleich offen; Groups-Layerfunktion separat.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbes": [
+          {
+            "run": "CITY-00-I26-I",
+            "state": "control_observed_ground_overlap_no_combined_movement",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
+            "result": "Two own objects placed on the same ground position; only selected hut moved. Actual save changes only objects: hut x4.17/z-1.35 to x4.46/z-0.48; trunk unchanged. Auto Combine control enabled, tooltip describes crates on walls/ships. No suitable elevated-support test and no combined movement proved. Groups tooltip describes layer visibility/locking, unavailable in Demo."
+          }
+        ]
       },
       {
         "id": "CO-COK-0004",
@@ -3827,13 +3837,49 @@
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
         }
+      },
+      {
+        "id": "CO-COK-0012",
+        "product": "Canvas of Kings",
+        "feature": "Layergruppen gemeinsam einblenden und gegen Bearbeitung sperren",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unavailable_in_demo",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json"
+        ],
+        "task": "Mehrere Stadtelemente einer Gruppe zuordnen, gemeinsam ausblenden und sperren; speichern und frisch öffnen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originaltooltip beschreibt Gruppen als Layer; in Demo nicht verfügbar. Vollversionswirkung sowie eigene Implementierung/Host/Bedienabnahme offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbes": [
+          {
+            "run": "CITY-00-I26-I",
+            "state": "tooltip_only_unavailable_in_demo",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
+            "result": "Groups show/hide and lock multiple elements; tooltip explicitly Not available in the demo."
+          }
+        ]
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I25-I",
+      "run": "CITY-00-I26-I",
       "products": 3,
-      "candidates": 63,
+      "candidates": 64,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -3866,7 +3912,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json"
       ],
       "resultReferences": [
         {
