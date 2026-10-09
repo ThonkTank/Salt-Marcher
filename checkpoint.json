@@ -2088,6 +2088,19 @@
         "result": "Eine isolierte Kopie der leeren C00-Karte erhält per Building Tool einen Rechteckraum. Hauptleisten-Save zeigt Success! und ändert den SHA-256 der Arbeitskopie von 283ddbf85c4f12536a862ea64200763d61062d7d7a296f3d2e1cbc31b59e6ae2 auf a81de48c0fbdffd037fd513e73a099444e022ebe7cf2ccaab8feac4cbce03543; ein Polygon und eine Wand sind gespeichert. Ein zweiter Originalprozess öffnet eine Kopie dieser gespeicherten Datei per Startargument und zeigt den Raum. Ein weiterer Save zeigt Success! und schreibt de97459080998efa0ea7faece02a9e2c2cc7af9698c5fb94df7f79ce2586b77c; Shapes, Walls und Tile-Zellen bleiben gleich, die Tile-Lookup-Reihenfolge ändert sich.",
         "review": "Unabhängiger read-only Review PASS nur für diesen direkten Original-Save-/CLI-Neuöffnungsbefund. Synthetische Zeigereingabe; kein Toolbar-Open/Open Recent, kein vollständiges Eingabeprotokoll für den zweiten Save, kein normaler App-Exit aus dem Wrapperstatus ableitbar. Atlas-Host-Save, Draft/Recovery und volle DD-036.03 bleiben offen."
       },
+      "s01Terrain": {
+        "run": "DD-036-ATLAS-S01-Terrain-Teilnachweis",
+        "state": "scoped_save_draft_reopen_host_passed_independent_review_passed_full_case_open",
+        "sourceRevision": "ee858931183cb387dce7ff38b01d6fc3be110818",
+        "mainSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
+        "startupFailureEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569891295-hex02-save-edit/result.json",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json"
+        ],
+        "result": "In zwei isolierten Obsidian-Prozessen speichert der sichtbare Atlas-Save 36 Zellen in fünf Terrainkinddateien plus Overworld-Manifest; ein 37-Zellen-Entwurf wird im frischen Prozess sichtbar wiederhergestellt und per Ctrl+S gespeichert. Nach einem einmalig injizierten Store-Schreibfehler im laufenden Prozess bleiben gespeicherte Basis und Entwurf erhalten; eine externe gültige Weltänderung wird sichtbar als Konflikt erkannt. Beide erfolgreichen Läufe enden normal. Der erste kalte Erststartversuch scheiterte vor Produktaktionen am Obsidian-Trust-/Befehlspalettenpfad und bleibt separat belegt.",
+        "review": "Unabhängiger read-only Review PASS nur für den Terrain-Save-/Draft-/Neuöffnungs-Teilnachweis mit lokal vorhandenen Rohbelegen und identischem Build-Tripel. Kein unveränderter zweiter Save, keine City-/Dungeon-Kinder, kein harter Prozessabbruch mit Journal-Recovery, kein Open Recent oder voller DD-036.03-/HEX-02-R01-Go."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },
