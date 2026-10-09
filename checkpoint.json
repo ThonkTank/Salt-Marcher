@@ -4653,17 +4653,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-INTEGRATION-R02-CLEAN-R01",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:29:09.073297+00:00",
-      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: R02-R",
+      "id": "CITY-00-I46-P46",
+      "kind": "plan",
+      "startedAt": "2026-10-09T19:30:30.593778+00:00",
+      "focus": "Bewohner-Massenbearbeitung: P",
       "state": "completed",
-      "result": "Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag."
+      "result": "Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten."
     },
     "nextRun": {
-      "id": "CITY-01-INTEGRATION-CONTRACT-REVIEW-P01",
-      "kind": "plan",
-      "focus": "Konkreten HEX04/05-Ownervertrag mit den drei Anschlussanforderungen abstimmen"
+      "id": "CITY-00-I46-PLAN-CLEAN-P46",
+      "kind": "cleanup_plan",
+      "focus": "Aktuelle Population-Mehrfachauswahl und zugänglichen Editor im Original prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

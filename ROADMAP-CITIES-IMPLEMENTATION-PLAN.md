@@ -1031,3 +1031,5 @@ CITY-01-INTEGRATION-R02-CLEAN-P01 Start 2026-10-09T19:29:03.471755+00:00; Aufrä
 CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
 
 CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-00-I46-P46 Start 2026-10-09T19:30:30.593778+00:00; Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten.
