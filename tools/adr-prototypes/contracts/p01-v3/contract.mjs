@@ -477,7 +477,7 @@ function validateTarget(value, operation, state, childValue) {
     false,
   );
 }
-function orphans(value) {
+function orphans(value, boundNames = []) {
   if (!Array.isArray(value) || value.length > MAX_ORPHANS)
     throw new Error("orphan inventory is unbounded");
   const seen = [];
@@ -511,7 +511,7 @@ function orphans(value) {
       identity(item.identity, "orphan.identity");
     }
   }
-  unique(seen, "orphan names");
+  unique([...seen, ...boundNames], "orphan and bound internal names");
 }
 export function validateChildReceipt(value) {
   exact(
@@ -576,7 +576,7 @@ export function validateChildReceipt(value) {
     value.state,
     value.child,
   );
-  orphans(value.orphanInventory);
+  orphans(value.orphanInventory, Object.values(value.names));
   if (
     conflict &&
     !Object.values(value.artifacts).some(
@@ -728,7 +728,13 @@ export function validateParentReceipt(value) {
   )
     throw new Error("parent aggregate digest does not bind children");
   coherent(value.state, children);
-  orphans(value.orphanInventory);
+  orphans(value.orphanInventory, [
+    ...Object.values(value.names),
+    ...children.flatMap((item) => [
+      item.receiptName,
+      ...Object.values(item.names),
+    ]),
+  ]);
   return freeze(structuredClone(value));
 }
 export const receiptDigest = (receipt) => hash(canonical(receipt));

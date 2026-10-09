@@ -449,6 +449,20 @@ test("orphan inventories bind absence or exact bounded retained content", () => 
       }));
       return validateChildReceipt(value);
     },
+    () => {
+      const value = receipt("update", "prepared");
+      value.orphanInventory = [
+        { ...absent, name: value.names.childReceiptStaging },
+      ];
+      return validateChildReceipt(value);
+    },
+    () => {
+      const value = parent("committed", "committed");
+      value.orphanInventory = [
+        { ...absent, name: value.children[0].receiptName },
+      ];
+      return validateParentReceipt(value);
+    },
   ];
   for (const reject of invalid) assert.throws(reject);
 });
