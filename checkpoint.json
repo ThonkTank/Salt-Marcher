@@ -419,35 +419,54 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "r01_repairs_native_checked_re_review_open",
+    "state": "r01_r02_pass_scoped_cleanup_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-N01-H01",
-      "kind": "native_repair_check",
-      "startedAt": "2026-10-09T19:20:08.756454+00:00",
-      "state": "completed_scoped_native",
-      "focus": "Actual native Busy Escape/X/outside/name/Cancel, late source switch, failure restore; fresh target named recovery prepared/committed/foreign. Clean product63e1efb/main4b78f558. Isolated vault only.",
-      "finishedAt": "2026-10-09T19:22:03.470421+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
-    },
-    "nextRun": {
-      "id": "HEX-02-R02",
-      "kind": "independent_re_review",
-      "focus": "Read-only exact0fdc76c source review plus separately supplied N01-H01 native proof; resolve required findings then CLEAN-P/I/R before HEX03."
-    },
-    "review": {
       "run": "HEX-02-R02",
-      "state": "requested_read_only",
+      "state": "completed_pass_scoped",
       "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
       "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
-      "scope": "Exactly both P1 repaired; independent source/adapter/DOM re-review, native host proof separate, no phase Go.",
-      "finishedAt": "2026-10-09T19:10:03.721578+00:00",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
-      "requiredFindings": [
+      "startedAt": "2026-10-09T19:19:16+00:00",
+      "finishedAt": "2026-10-09T19:21:30+00:00",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506",
+      "requiredFindings": [],
+      "closedFindings": [
         "HEX02-R01-01",
         "HEX02-R01-02"
       ],
-      "previousReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      "checkPassed": true,
+      "testsPassed": 373,
+      "buildPassed": true,
+      "nativeOnThisBuild": false,
+      "phaseApproval": false,
+      "scope": "Independent read-only exact source/Core/DOM P1 re-review; Root native N01-H01 separate, CLEAN/phase/overall Go not given.",
+      "id": "HEX-02-R02",
+      "kind": "independent_re_review"
+    },
+    "nextRun": {
+      "id": "HEX-02-CLEAN-P01",
+      "kind": "cleanup_plan",
+      "focus": "Bounded formatting/provenance cleanup only, then separate implementation/review and HEX03."
+    },
+    "review": {
+      "run": "HEX-02-R02",
+      "state": "completed_pass_scoped",
+      "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
+      "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
+      "startedAt": "2026-10-09T19:19:16+00:00",
+      "finishedAt": "2026-10-09T19:21:30+00:00",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506",
+      "requiredFindings": [],
+      "closedFindings": [
+        "HEX02-R01-01",
+        "HEX02-R01-02"
+      ],
+      "checkPassed": true,
+      "testsPassed": 373,
+      "buildPassed": true,
+      "nativeOnThisBuild": false,
+      "phaseApproval": false,
+      "scope": "Independent read-only exact source/Core/DOM P1 re-review; Root native N01-H01 separate, CLEAN/phase/overall Go not given."
     },
     "cleanup": {
       "run": "HEX-01-CLEAN-R01",
