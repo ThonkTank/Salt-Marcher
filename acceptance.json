@@ -100351,6 +100351,16 @@
       },
       "gate": "passed_with_user_exception",
       "open": ["Abschließende Aufräumphase", "Parität der übrigen Dungeondraft-Werkzeuge"]
+    },
+    "phase7CleanupPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
+      "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
+      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "physicalInput": "skipped_at_user_request_unverified",
+      "gate": "open",
+      "next": "Getrennter Aufräum-Umsetzungslauf und danach unabhängiger Review vor der Folge-Roadmap."
     }
   }
 }

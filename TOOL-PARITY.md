@@ -601,3 +601,7 @@ Der [eigene Plan](ROADMAP-PARITY-PHASE7-PLAN.md) setzt vier getrennte Prüfsträ
 ## Phase 7: Fachphasentor mit ausdrücklicher P7-2-Ausnahme
 
 Der [getrennte Review](/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md) und [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json) bestätigen P7-1, P7-3 und P7-4 durch unabhängige Edit-/Neuöffnungspaare auf Produktbuild `b3211281…`. Auf ausdrückliche Nutzeranweisung wird P7-2 übersprungen; echte Maus-/Touchpadbedienung wurde **nicht** geprüft. Typprüfung, 167 Tests und Build bestanden erneut; Produktivkarte und installierter Build blieben hashgleich. **Das Phase-7-Fachphasentor besteht mit dieser Ausnahme.** Die abschließende Aufräumphase und alle außerhalb dieser Roadmap liegenden Werkzeugfälle bleiben offen.
+
+## Phase 7: abschließender Aufräumplan
+
+Der [getrennte Plan](ROADMAP-PARITY-CLEANUP-7-PLAN.md) benennt drei begrenzte Hostschwächen: die unspezifische Modalwahl und Fokusfreigabe, volle V4-Dokumentübertragungen bei Zwischenaufnahmen der 4.295-Entitäten-Karte und die doppelte Objektfilter-Vorbereitung. Messung, Umsetzung und unabhängiger Review bleiben getrennte Läufe. **Nur Plan; Aufräumtor offen und Folge-Roadmap gesperrt.** Die physische P7-2-Probe bleibt ausdrücklich nicht durchgeführt.

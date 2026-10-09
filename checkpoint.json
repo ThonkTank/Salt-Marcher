@@ -997,14 +997,14 @@
     "physicalInput": "skipped_at_user_request_unverified"
   },
   "parityRoadmap": {
-    "status": "phase7_fach_gate_passed_with_p7_2_exception_cleanup_plan_next",
+    "status": "phase7_cleanup_plan_ready_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "followUpState": "planned_not_started_waiting_for_final_cleanup",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener Planlauf für die abschließende Phase-7-Aufräumphase; danach getrennte Umsetzung und unabhängiger Review. Erst nach bestandenem Aufräumtor beginnt ROADMAP-PARITY-TOOLS.md mit eigenem Phase-1-Plan.",
+    "nextRun": "ROADMAP-PARITY-CLEANUP-7-PLAN.md in einem eigenen Umsetzungslauf ausführen, danach unabhängiger Aufräumreview. Erst nach bestandenem Tor beginnt ROADMAP-PARITY-TOOLS.md mit eigenem Phase-1-Plan.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -2600,6 +2600,16 @@
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "passed_with_user_exception",
       "open": ["Phase-7-Aufräumplan, Umsetzung und unabhängiger Review", "Folge-Roadmap für übrige Werkzeuge"]
+    },
+    "phase7CleanupPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
+      "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
+      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "gate": "open",
+      "next": "Getrennte Umsetzung, dann unabhängiger Aufräumreview vor der Folge-Roadmap."
     }
   }
 }
