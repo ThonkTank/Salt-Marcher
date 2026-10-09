@@ -17,13 +17,14 @@ Delete-Faultmatrix ausführte. Der ausführbare H02-Harness ist aufgeräumt;
 
 H03 prüft genau eine engere Hypothese:
 
-> Ein nativer Linux-Transaktionsdienst kann einen erwarteten alten Zielnamen
-> zuerst ohne Überschreiben in einen exklusiven Backupnamen capturen und erst
-> danach die synchronisierte neue Datei mit `RENAME_NOREPLACE` publizieren.
-> Greift ein unkooperativer Writer dazwischen ein, bleiben dessen Bytes am
-> Zielnamen und die alten beziehungsweise neuen Bytes unter gebundenen Namen
-> erhalten; der Vorgang endet sichtbar als Konflikt und niemals als stiller
-> Erfolg.
+> Ein nativer Linux-Transaktionsdienst kann die erwarteten alten Bytes zuerst
+> über einen offen gehaltenen Ziel-FD in einen exklusiven, synchronisierten
+> Before-Snapshot materialisieren, danach den aktuellen Zielnamen ohne
+> Überschreiben capturen und erst dann die synchronisierte neue Datei mit
+> `RENAME_NOREPLACE` publizieren. Greift ein unkooperativer Writer vor oder
+> nach dem Capture ein, bleiben erwartete alte Bytes, beobachtete konkurrierende
+> Bytes und neue Bytes getrennt erhalten; der Vorgang endet sichtbar als
+> Konflikt und niemals als stiller Erfolg.
 
 H03 entscheidet nur diese native repositoryweite Write-/Recovery-Hypothese.
 Es baut keinen neuen Renderer und wiederholt die H02-Prozessgates nicht. Ein
@@ -74,8 +75,18 @@ Der Helper öffnet den neuen Root einmal als Verzeichnis-FD und verwendet nur
 validierte relative Namen. Jeder Dateischritt verwendet `openat2` mit
 `RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS|RESOLVE_NO_MAGICLINKS`, prüft Root,
 Parent, Mount, Gerät, Inode, Typ und Linkzahl neu und verweigert Hardlinks.
-Temp-, Backup-, Child-Receipt- und Parent-Receipt-Namen enthalten eine zufällige
-Transaktions-ID und entstehen mit `O_CREAT|O_EXCL` im selben Verzeichnis.
+Temp-, Before-Snapshot-, Capture-, Child-Receipt- und Parent-Receipt-Namen
+enthalten eine zufällige 256-Bit-Transaktions-ID und entstehen mit
+`O_CREAT|O_EXCL` im selben Verzeichnis.
+
+Der H03-Adversary ist ein unkooperativer Editor des gebundenen fachlichen
+Zielnamens: Er darf ihn ersetzen, neu anlegen, löschen oder über einen bereits
+offenen FD in-place verändern. Er erhält keine interne Transaktions-ID und
+keinen Zugriff durch den H03-Vertrag. Ein bösartiger Prozess desselben
+OS-Kontos, der das interne Transaktionsverzeichnis enumeriert und gezielt
+manipuliert, ist mit gewöhnlichen Dateirechten nicht isolierbar und deshalb
+eine ausdrücklich offene spätere OS-Principal-/Sandbox-Frage, kein durch H03
+behauptetes Sicherheitstor.
 
 Der additive Vertrag `p01-v3` definiert kein allgemeines Dateisystem. Er kennt
 nur gebundene `beginRepositoryTransaction`, Child-Create/Update/Delete,
@@ -86,11 +97,15 @@ aus einer beim Start gebundenen Fixture-Manifest-ID aufgelöst.
 ### Child-State-Machines
 
 Jedes Child-Receipt bindet Operation, Parent-ID, Before-/After-Hash,
-Gerät/Inode/Linkzahl, Temp-/Backupnamen und genau einen Zustand. Jeder
+Gerät/Inode/Linkzahl, Temp-/Before-Snapshot-/Capturenamen und genau einen Zustand. Jeder
 Receiptwrite wird in eine exklusive neue Receiptdatei geschrieben,
 `fdatasync`/`fsync`-synchronisiert und per `RENAME_NOREPLACE` als nächste
 Generation publiziert; anschließend wird das Receipt-Verzeichnis synchronisiert.
-Vorherige Generationen bleiben bis zur Parent-Freigabe erhalten.
+Vorherige Generationen bleiben bis zur Parent-Freigabe erhalten. H03 löscht
+Before-Snapshot, Capture oder Receiptgenerationen auch nach Parent-Commit
+nicht: sichere Reclamation gegenüber einem noch offenen fremden FD ist eine
+eigene Folgefrage. Retentionbytes stehen vollständig im Receipt und ein H03-Go
+enthält ausdrücklich keine Storage-/GC-Freigabe.
 
 **Create**
 
@@ -105,45 +120,64 @@ Receipt bleiben als sichtbarer Konflikt erhalten.
 
 **Update**
 
-1. Ziel per FD gegen Before-Hash und gebundene Identität prüfen; After-Temp
-   schreiben und synchronisieren; Receipt `prepared` durable publizieren.
-2. Ziel per `renameat2(target, exclusive-backup, RENAME_NOREPLACE)` capturen.
-3. Backupidentität/Before-Hash prüfen, Verzeichnis synchronisieren und Receipt
-   `old-captured` durable publizieren.
-4. Temp ausschließlich mit `RENAME_NOREPLACE` am nun freien Ziel publizieren.
-5. Zielidentität/After-Hash prüfen, Verzeichnis synchronisieren und Receipt
+1. Ziel-FD öffnen und gebundene Identität festhalten. Seine Bytes über genau
+   diesen FD in einen exklusiven Before-Snapshot kopieren, Snapshot
+   synchronisieren und dessen Hash gegen Before prüfen. Ein nicht passender
+   Snapshot stoppt ohne Namensmutation als Konflikt.
+2. After-Temp schreiben und synchronisieren; Receipt `before-snapshotted`,
+   danach `prepared`, mit Snapshotidentität durable publizieren.
+3. Den zu diesem Zeitpunkt aktuellen Zielnamen per
+   `renameat2(target, exclusive-capture, RENAME_NOREPLACE)` capturen.
+4. Captureidentität/-hash prüfen und Verzeichnis synchronisieren. Entspricht
+   die Capture nicht der ursprünglichen Zielidentität und dem Before-Hash,
+   bleibt sie neben Before-Snapshot und Temp als `conflict-before-capture`
+   erhalten; es wird nichts Neues publiziert.
+5. Nur bei passender Capture Receipt `old-captured` durable publizieren und
+   Temp ausschließlich mit `RENAME_NOREPLACE` am nun freien Ziel publizieren.
+6. Zielidentität/After-Hash prüfen, Verzeichnis synchronisieren und Receipt
    `new-published`, danach `committed`, durable publizieren.
 
-Belegt ein Writer den Zielnamen nach Capture neu, schlägt Schritt 4 ohne
-Überschreiben fehl. Konkurrent, altes Backup und neue Tempbytes bleiben
-erhalten; Recovery meldet Konflikt. `RENAME_EXCHANGE` ist verboten.
+Ersetzt oder verändert ein Writer den Zielnamen vor Capture, bewahrt der
+verifizierte Before-Snapshot die erwartete alte Wahrheit und die Capture dessen
+beobachtete konkurrierende Wahrheit. Belegt er den Zielnamen nach Capture neu,
+schlägt die Publikation ohne Überschreiben fehl. Before-Snapshot, Capture,
+Konkurrent am Ziel und neue Tempbytes bleiben erhalten; Recovery meldet
+Konflikt. `RENAME_EXCHANGE` ist verboten.
 
 **Delete**
 
-1. Ziel gegen Before-Hash/Identität prüfen und Receipt `prepared` durable
-   publizieren.
-2. Ziel per `RENAME_NOREPLACE` in den exklusiven Backupnamen capturen.
-3. Backupidentität/Before-Hash und Zielabwesenheit prüfen, Verzeichnis
+1. Wie bei Update die erwarteten Bytes über den offenen Ziel-FD in einen
+   exklusiven Before-Snapshot kopieren, synchronisieren und gegen Before
+   prüfen; Receipt `before-snapshotted`, danach `prepared`, durable publizieren.
+2. Den aktuellen Zielnamen per `RENAME_NOREPLACE` in den exklusiven
+   Capturenamen bewegen.
+3. Captureidentität/Before-Hash prüfen. Bei Abweichung Snapshot und
+   konkurrierende Capture als `conflict-before-capture` erhalten; Delete nicht
+   bestätigen. Nur bei Übereinstimmung Zielabwesenheit prüfen, Verzeichnis
    synchronisieren und Receipt `deleted`, danach `committed`, durable
    publizieren.
 
-Eine neue Belegung nach Capture wird nicht entfernt. Das Backup bleibt bis zur
-Parent-Entscheidung erhalten und Recovery meldet den konkurrierenden Zielnamen.
+Eine neue Belegung nach Capture wird nicht entfernt. Before-Snapshot und
+Capture bleiben dauerhaft erhalten und Recovery meldet den konkurrierenden
+Zielnamen.
 
 ### Parent-State-Machine und Recovery
 
 Ein Parent-Receipt bindet den stabil sortierten gesamten Write-Satz aus Karte,
 Notiz, Draft und Journal, jede Child-ID und aggregierte Before-/After-Digests.
 Es besitzt `prepared`, `children-committed`, `committed`, `rolling-back`,
-`rolled-back` oder `conflict`. Child-Backups, Temps und Receiptgenerationen
-dürfen vor durablem Parent-`committed` oder verifiziertem Parent-`rolled-back`
-nicht gelöscht werden.
+`rolled-back` oder `conflict`. Child-Snapshots, Captures, Temps und
+Receiptgenerationen dürfen vor durablem Parent-`committed` oder verifiziertem
+Parent-`rolled-back` nicht gelöscht werden; H03 selbst gibt sie auch danach
+nur logisch, nicht physisch, frei.
 
 Recovery liest in einem frischen Helper ausschließlich Receipts, gebundene
 Namen, Identitäten und Hashes:
 
-- Parent `prepared` oder ein unvollständiger Child-Satz wird vollständig auf
-  den aggregierten Before-Zustand zurückgeführt;
+- Parent `prepared` oder ein unvollständiger Child-Satz wird aus den
+  verifizierten Before-Snapshots vollständig auf den aggregierten
+  Before-Zustand zurückgeführt, aber nur per `RENAME_NOREPLACE` auf freie
+  Zielnamen;
 - Parent `children-committed`/`committed` wird vollständig auf den
   aggregierten After-Zustand vervollständigt;
 - jeder dritte Hash, fremde Inode, unerwartete Namensbelegung, fehlende
@@ -151,9 +185,9 @@ Namen, Identitäten und Hashes:
 - Konfliktrecovery überschreibt und löscht nichts, sondern liefert ein
   begrenztes Inventar aller erhaltenen Wahrheiten.
 
-Erst nach erneutem Hash-/Identitätsvergleich und Verzeichnissync darf Cleanup
-die nicht mehr benötigten internen Namen entfernen. Zweifacher Recovery-Aufruf
-ist idempotent und erzeugt denselben terminalen Zustand.
+Zweifacher Recovery-Aufruf ist idempotent und erzeugt denselben terminalen
+Zustand. Physische Reclamation der retained Transaktionsnamen liegt außerhalb
+H03 und darf nicht als bestanden behauptet werden.
 
 ## Vollständige Fault- und Adversary-Matrix
 
@@ -161,6 +195,7 @@ Create, Update und Delete sind getrennte Pflichtzeilen. Für jede Zeile werden
 mindestens folgende Killpunkte mit neuem Root und frischem Recoveryprozess
 ausgeführt:
 
+- vor/während/nach Before-Snapshot-Kopie und Snapshot-Sync;
 - vor/nach Temp-Sync;
 - vor/nach durablem `prepared`;
 - vor/nach Capture;
@@ -169,11 +204,12 @@ ausgeführt:
 - vor/nach Publish-Verzeichnissync;
 - vor/nach Child-Commit;
 - vor/nach Parent-`children-committed` und Parent-`committed`;
-- vor, während und nach Parent-Freigabe.
+- vor, während und nach logischer Parent-Freigabe.
 
 An jedem anwendbaren Dateisystemschritt werden zusätzlich separat injiziert:
 
 - Zielneubelegung durch einen unkooperativen Prozess;
+- Zielersatz vor Capture sowie In-place-Änderung über einen vorab offenen FD;
 - Ziel-Symlink, Parent-Symlink und Hardlink;
 - Austausch von Zielidentität, Parent und Rootpfad;
 - Mount-/Gerätewechsel, soweit der isolierte Host ihn sicher erlaubt;
@@ -188,14 +224,15 @@ Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
 
 - Create endet ausschließlich vollständig neu oder als erhaltener Konflikt.
 - Update endet ausschließlich vollständig alt, vollständig neu oder als
-  erhaltener Konflikt mit allen beobachteten Wahrheiten.
+  erhaltener Konflikt mit verifiziertem Before-Snapshot, beobachteter Capture,
+  neuer Temp und gegebenenfalls konkurrierendem Ziel.
 - Delete endet ausschließlich vollständig alt, verifiziert abwesend oder als
   erhaltener Konflikt.
 - Der Parent endet ausschließlich im vollständigen aggregierten Before- oder
   After-Zustand oder in einem nicht überschreibenden Konflikt. Mischungen aus
   neuer Karte/alter Notiz oder altem Draft/neuem Journal sind Fehler.
-- Kein Write wird vor durablem Parent-Commit bestätigt; kein Backup oder
-  Child-Receipt wird vor Parent-Freigabe gelöscht.
+- Kein Write wird vor durablem Parent-Commit bestätigt; kein Before-Snapshot,
+  Capture oder Child-Receipt wird in H03 physisch gelöscht.
 - Alle Schritte sind auf demselben lokalen Dateisystem; fehlende Primitive,
   nicht nachweisbarer Verzeichnissync oder unerkannter konkurrierender Writer
   sind sofortiges No-Go.
@@ -204,8 +241,9 @@ Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
   im sauberen externen Receipt.
 - `npm run check`, `npm test` und `npm run build` bestehen auf dem exakten
   Receipt-Quellcommit; Produktinputs bleiben byteidentisch.
-- Windows, macOS, Electron-Recomposition, GUI, Accessibility, Performance und
-  installierter Adapter sind ausdrücklich `not-run`.
+- Windows, macOS, Electron-Recomposition, GUI, Accessibility, Performance,
+  physische Transaktions-GC und installierter Adapter sind ausdrücklich
+  `not-run`.
 
 ## Ausführungsfolge
 
