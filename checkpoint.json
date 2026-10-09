@@ -4020,17 +4020,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I29-I",
-      "kind": "reference_probe",
-      "startedAt": "2026-10-09T15:08:41.202758+00:00",
-      "focus": "Hip/Complex/Hidden und Processing-Inventar prüfen",
+      "id": "CITY-00-I29-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T15:10:06.384271+00:00",
+      "focus": "Gebäudedarstellungsbelege CR",
       "state": "completed",
-      "result": "Hip zeigt zusätzliche diagonale Dachflächenlinien. Hidden blendet gewöhnliche Gebäude aus, Mauern/Fluss/Küste/Straßen und markante dunkle Gebäude bleiben sichtbar. Complex ausgewählt: zwei Beobachtungen zeigen nur Beschriftung/Grid/Kompass statt Kartenflächen; nach Lots-Rücksetzung Karte wieder sichtbar. Keine brauchbare Complex-Gebäudewirkung oder Originalursache belegt. Processing None/Offset als Optionen gelesen, Offset unverändert."
+      "result": "Snapshot/acceptance stimmen;15 Rawhashes und alle Inventarbelegziele geprüft,64 CO-/24 CTY-Pflichten offen. Eigene Vorgaben zurückgesetzt, Testkopie geschlossen. Aufräumumfang ohne Restbefund. Nächste begrenzte Referenzplanung Processing/Raised/Solids, während HEX-05-Handoff verfolgt wird."
     },
     "nextRun": {
-      "id": "CITY-00-I29-R",
-      "kind": "reference_review",
-      "focus": "Ungeklärte Complex-Wirkung und Rücksetzung abgrenzen"
+      "id": "CITY-00-I30-P",
+      "kind": "reference_planning",
+      "focus": "Processing/Raised/Solids planen; HEX-05-Übergabe verfolgen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
