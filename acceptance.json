@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I11: 13 frühe Path-/Symbol-Zahlenfragen direkt geklärt, Zahlenvalidierung und12 Slider getrennt. Width1.5..64/Roughness0..1; Symbol/Tree/Mountain Scale10..100, Rotation−180..180/Outline0..16, Tree/Mountain Rate/Density0.25..2, Eraser2..128, ausgewähltes Override Scale0.01..100. Zwei Advanced-Controltypen ausdrücklich korrigiert.663 UI/83 Fälle und historische Quellen erhalten.70 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I12: 14 frühe Regions-/Labels-Zahlenfragen direkt geklärt; Zahlenvalidierung und acht Slider getrennt. Territory/Edit Width2..20, Opacity/Smoothing0..1, Sorting−10..10; Label Size8..1000/Outline und Glow0..32/Curvature−1..1/Spacing−512..512; Box Scale0.25..2. Edit tatsächlich mit eigenem QA-Dreieck aktiviert. Vier Label-Controltypen ausdrücklich zu number korrigiert.663 UI/83 Fälle und historische Quellen erhalten.56 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -28554,8 +28554,29 @@
           "value": 10,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 20,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Territory Tool vor eigener QA-Geometrie.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -28578,6 +28599,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.png",
             "observation": "Regions > [flag icon] > Border Width: 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+            "observation": "Regions > Territory Tool > Border Width: Anfangsanzeige 10 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/012-0401-territory-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/012-0401-territory-width--99999-entry.png",
+            "observation": "Regions > Territory Tool > Border Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/013-0401-territory-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/013-0401-territory-width--99999-validated.png",
+            "observation": "Regions > Territory Tool > Border Width: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/020-0401-territory-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/020-0401-territory-width-99999-entry.png",
+            "observation": "Regions > Territory Tool > Border Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/021-0401-territory-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/021-0401-territory-width-99999-validated.png",
+            "observation": "Regions > Territory Tool > Border Width: nach Tab sichtbar auf 20 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/028-0401-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/028-0401-slider-low.png",
+            "observation": "Regions > Territory Tool > Border Width: eigener Slider am linken Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/029-0401-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/029-0401-slider-high.png",
+            "observation": "Regions > Territory Tool > Border Width: eigener Slider am rechten Ende zeigt 20."
           }
         ],
         "classification": "user_function",
@@ -28600,10 +28670,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+                "observation": "Regions > Territory Tool > Border Width: Anfangsanzeige 10 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/012-0401-territory-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/012-0401-territory-width--99999-entry.png",
+                "observation": "Regions > Territory Tool > Border Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/013-0401-territory-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/013-0401-territory-width--99999-validated.png",
+                "observation": "Regions > Territory Tool > Border Width: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/020-0401-territory-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/020-0401-territory-width-99999-entry.png",
+                "observation": "Regions > Territory Tool > Border Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/021-0401-territory-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/021-0401-territory-width-99999-validated.png",
+                "observation": "Regions > Territory Tool > Border Width: nach Tab sichtbar auf 20 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/028-0401-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/028-0401-slider-low.png",
+                "observation": "Regions > Territory Tool > Border Width: eigener Slider am linken Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/029-0401-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/029-0401-slider-high.png",
+                "observation": "Regions > Territory Tool > Border Width: eigener Slider am rechten Ende zeigt 20."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Territory Tool > Border Width einzeln im Original gemessen: -99999 → 2, 99999 → 20 nach Tab. Auch die beiden Sliderenden zeigen 2/20; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 10,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+          "note": "Regions > Territory Tool > Border Width einzeln im Original gemessen: -99999 → 2, 99999 → 20 nach Tab. Auch die beiden Sliderenden zeigen 2/20; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0402",
@@ -28616,8 +28745,29 @@
           "value": 0.25,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Territory Tool vor eigener QA-Geometrie.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -28640,6 +28790,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.png",
             "observation": "Regions > [flag icon] > Inner Opacity: 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: Anfangsanzeige 0.25 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/014-0402-territory-opacity--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/014-0402-territory-opacity--99999-entry.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/015-0402-territory-opacity--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/015-0402-territory-opacity--99999-validated.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/022-0402-territory-opacity-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/022-0402-territory-opacity-99999-entry.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/023-0402-territory-opacity-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/023-0402-territory-opacity-99999-validated.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/030-0402-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/030-0402-slider-low.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/031-0402-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/031-0402-slider-high.png",
+            "observation": "Regions > Territory Tool > Inner Opacity: eigener Slider am rechten Ende zeigt 1."
           }
         ],
         "classification": "user_function",
@@ -28662,10 +28861,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: Anfangsanzeige 0.25 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/014-0402-territory-opacity--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/014-0402-territory-opacity--99999-entry.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/015-0402-territory-opacity--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/015-0402-territory-opacity--99999-validated.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/022-0402-territory-opacity-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/022-0402-territory-opacity-99999-entry.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/023-0402-territory-opacity-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/023-0402-territory-opacity-99999-validated.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/030-0402-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/030-0402-slider-low.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/031-0402-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/031-0402-slider-high.png",
+                "observation": "Regions > Territory Tool > Inner Opacity: eigener Slider am rechten Ende zeigt 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Territory Tool > Inner Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0.25,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+          "note": "Regions > Territory Tool > Inner Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0403",
@@ -28678,8 +28936,29 @@
           "value": 0.2,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Territory Tool vor eigener QA-Geometrie.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -28702,6 +28981,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.png",
             "observation": "Regions > [flag icon] > Smoothing: 0.2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+            "observation": "Regions > Territory Tool > Smoothing: Anfangsanzeige 0.2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/016-0403-territory-smoothing--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/016-0403-territory-smoothing--99999-entry.png",
+            "observation": "Regions > Territory Tool > Smoothing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/017-0403-territory-smoothing--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/017-0403-territory-smoothing--99999-validated.png",
+            "observation": "Regions > Territory Tool > Smoothing: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/024-0403-territory-smoothing-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/024-0403-territory-smoothing-99999-entry.png",
+            "observation": "Regions > Territory Tool > Smoothing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/025-0403-territory-smoothing-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/025-0403-territory-smoothing-99999-validated.png",
+            "observation": "Regions > Territory Tool > Smoothing: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/032-0403-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/032-0403-slider-low.png",
+            "observation": "Regions > Territory Tool > Smoothing: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/033-0403-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/033-0403-slider-high.png",
+            "observation": "Regions > Territory Tool > Smoothing: eigener Slider am rechten Ende zeigt 1."
           }
         ],
         "classification": "user_function",
@@ -28724,10 +29052,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+                "observation": "Regions > Territory Tool > Smoothing: Anfangsanzeige 0.2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/016-0403-territory-smoothing--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/016-0403-territory-smoothing--99999-entry.png",
+                "observation": "Regions > Territory Tool > Smoothing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/017-0403-territory-smoothing--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/017-0403-territory-smoothing--99999-validated.png",
+                "observation": "Regions > Territory Tool > Smoothing: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/024-0403-territory-smoothing-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/024-0403-territory-smoothing-99999-entry.png",
+                "observation": "Regions > Territory Tool > Smoothing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/025-0403-territory-smoothing-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/025-0403-territory-smoothing-99999-validated.png",
+                "observation": "Regions > Territory Tool > Smoothing: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/032-0403-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/032-0403-slider-low.png",
+                "observation": "Regions > Territory Tool > Smoothing: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/033-0403-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/033-0403-slider-high.png",
+                "observation": "Regions > Territory Tool > Smoothing: eigener Slider am rechten Ende zeigt 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Territory Tool > Smoothing einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0.2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+          "note": "Regions > Territory Tool > Smoothing einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0404",
@@ -28740,8 +29127,28 @@
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -10,
+          "maximum": 10,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Territory Tool vor eigener QA-Geometrie.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -28764,6 +29171,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/066-region-tool.png",
             "observation": "Regions > [flag icon] > Sorting Adjustment: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+            "observation": "Regions > Territory Tool > Sorting Adjustment: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/018-0404-territory-sorting--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/018-0404-territory-sorting--99999-entry.png",
+            "observation": "Regions > Territory Tool > Sorting Adjustment: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/019-0404-territory-sorting--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/019-0404-territory-sorting--99999-validated.png",
+            "observation": "Regions > Territory Tool > Sorting Adjustment: nach Tab sichtbar auf -10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/026-0404-territory-sorting-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/026-0404-territory-sorting-99999-entry.png",
+            "observation": "Regions > Territory Tool > Sorting Adjustment: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/027-0404-territory-sorting-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/027-0404-territory-sorting-99999-validated.png",
+            "observation": "Regions > Territory Tool > Sorting Adjustment: nach Tab sichtbar auf 10 begrenzt."
           }
         ],
         "classification": "user_function",
@@ -28786,10 +29228,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.png",
+                "observation": "Regions > Territory Tool > Sorting Adjustment: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/018-0404-territory-sorting--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/018-0404-territory-sorting--99999-entry.png",
+                "observation": "Regions > Territory Tool > Sorting Adjustment: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/019-0404-territory-sorting--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/019-0404-territory-sorting--99999-validated.png",
+                "observation": "Regions > Territory Tool > Sorting Adjustment: nach Tab sichtbar auf -10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/026-0404-territory-sorting-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/026-0404-territory-sorting-99999-entry.png",
+                "observation": "Regions > Territory Tool > Sorting Adjustment: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/027-0404-territory-sorting-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/027-0404-territory-sorting-99999-validated.png",
+                "observation": "Regions > Territory Tool > Sorting Adjustment: nach Tab sichtbar auf 10 begrenzt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Territory Tool > Sorting Adjustment einzeln im Original gemessen: -99999 → -10, 99999 → 10 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/011-territory-tool.json",
+          "note": "Regions > Territory Tool > Sorting Adjustment einzeln im Original gemessen: -99999 → -10, 99999 → 10 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0405",
@@ -29067,8 +29554,29 @@
           "value": 10,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 20,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Edit Territories: ausgewähltes eigenes QA-Dreieck, zuvor Vorgaben10/0.25/0.2/0 wiederhergestellt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -29091,6 +29599,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.png",
             "observation": "Regions > [cursor icon] > Border Width: 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Regions > Edit Territories > Border Width: Anfangsanzeige 10 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/049-0410-edit-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/049-0410-edit-width--99999-entry.png",
+            "observation": "Regions > Edit Territories > Border Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/050-0410-edit-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/050-0410-edit-width--99999-validated.png",
+            "observation": "Regions > Edit Territories > Border Width: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/057-0410-edit-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/057-0410-edit-width-99999-entry.png",
+            "observation": "Regions > Edit Territories > Border Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/058-0410-edit-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/058-0410-edit-width-99999-validated.png",
+            "observation": "Regions > Edit Territories > Border Width: nach Tab sichtbar auf 20 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/065-0410-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/065-0410-slider-low.png",
+            "observation": "Regions > Edit Territories > Border Width: eigener Slider am linken Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/066-0410-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/066-0410-slider-high.png",
+            "observation": "Regions > Edit Territories > Border Width: eigener Slider am rechten Ende zeigt 20."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+            "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
           }
         ],
         "classification": "user_function",
@@ -29113,10 +29684,83 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Regions > Edit Territories > Border Width: Anfangsanzeige 10 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/049-0410-edit-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/049-0410-edit-width--99999-entry.png",
+                "observation": "Regions > Edit Territories > Border Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/050-0410-edit-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/050-0410-edit-width--99999-validated.png",
+                "observation": "Regions > Edit Territories > Border Width: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/057-0410-edit-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/057-0410-edit-width-99999-entry.png",
+                "observation": "Regions > Edit Territories > Border Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/058-0410-edit-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/058-0410-edit-width-99999-validated.png",
+                "observation": "Regions > Edit Territories > Border Width: nach Tab sichtbar auf 20 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/065-0410-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/065-0410-slider-low.png",
+                "observation": "Regions > Edit Territories > Border Width: eigener Slider am linken Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/066-0410-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/066-0410-slider-high.png",
+                "observation": "Regions > Edit Territories > Border Width: eigener Slider am rechten Ende zeigt 20."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+                "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Edit Territories > Border Width einzeln im Original gemessen: -99999 → 2, 99999 → 20 nach Tab. Auch die beiden Sliderenden zeigen 2/20; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 10,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+          "note": "Regions > Edit Territories > Border Width einzeln im Original gemessen: -99999 → 2, 99999 → 20 nach Tab. Auch die beiden Sliderenden zeigen 2/20; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0411",
@@ -29129,8 +29773,29 @@
           "value": 0.25,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Edit Territories: ausgewähltes eigenes QA-Dreieck, zuvor Vorgaben10/0.25/0.2/0 wiederhergestellt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -29153,6 +29818,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.png",
             "observation": "Regions > [cursor icon] > Inner Opacity: 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: Anfangsanzeige 0.25 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/051-0411-edit-opacity--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/051-0411-edit-opacity--99999-entry.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/052-0411-edit-opacity--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/052-0411-edit-opacity--99999-validated.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/059-0411-edit-opacity-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/059-0411-edit-opacity-99999-entry.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/060-0411-edit-opacity-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/060-0411-edit-opacity-99999-validated.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/067-0411-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/067-0411-slider-low.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/068-0411-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/068-0411-slider-high.png",
+            "observation": "Regions > Edit Territories > Inner Opacity: eigener Slider am rechten Ende zeigt 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+            "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
           }
         ],
         "classification": "user_function",
@@ -29175,10 +29903,83 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: Anfangsanzeige 0.25 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/051-0411-edit-opacity--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/051-0411-edit-opacity--99999-entry.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/052-0411-edit-opacity--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/052-0411-edit-opacity--99999-validated.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/059-0411-edit-opacity-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/059-0411-edit-opacity-99999-entry.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/060-0411-edit-opacity-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/060-0411-edit-opacity-99999-validated.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/067-0411-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/067-0411-slider-low.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/068-0411-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/068-0411-slider-high.png",
+                "observation": "Regions > Edit Territories > Inner Opacity: eigener Slider am rechten Ende zeigt 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+                "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Edit Territories > Inner Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0.25,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+          "note": "Regions > Edit Territories > Inner Opacity einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0412",
@@ -29191,8 +29992,29 @@
           "value": 0.2,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Edit Territories: ausgewähltes eigenes QA-Dreieck, zuvor Vorgaben10/0.25/0.2/0 wiederhergestellt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -29215,6 +30037,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.png",
             "observation": "Regions > [cursor icon] > Smoothing: 0.2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Regions > Edit Territories > Smoothing: Anfangsanzeige 0.2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/053-0412-edit-smoothing--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/053-0412-edit-smoothing--99999-entry.png",
+            "observation": "Regions > Edit Territories > Smoothing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/054-0412-edit-smoothing--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/054-0412-edit-smoothing--99999-validated.png",
+            "observation": "Regions > Edit Territories > Smoothing: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/061-0412-edit-smoothing-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/061-0412-edit-smoothing-99999-entry.png",
+            "observation": "Regions > Edit Territories > Smoothing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/062-0412-edit-smoothing-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/062-0412-edit-smoothing-99999-validated.png",
+            "observation": "Regions > Edit Territories > Smoothing: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/069-0412-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/069-0412-slider-low.png",
+            "observation": "Regions > Edit Territories > Smoothing: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/070-0412-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/070-0412-slider-high.png",
+            "observation": "Regions > Edit Territories > Smoothing: eigener Slider am rechten Ende zeigt 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+            "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
           }
         ],
         "classification": "user_function",
@@ -29237,10 +30122,83 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Regions > Edit Territories > Smoothing: Anfangsanzeige 0.2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/053-0412-edit-smoothing--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/053-0412-edit-smoothing--99999-entry.png",
+                "observation": "Regions > Edit Territories > Smoothing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/054-0412-edit-smoothing--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/054-0412-edit-smoothing--99999-validated.png",
+                "observation": "Regions > Edit Territories > Smoothing: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/061-0412-edit-smoothing-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/061-0412-edit-smoothing-99999-entry.png",
+                "observation": "Regions > Edit Territories > Smoothing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/062-0412-edit-smoothing-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/062-0412-edit-smoothing-99999-validated.png",
+                "observation": "Regions > Edit Territories > Smoothing: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/069-0412-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/069-0412-slider-low.png",
+                "observation": "Regions > Edit Territories > Smoothing: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/070-0412-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/070-0412-slider-high.png",
+                "observation": "Regions > Edit Territories > Smoothing: eigener Slider am rechten Ende zeigt 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+                "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Edit Territories > Smoothing einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0.2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+          "note": "Regions > Edit Territories > Smoothing einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0413",
@@ -29253,8 +30211,28 @@
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -10,
+          "maximum": 10,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Edit Territories: ausgewähltes eigenes QA-Dreieck, zuvor Vorgaben10/0.25/0.2/0 wiederhergestellt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -29277,6 +30255,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/067-region-move.png",
             "observation": "Regions > [cursor icon] > Sorting Adjustment: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Regions > Edit Territories > Sorting Adjustment: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/055-0413-edit-sorting--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/055-0413-edit-sorting--99999-entry.png",
+            "observation": "Regions > Edit Territories > Sorting Adjustment: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/056-0413-edit-sorting--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/056-0413-edit-sorting--99999-validated.png",
+            "observation": "Regions > Edit Territories > Sorting Adjustment: nach Tab sichtbar auf -10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/063-0413-edit-sorting-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/063-0413-edit-sorting-99999-entry.png",
+            "observation": "Regions > Edit Territories > Sorting Adjustment: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/064-0413-edit-sorting-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/064-0413-edit-sorting-99999-validated.png",
+            "observation": "Regions > Edit Territories > Sorting Adjustment: nach Tab sichtbar auf 10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+            "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+            "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
           }
         ],
         "classification": "user_function",
@@ -29299,10 +30326,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Regions > Edit Territories > Sorting Adjustment: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/055-0413-edit-sorting--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/055-0413-edit-sorting--99999-entry.png",
+                "observation": "Regions > Edit Territories > Sorting Adjustment: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/056-0413-edit-sorting--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/056-0413-edit-sorting--99999-validated.png",
+                "observation": "Regions > Edit Territories > Sorting Adjustment: nach Tab sichtbar auf -10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/063-0413-edit-sorting-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/063-0413-edit-sorting-99999-entry.png",
+                "observation": "Regions > Edit Territories > Sorting Adjustment: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/064-0413-edit-sorting-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/064-0413-edit-sorting-99999-validated.png",
+                "observation": "Regions > Edit Territories > Sorting Adjustment: nach Tab sichtbar auf 10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/046-territory-close-first.png",
+                "observation": "Eigenes QA-Dreieck nach drei Klickpunkten durch Klick auf den ersten Punkt geschlossen; nur Kontextvorbereitung."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.png",
+                "observation": "Edit Territories mit eigenem QA-Gebiet aktiviert; drei weiße Auswahlpunkte sichtbar. Vorgaben10/0.25/0.2/0 zuvor bewusst wiederhergestellt, keine globalen Defaults."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Regions > Edit Territories > Sorting Adjustment einzeln im Original gemessen: -99999 → -10, 99999 → 10 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/048-edit-territory-selected.json",
+          "note": "Regions > Edit Territories > Sorting Adjustment einzeln im Original gemessen: -99999 → -10, 99999 → 10 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Tatsächlich ausgewähltes eigenes QA-Dreieck; Anfangsanzeigen folgen auf bewusste Wiederherstellung der Vorgaben, keine neuen Defaults. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0414",
@@ -29921,13 +31007,33 @@
         "exactUiPath": "Labels > Label Tool > Font Size",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Font Size",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 48,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 8,
+          "maximum": 1000,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -29951,6 +31057,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.png",
             "observation": "Labels > Label Tool > Font Size: 48."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+            "observation": "Labels > Label Tool > Font Size: Anfangsanzeige 48 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/073-0423-label-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/073-0423-label-size--99999-entry.png",
+            "observation": "Labels > Label Tool > Font Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/074-0423-label-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/074-0423-label-size--99999-validated.png",
+            "observation": "Labels > Label Tool > Font Size: nach Tab sichtbar auf 8 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/083-0423-label-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/083-0423-label-size-99999-entry.png",
+            "observation": "Labels > Label Tool > Font Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/084-0423-label-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/084-0423-label-size-99999-validated.png",
+            "observation": "Labels > Label Tool > Font Size: nach Tab sichtbar auf 1000 begrenzt."
           }
         ],
         "classification": "user_function",
@@ -29971,10 +31112,70 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+                "observation": "Labels > Label Tool > Font Size: Anfangsanzeige 48 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/073-0423-label-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/073-0423-label-size--99999-entry.png",
+                "observation": "Labels > Label Tool > Font Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/074-0423-label-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/074-0423-label-size--99999-validated.png",
+                "observation": "Labels > Label Tool > Font Size: nach Tab sichtbar auf 8 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/083-0423-label-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/083-0423-label-size-99999-entry.png",
+                "observation": "Labels > Label Tool > Font Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/084-0423-label-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/084-0423-label-size-99999-validated.png",
+                "observation": "Labels > Label Tool > Font Size: nach Tab sichtbar auf 1000 begrenzt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Label Tool > Font Size einzeln im Original gemessen: -99999 → 8, 99999 → 1000 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I12",
+          "prior": "slider_number",
+          "observed": "number",
+          "reason": "Vorhandene Originalaufnahme069 und frischer Label-Tool-Kontext zeigen reine Zahlenfelder mit Pfeilen. Nur Curvature hat einen Slider.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+              "observation": "Labels > Label Tool > Font Size: Zahlenfeld mit Pfeilen ohne Slider."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 48,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+          "note": "Labels > Label Tool > Font Size einzeln im Original gemessen: -99999 → 8, 99999 → 1000 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0424",
@@ -30067,13 +31268,33 @@
         "exactUiPath": "Labels > Label Tool > Outline",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Outline",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 2,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 32,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -30097,6 +31318,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.png",
             "observation": "Labels > Label Tool > Outline: 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+            "observation": "Labels > Label Tool > Outline: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/075-0426-label-outline--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/075-0426-label-outline--99999-entry.png",
+            "observation": "Labels > Label Tool > Outline: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/076-0426-label-outline--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/076-0426-label-outline--99999-validated.png",
+            "observation": "Labels > Label Tool > Outline: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/085-0426-label-outline-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/085-0426-label-outline-99999-entry.png",
+            "observation": "Labels > Label Tool > Outline: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/086-0426-label-outline-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/086-0426-label-outline-99999-validated.png",
+            "observation": "Labels > Label Tool > Outline: nach Tab sichtbar auf 32 begrenzt."
           }
         ],
         "classification": "user_function",
@@ -30117,10 +31373,70 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+                "observation": "Labels > Label Tool > Outline: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/075-0426-label-outline--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/075-0426-label-outline--99999-entry.png",
+                "observation": "Labels > Label Tool > Outline: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/076-0426-label-outline--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/076-0426-label-outline--99999-validated.png",
+                "observation": "Labels > Label Tool > Outline: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/085-0426-label-outline-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/085-0426-label-outline-99999-entry.png",
+                "observation": "Labels > Label Tool > Outline: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/086-0426-label-outline-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/086-0426-label-outline-99999-validated.png",
+                "observation": "Labels > Label Tool > Outline: nach Tab sichtbar auf 32 begrenzt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Label Tool > Outline einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I12",
+          "prior": "slider_number",
+          "observed": "number",
+          "reason": "Vorhandene Originalaufnahme069 und frischer Label-Tool-Kontext zeigen reine Zahlenfelder mit Pfeilen. Nur Curvature hat einen Slider.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+              "observation": "Labels > Label Tool > Outline: Zahlenfeld mit Pfeilen ohne Slider."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+          "note": "Labels > Label Tool > Outline einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0427",
@@ -30169,13 +31485,33 @@
         "exactUiPath": "Labels > Label Tool > Glow",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Glow",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 32,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -30199,6 +31535,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.png",
             "observation": "Labels > Label Tool > Glow: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+            "observation": "Labels > Label Tool > Glow: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/077-0428-label-glow--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/077-0428-label-glow--99999-entry.png",
+            "observation": "Labels > Label Tool > Glow: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/078-0428-label-glow--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/078-0428-label-glow--99999-validated.png",
+            "observation": "Labels > Label Tool > Glow: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/087-0428-label-glow-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/087-0428-label-glow-99999-entry.png",
+            "observation": "Labels > Label Tool > Glow: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/088-0428-label-glow-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/088-0428-label-glow-99999-validated.png",
+            "observation": "Labels > Label Tool > Glow: nach Tab sichtbar auf 32 begrenzt."
           }
         ],
         "classification": "user_function",
@@ -30219,10 +31590,70 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+                "observation": "Labels > Label Tool > Glow: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/077-0428-label-glow--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/077-0428-label-glow--99999-entry.png",
+                "observation": "Labels > Label Tool > Glow: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/078-0428-label-glow--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/078-0428-label-glow--99999-validated.png",
+                "observation": "Labels > Label Tool > Glow: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/087-0428-label-glow-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/087-0428-label-glow-99999-entry.png",
+                "observation": "Labels > Label Tool > Glow: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/088-0428-label-glow-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/088-0428-label-glow-99999-validated.png",
+                "observation": "Labels > Label Tool > Glow: nach Tab sichtbar auf 32 begrenzt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Label Tool > Glow einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I12",
+          "prior": "slider_number",
+          "observed": "number",
+          "reason": "Vorhandene Originalaufnahme069 und frischer Label-Tool-Kontext zeigen reine Zahlenfelder mit Pfeilen. Nur Curvature hat einen Slider.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+              "observation": "Labels > Label Tool > Glow: Zahlenfeld mit Pfeilen ohne Slider."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+          "note": "Labels > Label Tool > Glow einzeln im Original gemessen: -99999 → 0, 99999 → 32 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0429",
@@ -30321,8 +31752,29 @@
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -1,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -30346,6 +31798,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.png",
             "observation": "Labels > Label Tool > Curvature: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+            "observation": "Labels > Label Tool > Curvature: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/079-0431-label-curvature--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/079-0431-label-curvature--99999-entry.png",
+            "observation": "Labels > Label Tool > Curvature: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/080-0431-label-curvature--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/080-0431-label-curvature--99999-validated.png",
+            "observation": "Labels > Label Tool > Curvature: nach Tab sichtbar auf -1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/089-0431-label-curvature-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/089-0431-label-curvature-99999-entry.png",
+            "observation": "Labels > Label Tool > Curvature: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/090-0431-label-curvature-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/090-0431-label-curvature-99999-validated.png",
+            "observation": "Labels > Label Tool > Curvature: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/93-0431-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/93-0431-slider-low.png",
+            "observation": "Labels > Label Tool > Curvature: eigener Slider am linken Ende zeigt -1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/94-0431-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/94-0431-slider-high.png",
+            "observation": "Labels > Label Tool > Curvature: eigener Slider am rechten Ende zeigt 1."
           }
         ],
         "classification": "user_function",
@@ -30366,10 +31867,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+                "observation": "Labels > Label Tool > Curvature: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/079-0431-label-curvature--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/079-0431-label-curvature--99999-entry.png",
+                "observation": "Labels > Label Tool > Curvature: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/080-0431-label-curvature--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/080-0431-label-curvature--99999-validated.png",
+                "observation": "Labels > Label Tool > Curvature: nach Tab sichtbar auf -1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/089-0431-label-curvature-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/089-0431-label-curvature-99999-entry.png",
+                "observation": "Labels > Label Tool > Curvature: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/090-0431-label-curvature-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/090-0431-label-curvature-99999-validated.png",
+                "observation": "Labels > Label Tool > Curvature: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/93-0431-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/93-0431-slider-low.png",
+                "observation": "Labels > Label Tool > Curvature: eigener Slider am linken Ende zeigt -1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/94-0431-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/94-0431-slider-high.png",
+                "observation": "Labels > Label Tool > Curvature: eigener Slider am rechten Ende zeigt 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Label Tool > Curvature einzeln im Original gemessen: -99999 → -1, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen -1/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+          "note": "Labels > Label Tool > Curvature einzeln im Original gemessen: -99999 → -1, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen -1/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0432",
@@ -30418,13 +31978,33 @@
         "exactUiPath": "Labels > Label Tool > Letter Spacing",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Letter Spacing",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -512,
+          "maximum": 512,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -30448,6 +32028,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/069-label-tool.png",
             "observation": "Labels > Label Tool > Letter Spacing: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+            "observation": "Labels > Label Tool > Letter Spacing: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/081-0433-label-spacing--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/081-0433-label-spacing--99999-entry.png",
+            "observation": "Labels > Label Tool > Letter Spacing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/082-0433-label-spacing--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/082-0433-label-spacing--99999-validated.png",
+            "observation": "Labels > Label Tool > Letter Spacing: nach Tab sichtbar auf -512 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/091-0433-label-spacing-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/091-0433-label-spacing-99999-entry.png",
+            "observation": "Labels > Label Tool > Letter Spacing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/092-0433-label-spacing-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/092-0433-label-spacing-99999-validated.png",
+            "observation": "Labels > Label Tool > Letter Spacing: nach Tab sichtbar auf 512 begrenzt."
           }
         ],
         "classification": "user_function",
@@ -30468,10 +32083,70 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+                "observation": "Labels > Label Tool > Letter Spacing: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/081-0433-label-spacing--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/081-0433-label-spacing--99999-entry.png",
+                "observation": "Labels > Label Tool > Letter Spacing: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/082-0433-label-spacing--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/082-0433-label-spacing--99999-validated.png",
+                "observation": "Labels > Label Tool > Letter Spacing: nach Tab sichtbar auf -512 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/091-0433-label-spacing-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/091-0433-label-spacing-99999-entry.png",
+                "observation": "Labels > Label Tool > Letter Spacing: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/092-0433-label-spacing-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/092-0433-label-spacing-99999-validated.png",
+                "observation": "Labels > Label Tool > Letter Spacing: nach Tab sichtbar auf 512 begrenzt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Label Tool > Letter Spacing einzeln im Original gemessen: -99999 → -512, 99999 → 512 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I12",
+          "prior": "slider_number",
+          "observed": "number",
+          "reason": "Vorhandene Originalaufnahme069 und frischer Label-Tool-Kontext zeigen reine Zahlenfelder mit Pfeilen. Nur Curvature hat einen Slider.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.png",
+              "observation": "Labels > Label Tool > Letter Spacing: Zahlenfeld mit Pfeilen ohne Slider."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/072-label-tool.json",
+          "note": "Labels > Label Tool > Letter Spacing einzeln im Original gemessen: -99999 → -512, 99999 → 512 nach Tab. Reines Zahlenfeld mit Pfeilen; kein Slider in diesem Panel. Frühere slider_number-Einordnung ausdrücklich zu number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0434",
@@ -30822,8 +32497,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Label Tool: City/East Sea Dokdo, keine Textplatzierung; danach Box Tool ohne Boxplatzierung.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I12: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -30852,6 +32548,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/071-box-moved.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original/screens/071-box-moved.png",
             "observation": "Box mit erstem Papierstil direkt gezeichnet, ausgewählt und separat vom Label verschoben; Auswahl erfolgt hier mit Box Tool."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/95-box-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/95-box-tool.png",
+            "observation": "Labels > Box Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/096-0439-box-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/096-0439-box-scale--99999-entry.png",
+            "observation": "Labels > Box Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/097-0439-box-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/097-0439-box-scale--99999-validated.png",
+            "observation": "Labels > Box Tool > Scale: nach Tab sichtbar auf 0.25 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/098-0439-box-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/098-0439-box-scale-99999-entry.png",
+            "observation": "Labels > Box Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/099-0439-box-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/099-0439-box-scale-99999-validated.png",
+            "observation": "Labels > Box Tool > Scale: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/100-0439-slider-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/100-0439-slider-low.png",
+            "observation": "Labels > Box Tool > Scale: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/101-0439-slider-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/101-0439-slider-high.png",
+            "observation": "Labels > Box Tool > Scale: eigener Slider am rechten Ende zeigt 2."
           }
         ],
         "classification": "user_function",
@@ -30875,10 +32620,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/95-box-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/95-box-tool.png",
+                "observation": "Labels > Box Tool > Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/096-0439-box-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/096-0439-box-scale--99999-entry.png",
+                "observation": "Labels > Box Tool > Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/097-0439-box-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/097-0439-box-scale--99999-validated.png",
+                "observation": "Labels > Box Tool > Scale: nach Tab sichtbar auf 0.25 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/098-0439-box-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/098-0439-box-scale-99999-entry.png",
+                "observation": "Labels > Box Tool > Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/099-0439-box-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/099-0439-box-scale-99999-validated.png",
+                "observation": "Labels > Box Tool > Scale: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/100-0439-slider-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/100-0439-slider-low.png",
+                "observation": "Labels > Box Tool > Scale: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/101-0439-slider-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/101-0439-slider-high.png",
+                "observation": "Labels > Box Tool > Scale: eigener Slider am rechten Ende zeigt 2."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I12",
+            "resolution": "Labels > Box Tool > Scale einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I12",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/region-label-numeric-repair-20261009-100254/original/screens/95-box-tool.json",
+          "note": "Labels > Box Tool > Scale einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; vollständige Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0440",
