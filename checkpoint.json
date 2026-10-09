@@ -3952,17 +3952,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I26-I",
-      "kind": "native_object_reference_probe",
-      "startedAt": "2026-10-09T14:52:25.394917+00:00",
-      "focus": "Original-Objektcontrols und Speicherwirkung",
+      "id": "CITY-00-I26-CP",
+      "kind": "cleanup_planning",
+      "startedAt": "2026-10-09T14:53:12.962042+00:00",
+      "focus": "Snapshot und Verweise planen",
       "state": "completed",
-      "result": "Hütte allein bewegt/gespeichert; Auto Combine unbestätigt. Groups-Layerpflicht separat ergänzt; normal Exit0 und GUI-Rückgabe belegt."
+      "result": "Gezielte Snapshotkorrektur geplant; historische Zählungen und sämtliche Originalbelege erhalten."
     },
     "nextRun": {
-      "id": "CITY-00-I26-R",
-      "kind": "reference_review",
-      "focus": "Rohdaten, Funktionsabgrenzung und Pflichtinventar prüfen"
+      "id": "CITY-00-I26-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Snapshot aus authoritative acceptance aktualisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
