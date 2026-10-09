@@ -4195,7 +4195,9 @@
             "Full population schedules and dependencies",
             "Own model/commands/Host/UX/physical comparison"
           ],
-          "limits": "One temporary settlement, same-date sequence. Visible references/names, not stable serialized IDs. No version, persistence, universal calendar or independent reference review proof."
+          "limits": "One temporary settlement, same-date sequence. Visible references/names, not stable serialized IDs. No version, persistence, universal calendar or independent reference review proof.",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/review.json",
+          "semanticLimit": "Neither None-clear nor None-preserve is ratified as intended own behavior by this single discrepant reference sequence. Explicit calendar/override policy must be coordinated and tested."
         }
       },
       {

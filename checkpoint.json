@@ -4469,17 +4469,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I42-REVIEW-CLEAN-P42",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T18:54:30.807584+00:00",
-      "focus": "Semantikgrenze desOriginalvergleichs bereinigen",
-      "state": "completed",
-      "result": "ExpliziteKeineBugparität-Regel undReviewlink planen."
-    },
-    "nextRun": {
       "id": "CITY-00-I42-REVIEW-CLEAN-I42",
       "kind": "cleanup_implementation",
-      "focus": "CO42Semantikgrenze undReviewnachweis ergänzen"
+      "startedAt": "2026-10-09T18:54:46.255992+00:00",
+      "focus": "Reviewlink undSemantikgrenze ergänzen",
+      "state": "completed",
+      "result": "BestehenderCO42Entry präzisiert, Original-/Produktabnahmegetrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I42-REVIEW-CLEAN-R42",
+      "kind": "cleanup_review",
+      "focus": "JSON/Kennungen/Rawbelegschutz undSemantikgrenze prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
