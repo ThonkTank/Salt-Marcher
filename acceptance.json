@@ -112569,6 +112569,21 @@
           ],
           "measuredScope": "Original 12×8: nach oben 64 wird unten 999 zu 56 normalisiert; Host-GUI 8×8 zeigt denselben Gegenrandwert nach Tab.",
           "remaining": "Untere Crop-Wirkung, weitere Ausgangsgrößen und unabhängiger Review offen."
+        },
+        "followUpPhase1BottomCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×10 mit zehn Smart-Tile-Zellen → Bottom in tiles -2 → Save → Bottom in tiles +2 → Save; dieselbe gespeicherte 12×8-Beschnittkarte frisch öffnen → Bottom in tiles +2 → Save",
+          "sourceMapSha256": "7f6be27e1ce298f7e0e5319a26f749490362ddf529a8dd73182e503fb68e55e4",
+          "cropMapSha256": "6a884bdd0bff18cec2785032203287c534ad0584f7441003f7096697a1cbd0bc",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-prepare-second/runs/20261009-060322-3494601/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-same/runs/20261009-060413-3495578/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-fresh/runs/20261009-060457-3496258/evidence/result.json"
+          ],
+          "measuredScope": "Unten -2: gespeicherte Zellen 10→5 und vier Polygone gleich; unten +2 im selben Prozess 5→10, aus frisch geladener identischer Beschnittkarte 5→5.",
+          "remaining": "Host mit persistenten sichtbaren und flüchtigen unteren Außenzellen paaren; oberer/linker Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
