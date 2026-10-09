@@ -132064,6 +132064,14 @@
           "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/review-audit.json"
         },
+        "followUpPhase1BuildingFloorEllipseRefillOriginalProbe": {
+          "state": "ellipse_refill_original_replicated_host_open_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-probe.md",
+          "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-audit.json",
+          "measuredScope": "1×1-Smart-Wood-Rechteckzug über dem linken oberen Ellipsenloch liefert in zwei Originalprozessen 36→43 Zellen. Sieben Wood-Zellen kommen am linken/oberen Rand hinzu, vorhandene Zellwerte bleiben gleich; Außenkontur reicht links über die Karte, Innenring öffnet links oben. Undo semantisch gleich, Redo bytegleich; frische Originalöffnung erhält den Zustand.",
+          "remaining": "Identischer Host-GUI-Zug, Rohdatenpaar und getrennter Review offen. Weitere Startpunkte, Größen und Randfolgen nicht abgeleitet; DD-038 und Phase 1 offen. P7-2 physisch ungeprüft."
+        },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
