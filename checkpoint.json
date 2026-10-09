@@ -4359,17 +4359,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N05-CLEAN-R05",
+      "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-R06",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:53:44.038473+00:00",
-      "focus": "Nachbesserungs-Aufräumen gegen aktuellen geprüften Stand abschließen",
+      "startedAt": "2026-10-09T17:59:39.900617+00:00",
+      "focus": "Finalen Gestenplan mit Quellen und No-op-Gegenprobe prüfen",
       "state": "completed",
-      "result": "Quellenhashes und Planverweise/JSON unverändert gültig;327Tests/check/build gelten für den aktuellen integrierten Stand. Draftcore ohne Restbefund,24CTY offen."
+      "result": "Planverträge/Links/JSON und aktuelle Quellenhashes geprüft; No-op-Pivotrundung tatsächlich reproduziert und Originalpose-Regel festgelegt. Keine Restlücke im Plan-Aufräumen, kein Produkt-/Hostnachweis."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-P06",
-      "kind": "plan",
-      "focus": "Stadt-Werkzeugadapter am bestätigten Atlasprojektionsvertrag planen und Anschluss mit Hexbesitzer abgleichen"
+      "id": "CITY-01-PREP-I06",
+      "kind": "implementation",
+      "focus": "CityGesture und gemeinsame Cityposepunkte samt realen Draft-/Historyregressionen implementieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
