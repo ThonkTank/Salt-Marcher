@@ -130420,11 +130420,12 @@
         "original": {
           "sequence": "Hauptleiste → Open",
           "options": null,
-          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Die Ausgangs- und die ausgewählte Kartendatei bleiben bytegleich. Nur eine Karte mit synthetischer Eingabe geprüft; Cancel, Dateifilter und Open Recent bleiben offen.",
+          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Escape schließt den Dialog ohne Änderung der leeren Karte. Der Dialogprozess setzt den Filter *.dungeondraft_map; dessen Annahme-/Ablehnungswirkung ist ungeprüft. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich. Synthetische Eingabe; Open Recent bleibt offen.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-main-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o04-20261009/evidence/native-open-cancel-result.json"
           ]
         },
         "target": "Nach Originalmessung offen: „Open“ öffnet eine zuvor gespeicherte eigene Karte mit ihren Inhalten.",
@@ -131780,11 +131781,12 @@
         "original": {
           "sequence": "Dateiablauf > Open → Eigene gespeicherte Karte öffnen",
           "options": null,
-          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich. Nur eine gültige Karte geprüft; Cancel und Dateifilter bleiben offen.",
+          "effect": "Hauptleisten-Open zeigt einen Dateidialog. Die Auswahl einer zuvor selbst gespeicherten gültigen Karte ersetzt die leere Karte durch deren sichtbaren Rechteckraum. In einem getrennten leeren Kartenlauf schließt Escape den Dialog ohne Kartenänderung; der Dialogprozess setzt den Filter *.dungeondraft_map, dessen Annahme-/Ablehnungswirkung ungeprüft ist. Ausgangs- und ausgewählte Kartendatei bleiben bytegleich.",
           "version": "Dungeondraft 1.2.0.1 Opulent Kirin; direkter Bildschirmbeleg, sofern angegeben",
           "evidence": [
             "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/native-loaded-menu.png",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-native-o04-20261009/evidence/native-open-cancel-result.json"
           ]
         },
         "target": "Nach Originalmessung offen: „Eigene gespeicherte Karte öffnen“ führt den sichtbaren Datei- oder Verwaltungsablauf im passenden Kartenzustand aus.",
