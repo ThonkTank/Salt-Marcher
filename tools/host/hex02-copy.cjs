@@ -96,7 +96,15 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await item.hover();
     await settle();
     await page.screenshot({ path: path.join(out, "menu-before-choice.png") });
+    let debugSession, exceptions = [];
     if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
+      debugSession = await page.context().newCDPSession(page);
+      await debugSession.send("Debugger.enable");
+      debugSession.on("Debugger.paused", (event) => {
+        exceptions.push({reason:event.reason, data:event.data, frames:event.callFrames.map(f=>({name:f.functionName,url:f.url,location:f.location}))});
+        void debugSession.send("Debugger.resume");
+      });
+      await debugSession.send("Debugger.setPauseOnExceptions", {state:"all"});
       await page.evaluate(() => {
         const log = (window.__hexMenuEvents = []);
         const describe = (el) => ({
@@ -132,6 +140,9 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await item.click();
     if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
       await settle();
+      await debugSession.send("Debugger.setPauseOnExceptions", {state:"none"});
+      await debugSession.detach();
+      fs.writeFileSync(path.join(out, "menu-exception-diagnostic.json"), JSON.stringify(exceptions,null,2));
       fs.writeFileSync(path.join(out, "menu-event-diagnostic.json"), JSON.stringify(await page.evaluate(() => {
         window.__hexMenuObserver.disconnect();
         return {events:window.__hexMenuEvents, modals:[...document.querySelectorAll(".modal-container")].map(el=>el.outerHTML)};
