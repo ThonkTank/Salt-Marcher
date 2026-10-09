@@ -3426,20 +3426,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I03-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T12:26:27.986169+02:00",
-      "focus": "Direkte Watabou-Stadtgalerie und Funktionsmenüs mit festem Seed",
-      "state": "completed_bounded_reference_package",
-      "result": "Ummauerte Hafen-/Flussstadt in Übersicht und Detail, sechs Menübelege; 44 offene Funktionskandidaten; Versions-/Wirkungsabnahmen offen",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-      ]
+      "id": "CITY-00-I04-P",
+      "kind": "reference_planning",
+      "startedAt": "2026-10-09T12:33:25.808263+02:00",
+      "focus": "Vorhandene Canvas-of-Kings-Demo und koordinierten Original-QA-Zugang planen",
+      "state": "completed_access_coordination_pending",
+      "result": "Steam-Demo3122210 installiert; Rollen Hex/Stadt bestätigt; direkter Native-QA-Zugang angefragt, kein paralleler Host gestartet"
     },
     "nextRun": {
-      "id": "CITY-00-I03-R",
-      "kind": "reference_review",
-      "focus": "Reproduzierbarkeit und Bild-/Funktionsumfang prüfen, anschließend getrennt aufräumen"
+      "id": "CITY-00-I04-I",
+      "kind": "reference_implementation",
+      "focus": "Canvas-of-Kings-Ergebnisbilder/Funktionen über bestätigten Originalzugang prüfen; FTG/Watabou-Restproben weiterführen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
