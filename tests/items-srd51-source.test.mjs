@@ -55,6 +55,7 @@ function inventory(...occurrences) {
       firstPdfPage: 207, lastPdfPage: 207, firstPrintedPage: 207, lastPrintedPage: 207,
       expectedOccurrences: occurrences.length, capturedOccurrences: occurrences.length, complete: true }],
     occurrences,
+    crossReferences: [],
     helperDispositions: [],
   };
 }
@@ -63,8 +64,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 156);
-  assert.equal(result.validation.recordCount, 156);
+  assert.equal(result.validation.occurrenceCount, 191);
+  assert.equal(result.validation.recordCount, 191);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -271,4 +272,66 @@ test("pack-only helper dispositions are explicit and cannot invent primary ident
   unknownSource.helperDispositions[0].sourceOccurrenceIds = ["srd51:equipment:equipment-packs:99"];
   assert.throws(() => validateTranscriptData(checkedTranscript, unknownSource, { allowIncomplete: true }),
     /unbekannte Occurrence/);
+});
+
+test("tools preserve all 35 leaf rows, physical order, categories and optional weights", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "tools");
+  const records = checkedTranscript.records.filter(record => record.id.includes(":tools:"));
+  assert.equal(occurrences.length, 35);
+  assert.deepEqual(occurrences.map(item => item.id),
+    Array.from({ length: 35 }, (_, index) => `srd51:equipment:tools:${index + 1}`));
+  assert.deepEqual(records.map(record => record.id), occurrences.map(item => item.id));
+  assert.deepEqual(records.reduce((counts, record) => ({
+    ...counts, [record.subcategory]: (counts[record.subcategory] ?? 0) + 1,
+  }), {}), {
+    "artisans-tools": 17,
+    kit: 4,
+    "gaming-set": 2,
+    "musical-instrument": 10,
+    "other-tools": 2,
+  });
+  const byName = new Map(records.map(record => [record.name, record]));
+  assert.deepEqual(byName.get("Alchemist’s supplies").cost, { sourceText: "50 gp", copperPieces: 5000 });
+  assert.deepEqual(byName.get("Dice set").cost, { sourceText: "1 sp", copperPieces: 10 });
+  assert.deepEqual(byName.get("Playing card set").cost, { sourceText: "5 sp", copperPieces: 50 });
+  assert.equal("weight" in byName.get("Dice set"), false);
+  assert.equal("weight" in byName.get("Playing card set"), false);
+  assert.equal(records.filter(record => record.weight !== undefined).length, 33);
+  assert.equal(byName.has("Calligrapher's supplies"), true);
+  assert.equal(byName.has("Calligrapher’s supplies"), false);
+  assert.match(byName.get("Alchemist’s supplies").description[0].text, /Each type of artisan’s tools/);
+  assert.match(byName.get("Dice set").description[0].text, /Three-Dragon Ante/);
+  assert.match(byName.get("Navigator’s tools").description[0].text, /navigator's tools.*ship's course/);
+  assert.match(byName.get("Thieves’ tools").description[0].text, /narrow-bladed scissors/);
+});
+
+test("Tools Vehicles row remains a sourced cross-reference without a primary item identity", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(checkedInventory.crossReferences, [{
+    id: "srd51:equipment:tools:cross-reference:1",
+    feed: "equipment",
+    sectionId: "tools",
+    sourceKind: "cross-reference",
+    sourceTable: "Tools",
+    sourceLabel: "Vehicles (land or water)",
+    sourceText: "* See the “Mounts and Vehicles” section.",
+    firstPdfPage: 70,
+    lastPdfPage: 70,
+    firstPrintedPage: 70,
+    lastPrintedPage: 70,
+    targetSectionIds: ["mounts-other-animals", "tack-harness-drawn-vehicles", "waterborne-vehicles"],
+  }]);
+  assert.equal(checkedInventory.occurrences.some(item => item.sourceLabel === "Vehicles (land or water)"), false);
+  assert.equal(checkedTranscript.records.some(record => record.name === "Vehicles (land or water)"), false);
+  const damaged = structuredClone(checkedInventory);
+  damaged.crossReferences[0].targetSectionIds.push("missing-section");
+  assert.throws(() => validateTranscriptData(checkedTranscript, damaged, { allowIncomplete: true }),
+    /unbekannten Zielabschnitt missing-section/);
 });
