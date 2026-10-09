@@ -413,19 +413,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "durable_terrain_editing_in_progress",
+    "state": "native_save_draft_checked_copy_discard_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
       "id": "HEX-02-I01c",
       "kind": "durable_implementation",
       "startedAt": "2026-10-09T17:01:39.507883+00:00",
-      "state": "in_progress",
+      "state": "checked_implementation_native_passed_review_pending",
       "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
       "fileTransactionPacket": {
         "state": "checked_clean",
         "finishedAt": "2026-10-09T17:13:32.092547+00:00",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/file-transaction-implementation.json"
-      }
+      },
+      "finishedAt": "2026-10-09T18:15:54.130087+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
     },
     "nextRun": {
       "id": "HEX-02-I01d",
@@ -444,7 +446,7 @@
     },
     "open": [
       "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
-      "HEX02 terrain/history/drafts, then HEX03..05 common location/Dungeon Atlas; CITY01 depends on tested HEX05 contract.",
+      "HEX02-I01d Copy/abort, A↔B and explicit Discard, then R01/CLEAN; HEX03..05 location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open."
     ],
@@ -454,13 +456,14 @@
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Genau eine grafische QA-Instanz.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
-      "nextJointGate": "Reference R02 passed; changed-build core host then C01 cleanup, immediately HEX01..05 common atlas.",
+      "nextJointGate": "Publish I01c; I01d and R01/CLEAN before HEX03..05 fixed shared camera/router/placement contracts.",
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
       "nativeGuiSlot": "Root holds one local native slot for HEX02; City core-model prep only, Cloud host separate.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
-      "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
+      "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
+      "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
     },
     "verification": {
       "check": "Clean Git41cac27 passed",
@@ -1134,8 +1137,37 @@
         "injectedBoundaries": 12,
         "nativeBuildUnchanged": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
         "implementation": "src/features/atlas/file-transaction.ts",
-        "nativeFileStoreAndTerrainSavedHost": "pending actual Save/draft wiring",
+        "nativeFileStoreAndTerrainSavedHost": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json",
         "failureRetained": "Initial strict journal field count7 was incorrect; six exact keys fixed, fault/corrupt tests passed after repair.",
+        "physicalInput": false,
+        "userVault": "unchanged"
+      },
+      "hex02DurableIsland": {
+        "run": "HEX-02-I01c",
+        "state": "checked_native_implementation_review_pending",
+        "finishedAt": "2026-10-09T18:15:54.130087+00:00",
+        "cleanSource": "6de1cec79d7e3fc59ead07840bbdabe7c8baa996",
+        "cleanTestsPassed": 346,
+        "checkPassed": true,
+        "buildPassed": true,
+        "coreRepositoryCases": 8,
+        "triplet": {
+          "main.js": {
+            "bytes": 1387589,
+            "sha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997"
+          },
+          "styles.css": {
+            "bytes": 26762,
+            "sha256": "9c98763ef1aca2dc88a0a5d90dd4dc24601b31368852a1974f169a303d08078c"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json",
+        "normalNativeExits": 5,
+        "screensActuallyViewed": true,
         "physicalInput": false,
         "userVault": "unchanged"
       }

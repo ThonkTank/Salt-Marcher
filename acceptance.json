@@ -152273,7 +152273,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "early_native_terrain_checked_durable_editing_open",
+    "state": "native_save_draft_checked_copy_discard_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152407,12 +152407,12 @@
       {
         "id": "HEX02-005",
         "requirement": "Speichern, dauerhafter Entwurf, Konflikt/Unterbruch und frischer Geländeprozess",
-        "state": "open",
-        "implementationRun": "HEX-02-I01a/I01b",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01c",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
         ],
-        "observed": "I01c immediately next; transient island is not save/restart approval."
+        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. Independent R01 pending."
       },
       {
         "id": "HEX02-006",
@@ -152460,7 +152460,7 @@
         }
       }
     ],
-    "limits": "I01b visible discrete level0 terrain only. Save/draft/fresh terrain reopening I01c mandatory; City/Location/Dungeon spatial integration, multilevel editing, full Wonderdraft parity, large-map/physical/installed-vault remain open.",
+    "limits": "Early native sparse level0 island Save/Draft/fresh/conflict verified; Copy/Discard/A↔B I01d and independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
