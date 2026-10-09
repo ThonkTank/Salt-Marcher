@@ -4135,13 +4135,13 @@
         "coordination": "Issue #1 Kommentar 6082352187",
         "retest": {
           "date": "2026-10-09",
-          "productCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
+          "productCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
           "productCodeCommit": "997db05 (integriert)",
-          "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
+          "buildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
           "host": "Eigener Obsidian-1.14.4-Cloudhost, isolierter Vault, UI 1024x800; Build frisch erstellt und in Pluginhost geladen.",
-          "result": "Bestanden: Wooden Crate-Eingabe aktualisiert die Kachel ohne Enter; Wechsel zu Oak Barrel aktualisiert direkt; × leert den Text und zeigt alle drei Assets. „Suche zurücksetzen“ lässt den Text stehen und zeigt alle drei Assets. Kachelauswahl funktionierte. Zehn Objekte (4/3/3) platziert; Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie her. Save, Tab schließen und erneutes Öffnen über Schnellschalter erhielten alle zehn Objekte. Tags-Ansicht war erreichbar, aber Fixture enthält keine Tags, daher kein Urteil zur Tagpflege. Keine Produktlatenz gemessen. Auf erneut vorgerücktem sauberem 706627c-Build (Asset-Vorschaurenderer) Suche erneut bestanden; nach Hostreload alle zehn gespeicherten Objekte sichtbar. Vollständiger Undo/Redo/Save/Reopen-Lauf zuvor auf dem gleichen Produktcode/hash aus d65538b; Änderungsbereich im Folgecommit veränderte nur Asset-Preview.",
-          "evidence": "/workspace/scratch/gm-cloud-qa/142-n002-pass-integrated-latest.png; 135-n002-ten-placed.png; 136-n002-undo.png; 137-n002-redo.png; 138-n002-saved.png; 139-n002-quick-switch.png; 140-n002-fresh-reopen.png; 141-reloaded-618a7f2.png; /workspace/scratch/gm-cloud-qa/151-n002-latest-build-pass.png",
-          "coordination": "Issue #1 Kommentar 6083198759; unabhängiger Nachtest gemeldet. Latest-build-Nachtrag Issue #1 Kommentar 6083286156."
+          "result": "Bestanden: Wooden Crate-Eingabe aktualisiert die Kachel ohne Enter; Wechsel zu Oak Barrel aktualisiert direkt; × leert den Text und zeigt alle drei Assets. „Suche zurücksetzen“ lässt den Text stehen und zeigt alle drei Assets. Kachelauswahl funktionierte. Zehn Objekte (4/3/3) platziert; Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie her. Save, Tab schließen und erneutes Öffnen über Schnellschalter erhielten alle zehn Objekte. Tags-Ansicht war erreichbar, aber Fixture enthält keine Tags, daher kein Urteil zur Tagpflege. Keine Produktlatenz gemessen. Auf erneut vorgerücktem sauberem 706627c-Build (Asset-Vorschaurenderer) Suche erneut bestanden; nach Hostreload alle zehn gespeicherten Objekte sichtbar. Vollständiger Undo/Redo/Save/Reopen-Lauf zuvor auf dem gleichen Produktcode/hash aus d65538b; Änderungsbereich im Folgecommit veränderte nur Asset-Preview. Auf c00bd41 mit aktualisiertem Browser-Assetrenderer sauber neu gebaut und erneut geprüft. Live-Suche/Termwechsel/× bestanden; eine Kiste sichtbar platziert, Toolbar-Undo nahm sie zurück, Redo stellte sie her; Save, Tab-Schließen/Neuöffnen erhielten 11 Testobjekte. Ein vorheriger Klick auf alte Drittspaltenkoordinate nach Such-Reflow war Testkoordinatenfehler und per Undo rückgängig gemacht, kein Produktfehler.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/142-n002-pass-integrated-latest.png; 135-n002-ten-placed.png; 136-n002-undo.png; 137-n002-redo.png; 138-n002-saved.png; 139-n002-quick-switch.png; 140-n002-fresh-reopen.png; 141-reloaded-618a7f2.png; /workspace/scratch/gm-cloud-qa/151-n002-latest-build-pass.png; /workspace/scratch/gm-cloud-qa/188-current-build-place.png; 191-latest-undo-visible.png; 192-latest-redo-visible.png; 194-latest-final-reopen-eleven.png",
+          "coordination": "Issue #1 Kommentar 6083198759; unabhängiger Nachtest gemeldet. Latest-build-Nachtrag Issue #1 Kommentar 6083286156. c00bd41-Nachtest Issue #1 Kommentar 6083603608."
         }
       }
     ],
@@ -4153,7 +4153,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-OBS-01 in derselben Szene bei breiterem Fenster vergleichen; danach Spielansicht und spontane Informationssuche im längeren Nebelwacht-Ablauf fortsetzen. Atlas-Zoomfolge nur testen, soweit implementiert.",
+    "next": "Den GM-Ablauf mit zweiter Karte fortsetzen: prüfen, ob „Raum-Key öffnen“ regelmäßig gebraucht wird und ob der zusätzliche Pane bei mehreren Räumen dieselbe doppelte Darstellung erzeugt. Danach frisches Öffnen/State checken; Atlas-Zoomfolge nur testen, soweit implementiert.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4171,25 +4171,25 @@
         800
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
-      "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
-      "verified": "Frischer, sauberer Build aus integriertem 706627c (Asset-Vorschaurenderer eingeschlossen) in isoliertem Obsidian 1.14.4 neu geladen. N-002-Suche erneut sichtbar bestanden: Tippen/Begriffwechsel aktualisiert Kachel ohne Enter, × zeigt alle drei Testassets; nach App-Neustart sind alle zehn gespeicherten Objekte sichtbar. Keine Produktlatenz gemessen.",
+      "productCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
+      "buildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
+      "verified": "Aktueller Stand c00bd41 enthält Assetrenderer-Änderungen. Erster Build durch fehlende png-tools/fflate blockiert; npm install aus Lockfile installierte 22 Pakete; danach sauberer Build dirty:false, im isolierten Obsidian 1.14.4-Host reload. N-002 erneut: Live-Suche und Wechsel, × zeigt drei Assets; sichtbare Kachel-Auswahl, Platzierung, Toolbar-Undo/Redo, Speichern und Tab schließen/frisch öffnen; zehn ursprüngliche plus eine neue Testkiste (11 Entities) sichtbar. Keine Produktlatenz gemessen.",
       "evidence": [
-        "151-n002-latest-build-pass.png",
-        "142-n002-pass-integrated-latest.png",
-        "135-n002-ten-placed.png",
-        "136-n002-undo.png",
-        "137-n002-redo.png",
-        "138-n002-saved.png",
-        "140-n002-fresh-reopen.png"
+        "176-n002-current-remote-switch.png",
+        "177-n002-current-remote-open.png",
+        "188-current-build-place.png",
+        "191-latest-undo-visible.png",
+        "192-latest-redo-visible.png",
+        "194-latest-final-reopen-eleven.png"
       ],
-      "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund."
+      "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
+      "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000."
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
-      "builtProductCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
-      "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
-      "completed": "GM Asset Test auf dem integrierten Build: ein selbst erzeugtes, freigegebenes Paket mit drei Assets importiert und in der Kartenbibliothek aktiviert; Objektname gesucht; zehn Objekte aus drei Assets platziert. Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie wieder her. Speichern, Tab schließen und frisch öffnen erhielten alle zehn Objekte und die Paketverknüpfung. Separat fortbestehend: Nebelwacht-Ablauf mit zwölf Räumen auf zwei Geschossen, Verbindungen/Türen und geänderter Raum-12-Notiz nach Speichern/Neuöffnung; Spielansicht und Raum-Key waren sichtbar. GM-UX-N-002 zusätzlich im selben isolierten Host auf frischem Build aus 618a7f2 nachgetestet: Suche mit Wooden Crate zeigte sofort eine Kachel; Wechsel auf Oak Barrel zeigte sofort die andere Kachel; × stellte alle drei wieder her. Zehn Objekte platziert, Ctrl+Z/ Ctrl+Shift+Z sichtbar geprüft, gespeichert, Tab geschlossen und über Schnellschalter frisch geöffnet; alle zehn blieben sichtbar. Issue-1-Ergebnisbericht 6083198759. Anschließend über den Obsidian-Schnellschalter GM-UX-01 Nebelwacht frisch geöffnet; gespeicherte Karte mit nummerierten Räumen und Verbindung sichtbar. Doppelklick auf Raum 1 markierte den Raum (keine Notiz geöffnet). Beim Zurückkehren zum Obsidian-Layout erschien der Karteninhalt in einem ca. 274 px breiten rechten Split neben einem leeren New-tab-Bereich; Bildschirmbeleg 149. Dies bestätigt die konkrete Split-Anordnung, aber vergleicht noch kein maximiertes Fenster. Nach Remote-Vorschub bis 706627c (enthält Asset-Vorschaurenderer) sauberer Build neu erstellt und im isolierten Obsidian-Host neu geladen. Suchfolge Wooden Crate→Oak Barrel→× wiederholt; 1/1/3 Kacheln ohne Enter. Nach App-Neustart alle zehn zuvor gespeicherten Objekte sichtbar. Aktueller Build-Beleg 151-n002-latest-build-pass.png; Issue-1-Nachtrag 6083286156. Undo/Redo/Save/Close/Reopen wurden im bisherigen vollständigen Lauf auf gleichem Produktcode getestet; der integrierte Produktbuild 618a7f2 davor war quellgleich (gleicher main.js-Hash).",
+      "builtProductCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
+      "buildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
+      "completed": "GM Asset Test auf dem integrierten Build: ein selbst erzeugtes, freigegebenes Paket mit drei Assets importiert und in der Kartenbibliothek aktiviert; Objektname gesucht; zehn Objekte aus drei Assets platziert. Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie wieder her. Speichern, Tab schließen und frisch öffnen erhielten alle zehn Objekte und die Paketverknüpfung. Separat fortbestehend: Nebelwacht-Ablauf mit zwölf Räumen auf zwei Geschossen, Verbindungen/Türen und geänderter Raum-12-Notiz nach Speichern/Neuöffnung; Spielansicht und Raum-Key waren sichtbar. GM-UX-N-002 zusätzlich im selben isolierten Host auf frischem Build aus 618a7f2 nachgetestet: Suche mit Wooden Crate zeigte sofort eine Kachel; Wechsel auf Oak Barrel zeigte sofort die andere Kachel; × stellte alle drei wieder her. Zehn Objekte platziert, Ctrl+Z/ Ctrl+Shift+Z sichtbar geprüft, gespeichert, Tab geschlossen und über Schnellschalter frisch geöffnet; alle zehn blieben sichtbar. Issue-1-Ergebnisbericht 6083198759. Anschließend über den Obsidian-Schnellschalter GM-UX-01 Nebelwacht frisch geöffnet; gespeicherte Karte mit nummerierten Räumen und Verbindung sichtbar. Doppelklick auf Raum 1 markierte den Raum (keine Notiz geöffnet). Beim Zurückkehren zum Obsidian-Layout erschien der Karteninhalt in einem ca. 274 px breiten rechten Split neben einem leeren New-tab-Bereich; Bildschirmbeleg 149. Dies bestätigt die konkrete Split-Anordnung, aber vergleicht noch kein maximiertes Fenster. Nach Remote-Vorschub bis 706627c (enthält Asset-Vorschaurenderer) sauberer Build neu erstellt und im isolierten Obsidian-Host neu geladen. Suchfolge Wooden Crate→Oak Barrel→× wiederholt; 1/1/3 Kacheln ohne Enter. Nach App-Neustart alle zehn zuvor gespeicherten Objekte sichtbar. Aktueller Build-Beleg 151-n002-latest-build-pass.png; Issue-1-Nachtrag 6083286156. Undo/Redo/Save/Close/Reopen wurden im bisherigen vollständigen Lauf auf gleichem Produktcode getestet; der integrierte Produktbuild 618a7f2 davor war quellgleich (gleicher main.js-Hash). Fenster-/Splitvergleich: Cloud-Host auf 1440x1000 maximiert. Im vollen Dungeon-Editor war die gesamte Nebelwacht-Karte sichtbar (ca. 846x512 px). „Zurück zum Layout“ ließ die rechte Dock-Spalte mit ca. 274 px Kartenbreite unverändert, auch wenn der Host maximiert war. Ein sichtbarer Splitterzug von x≈1140 auf x≈880 verbreiterte die Dockansicht auf ca. 560 px; die Karte war danach teilweise abgeschnitten. Ein Klick auf „Einpassen“ zeigte wieder alle sechs nummerierten Räume und die Karte vollständig. Das ist ein layoutbezogener Befund mit verfügbarer Bedienlösung, keine Produktlatenz und derzeit kein Codeauftrag. Issue #1 Ergebnis 6083371214. Längere Informationssuche fortgesetzt: Im „Dungeon“-Panel Dropdown Erdgeschoss öffnen, Pfeil-ab/Enter wählte Geschoss 1; Karte zeigte Räume 7–12 und Verbindungen. Raum 12 anklicken > Inhalte > Key bearbeiten zeigte „Hinweis akut: Die blaue Fackel in Raum 12 öffnet den Geheimgang.“ „Raum-Key öffnen“ erzeugte eine zusätzliche Obsidian-Notizansicht neben Karte und offenem Key-Editor, damit stand derselbe Text in beiden Bereichen; nach Schließen des eingebetteten Editors blieb Note+Karte sichtbar. Keine Textänderung; kein Speichern erforderlich. Mögliche UI-Clutter-Reibung ist Hypothese, da nur nach explizitem Öffnen und in einer Karte gesehen; weitere Wiederholung nötig, daher kein Reparaturauftrag. Issue #1 Kommentar 6083448633. Danach Obsidian über Befehlspalette neu geladen (Reload app without saving). Editor stellte sich zunächst auf Erdgeschoss wieder her. Über sichtbares Dungeon > Geschosse-Dropdown (Erdgeschoss, Pfeil-ab, Enter) wechselte ich erneut zu Geschoss 1, klickte Raum 12 und öffnete Inhalte > Key bearbeiten. Der gespeicherte Hinweis war nach dem Hostreload wieder sichtbar; Status „Gespeichert“. Keine Änderung an Karten/Texten. Belege 173-175, Issue #1 Kommentar 6083476576. Nach weiteren Remote-Änderungen bis c00bd41 (Browser-Assetrenderer) neuer Cloud-Build: erster Versuch wegen fehlender npm-Abhängigkeiten png-tools/fflate blockiert; npm install fügte 22 Lockfile-Pakete hinzu; sauberer npm run build dirty:false, main.js SHA-256 cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777. Aktuelle N-002-Wiederholung im geladenen Build: Wooden-Crate- und Oak-Barrel-Suche sofort, × zeigt drei Assets; sichtbare Auswahl-Kachel und placement. Ein Testklick auf frühere dritte Spaltenkoordinate traf nach Filter-Reflow leeren Platz und ließ Torch vorausgewählt; dies war CDP-Testkoordinatenfehler. Ausgangszustand per Undo restauriert, dann sichtbare Kachel selektiert. Eine Kiste hinzugefügt; Undo/Redo über sichtbare Toolbar-Schaltflächen klar entfernt/wiederhergestellt; save, Tab close, fresh quick-switch reopen zeigte 11 Testobjekte (zehn original plus Kiste). Issue #1 Kommentar 6083603608.",
       "limitations": "Keine Produktlatenz gemessen. Tags-Ansicht erreichbar, aber synthetische Fixture enthält keine Tags; Tagpflege daher nicht abgenommen. Die schmale Spielansicht bei 1024x800 bleibt viewportgebundene Beobachtung und braucht breiteren Vergleich. Keine Original-Paketlizenzabnahme; Atlas-Zoomfolge nicht getestet.",
       "evidence": [
         "49-second-floor-rooms.png",
@@ -4228,16 +4228,47 @@
         "147-nebelwacht-menu.png",
         "148-nebelwacht-play-session.png",
         "149-nebelwacht-narrow-layout.png",
-        "151-n002-latest-build-pass.png"
+        "151-n002-latest-build-pass.png",
+        "152-maximized-host-1440x1000.png",
+        "154-nebelwacht-max-1440.png",
+        "155-nebelwacht-max-layout.png",
+        "157-nebelwacht-resized-pane.png",
+        "158-nebelwacht-resize-fit.png",
+        "166-nebelwacht-floor1-map.png",
+        "167-nebelwacht-room12-key.png",
+        "168-nebelwacht-room12-key-open.png",
+        "170-room12-note-map-editor.png",
+        "172-room12-note-fit-locator.png",
+        "173-reload-room12-note-layout.png",
+        "174-room12-floor-after-reload.png",
+        "175-room12-key-after-reload.png",
+        "176-n002-current-remote-switch.png",
+        "177-n002-current-remote-open.png",
+        "188-current-build-place.png",
+        "191-latest-undo-visible.png",
+        "192-latest-redo-visible.png",
+        "194-latest-final-reopen-eleven.png"
       ]
     },
     "openObservations": [
       {
         "id": "GM-UX-OBS-01",
-        "status": "viewport_split_reproduced_broader_window_comparison_open",
-        "observation": "Im 1024x800-Obsidian-Split war die Karten-Spielansicht schmal; bei Geschosswechsel war die Karte zunächst außerhalb des sichtbaren Ausschnitts und nach Einpassen sichtbar. Einige rechte Steuerungen lagen außerhalb des Viewports, ließen sich aber per Tabulator erreichen. Bei einem erneuten Aufruf auf dem aktuellen Build blieb die Kartenfläche in einem rechten Split von ca. 274 px Breite; Teile der Steuerleiste lagen rechts außerhalb des 1024x800-App-Viewports. Weiterhin nur viewportgebundene Beobachtung, noch kein Nacharbeitsauftrag. Auf erneutem Cloud-Lauf frisch über den Schnellschalter geöffnet; die Nebelwacht-Karte war sichtbar. Das Zurückkehren zum Obsidian-Layout zeigte sie als schmale rechte Pane von etwa 274 px neben einem leeren zentralen Tab. Ein maximiertes Fenster/volle Editorbreite wurde noch nicht erfolgreich verglichen.",
-        "impact": "Mögliche Reibung für simultanes Leiten mit offener Raum-Notiz. Der Befund trat in der konkreten geteilten Fensteranordnung auf; weitere Fensterbreiten/GM-Abläufe vergleichen, bevor Nacharbeit beauftragt wird.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png, /workspace/scratch/gm-cloud-qa/116-playview-tab2.png, /workspace/scratch/gm-cloud-qa/145-nebelwacht-reopened.png, /workspace/scratch/gm-cloud-qa/149-nebelwacht-narrow-layout.png"
+        "status": "compare_completed_dock_width_driven_fit_workaround_verified",
+        "observation": "Bei 1024x800 bleibt die rechte Obsidian-Dock-Pane ca. 274 px breit. Maximieren des Cloudhosts auf 1440x1000 änderte diese gespeicherte Pane-Aufteilung nicht. Im vollen Dungeon-Editor waren alle Räume sichtbar (Nebelwacht ca. 846x512 px). Im Layout blieben rund 274 px Dockbreite; sichtbares Verschieben des Splitters verbreiterte die Pane auf ca. 560 px, dabei war der Kartenausschnitt zunächst abgeschnitten. Ein Klick „Einpassen“ zeigte die gesamte Karte mit sechs nummerierten Räumen. Der Vergleich grenzt die Ursache auf Obsidian-Pane-Aufteilung plus Fit-Zustand ein; keine Produktlatenz und aktuell kein Codeauftrag.",
+        "impact": "Beim Leiten mit Raum-Notiz neben der Karte ist die anfängliche rechte Dock-Pane schmal. Im getesteten Host helfen ein sichtbarer Splitterzug und „Einpassen“; Nutzungsfrequenz und Bedienkosten mit tatsächlicher gleichzeitiger Key-/Notizansicht noch nicht erhoben. Daher aktuell Beobachtung ohne Reparaturauftrag.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png, /workspace/scratch/gm-cloud-qa/116-playview-tab2.png, /workspace/scratch/gm-cloud-qa/145-nebelwacht-reopened.png, /workspace/scratch/gm-cloud-qa/149-nebelwacht-narrow-layout.png, /workspace/scratch/gm-cloud-qa/152-maximized-host-1440x1000.png, /workspace/scratch/gm-cloud-qa/154-nebelwacht-max-1440.png, /workspace/scratch/gm-cloud-qa/155-nebelwacht-max-layout.png, /workspace/scratch/gm-cloud-qa/157-nebelwacht-resized-pane.png, /workspace/scratch/gm-cloud-qa/158-nebelwacht-resize-fit.png"
+      },
+      {
+        "id": "GM-UX-OBS-02",
+        "status": "one_ui_reproduction_hypothesis_frequency_unverified",
+        "kind": "Eigene UI-Beobachtung; Cloud/Testvault; mögliche Clutter-Auswirkung ist noch Hypothese",
+        "build": "Obsidian 1.14.4; Produktcommit 706627cb36a5f4063e9e84268954eda62193e6a6; main.js SHA-256 98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
+        "scenario": "GM-UX-01 Nebelwacht, Geschoss 1, Raum 12; maximierter Cloudhost 1440x1000; isolierter Vault",
+        "observation": "Dungeon > Geschosse; sichtbares Geschoss-Dropdown von Erdgeschoss zu Geschoss 1 mit Pfeil-ab/Enter ändern; Raum 12 auswählen; Inhalte > Key bearbeiten. Der Raum-Key-Text war direkt lesbar. „Raum-Key öffnen“ öffnete eine zusätzliche Obsidian-Notizansicht und ließ den eingebetteten Key-Editor offen; der identische Text erschien zweimal und beanspruchte neben der Karte zwei Flächen. Schließen des eingebetteten Editors ließ die zusätzliche Note-Ansicht offen; einmal Einpassen stellte die Karte neben der Notiz dar. Nach App-Neustart führte sichtbare Geschossauswahl zurück zu Geschoss 1, Raum 12 und Key; der vorhandene Hinweistext erschien unverändert und Editorstatus war Gespeichert.",
+        "impact": "Mögliche Überladung/Flächenverlust bei GM-Informationssuche nach explizitem Öffnen einer Note; keine Zeitmessung und keine wiederholte Häufigkeitsmessung. Da der zusätzliche Pane bewusst geöffnet wurde und der Text schon im Key-Editor sichtbar war, kein Produktfehler oder Codeauftrag abgeleitet.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/166-nebelwacht-floor1-map.png; 167-nebelwacht-room12-key.png; 168-nebelwacht-room12-key-open.png; 170-room12-note-map-editor.png; 172-room12-note-fit-locator.png; /workspace/scratch/gm-cloud-qa/173-reload-room12-note-layout.png; 174-room12-floor-after-reload.png; 175-room12-key-after-reload.png",
+        "next": "In zweiter Karte wiederholen und Häufigkeit/Mehrwert des zusätzlichen Note-Pane im GM-Ablauf prüfen. Erst danach priorisieren oder Auftrag erstellen.",
+        "coordination": "Issue #1 Kommentar 6083448633; Befund getrennt als Beobachtung/Hypothese gemeldet. Hostreload-/Key-Abrufnachtrag Issue #1 Kommentar 6083476576."
       }
     ]
   }
