@@ -4312,17 +4312,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I04",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T17:19:57.078Z",
-      "focus": "Lokale Szene, Treffer und gemeinsame Geometrie implementieren",
-      "state": "completed",
-      "result": "Lokaler Core implementiert;308Tests/Typprüfung/Build grün,7525Dungeonbaselinevergleiche mit exakten Adressen. Separater Review folgt."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R05",
       "kind": "review",
-      "focus": "Szene/Treffer und gemeinsame Geometrie unabhängig gegen Plan prüfen"
+      "startedAt": "2026-10-09T17:28:14.444Z",
+      "focus": "Lokale Szene/Treffer und gemeinsame Geometrie unabhängig prüfen",
+      "state": "completed",
+      "result": "Gegenprobe, Baseline und integrierte Basischecks bestätigen Core ohne Pflichtlücke; Szenenarchitektur und offene native Regression dokumentieren."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-SCENE-CLEAN-P04",
+      "kind": "cleanup_planning",
+      "focus": "Vorhandene Szene/Helper und offene Hostintegration in Architektur/Plänen aufräumen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
