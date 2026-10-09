@@ -143339,6 +143339,14 @@
           ]
         },
         "target": "Wandschatten an/aus besitzt einen getrennt gespeicherten Startwert; der direkte gemischte QA-Fall bleibt nach Reopen erhalten.",
+        "followUpPhase1OriginalRenderProbe": {
+          "state": "measured_effect_only_host_review_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
+          "measured": "Bei gleicher bestehender Geometrie ändert wall.shadow=false 15068 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
+          "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -143407,6 +143415,14 @@
           ]
         },
         "target": "Objektschatten an/aus besitzt einen getrennt gespeicherten Startwert; der direkte gemischte QA-Fall bleibt nach Reopen erhalten.",
+        "followUpPhase1OriginalRenderProbe": {
+          "state": "measured_effect_only_host_review_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
+          "measured": "Bei gleicher bestehender Geometrie ändert object.shadow=false 238 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
+          "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
+        },
         "baseline": {
           "editor": {
             "sequence": "Objektschatten an/aus",

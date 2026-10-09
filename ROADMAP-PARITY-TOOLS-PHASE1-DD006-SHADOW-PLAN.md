@@ -11,3 +11,7 @@ Planlauf vom 09.10.2026 zu [ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md](ROADMAP-PARITY-
 ## Grenze
 
 Ein importierter Original-Rohkartenwechsel belegt nur die Renderwirkung der gespeicherten Werte. Er ersetzt keine Bedienprobe für künftige Atlasoptionen. Kein Produktbuild im Nutzervault, keine Originalkarte oder Dungeontexte ändern. QA-Rohdaten liegen unter `/home/aaron/.cache/dungeon-native-qa/`.
+
+## Original-Zwischenbefund
+
+Der [isolierte Original-Renderlauf](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md) ergibt bei gleicher vorhandener Geometrie vier bytegleiche Bilder trotz Wechsel der globalen `world.wall_shadow`/`world.object_shadow`-Werte. Bei Wechsel der gespeicherten `shadow`-Felder an Wand beziehungsweise Objekt ändern sich die zugehörigen Bildbereiche getrennt. Daraus folgt für den Hostvergleich: vorhandene Elemente und Vorgaben für neue Elemente gesondert behandeln. Eine direkte Atlas-Bedienfolge ist damit noch nicht belegt.

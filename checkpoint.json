@@ -1504,10 +1504,13 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "plan_recorded_original_render_probe_next",
+      "state": "original_render_probe_recorded_host_pair_next",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
-      "next": "Vier Original-Rohkarten mit gleicher Geometrie und getrennten Schattenwerten im Original rendern und frisch öffnen; danach isolierten Hostvergleich durchführen. New-Map-Bedienung ist historisch."
+      "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
+      "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
+      "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
+      "next": "Hostbildpaar für die getrennte Wirkung und gespeicherte V4-Felder prüfen; Bedienvorgaben für neue Elemente und bestehende Elemente getrennt halten. New-Map-Bedienung ist historisch."
     },
     "dd001002Plan": {
       "date": "2026-10-09",
