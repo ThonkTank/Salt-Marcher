@@ -198,6 +198,36 @@ Namen, Identitäten und Hashes:
 - Konfliktrecovery überschreibt und löscht nichts, sondern liefert ein
   begrenztes Inventar aller erhaltenen Wahrheiten.
 
+Rollback ist pro Child-Operation explizit und schreibt für jeden Schritt eine
+durable Receiptgeneration `rolling-back`, `rollback-captured`,
+`rollback-published`, `rolled-back` oder `conflict`:
+
+- **Create:** Ist das neue Ziel noch nicht publiziert, bleibt der Zielname
+  abwesend und Temp wird nur retained. Ist es publiziert, muss Zielidentität und
+  After-Hash exakt der eigenen Publication entsprechen. Dann wird es per
+  `RENAME_NOREPLACE` in einen exklusiven retained Rollback-Capture bewegt,
+  Zielabwesenheit geprüft und das Verzeichnis synchronisiert. Weicht das Ziel
+  vor dem Move ab, bleibt es unangetasteter Konflikt. Weicht die Capture nach
+  einer Race ab, bleibt sie erhalten und eine Wiederherstellung an den
+  Zielnamen wird höchstens per `RENAME_NOREPLACE` versucht; der Parent endet
+  in jedem Fall als Konflikt, nicht als `rolled-back`.
+- **Update:** Ein noch nicht publiziertes Child muss das ursprüngliche Ziel
+  erneut gegen Before verifizieren. Ein eigenes publiziertes After-Ziel wird
+  wie bei Create identitätsgebunden in einen retained Rollback-Capture bewegt.
+  Danach wird eine neue Restore-Temp ausschließlich aus dem retained
+  Before-Snapshot geschrieben, synchronisiert und per `RENAME_NOREPLACE` am
+  freien Ziel publiziert. Zielhash, Verzeichnissync und Before-Digest müssen
+  bestehen, bevor `rolled-back` zulässig ist.
+- **Delete:** Ist der Zielname nach gültiger Capture abwesend, wird ebenfalls
+  eine neue Restore-Temp aus dem retained Before-Snapshot synchronisiert und
+  nur per `RENAME_NOREPLACE` publiziert. Jede fremde Belegung oder abweichende
+  Capture wird `conflict`; sie wird weder entfernt noch überschrieben.
+
+Nach jedem Rollback-Namensschritt wird Identität und Hash erneut geprüft. Ein
+Writer zwischen Prüfung und Capture/Restore kann damit den Erfolg verhindern,
+aber keine seiner beobachteten Bytes verlieren und niemals einen falschen
+`rolled-back`-Status erzeugen.
+
 Zweifacher Recovery-Aufruf ist idempotent und erzeugt denselben terminalen
 Zustand. Physische Reclamation der retained Transaktionsnamen liegt außerhalb
 H03 und darf nicht als bestanden behauptet werden.
@@ -218,6 +248,8 @@ ausgeführt:
 - vor/nach Publish-Verzeichnissync;
 - vor/nach Child-Commit;
 - vor/nach Parent-`children-committed` und Parent-`committed`;
+- vor/während/nach jedem Create-Rollback-Capture;
+- vor/während/nach Update-/Delete-Restore-Temp-Sync und Restore-Publication;
 - vor, während und nach logischer Parent-Freigabe.
 
 An jedem anwendbaren Dateisystemschritt werden zusätzlich separat injiziert:
@@ -246,6 +278,9 @@ Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
 - Der Parent endet ausschließlich im vollständigen aggregierten Before- oder
   After-Zustand oder in einem nicht überschreibenden Konflikt. Mischungen aus
   neuer Karte/alter Notiz oder altem Draft/neuem Journal sind Fehler.
+- Create-Rollback belegt verifizierte Zielabwesenheit; Update-/Delete-Rollback
+  belegt den aus retained Before-Snapshots wiederhergestellten aggregierten
+  Before-Digest. Ein bloßes Receipt ohne Namens-/Hash-Orakel genügt nicht.
 - Kein Write wird vor durablem Parent-Commit bestätigt; kein Before-Snapshot,
   Capture oder Child-Receipt wird in H03 physisch gelöscht.
 - Alle Schritte sind auf demselben lokalen Dateisystem; fehlende Primitive,
