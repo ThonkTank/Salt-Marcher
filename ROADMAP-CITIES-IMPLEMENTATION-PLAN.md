@@ -287,3 +287,19 @@ Dieses Aufräumpaket ergänzt ausschließlich geplante Architektur und Teilpflic
 CO-WAT-0008: Bloat, Equalize, Liquify, Measure, Pinch, Rotate und Relax bislang nur Controls. Neue eigene Browserkopie derselben beobachteten New-River-URL; für jedes Werkzeug vor der Folge neu laden, damit kein voriger Zug das Ergebnis beeinflusst. Sichtbares Warp-Menü und gewähltes Werkzeug sichern, kleinen lokalen Zug beziehungsweise angebotene Messfolge ausführen und tatsächliche sichtbare Wirkung erfassen. Kein Effekt wird aus seinem Namen abgeleitet. Bei fehlender Wirkung höchstens zwei kontrollierte Folgen, dann offene Eingabe-/Wirkungslücke erhalten. Apply/Discard nur auf dieser Testkopie; keine Galerie-/Ausgangskarte ändern. Seed-Neuladen ist Reset der Testbasis, kein bearbeiteter Save/Reload. Distanzanzeige, falls angeboten, als Messfunktion getrennt erfassen.
 
 Alle sieben Teilpflichten bleiben offen bis eigener Umsetzung samt Ergebnis-/Host-/Bedienvergleich; Radius/Falloff, exakte Konturwerte, Schutz und Bindungen werden hier nicht aus Pixelbildern behauptet. Ergebnistabelle ordnet pro Werkzeug tatsächlich beobachtete Folge und offene Restfragen zu. Eigener Review und Aufräumplanung/Umsetzung/Review; keine Atlasimplementierung vor HEX-05.
+
+## CITY-00-I15-CP: globale Drehung und Messung gesondert planen
+
+I15-R01: Eine starre Gesamtdrehung nutzt die gemeinsame Stadtplatzierung als getrackten Atlasbefehl; die lokale Stadtgeometrie wird dafür nicht neu generiert. Gebundene Gebäude-/Dungeonplatzierungen folgen über die vorhandene Transformkette; Keys/Personen bleiben wertgleich. Drehpunkt und Winkelabbildung des Originalwerkzeugs sind weiter zu vermessen. Lokale Konturverformungen behalten den geplanten Vorher-/Nachher-Geometriebefehl. Die Messfunktion erzeugt ein vorübergehendes Overlay in derselben Kamera; Endpunkte liegen in gemeinsamen Meterkoordinaten, Anzeige folgt den gewählten Einheiten. Messung erzeugt keine Dokumentmutation oder History-Einträge. Prüfen: Rotation plus lokale Hausverschiebung/Undo, gebundener Dungeon, Save/Neustart, Messung bei mehreren Zoom-/Einheitenstufen ohne Dirty.
+
+| Originalwerkzeug | Direkte I15-Teilprobe | Rest vor Abnahme |
+|---|---|---|
+| Bloat | Geometrie/Bebauung ändert sich sichtbar | Formel, Stärke, Radius, exakte Reichweite |
+| Equalize | Rote Polygonpunkte und geänderte Geometrie/Bebauung | Gleichverteilungsregel, Zielumfang |
+| Liquify | Pinsel/Kanten und geänderte Geometrie/Bebauung | Feld-/Konturregel, Einflussverlauf |
+| Measure | Endpunktstrecke zeigt 96 m | Kalibrierung, Einheiten, Zoom, Overlaylebensdauer |
+| Pinch | Pinsel/Kanten und geänderte Geometrie/Bebauung | Richtung/Stärke, Einflussverlauf |
+| Rotate | Ganze Stadt samt Fluss/Küste dreht sich | Drehpunkt, Winkelabbildung, Bindung/Save |
+| Relax | Pinsel/Kanten und geänderte Geometrie/Bebauung | Glättungsregel, Stärke, Einflussverlauf |
+
+Ein kontrollierter Zug pro Werkzeug auf frischer Seedbasis; Discard geprüft. Kein Rohgeometrie-/Kennungsvergleich, keine vollständige Operationsformel und keine eigene Implementierung aus diesen Bildern ableiten. Nach Umsetzung der geplanten Rollenpräzisierung eigener Review auf Beleg-/Status-/Wurzelschutz.
