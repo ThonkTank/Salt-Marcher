@@ -350,26 +350,22 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "planning_passed",
+    "state": "implemented_checked_review_pending",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "run": "HEX-01-P01",
-      "state": "planning_artifact_checks_passed",
-      "startedAt": "2026-10-09T17:10:55.836713+02:00",
-      "endedAt": "2026-10-09T17:10:55.836713+02:00",
-      "baseCommit": "a3baac32c6f01fdb8ef593de6bf3359ac1c757dd",
-      "plan": "ROADMAP-HEX-01-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
-      "cleanupReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json",
-      "phaseApproval": false,
-      "kind": "planning",
-      "focus": "Create/open actual boundless Overworld with hostneutral meter/hex/camera core; visible selection and fresh reopen."
+      "id": "HEX-01-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T15:45:14.565158+00:00",
+      "state": "completed",
+      "focus": "Existing-name notice and formatting only; native replay after checks.",
+      "finishedAt": "2026-10-09T15:49:06.234755+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
+      "result": "Clear existing-name notice, modal/file identity preserved; native reopen plus expression-tree equivalence."
     },
     "nextRun": {
-      "id": "HEX-01-I01",
-      "kind": "implementation",
-      "focus": "Core and first native Atlas UI plus actual host proof",
-      "gate": "No phase approval until own R01 and cleanup."
+      "id": "HEX-01-CLEAN-R01",
+      "kind": "cleanup_review",
+      "focus": "Exact bytes, actual notice, formatting semantic preservation."
     },
     "review": {
       "state": "passed",
@@ -928,6 +924,32 @@
           "Synthetic transport is not Original or physical acceptance.",
           "Full Wonderdraft/City/Hex/large-map parity and user installation remain open."
         ]
+      },
+      "hex01Implementation": {
+        "run": "HEX-01-I01",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+        "state": "implementation_checked_review_pending",
+        "productBuildSha256": "50912139879c51c740a976301794964cf8d11c1f78e1e4f38c75c18d4443e625",
+        "host": "Own native edit and fresh process passed; screenshots viewed; empty foundation scope."
+      },
+      "latestIntegratedHostCC": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/latest-host-review.json",
+        "state": "passed",
+        "screensActuallyViewed": true,
+        "physicalInput": false
+      },
+      "hex01Review": {
+        "run": "HEX-01-R01",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json",
+        "cleanTests": 252,
+        "cleanBuildSha256": "416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159",
+        "physicalInput": false,
+        "largeMap": false,
+        "installation": "unchanged"
+      },
+      "hex01CleanupImplementation": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
+        "state": "implemented_checked_review_pending"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -943,7 +965,8 @@
         "HEX-05/CITY-03: unmittelbare gemeinsame Bearbeitung"
       ],
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
-    }
+    },
+    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
@@ -4060,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I33-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T15:31:15.126984+00:00",
-      "focus": "Kontrollierte Number3-Generationswirkung",
+      "id": "CITY-00-I38-P",
+      "kind": "reference_planning",
+      "startedAt": "2026-10-09T15:51:56.580605+00:00",
+      "focus": "Küste und Hafen",
       "state": "completed",
-      "result": "13 Gruppen verglichen, Default-Wiederherstellung bytegleich; konkrete CITY-02/05-Planpräzisierung."
+      "result": "Kontrollierter Coast-Rebuild mit vollständigem Gruppenumfang und Rückstellung geplant."
     },
     "nextRun": {
-      "id": "CITY-00-I33-R",
-      "kind": "reference_review",
-      "focus": "Originalbelege und Vorgabenwiederherstellung prüfen"
+      "id": "CITY-00-I38-I",
+      "kind": "reference_implementation",
+      "focus": "Coast-Feature und Hafenstruktur prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4129,11 +4152,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_n002_product_retest_passed_continue_long_gm_workflow",
+    "state": "gm_ux_n003_n004_assigned_atlas_zoom_blocked_continue_gm_workflow",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-01",
-    "executedUiRuns": 3,
+    "currentRun": "GM-UX-02 Atlas foundation zoom probe",
+    "executedUiRuns": 5,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4185,6 +4208,38 @@
           "evidence": "/workspace/scratch/gm-cloud-qa/142-n002-pass-integrated-latest.png; 135-n002-ten-placed.png; 136-n002-undo.png; 137-n002-redo.png; 138-n002-saved.png; 139-n002-quick-switch.png; 140-n002-fresh-reopen.png; 141-reloaded-618a7f2.png; /workspace/scratch/gm-cloud-qa/151-n002-latest-build-pass.png; /workspace/scratch/gm-cloud-qa/188-current-build-place.png; 191-latest-undo-visible.png; 192-latest-redo-visible.png; 194-latest-final-reopen-eleven.png",
           "coordination": "Issue #1 Kommentar 6083198759; unabhängiger Nachtest gemeldet. Latest-build-Nachtrag Issue #1 Kommentar 6083286156. c00bd41-Nachtest Issue #1 Kommentar 6083603608."
         }
+      },
+      {
+        "id": "GM-UX-003",
+        "priority": "P2-Kandidat",
+        "status": "reproduced_in_second_card_assigned_issue1_retest_pending",
+        "kind": "Eigene UI-Beobachtung; isolierter Cloud-Testvault; Fernsteuerung, keine physische Bedienabnahme",
+        "build": "Obsidian 1.14.4, Produktcommit 2a9a7d55a31c2c8c3d0183fd4980b81caf226714, main.js SHA-256 3388ddf4d380971f4b6d659c6344f6623a2299f014957ebb5e6adc20d6ec5773",
+        "scenario": "GM-UX-01 Schnellmodus-Nachtest, Raum 1, Fenster 1440x1000; vorherige Reproduktion in GM-UX-01 Nebelwacht, Raum 12",
+        "reproduction": "Ctrl+O, Testkarte suchen/öffnen; Raum 1 anklicken; Inhalte > Key bearbeiten; synthetischen Hinweis eingeben, Übernehmen und Speichern; Raum-Key öffnen. Dieselbe Key-Information steht im geöffneten Key-Editor und zusätzlich in der zweiten Ansicht; Kartenkontext wird stark geteilt. Schließen des eingebetteten Key-Editors stellt nur einen Teil der Kartenfläche wieder her, die zweite Ansicht bleibt offen.",
+        "expected": "Key-Ansicht öffnen, den zugehörigen Kartenraum brauchbar sichtbar halten und dieselbe Information nicht zusätzlich in einem offenen eingebetteten Key-Editor duplizieren; Key bearbeiten bleibt erreichbar.",
+        "actual": "Zweite Ansicht öffnet sich, der Key-Editor bleibt aktiv und dieselbe Information erscheint in beiden Bereichen. Reproduziert auf zwei isolierten Karten. Speichern und App-Reload erhielten synthetischen Text.",
+        "impact": "P2-Kandidat: unnötig doppelte Informationsdarstellung und geteilter Kartenkontext. GM-Nutzungshäufigkeit/Produktzeit nicht populationsgemessen; Parallelansicht kann beabsichtigt sein.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/168-nebelwacht-room12-key-open.png; /workspace/scratch/gm-cloud-qa/213-current-build-second-card-key.png; /workspace/scratch/gm-cloud-qa/214-current-build-room-note-open.png; /workspace/scratch/gm-cloud-qa/215-current-build-note-after-close-editor.png; /workspace/scratch/gm-cloud-qa/216-second-card-after-reload.png; /workspace/scratch/gm-cloud-qa/217-second-card-key-after-reload.png",
+        "latency": "Keine Produktlatenz gemessen; CDP-/Koordinatensteuerung nicht als Produktzeit gewertet.",
+        "retest": null,
+        "coordination": "GM-UX-N-003 an Dungeon-Verantwortlichen, Issue #1 Kommentar 6084205940; Umsetzung und erneute Abnahme offen."
+      },
+      {
+        "id": "GM-UX-004",
+        "priority": "P1-Kandidat",
+        "status": "visible_zoom_test_blocked_atlas_render_or_cloud_host_issue_assigned_issue1",
+        "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Obsidian; Ursache Produkt/Host offen",
+        "build": "Obsidian 1.14.4, source commit 0dc85609a35bc4c4452f7afc2a360400922becab, main.js SHA-256 416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159; build dirty only in GM docs/checkpoint",
+        "scenario": "Synthetischer leerer Atlas GM Atlas Zoom Test, 1440x1000; danach sichtbarer Splitterzug auf ca. 860 px Atlasbreite",
+        "reproduction": "Befehlspalette > Atlas anlegen > synthetischen Namen eingeben. Canvas schwarz; kein Raster/Ursprung sichtbar. + dreimal, −, Strg+Mausrad und sichtbarer Splitterzug. Kein sichtbarer Zoom auf schwarzem Canvas; sichtbarer Maßstabstext bleibt 3 Meilen pro Hex. Diagnostisch: Atlasviewport ca. 498x11170 px und nach Splitterzug 860x16868 px.",
+        "expected": "Leerer Atlas zeigt sichtbares Raster und Ursprung; Canvas bleibt innerhalb des sichtbaren Fensters/Panes. −/+, Strg+Mausrad und Einpassen zeigen sichtbare, nachvollziehbare Zoomänderungen.",
+        "actual": "Schwarze Atlasfläche ohne sichtbare Hexes/Ursprung; extreme vertikale Viewportgröße; sichtbarer Zoomeffekt nicht beurteilbar. Host-WebGL-Ursache nicht ausgeschlossen.",
+        "impact": "P1-Kandidat, weil neu sichtbare Atlas-Zoomfunktion aus GM-Sicht nicht beurteilbar ist; keine Nutzerzeit/Latenz gemessen.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/218-atlas-create-command.png; /workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/221-atlas-initial-scale.png; /workspace/scratch/gm-cloud-qa/222-atlas-plus-three.png; /workspace/scratch/gm-cloud-qa/223-atlas-zoom-attempts.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png",
+        "latency": "Nicht gemessen; CDP-/Fernsteuerungszeit nicht als Produktlatenz gewertet.",
+        "retest": null,
+        "coordination": "Hex-/Atlas-Auftrag GM-UX-N-004, Issue #1 Kommentar 6084269776; Ursache und Nachtest offen; HEX-01-CLEAN-P01/R01-Auftragsgrenze, Issue #1 Kommentar 6084291328."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4195,7 +4250,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Den GM-Ablauf mit zweiter Karte fortsetzen: prüfen, ob „Raum-Key öffnen“ regelmäßig gebraucht wird und ob der zusätzliche Pane bei mehreren Räumen dieselbe doppelte Darstellung erzeugt. Danach frisches Öffnen/State checken; Atlas-Zoomfolge nur testen, soweit implementiert.",
+    "next": "Während Dungeon-Auftrag GM-UX-N-003 und Hex-Auftrag GM-UX-N-004 offen sind, GM-UX-01 mit längerer Gameplay-Informationssuche und Ebenenwechsel fortsetzen. Nach Produktfix denselben Key- und Atlaszoomablauf erneut testen; Atlas ist derzeit visuell nicht abgenommen.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4302,15 +4357,24 @@
       },
       {
         "id": "GM-UX-OBS-02",
-        "status": "one_ui_reproduction_hypothesis_frequency_unverified",
+        "status": "reproduced_in_second_card_task_assigned_retest_pending",
         "kind": "Eigene UI-Beobachtung; Cloud/Testvault; mögliche Clutter-Auswirkung ist noch Hypothese",
         "build": "Obsidian 1.14.4; Produktcommit 706627cb36a5f4063e9e84268954eda62193e6a6; main.js SHA-256 98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
         "scenario": "GM-UX-01 Nebelwacht, Geschoss 1, Raum 12; maximierter Cloudhost 1440x1000; isolierter Vault",
         "observation": "Dungeon > Geschosse; sichtbares Geschoss-Dropdown von Erdgeschoss zu Geschoss 1 mit Pfeil-ab/Enter ändern; Raum 12 auswählen; Inhalte > Key bearbeiten. Der Raum-Key-Text war direkt lesbar. „Raum-Key öffnen“ öffnete eine zusätzliche Obsidian-Notizansicht und ließ den eingebetteten Key-Editor offen; der identische Text erschien zweimal und beanspruchte neben der Karte zwei Flächen. Schließen des eingebetteten Editors ließ die zusätzliche Note-Ansicht offen; einmal Einpassen stellte die Karte neben der Notiz dar. Nach App-Neustart führte sichtbare Geschossauswahl zurück zu Geschoss 1, Raum 12 und Key; der vorhandene Hinweistext erschien unverändert und Editorstatus war Gespeichert.",
-        "impact": "Mögliche Überladung/Flächenverlust bei GM-Informationssuche nach explizitem Öffnen einer Note; keine Zeitmessung und keine wiederholte Häufigkeitsmessung. Da der zusätzliche Pane bewusst geöffnet wurde und der Text schon im Key-Editor sichtbar war, kein Produktfehler oder Codeauftrag abgeleitet.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/166-nebelwacht-floor1-map.png; 167-nebelwacht-room12-key.png; 168-nebelwacht-room12-key-open.png; 170-room12-note-map-editor.png; 172-room12-note-fit-locator.png; /workspace/scratch/gm-cloud-qa/173-reload-room12-note-layout.png; 174-room12-floor-after-reload.png; 175-room12-key-after-reload.png",
-        "next": "In zweiter Karte wiederholen und Häufigkeit/Mehrwert des zusätzlichen Note-Pane im GM-Ablauf prüfen. Erst danach priorisieren oder Auftrag erstellen.",
-        "coordination": "Issue #1 Kommentar 6083448633; Befund getrennt als Beobachtung/Hypothese gemeldet. Hostreload-/Key-Abrufnachtrag Issue #1 Kommentar 6083476576."
+        "impact": "Duplikation wurde nun in zwei isolierten Karten reproduziert. Mögliche Überladung/Flächenverlust bei GM-Informationssuche; Nutzungshäufigkeit und Zeitverlust bleiben ungemessen. Begrenzter Dungeon-UX-Auftrag GM-UX-N-003 erteilt.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/166-nebelwacht-floor1-map.png; 167-nebelwacht-room12-key.png; 168-nebelwacht-room12-key-open.png; 170-room12-note-map-editor.png; 172-room12-note-fit-locator.png; /workspace/scratch/gm-cloud-qa/173-reload-room12-note-layout.png; 174-room12-floor-after-reload.png; 175-room12-key-after-reload.png; zweite Karte aktueller Build: /workspace/scratch/gm-cloud-qa/213-current-build-second-card-key.png, /workspace/scratch/gm-cloud-qa/214-current-build-room-note-open.png, /workspace/scratch/gm-cloud-qa/215-current-build-note-after-close-editor.png, /workspace/scratch/gm-cloud-qa/216-second-card-after-reload.png, /workspace/scratch/gm-cloud-qa/217-second-card-key-after-reload.png",
+        "next": "GM-UX-N-003 auf derselben isolierten Karte nach integrierter Änderung erneut prüfen; Nutzerhäufigkeit bleibt eine offene Annahme.",
+        "coordination": "Issue #1 Kommentar 6083448633; Befund getrennt als Beobachtung/Hypothese gemeldet. Hostreload-/Key-Abrufnachtrag Issue #1 Kommentar 6083476576; GM-UX-N-003 Folgeauftrag Issue #1 Kommentar 6084205940."
+      },
+      {
+        "id": "GM-UX-OBS-03",
+        "status": "atlas_zoom_test_blocked_current_cloud_build_task_assigned",
+        "observation": "Sichtbare Atlasfläche bleibt schwarz und wächst im Cloud Obsidian Pane extrem in die Höhe; Zoom ist visuell nicht abnehmbar. Ursache Produkt/Cloud-WebGL offen.",
+        "impact": "Atlaszoom nicht visuell testbar; keine Produkterfolgsaussage.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png",
+        "next": "GM-UX-N-004 mit Hex-Verantwortlichen klären und anschließend denselben Zoomablauf wiederholen.",
+        "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328."
       }
     ]
   }
