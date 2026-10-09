@@ -1,5 +1,7 @@
 import { AtlasHistory, type AtlasChange } from "./atlas-history";
 import type { OverworldDocument } from "./overworld";
+import { checkedLocationPlacements } from "./location-placement";
+import type { AtlasValue } from "./atlas-history";
 import {
   checkedAxial,
   checkedTerrainCell,
@@ -34,7 +36,18 @@ export class TerrainSource {
     readonly history: AtlasHistory,
     private load: (reference: TerrainReference) => Promise<string>,
   ) {
-    history.register(world.id, validateTerrainChange);
+    history.register(world.id, (target, value) => {
+      if (target !== "placements") return validateTerrainChange(target, value);
+      if (
+        checkedLocationPlacements(value).some((p) => p.locationId === world.id)
+      )
+        throw new Error(
+          "Ort und Welt benötigen verschiedene Dokumentkennungen.",
+        );
+    });
+    history.hydrate(world.id, [
+      ["placements", world.placements as unknown as AtlasValue],
+    ]);
     for (const ref of world.chunks) this.refs.set(terrainChunkKey(ref), ref);
   }
   async ensure(cells: readonly AxialCell[]): Promise<void> {
@@ -99,9 +112,16 @@ export class TerrainSource {
   cells(): readonly TerrainCell[] {
     return this.history
       .entries(this.world.id)
-      .flatMap(([, value]) =>
-        value === null ? [] : [checkedTerrainCell(value)],
+      .flatMap(([target, value]) =>
+        target === "placements" || value === null
+          ? []
+          : [checkedTerrainCell(value)],
       );
+  }
+  placements() {
+    return checkedLocationPlacements(
+      this.history.read(this.world.id, "placements"),
+    );
   }
   references(): readonly TerrainReference[] {
     const refs = new Map(this.refs),

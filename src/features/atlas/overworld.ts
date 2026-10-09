@@ -3,6 +3,10 @@ import {
   terrainChunkKey,
   type TerrainReference,
 } from "./terrain-schema";
+import {
+  checkedLocationPlacements,
+  type LocationPlacement,
+} from "./location-placement";
 export type HexOrientation = "pointy" | "flat";
 export interface WorldPoint {
   readonly x: number;
@@ -21,7 +25,7 @@ export interface OverworldDocument {
   readonly minHexMiles: typeof MIN_HEX_MILES;
   readonly levelFactor: 3;
   readonly chunks: readonly TerrainReference[];
-  readonly placements: readonly never[];
+  readonly placements: readonly LocationPlacement[];
 }
 export function newOverworld(
   id: string,
@@ -44,7 +48,10 @@ export function newOverworld(
     }),
   );
 }
-export function parseOverworld(text: string): OverworldDocument {
+export function parseOverworld(
+  text: string,
+  locations = false,
+): OverworldDocument {
   const d = JSON.parse(text) as OverworldDocument;
   if (
     !d ||
@@ -65,7 +72,7 @@ export function parseOverworld(text: string): OverworldDocument {
     !Array.isArray(d.placements)
   )
     throw new Error("Ungültige Atlasdatei oder unbekannter Maßstab.");
-  if (d.placements.length)
+  if (d.placements.length && !locations)
     throw new Error("Diese Atlasinhalte benötigen einen neueren Editor.");
   const keys = [
     "kind",
@@ -89,15 +96,26 @@ export function parseOverworld(text: string): OverworldDocument {
     if (chunkKeys.has(key)) throw new Error("Doppelter Landschaftsbereich.");
     chunkKeys.add(key);
   }
+  const placements = checkedLocationPlacements(d.placements);
+  if (placements.some((p) => p.locationId === d.id))
+    throw new Error("Ort und Welt benötigen verschiedene Dokumentkennungen.");
   return Object.freeze({
     ...d,
     origin: Object.freeze({ ...d.origin }),
     chunks: Object.freeze(chunks),
-    placements: Object.freeze([]),
+    placements,
   });
 }
-export function serializeOverworld(document: OverworldDocument): string {
+export function serializeOverworld(
+  document: OverworldDocument,
+  locations = false,
+): string {
+  checkedLocationPlacements(document.placements);
   return (
-    JSON.stringify(parseOverworld(JSON.stringify(document)), null, 2) + "\n"
+    JSON.stringify(
+      parseOverworld(JSON.stringify(document), locations),
+      null,
+      2,
+    ) + "\n"
   );
 }
