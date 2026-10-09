@@ -127613,7 +127613,7 @@
           "remaining": "Löschzug und vier frühere Punktfälle sind mit Host-Rohdaten ohne Abweichung gepaart und separat reviewt; Undo/Redo und frische Hostöffnungen bestehen. Weitere Punktentfernungen, aktive Wandvorlage, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingLastOutlineOriginalProbe": {
-          "state": "last_outline_delete_scoped_host_raw_pair_passed_case_open",
+          "state": "last_outline_delete_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "hostBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-probe.md",
@@ -127626,8 +127626,9 @@
           "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/evidence/1791541240517-parity-tools-phase1-building-point-edit/result.json",
           "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/evidence/1791541281079-parity-tools-phase1-building-point-reopen/result.json",
           "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/independent-audit.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/review.md",
           "measuredScope": "8×8: Delete am Stone-Dreieckgriff entfernt den letzten Shape-Umriss und zwölf belegte Zellen. Undo stellt beides wieder her, Redo entfernt beides. Frische Originalöffnung bleibt leer; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
-          "remaining": "Host-GUI-/Rohdatenvergleich, zwei Undo-/Redo-Schritte und frische Hostöffnung bestehen. Getrennter Review, weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Host-GUI-/Rohdatenvergleich, zwei Undo-/Redo-Schritte, frische Hostöffnung und getrennter Review bestehen. Weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
