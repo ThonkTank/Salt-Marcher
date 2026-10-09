@@ -152371,8 +152371,8 @@
   },
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
-    "currentPhase": "HEX-02",
-    "state": "passed_scoped_early_level0_island",
+    "currentPhase": "HEX-03",
+    "state": "concrete_location_plan_checked_not_implemented",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152548,6 +152548,48 @@
         ],
         "observed": "Independent complete R01 and exact P1 R02 passed; distinct bounded cleanup completed; no total Atlas or parity Go.",
         "reviewRun": "HEX-02-R01/R02 + own CLEAN-P/I/R"
+      },
+      {
+        "id": "HEX03-001",
+        "requirement": "Geschlossener Orts-/Platzierungs-/Key-Codec mit unverändertem Markdown",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-002",
+        "requirement": "Ort und Weltplatzierung gemeinsam anlegen/rücknehmen",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-003",
+        "requirement": "Orts-Key rechts lesen/bearbeiten/ordnen ohne Kartenkontextwechsel",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-004",
+        "requirement": "Ort verschieben, Hex bearbeiten und gemeinsam einpassen",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-005",
+        "requirement": "Gemeinsames Save/Draft/Discard/Copy/Recovery samt frischem Prozess",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-006",
+        "requirement": "ID-/Abschnittslink nach Dateiumbenennung und frischem Prozess",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "HEX03-007",
+        "requirement": "Unabhängiger Fachreview und getrenntes Aufräumen",
+        "state": "open",
+        "plan": "ROADMAP-HEX-03-PLAN.md"
       }
     ],
     "cleanupFindings": [
