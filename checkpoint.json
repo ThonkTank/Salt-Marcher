@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_contract_review_passed_child_state_machine_next",
+    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,13 +101,14 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "i02_p01_plan_candidate_review_required",
+      "state": "i02_p01_plan_review_changes_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
+      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair: Parent/Child binding, aggregates, complete state/operation oracles, target and rename lifecycle, retained evidence, global name uniqueness including orphans, identity/hash/length rules, deep immutability and adversarial Golden DTOs are covered. The isolated contract suite passed 9 tests; the integrated tree passed typecheck, 276 tests and build."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. The first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3 requires repair: its ten aggregate transition rows omit individual Parent and conflict transitions, the Update temp-synced receipt generation, complete durable receipt ordering, and an enumerated operation-state-killpoint-adversary matrix with deterministic recovery oracles."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -116,25 +117,25 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-P01",
-      "kind": "child_state_machine_plan",
+      "id": "ADR-P01-H03-I02-P01-N01",
+      "kind": "child_state_machine_plan_repair",
       "owner": "local_implementation_thread",
-      "focus": "Plan the bounded native Child-State-Machines and pure Create/Update/Delete fault matrix against the reviewed p01-v3 contract; do not claim executable H03 evidence, Linux durability Go, platform selection or P02 authorization"
+      "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
     }
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_repair_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_second_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N01",
+      "id": "CE-02-I02-P01-N02",
       "kind": "plan_repair",
       "state": "drafted_review_pending",
-      "focus": "Repair seven mandatory R01 findings with a separate corpus/source gate before item implementation",
+      "focus": "Resolve N01-R01 cycle and schema-artifact findings while preserving the five confirmed repair groups",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "R01 required changes on 8c5c5680054b8dddd89900733ac7bbfe966876f1; repaired plan awaits exact-head independent re-review. No Item implementation or acceptance."
+      "result": "R01 required seven changes on 8c5c5680054b8dddd89900733ac7bbfe966876f1 (Issue #1 comment 6085178049). N01-R01 left two mandatory findings on 01a02ef124e3ffc02b626019f89f5e216612f7ab (Issue #1 comment 6085248851). N02 repair awaits exact-head independent review. No Item implementation or acceptance."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -311,10 +312,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-N01-R01",
+      "id": "CE-02-I02-P01-N02-R01",
       "kind": "independent_plan_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Verify all seven R01 repairs on the exact shared commit; only after PASS begin separate CE-02-I02-S01 corpus/provenance inventory, not product implementation"
+      "focus": "Verify S01 gate is acyclic and owns complete inventory/transcript/schema/source evidence while Inspector and product gates remain I01; verify named schema types, enums, units, optionality and review hashes. Only after PASS begin S01, not I01."
     }
   },
   "repositoryWorkflow": {
@@ -4175,17 +4176,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R02",
-      "kind": "implementation_review",
-      "startedAt": "2026-10-09T16:45:41.128935+00:00",
-      "focus": "Nachbesserung gegen Gegenfälle und Modellvertrag reviewen",
+      "id": "CITY-01-PREP-CLEAN-R01",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T16:48:58.646070+00:00",
+      "focus": "Aufgeräumten Modell-/Codec-Vertrag und Codegleichheit prüfen",
       "state": "completed",
-      "result": "Beide R01-Gegenfälle erneut am reparierten Codec kontrolliert abgelehnt; kanonischer Roundtrip unverändert.276Tests einschließlich11 City-Fällen, Typprüfung und Build an unveränderten geprüften Quellen bestätigt. Modellvertrag ohne weitere Fachlücke im begrenzten Vorbereitungsumfang. Aufräumreste: dimensionslose Skalierung im Typ kommentieren, pauschal geplante Modulpfade im Gesamtplan korrigieren und dichte Listen in Architektur dokumentieren. Alle Host-/Atlas-/Paritätspflichten bleiben offen."
+      "result": "Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-CLEAN-P01",
-      "kind": "cleanup_planning",
-      "focus": "Einheitenkommentar, tatsächliche Modulpfade und Listenvertrag aufräumen"
+      "id": "CITY-01-PREP-P02",
+      "kind": "implementation_planning",
+      "focus": "Reine Stadtbefehle auf vorhandener AtlasHistory planen und Modulgrenze abstimmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
