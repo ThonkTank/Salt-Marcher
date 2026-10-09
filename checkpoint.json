@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I05-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T10:46:01.305590+00:00",
-      "focus": "Stammbaumwirkung direkt messen",
-      "state": "completed",
-      "result": "Sechs Karten, Kanten, Vollbild und Personenaufruf beobachtet; Adoptionssemantik nur Relations belegt"
-    },
-    "nextRun": {
       "id": "CITY-00-I05-R",
       "kind": "reference_review",
-      "focus": "Graphbelege und technische Bindung gegen Plan prüfen"
+      "startedAt": "2026-10-09T10:46:28.413339+00:00",
+      "focus": "Graphbelege und Anspruch gegen Plan prüfen",
+      "state": "completed",
+      "result": "Keine Pflichtlücke im gemessenen Teilumfang; übrige Originalwirkungen und eigener Vergleich bleiben offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I05-CP",
+      "kind": "cleanup_planning",
+      "focus": "Beleggrenzen und technische Graphbindung bereinigen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
