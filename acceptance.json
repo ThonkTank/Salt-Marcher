@@ -117555,6 +117555,20 @@
           "measuredScope": "8×8, angrenzende 3×3-Smart-Wood-/Smart-Stone-Gesten ohne Wand: eine gemeinsame Kontur und 18 Zellen. Gespeicherte Kontur, Positionen, Stilpfade und Farben entsprechen dem Original vollständig; Undo/Redo, Save und frische Neuöffnung bestanden.",
           "remaining": "Reine Übermalung, Radieren an der Stilgrenze, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorOverpaintCandidate": {
+          "state": "single_cell_stone_overpaint_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-original-20261009/original-probe.md",
+          "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-original-20261009/native/runs/20261009-080226-3626822/evidence/maps/00-source.dungeondraft_map",
+          "originalPainted": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-original-20261009/native/runs/20261009-080226-3626822/evidence/maps/01-painted.dungeondraft_map",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-host-20261009-checked/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-host-20261009-checked/evidence/1791526045825-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-host-20261009-checked/evidence/1791526062430-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-host-20261009-checked/independent-audit.json",
+          "measuredScope": "8×8 Wood/Stone: Stone-Rechteck über genau einer Wood-Zelle. Original und Host speichern dieselbe eine Kontur und 18 Zellen; nur (1,1) wechselt Stil und Farbe. Host-Undo/Redo sowie frische Original- und Hostöffnung bestanden.",
+          "remaining": "Größere Übermalung, Radieren an der Stilgrenze, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
