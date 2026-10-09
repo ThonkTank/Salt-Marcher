@@ -1029,3 +1029,5 @@ CITY-01-INTEGRATION-R02 Start 2026-10-09T19:29:00.630020+00:00; R02: alle drei B
 CITY-01-INTEGRATION-R02-CLEAN-P01 Start 2026-10-09T19:29:03.471755+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
 
 CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
