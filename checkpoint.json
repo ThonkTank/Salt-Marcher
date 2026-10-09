@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I34-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:36:12.128528+00:00",
-      "focus": "Maximum-Belege CP",
-      "state": "completed",
-      "result": "Plan: CO-WAT-0010-Snapshot um Maximum/hub und bytegleiche Rückstellung ergänzen, genaue Grenzregel/Torzählung weiterhin offen. Beide früheren Number3/I32-Beleggrenzen erhalten.13 Gruppen, Hashes, Belegziele und64/24 offene Pflichten prüfen. CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I34-CI",
       "kind": "cleanup_implementation",
-      "focus": "Maximum-Belege und Snapshot CI"
+      "startedAt": "2026-10-09T15:36:23.910998+00:00",
+      "focus": "Maximum-Belege CI",
+      "state": "completed",
+      "result": "Snapshot enthält Number3 sowie Maximum/hub mit tatsächlicher Straßenwirkung; unbekannte Maximalregel und Torzählung bleiben offen. Keine eigene Produktfreigabe."
+    },
+    "nextRun": {
+      "id": "CITY-00-I34-CR",
+      "kind": "cleanup_review",
+      "focus": "Maximum-Belege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

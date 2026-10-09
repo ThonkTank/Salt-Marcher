@@ -554,3 +554,5 @@ CITY-02/CITY-05-Präzisierung aus I34: Maximum ist eine eigene Anschlussstrategi
 CITY-00-I34-R Start 2026-10-09T15:35:59.517218+00:00; Tatsächliche Downloadkopien, acht Bilder/Rawhashes und13-Gruppenvergleich bestätigt. Maximum erzeugt hub=1 ohne gates-Parameter, roads5→10, vier weitere Gruppen geändert; übrige8 gleich. Rückstellung bytegleich. Keine Original-Maximalformel oder Torzählung aus Linienanzahl abgeleitet. Aufräumbefund: Snapshot führt Maximum-Wirkung noch offen.
 
 CITY-00-I34-CP Start 2026-10-09T15:36:12.128528+00:00; Plan: CO-WAT-0010-Snapshot um Maximum/hub und bytegleiche Rückstellung ergänzen, genaue Grenzregel/Torzählung weiterhin offen. Beide früheren Number3/I32-Beleggrenzen erhalten.13 Gruppen, Hashes, Belegziele und64/24 offene Pflichten prüfen. CI/CR getrennt.
+
+CITY-00-I34-CI Start 2026-10-09T15:36:23.910998+00:00; Snapshot enthält Number3 sowie Maximum/hub mit tatsächlicher Straßenwirkung; unbekannte Maximalregel und Torzählung bleiben offen. Keine eigene Produktfreigabe.

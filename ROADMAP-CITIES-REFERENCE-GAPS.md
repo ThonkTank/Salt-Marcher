@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I33-I; 64 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I34-I; 64 CO-/24 CTY-Pflichten. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -19,7 +19,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-WAT-0008 | CITY-04 | Stadtgeometrie verformen (Warp) | all8_operations_direct_partial; Rotate global, Measure96m |
 | CO-COK-0008 | CITY-05 | Snapping und Kollisionsprüfung | control_observed_only |
 | CO-WAT-0003 | CITY-05 | Gassen und Straßennetz | alley_flag_actual_json_roads_3_to74_other13_equal; Einzelbearbeitung/Topologie/Persistenz offen |
-| CO-WAT-0010 | CITY-05 | Kontrollierte Tor-/Straßenanzahl | Number3-Rebuild: roads/walls/buildings/fields/districts geändert, andere8 gleich; Default-Rückstellung bytegleich; Maximum/genaue Torzählung offen |
+| CO-WAT-0010 | CITY-05 | Kontrollierte Tor-/Straßenanzahl | Number3 und Maximum/hub-Rebuild direkt; Maximum roads5→10/weitere4 Gruppen geändert/andere8 gleich; Default-Rückstellungen bytegleich; genaue Maximalregel/Torzählung offen |
 | CO-FTG-0004 | CITY-06 | Demografie und Lebensstandard | keine gesonderte Wirkungsprobe; direct |
 | CO-FTG-0005 | CITY-06 | Regierung und Wachen | keine gesonderte Wirkungsprobe; direct |
 | CO-FTG-0006 | CITY-06 | Viertelwachstum und Dekoration | keine gesonderte Wirkungsprobe; direct |
