@@ -101,7 +101,7 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "contract_review_passed_child_state_machine_next",
+      "state": "i02_p01_plan_candidate_review_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",

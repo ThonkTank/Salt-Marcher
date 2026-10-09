@@ -98,7 +98,7 @@
     },
     "adrP01H03": {
       "run": "ADR-P01-H03-I01-R03",
-      "state": "contract_review_passed_child_state_machine_next",
+      "state": "i02_p01_plan_candidate_review_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
