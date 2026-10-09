@@ -3446,17 +3446,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T10:52:40.527650+00:00",
-      "focus": "Sperr- und Zielvertrag technisch planen",
+      "id": "CITY-00-I06-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T10:54:28.931093+00:00",
+      "focus": "Sperr- und Zielreparatur vor Originalstart reviewen",
       "state": "completed",
-      "result": "PID/Inode-FLOCK-Prüfung, Besitzeridentität und Frame-/Portbindung geplant"
+      "result": "R01/R02 geschlossen; fünf Offline-Tests grün; check/build grün, drei fehlende externe Fixtures als offene Baselinegrenze erfasst. Freier GUI-Platz bestätigt."
     },
     "nextRun": {
-      "id": "CITY-00-I06-CI",
-      "kind": "cleanup_implementation",
-      "focus": "R01/R02 mit Offline-Grenztests reparieren"
+      "id": "CITY-00-I06-NI",
+      "kind": "native_original_probe",
+      "focus": "Ein enger COK-Start-/Werkzeugbeleg und normaler Abschluss unter eigener Sperre"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

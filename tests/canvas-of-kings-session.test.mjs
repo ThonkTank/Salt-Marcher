@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { assertRun, originalIdentity, assertProcesses, startTicks, sha256, qaRoot } from '../tools/canvas-of-kings/identity.mjs';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { assertRun, originalIdentity, assertProcesses, startTicks, sha256, qaRoot, assertHeldLock, assertTarget } from '../tools/canvas-of-kings/identity.mjs';
 // Offline fixtures only; these are never claimed as original runtime evidence.
 const root = fs.mkdtempSync(path.join(qaRoot, 'cok-adapter-offline-'));
 test.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -37,4 +39,22 @@ test('process guard rejects wrong product, executable and PID start identity', (
   assert.throws(() => assertProcesses({ ...session, product: 'Wonderdraft' }), /Canvas/);
   assert.throws(() => assertProcesses({ ...session, processes: [{ ...session.processes[0], startTicks: '0' }] }), /identity/);
   assert.throws(() => assertProcesses({ ...session, processes: [{ ...session.processes[0], executable: '/bin/false' }] }), /identity/);
+});
+
+test('real flock ownership is required, including internal launcher reentry', () => {
+  const lock = path.join(root, 'offline.lock'); fs.writeFileSync(lock, '');
+  const owner = { pid: process.pid, startTicks: startTicks(process.pid), executable: process.execPath };
+  assert.throws(() => assertHeldLock(lock, owner), /not held/);
+  const module = pathToFileURL(path.resolve('tools/canvas-of-kings/identity.mjs')).href;
+  const code = `import { assertHeldLock, startTicks } from ${JSON.stringify(module)}; assertHeldLock(${JSON.stringify(lock)}, { pid: process.pid, startTicks: startTicks(process.pid), executable: process.execPath });`;
+  const result = spawnSync('flock', ['--no-fork', lock, process.execPath, '--input-type=module', '-e', code], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.throws(() => assertHeldLock(lock, owner), /not held/);
+});
+test('RFB target cannot redirect to another port or incomplete role set', () => {
+  const session = { display: ':12', port: 5912, width: 1280, height: 960, executable: process.execPath,
+    processes: ['canvas-of-kings', 'session-bus', 'window-manager', 'xvnc'].map(name => ({ name, executable: process.execPath })) };
+  assertTarget(session);
+  assert.throws(() => assertTarget({ ...session, port: 5900 }), /contract/);
+  assert.throws(() => assertTarget({ ...session, processes: session.processes.slice(1) }), /roles/);
 });
