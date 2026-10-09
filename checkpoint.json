@@ -4325,17 +4325,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-CLEAN-I04",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T17:32:05.019677+00:00",
-      "focus": "Vorhandenen lokalen Core und offene native Prüfung dokumentieren",
-      "state": "completed",
-      "result": "Architektur/Pläne stimmen mit lokalem Szene-/Treffercore und gemeinsamer Geometrie; sichtbare Grafik und native Regression bleiben offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-SCENE-CLEAN-R04",
       "kind": "cleanup_review",
-      "focus": "Szenenarchitektur und unveränderte geprüfte Quellen abschließend prüfen"
+      "startedAt": "2026-10-09T17:32:52.031176+00:00",
+      "focus": "Szenenarchitektur und unveränderte geprüfte Quellen prüfen",
+      "state": "completed",
+      "result": "Lokaler Core reviewt und aufgeräumt;310Tests/Typprüfung/Build und7525Baselinevergleiche gültig. Native-/Grafik-/Gesten-/Saveintegration weiter offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-P05",
+      "kind": "implementation_planning",
+      "focus": "Transiente Stadtwerkzeugzüge mit stabilem Gestenanfangsstand und gemeinsamem Historyvertrag planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
