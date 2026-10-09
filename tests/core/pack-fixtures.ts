@@ -1,12 +1,9 @@
+import { PNG } from "pngjs";
+
 /** Small valid GDPC packages for parser and catalog tests. */
 export function assetPack(): Blob {
   const id = "portable-fixture",
-    png = new Uint8Array(24),
-    view = new DataView(png.buffer);
-  png.set([137, 80, 78, 71, 13, 10, 26, 10]);
-  view.setUint32(12, 0x49484452);
-  view.setUint32(16, 256);
-  view.setUint32(20, 256);
+    png = PNG.sync.write(new PNG({ width: 1, height: 1 }));
   const manifest = new TextEncoder().encode(JSON.stringify({
       id,
       name: "Portable fixture",
