@@ -1,13 +1,13 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I19-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I25-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
-CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: zwei Versuche nach Save ohne beobachtete Rücknahme; erfolgreiche History-Folge und Einfluss von Save offen. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
+CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: je zwei Versuche nach Save und vor manuellem Save ohne Rücknahme; automatische Sicherungen/History-Eignung ungeklärt, beide Hypothesen gestoppt. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
 | Pflicht | Zielphase | Funktion | Originalbelegumfang |
 |---|---|---|---|
 | CO-COK-0006 | CITY-01 | Native Karten speichern und öffnen | save_and_fresh_open_observed |
-| CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | two_undo_attempts_no_observed_effect_after_save; Redo ungeprüft |
+| CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | two_undo_attempts_before_manual_save_no_observed_effect; Auto-Save ungeklärt, Redo ungeprüft |
 | CO-FTG-0015 | CITY-01 | Manuelle Kartenbearbeitung | road_draw_save_reload_remove_observed |
 | CO-FTG-0001 | CITY-02 | Siedlungsgröße und benannte Vorgaben | partial |
 | CO-FTG-0002 | CITY-02 | Straßenlayout und Bebauungsvorgaben | preset_parameter_change_observed_not_generated |
@@ -18,7 +18,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-WAT-0007 | CITY-04 | Lokale Geometrie erneut erzeugen | local_reroll_visual_effect_observed |
 | CO-WAT-0008 | CITY-04 | Stadtgeometrie verformen (Warp) | all8_operations_direct_partial; Rotate global, Measure96m |
 | CO-COK-0008 | CITY-05 | Snapping und Kollisionsprüfung | control_observed_only |
-| CO-WAT-0003 | CITY-05 | Gassen und Straßennetz | partial |
+| CO-WAT-0003 | CITY-05 | Gassen und Straßennetz | alley_flag_actual_json_roads_3_to74_other13_equal; Einzelbearbeitung/Topologie/Persistenz offen |
 | CO-WAT-0010 | CITY-05 | Kontrollierte Tor-/Straßenanzahl | partial |
 | CO-FTG-0004 | CITY-06 | Demografie und Lebensstandard | keine gesonderte Wirkungsprobe; direct |
 | CO-FTG-0005 | CITY-06 | Regierung und Wachen | keine gesonderte Wirkungsprobe; direct |
@@ -33,7 +33,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0027 | CITY-06 | Gebäudeereignisse | control_observed_only |
 | CO-FTG-0028 | CITY-06 | Favoriten für Gebäude und Bewohner | control_observed_only |
 | CO-FTG-0030 | CITY-06 | Gebäudedaten bearbeiten und erhalten | rename_save_reload_observed |
-| CO-WAT-0006 | CITY-06 | Landmarken setzen | partial |
+| CO-WAT-0006 | CITY-06 | Landmarken setzen | legend_name_inline_rename_delete_and_actual_svg_observed; Position-Menü ist Legendenlayout, Pin/Persistenz offen |
 | CO-COK-0001 | CITY-07 | Pfad-/Flächenplatzierung | named_path_and_plot_effect_observed |
 | CO-COK-0002 | CITY-07 | Zufallsvarianten von Objektkategorien | keine gesonderte Wirkungsprobe; documentation |
 | CO-COK-0003 | CITY-07 | Zusammen bewegte Objektgruppen | keine gesonderte Wirkungsprobe; documentation |
@@ -55,7 +55,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0041 | CITY-07 | 3D-Darstellung und Street View | perspective_entry_and_return_observed |
 | CO-FTG-0042 | CITY-07 | Ruhetag manuell überschreiben | control_observed_only |
 | CO-WAT-0002 | CITY-07 | Dächer und Vierteldarstellung | partial |
-| CO-WAT-0004 | CITY-07 | Wälder und Stadtumgebung | keine gesonderte Wirkungsprobe; documentation |
+| CO-WAT-0004 | CITY-07 | Wälder und Stadtumgebung | tree_flag_actual_json_0_to13_points_other13_equal; Forest-Control danach bedienbar, Waldwirkung offen |
 | CO-WAT-0009 | CITY-07 | Farb-/Stilvorgaben | vivid_apply_color_file_geometry_equal_tint_partial |
 | CO-COK-0005 | CITY-08 | Exportbereich, Raster und Vorlagen | keine gesonderte Wirkungsprobe; documentation |
 | CO-FTG-0020 | CITY-08 | Bild-, CSV- und JSON-Ausgabe | partial |

@@ -56,6 +56,34 @@ await build({
     },
   ],
 });
+if (test) await build({
+  entryPoints: ["tests/catalog-creature-view-dom.entry.ts"],
+  outfile: ".build/catalog-creature-view-dom.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/catalog-creature-view-adapter.entry.ts"],
+  outfile: ".build/catalog-creature-view-adapter.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+  plugins: [{
+    name: "obsidian-view-test-stub",
+    setup(builder) {
+      builder.onResolve({ filter: /^obsidian$/ }, () => ({
+        path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
+      }));
+    },
+  }],
+});
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);

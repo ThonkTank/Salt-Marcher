@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:36:06Z",
-    "state": "smr00_local_static_review_repaired_external_reviews_pending",
+    "updated": "2026-10-09T14:28:52Z",
+    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -21,7 +21,7 @@
       "confirmed acceptance cases, static catalog data, reference tables and Golden Masters"
     ],
     "phases": [
-      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "plan_ready_review_pending"},
+      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "prototype_plan_reviewed_execution_pending"},
       {"id": "SMR-01", "title": "Campaign identity and data lifecycle", "state": "open"},
       {"id": "SMR-02", "title": "Catalog, reference graph and world planner", "state": "partial_via_ce01"},
       {"id": "SMR-03", "title": "Party, scene and live session", "state": "open"},
@@ -54,17 +54,25 @@
       {"id": "SMR-AC-17", "title": "Tutorial, localization, keyboard and 200-percent accessibility", "state": "open"},
       {"id": "SMR-AC-18", "title": "Performance, cancellation, offline and privacy qualification", "state": "open"}
     ],
+    "adrPrototypePlan": {
+      "run": "SMR-00-P01",
+      "state": "completed_static_validation_reviewed",
+      "document": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
+      "result": "Defines sequential ADR-P01 through ADR-P04 executable proofs plus ADR-C01 composition, immutable receipts, versioned contracts, package ownership, cleanup, OS matrices and hard Go/No-Go rules without ratifying the target platform.",
+      "review": "Passed on exact source commit 0497661e21848fd16454b088ffe4aa1230bc62d9 after repairs for shared contract composition, repository-wide write/delete receipts, import identity mapping, canonical archive bytes, retry/concurrency and ratification blockers.",
+      "limits": "No executable prototype or target-platform decision exists yet. Device/cloud inputs, ADR-P01 through ADR-P04, ADR-C01 and the additional distribution, extension, audio/background-work and three-option evidence remain open."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "SMR-00-ADR-01 compares the Obsidian-plugin, standalone-desktop and incremental-hybrid paths and records the team decision with independent cloud review. Host-neutral CE-01-I03 and existing dungeon/hex/city work may continue."
+    "next": "ADR-P01 implements the isolated desktop-shell map proof on a clean candidate branch and must pass its fault, restart, renderer-boundary, OS-durability and cleanup reviews before ADR-P02 begins. The platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:36:06Z",
-  "state": "ce01_i02_implemented_i03_next",
+  "updated": "2026-10-09T14:38:00Z",
+  "state": "ce01_n01_reviewed_host_acceptance_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -248,11 +256,52 @@
       },
       "limits": "Implementation candidate only. Advanced filters/chips/reset/debounce, DOM-host and real Obsidian acceptance, independent review and all Encounter behavior remain open; CE-AC-01/02/14 are not approved."
     },
-    "next": "CE-01-I03 completes advanced filters, removable chips/reset, debounced stale-safe querying, responsive/A11y behavior and focused DOM-host coverage; no CE-01 or encounter acceptance approval."
+    "ce01I03": {
+      "run": "CE-01-I03",
+      "state": "completed_checked_reviewed",
+      "result": "All planned D&D-2014 monster filters project into the catalog query. Discrete filters accept multiple values; every accepted criterion has an individually removable chip and reset preserves sort/selection. Free-text drafts publish stale-safe after 200 ms or Enter, persist unfinished and empty input, and are folded atomically into applied filters for host persistence and close. Range errors remain correctable. State, content controller and DOM harness are host-neutral behind an injected port; the Obsidian ItemView is a separately tested adapter. Explicit scroll resets survive re-render.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 235, "failed": 0},
+        "domHarness": "passed",
+        "build": "passed",
+        "covered": ["multi-filter intersection", "individual chip and reset focus", "paging", "Arrow/Enter/Escape", "selection after sort", "explicit scroll reset", "aria-sort", "notice", "200-ms latest generation", "Enter flush", "empty state", "host-lifecycle draft persistence", "correctable range alert", "close cleanup", "responsive CSS contract", "thin Obsidian adapter"]
+      },
+      "review": "Passed after required repairs; reviewer ran no separate tests.",
+      "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."
+    },
+    "ce01R01": {
+      "run": "CE-01-R01",
+      "state": "changes_required",
+      "reviewedCommit": "a04efd3df215f4c03504e2895a21c92d67b15ee2",
+      "findings": [
+        "Concurrent openCreatureCatalog calls can both pass the pre-await unique-view check and leave two catalog leaves because the command callback does not serialize or await the open operation.",
+        "A parser-accepted adversarial creature ID can make the keyboard focus querySelector throw a selector SyntaxError."
+      ],
+      "retained": "Host-neutral content boundary, draft/close race handling, ownerWindow use, combined filters and the static accessibility contract remain sound.",
+      "limits": "Reviewer ran no separate tests or GUI. Real Obsidian command, restart, physical input, damaged-data and measured-size acceptance remain open."
+    },
+    "ce01N01": {
+      "run": "CE-01-N01",
+      "state": "completed_checked_reviewed",
+      "commits": ["2c86971", "e93e2ba"],
+      "result": "Catalog opening is serialized through one in-flight operation, preserves and reveals one canonical leaf, and removes pre-existing duplicates. Keyboard row focus compares dataset values instead of interpolating untrusted IDs into a selector.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 239, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1356752,
+        "mainJsGrowthBytes": 167382,
+        "mainJsGrowthLimitBytes": 180000
+      },
+      "review": "Passed after the repair review required explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions.",
+      "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+    },
+    "next": "CE-01-H01 follows ROADMAP-SALTMARCHER-CE01-H01-PLAN.md for the real Obsidian command, focus, close/reopen, fresh-process, damaged-payload and measured 900x650/1150x700 acceptance. Only after its review may the separate CE-01-C01 cleanup begin."
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:44:38.401333+00:00",
+    "updated": "2026-10-09T13:56:09.039401+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1526,7 +1575,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-roads.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json"
         ],
         "task": "Hauptweg und Gasse bearbeiten",
         "phase": "CITY-05",
@@ -1542,14 +1592,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
+        "gap": "Show alleys und tatsächliche Ausgabe von71 zusätzlichen Linien direkt belegt; individuelle Hauptweg-/Gassenbearbeitung, Topologie, Save/Reload, Version und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I24-I",
+            "state": "direct_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
+            "result": "Show alleys Flag/Wirkungsprobe und tatsächliche JSON-Dateien: roads 3→74 LineStrings, ursprüngliche3 erhalten, übrige13 Gruppen wertgleich."
+          }
+        ]
       },
       {
         "id": "CO-WAT-0004",
@@ -1559,8 +1617,10 @@
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json"
+        ],
         "task": "Umgebung sichtbar ausarbeiten",
         "phase": "CITY-07",
         "caseIds": [
@@ -1575,9 +1635,17 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Baumdarstellung und tatsächliche trees-Ausgabe direkt teilbelegt. Forest-Zugang nach Show trees beobachtet; Waldwirkung, Einzelbearbeitung, Save/Reload und eigener Produkt-/Host-/Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbes": [
+          {
+            "run": "CITY-00-I25-I",
+            "state": "direct_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
+            "result": "Show trees off/on/off; sichtbare Kronen und tatsächliche JSON trees0→13 Punkte, andere13 Gruppen wertgleich. Show forests wird nach Show trees bedienbar, Waldwirkung noch ungeprüft."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0001",
@@ -2685,7 +2753,9 @@
         "availability": "unknown",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json"
         ],
         "task": "Benannten Ort direkt platzieren",
         "phase": "CITY-06",
@@ -2701,14 +2771,28 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Name anlegen/inline ändern/entfernen in Originallegende und SVG belegt. Räumliche Pinposition/Bewegung, Save/Reload, stabile Keys und eigener Produkt-/Host-/Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I21-I",
+            "state": "direct_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
+            "result": "Eingegebener Landmarkenname in Legend-Darstellung sichtbar und im tatsächlich heruntergeladenen SVG als Text enthalten; Position/Bearbeitung/Persistenz nicht verifiziert."
+          },
+          {
+            "run": "CITY-00-I23-I",
+            "state": "direct_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
+            "result": "Inline-Umbenennung und Delete in Originallegende sichtbar sowie in zwei tatsächlichen SVG-Ausgaben bestätigt. Position-Menü verschiebt Legendenkasten, nicht belegte geographische Landmarke."
+          }
+        ]
       },
       {
         "id": "CO-WAT-0007",
@@ -3086,13 +3170,14 @@
         "product": "Canvas of Kings",
         "feature": "Rückgängig und Wiederherstellen",
         "sourceUrl": "steam://run/3122210",
-        "observedAt": "2026-10-09T13:27:57.021215+00:00",
+        "observedAt": "2026-10-09T13:56:09.039401+00:00",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json"
         ],
         "task": "Pfad-/Plotänderung rücknehmen und wiederherstellen",
         "phase": "CITY-01",
@@ -3108,15 +3193,14 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Undo/Redo controls visible; saved road change proven. Two Undo attempts after Save showed no rollback; Save/history boundary and successful Undo/Redo remain unverified. Own implementation, host and usability remain open.",
+        "gap": "I17 post-Save and I20 before-manual-Save hypotheses each stopped after two no-effect attempts. Automatic saving enabled per Welcome; operation/history eligibility and successful Undo/Redo remain unverified. Own implementation/host/usability remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I17-I",
-          "state": "two_undo_attempts_no_observed_effect_after_save",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
-          "observation": "Saved single road endpoint z1.04→1.73; two Undo menu attempts, saved result still exactly changed; Redo untested",
-          "sourceScope": "installed demo; synthetic inputs; Save/history relationship unresolved"
+          "run": "CITY-00-I20-I",
+          "state": "two_undo_attempts_before_manual_save_no_observed_effect",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
+          "observation": "Same road endpoint drag; Undo100ms and2000ms without rollback before explicit Save. Before-manual-save file still original; final Save path0 z1.73; automated save impact unknown. Redo untested."
         },
         "originalProbes": [
           {
@@ -3134,6 +3218,12 @@
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
             "observation": "Saved single road endpoint z1.04→1.73; two Undo menu attempts, saved result still exactly changed; Redo untested",
             "sourceScope": "installed demo; synthetic inputs; Save/history relationship unresolved"
+          },
+          {
+            "run": "CITY-00-I20-I",
+            "state": "two_undo_attempts_before_manual_save_no_observed_effect",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
+            "observation": "Same road endpoint drag; Undo100ms and2000ms without rollback before explicit Save. Before-manual-save file still original; final Save path0 z1.73; automated save impact unknown. Redo untested."
           }
         ]
       },
@@ -3741,7 +3831,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I19-I",
+      "run": "CITY-00-I25-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3771,7 +3861,12 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i20-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json"
       ],
       "resultReferences": [
         {
@@ -112691,6 +112786,17 @@
           "gap": "Suche zusammen mit Fuzzy/Exact und Tagfilter im Original nicht vollständig geprüft."
         },
         "target": "Die Suche zeigt für denselben Begriff dieselben Treffer und erhält die beabsichtigte Assetwahl.",
+        "productOverride20261009": {
+          "source": "GM-UX-002 im getrennten GM-Produkttest; Issue #1 Kommentar 6082352187",
+          "decision": "Treffer erscheinen beim Tippen ohne Enter; × leert Text und wirksamen Filter. Die Originalbelege für Return-Suche bleiben historisch erhalten. Die Papierkorbwirkung aus DD-026.07 bleibt bestehen.",
+          "reviewBuildSha256": "537823555975cd3b905456d6124637218a2f89ab0dd993fcbdffca5701e37a3e",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555054805-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555068634-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/review-audit.json"
+          ],
+          "remaining": "Unabhängiger Produkttester-Nachlauf und Zielshell-Abnahme stehen aus."
+        },
         "baseline": {
           "editor": {
             "sequence": null,
@@ -145371,6 +145477,17 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
           ],
           "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_paired_p0_p1_scope",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556129222-parity-tools-phase1-navigation-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556141720-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review.md",
+          "remaining": "Canvasrand, Fokusverlust, Touchpad, physische Eingabe, P2-Gesten und Atlas-Zielshell offen; Phase-1-Gesamttor offen."
         }
       },
       {
@@ -145438,6 +145555,17 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
           ],
           "gap": "P0 bei 100/125 % gleichwertig. P1-Auswahl, Zeichenentwurf, Leertastenwechsel, Escape sowie Speichern/frisches Öffnen nach Pan am installierten Build nicht erneut geprüft; Rand/Fokus/P2 offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_paired_p0_p1_scope",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556129222-parity-tools-phase1-navigation-edit/result.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556141720-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review.md",
+          "remaining": "Canvasrand, Fokusverlust, Touchpad, physische Eingabe, P2-Gesten und Atlas-Zielshell offen; Phase-1-Gesamttor offen."
         }
       },
       {
@@ -145511,6 +145639,17 @@
           "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510197843-parity-tools-phase1-navigation-edit/navigation-pair.json",
           "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510204224-parity-tools-phase1-navigation-reopen/result.json",
           "comparison": "Im isolierten Host 64→80→64; Weltpunkt unter dem Zeiger, V4-Dokument, History, Dirty und Dateihash bleiben gleich. Frischer Prozess liest dieselbe Karte. Fachentscheidung offen."
+        },
+        "followUpPhase1Review": {
+          "date": "2026-10-09",
+          "state": "verified_measured_wheel_step_only",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostBuildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555459952-parity-tools-phase1-navigation-edit/navigation-pair.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/evidence/1791555468161-parity-tools-phase1-navigation-reopen/result.json",
+          "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-review-20261009/review.md",
+          "remaining": "Weitere Zoomstufen, Radsignale, Touchpad, Canvasrand, Fokusverlust und physische Eingabe offen; Phase-1-Gesamttor offen."
         }
       },
       {
@@ -145992,6 +146131,14 @@
           "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
           "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
         },
+        "followUpPhase1ShadowReview": {
+          "state": "passed_scoped_per_entity_atlas_option_open",
+          "scope": "Getrennte Wand-/Objekt-Renderwirkung, Werkzeugwahl für neue Elemente, Undo/Redo, Save und frische Neuöffnung auf integriertem Build.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+          "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+          "remaining": "Globales Atlasoptionen-Verhalten und Phase-1-Gesamttor offen; New-Map-Startdialog ist kein direktes Vorbild."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -146084,6 +146231,14 @@
           "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
           "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
           "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
+        },
+        "followUpPhase1ShadowReview": {
+          "state": "passed_scoped_per_entity_atlas_option_open",
+          "scope": "Getrennte Wand-/Objekt-Renderwirkung, Werkzeugwahl für neue Elemente, Undo/Redo, Save und frische Neuöffnung auf integriertem Build.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+          "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+          "remaining": "Globales Atlasoptionen-Verhalten und Phase-1-Gesamttor offen; New-Map-Startdialog ist kein direktes Vorbild."
         },
         "baseline": {
           "editor": {

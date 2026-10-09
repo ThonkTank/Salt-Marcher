@@ -1,6 +1,6 @@
 # SMR-00-ADR-01 – Zielplattform und Migrationspfad
 
-Status: vorgeschlagen; Team- und Cloud-Review ausstehend  
+Status: vorgeschlagen; Team- und Cloud-Review ausstehend
 Stand: 9. Oktober 2026
 
 ## Entscheidungskontext

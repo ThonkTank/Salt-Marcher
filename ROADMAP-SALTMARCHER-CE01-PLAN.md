@@ -137,6 +137,13 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
+Status: umgesetzt; Typprüfung, 235 Tests einschließlich hostneutralem DOM-
+Harness und Build bestanden. Ein Reparaturreview bestätigt Filterprojektion,
+Mehrfachwerte, Chips/Reset, 200-ms-Drafts, Timer-Cleanup, atomare Übernahme
+ausstehender Drafts beim Host-Lifecycle und Fokusfallbacks.
+Der CSS-Container und seine Breakpoints sind statisch belegt; echte
+Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
+
 - Query, State, Render-Controller und DOM-Host-Prüfungen bleiben hostneutral
   und erhalten alle Hostfähigkeiten über injizierte Ports. Der bestehende
   Obsidian-`ItemView` ist nur ein dünner Übergangsadapter; Command-/View-Tests
@@ -188,6 +195,10 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-I03`: verbleibende Filter, einzelne Chips/Reset, 200-ms-Debounce mit
-Stale-Schutz, responsive/A11y-Vervollständigung und fokussierte DOM-Host-
-Prüfungen. Keine CE-01- oder Encounter-Fachfreigabe behaupten.
+`CE-01-H01`: echte Obsidian-Abnahme des nach `CE-01-R01`, `CE-01-N01` und
+`CE-01-R02` statisch bestandenen Kandidaten. Command-Palette, eindeutiger
+Fokus, Filter/Detailzustand, Schließen/Neuöffnen, frischer Prozess,
+beschädigtes Asset, physische Tastatur und 900×650/1150×700 bleiben bis zu
+diesem Lauf offen. Erst nach seinem Review folgt der getrennte
+`CE-01-C01`-Aufräumlauf; keine Fach- oder Hostfreigabe aus Tests allein
+ableiten.

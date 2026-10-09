@@ -187,6 +187,11 @@ CE-01 folgt dem technischen Fachplan
 und nach Reparaturreview bestanden. `CE-01-I02` stellt den eigenen
 Katalog-`ItemView`, eindeutigen Command-Fokus und den Kernfluss aus Suche,
 Filtern, Sortierung, Paging, Auswahl und Statblock als geprüften
-Umsetzungskandidaten bereit. Nächster Lauf ist `CE-01-I03` für die übrigen
-Filter, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit und
-DOM-Host-Prüfungen. Noch keine CE-01- oder Encounter-Fachfreigabe behaupten.
+Umsetzungskandidaten bereit. `CE-01-I03` ergänzt die übrigen 2014-Filter,
+Mehrfachwerte, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit,
+einen fokussierten DOM-Harness und atomare Draft-Übernahme beim Host-Lifecycle.
+`CE-01-R01` fand einen Unique-View-Concurrency-Race und selectorunsicheren
+Tastaturfokus. `CE-01-N01` reparierte beide Pfade; `CE-01-R02` bestand nach
+expliziten Regressionen für kanonisches Reveal, Duplikatbereinigung und eine
+adversariale ID. Nächster Lauf ist `CE-01-H01`, die echte Obsidian-Abnahme.
+Noch keine CE-01- oder Encounter-Fachfreigabe behaupten.
